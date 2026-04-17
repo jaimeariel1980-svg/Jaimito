@@ -1,0 +1,32 @@
+{
+  "title": "Desarrollador Senior Python",
+  "department": "Tecnología",
+  "description": "Buscamos un desarrollador senior con sólida experiencia en Python y APIs REST para liderar el desarrollo de nuestra plataforma backend.",
+  "required_experience_years": 5,
+  "education_required": "Ingeniería en Sistemas, Computación o carrera afín (o experiencia equivalente)",
+  "required_skills": [
+    "Python",
+    "APIs REST / FastAPI o Django REST Framework",
+    "PostgreSQL o base de datos relacional",
+    "Git",
+    "Docker"
+  ],
+  "nice_to_have_skills": [
+    "AWS o GCP",
+    "Kubernetes",
+    "Redis",
+    "CI/CD (GitHub Actions, GitLab CI)",
+    "Metodologías ágiles (Scrum/Kanban)"
+  ],
+  "responsibilities": [
+    "Diseñar e implementar APIs REST de alto rendimiento",
+    "Modelar y optimizar bases de datos relacionales",
+    "Participar en revisiones de código y mentoría del equipo junior",
+    "Colaborar con el equipo de infraestructura en despliegues"
+  ],
+  "disqualifiers": [
+    "Menos de 3 años de experiencia en Python",
+    "Sin experiencia en bases de datos relacionales",
+    "Sin experiencia en trabajo con APIs"
+  ]
+}

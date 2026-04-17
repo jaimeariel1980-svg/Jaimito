@@ -1,0 +1,30 @@
+{
+  "title": "Analista de Recursos Humanos",
+  "department": "Recursos Humanos",
+  "description": "Buscamos un analista de RRHH con experiencia en selección de personal, administración de personal y gestión del ciclo de vida del empleado.",
+  "required_experience_years": 3,
+  "education_required": "Lic. en Recursos Humanos, Relaciones Laborales, Psicología o afín",
+  "required_skills": [
+    "Selección y reclutamiento",
+    "Entrevistas por competencias",
+    "Administración de personal",
+    "Liquidación de sueldos básica",
+    "Manejo de herramientas de ofimática (Excel, Google Sheets)"
+  ],
+  "nice_to_have_skills": [
+    "Experiencia en RRHH en empresa de tecnología",
+    "Conocimiento de SAP HR o sistemas HRIS",
+    "Inglés intermedio",
+    "Gestión del desempeño"
+  ],
+  "responsibilities": [
+    "Gestionar procesos de selección end-to-end",
+    "Realizar entrevistas y reportes de candidatos",
+    "Administrar altas, bajas y modificaciones de personal",
+    "Colaborar en el desarrollo de políticas de RRHH"
+  ],
+  "disqualifiers": [
+    "Sin experiencia en procesos de selección",
+    "Sin título universitario o estudiante muy inicial"
+  ]
+}
