@@ -1,3 +1,12 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a3d91">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>AzcuBot — Azcuénaga</title>
+<style>html,body{margin:0;height:100%;background:#0a3d91;overscroll-behavior:none}</style>
+</head><body>
+<script>var LOGO="<?!= logo ?>";window.AZCU_APP=true;window.AZCU_TABLERO="<?!= tablero ?>";</script>
 <!-- ===== AZCUBOT — pegar justo antes de </body> en Tablero.html ===== -->
 <style>
 .azb,.azb *{box-sizing:border-box}
@@ -220,3 +229,5 @@
   if(!APP && !st.msgs.length && !ls('tip')){ setTimeout(function(){ if(st.open) return; var t = document.createElement('div'); t.className = 'azb azb-tip'; t.textContent = '¿Te doy una mano? 👋'; document.body.appendChild(t); ls('tip','1'); setTimeout(function(){ t.remove(); }, 7000); }, 2500); }
 })();
 </script>
+
+</body></html>

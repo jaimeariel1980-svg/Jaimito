@@ -245,3 +245,20 @@ function azcuTranscribir(pin, base64, mime){
 function azcuProbar(){
   Logger.log(JSON.stringify(azcuChat('', [{role:'user', content:'¿Qué alertas hay hoy?'}], {nombre:'Ariel'})));
 }
+
+function azcuLogo_(){
+  try{
+    var html = HtmlService.createHtmlOutputFromFile('Tablero').getContent();
+    var i = html.indexOf('var LOGO='), j = html.indexOf("document.getElementById('logoimg')", i);
+    if(i<0 || j<0) return '';
+    return (html.slice(i, j).match(/"([^"]*)"/g) || []).map(function(x){ return x.slice(1,-1); }).join('');
+  }catch(e){ return ''; }
+}
+function azcuApp(){
+  var t = HtmlService.createTemplateFromFile('AzcuBotApp');
+  t.logo = azcuLogo_();
+  t.tablero = ScriptApp.getService().getUrl() + '?app=tablero';
+  return t.evaluate().setTitle('AzcuBot — Azcuénaga')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1, viewport-fit=cover')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
