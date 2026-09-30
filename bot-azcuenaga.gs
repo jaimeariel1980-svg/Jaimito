@@ -361,13 +361,14 @@ function guardarAgenda(est){
   rng.setNumberFormat('@');
   rng.setValues([[est.codigo, est.fecha, est.hora, est.interesado||'', est.telefono||'', est.vendedor||'', est.nota||'', 'Pendiente', est.email||'']]);
   try{
-    ss().getSheetByName('Seguimiento').appendRow([est.codigo, hoy(), 'Visita', est.interesado||'', est.telefono||'', 'Visita agendada', 'Visita '+est.fecha+' '+est.hora, est.fecha, est.nota||'', est.vendedor||'']);
+    ss().getSheetByName('Seguimiento').appendRow([est.codigo, est.fecha, 'Visita', est.interesado||'', est.telefono||'', 'Visita agendada', 'Visita '+est.fecha+' '+est.hora, '', est.nota||'', est.vendedor||'']);
   }catch(e){ Logger.log(e); }
   try{
     var ini = parseFH(est.fecha, est.hora);
-    var o = {description:'Interesado: '+(est.interesado||'')+'\nTel: '+(est.telefono||'')+(est.nota?'\n'+est.nota:'')};
+    var o = {description:'Propiedad: '+est.codigo+'\nInteresado: '+(est.interesado||'')+'\nTel: '+(est.telefono||'')+(est.nota?'\n'+est.nota:''), location:est.dir||''};
     if(est.email){ o.guests = est.email; o.sendInvites = true; }
-    CalendarApp.getDefaultCalendar().createEvent('Visita — '+(est.dir||est.codigo), ini, new Date(ini.getTime()+3600000), o);
+    var ev = CalendarApp.getDefaultCalendar().createEvent('Visita: '+(est.dir||est.codigo)+(est.interesado?' - '+est.interesado:''), ini, new Date(ini.getTime()+3600000), o);
+    ev.addPopupReminder(60);
     return true;
   }catch(e){ Logger.log(e); return false; }
 }
@@ -378,22 +379,25 @@ function chequeoCada5(){
 }
 
 function avisarVisitas(){
-  var sh = ss().getSheetByName('Agenda'), v = sh.getDataRange().getValues(), now = Date.now(), maestroV = null;
+  var v = ss().getSheetByName('Seguimiento').getDataRange().getValues(), now = Date.now(), maestroV = null;
+  var raw = prop('VISITAS_AVISADAS'), hechas = raw ? JSON.parse(raw) : [], nuevo = false;
   for(var i=1;i<v.length;i++){
-    var e = String(v[i][7]).trim();
-    if(e && e!=='Pendiente') continue;
-    var dt = parseFH(v[i][1], v[i][2]);
+    if(String(v[i][5]).trim()!=='Visita agendada') continue;
+    var m = String(v[i][6]).match(/^Visita (\d{2}\/\d{2}\/\d{4}) (\d{2}:\d{2})/);
+    if(!m) continue;
+    var dt = parseFH(m[1], m[2]);
     if(!dt) continue;
     var diff = (dt.getTime()-now)/60000;
-    if(diff > MIN_ANTES) continue;
-    if(diff > -30){
-      maestroV = maestroV || maestro();
-      var cod = String(v[i][0]).trim(), f = filaPorCodigo(maestroV, cod);
-      tgSend(CHAT_ID_ALERTAS, '⏰ *Visita en '+Math.max(0,Math.round(diff))+' min* ('+fmt(dt,'HH:mm')+')\n🏠 '+(f?dirDe(f):cod)+' ('+cod+')\n👤 '+v[i][3]+(v[i][4]?' · '+v[i][4]:'')+
-        (v[i][5]?'\n🧑‍💼 '+v[i][5]:'')+(v[i][6]?'\n📝 '+v[i][6]:''));
-      sh.getRange(i+1,8).setValue('Avisada');
-    } else sh.getRange(i+1,8).setValue('Vencida');
+    if(diff > MIN_ANTES || diff <= -30) continue;
+    var cod = String(v[i][0]).trim(), key = cod+'|'+m[1]+' '+m[2]+'|'+String(v[i][3]).trim();
+    if(hechas.indexOf(key)>=0) continue;
+    maestroV = maestroV || maestro();
+    var f = filaPorCodigo(maestroV, cod);
+    tgSend(CHAT_ID_ALERTAS, '⏰ *Visita en '+Math.max(0,Math.round(diff))+' min* ('+m[2]+')\n🏠 '+(f?dirDe(f):cod)+' ('+cod+')\n👤 '+v[i][3]+(v[i][4]?' · '+v[i][4]:'')+
+      (v[i][9]?'\n🧑‍💼 '+v[i][9]:'')+(v[i][8]?'\n📝 '+v[i][8]:''));
+    hechas.push(key); nuevo = true;
   }
+  if(nuevo) prop('VISITAS_AVISADAS', JSON.stringify(hechas.slice(-200)));
 }
 
 function avisarCambiosEstado(){
