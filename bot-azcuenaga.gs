@@ -526,7 +526,7 @@ function avisarVisitas(){
 }
 
 function avisarCambiosEstado(){
-  var v = maestro(), actual = {}, cambios = [];
+  var v = maestro(), actual = {}, cambios = [], nuevas = [], urgentes = [];
   for(var i=1;i<v.length;i++){
     var cod = String(v[i][C.COD]).trim();
     if(cod) actual[cod] = String(v[i][C.ETAPA]).trim();
@@ -536,13 +536,19 @@ function avisarCambiosEstado(){
     var previo = JSON.parse(raw);
     for(var k in actual){
       if(previo[k]!==actual[k]) desde[k] = ahora;
-      if(previo[k]!==undefined && previo[k]!==actual[k]){
-        var f = filaPorCodigo(v, k);
+      var f = filaPorCodigo(v, k), pend = f ? docsPendientes(f) : [];
+      if(previo[k]===undefined){
+        nuevas.push('· *'+k+'* '+(f?dirDe(f):'')+' — '+(actual[k]||'Captación')+(f&&f[C.DUENO]?'\n   👤 '+String(f[C.DUENO]).trim()+(f[C.TEL]?' · '+f[C.TEL]:''):''));
+      } else if(previo[k]!==actual[k]){
         cambios.push('· '+k+' — '+(f?dirDe(f):'')+': '+(previo[k]||'—')+' → '+(actual[k]||'—'));
-      }
+      } else continue;
+      if((actual[k]==='Reserva' || actual[k]==='Vendida') && pend.length)
+        urgentes.push('· *'+k+'* '+(f?dirDe(f):'')+' pasó a *'+actual[k]+'*\n   Falta: '+pend.join(', '));
     }
   }
   for(var k2 in actual) if(!desde[k2]) desde[k2] = ahora;
+  if(urgentes.length) tgSend(CHAT_ID_ALERTAS, '🚨 *URGENTE — faltan papeles*\n'+urgentes.join('\n')+'\n\nRegularizar antes de avanzar.');
+  if(nuevas.length) tgSend(CHAT_ID_ALERTAS, '🆕 *Nueva propiedad ingresada*\n'+nuevas.join('\n'));
   if(cambios.length) tgSend(CHAT_ID_ALERTAS, '📌 *Cambio de estado*\n'+cambios.join('\n'));
   prop('SNAP_ESTADOS', JSON.stringify(actual));
   prop('ESTADO_DESDE', JSON.stringify(desde));
