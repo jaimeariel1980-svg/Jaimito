@@ -578,7 +578,8 @@ function alertasDiarias(){
   }
   var mes = fmt(new Date(),'yyyyMM');
   if(+fmt(new Date(),'d')===5 && prop('ULT_REPORTE_MES')!==mes){
-    tgSend(CHAT_ID_ALERTAS, '📊 *Recordatorio:* hoy es 5 — corresponde enviar los reportes a propietarios. Usá "Reporte a propietario".');
+    var rm = reportesPendientes(true);
+    if(rm) tgSend(CHAT_ID_ALERTAS, '📅 *Hoy es 5:* reportes del mes.\n\n'+rm);
     prop('ULT_REPORTE_MES', mes);
   }
   try{ var r = reportesPendientes(); if(r) tgSend(CHAT_ID_ALERTAS, r); }catch(e){ Logger.log(e); }
@@ -599,18 +600,26 @@ function papelesIncompletos(){
   return out.length ? '⚠️ *Papeles incompletos ('+out.length+') — '+hoy()+'*\n'+out.join('\n') : '';
 }
 
-function reportesPendientes(){
+function reportesPendientes(mensual){
   var ult = prop('ULT_AVISO_REP');
   var map = jprop('REP_ULT'), v = maestro(), out = [], ahora = Date.now(), cambio = false;
+  var seg = ss().getSheetByName('Seguimiento').getDataRange().getValues(), fechas = {};
+  for(var i=1;i<seg.length;i++){
+    var c = String(seg[i][0]).trim(), n = numFecha(seg[i][1]);
+    if(c && n) (fechas[c] = fechas[c] || []).push(n);
+  }
   activas(v).forEach(function(a){
     if(!map[a.cod]){ map[a.cod] = ahora; cambio = true; return; }
     var d = Math.floor((ahora-map[a.cod])/86400000);
-    if(d>=DIAS_REPORTE) out.push('· *'+a.cod+'* '+a.dir+' — hace '+d+' días');
+    if(!mensual && d<DIAS_REPORTE) return;
+    var desde = numFecha(new Date(map[a.cod]));
+    var mov = (fechas[a.cod]||[]).filter(function(n){ return n>desde; }).length;
+    if(mov) out.push('· *'+a.cod+'* '+a.dir+' — '+mov+' movimiento(s) desde el último reporte (hace '+d+' días)');
   });
   if(cambio) prop('REP_ULT', JSON.stringify(map));
-  if(!out.length || (ult && (ahora-Number(ult))/86400000 < 3)) return '';
-  prop('ULT_AVISO_REP', String(ahora));
-  return '📊 *Reportes pendientes ('+out.length+')* — sin reporte hace '+DIAS_REPORTE+'+ días\n'+out.join('\n')+'\n\nUsá "Reporte a propietario".';
+  if(!out.length) return '';
+  if(!mensual){ if(ult && (ahora-Number(ult))/86400000 < 3) return ''; prop('ULT_AVISO_REP', String(ahora)); }
+  return '📊 *Reportes para enviar ('+out.length+')* — propiedades con movimiento\n'+out.join('\n')+'\n\nUsá "Reporte a propietario".';
 }
 
 function ultimasPorPersona(){
