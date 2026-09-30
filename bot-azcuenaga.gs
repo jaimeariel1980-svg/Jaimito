@@ -50,11 +50,12 @@ function doPost(e){
       if(c.get('upd_'+u.update_id)) return ok;
       c.put('upd_'+u.update_id,'1',600);
     }
-    if(u.callback_query){ manejarBoton(u.callback_query); return ok; }
+    if(u.callback_query){ recordarNombre(u.callback_query.message.chat.id, u.callback_query.from); manejarBoton(u.callback_query); return ok; }
     var msg = u.message;
     if(!msg) return ok;
     if(msg.date && (Date.now()/1000 - msg.date) > 120) return ok;
     var chatId = msg.chat.id, texto = msg.text || '';
+    recordarNombre(chatId, msg.from);
     if(texto === '/start' || /^men[uú]$/i.test(texto)){ setEstado(chatId, null); mostrarMenu(chatId); return ok; }
     if(msg.voice || msg.audio){ manejarAudio(chatId, msg); return ok; }
     if(texto) manejarTexto(chatId, texto, msg.from);
@@ -71,14 +72,36 @@ function getEstado(chatId){
   return v ? JSON.parse(v) : null;
 }
 
-function mostrarMenu(chatId){
-  tgSend(chatId, '🏠 *Bot Azcuénaga*\n\n📝 *Cargar*: registrá una consulta o visita\n📅 *Agendar*: visita con aviso y Calendar\n🔍 *Buscar*: ficha de una propiedad\n📌 *Estado*: cambiá la etapa\n📊 *Reporte*: resumen al propietario\n\n🎤 *No hace falta usar el menú.* Escribime o mandame un audio:\n· _"Visité Gutemberg con Juan, le interesó"_\n· _"Mañana 17:30 Juan en Gutemberg"_\n· _"Gutemberg"_ (ficha)\n· _"Gutemberg vendida"_\n· _"Reporte Gutemberg"_\n\n🧭 *¿Preferís ir paso a paso?* Tocá un botón y te voy guiando.', { inline_keyboard: [
+function nombreDe(chatId){ return CacheService.getScriptCache().get('nom_'+chatId) || ''; }
+function recordarNombre(chatId, from){ if(from && from.first_name) CacheService.getScriptCache().put('nom_'+chatId, from.first_name, 21600); }
+function menuTeclado(){
+  return { inline_keyboard: [
     [{ text:'📝 Cargar visita / consulta', callback_data:'cargar' }],
     [{ text:'📅 Agendar visita',            callback_data:'agendar' }],
     [{ text:'🔍 Buscar propiedad',          callback_data:'buscar' }],
     [{ text:'📌 Cambiar estado',            callback_data:'cambiar_estado' }],
     [{ text:'📊 Reporte a propietario',     callback_data:'reporte' }]
-  ]});
+  ]};
+}
+function mostrarMenu(chatId, corto){
+  var n = nombreDe(chatId);
+  if(corto){ tgSend(chatId, corto, menuTeclado()); return; }
+  tgSend(chatId,
+    '👋 *¡Hola'+(n?', '+n:'')+'!* Soy *AzcuBot* 🏠\n'+
+    'Contame en qué te puedo ayudar 😊\n\n'+
+    '━━━━━━━━━━━━━━\n'+
+    '*Puedo ayudarte a:*\n\n'+
+    '📝 *Cargar* una consulta o visita\n'+
+    '📅 *Agendar* una visita (con aviso y Calendar)\n'+
+    '🔍 *Buscar* la ficha de una propiedad\n'+
+    '📌 *Cambiar* el estado de una propiedad\n'+
+    '📊 *Armar* el reporte para el propietario\n'+
+    '━━━━━━━━━━━━━━\n\n'+
+    '💬 *No hace falta usar botones.* Escribime o mandame un audio, por ejemplo:\n'+
+    '· _"Visité Gutemberg con Juan, le interesó"_\n'+
+    '· _"Mañana 17:30 Juan en Gutemberg"_\n'+
+    '· _"Gutemberg vendida"_\n\n'+
+    '🧭 ¿Preferís ir *paso a paso*? Tocá una opción y te voy guiando 👇', menuTeclado());
 }
 
 function listaProps(chatId, texto, prefijo){
@@ -275,7 +298,7 @@ function texto3(chatId, t, est, paso, from){
     finalizarCarga(chatId, est); return;
   }
   if(t.length>=3){ enrutar(chatId, t, from && from.first_name); return; }
-  tgSend(chatId, 'Para empezar tocá una opción 👇'); mostrarMenu(chatId);
+  mostrarMenu(chatId);
 }
 
 function parseFechaInput(t){
@@ -427,7 +450,7 @@ function enrutar(chatId, texto, vend, forzada){
   var it = forzada || d.intencion, res = d.propiedad ? buscarPropiedades(d.propiedad) : [];
   if(it==='cargar' || it==='agendar'){ iniciarFlujo(chatId, it, d, texto, vend, res); return; }
   var pref = {buscar:'info:', estado:'estado_prop:', reporte:'rep:'}[it];
-  if(!pref){ tgSend(chatId, 'No estoy seguro de qué querés hacer. Podés ir *paso a paso* con el menú 👇'); mostrarMenu(chatId); return; }
+  if(!pref){ mostrarMenu(chatId, '🤔 Mmm'+(nombreDe(chatId)?', *'+nombreDe(chatId)+'*':'')+', no terminé de entender qué necesitás.\nContámelo de otra forma (texto o audio) o elegí una opción para ir *paso a paso* 👇'); return; }
   if(!res.length){
     setEstado(chatId, {paso:{buscar:'buscando_prop_info', estado:'buscando_prop_estado', reporte:'buscando_prop_reporte'}[it]});
     tgSend(chatId, 'No identifiqué la propiedad. Escribí parte de la *dirección* o el *código*:', recientesTeclado(pref)); return;
