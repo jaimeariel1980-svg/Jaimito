@@ -361,6 +361,9 @@ function guardarAgenda(est){
   rng.setNumberFormat('@');
   rng.setValues([[est.codigo, est.fecha, est.hora, est.interesado||'', est.telefono||'', est.vendedor||'', est.nota||'', 'Pendiente', est.email||'']]);
   try{
+    ss().getSheetByName('Seguimiento').appendRow([est.codigo, hoy(), 'Visita', est.interesado||'', est.telefono||'', 'Visita agendada', 'Visita '+est.fecha+' '+est.hora, est.fecha, est.nota||'', est.vendedor||'']);
+  }catch(e){ Logger.log(e); }
+  try{
     var ini = parseFH(est.fecha, est.hora);
     var o = {description:'Interesado: '+(est.interesado||'')+'\nTel: '+(est.telefono||'')+(est.nota?'\n'+est.nota:'')};
     if(est.email){ o.guests = est.email; o.sendInvites = true; }
