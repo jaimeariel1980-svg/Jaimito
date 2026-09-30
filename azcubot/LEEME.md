@@ -1,12 +1,18 @@
-# AzcuBot — asistente del tablero
+# AzcuBot
 
-1. **Apps Script del tablero** → nuevo archivo `AzcuBot.gs` → pegar `AzcuBot.gs`.
-2. **Configuración del proyecto → Propiedades del script**:
-   - `OPENAI_API_KEY` = clave NUEVA (revocar las anteriores).
-   - `AZCU_PIN` = un PIN (recomendado; se pide una vez por navegador).
-3. **Tablero.html** → pegar `azcubot-widget.html` justo antes de `</body>`.
-4. Implementar → Administrar implementaciones → Nueva versión.
-5. Probar: abrir el tablero (Ctrl+F5) → burbuja abajo a la derecha. Función de prueba en el editor: `azcuProbar`.
+## A) Servidor (Apps Script del tablero)
+1. Archivo nuevo `AzcuBot.gs` → pegar `AzcuBot.gs`.
+2. Agregar una función nueva (no existe `doPost` en el tablero):
+   `function doPost(e){ return azcuApi(e); }`
+3. Propiedades del script: `OPENAI_API_KEY` (ya existe) y `AZCU_PIN` (PIN del equipo).
+4. Implementar → Administrar implementaciones → Nueva versión. Acceso: "Cualquier persona".
 
-El widget usa la variable `LOGO` del tablero para el ícono (logo + ojitos).
-Cambios de datos: siempre pasan por una tarjeta "Confirmá esta acción".
+## B) App de celular (Netlify)
+1. Subir la carpeta `netlify/` (o `azcubot-netlify.zip` descomprimido) a https://app.netlify.com/drop
+2. En el celular abrir la URL de Netlify → menú del navegador → "Agregar a pantalla de inicio".
+3. La primera vez pide nombre y el PIN.
+
+## C) Burbuja en el tablero de escritorio (opcional)
+Pegar `azcubot-widget.html` antes de `</body>` en Tablero.html.
+
+`build_netlify.py` regenera `netlify/index.html` a partir de `azcubot-widget.html`.

@@ -90,7 +90,7 @@
   var gf = document.createElement('link'); gf.rel='stylesheet'; gf.href='https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap'; document.head.appendChild(gf);
   function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function fmt(s){ return esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/^[-•] /gm,'• ').replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>').replace(/\n/g,'<br>'); }
-  function logoSrc(){ try{ return typeof LOGO!=='undefined' ? LOGO : ''; }catch(e){ return ''; } }
+  function logoSrc(){ try{ if(window.AZCU_LOGO) return window.AZCU_LOGO; return typeof LOGO!=='undefined' ? LOGO : ''; }catch(e){ return ''; } }
   function mk(size){
     var src = logoSrc(), eyes = '<svg class="azb-eyes" viewBox="0 0 100 100"><g class="azb-blink"><ellipse cx="36" cy="47" rx="11" ry="12.5" fill="#fff" stroke="#0a3d91" stroke-width="3"/><ellipse cx="64" cy="47" rx="11" ry="12.5" fill="#fff" stroke="#0a3d91" stroke-width="3"/></g><circle class="azb-pp" cx="36" cy="48" r="5.2" fill="#0f1b33"/><circle class="azb-pp" cx="64" cy="48" r="5.2" fill="#0f1b33"/><circle cx="38" cy="45.5" r="1.7" fill="#fff"/><circle cx="66" cy="45.5" r="1.7" fill="#fff"/></svg>';
     return '<span class="azb-mk" style="width:'+size+'px;height:'+size+'px">'+(src?'<img src="'+src+'" alt="">':'<span style="display:block;width:100%;height:100%;background:#0a3d91"></span>')+eyes+'</span>';
@@ -151,11 +151,19 @@
     });
   }
   function call(fn, args, ok, fail, retried){
-    var run = google.script.run.withSuccessHandler(ok).withFailureHandler(function(e){
+    function onErr(e){
       var msg = (e && e.message) ? e.message : String(e);
       if(/PIN/.test(msg) && !retried){ var p = window.prompt('Poné el PIN de AzcuBot:'); if(p){ st.pin = p; ls('pin', p); return call(fn, args, ok, fail, true); } }
       fail(msg.replace(/^Error:\s*/,''));
-    });
+    }
+    if(window.AZCU_API){
+      fetch(window.AZCU_API, {method:'POST', body:JSON.stringify({fn:fn, args:[st.pin].concat(args)})})
+        .then(function(r){ return r.json(); })
+        .then(function(j){ if(j && j.ok) ok(j.data); else onErr(new Error((j && j.error) || 'error')); })
+        .catch(function(){ onErr(new Error('no hay conexión con el servidor')); });
+      return;
+    }
+    var run = google.script.run.withSuccessHandler(ok).withFailureHandler(onErr);
     run[fn].apply(run, [st.pin].concat(args));
   }
   function doAction(mi, ai, yes){
@@ -217,6 +225,10 @@
   }
   if(!APP){ hook(); setTimeout(hook, 1500); }
   render();
+  if(APP && window.AZCU_API && !logoSrc()){
+    var cl = ls('logo'); if(cl){ window.AZCU_LOGO = cl; render(); }
+    else fetch(window.AZCU_API, {method:'POST', body:JSON.stringify({fn:'azcuLogo', args:['']})}).then(function(r){ return r.json(); }).then(function(j){ if(j && j.ok && j.data){ window.AZCU_LOGO = j.data; ls('logo', j.data); render(); } }).catch(function(){});
+  }
   if(!APP && !st.msgs.length && !ls('tip')){ setTimeout(function(){ if(st.open) return; var t = document.createElement('div'); t.className = 'azb azb-tip'; t.textContent = '¿Te doy una mano? 👋'; document.body.appendChild(t); ls('tip','1'); setTimeout(function(){ t.remove(); }, 7000); }, 2500); }
 })();
 </script>

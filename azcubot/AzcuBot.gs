@@ -254,11 +254,15 @@ function azcuLogo_(){
     return (html.slice(i, j).match(/"([^"]*)"/g) || []).map(function(x){ return x.slice(1,-1); }).join('');
   }catch(e){ return ''; }
 }
-function azcuApp(){
-  var t = HtmlService.createTemplateFromFile('AzcuBotApp');
-  t.logo = azcuLogo_();
-  t.tablero = ScriptApp.getService().getUrl() + '?app=tablero';
-  return t.evaluate().setTitle('AzcuBot — Azcuénaga')
-    .addMetaTag('viewport', 'width=device-width, initial-scale=1, viewport-fit=cover')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+function azcuApi(e){
+  var out;
+  try{
+    var req = JSON.parse(e.postData.contents), a = req.args || [];
+    if(req.fn==='azcuChat') out = {ok:true, data:azcuChat(a[0], a[1], a[2])};
+    else if(req.fn==='azcuEjecutar') out = {ok:true, data:azcuEjecutar(a[0], a[1])};
+    else if(req.fn==='azcuTranscribir') out = {ok:true, data:azcuTranscribir(a[0], a[1], a[2])};
+    else if(req.fn==='azcuLogo') out = {ok:true, data:azcuLogo_()};
+    else out = {ok:false, error:'Función desconocida'};
+  }catch(err){ out = {ok:false, error:String(err.message || err)}; }
+  return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
 }
