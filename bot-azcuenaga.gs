@@ -3,6 +3,7 @@ var CHAT_ID_ALERTAS = '5692711315';
 var TZ = 'America/Argentina/Buenos_Aires';
 var MIN_ANTES = 30;
 var DIAS_PAPELES = 10;
+var DIAS_REPORTE = 20;
 var HOJA = 'Ventas - Base de Datos Maestra';
 var C = { COD:0, ACT:2, DUENO:3, TEL:9, MAIL:10, CALLE:43, NUM:44, DOCS:69, PRECIO:108, MONEDA:109, ETAPA:111, TOKKO:119, COMPL:67 };
 var DOCS = ['Plano edificación','Plano mensura','Escritura','DNI propietario','CUIL propietario','Título propiedad','TGI Municipal','API Provincial','EPE Luz','Aguas Santafesinas','Litoral Gas'];
@@ -30,9 +31,10 @@ function testBot(){ Logger.log(tg('getMe').getContentText()); Logger.log(tg('get
 
 function crearTriggers(){
   ScriptApp.getProjectTriggers().forEach(function(t){
-    if(['chequeoCada5','alertasDiarias','alertasAutomaticas'].indexOf(t.getHandlerFunction())>=0) ScriptApp.deleteTrigger(t);
+    if(['chequeoCada5','alertasDiarias','resumenDia','alertasAutomaticas'].indexOf(t.getHandlerFunction())>=0) ScriptApp.deleteTrigger(t);
   });
   ScriptApp.newTrigger('chequeoCada5').timeBased().everyMinutes(5).create();
+  ScriptApp.newTrigger('resumenDia').timeBased().everyDays(1).atHour(8).create();
   ScriptApp.newTrigger('alertasDiarias').timeBased().everyDays(1).atHour(9).create();
   Logger.log('Triggers creados');
 }
@@ -498,6 +500,7 @@ function guardarAgenda(est){
 function chequeoCada5(){
   try{ avisarVisitas(); }catch(e){ Logger.log(e); }
   try{ avisarCambiosEstado(); }catch(e){ Logger.log(e); }
+  try{ avisarEncuestas(); }catch(e){ Logger.log(e); }
 }
 
 function avisarVisitas(){
@@ -528,23 +531,46 @@ function avisarCambiosEstado(){
     var cod = String(v[i][C.COD]).trim();
     if(cod) actual[cod] = String(v[i][C.ETAPA]).trim();
   }
-  var raw = prop('SNAP_ESTADOS');
+  var raw = prop('SNAP_ESTADOS'), desde = jprop('ESTADO_DESDE'), ahora = Date.now();
   if(raw){
     var previo = JSON.parse(raw);
     for(var k in actual){
+      if(previo[k]!==actual[k]) desde[k] = ahora;
       if(previo[k]!==undefined && previo[k]!==actual[k]){
         var f = filaPorCodigo(v, k);
         cambios.push('· '+k+' — '+(f?dirDe(f):'')+': '+(previo[k]||'—')+' → '+(actual[k]||'—'));
       }
     }
   }
+  for(var k2 in actual) if(!desde[k2]) desde[k2] = ahora;
   if(cambios.length) tgSend(CHAT_ID_ALERTAS, '📌 *Cambio de estado*\n'+cambios.join('\n'));
   prop('SNAP_ESTADOS', JSON.stringify(actual));
+  prop('ESTADO_DESDE', JSON.stringify(desde));
 }
 
+function jprop(k){ var r = prop(k); return r ? JSON.parse(r) : {}; }
+function numFecha(x){
+  if(x instanceof Date) return +fmt(x,'yyyyMMdd');
+  var m = String(x).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  return m ? +(m[3]+('0'+m[2]).slice(-2)+('0'+m[1]).slice(-2)) : null;
+}
+function difDias(a, b){
+  function d(n){ return Date.UTC(Math.floor(n/10000), Math.floor(n/100)%100-1, n%100); }
+  return Math.round((d(a)-d(b))/86400000);
+}
+function hoyNum(){ return +fmt(new Date(),'yyyyMMdd'); }
+function activas(v){
+  var out = [];
+  for(var i=1;i<v.length;i++){
+    var et = String(v[i][C.ETAPA]).trim();
+    if(v[i][C.COD] && (et==='Publicada' || et==='Reserva')) out.push({cod:String(v[i][C.COD]).trim(), dir:dirDe(v[i]), etapa:et});
+  }
+  return out;
+}
+function marcarReporte(cod){ var m = jprop('REP_ULT'); m[cod] = Date.now(); prop('REP_ULT', JSON.stringify(m)); }
+
 function alertasDiarias(){
-  var h = hoy(), p = prop('ULT_PAPELES');
-  var dias = p ? (Date.now()-Number(p))/86400000 : 999;
+  var p = prop('ULT_PAPELES'), dias = p ? (Date.now()-Number(p))/86400000 : 999;
   if(dias >= DIAS_PAPELES - 0.1){
     var txt = papelesIncompletos();
     if(txt) tgSend(CHAT_ID_ALERTAS, txt);
@@ -552,19 +578,124 @@ function alertasDiarias(){
   }
   var mes = fmt(new Date(),'yyyyMM');
   if(+fmt(new Date(),'d')===5 && prop('ULT_REPORTE_MES')!==mes){
-    tgSend(CHAT_ID_ALERTAS, '📊 *Recordatorio:* hoy 5 — corresponde enviar los reportes a propietarios. Usá "Reporte a propietario".');
+    tgSend(CHAT_ID_ALERTAS, '📊 *Recordatorio:* hoy es 5 — corresponde enviar los reportes a propietarios. Usá "Reporte a propietario".');
     prop('ULT_REPORTE_MES', mes);
   }
+  try{ var r = reportesPendientes(); if(r) tgSend(CHAT_ID_ALERTAS, r); }catch(e){ Logger.log(e); }
+  try{ var q = propuestasSinRespuesta(); if(q) tgSend(CHAT_ID_ALERTAS, q); }catch(e){ Logger.log(e); }
+  if(fmt(new Date(),'u')==='1'){
+    try{ var w = semanal(); if(w) tgSend(CHAT_ID_ALERTAS, w); }catch(e){ Logger.log(e); }
+  }
 }
+
 function papelesIncompletos(){
   var v = maestro(), out = [];
   for(var i=1;i<v.length;i++){
     var et = String(v[i][C.ETAPA]).trim();
     if(!v[i][C.COD] || !et || et==='Vendida' || et==='Suspendida') continue;
-    var n = docsPendientes(v[i]).length;
-    if(n>=3) out.push('· '+String(v[i][C.COD]).trim()+' — '+dirDe(v[i])+' ('+n+' pend.)');
+    var pend = docsPendientes(v[i]);
+    if(pend.length>=3) out.push('· *'+String(v[i][C.COD]).trim()+'* '+dirDe(v[i])+'\n   Falta: '+pend.slice(0,4).join(', ')+(pend.length>4?' +'+(pend.length-4)+' más':''));
   }
-  return out.length ? '⚠️ *Docs incompletos ('+out.length+') — '+hoy()+'*\n'+out.join('\n') : '';
+  return out.length ? '⚠️ *Papeles incompletos ('+out.length+') — '+hoy()+'*\n'+out.join('\n') : '';
+}
+
+function reportesPendientes(){
+  var ult = prop('ULT_AVISO_REP');
+  var map = jprop('REP_ULT'), v = maestro(), out = [], ahora = Date.now(), cambio = false;
+  activas(v).forEach(function(a){
+    if(!map[a.cod]){ map[a.cod] = ahora; cambio = true; return; }
+    var d = Math.floor((ahora-map[a.cod])/86400000);
+    if(d>=DIAS_REPORTE) out.push('· *'+a.cod+'* '+a.dir+' — hace '+d+' días');
+  });
+  if(cambio) prop('REP_ULT', JSON.stringify(map));
+  if(!out.length || (ult && (ahora-Number(ult))/86400000 < 3)) return '';
+  prop('ULT_AVISO_REP', String(ahora));
+  return '📊 *Reportes pendientes ('+out.length+')* — sin reporte hace '+DIAS_REPORTE+'+ días\n'+out.join('\n')+'\n\nUsá "Reporte a propietario".';
+}
+
+function ultimasPorPersona(){
+  var v = ss().getSheetByName('Seguimiento').getDataRange().getValues(), m = {};
+  for(var i=1;i<v.length;i++){
+    var cod = String(v[i][0]).trim(); if(!cod) continue;
+    m[cod+'|'+(normalizarTel(v[i][4])||sinAcentos(v[i][3]))] = v[i];
+  }
+  return {filas:v, ult:m};
+}
+
+function propuestasSinRespuesta(){
+  var d = ultimasPorPersona(), mae = maestro(), ult = {}, out = [], hn = hoyNum();
+  for(var k in d.ult) ult[String(d.ult[k][0]).trim()] = d.ult[k];
+  for(var cod in ult){
+    var r = ult[cod], res = String(r[5]);
+    if(!/propuesta/i.test(res) || /acept|rechaz/i.test(res)) continue;
+    var f = filaPorCodigo(mae, cod), et = f ? String(f[C.ETAPA]).trim() : '';
+    if(et==='Reserva' || et==='Vendida' || et==='Suspendida') continue;
+    var n = numFecha(r[1]); if(!n) continue;
+    var dd = difDias(hn, n);
+    if(dd>=3 && dd<=30 && dd%3===0) out.push('· *'+cod+'* '+(f?dirDe(f):'')+' — '+r[3]+' (hace '+dd+' días)');
+  }
+  return out.length ? '💬 *Propuestas sin respuesta ('+out.length+')*\n'+out.join('\n') : '';
+}
+
+function semanal(){
+  var mae = maestro(), d = ultimasPorPersona(), hn = hoyNum(), ultimo = {}, sinMov = [], est = [];
+  for(var i=1;i<d.filas.length;i++){
+    var cod = String(d.filas[i][0]).trim(), n = numFecha(d.filas[i][1]);
+    if(cod && n && (!ultimo[cod] || n>ultimo[cod])) ultimo[cod] = n;
+  }
+  var desde = jprop('ESTADO_DESDE');
+  activas(mae).forEach(function(a){
+    var n = ultimo[a.cod], dd = n ? difDias(hn, n) : null;
+    if(dd===null || dd>30) sinMov.push('· *'+a.cod+'* '+a.dir+' — '+(dd===null?'sin actividad':'hace '+dd+' días'));
+    if(a.etapa==='Reserva' && desde[a.cod]){
+      var r = Math.floor((Date.now()-desde[a.cod])/86400000);
+      if(r>30) est.push('· *'+a.cod+'* '+a.dir+' — en Reserva hace '+r+' días');
+    }
+  });
+  var t = '';
+  if(sinMov.length) t += '🛑 *Sin movimiento +30 días ('+sinMov.length+')*\n'+sinMov.join('\n')+'\n\n';
+  if(est.length) t += '⏳ *Reservas estancadas ('+est.length+')*\n'+est.join('\n');
+  return t.trim();
+}
+
+function resumenDia(){
+  var d = ultimasPorPersona(), mae = maestro(), hn = hoyNum(), visitas = [], toca = [];
+  for(var i=1;i<d.filas.length;i++){
+    var r = d.filas[i];
+    if(String(r[5]).trim()!=='Visita agendada') continue;
+    var m = String(r[6]).match(/^Visita (\d{2}\/\d{2}\/\d{4}) (\d{2}:\d{2})/);
+    if(m && numFecha(m[1])===hn){
+      var f = filaPorCodigo(mae, String(r[0]).trim());
+      visitas.push({h:m[2], t:'· '+m[2]+' — '+(f?dirDe(f):r[0])+' · '+r[3]+(r[4]?' ('+r[4]+')':'')});
+    }
+  }
+  visitas.sort(function(a,b){ return a.h<b.h?-1:1; });
+  for(var k in d.ult){
+    var x = d.ult[k], n = numFecha(x[7]);
+    if(!n || /cerrar/i.test(String(x[6])) || /no le interes/i.test(String(x[5]))) continue;
+    var dd = difDias(hn, n);
+    if(dd>=0 && dd<=7){
+      var f2 = filaPorCodigo(mae, String(x[0]).trim());
+      toca.push('· '+x[3]+(x[4]?' ('+x[4]+')':'')+' — '+(f2?dirDe(f2):x[0])+(x[6]?' · '+x[6]:'')+(dd?' (vencido hace '+dd+'d)':''));
+    }
+  }
+  var t = '';
+  if(visitas.length) t += '🗓 *Visitas de hoy ('+visitas.length+')*\n'+visitas.map(function(x){ return x.t; }).join('\n')+'\n\n';
+  if(toca.length) t += '📞 *Te toca contactar ('+toca.length+')*\n'+toca.join('\n');
+  if(t) tgSend(CHAT_ID_ALERTAS, '☀️ *Buen día — '+hoy()+'*\n\n'+t.trim());
+}
+
+function avisarEncuestas(){
+  var sh = ss().getSheetByName('Encuestas'); if(!sh) return;
+  var n = sh.getLastRow(), ult = prop('ENC_N');
+  if(ult===null){ prop('ENC_N', String(n)); return; }
+  if(n<=+ult){ if(n<+ult) prop('ENC_N', String(n)); return; }
+  var v = sh.getRange(+ult+1, 1, n-+ult, 10).getValues(), mae = maestro();
+  v.forEach(function(r){
+    var f = filaPorCodigo(mae, String(r[0]).trim());
+    tgSend(CHAT_ID_ALERTAS, '⭐ *Nueva encuesta* — '+(f?dirDe(f):r[0])+' ('+r[0]+')\n👤 '+r[2]+' · '+r[3]+'\nNota: *'+r[4]+'/10* · Recomienda: '+(r[8]||'—')+(r[9]?'\n💬 '+r[9]:''));
+  });
+  prop('ENC_N', String(n));
 }
 
 function generarReporte(cod){
@@ -590,6 +721,7 @@ function generarReporte(cod){
 function enviarReporteMail(cod, texto, mail){
   var cuerpo = texto.replace(/\*/g,'').replace(/_/g,'').replace(/\[([^\]]+)\]\([^)]+\)/g,'$1')+'\n\nCualquier consulta estamos a tu disposición.\nAzcuénaga Inmobiliaria';
   GmailApp.sendEmail(mail, 'Reporte de tu propiedad — Azcuénaga Inmobiliaria', cuerpo);
+  marcarReporte(cod);
 }
 
 function normalizarTel(t){
