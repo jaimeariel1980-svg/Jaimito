@@ -184,7 +184,7 @@ function manejarTexto(chatId, texto, from){
     if(previo){
       est.interesado = previo.nombre;
       tgSend(chatId, '👤 Es *'+previo.nombre+'* — '+previo.cant+' interacción/es registradas.');
-      if(ag){ est.paso='ag_nota'; setEstado(chatId, est); tgSend(chatId, '¿Alguna *nota*? (o escribí "-")'); }
+      if(ag){ est.paso='ag_mail'; setEstado(chatId, est); tgSend(chatId, '¿*Email* del cliente? (opcional, o escribí "-")'); }
       else { est.paso='pide_via'; setEstado(chatId, est); pedirVia(chatId); }
     } else {
       est.paso = ag ? 'ag_nombre' : 'pide_nombre'; setEstado(chatId, est);
@@ -193,7 +193,7 @@ function manejarTexto(chatId, texto, from){
     return;
   }
   if(paso==='pide_nombre'){ est.interesado=t; est.paso='pide_via'; setEstado(chatId, est); pedirVia(chatId); return; }
-  if(paso==='ag_nombre'){ est.interesado=t; est.paso='ag_nota'; setEstado(chatId, est); tgSend(chatId, '¿Alguna *nota*? (o escribí "-")'); return; }
+  if(paso==='ag_nombre'){ est.interesado=t; est.paso='ag_mail'; setEstado(chatId, est); tgSend(chatId, '¿*Email* del cliente? (opcional, o escribí "-")'); return; }
 
   texto2(chatId, t, est, paso);
 }
@@ -211,11 +211,16 @@ function texto2(chatId, t, est, paso){
     est.hora = ('0'+m[1]).slice(-2)+':'+(m[2]||'00'); est.paso='ag_tel'; setEstado(chatId, est);
     tgSend(chatId, 'Escribí el *teléfono* del interesado (solo números):'); return;
   }
+  if(paso==='ag_mail'){
+    if(t!=='-' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t)){ tgSend(chatId, 'Ese mail no parece válido. Escribilo de nuevo o "-" para omitir.'); return; }
+    est.email = t==='-' ? '' : t; est.paso='ag_nota'; setEstado(chatId, est);
+    tgSend(chatId, '¿Alguna *nota*? (o escribí "-")'); return;
+  }
   if(paso==='ag_nota'){
     est.nota = t==='-' ? '' : t;
-    guardarAgenda(est); setEstado(chatId, null);
+    var calOk = guardarAgenda(est); setEstado(chatId, null);
     tgSend(chatId, '✅ *Visita agendada*\n🏠 '+est.dir+' ('+est.codigo+')\n📅 '+est.fecha+' '+est.hora+'\n👤 '+(est.interesado||'—')+' · '+est.telefono+
-      '\n\nTe aviso '+MIN_ANTES+' min antes.'); return;
+      '\n'+(calOk?'🗓 Evento creado en Calendar'+(est.email?' e invitación enviada':'')+'.':'⚠️ No se pudo crear el evento en Calendar.')+'\nTe aviso '+MIN_ANTES+' min antes.'); return;
   }
 
   if(paso==='pide_mail'){
@@ -352,9 +357,16 @@ function parseFH(f, h){
   return new Date(Date.UTC(+m[3], +m[2]-1, +m[1], +t[1]+3, +t[2]));
 }
 function guardarAgenda(est){
-  var sh = ss().getSheetByName('Agenda'), r = sh.getLastRow()+1, rng = sh.getRange(r,1,1,8);
+  var sh = ss().getSheetByName('Agenda'), r = sh.getLastRow()+1, rng = sh.getRange(r,1,1,9);
   rng.setNumberFormat('@');
-  rng.setValues([[est.codigo, est.fecha, est.hora, est.interesado||'', est.telefono||'', est.vendedor||'', est.nota||'', 'Pendiente']]);
+  rng.setValues([[est.codigo, est.fecha, est.hora, est.interesado||'', est.telefono||'', est.vendedor||'', est.nota||'', 'Pendiente', est.email||'']]);
+  try{
+    var ini = parseFH(est.fecha, est.hora);
+    var o = {description:'Interesado: '+(est.interesado||'')+'\nTel: '+(est.telefono||'')+(est.nota?'\n'+est.nota:'')};
+    if(est.email){ o.guests = est.email; o.sendInvites = true; }
+    CalendarApp.getDefaultCalendar().createEvent('Visita — '+(est.dir||est.codigo), ini, new Date(ini.getTime()+3600000), o);
+    return true;
+  }catch(e){ Logger.log(e); return false; }
 }
 
 function chequeoCada5(){
@@ -514,4 +526,11 @@ function tgSend(chatId, texto, teclado){
 function testAgenda(){
   guardarAgenda({codigo:'TEST', fecha:'01/01/2030', hora:'10:00', interesado:'Prueba', telefono:'3410000000', vendedor:'Test', nota:'borrar'});
   Logger.log('Fila agregada en Agenda OK');
+}
+
+function autorizar(){
+  GmailApp.getInboxUnreadCount();
+  CalendarApp.getDefaultCalendar().getName();
+  ss().getName();
+  Logger.log('Permisos OK');
 }
