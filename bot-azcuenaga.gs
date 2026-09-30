@@ -70,7 +70,7 @@ function getEstado(chatId){
 }
 
 function mostrarMenu(chatId){
-  tgSend(chatId, '🏠 *Bot Azcuénaga* — ¿Qué necesitás?\n\nElegí una opción:', { inline_keyboard: [
+  tgSend(chatId, '🏠 *Bot Azcuénaga*\n\n📝 *Cargar*: registrá una consulta o visita\n📅 *Agendar*: visita con aviso y Calendar\n🔍 *Buscar*: ficha de una propiedad\n📌 *Estado*: cambiá la etapa\n📊 *Reporte*: resumen al propietario\n\n🎤 *Atajo:* mandame un audio o frase con lo que pasó (ej: _"Visité Gutemberg con Juan, le interesó"_) y lo cargo solo.', { inline_keyboard: [
     [{ text:'📝 Cargar visita / consulta', callback_data:'cargar' }],
     [{ text:'📅 Agendar visita',            callback_data:'agendar' }],
     [{ text:'🔍 Buscar propiedad',          callback_data:'buscar' }],
@@ -108,8 +108,11 @@ function manejarBoton(cq){
   }
   else if(a.indexOf('agp:')===0){
     cod = a.substring(4); p = buscarPropPorCodigo(cod);
-    setEstado(chatId, {paso:'ag_fecha', codigo:cod, dir:(p?p.dir:cod), vendedor:vend});
-    tgSend(chatId, '✅ *'+(p?p.dir:cod)+'* ('+cod+')\n\n¿Qué *fecha*? (dd/mm/aaaa, dd/mm, "hoy" o "mañana")');
+    setEstado(chatId, {paso:'ag_frase', codigo:cod, dir:(p?p.dir:cod), vendedor:vend});
+    tgSend(chatId, '✅ *'+(p?p.dir:cod)+'* ('+cod+')\n\n🎤 Mandame *un audio o una frase* con fecha, hora y cliente.\nEj: _"mañana 17:30 Juan 3415550000"_\n\nO tocá *Paso a paso*.', {inline_keyboard:[
+      [{text:'🧭 Paso a paso', callback_data:'ag_pasos'}],
+      [{text:'✖ Cancelar', callback_data:'cancelar'}]
+    ]});
   }
   else if(a.indexOf('info:')===0){ tgSend(chatId, fichaPropiedad(a.substring(5))); setEstado(chatId, null); }
   else if(a.indexOf('estado_prop:')===0){
@@ -122,6 +125,13 @@ function manejarBoton(cq){
     var pt = a.substring(11).split(':');
     cambiarEstado(pt[0], pt[1]); setEstado(chatId, null);
     tgSend(chatId, '✅ *'+pt[0]+'* → '+pt[1]+' actualizado en el maestro.');
+  }
+  else if(a.indexOf('cand:')===0 && est && est.cands){ var c = est.cands[+a.substring(5)]; seguirConInteresado(chatId, est, c.nombre, c.tel); }
+  else if(a==='ag_pasos' && est){ est.paso='ag_fecha'; setEstado(chatId, est); tgSend(chatId, '¿Qué *fecha*? (dd/mm/aaaa, dd/mm, "hoy" o "mañana")'); }
+  else if(a==='cand_new' && est){ seguirConInteresado(chatId, est, est.nombreNuevo, ''); }
+  else if(a.indexOf('rprop:')===0 && est){
+    cod = a.substring(6); p = buscarPropPorCodigo(cod);
+    est.codigo = cod; est.dir = p ? p.dir : cod; continuarRapida(chatId, est);
   }
   else boton2(chatId, a, est);
 }
@@ -172,10 +182,11 @@ function boton2(chatId, a, est){
 function manejarTexto(chatId, texto, from){
   var est = getEstado(chatId), t = texto.trim();
   var paso = est && est.paso;
-  var bus = { buscando_prop:'prop:', ag_buscando:'agp:', buscando_prop_info:'info:', buscando_prop_estado:'estado_prop:', buscando_prop_reporte:'rep:' };
+  var bus = { buscando_prop:'prop:', ag_buscando:'agp:', buscando_prop_info:'info:', buscando_prop_estado:'estado_prop:', buscando_prop_reporte:'rep:', rapida_prop_txt:'rprop:' };
   if(bus[paso]){ listaProps(chatId, t, bus[paso]); return; }
 
   if(paso==='pide_tel' || paso==='ag_tel'){
+    if(/[a-zA-ZáéíóúñÁÉÍÓÚÑ]/.test(t)){ est.ag = paso==='ag_tel'; porNombre(chatId, est, t); return; }
     var tel = t.replace(/[^0-9]/g,'');
     if(tel.length < 6){ tgSend(chatId, 'Ese teléfono parece corto. Escribilo de nuevo (solo números).'); return; }
     est.telefono = tel;
@@ -184,7 +195,7 @@ function manejarTexto(chatId, texto, from){
     if(previo){
       est.interesado = previo.nombre;
       tgSend(chatId, '👤 Es *'+previo.nombre+'* — '+previo.cant+' interacción/es registradas.');
-      if(ag){ est.paso='ag_mail'; setEstado(chatId, est); tgSend(chatId, '¿*Email* del cliente? (opcional, o escribí "-")'); }
+      if(ag){ siguienteAg(chatId, est); }
       else { est.paso='pide_via'; setEstado(chatId, est); pedirVia(chatId); }
     } else {
       est.paso = ag ? 'ag_nombre' : 'pide_nombre'; setEstado(chatId, est);
@@ -193,36 +204,44 @@ function manejarTexto(chatId, texto, from){
     return;
   }
   if(paso==='pide_nombre'){ est.interesado=t; est.paso='pide_via'; setEstado(chatId, est); pedirVia(chatId); return; }
-  if(paso==='ag_nombre'){ est.interesado=t; est.paso='ag_mail'; setEstado(chatId, est); tgSend(chatId, '¿*Email* del cliente? (opcional, o escribí "-")'); return; }
+  if(paso==='ag_nombre'){ est.interesado=t; siguienteAg(chatId, est); return; }
 
-  texto2(chatId, t, est, paso);
+  texto2(chatId, t, est, paso, from);
 }
 
-function texto2(chatId, t, est, paso){
+function texto2(chatId, t, est, paso, from){
   if(paso==='ag_fecha'){
     var f = parseFechaInput(t);
     if(!f){ tgSend(chatId, 'No entendí la fecha. Probá: 15/10/2026, 15/10, hoy o mañana.'); return; }
-    est.fecha = f; est.paso='ag_hora'; setEstado(chatId, est);
-    tgSend(chatId, '¿A qué *hora*? (ej: 15:30)'); return;
+    est.fecha = f; siguienteAg(chatId, est); return;
   }
   if(paso==='ag_hora'){
     var m = t.match(/^(\d{1,2})(?:[:.h]?(\d{2}))?$/);
     if(!m || +m[1]>23 || +(m[2]||0)>59){ tgSend(chatId, 'No entendí la hora. Probá: 15:30 o 15.'); return; }
-    est.hora = ('0'+m[1]).slice(-2)+':'+(m[2]||'00'); est.paso='ag_tel'; setEstado(chatId, est);
-    tgSend(chatId, 'Escribí el *teléfono* del interesado (solo números):'); return;
+    est.hora = ('0'+m[1]).slice(-2)+':'+(m[2]||'00'); siguienteAg(chatId, est); return;
   }
   if(paso==='ag_mail'){
     if(t!=='-' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t)){ tgSend(chatId, 'Ese mail no parece válido. Escribilo de nuevo o "-" para omitir.'); return; }
-    est.email = t==='-' ? '' : t; est.paso='ag_nota'; setEstado(chatId, est);
+    est.email = t==='-' ? '' : t;
+    if(est.nota!==undefined){ cerrarAgenda(chatId, est); return; }
+    est.paso='ag_nota'; setEstado(chatId, est);
     tgSend(chatId, '¿Alguna *nota*? (o escribí "-")'); return;
   }
+  if(paso==='ag_frase'){ agendaFrase(chatId, est, t); return; }
   if(paso==='ag_nota'){
     est.nota = t==='-' ? '' : t;
-    var calOk = guardarAgenda(est); setEstado(chatId, null);
-    tgSend(chatId, '✅ *Visita agendada*\n🏠 '+est.dir+' ('+est.codigo+')\n📅 '+est.fecha+' '+est.hora+'\n👤 '+(est.interesado||'—')+' · '+est.telefono+
-      '\n'+(calOk?'🗓 Evento creado en Calendar'+(est.email?' e invitación enviada':'')+'.':'⚠️ No se pudo crear el evento en Calendar.')+'\nTe aviso '+MIN_ANTES+' min antes.'); return;
+    cerrarAgenda(chatId, est); return;
   }
+  texto3(chatId, t, est, paso, from);
+}
 
+function cerrarAgenda(chatId, est){
+  var calOk = guardarAgenda(est); setEstado(chatId, null);
+  tgSend(chatId, '✅ *Visita agendada*\n🏠 '+est.dir+' ('+est.codigo+')\n📅 '+est.fecha+' '+est.hora+'\n👤 '+(est.interesado||'—')+' · '+est.telefono+
+      '\n'+(calOk?'🗓 Evento creado en Calendar'+(est.email?' e invitación enviada':'')+'.':'⚠️ No se pudo crear el evento en Calendar.')+'\nTe aviso '+MIN_ANTES+' min antes.\n\n/start para el menú.');
+}
+
+function texto3(chatId, t, est, paso, from){
   if(paso==='pide_mail'){
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t)){ tgSend(chatId, 'Ese mail no parece válido. Escribilo de nuevo.'); return; }
     guardarMailDueno(est.codigo, t);
@@ -239,6 +258,7 @@ function texto2(chatId, t, est, paso){
     }
     finalizarCarga(chatId, est); return;
   }
+  if(t.length>=25 && /\s/.test(t)){ cargaRapida(chatId, t, from && from.first_name); return; }
   tgSend(chatId, 'Para empezar tocá una opción 👇'); mostrarMenu(chatId);
 }
 
@@ -266,14 +286,116 @@ function pedirVia(chatId){
 
 function manejarAudio(chatId, msg){
   var est = getEstado(chatId);
-  if(!est || est.paso!=='esperando_audio'){ tgSend(chatId, 'Primero elegí propiedad, teléfono, vía y resultado. /start → Cargar visita.'); return; }
   tgSend(chatId, '🎧 Escuchando...');
   var texto = transcribirAudioTelegram((msg.voice && msg.voice.file_id) || (msg.audio && msg.audio.file_id));
   if(!texto){ tgSend(chatId, 'No pude entender el audio. Probá de nuevo o escribí el detalle.'); return; }
+  if(est && est.paso==='ag_frase'){ agendaFrase(chatId, est, texto); return; }
+  if(!est || est.paso!=='esperando_audio'){ cargaRapida(chatId, texto, msg.from && msg.from.first_name); return; }
   est.observaciones = texto;
   var d = interpretarVisita(texto);
   if(d && d.proximo_paso) est.proximo_paso = d.proximo_paso;
   if(d && d.observaciones) est.observaciones = d.observaciones;
+  finalizarCarga(chatId, est);
+}
+
+function interpretarAgenda(texto){
+  var hoyIso = fmt(new Date(),'yyyy-MM-dd'), dia = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'][new Date(Date.now()-3*3600000).getUTCDay()];
+  var sys = 'Extraé de lo que dice un vendedor para agendar una visita. Hoy es '+dia+' '+hoyIso+'. Devolvé SOLO JSON: {fecha (AAAA-MM-DD resuelta a fecha real, o vacío), hora (HH:mm 24h o vacío), interesado (nombre o vacío), telefono (solo dígitos o vacío), email (o vacío), nota (o vacío)}. Español rioplatense.';
+  try{
+    var r = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions',{
+      method:'post', contentType:'application/json', headers:{Authorization:'Bearer '+OAI()},
+      payload:JSON.stringify({model:'gpt-4o-mini', temperature:0, response_format:{type:'json_object'},
+        messages:[{role:'system',content:sys},{role:'user',content:texto}]}),
+      muteHttpExceptions:true
+    });
+    return JSON.parse(JSON.parse(r.getContentText()).choices[0].message.content);
+  }catch(e){ return null; }
+}
+function agendaFrase(chatId, est, texto){
+  var d = interpretarAgenda(texto);
+  if(!d){ tgSend(chatId, 'No pude interpretarlo. Probá de nuevo o tocá *Paso a paso*.'); return; }
+  var m = String(d.fecha||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(m) est.fecha = m[3]+'/'+m[2]+'/'+m[1];
+  var h = String(d.hora||'').match(/^(\d{1,2}):(\d{2})/);
+  if(h) est.hora = ('0'+h[1]).slice(-2)+':'+h[2];
+  est.interesado = String(d.interesado||'').trim();
+  est.telefono = String(d.telefono||'').replace(/[^0-9]/g,'');
+  if(est.interesado && !est.telefono){
+    var c = buscarPersonasPorNombre(est.interesado);
+    if(c.length===1){ est.interesado = c[0].nombre; est.telefono = c[0].tel; }
+  }
+  if(d.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email)) est.email = d.email;
+  if(d.nota) est.nota = String(d.nota);
+  siguienteAg(chatId, est);
+}
+function siguienteAg(chatId, est){
+  if(!est.fecha){ est.paso='ag_fecha'; setEstado(chatId, est); tgSend(chatId, '¿Qué *fecha*? (dd/mm/aaaa, dd/mm, "hoy" o "mañana")'); return; }
+  if(!est.hora){ est.paso='ag_hora'; setEstado(chatId, est); tgSend(chatId, '📅 '+est.fecha+'\n¿A qué *hora*? (ej: 15:30)'); return; }
+  if(!est.interesado && !est.telefono){ est.paso='ag_tel'; setEstado(chatId, est); tgSend(chatId, '📅 '+est.fecha+' '+est.hora+'\n¿*Nombre o teléfono* del cliente?'); return; }
+  if(est.email===undefined){ est.paso='ag_mail'; setEstado(chatId, est); tgSend(chatId, '📅 '+est.fecha+' '+est.hora+' · 👤 '+(est.interesado||est.telefono)+'\n¿*Email* del cliente? (opcional, o escribí "-")'); return; }
+  if(est.nota===undefined){ est.paso='ag_nota'; setEstado(chatId, est); tgSend(chatId, '¿Alguna *nota*? (o escribí "-")'); return; }
+  cerrarAgenda(chatId, est);
+}
+
+function sinAcentos(x){ return String(x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim(); }
+function buscarPersonasPorNombre(q){
+  var v = ss().getSheetByName('Seguimiento').getDataRange().getValues(), n = sinAcentos(q), vistos = {}, out = [];
+  if(!n) return out;
+  for(var i=v.length-1;i>=1 && out.length<6;i--){
+    var nom = String(v[i][3]||'').trim();
+    if(!nom || sinAcentos(nom).indexOf(n)<0) continue;
+    var tel = String(v[i][4]||'').replace(/[^0-9]/g,''), k = normalizarTel(tel) || sinAcentos(nom);
+    if(vistos[k]) continue;
+    vistos[k] = 1; out.push({nombre:nom, tel:tel});
+  }
+  return out;
+}
+function porNombre(chatId, est, t){
+  var c = buscarPersonasPorNombre(t);
+  if(!c.length){ seguirConInteresado(chatId, est, t, ''); return; }
+  est.cands = c; est.nombreNuevo = t; setEstado(chatId, est);
+  var b = c.map(function(p,i){ return [{text:p.nombre+(p.tel?' · '+p.tel:''), callback_data:'cand:'+i}]; });
+  b.push([{text:'➕ Nuevo: '+t, callback_data:'cand_new'}]);
+  tgSend(chatId, '¿Es alguno de estos?', {inline_keyboard:b});
+}
+function seguirConInteresado(chatId, est, nombre, tel){
+  est.interesado = nombre; est.telefono = tel;
+  if(est.ag){ siguienteAg(chatId, est); }
+  else { est.paso='pide_via'; setEstado(chatId, est); tgSend(chatId, '👤 *'+nombre+'*'+(tel?' · '+tel:'')); pedirVia(chatId); }
+}
+
+function interpretarCargaRapida(texto){
+  var sys = 'Sos asistente de una inmobiliaria. De lo que cuenta un vendedor extraé JSON con: propiedad (calle/dirección o código mencionado), interesado (nombre), telefono (solo dígitos o vacío), via (Visita, WhatsApp o Llamada), resultado (uno de: Solo consulta, Visita, Le interesó, No le interesó, Hizo una propuesta), proximo_paso (breve), observaciones (1-2 frases). Campos que no se mencionan: cadena vacía. Devolvé SOLO JSON. Español rioplatense.';
+  try{
+    var r = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions',{
+      method:'post', contentType:'application/json', headers:{Authorization:'Bearer '+OAI()},
+      payload:JSON.stringify({model:'gpt-4o-mini', temperature:0.2, response_format:{type:'json_object'},
+        messages:[{role:'system',content:sys},{role:'user',content:texto}]}),
+      muteHttpExceptions:true
+    });
+    return JSON.parse(JSON.parse(r.getContentText()).choices[0].message.content);
+  }catch(e){ return null; }
+}
+function cargaRapida(chatId, texto, vend){
+  var d = interpretarCargaRapida(texto);
+  if(!d){ tgSend(chatId, 'No pude interpretarlo. Probá de nuevo o usá /start.'); return; }
+  var vias = ['Visita','WhatsApp','Llamada'], ress = ['Solo consulta','Visita','Le interesó','No le interesó','Hizo una propuesta'];
+  var est = { vendedor:vend||'', interesado:String(d.interesado||'').trim(), telefono:String(d.telefono||'').replace(/[^0-9]/g,''),
+    via:vias.indexOf(d.via)>=0 ? d.via : 'Visita', resultado:ress.indexOf(d.resultado)>=0 ? d.resultado : 'Solo consulta',
+    proximo_paso:d.proximo_paso||'', observaciones:d.observaciones||texto };
+  var res = d.propiedad ? buscarPropiedades(d.propiedad) : [];
+  if(res.length===1){ est.codigo = res[0].codigo; est.dir = res[0].dir; continuarRapida(chatId, est); return; }
+  est.paso = 'rapida_prop_txt'; setEstado(chatId, est);
+  if(!res.length){ tgSend(chatId, 'No identifiqué la propiedad. Escribí parte de la *dirección* o el *código*:'); return; }
+  var b = res.slice(0,8).map(function(p){ return [{ text:p.dir+' ('+p.codigo+')', callback_data:'rprop:'+p.codigo }]; });
+  b.push([{ text:'✖ Cancelar', callback_data:'cancelar' }]);
+  tgSend(chatId, '¿Cuál propiedad?', { inline_keyboard:b });
+}
+function continuarRapida(chatId, est){
+  if(est.interesado && !est.telefono){
+    var c = buscarPersonasPorNombre(est.interesado);
+    if(c.length===1){ est.interesado = c[0].nombre; est.telefono = c[0].tel; }
+  }
   finalizarCarga(chatId, est);
 }
 
