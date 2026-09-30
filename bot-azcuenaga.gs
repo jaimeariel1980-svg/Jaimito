@@ -72,7 +72,7 @@ function getEstado(chatId){
 }
 
 function mostrarMenu(chatId){
-  tgSend(chatId, '🏠 *Bot Azcuénaga*\n\n📝 *Cargar*: registrá una consulta o visita\n📅 *Agendar*: visita con aviso y Calendar\n🔍 *Buscar*: ficha de una propiedad\n📌 *Estado*: cambiá la etapa\n📊 *Reporte*: resumen al propietario\n\n🎤 *No hace falta usar el menú.* Escribime o mandame un audio:\n· _"Visité Gutemberg con Juan, le interesó"_\n· _"Mañana 17:30 Juan en Gutemberg"_\n· _"Gutemberg"_ (ficha)\n· _"Gutemberg vendida"_\n· _"Reporte Gutemberg"_', { inline_keyboard: [
+  tgSend(chatId, '🏠 *Bot Azcuénaga*\n\n📝 *Cargar*: registrá una consulta o visita\n📅 *Agendar*: visita con aviso y Calendar\n🔍 *Buscar*: ficha de una propiedad\n📌 *Estado*: cambiá la etapa\n📊 *Reporte*: resumen al propietario\n\n🎤 *No hace falta usar el menú.* Escribime o mandame un audio:\n· _"Visité Gutemberg con Juan, le interesó"_\n· _"Mañana 17:30 Juan en Gutemberg"_\n· _"Gutemberg"_ (ficha)\n· _"Gutemberg vendida"_\n· _"Reporte Gutemberg"_\n\n🧭 *¿Preferís ir paso a paso?* Tocá un botón y te voy guiando.', { inline_keyboard: [
     [{ text:'📝 Cargar visita / consulta', callback_data:'cargar' }],
     [{ text:'📅 Agendar visita',            callback_data:'agendar' }],
     [{ text:'🔍 Buscar propiedad',          callback_data:'buscar' }],
@@ -102,7 +102,8 @@ function manejarBoton(cq){
   tg('answerCallbackQuery','?callback_query_id='+cq.id);
   var est = getEstado(chatId), p, cod;
 
-  if(a==='cargar'){
+  if(a==='menu'){ setEstado(chatId, null); mostrarMenu(chatId); }
+  else if(a==='cargar'){
     setEstado(chatId, {paso:'cargar_libre', vendedor:vend});
     tgSend(chatId, '📝 *Cargar visita / consulta*\n\n🎤 Contame *qué pasó* (audio o texto): propiedad, quién y cómo fue.\nEj: _"Visité Gutemberg con Juan, le interesó"_', {inline_keyboard:[[{text:'🧭 Paso a paso', callback_data:'cg_pasos'}],[{text:'✖ Cancelar', callback_data:'cancelar'}]]});
   }
@@ -422,11 +423,11 @@ function mostrarReporte(chatId, cod){
 }
 function enrutar(chatId, texto, vend, forzada){
   var d = interpretarIntencion(texto);
-  if(!d){ tgSend(chatId, 'No pude interpretarlo. Probá de nuevo o usá /start.'); return; }
+  if(!d){ tgSend(chatId, 'No pude interpretarlo. Probá de nuevo o andá *paso a paso*.', {inline_keyboard:[[{text:'🧭 Paso a paso', callback_data:'menu'}]]}); return; }
   var it = forzada || d.intencion, res = d.propiedad ? buscarPropiedades(d.propiedad) : [];
   if(it==='cargar' || it==='agendar'){ iniciarFlujo(chatId, it, d, texto, vend, res); return; }
   var pref = {buscar:'info:', estado:'estado_prop:', reporte:'rep:'}[it];
-  if(!pref){ mostrarMenu(chatId); return; }
+  if(!pref){ tgSend(chatId, 'No estoy seguro de qué querés hacer. Podés ir *paso a paso* con el menú 👇'); mostrarMenu(chatId); return; }
   if(!res.length){
     setEstado(chatId, {paso:{buscar:'buscando_prop_info', estado:'buscando_prop_estado', reporte:'buscando_prop_reporte'}[it]});
     tgSend(chatId, 'No identifiqué la propiedad. Escribí parte de la *dirección* o el *código*:', recientesTeclado(pref)); return;
