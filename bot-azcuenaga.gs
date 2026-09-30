@@ -123,7 +123,12 @@ function manejarBoton(cq){
     cambiarEstado(pt[0], pt[1]); setEstado(chatId, null);
     tgSend(chatId, '✅ *'+pt[0]+'* → '+pt[1]+' actualizado en el maestro.');
   }
-  else if(a.indexOf('rep:')===0){
+  else boton2(chatId, a, est);
+}
+
+function boton2(chatId, a, est){
+  var cod;
+  if(a.indexOf('rep:')===0){
     cod = a.substring(4);
     var rep = generarReporte(cod);
     setEstado(chatId, {paso:'confirmar_reporte', codigo:cod, reporte:rep.texto, mail:rep.mail, dir:rep.dir});
@@ -190,6 +195,10 @@ function manejarTexto(chatId, texto, from){
   if(paso==='pide_nombre'){ est.interesado=t; est.paso='pide_via'; setEstado(chatId, est); pedirVia(chatId); return; }
   if(paso==='ag_nombre'){ est.interesado=t; est.paso='ag_nota'; setEstado(chatId, est); tgSend(chatId, '¿Alguna *nota*? (o escribí "-")'); return; }
 
+  texto2(chatId, t, est, paso);
+}
+
+function texto2(chatId, t, est, paso){
   if(paso==='ag_fecha'){
     var f = parseFechaInput(t);
     if(!f){ tgSend(chatId, 'No entendí la fecha. Probá: 15/10/2026, 15/10, hoy o mañana.'); return; }
