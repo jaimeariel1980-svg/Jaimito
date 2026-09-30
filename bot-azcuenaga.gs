@@ -116,7 +116,11 @@ function manejarBoton(cq){
       [{text:'✖ Cancelar', callback_data:'cancelar'}]
     ]});
   }
-  else if(a.indexOf('info:')===0){ tgSend(chatId, fichaPropiedad(a.substring(5))); setEstado(chatId, null); }
+  else if(a.indexOf('info:')===0){ cod = a.substring(5); tgSend(chatId, fichaPropiedad(cod), fichaTeclado(cod)); setEstado(chatId, null); }
+  else if(a.indexOf('fh:')===0){ tgSend(chatId, fichaHistorial(a.substring(3))); }
+  else if(a.indexOf('fd:')===0){ tgSend(chatId, fichaDocs(a.substring(3))); }
+  else if(a.indexOf('fp:')===0){ tgSend(chatId, fichaPropietario(a.substring(3))); }
+  else if(a.indexOf('fe:')===0){ tgSend(chatId, fichaEncuesta(a.substring(3))); }
   else if(a.indexOf('estado_prop:')===0){
     cod = a.substring(12);
     var bts = ['Captación','Publicada','Reserva','Vendida','Suspendida'].map(function(e){ return [{text:e, callback_data:'set_estado:'+cod+':'+e}]; });
@@ -442,21 +446,105 @@ function docsPendientes(f){
   return p;
 }
 
+function gcol(v, f, n){ var i = v[0].indexOf(n); return i>-1 && f[i]!=null ? String(f[i]).trim() : ''; }
+function statsSeg(cod){
+  var v = ss().getSheetByName('Seguimiento').getDataRange().getValues(), rows = [], hn = hoyNum(), dias = null;
+  for(var i=1;i<v.length;i++) if(String(v[i][0]).trim()===cod) rows.push(v[i]);
+  var vis = rows.filter(function(r){ return /visita/i.test(r[2]) || /visitó|oferta/i.test(r[5]); }).length;
+  var prop = rows.filter(function(r){ return /propuesta|oferta/i.test(r[5]); });
+  rows.forEach(function(r){ var n = numFecha(r[1]); if(n){ var d = Math.max(0, difDias(hn, n)); if(dias===null || d<dias) dias = d; } });
+  return {rows:rows, cons:rows.length, vis:vis, prop:prop, dias:dias};
+}
+function docsInfo(v, f){
+  var h = v[0], duenos = 0, out = [];
+  for(var k=1;k<=5;k++) if(gcol(v, f, 'Dueño '+k+' - Nombre y Apellido')) duenos = k;
+  for(var i=0;i<h.length;i++){
+    var n = String(h[i]);
+    if(n.indexOf('Doc: ')!==0) continue;
+    var mo = n.match(/Due[ñn]o\s+(\d)/i);
+    if(mo && +mo[1]>duenos) continue;
+    var val = String(f[i]||'').trim(), nom = n.substring(5);
+    out.push({n:nom, ok:!!val && !/pendiente|falta|^no$|^-$/i.test(val), url:/^https?:/i.test(val)?val:'', ia:gcol(v, f, 'Verificación IA: '+nom)});
+  }
+  return out;
+}
 function fichaPropiedad(cod){
-  var f = filaPorCodigo(maestro(), cod);
+  var v = maestro(), f = filaPorCodigo(v, cod);
   if(!f) return 'No encontré la propiedad '+cod+'.';
-  var precio = String(f[C.PRECIO]).trim(), moneda = String(f[C.MONEDA]).trim(), dueno = String(f[C.DUENO]).trim(), tel = String(f[C.TEL]).trim();
-  var compl = String(f[C.COMPL]).trim(), tokko = String(f[C.TOKKO]).trim(), pend = docsPendientes(f);
-  var seg = ss().getSheetByName('Seguimiento').getDataRange().getValues(), ints = [];
-  for(var j=seg.length-1;j>=1 && ints.length<3;j--)
-    if(String(seg[j][0]).trim()===cod) ints.push(fechaTxt(seg[j][1])+' · '+seg[j][3]+' · '+seg[j][5]);
-  var t = '🏠 *'+dirDe(f)+'* ('+cod+')\n📌 Etapa: '+String(f[C.ETAPA]).trim()+'\n';
-  if(precio) t += '💰 '+precio+(moneda?' '+moneda:'')+'\n';
-  if(dueno) t += '👤 Dueño: '+dueno+(tel?' · '+tel:'')+'\n';
-  if(compl) t += '📊 Completitud: '+compl+'\n';
-  if(pend.length) t += '\n⚠️ *Docs pendientes ('+pend.length+'):*\n'+pend.map(function(d){ return '· '+d; }).join('\n')+'\n';
-  if(ints.length) t += '\n💬 *Últimas interacciones:*\n'+ints.map(function(i){ return '· '+i; }).join('\n')+'\n';
-  return t + (tokko ? '\n🔗 [Ver en Tokko]('+tokko+')' : '\n_(Sin link Tokko cargado)_');
+  var g = function(n){ return gcol(v, f, n); };
+  var st = statsSeg(cod), docs = docsInfo(v, f), falta = docs.filter(function(d){ return !d.ok; });
+  var precio = g('Precio'), mon = g('Moneda'), et = g('Etapa'), t = '🏠 *'+dirDe(f)+'* ('+cod+')'+(g('Tipo de propiedad')?' · '+g('Tipo de propiedad'):'')+'\n';
+  t += '📌 Etapa: *'+et+'*';
+  if(et==='Suspendida' && g('Motivo de suspensión')) t += ' — '+g('Motivo de suspensión');
+  t += '\n';
+  if(precio) t += '💰 '+precio+(mon?' '+mon:'')+'\n';
+  t += '🤝 Origen: '+(g('Origen')||'Propia');
+  if(g('Origen')==='Compartida') t += ' — '+g('Inmobiliaria colega')+(g('Contacto colega')?' · '+g('Contacto colega'):'')+(g('Reparto de comisión')?' · comisión '+g('Reparto de comisión'):'');
+  t += '\n';
+  if(g('Vendedor asignado')) t += '🧑‍💼 Vendedor: '+g('Vendedor asignado')+'\n';
+  t += '\n📈 *Actividad:* '+st.cons+' consulta(s) · '+st.vis+' visita(s) · '+st.prop.length+' propuesta(s)\n';
+  t += '⏱ Días sin movimiento: '+(st.dias===null?'sin actividad':st.dias)+'\n';
+  var salud = g('% Aviso Tokko').replace('%','');
+  if(salud) t += '📊 Salud del aviso: '+salud+'%\n';
+  if(docs.length) t += '\n📁 *Documentación:* '+(docs.length-falta.length)+'/'+docs.length+' al día'+(falta.length?'\n⚠️ Falta: '+falta.map(function(d){ return d.n; }).join(', '):' ✅')+'\n';
+  if(g('Observaciones comerciales')) t += '\n📝 '+g('Observaciones comerciales')+'\n';
+  var u = st.rows[st.rows.length-1];
+  if(u) t += '\n💬 Última: '+fechaTxt(u[1])+' · '+u[3]+' · '+u[5]+'\n';
+  var tokko = g('Link Tokko');
+  return t+(tokko ? '\n🔗 [Ver en Tokko]('+tokko+')' : '\n_(Sin link Tokko cargado)_');
+}
+function fichaTeclado(cod){
+  return { inline_keyboard:[
+    [{text:'📜 Historial', callback_data:'fh:'+cod}, {text:'📁 Documentos', callback_data:'fd:'+cod}],
+    [{text:'👤 Propietario', callback_data:'fp:'+cod}, {text:'⭐ Encuesta', callback_data:'fe:'+cod}]
+  ]};
+}
+function fichaHistorial(cod){
+  var st = statsSeg(cod);
+  if(!st.rows.length) return 'Sin consultas ni visitas registradas.';
+  var t = '📜 *Historial de '+cod+'* ('+st.cons+')\n\n';
+  st.rows.slice(-15).reverse().forEach(function(r){
+    t += '· '+fechaTxt(r[1])+' · '+r[2]+' · *'+(r[3]||'—')+'*'+(r[4]?' ('+r[4]+')':'')+'\n   '+r[5]+(r[6]?' → '+r[6]:'')+(r[8]?'\n   _'+String(r[8]).substring(0,80)+'_':'')+'\n';
+  });
+  if(st.prop.length) t += '\n💬 *Propuestas:*\n'+st.prop.map(function(r){ return '· '+fechaTxt(r[1])+' · '+r[3]+' — '+r[5]+(r[8]?' · '+String(r[8]).substring(0,60):''); }).join('\n');
+  return t.substring(0,3900);
+}
+function fichaDocs(cod){
+  var v = maestro(), f = filaPorCodigo(v, cod);
+  if(!f) return 'No encontré la propiedad.';
+  var d = docsInfo(v, f);
+  if(!d.length) return 'Sin documentos registrados.';
+  return '📁 *Documentación de '+cod+'*\n\n'+d.map(function(x){
+    var ia = x.ia ? (x.ia.indexOf('Verificado OK')===0 ? ' · IA ✅' : (x.ia.indexOf('No verificado')===0 ? ' · IA sin verificar' : ' · IA ⚠️ '+x.ia)) : '';
+    return (x.ok?'✅ ':'❌ ')+x.n+ia+(x.url?' · [ver]('+x.url+')':'');
+  }).join('\n');
+}
+function fichaPropietario(cod){
+  var v = maestro(), f = filaPorCodigo(v, cod);
+  if(!f) return 'No encontré la propiedad.';
+  var t = '👤 *Propietario(s) de '+cod+'*\n';
+  for(var k=1;k<=5;k++){
+    var n = gcol(v, f, 'Dueño '+k+' - Nombre y Apellido');
+    if(!n) continue;
+    t += '\n*'+n+'*\n';
+    var dni = gcol(v, f, 'Dueño '+k+' - DNI'), tel = gcol(v, f, 'Dueño '+k+' - Celular'), mail = gcol(v, f, 'Dueño '+k+' - E-mail'), dom = gcol(v, f, 'Dueño '+k+' - Domicilio');
+    if(dni) t += 'DNI: '+dni+'\n';
+    if(tel) t += '📱 '+tel+' · [WhatsApp](https://wa.me/'+(function(d){ d = d.replace(/\D/g,''); return d.indexOf('54')===0 ? d : '549'+d.replace(/^0/,'').replace(/^15/,''); })(tel)+')\n';
+    t += (mail ? '✉️ '+mail : '✉️ _sin mail cargado_')+'\n';
+    if(dom) t += '🏡 '+dom+'\n';
+  }
+  return t;
+}
+function fichaEncuesta(cod){
+  var sh = ss().getSheetByName('Encuestas');
+  if(sh && sh.getLastRow()>1){
+    var v = sh.getDataRange().getValues();
+    for(var i=v.length-1;i>=1;i--) if(String(v[i][0]).trim()===cod){
+      var r = v[i];
+      return '⭐ *Encuesta de '+cod+'*\n\nNota: *'+r[4]+'/10*\n👤 '+r[2]+' · '+r[3]+' · '+fechaTxt(r[1])+'\nEquipo: '+r[5]+'\nTiempos de respuesta: '+r[6]+'\nTiempos de operación: '+r[7]+'\nRecomendaría: '+r[8]+(r[9]?'\n💬 '+r[9]:'');
+    }
+  }
+  return 'Esta propiedad todavía no tiene encuesta.';
 }
 function fechaTxt(x){ return x instanceof Date ? fmt(x,'dd/MM/yyyy') : String(x); }
 
