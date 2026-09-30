@@ -810,3 +810,14 @@ function autorizar(){
   ss().getName();
   Logger.log('Permisos OK');
 }
+
+function probarAlertas(){
+  tgSend(CHAT_ID_ALERTAS, '🧪 *Prueba de alertas* — '+hoy());
+  [['Papeles incompletos', papelesIncompletos], ['Reportes para enviar', function(){ return reportesPendientes(true); }],
+   ['Propuestas sin respuesta', propuestasSinRespuesta], ['Semanal (sin movimiento y reservas)', semanal]].forEach(function(x){
+    try{ tgSend(CHAT_ID_ALERTAS, x[1]() || '✅ '+x[0]+': nada para avisar.'); }
+    catch(e){ tgSend(CHAT_ID_ALERTAS, '❌ '+x[0]+': '+e.message); }
+  });
+  try{ resumenDia(); tgSend(CHAT_ID_ALERTAS, '☀️ Resumen del día ejecutado (si no llegó arriba, hoy no hay visitas ni seguimientos).'); }
+  catch(e){ tgSend(CHAT_ID_ALERTAS, '❌ Resumen del día: '+e.message); }
+}
