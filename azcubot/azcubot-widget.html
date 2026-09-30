@@ -1,0 +1,210 @@
+<!-- ===== AZCUBOT — pegar justo antes de </body> en Tablero.html ===== -->
+<style>
+.azb,.azb *{box-sizing:border-box}
+.azb{--n:#0a3d91;--nd:#072a66;--ink:#0f1b33;--cr:#f4f2ee;--ln:#dcd8cf;--mu:#6b7280;--rj:#d1495b;font-family:'Inter','Segoe UI',system-ui,sans-serif;color:var(--ink)}
+.azb-fab{position:fixed;right:22px;bottom:22px;width:68px;height:68px;border:0;padding:0;border-radius:50%;background:#fff;box-shadow:0 6px 22px rgba(10,61,145,.35),0 0 0 3px var(--n);cursor:pointer;z-index:9000;transition:transform .15s}
+.azb-fab:hover{transform:scale(1.07)}
+.azb-fab .azb-dot{position:absolute;top:2px;right:2px;width:14px;height:14px;border-radius:50%;background:#2e9e5b;border:2px solid #fff}
+.azb-tip{position:fixed;right:102px;bottom:36px;background:var(--n);color:#fff;font-size:13.5px;font-weight:600;padding:9px 14px;border-radius:12px 12px 2px 12px;z-index:9000;box-shadow:0 4px 14px rgba(0,0,0,.2);animation:azbin .3s}
+.azb-tip:after{content:"";position:absolute;right:-7px;bottom:0;border:7px solid transparent;border-left-color:var(--n);border-bottom-color:var(--n)}
+.azb-mk{position:relative;display:inline-block;flex-shrink:0;border-radius:50%;background:#fff;overflow:hidden}
+.azb-mk img{width:100%;height:100%;display:block;border-radius:50%}
+.azb-mk svg.azb-eyes{position:absolute;inset:0;width:100%;height:100%}
+.azb-blink{animation:azbblink 4.5s infinite;transform-origin:center;transform-box:fill-box}
+@keyframes azbblink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.08)}}
+@keyframes azbin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.azb-panel{position:fixed;top:0;right:0;bottom:0;width:430px;max-width:100vw;background:var(--cr);z-index:9100;display:none;flex-direction:column;box-shadow:-12px 0 40px rgba(15,27,51,.25);border-left:1px solid var(--ln)}
+.azb-panel.on{display:flex;animation:azbslide .22s}
+@keyframes azbslide{from{transform:translateX(30px);opacity:0}to{transform:none;opacity:1}}
+@media(max-width:640px){.azb-panel{width:100vw;border:0}.azb-fab{right:14px;bottom:14px}.azb-tip{display:none}}
+.azb-hd{height:58px;background:#fff;border-bottom:1px solid var(--ln);display:flex;align-items:center;gap:10px;padding:0 14px 0 16px;flex-shrink:0}
+.azb-hd .azb-t{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--mu);flex:1}
+.azb-ib{background:none;border:0;width:34px;height:34px;border-radius:8px;cursor:pointer;color:var(--ink);display:flex;align-items:center;justify-content:center}
+.azb-ib:hover{background:var(--cr)}
+.azb-body{flex:1;overflow-y:auto;padding:20px 18px 12px}
+.azb-eyb{display:flex;align-items:center;gap:10px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--n);margin:14px 0 10px}
+.azb-eyb:before{content:"";width:26px;height:2px;background:var(--n)}
+.azb h1{font-family:'Archivo','Inter',sans-serif;font-weight:800;font-size:31px;line-height:1.05;letter-spacing:-.02em;margin:0 0 10px;color:var(--ink)}
+.azb h1 b{color:var(--n)}
+.azb p.azb-lead{font-size:14.5px;line-height:1.5;color:#4a5264;margin:0 0 18px}
+.azb-av{width:76px;height:76px;border:1px solid var(--n);background:#fff;padding:7px;display:flex}
+.azb-lbl{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--mu);margin:16px 0 8px}
+.azb-row{display:flex;align-items:center;justify-content:space-between;width:100%;text-align:left;background:#fff;border:1px solid var(--ln);padding:12px 14px;margin-bottom:8px;font:500 14px 'Inter',sans-serif;color:var(--ink);cursor:pointer}
+.azb-row:hover{border-color:var(--n);color:var(--n)}
+.azb-row span{color:var(--n);font-weight:700}
+.azb-port{flex:1;background:var(--n);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px 28px;position:relative;overflow:hidden}
+.azb-port .azb-wm{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);font:900 120px 'Archivo',sans-serif;color:transparent;-webkit-text-stroke:1.5px rgba(255,255,255,.13);letter-spacing:-.03em;white-space:nowrap;pointer-events:none}
+.azb-port .azb-box{width:96px;height:96px;border:1.5px solid rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;margin-bottom:22px;position:relative}
+.azb-port .azb-pe{display:flex;align-items:center;gap:10px;font:500 11px 'JetBrains Mono',monospace;letter-spacing:.16em;text-transform:uppercase;margin-bottom:12px;position:relative}
+.azb-port .azb-pe:before{content:"";width:28px;height:2px;background:#fff}
+.azb-port h2{font:800 40px/1 'Archivo',sans-serif;letter-spacing:-.02em;margin:0 0 8px;position:relative}
+.azb-port .azb-rl{font:500 12px 'JetBrains Mono',monospace;letter-spacing:.16em;text-transform:uppercase;opacity:.85;margin-bottom:18px;position:relative}
+.azb-port p{font-size:15px;line-height:1.45;opacity:.92;margin:0 0 20px;position:relative}
+.azb-port input{width:100%;max-width:300px;background:rgba(255,255,255,.14);border:0;border-bottom:2px solid rgba(255,255,255,.7);padding:14px;color:#fff;font:500 16px 'Inter',sans-serif;text-align:center;outline:none;position:relative}
+.azb-port input::placeholder{color:rgba(255,255,255,.65)}
+.azb-port .azb-go{width:100%;max-width:300px;margin-top:12px;background:#fff;color:var(--n);border:0;padding:15px;font:700 12.5px 'JetBrains Mono',monospace;letter-spacing:.16em;text-transform:uppercase;cursor:pointer;position:relative}
+.azb-port .azb-sk{margin-top:16px;background:none;border:0;color:rgba(255,255,255,.75);font:500 11px 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;position:relative}
+.azb-m{display:flex;gap:8px;margin-bottom:12px;align-items:flex-end}
+.azb-m.u{justify-content:flex-end}
+.azb-b{max-width:86%;padding:10px 13px;font-size:14px;line-height:1.5;word-wrap:break-word}
+.azb-m.a .azb-b{background:#fff;border:1px solid var(--ln);border-radius:14px 14px 14px 3px}
+.azb-m.u .azb-b{background:var(--n);color:#fff;border-radius:14px 14px 3px 14px}
+.azb-b b{font-weight:700}
+.azb-b a{color:var(--n)}
+.azb-ty span{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--n);margin:0 2px;animation:azbty 1s infinite}
+.azb-ty span:nth-child(2){animation-delay:.15s}.azb-ty span:nth-child(3){animation-delay:.3s}
+@keyframes azbty{0%,60%,100%{opacity:.25;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+.azb-card{margin:0 0 12px 30px;background:#f3f7ff;border:1px solid #c9d8f5;border-left:4px solid var(--n);padding:12px 14px}
+.azb-card .azb-k{font:500 10.5px 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--n);margin-bottom:6px}
+.azb-card .azb-s{font-size:13.5px;line-height:1.45;margin-bottom:10px}
+.azb-card .azb-bt{display:flex;gap:8px}
+.azb-btn{border:1px solid var(--n);background:var(--n);color:#fff;padding:8px 14px;font:700 11.5px 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
+.azb-btn.o{background:#fff;color:var(--n)}
+.azb-btn:disabled{opacity:.5;cursor:default}
+.azb-card.ok{border-left-color:#2e9e5b;background:#f0faf3;border-color:#c6e6cf}
+.azb-card.ok .azb-k{color:#1f7a44}.azb-card.no{opacity:.6}
+.azb-in{display:flex;gap:8px;padding:10px 12px;background:#fff;border-top:1px solid var(--ln);flex-shrink:0}
+.azb-in input{flex:1;border:1px solid var(--ln);padding:11px 12px;font:14.5px 'Inter',sans-serif;outline:none;min-width:0}
+.azb-in input:focus{border-color:var(--n)}
+.azb-sd{width:44px;border:0;background:var(--n);color:#fff;cursor:pointer;font-size:18px}
+.azb-sd:disabled{background:#b9c3d6;cursor:default}
+.azb-mic{width:44px;border:1px solid var(--ln);background:#fff;color:var(--n);cursor:pointer;font-size:17px}
+.azb-mic.rec{background:var(--rj);border-color:var(--rj);color:#fff;animation:azbrec 1s infinite}
+@keyframes azbrec{50%{opacity:.6}}
+</style>
+<script>
+(function(){
+  if(window.__azb) return; window.__azb = 1;
+  var LSK = 'azcu_', AZ = window.AZCU = {ctx:null};
+  function ls(k,v){ try{ if(v===undefined) return localStorage.getItem(LSK+k); if(v===null) localStorage.removeItem(LSK+k); else localStorage.setItem(LSK+k,v); }catch(e){ return null; } }
+  var st = { open:false, busy:false, rec:null, nombre:ls('nombre'), pin:ls('pin')||'', msgs:[] };
+  try{ st.msgs = JSON.parse(ls('msgs')||'[]'); }catch(e){}
+  var gf = document.createElement('link'); gf.rel='stylesheet'; gf.href='https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap'; document.head.appendChild(gf);
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function fmt(s){ return esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/^[-•] /gm,'• ').replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>').replace(/\n/g,'<br>'); }
+  function logoSrc(){ try{ return typeof LOGO!=='undefined' ? LOGO : ''; }catch(e){ return ''; } }
+  function mk(size){
+    var src = logoSrc(), eyes = '<svg class="azb-eyes" viewBox="0 0 100 100"><g class="azb-blink"><ellipse cx="36" cy="47" rx="11" ry="12.5" fill="#fff" stroke="#0a3d91" stroke-width="3"/><ellipse cx="64" cy="47" rx="11" ry="12.5" fill="#fff" stroke="#0a3d91" stroke-width="3"/></g><circle class="azb-pp" cx="36" cy="48" r="5.2" fill="#0f1b33"/><circle class="azb-pp" cx="64" cy="48" r="5.2" fill="#0f1b33"/><circle cx="38" cy="45.5" r="1.7" fill="#fff"/><circle cx="66" cy="45.5" r="1.7" fill="#fff"/></svg>';
+    return '<span class="azb-mk" style="width:'+size+'px;height:'+size+'px">'+(src?'<img src="'+src+'" alt="">':'<span style="display:block;width:100%;height:100%;background:#0a3d91"></span>')+eyes+'</span>';
+  }
+  var root = document.createElement('div'); root.className = 'azb'; document.body.appendChild(root);
+  function save(){ ls('msgs', JSON.stringify(st.msgs.slice(-40))); }
+  function scroll(){ var b = root.querySelector('.azb-body'); if(b) b.scrollTop = b.scrollHeight; }
+  function shortcuts(){
+    var l = AZ.ctx ? ['Contame de esta propiedad','Agendar una visita acá','Cargar una consulta acá','¿Qué documentos le faltan?'] : ['¿Qué alertas tengo hoy?','Resumen de la cartera','Cargar una visita','Agendar una visita','Buscar una propiedad'];
+    return l;
+  }
+  function render(){
+    var h = '<button class="azb-fab" id="azbFab" aria-label="Abrir AzcuBot">'+mk(62)+'<span class="azb-dot"></span></button>';
+    h += '<div class="azb-panel'+(st.open?' on':'')+'">';
+    if(st.nombre===null){
+      h += '<div class="azb-hd"><span class="azb-t">AzcuBot · Asistente interno</span><button class="azb-ib" data-a="close">✕</button></div>'+
+        '<div class="azb-port"><div class="azb-wm">AZCU</div><div class="azb-box">'+mk(76)+'</div><div class="azb-pe">Azcuénaga Inmobiliaria</div><h2>Hola, soy AzcuBot</h2><div class="azb-rl">Tu compañero de laburo</div><p>¿Cómo te llamás? Así te doy una mano con el tablero, las visitas y todo lo de todos los días.</p><input id="azbName" placeholder="Tu nombre" autocomplete="off"><button class="azb-go" data-a="start">Empezar →</button><button class="azb-sk" data-a="skip">Prefiero no decirlo</button></div>';
+    } else {
+      h += '<div class="azb-hd">'+mk(30)+'<span class="azb-t">AzcuBot · '+(AZ.ctx?'Ficha '+esc(AZ.ctx):'Asistente interno')+'</span><button class="azb-ib" data-a="clear" title="Borrar charla">🗑</button><button class="azb-ib" data-a="close">✕</button></div><div class="azb-body">';
+      if(!st.msgs.length){
+        h += '<div class="azb-av">'+mk(60)+'</div><div class="azb-eyb">Tu asistente, siempre disponible</div><h1>Hola'+(st.nombre?', <b>'+esc(st.nombre)+'</b>':'')+'.<br>¿Qué hacemos hoy?</h1><p class="azb-lead">Preguntame lo que quieras del tablero o pedime que cargue visitas, agende, cambie estados o mande reportes. Escribime como a un compañero.</p><div class="azb-lbl">Atajos</div>';
+        shortcuts().forEach(function(s){ h += '<button class="azb-row" data-q="'+esc(s)+'">'+esc(s)+'<span>→</span></button>'; });
+      } else st.msgs.forEach(function(m,mi){
+        if(m.role==='user') h += '<div class="azb-m u"><div class="azb-b">'+fmt(m.content)+'</div></div>';
+        else {
+          if(m.content) h += '<div class="azb-m a">'+mk(22)+'<div class="azb-b">'+fmt(m.content)+'</div></div>';
+          (m.acciones||[]).forEach(function(a,ai){
+            var done = a.estado==='hecho', canc = a.estado==='cancelado';
+            h += '<div class="azb-card'+(done?' ok':'')+(canc?' no':'')+'"><div class="azb-k">'+(done?'✓ Hecho':canc?'Cancelado':'Confirmá esta acción')+'</div><div class="azb-s">'+esc(done&&a.resultado?a.resultado:a.resumen)+'</div>'+
+              (a.estado==='pendiente'?'<div class="azb-bt"><button class="azb-btn" data-ok="'+mi+':'+ai+'">Confirmar</button><button class="azb-btn o" data-no="'+mi+':'+ai+'">Cancelar</button></div>':'')+'</div>';
+          });
+        }
+      });
+      if(st.busy) h += '<div class="azb-m a">'+mk(22)+'<div class="azb-b azb-ty"><span></span><span></span><span></span></div></div>';
+      h += '</div><form class="azb-in" id="azbForm"><button type="button" class="azb-mic'+(st.rec?' rec':'')+'" data-a="mic" title="Hablar">🎤</button><input id="azbInp" placeholder="Escribime acá…" autocomplete="off"'+(st.busy?' disabled':'')+'><button class="azb-sd" type="submit"'+(st.busy?' disabled':'')+'>➤</button></form>';
+    }
+    h += '</div>';
+    root.innerHTML = h;
+    scroll();
+    var inp = root.querySelector('#azbInp'); if(inp && st.open && !st.busy) inp.focus();
+    var nm = root.querySelector('#azbName'); if(nm && st.open) nm.focus();
+  }
+  function ask(text){
+    text = (text||'').trim(); if(!text || st.busy) return;
+    st.msgs.push({role:'user', content:text}); st.busy = true; save(); render();
+    var hist = st.msgs.map(function(m){ return {role:m.role, content:m.content||''}; }).filter(function(m){ return m.content; });
+    call('azcuChat', [hist, {nombre:st.nombre||'', fichaId:AZ.ctx||''}], function(r){
+      st.busy = false;
+      st.msgs.push({role:'assistant', content:r.texto, acciones:(r.acciones||[]).map(function(a){ a.estado='pendiente'; return a; })});
+      save(); render();
+    }, function(err){
+      st.busy = false;
+      st.msgs.push({role:'assistant', content:'Uy, tuve un problema: '+err+'. Probá de nuevo en un momento.'});
+      save(); render();
+    });
+  }
+  function call(fn, args, ok, fail, retried){
+    var run = google.script.run.withSuccessHandler(ok).withFailureHandler(function(e){
+      var msg = (e && e.message) ? e.message : String(e);
+      if(/PIN/.test(msg) && !retried){ var p = window.prompt('Poné el PIN de AzcuBot:'); if(p){ st.pin = p; ls('pin', p); return call(fn, args, ok, fail, true); } }
+      fail(msg.replace(/^Error:\s*/,''));
+    });
+    run[fn].apply(run, [st.pin].concat(args));
+  }
+  function doAction(mi, ai, yes){
+    var a = st.msgs[mi].acciones[ai];
+    if(!yes){ a.estado = 'cancelado'; save(); render(); return; }
+    a.estado = 'hecho'; a.resultado = 'Ejecutando…'; render();
+    call('azcuEjecutar', [a], function(r){
+      a.resultado = r.mensaje; save(); render();
+      if(typeof window.recargar==='function'){ try{ window.recargar(AZ.ctx||undefined); }catch(e){} }
+    }, function(err){ a.estado = 'pendiente'; a.resultado = ''; st.msgs.push({role:'assistant', content:'No pude hacerlo: '+err}); save(); render(); });
+  }
+  function mic(){
+    if(st.rec){ st.rec.stop(); return; }
+    if(!navigator.mediaDevices || !window.MediaRecorder){ alert('Este navegador no permite grabar. Usá el dictado del teclado del celular 🎤'); return; }
+    navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+      var chunks = [], rec = new MediaRecorder(stream);
+      rec.ondataavailable = function(e){ chunks.push(e.data); };
+      rec.onstop = function(){
+        stream.getTracks().forEach(function(t){ t.stop(); }); st.rec = null; render();
+        var blob = new Blob(chunks, {type:rec.mimeType||'audio/webm'}), fr = new FileReader();
+        fr.onload = function(){
+          st.busy = true; render();
+          call('azcuTranscribir', [fr.result.split(',')[1], blob.type], function(r){ st.busy = false; render(); if(r.texto) ask(r.texto); }, function(err){ st.busy = false; st.msgs.push({role:'assistant', content:'No pude entender el audio: '+err}); render(); });
+        };
+        fr.readAsDataURL(blob);
+      };
+      rec.start(); st.rec = rec; render();
+    }).catch(function(){ alert('No pude usar el micrófono desde esta pantalla. Usá el dictado del teclado del celular 🎤'); });
+  }
+  root.addEventListener('click', function(e){
+    var t = e.target.closest('[data-a],[data-q],[data-ok],[data-no],#azbFab'); if(!t) return;
+    if(t.id==='azbFab'){ st.open = !st.open; var tip = document.querySelector('.azb-tip'); if(tip) tip.remove(); render(); return; }
+    if(t.dataset.q){ ask(t.dataset.q); return; }
+    if(t.dataset.ok){ var p = t.dataset.ok.split(':'); doAction(+p[0], +p[1], true); return; }
+    if(t.dataset.no){ var q = t.dataset.no.split(':'); doAction(+q[0], +q[1], false); return; }
+    var a = t.dataset.a;
+    if(a==='close'){ st.open = false; render(); }
+    else if(a==='clear'){ if(confirm('¿Borro la charla?')){ st.msgs = []; save(); render(); } }
+    else if(a==='start'){ var v = (root.querySelector('#azbName').value||'').trim(); st.nombre = v; ls('nombre', v); render(); }
+    else if(a==='skip'){ st.nombre = ''; ls('nombre', ''); render(); }
+    else if(a==='mic') mic();
+  });
+  root.addEventListener('submit', function(e){ if(e.target.id==='azbForm'){ e.preventDefault(); var i = root.querySelector('#azbInp'); var v = i.value; i.value = ''; ask(v); } });
+  root.addEventListener('keydown', function(e){ if(e.key==='Enter' && e.target.id==='azbName'){ e.preventDefault(); root.querySelector('[data-a="start"]').click(); } });
+  document.addEventListener('mousemove', function(e){
+    root.querySelectorAll('.azb-mk').forEach(function(m){
+      var r = m.getBoundingClientRect(); if(!r.width) return;
+      var dx = e.clientX-(r.left+r.width/2), dy = e.clientY-(r.top+r.height/2), d = Math.hypot(dx,dy)||1, k = Math.min(1, d/200)*2.6;
+      m.querySelectorAll('.azb-pp').forEach(function(p){ p.style.transform = 'translate('+(dx/d*k)+'px,'+(dy/d*k)+'px)'; });
+    });
+  });
+  function hook(){
+    ['ficha','close_'].forEach(function(n){
+      var f = window[n]; if(typeof f!=='function' || f.__azb) return;
+      window[n] = function(id){ AZ.ctx = (n==='ficha') ? id : null; var r = f.apply(this, arguments); if(st.open){ var keep = root.querySelector('#azbInp') ? root.querySelector('#azbInp').value : ''; render(); var i = root.querySelector('#azbInp'); if(i) i.value = keep; } return r; };
+      window[n].__azb = 1;
+    });
+  }
+  hook(); setTimeout(hook, 1500);
+  render();
+  if(!st.msgs.length && !ls('tip')){ setTimeout(function(){ if(st.open) return; var t = document.createElement('div'); t.className = 'azb azb-tip'; t.textContent = '¿Te doy una mano? 👋'; document.body.appendChild(t); ls('tip','1'); setTimeout(function(){ t.remove(); }, 7000); }, 2500); }
+})();
+</script>
