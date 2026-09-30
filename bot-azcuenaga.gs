@@ -56,7 +56,7 @@ function doPost(e){
     if(texto === '/start' || /^men[uú]$/i.test(texto)){ setEstado(chatId, null); mostrarMenu(chatId); return ok; }
     if(msg.voice || msg.audio){ manejarAudio(chatId, msg); return ok; }
     if(texto) manejarTexto(chatId, texto, msg.from);
-  }catch(err){}
+  }catch(err){ try{ tgSend(CHAT_ID_ALERTAS, '⚠️ Error: '+err.message); }catch(e2){} }
   return ok;
 }
 
@@ -509,4 +509,9 @@ function tgSend(chatId, texto, teclado){
   o.payload = JSON.stringify(p);
   var r = UrlFetchApp.fetch('https://api.telegram.org/bot'+TG()+'/sendMessage', o);
   if(r.getResponseCode()!==200){ delete p.parse_mode; o.payload = JSON.stringify(p); UrlFetchApp.fetch('https://api.telegram.org/bot'+TG()+'/sendMessage', o); }
+}
+
+function testAgenda(){
+  guardarAgenda({codigo:'TEST', fecha:'01/01/2030', hora:'10:00', interesado:'Prueba', telefono:'3410000000', vendedor:'Test', nota:'borrar'});
+  Logger.log('Fila agregada en Agenda OK');
 }

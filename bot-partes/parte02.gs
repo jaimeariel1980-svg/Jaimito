@@ -31,7 +31,7 @@ function doPost(e){
     if(texto === '/start' || /^men[uú]$/i.test(texto)){ setEstado(chatId, null); mostrarMenu(chatId); return ok; }
     if(msg.voice || msg.audio){ manejarAudio(chatId, msg); return ok; }
     if(texto) manejarTexto(chatId, texto, msg.from);
-  }catch(err){}
+  }catch(err){ try{ tgSend(CHAT_ID_ALERTAS, '⚠️ Error: '+err.message); }catch(e2){} }
   return ok;
 }
 
