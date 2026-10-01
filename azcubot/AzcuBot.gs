@@ -110,6 +110,33 @@ function azcuHerrResumen_(){
   return {total:d.length, por_etapa:por, activas:act, activas_con_papeles_al_dia:pap, activas_sin_movimiento_30d:sm, visitas_hoy:al.visitas_hoy.length, propuestas_sin_respuesta:al.propuestas_sin_respuesta.length};
 }
 
+function azcuFmtAlertas_(){
+  var a = azcuHerrAlertas_(), t = '';
+  function sec(titulo, arr, fn){ if(arr.length) t += '**'+titulo+' ('+arr.length+')**\n'+arr.slice(0,12).map(fn).join('\n')+(arr.length>12 ? '\n- …y '+(arr.length-12)+' más' : '')+'\n\n'; }
+  sec('🗓 Visitas de hoy', a.visitas_hoy, function(x){ return '- '+x.hora+' · '+x.direccion+(x.interesado?' · '+x.interesado:'')+(x.telefono?' ('+x.telefono+')':''); });
+  sec('📞 Para contactar hoy', a.seguimientos_para_hoy, function(x){ return '- '+x.interesado+(x.telefono?' ('+x.telefono+')':'')+' · '+x.id+(x.proximo_paso?' · '+x.proximo_paso:'')+(x.vencido_hace_dias?' (vencido hace '+x.vencido_hace_dias+' d)':''); });
+  sec('💬 Propuestas sin respuesta', a.propuestas_sin_respuesta, function(x){ return '- '+x.direccion+' · '+x.cliente+' (hace '+x.dias+' días)'; });
+  sec('⚠️ Papeles incompletos', a.papeles, function(x){ return '- '+x.direccion+': '+x.faltan.slice(0,4).join(', ')+(x.faltan.length>4 ? ' +'+(x.faltan.length-4)+' más' : ''); });
+  sec('🛑 Sin movimiento +30 días', a.sin_movimiento, function(x){ return '- '+x.direccion+(x.dias===null ? ' (sin actividad)' : ' ('+x.dias+' días)'); });
+  return t.trim() || 'Todo tranquilo: hoy no hay alertas 🙌';
+}
+function azcuFmtResumen_(){
+  var r = azcuHerrResumen_(), t = '**Resumen de la cartera**\n- Total de propiedades: **'+r.total+'**\n- Activas: **'+r.activas+'**\n';
+  Object.keys(r.por_etapa).forEach(function(k){ t += '- '+k+': '+r.por_etapa[k]+'\n'; });
+  t += '- Activas con papeles al día: '+r.activas_con_papeles_al_dia+'\n- Activas sin movimiento (+30 días): '+r.activas_sin_movimiento_30d+'\n- Visitas de hoy: '+r.visitas_hoy+'\n- Propuestas sin respuesta: '+r.propuestas_sin_respuesta;
+  return t;
+}
+function azcuFmtDocs_(){
+  var d = azcuHerrDocs_();
+  if(!d.length) return 'Todas las propiedades tienen la documentación al día 🙌';
+  return '**Documentos faltantes ('+d.length+(d.length===1 ? ' propiedad' : ' propiedades')+')**\n'+d.slice(0,25).map(function(x){ return '- **'+x.direccion+'** ('+x.etapa+'): '+x.faltan.join(', '); }).join('\n')+(d.length>25 ? '\n- …y '+(d.length-25)+' más' : '');
+}
+function azcuAtajo(pin, tipo){
+  azcuPin_(pin); AZCU_D_ = null;
+  var t = tipo==='alertas' ? azcuFmtAlertas_() : tipo==='resumen' ? azcuFmtResumen_() : tipo==='docs' ? azcuFmtDocs_() : 'No conozco ese atajo.';
+  return {texto:t, acciones:[]};
+}
+function azcuWarm(pin){ azcuPin_(pin); azcuDatos_(); return true; }
 function azcuTools_(){
   function t(name, desc, props, req){ return {type:'function', function:{name:name, description:desc, parameters:{type:'object', properties:props, required:req||[]}}}; }
   var S = {type:'string'};
@@ -297,6 +324,8 @@ function azcuApi(e){
   try{
     req = JSON.parse(raw); var a = req.args || [];
     if(req.fn==='azcuChat'){ var cx = a[2] || {}; cx.reqId = String(req.id || '').replace(/[^A-Za-z0-9]/g, ''); out = {ok:true, data:azcuChat(a[0], a[1], cx)}; }
+    else if(req.fn==='azcuAtajo') out = {ok:true, data:azcuAtajo(a[0], a[1])};
+    else if(req.fn==='azcuWarm') out = {ok:true, data:azcuWarm(a[0])};
     else if(req.fn==='azcuEjecutar') out = {ok:true, data:azcuEjecutar(a[0], a[1])};
     else if(req.fn==='azcuTranscribir') out = {ok:true, data:azcuTranscribir(a[0], a[1], a[2])};
     else if(req.fn==='azcuLogo') out = {ok:true, data:azcuLogo_()};
