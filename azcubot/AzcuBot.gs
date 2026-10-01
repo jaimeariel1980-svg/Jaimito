@@ -362,13 +362,18 @@ function doPost(e){ return azcuApi(e); }
 
 var AZCU_OS_APP = '26a05ded-18d0-4349-972b-b30e5e614805';
 var AZCU_WEB = 'https://glittery-shortbread-d3e96e.netlify.app';
+function azcuFetchRetry_(u, o){
+  var t, e;
+  for(t=0;t<3;t++){ try{ return UrlFetchApp.fetch(u, o); }catch(x){ e = x; Utilities.sleep(1500*(t+1)); } }
+  throw e;
+}
 function azcuPush_(titulo, msg, url){
   var k = PropertiesService.getScriptProperties().getProperty('ONESIGNAL_KEY');
   if(!k) throw new Error('Falta ONESIGNAL_KEY en las propiedades del script');
   k = String(k).replace(/\s/g,'');
   var seg = ['Total Subscriptions', 'Subscribed Users'], esq = ['Key ', 'Basic '], i, j, r;
   for(j=0;j<esq.length;j++) for(i=0;i<seg.length;i++){
-    r = UrlFetchApp.fetch('https://api.onesignal.com/notifications?c=push', {method:'post', contentType:'application/json', headers:{Authorization:esq[j]+k}, muteHttpExceptions:true,
+    r = azcuFetchRetry_('https://api.onesignal.com/notifications?c=push', {method:'post', contentType:'application/json', headers:{Authorization:esq[j]+k}, muteHttpExceptions:true,
       payload:JSON.stringify({app_id:AZCU_OS_APP, target_channel:'push', included_segments:[seg[i]], headings:{en:titulo, es:titulo}, contents:{en:msg, es:msg}, url:url||AZCU_WEB})});
     if(r.getResponseCode()===401) break;
     if(r.getResponseCode()===200 && /not subscribed/.test(r.getContentText())) return 'Nadie suscripto todavía';
