@@ -371,6 +371,7 @@ function azcuPush_(titulo, msg, url){
     r = UrlFetchApp.fetch('https://api.onesignal.com/notifications?c=push', {method:'post', contentType:'application/json', headers:{Authorization:esq[j]+k}, muteHttpExceptions:true,
       payload:JSON.stringify({app_id:AZCU_OS_APP, target_channel:'push', included_segments:[seg[i]], headings:{en:titulo, es:titulo}, contents:{en:msg, es:msg}, url:url||AZCU_WEB})});
     if(r.getResponseCode()===401) break;
+    if(r.getResponseCode()===200 && /not subscribed/.test(r.getContentText())) return 'Nadie suscripto todavía';
     if(r.getResponseCode()>=200 && r.getResponseCode()<300 && !/errors/.test(r.getContentText())) return r.getContentText();
   }
   throw new Error('OneSignal '+r.getResponseCode()+': '+r.getContentText().slice(0,300)+' (clave de '+k.length+' caracteres, empieza con "'+k.slice(0,8)+'")');
