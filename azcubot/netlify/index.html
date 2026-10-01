@@ -185,7 +185,7 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catc
     var P = {k:'prop', q:'¿De qué propiedad? Escribí parte de la dirección o el propietario.', kind:'prop', ph:'Ej: Mendoza 7201'};
     var T = function(k,q,ph,opt,parse){ return {k:k, q:q, kind:'text', ph:ph, opt:opt, parse:parse}; };
     var tel = function(t){ var d = t.replace(/[^0-9]/g,''); return d.length>=6 ? d : null; }, mail = function(t){ return /^\S+@\S+\.\S+$/.test(t) ? t : null; };
-    if(t==='cargar') return [P, T('interesado','¿Quién consultó o vino? (nombre)','Nombre del interesado'), {k:'via',q:'¿Por qué vía fue?',kind:'opt',opts:OP(VIAS)}, {k:'resultado',q:'¿Cómo resultó?',kind:'opt',opts:OP(RES)}, T('tel','Teléfono del interesado','Teléfono',1,tel), T('prox','Próximo paso','Ej: llamarlo el viernes',1), T('obs','Observaciones','Observaciones',1)];
+    if(t==='cargar') return [P, T('interesado','¿Quién consultó o vino? (nombre)','Nombre del interesado'), {k:'via',q:'¿Por qué vía fue?',kind:'opt',opts:OP(VIAS)}, {k:'resultado',q:'¿Cómo resultó?',kind:'opt',opts:OP(RES)}, T('obs','Contame el detalle de lo que pasó (podés dictarlo 🎤)','Qué pasó, qué dijo, qué quiere…',1), T('prox','Próximo paso','Ej: llamarlo el viernes',1), T('tel','Teléfono del interesado','Teléfono',1,tel)];
     if(t==='agendar') return [P, {k:'fecha',q:'¿Qué día? Elegí o escribí dd/mm.',kind:'opt',opts:fechas(),parse:parseFecha,ph:'dd/mm'}, {k:'hora',q:'¿A qué hora? Elegí o escribila (ej 16:30).',kind:'opt',opts:OP(HORAS),parse:parseHora,ph:'hh:mm'}, T('interesado','¿Quién es el interesado?','Nombre',1), T('tel','Teléfono','Teléfono',1,tel), T('mail','Mail (le llega la invitación al Calendar)','mail@ejemplo.com',1,mail)];
     if(t==='etapa') return [P, {k:'etapa',q:'¿A qué etapa la pasamos?',kind:'opt',opts:OP(ETAPAS)}];
     return [P];
@@ -238,7 +238,7 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catc
   function wzFin(){
     var w = st.wz, d = w.d, a = {id:'a'+Date.now(), estado:'pendiente'}, pr = (st.props||[]).filter(function(p){ return p.id===d.id; })[0] || {}, fd = function(f){ return f.split('-').reverse().join('/'); };
     st.wz = null;
-    if(w.t==='cargar'){ a.tipo = 'cargar'; a.datos = {id:d.id, dir:d.dir, interesado:d.interesado||'', tel:d.tel||'', via:d.via, resultado:d.resultado, prox:d.prox||'', obs:d.obs||''}; a.resumen = 'Cargar en '+d.dir+': '+d.interesado+' · '+d.via+' · '+d.resultado+(d.prox?' · próximo paso: '+d.prox:''); }
+    if(w.t==='cargar'){ a.tipo = 'cargar'; a.datos = {id:d.id, dir:d.dir, interesado:d.interesado||'', tel:d.tel||'', via:d.via, resultado:d.resultado, prox:d.prox||'', obs:d.obs||''}; a.resumen = 'Cargar en '+d.dir+': '+d.interesado+' · '+d.via+' · '+d.resultado+(d.prox?' · próximo paso: '+d.prox:'')+(d.obs?' · detalle: '+d.obs:''); }
     else if(w.t==='agendar'){ a.tipo = 'agendar'; a.datos = {id:d.id, dir:d.dir, fecha:d.fecha, hora:d.hora, interesado:d.interesado||'', tel:d.tel||'', mail:d.mail||'', obs:''}; a.resumen = 'Agendar visita en '+d.dir+': '+fd(d.fecha)+' '+d.hora+(d.interesado?' · '+d.interesado:'')+(d.mail?' · invitación a '+d.mail:''); }
     else if(w.t==='etapa'){ a.tipo = 'etapa'; a.datos = {id:d.id, dir:d.dir, etapa:d.etapa}; a.resumen = 'Pasar '+d.dir+(pr.etapa?' de '+pr.etapa:'')+' a '+d.etapa; }
     else { a.tipo = 'reporte'; a.datos = {id:d.id, dir:d.dir}; a.resumen = 'Enviar por mail el informe de gestión de '+d.dir+' a los propietarios con mail cargado'; }
