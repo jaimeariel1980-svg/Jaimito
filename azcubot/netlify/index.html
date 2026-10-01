@@ -55,7 +55,7 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catc
 .azb-row span{color:var(--n);font-weight:700}
 .azb-port{flex:1;background:var(--n);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:30px 28px;position:relative;overflow:hidden}
 .azb-port .azb-wm{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);font:900 120px 'Archivo',sans-serif;color:transparent;-webkit-text-stroke:1.5px rgba(255,255,255,.13);letter-spacing:-.03em;white-space:nowrap;pointer-events:none}
-.azb-port .azb-box{width:96px;height:96px;border:1.5px solid rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;margin-bottom:22px;position:relative}
+.azb-port .azb-box{width:128px;height:128px;border:1.5px solid rgba(255,255,255,.55);display:flex;align-items:center;justify-content:center;margin-bottom:22px;position:relative}
 .azb-port .azb-pe{display:flex;align-items:center;gap:10px;font:500 11px 'JetBrains Mono',monospace;letter-spacing:.16em;text-transform:uppercase;margin-bottom:12px;position:relative}
 .azb-port .azb-pe:before{content:"";width:28px;height:2px;background:#fff}
 .azb-port h2{font:800 40px/1 'Archivo',sans-serif;letter-spacing:-.02em;margin:0 0 8px;position:relative}
@@ -72,6 +72,7 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catc
 .azb-m.u .azb-b{background:var(--n);color:#fff;border-radius:14px 14px 3px 14px}
 .azb-b b{font-weight:700}
 .azb-b a{color:var(--n)}
+.azb-st{font-style:normal;font-size:12.5px;color:var(--mu);margin-left:8px}
 .azb-ty span{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--n);margin:0 2px;animation:azbty 1s infinite}
 .azb-ty span:nth-child(2){animation-delay:.15s}.azb-ty span:nth-child(3){animation-delay:.3s}
 @keyframes azbty{0%,60%,100%{opacity:.25;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
@@ -84,6 +85,10 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catc
 .azb-btn:disabled{opacity:.5;cursor:default}
 .azb-card.ok{border-left-color:#2e9e5b;background:#f0faf3;border-color:#c6e6cf}
 .azb-card.ok .azb-k{color:#1f7a44}.azb-card.no{opacity:.6}
+.azb-chips{display:flex;gap:7px;padding:8px 12px 2px;overflow-x:auto;background:#fff;border-top:1px solid var(--ln);flex-shrink:0;scrollbar-width:none}
+.azb-chips::-webkit-scrollbar{display:none}
+.azb-chip{flex-shrink:0;border:1px solid var(--n);background:#fff;color:var(--n);padding:7px 12px;font:600 11px 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;white-space:nowrap}
+.azb-chip:active{background:var(--n);color:#fff}
 .azb-in{display:flex;gap:8px;padding:10px 12px;background:#fff;border-top:1px solid var(--ln);flex-shrink:0}
 .azb-in input{flex:1;border:1px solid var(--ln);padding:11px 12px;font:14.5px 'Inter',sans-serif;outline:none;min-width:0}
 .azb-in input:focus{border-color:var(--n)}
@@ -118,7 +123,7 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catc
   function fmt(s){ return esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/^[-•] /gm,'• ').replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>').replace(/\n/g,'<br>'); }
   function logoSrc(){ try{ if(window.AZCU_LOGO) return window.AZCU_LOGO; return typeof LOGO!=='undefined' ? LOGO : ''; }catch(e){ return ''; } }
   function mk(size){
-    var src = logoSrc(), eyes = '<svg class="azb-eyes" viewBox="0 0 100 100"><g class="azb-blink"><ellipse cx="36" cy="47" rx="11" ry="12.5" fill="#fff" stroke="#0a3d91" stroke-width="3"/><ellipse cx="64" cy="47" rx="11" ry="12.5" fill="#fff" stroke="#0a3d91" stroke-width="3"/></g><circle class="azb-pp" cx="36" cy="48" r="5.2" fill="#0f1b33"/><circle class="azb-pp" cx="64" cy="48" r="5.2" fill="#0f1b33"/><circle cx="38" cy="45.5" r="1.7" fill="#fff"/><circle cx="66" cy="45.5" r="1.7" fill="#fff"/></svg>';
+    var src = logoSrc(), eyes = '<svg class="azb-eyes" viewBox="0 0 100 100"><g class="azb-blink"><ellipse cx="39" cy="50" rx="8" ry="9.5" fill="#fff" stroke="#0a3d91" stroke-width="2.2"/><ellipse cx="61" cy="50" rx="8" ry="9.5" fill="#fff" stroke="#0a3d91" stroke-width="2.2"/></g><circle class="azb-pp" cx="39" cy="51" r="3.9" fill="#0f1b33"/><circle class="azb-pp" cx="61" cy="51" r="3.9" fill="#0f1b33"/><circle cx="40.4" cy="49" r="1.3" fill="#fff"/><circle cx="62.4" cy="49" r="1.3" fill="#fff"/></svg>';
     return '<span class="azb-mk" style="width:'+size+'px;height:'+size+'px">'+(src?'<img src="'+src+'" alt="">':'<span style="display:block;width:100%;height:100%;background:#0a3d91"></span>')+eyes+'</span>';
   }
   var root = document.createElement('div'); root.className = 'azb'; document.body.appendChild(root);
@@ -133,12 +138,12 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catc
     h += '<div class="azb-panel'+(st.open?' on':'')+(APP?' azb-app':'')+'">';
     var foot = APP ? '<div class="azb-ft"><span class="lg">'+mk(26)+'AZCUÉNAGA</span><span class="lm">Siempre dedicada<br>a lo que necesitás</span></div>' : '';
     if(APP && st.nombre!==null && !st.entered){
-      h += '<div class="azb-port"><div class="azb-wm">AZCU</div><div class="azb-box">'+mk(76)+'</div><div class="azb-pe">Azcuénaga Inmobiliaria</div><h2>Hola'+(st.nombre?', '+esc(st.nombre):'')+'</h2><div class="azb-rl">Soy AzcuBot · tu compañero de laburo</div><p>Estoy acá para tu día a día: cargar visitas, agendar, ver fichas y alertas. Escribime o mandame un audio.</p><button class="azb-go" data-a="enter">Entrar →</button>'+foot+'</div>';
+      h += '<div class="azb-port"><div class="azb-wm">AZCU</div><div class="azb-box">'+mk(108)+'</div><div class="azb-pe">Azcuénaga Inmobiliaria</div><h2>Hola'+(st.nombre?', '+esc(st.nombre):'')+'</h2><div class="azb-rl">Soy AzcuBot · tu compañero de laburo</div><p>Estoy acá para tu día a día: cargar visitas, agendar, ver fichas y alertas. Escribime o mandame un audio.</p><button class="azb-go" data-a="enter">Entrar →</button>'+foot+'</div>';
     } else if(st.nombre===null){
       h += (APP?'':'<div class="azb-hd"><span class="azb-t">AzcuBot · Asistente interno</span><button class="azb-ib" data-a="close">✕</button></div>')+
-        '<div class="azb-port"><div class="azb-wm">AZCU</div><div class="azb-box">'+mk(76)+'</div><div class="azb-pe">Azcuénaga Inmobiliaria</div><h2>Hola, soy AzcuBot</h2><div class="azb-rl">Tu compañero de laburo</div><p>¿Cómo te llamás? Así te doy una mano con el tablero, las visitas y todo lo de todos los días.</p><input id="azbName" placeholder="Tu nombre" autocomplete="off"><button class="azb-go" data-a="start">Empezar →</button><button class="azb-sk" data-a="skip">Prefiero no decirlo</button>'+foot+'</div>';
+        '<div class="azb-port"><div class="azb-wm">AZCU</div><div class="azb-box">'+mk(108)+'</div><div class="azb-pe">Azcuénaga Inmobiliaria</div><h2>Hola, soy AzcuBot</h2><div class="azb-rl">Tu compañero de laburo</div><p>¿Cómo te llamás? Así te doy una mano con el tablero, las visitas y todo lo de todos los días.</p><input id="azbName" placeholder="Tu nombre" autocomplete="off"><button class="azb-go" data-a="start">Empezar →</button><button class="azb-sk" data-a="skip">Prefiero no decirlo</button>'+foot+'</div>';
     } else {
-      h += '<div class="azb-hd">'+mk(30)+'<span class="azb-t">AzcuBot'+(APP?'':' · '+(AZ.ctx?'Ficha '+esc(AZ.ctx):'Asistente interno'))+'</span>'+(APP?'<button class="azb-ib" data-q="¿Qué alertas tengo hoy?" title="Alertas">🔔</button><a class="azb-ib" href="'+esc(window.AZCU_TABLERO||'#')+'" target="_blank" rel="noopener" title="Abrir tablero" style="text-decoration:none">📋</a>':'')+'<button class="azb-ib" data-a="clear" title="Borrar charla">🗑</button>'+(APP?'':'<button class="azb-ib" data-a="close">✕</button>')+'</div><div class="azb-body">';
+      h += '<div class="azb-hd">'+(APP?'<button class="azb-ib" data-a="home" title="Volver al inicio">←</button>':'')+mk(30)+'<span class="azb-t">AzcuBot'+(APP?'':' · '+(AZ.ctx?'Ficha '+esc(AZ.ctx):'Asistente interno'))+'</span>'+(APP?'<button class="azb-ib" data-q="¿Qué alertas tengo hoy?" title="Alertas">🔔</button><a class="azb-ib" href="'+esc(window.AZCU_TABLERO||'#')+'" target="_blank" rel="noopener" title="Abrir tablero" style="text-decoration:none">📋</a>':'')+'<button class="azb-ib" data-a="clear" title="Borrar charla">🗑</button>'+(APP?'':'<button class="azb-ib" data-a="close">✕</button>')+'</div><div class="azb-body">';
       if(!st.msgs.length){
         h += '<div class="azb-av">'+mk(60)+'</div><div class="azb-eyb">Tu asistente, siempre disponible</div><h1>Hola'+(st.nombre?', <b>'+esc(st.nombre)+'</b>':'')+'.<br>¿Qué hacemos hoy?</h1><p class="azb-lead">Preguntame lo que quieras del tablero o pedime que cargue visitas, agende, cambie estados o mande reportes. Escribime como a un compañero.</p><div class="azb-lbl">Atajos</div>';
         shortcuts().forEach(function(s){ h += '<button class="azb-row" data-q="'+esc(s)+'">'+esc(s)+'<span>→</span></button>'; });
@@ -153,8 +158,8 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catc
           });
         }
       });
-      if(st.busy) h += '<div class="azb-m a">'+mk(22)+'<div class="azb-b azb-ty"><span></span><span></span><span></span></div></div>';
-      h += '</div><form class="azb-in" id="azbForm">'+
+      if(st.busy) h += '<div class="azb-m a">'+mk(22)+'<div class="azb-b azb-ty"><span></span><span></span><span></span>'+(st.status?'<em class="azb-st">'+esc(st.status)+'</em>':'')+'</div></div>';
+      h += '</div>'+(st.rec?'':'<div class="azb-chips">'+[['Cargar visita','Quiero cargar una visita o consulta'],['Agendar','Quiero agendar una visita'],['Buscar propiedad','Quiero buscar una propiedad'],['Cambiar estado','Quiero cambiar el estado de una propiedad'],['Reporte','Quiero enviar el reporte a un propietario'],['Alertas','¿Qué alertas tengo hoy?'],['Resumen','Resumen de la cartera']].map(function(c){ return '<button type="button" class="azb-chip" data-q="'+esc(c[1])+'">'+c[0]+'</button>'; }).join('')+'</div>')+'<form class="azb-in" id="azbForm">'+
         (st.rec ? '<div class="azb-rb'+(st.rec.cancel?' cx':'')+'"><span class="rd"></span><span id="azbT">0:00</span><span class="rh" id="azbH">'+(st.rec.cancel?'Soltá para cancelar':(st.rec.mode==='tap'?'Tocá el 🎤 para enviar':'Soltá para enviar · ← cancelar'))+'</span></div>' : '<input id="azbInp" placeholder="Escribime acá…" autocomplete="off"'+(st.busy?' disabled':'')+'>')+
         '<button type="button" class="azb-mic'+(st.rec?' rec':'')+'" data-a="mic" title="Mantené apretado para hablar">🎤</button>'+(st.rec?'':'<button class="azb-sd" type="submit"'+(st.busy?' disabled':'')+'>➤</button>')+'</form>';
     }
@@ -166,7 +171,7 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catc
   }
   function ask(text){
     text = (text||'').trim(); if(!text || st.busy) return;
-    st.msgs.push({role:'user', content:text}); st.busy = true; save(); render();
+    st.msgs.push({role:'user', content:text}); st.busy = true; st.status = ''; save(); render();
     var hist = st.msgs.map(function(m){ return {role:m.role, content:m.content||''}; }).filter(function(m){ return m.content; });
     call('azcuChat', [hist, {nombre:st.nombre||'', fichaId:AZ.ctx||''}], function(r){
       st.busy = false;
@@ -188,7 +193,7 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catc
       if(done) return;
       if(Date.now()-t0 > 150000){ finish(); onErr(new Error('El servidor no respondió. Revisá la URL y que el despliegue esté actualizado y sea para "Cualquier persona".')); return; }
       var cb = 'azbcb'+Math.random().toString(36).slice(2,9);
-      window[cb] = function(d){ delete window[cb]; if(scr) scr.remove(); if(done) return; if(d){ finish(); if(d.ok) ok(d.data); else onErr(new Error(d.error || 'error')); } else pollT = setTimeout(poll, 1200); };
+      window[cb] = function(d){ delete window[cb]; if(scr) scr.remove(); if(done) return; if(d && d.progress && d.ok===undefined){ if(st.status!==d.progress){ st.status = d.progress; render(); } pollT = setTimeout(poll, 800); } else if(d){ st.status = ''; finish(); if(d.ok) ok(d.data); else onErr(new Error(d.error || 'error')); } else pollT = setTimeout(poll, 1200); };
       scr = document.createElement('script'); scr.src = window.AZCU_API+'?azr='+id+'&cb='+cb+'&_='+Date.now();
       scr.onerror = function(){ delete window[cb]; if(scr) scr.remove(); if(!done) pollT = setTimeout(poll, 2000); };
       document.head.appendChild(scr);
@@ -270,6 +275,7 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catc
     else if(a==='start'){ var v = (root.querySelector('#azbName').value||'').trim(); st.nombre = v; ls('nombre', v); st.entered = true; render(); }
     else if(a==='skip'){ st.nombre = ''; ls('nombre', ''); st.entered = true; render(); }
     else if(a==='enter'){ st.entered = true; render(); }
+    else if(a==='home'){ st.entered = false; render(); }
   });
   root.addEventListener('submit', function(e){ if(e.target.id==='azbForm'){ e.preventDefault(); var i = root.querySelector('#azbInp'); var v = i.value; i.value = ''; ask(v); } });
   root.addEventListener('keydown', function(e){ if(e.key==='Enter' && e.target.id==='azbName'){ e.preventDefault(); root.querySelector('[data-a="start"]').click(); } });
