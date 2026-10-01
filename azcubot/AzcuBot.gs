@@ -8,7 +8,10 @@ var AZCU_D_ = null;
 
 function azcuPin_(pin){
   var p = PropertiesService.getScriptProperties().getProperty('AZCU_PIN');
-  if(p && String(pin||'')!==p) throw new Error('PIN incorrecto');
+  if(!p) return;
+  var c = CacheService.getScriptCache(), n = +(c.get('azcu_fail')||0);
+  if(n>=10) throw new Error('Demasiados intentos. Probá de nuevo en 15 minutos.');
+  if(String(pin||'')!==p){ if(pin) c.put('azcu_fail', String(n+1), 900); throw new Error('PIN incorrecto'); }
 }
 function azcuSinAc_(x){ return String(x||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim(); }
 function azcuNum_(x){
@@ -243,7 +246,8 @@ function azcuTranscribir(pin, base64, mime){
 }
 
 function azcuProbar(){
-  Logger.log(JSON.stringify(azcuChat('', [{role:'user', content:'¿Qué alertas hay hoy?'}], {nombre:'Ariel'})));
+  var pin = PropertiesService.getScriptProperties().getProperty('AZCU_PIN') || '';
+  Logger.log(JSON.stringify(azcuChat(pin, [{role:'user', content:'¿Qué alertas hay hoy?'}], {nombre:'Ariel'})));
 }
 
 function azcuLogo_(){
