@@ -259,14 +259,21 @@ function azcuLogo_(){
   }catch(e){ return ''; }
 }
 function azcuApi(e){
-  var out;
+  var viaFrame = !!(e && e.parameter && e.parameter.payload), raw = viaFrame ? e.parameter.payload : ((e && e.postData && e.postData.contents) || '{}'), req = {}, out;
   try{
-    var req = JSON.parse(e.postData.contents), a = req.args || [];
+    req = JSON.parse(raw); var a = req.args || [];
     if(req.fn==='azcuChat') out = {ok:true, data:azcuChat(a[0], a[1], a[2])};
     else if(req.fn==='azcuEjecutar') out = {ok:true, data:azcuEjecutar(a[0], a[1])};
     else if(req.fn==='azcuTranscribir') out = {ok:true, data:azcuTranscribir(a[0], a[1], a[2])};
     else if(req.fn==='azcuLogo') out = {ok:true, data:azcuLogo_()};
     else out = {ok:false, error:'Función desconocida'};
   }catch(err){ out = {ok:false, error:String(err.message || err)}; }
+  out.azb = req.id || '';
+  if(viaFrame){
+    var js = JSON.stringify(out).replace(/</g,'\\u003c').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029');
+    return HtmlService.createHtmlOutput('<!doctype html><html><body><script>window.top.postMessage('+js+',"*");</script></body></html>').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  }
   return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
 }
+
+function doPost(e){ return azcuApi(e); }

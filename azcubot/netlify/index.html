@@ -178,21 +178,24 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catc
       save(); render();
     });
   }
+  function frameCall(fn, args, ok, onErr){
+    var id = 'f'+Date.now()+Math.random().toString(36).slice(2,7), done = false;
+    var ifr = document.createElement('iframe'); ifr.name = 'azbf_'+id; ifr.style.display = 'none';
+    var form = document.createElement('form'); form.method = 'POST'; form.action = window.AZCU_API; form.target = ifr.name; form.style.display = 'none';
+    var inp = document.createElement('input'); inp.type = 'hidden'; inp.name = 'payload'; inp.value = JSON.stringify({id:id, fn:fn, args:[st.pin].concat(args)}); form.appendChild(inp);
+    var tm;
+    function clean(){ window.removeEventListener('message', onMsg); clearTimeout(tm); setTimeout(function(){ ifr.remove(); form.remove(); }, 200); }
+    function onMsg(e){ var d = e.data; if(!d || d.azb!==id) return; done = true; clean(); if(d.ok) ok(d.data); else onErr(new Error(d.error || 'error')); }
+    tm = setTimeout(function(){ if(!done){ clean(); onErr(new Error('El servidor no respondió. Revisá que la URL sea la correcta y que el despliegue sea para "Cualquier persona".')); } }, 90000);
+    window.addEventListener('message', onMsg); document.body.appendChild(ifr); document.body.appendChild(form); form.submit();
+  }
   function call(fn, args, ok, fail, retried){
     function onErr(e){
       var msg = (e && e.message) ? e.message : String(e);
       if(/PIN/.test(msg) && !retried){ var p = window.prompt('Poné el PIN de AzcuBot:'); if(p){ st.pin = p; ls('pin', p); return call(fn, args, ok, fail, true); } }
       fail(msg.replace(/^Error:\s*/,''));
     }
-    if(window.AZCU_API){
-      fetch(window.AZCU_API, {method:'POST', body:JSON.stringify({fn:fn, args:[st.pin].concat(args)})})
-        .then(function(r){ return r.text().then(function(t){
-          var j; try{ j = JSON.parse(t); }catch(e){ throw new Error('El servidor devolvió una respuesta inesperada (HTTP '+r.status+'): '+t.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim().slice(0,150)); }
-          return j; }); })
-        .then(function(j){ if(j && j.ok) ok(j.data); else onErr(new Error((j && j.error) || 'error')); })
-        .catch(function(e){ var m = (e && e.message) || ''; onErr(/Failed to fetch|NetworkError|Load failed/i.test(m) || !m ? new Error('No se pudo conectar con el servidor. Revisá que el despliegue de Apps Script sea para "Cualquier persona" y que la URL sea la correcta.') : e); });
-      return;
-    }
+    if(window.AZCU_API){ frameCall(fn, args, ok, onErr); return; }
     var run = google.script.run.withSuccessHandler(ok).withFailureHandler(onErr);
     run[fn].apply(run, [st.pin].concat(args));
   }
@@ -281,7 +284,7 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catc
   render();
   if(APP && window.AZCU_API && !logoSrc()){
     var cl = ls('logo'); if(cl){ window.AZCU_LOGO = cl; render(); }
-    else fetch(window.AZCU_API, {method:'POST', body:JSON.stringify({fn:'azcuLogo', args:['']})}).then(function(r){ return r.json(); }).then(function(j){ if(j && j.ok && j.data){ window.AZCU_LOGO = j.data; ls('logo', j.data); render(); } }).catch(function(){});
+    else frameCall('azcuLogo', [], function(d){ if(d){ window.AZCU_LOGO = d; ls('logo', d); render(); } }, function(){});
   }
   if(!APP && !st.msgs.length && !ls('tip')){ setTimeout(function(){ if(st.open) return; var t = document.createElement('div'); t.className = 'azb azb-tip'; t.textContent = '¿Te doy una mano? 👋'; document.body.appendChild(t); ls('tip','1'); setTimeout(function(){ t.remove(); }, 7000); }, 2500); }
 })();
