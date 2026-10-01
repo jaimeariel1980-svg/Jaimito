@@ -12,6 +12,7 @@ head = '''<!DOCTYPE html>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <style>html,body{margin:0;height:100%;background:#0a3d91;overscroll-behavior:none}</style>
 </head><body>
 <script>
@@ -19,6 +20,9 @@ head = '''<!DOCTYPE html>
 window.AZCU_API = "'''+EXEC+'''";      // URL /exec del despliegue de Apps Script del tablero
 window.AZCU_TABLERO = "'''+EXEC+'''?app=tablero";
 window.AZCU_APP = true;
+window.AZCU_ONESIGNAL = "26a05ded-18d0-4349-972b-b30e5e614805";
+window.OneSignalDeferred = window.OneSignalDeferred || [];
+OneSignalDeferred.push(function(OneSignal){ return OneSignal.init({appId: window.AZCU_ONESIGNAL}); });
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(function(){}); }
 </script>
 '''

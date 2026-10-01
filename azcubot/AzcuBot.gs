@@ -359,3 +359,67 @@ function azcuPoll(e){
   return ContentService.createTextOutput(cb+'('+(s || 'null')+');').setMimeType(ContentService.MimeType.JAVASCRIPT);
 }
 function doPost(e){ return azcuApi(e); }
+
+var AZCU_OS_APP = '26a05ded-18d0-4349-972b-b30e5e614805';
+var AZCU_WEB = 'https://glittery-shortbread-d3e96e.netlify.app';
+function azcuPush_(titulo, msg, url){
+  var k = PropertiesService.getScriptProperties().getProperty('ONESIGNAL_KEY');
+  if(!k) throw new Error('Falta ONESIGNAL_KEY en las propiedades del script');
+  var seg = ['Total Subscriptions', 'Subscribed Users'], i, r;
+  for(i=0;i<seg.length;i++){
+    r = UrlFetchApp.fetch('https://api.onesignal.com/notifications?c=push', {method:'post', contentType:'application/json', headers:{Authorization:'Key '+k}, muteHttpExceptions:true,
+      payload:JSON.stringify({app_id:AZCU_OS_APP, target_channel:'push', included_segments:[seg[i]], headings:{en:titulo, es:titulo}, contents:{en:msg, es:msg}, url:url||AZCU_WEB})});
+    if(r.getResponseCode()>=200 && r.getResponseCode()<300 && !/errors/.test(r.getContentText())) return r.getContentText();
+  }
+  throw new Error('OneSignal '+r.getResponseCode()+': '+r.getContentText().slice(0,300));
+}
+function azcuProbarPush(){ Logger.log(azcuPush_('AzcuBot 🏠', 'Prueba de aviso: si lo ves, las notificaciones funcionan.')); }
+function azcuAvisoDiario(){
+  azcuLimpiarCache_();
+  var a = azcuHerrAlertas_(), p = [], lunes = new Date(Date.now()-3*3600000).getUTCDay()===1;
+  if(a.visitas_hoy.length) p.push('🗓 '+a.visitas_hoy.length+(a.visitas_hoy.length===1?' visita':' visitas')+' hoy');
+  if(a.seguimientos_para_hoy.length) p.push('📞 '+a.seguimientos_para_hoy.length+' para contactar');
+  if(a.propuestas_sin_respuesta.length) p.push('💬 '+a.propuestas_sin_respuesta.length+' propuesta'+(a.propuestas_sin_respuesta.length===1?'':'s')+' sin respuesta');
+  if(lunes && a.papeles.length) p.push('⚠️ '+a.papeles.length+' con papeles incompletos');
+  if(lunes && a.sin_movimiento.length) p.push('🛑 '+a.sin_movimiento.length+' sin movimiento');
+  if(p.length) azcuPush_('Buen día ☀️ Esto es lo de hoy', p.join(' · '));
+}
+var AZCU_COD_ = {'Captación':'c','Publicada':'p','Publicadas':'p','Reserva':'r','Vendida':'v','Suspendida':'s'};
+function azcuEstadosGet_(){
+  var pr = PropertiesService.getScriptProperties(), n = +(pr.getProperty('AZCU_EST_n')||0), s = '', i;
+  if(!n) return null;
+  for(i=0;i<n;i++) s += pr.getProperty('AZCU_EST_'+i) || '';
+  var m = {}; s.split(';').forEach(function(x){ var q = x.split('='); if(q[0]) m[q[0]] = q[1]; });
+  return m;
+}
+function azcuEstadosSet_(m){
+  var pr = PropertiesService.getScriptProperties(), s = Object.keys(m).map(function(k){ return k+'='+m[k]; }).join(';'), n = Math.ceil(s.length/8000) || 1, i, o = {};
+  for(i=0;i<n;i++) o['AZCU_EST_'+i] = s.slice(i*8000, (i+1)*8000);
+  o.AZCU_EST_n = String(n);
+  pr.setProperties(o);
+}
+function azcuAvisoCambios(){
+  azcuLimpiarCache_();
+  var d = azcuDatos_(), ant = azcuEstadosGet_(), nuevo = {}, av = [];
+  d.forEach(function(p){
+    var c = AZCU_COD_[p.etapa] || 'x', id = String(p.id).trim().replace(/[;=]/g,'');
+    nuevo[id] = c;
+    if(!ant) return;
+    if(ant[id]===undefined) av.push(c==='c' ? ['Nueva captación 🆕', p.dir] : ['Nueva propiedad 🆕', p.dir+' ('+p.etapa+')']);
+    else if(ant[id]!==c){
+      if(c==='r') av.push(['🔶 Pasó a RESERVA', p.dir]);
+      else if(c==='v') av.push(['✅ VENDIDA', p.dir]);
+      else av.push(['Cambió de etapa', p.dir+' → '+p.etapa]);
+    }
+  });
+  azcuEstadosSet_(nuevo);
+  av.slice(0,5).forEach(function(x){ azcuPush_(x[0], x[1]); });
+  if(av.length>5) azcuPush_('Más cambios de etapa', 'Hubo '+(av.length-5)+' cambios más. Abrí AzcuBot para verlos.');
+}
+function azcuCrearAvisos(){
+  ScriptApp.getProjectTriggers().forEach(function(t){ if(['azcuAvisoDiario','azcuAvisoCambios'].indexOf(t.getHandlerFunction())>=0) ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger('azcuAvisoDiario').timeBased().everyDays(1).atHour(8).create();
+  ScriptApp.newTrigger('azcuAvisoCambios').timeBased().everyMinutes(30).create();
+  azcuAvisoCambios();
+  Logger.log('Listo: aviso diario 8 h y control de cambios cada 30 min.');
+}
