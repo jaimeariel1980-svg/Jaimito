@@ -165,9 +165,11 @@
     }
     if(window.AZCU_API){
       fetch(window.AZCU_API, {method:'POST', body:JSON.stringify({fn:fn, args:[st.pin].concat(args)})})
-        .then(function(r){ return r.json(); })
+        .then(function(r){ return r.text().then(function(t){
+          var j; try{ j = JSON.parse(t); }catch(e){ throw new Error('El servidor devolvió una respuesta inesperada (HTTP '+r.status+'): '+t.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim().slice(0,150)); }
+          return j; }); })
         .then(function(j){ if(j && j.ok) ok(j.data); else onErr(new Error((j && j.error) || 'error')); })
-        .catch(function(){ onErr(new Error('no hay conexión con el servidor')); });
+        .catch(function(e){ var m = (e && e.message) || ''; onErr(/Failed to fetch|NetworkError|Load failed/i.test(m) || !m ? new Error('No se pudo conectar con el servidor. Revisá que el despliegue de Apps Script sea para "Cualquier persona" y que la URL sea la correcta.') : e); });
       return;
     }
     var run = google.script.run.withSuccessHandler(ok).withFailureHandler(onErr);
