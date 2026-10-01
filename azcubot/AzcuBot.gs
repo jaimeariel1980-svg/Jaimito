@@ -24,7 +24,20 @@ function azcuDif_(a, b){
   return Math.round((d(a)-d(b))/86400000);
 }
 function azcuHoy_(){ return +Utilities.formatDate(new Date(), AZCU_TZ, 'yyyyMMdd'); }
-function azcuDatos_(){ if(!AZCU_D_) AZCU_D_ = getDatos(); return AZCU_D_; }
+function azcuDatos_(){
+  if(AZCU_D_) return AZCU_D_;
+  var c = CacheService.getScriptCache(), n = +(c.get('azd_n') || 0), s = '', i, p, ok = n > 0;
+  for(i=0;i<n && ok;i++){ p = c.get('azd_'+i); if(p===null) ok = false; else s += p; }
+  if(ok){ try{ AZCU_D_ = JSON.parse(s); return AZCU_D_; }catch(e){} }
+  AZCU_D_ = getDatos();
+  try{
+    var j = JSON.stringify(AZCU_D_), k = Math.ceil(j.length/90000);
+    for(i=0;i<k;i++) c.put('azd_'+i, j.slice(i*90000, (i+1)*90000), 120);
+    c.put('azd_n', String(k), 120);
+  }catch(e){}
+  return AZCU_D_;
+}
+function azcuLimpiarCache_(){ try{ var c = CacheService.getScriptCache(), n = +(c.get('azd_n') || 0), i; for(i=0;i<n;i++) c.remove('azd_'+i); c.remove('azd_n'); AZCU_D_ = null; }catch(e){} }
 function azcuProp_(id){
   var d = azcuDatos_(), q = azcuSinAc_(id), i;
   for(i=0;i<d.length;i++) if(String(d[i].id).trim()===String(id).trim()) return d[i];
@@ -202,6 +215,7 @@ function azcuEjecutar(pin, accion){
   var p = azcuProp_(d.id);
   if(!p) throw new Error('No encontré la propiedad');
   var hoy = Utilities.formatDate(new Date(), AZCU_TZ, 'dd/MM/yyyy');
+  azcuLimpiarCache_();
   if(tipo==='cargar'){
     if(AZCU_VIAS.indexOf(d.via)<0 || AZCU_RESULTADOS.indexOf(d.resultado)<0) throw new Error('Datos inválidos');
     registrarInteraccion(p.id, {fecha:hoy, via:d.via, interesado:d.interesado, tel:d.tel, resultado:d.resultado, prox:d.prox, obs:d.obs});
@@ -258,8 +272,19 @@ function azcuLogo_(){
     return (html.slice(i, j).match(/"([^"]*)"/g) || []).map(function(x){ return x.slice(1,-1); }).join('');
   }catch(e){ return ''; }
 }
+function azcuPut_(id, obj){
+  var s = JSON.stringify(obj), c = CacheService.getScriptCache(), n = Math.ceil(s.length/90000) || 1, i;
+  for(i=0;i<n;i++) c.put('azr_'+id+'_'+i, s.slice(i*90000, (i+1)*90000), 600);
+  c.put('azr_'+id+'_n', String(n), 600);
+}
+function azcuGet_(id){
+  var c = CacheService.getScriptCache(), n = +(c.get('azr_'+id+'_n') || 0), s = '', i, p;
+  if(!n) return null;
+  for(i=0;i<n;i++){ p = c.get('azr_'+id+'_'+i); if(p===null) return null; s += p; }
+  return s;
+}
 function azcuApi(e){
-  var viaFrame = !!(e && e.parameter && e.parameter.payload), raw = viaFrame ? e.parameter.payload : ((e && e.postData && e.postData.contents) || '{}'), req = {}, out;
+  var raw = (e && e.parameter && e.parameter.payload) || (e && e.postData && e.postData.contents) || '{}', req = {}, out;
   try{
     req = JSON.parse(raw); var a = req.args || [];
     if(req.fn==='azcuChat') out = {ok:true, data:azcuChat(a[0], a[1], a[2])};
@@ -268,12 +293,12 @@ function azcuApi(e){
     else if(req.fn==='azcuLogo') out = {ok:true, data:azcuLogo_()};
     else out = {ok:false, error:'Función desconocida'};
   }catch(err){ out = {ok:false, error:String(err.message || err)}; }
-  out.azb = req.id || '';
-  if(viaFrame){
-    var js = JSON.stringify(out).replace(/</g,'\\u003c').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029');
-    return HtmlService.createHtmlOutput('<!doctype html><html><body><script>window.top.postMessage('+js+',"*");</script></body></html>').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-  }
+  var id = String(req.id || '').replace(/[^A-Za-z0-9]/g, '');
+  if(id){ azcuPut_(id, out); return ContentService.createTextOutput('{"ok":true}').setMimeType(ContentService.MimeType.JSON); }
   return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
 }
-
+function azcuPoll(e){
+  var cb = String(e.parameter.cb || 'azbcb').replace(/[^A-Za-z0-9_]/g, ''), id = String(e.parameter.azr || '').replace(/[^A-Za-z0-9]/g, ''), s = id ? azcuGet_(id) : null;
+  return ContentService.createTextOutput(cb+'('+(s || 'null')+');').setMimeType(ContentService.MimeType.JAVASCRIPT);
+}
 function doPost(e){ return azcuApi(e); }

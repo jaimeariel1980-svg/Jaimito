@@ -158,15 +158,22 @@
     });
   }
   function frameCall(fn, args, ok, onErr){
-    var id = 'f'+Date.now()+Math.random().toString(36).slice(2,7), done = false;
+    var id = 'f'+Date.now().toString(36)+Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,8), done = false, t0 = Date.now(), pollT, scr;
     var ifr = document.createElement('iframe'); ifr.name = 'azbf_'+id; ifr.style.display = 'none';
     var form = document.createElement('form'); form.method = 'POST'; form.action = window.AZCU_API; form.target = ifr.name; form.style.display = 'none';
     var inp = document.createElement('input'); inp.type = 'hidden'; inp.name = 'payload'; inp.value = JSON.stringify({id:id, fn:fn, args:[st.pin].concat(args)}); form.appendChild(inp);
-    var tm;
-    function clean(){ window.removeEventListener('message', onMsg); clearTimeout(tm); setTimeout(function(){ ifr.remove(); form.remove(); }, 200); }
-    function onMsg(e){ var d = e.data; if(!d || d.azb!==id) return; done = true; clean(); if(d.ok) ok(d.data); else onErr(new Error(d.error || 'error')); }
-    tm = setTimeout(function(){ if(!done){ clean(); onErr(new Error('El servidor no respondió. Revisá que la URL sea la correcta y que el despliegue sea para "Cualquier persona".')); } }, 90000);
-    window.addEventListener('message', onMsg); document.body.appendChild(ifr); document.body.appendChild(form); form.submit();
+    function finish(){ done = true; clearTimeout(pollT); if(scr) scr.remove(); setTimeout(function(){ ifr.remove(); form.remove(); }, 300); }
+    function poll(){
+      if(done) return;
+      if(Date.now()-t0 > 150000){ finish(); onErr(new Error('El servidor no respondió. Revisá la URL y que el despliegue esté actualizado y sea para "Cualquier persona".')); return; }
+      var cb = 'azbcb'+Math.random().toString(36).slice(2,9);
+      window[cb] = function(d){ delete window[cb]; if(scr) scr.remove(); if(done) return; if(d){ finish(); if(d.ok) ok(d.data); else onErr(new Error(d.error || 'error')); } else pollT = setTimeout(poll, 1200); };
+      scr = document.createElement('script'); scr.src = window.AZCU_API+'?azr='+id+'&cb='+cb+'&_='+Date.now();
+      scr.onerror = function(){ delete window[cb]; if(scr) scr.remove(); if(!done) pollT = setTimeout(poll, 2000); };
+      document.head.appendChild(scr);
+    }
+    document.body.appendChild(ifr); document.body.appendChild(form); form.submit();
+    pollT = setTimeout(poll, 1500);
   }
   function call(fn, args, ok, fail, retried){
     function onErr(e){
