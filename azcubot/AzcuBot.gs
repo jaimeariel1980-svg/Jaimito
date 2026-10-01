@@ -136,7 +136,7 @@ function azcuAtajo(pin, tipo){
   var t = tipo==='alertas' ? azcuFmtAlertas_() : tipo==='resumen' ? azcuFmtResumen_() : tipo==='docs' ? azcuFmtDocs_() : 'No conozco ese atajo.';
   return {texto:t, acciones:[]};
 }
-function azcuWarm(pin){ azcuPin_(pin); azcuDatos_(); return true; }
+function azcuWarm(pin){ azcuPin_(pin); return azcuDatos_().map(function(p){ return {id:p.id, dir:p.dir, prop:p.prop||'', etapa:p.etapa}; }); }
 function azcuTools_(){
   function t(name, desc, props, req){ return {type:'function', function:{name:name, description:desc, parameters:{type:'object', properties:props, required:req||[]}}}; }
   var S = {type:'string'};
@@ -194,6 +194,7 @@ function azcuSistema_(ctx){
     'QUÉ HACÉS: respondés sobre todo lo del tablero (propiedades, etapas, documentos, propietarios, historial, encuestas, alertas) y hacés lo mismo que el bot de Telegram: cargar consultas/visitas, agendar visitas, cambiar etapas, editar precio/observaciones y enviar el reporte al propietario.',
     'USO DE DATOS: nunca inventes. Para cualquier dato consultá las herramientas (buscar_propiedades, ficha_propiedad, alertas, resumen_cartera). Si una búsqueda da varias propiedades, preguntá cuál.',
     'CAMBIOS: para escribir datos usá SIEMPRE las herramientas proponer_*: eso arma una tarjeta que el usuario confirma con un botón. Nunca digas que algo ya está hecho: decí que dejaste la tarjeta para confirmar. Inferí lo que puedas del mensaje y preguntá solo lo indispensable (propiedad, quién, resultado / fecha y hora).',
+    'CARGA ÁGIL: NUNCA pidas datos opcionales (teléfono, próximo paso, observaciones, mail). Si el usuario ya dio propiedad, quién y cómo resultó, armá la tarjeta YA. Si dice que visitó o vino, la vía es Visita. Si falta algo obligatorio (propiedad, quién, vía o resultado) preguntá SOLO eso, en una línea corta. Ejemplo: "Mendoza 7201, Marcos Tejo, le interesó" → tarjeta directa.',
     'EFICIENCIA: usá la menor cantidad de llamadas posible. Para documentos faltantes de varias propiedades usá documentos_faltantes (una sola llamada). Si necesitás varias fichas, pedilas todas juntas en la misma vuelta. Respondé directo, sin vueltas.',
     'PROPIEDADES (id|dirección|propietario). Si el usuario nombra una que está acá y no hay ambigüedad, usá el id directo SIN buscar_propiedades; si hay 2 o más coincidencias, preguntá cuál:\n'+azcuLista_(),
     'FECHAS: hoy es '+dia+' '+hoy+' (Argentina). Resolvé "mañana", "el viernes", etc. a AAAA-MM-DD.',
