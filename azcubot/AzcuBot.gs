@@ -365,13 +365,15 @@ var AZCU_WEB = 'https://glittery-shortbread-d3e96e.netlify.app';
 function azcuPush_(titulo, msg, url){
   var k = PropertiesService.getScriptProperties().getProperty('ONESIGNAL_KEY');
   if(!k) throw new Error('Falta ONESIGNAL_KEY en las propiedades del script');
-  var seg = ['Total Subscriptions', 'Subscribed Users'], i, r;
-  for(i=0;i<seg.length;i++){
-    r = UrlFetchApp.fetch('https://api.onesignal.com/notifications?c=push', {method:'post', contentType:'application/json', headers:{Authorization:'Key '+k}, muteHttpExceptions:true,
+  k = String(k).replace(/\s/g,'');
+  var seg = ['Total Subscriptions', 'Subscribed Users'], esq = ['Key ', 'Basic '], i, j, r;
+  for(j=0;j<esq.length;j++) for(i=0;i<seg.length;i++){
+    r = UrlFetchApp.fetch('https://api.onesignal.com/notifications?c=push', {method:'post', contentType:'application/json', headers:{Authorization:esq[j]+k}, muteHttpExceptions:true,
       payload:JSON.stringify({app_id:AZCU_OS_APP, target_channel:'push', included_segments:[seg[i]], headings:{en:titulo, es:titulo}, contents:{en:msg, es:msg}, url:url||AZCU_WEB})});
+    if(r.getResponseCode()===401) break;
     if(r.getResponseCode()>=200 && r.getResponseCode()<300 && !/errors/.test(r.getContentText())) return r.getContentText();
   }
-  throw new Error('OneSignal '+r.getResponseCode()+': '+r.getContentText().slice(0,300));
+  throw new Error('OneSignal '+r.getResponseCode()+': '+r.getContentText().slice(0,300)+' (clave de '+k.length+' caracteres, empieza con "'+k.slice(0,8)+'")');
 }
 function azcuProbarPush(){ Logger.log(azcuPush_('AzcuBot 🏠', 'Prueba de aviso: si lo ves, las notificaciones funcionan.')); }
 function azcuAvisoDiario(){
