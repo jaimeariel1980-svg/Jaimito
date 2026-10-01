@@ -1,4 +1,4 @@
-EXEC = "https://script.google.com/macros/s/AKfycbw82JqJx-WAAah3rd9V1U-KObnkWLmMKIASwDhrHK9CX4fkDGJPiO2fAnmMjofsPiHBFg/exec"
+EXEC = "https://script.google.com/macros/s/AKfycbwTjB54c1n8nJyN9W5zi-8VYtcypgOwSynqHrtyC2NQdhkSqtMk96IlllMbhDmOcIbv/exec"
 w = open('azcubot-widget.html', encoding='utf8').read()
 head = '''<!DOCTYPE html>
 <html lang="es"><head><meta charset="utf-8">
