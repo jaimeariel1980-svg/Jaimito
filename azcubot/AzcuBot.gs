@@ -659,6 +659,7 @@ function azcuSistema_(ctx){
     'PROPIEDADES (id|dirección|propietario). Si el usuario nombra una que está acá y no hay ambigüedad, usá el id directo SIN buscar_propiedades; si hay 2 o más coincidencias, preguntá cuál:\n'+azcuLista_(),
     'TODO EL TABLERO: tenés acceso a todo lo que tiene el tablero. Recordatorios y agenda personal: crear_recordatorio, mis_recordatorios, cancelar_recordatorio, agenda. Consultar: resumen_semana (cómo viene la semana, por vendedor), dashboard (panel inicial), listar_propiedades (como los detalles: sin movimiento, sin visitas, con propuesta, papeles, encuestas), encuestas, ficha_propiedad (datos, precio, documentos con archivo, propietarios, historial con fila, links), captacion_formulario (todo lo cargado en el formulario de captación/precarga: "repasame el formulario de captación de X"), guia_pagina (procedimiento_ventas, generador_documentos, formulario_captacion, encuesta: leé el texto y explicalo o repasalo paso a paso fiel al contenido; si dice "parte 1 de N" y hace falta, pedí las siguientes). Enviar/compartir: abrir_enlace, enviar_whatsapp (encuesta, formulario de captación, link de Tokko, documento), generar_pdf (ficha para cargar en Tokko). Cambiar: cargar visita/consulta, agendar, registrar propuesta, cambiar etapa, editar campos (precio, tipo, observaciones, Tokko, origen, colega, comisión, vendedor, motivo de suspensión, % de aviso, datos del propietario), marcar o borrar documentos, corregir o borrar interacciones del historial, eliminar una propiedad y enviar el reporte al propietario. Todo lo que modifica datos pasa por una tarjeta de confirmación. Si una propuesta fue aceptada, ofrecé pasar la propiedad a Reserva. Para repasar un procedimiento o formulario podés extenderte hasta ~350 palabras con pasos numerados.',
     'ENLACES: cualquier enlace (formulario de captación, encuesta, tablero, procedimiento, carpeta, Tokko) lo das con abrir_enlace, que deja abrir, mandar por WhatsApp y copiar. Si piden "el enlace" o "el formulario de captación" para mandar a alguien, usá abrir_enlace de una, SIN pedir ID (el de captación nuevo no lleva propiedad; la encuesta sí necesita elegir la propiedad). Si piden repasar lo cargado del formulario de una propiedad existente: usá captacion_formulario, resumí lo cargado y lo que falta, y cerrá con ofrecer_ayuda con que ambos para completar datos o subir papeles. Siempre que se pueda, ofrecé mandarlo por WhatsApp.',
+    'PROPIEDAD CORRECTA: antes de proponer cualquier tarjeta (visita, consulta, propuesta, etapa, edición) resolvé la propiedad con buscar_propiedades usando la dirección que dijo el usuario y usá el id que devuelva; nunca adivines ni reutilices un id sin verificar. Si el usuario corrige la dirección o un dato, volvé a buscar y armá una tarjeta nueva con lo corregido (las tarjetas pendientes anteriores quedan sin efecto).',
     'COLABORATIVO: sos un compañero que ayuda de verdad, con buena onda. Cuando mostrés papeles o datos del formulario que faltan, ofrecé ayuda con una frase breve ("pasame una foto o un PDF y lo subo yo" / "si querés completamos juntos lo que falta") y dejá los botones con ofrecer_ayuda. Ofrecelo una sola vez por charla, sin insistir. Para crear una captación nueva no la armes vos: pasá el link del formulario de captación (abrir_enlace o enviar_whatsapp).',
     'FECHAS: hoy es '+dia+' '+hoy+' y son las '+Utilities.formatDate(new Date(), AZCU_TZ, 'HH:mm')+' (Argentina). Resolvé "mañana", "el viernes", etc. a AAAA-MM-DD.',
     'RECORDATORIOS Y AGENDA: si el usuario pide que le recuerdes algo ("recordame en 2 horas", "el viernes a las 10 llamar a X") usá crear_recordatorio directo, sin pedir confirmación, y confirmá en una frase cuándo le vas a avisar y que le llega una notificación. Si no dice hora, preguntala. Para "qué tengo hoy/mañana/esta semana" usá agenda. Para ver o cancelar usá mis_recordatorios y cancelar_recordatorio.',
@@ -740,7 +741,13 @@ function azcuSegVerif_(fila, id, huella){
   var r = seg.getRange(fila,1,1,10).getValues()[0];
   if(String(r[0]).trim()!==String(id).trim() || String(r[3]).trim()!==String(huella||'').trim()) throw new Error('El historial cambió. Pedí la ficha de nuevo y repetí.');
 }
+var AZCU_LOGT_ = {etapa:'🔶', campos:'✏️', doc:'📄', borrardoc:'📄', adjuntar:'📎', completar:'📝', agendar:'📅', reporte:'✉️', elimprop:'🗑', nueva:'🆕'};
 function azcuEjecutar(pin, accion){
+  var r = azcuEjecutar_(pin, accion), t = accion && accion.tipo;
+  if(AZCU_LOGT_[t]){ var d = accion.datos || {}; azcuLog_(t, r && r.mensaje || '', d.dir || '', accion.quien); }
+  return r;
+}
+function azcuEjecutar_(pin, accion){
   azcuPin_(pin);
   var d = accion && accion.datos, tipo = accion && accion.tipo;
   if(tipo==='nueva' && d){ azcuLimpiarCache_(); return azcuCrearCaptacion_(accion); }
@@ -886,6 +893,7 @@ function azcuApi(e){
     else if(req.fn==='azcuAgenda') out = {ok:true, data:azcuAgenda(a[0], a[1], a[2], a[3])};
     else if(req.fn==='azcuRecNuevo') out = {ok:true, data:azcuRecNuevo(a[0], a[1], a[2], a[3], a[4])};
     else if(req.fn==='azcuRecCancelar') out = {ok:true, data:azcuRecCancelar(a[0], a[1], a[2])};
+    else if(req.fn==='azcuMov') out = {ok:true, data:azcuMov(a[0], a[1])};
     else if(req.fn==='azcuAtajo') out = {ok:true, data:azcuAtajo(a[0], a[1])};
     else if(req.fn==='azcuWarm') out = {ok:true, data:azcuWarm(a[0])};
     else if(req.fn==='azcuEjecutar'){ var ac = a[1] || {}; ac.reqId = String(req.id || '').replace(/[^A-Za-z0-9]/g, ''); out = {ok:true, data:azcuEjecutar(a[0], ac)}; }
@@ -1008,6 +1016,43 @@ function azcuAvisoPapeles(){
   if(!vs.length && tot){ try{ azcuPush_('Papeles pendientes 📎', 'Hay '+tot+' propiedades con papeles faltantes. Pasame una foto o PDF y lo subo.', AZCU_WEB+'?ayuda=docs'); }catch(e){} }
 }
 
+function azcuLog_(tipo, texto, dir, quien){
+  try{
+    var ss = SpreadsheetApp.openById(MAESTRO_ID), h = ss.getSheetByName('Movimientos');
+    if(!h){ h = ss.insertSheet('Movimientos'); h.appendRow(['Cuándo (ms)','Quién','Tipo','Texto','Propiedad']); }
+    h.appendRow([Date.now(), String(quien||'').slice(0,40), tipo, String(texto||'').slice(0,220), String(dir||'').slice(0,80)]);
+  }catch(e){}
+}
+function azcuMovimientos_(dias){
+  dias = Math.max(1, Math.min(+dias||7, 31));
+  var hn = azcuHoy_(), desde = Date.now()-dias*86400000, out = [], dirs = {}, i, v;
+  azcuDatos_().forEach(function(p){ dirs[String(p.id).trim()] = p.dir; });
+  try{
+    var seg = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento');
+    v = seg ? seg.getDataRange().getValues() : [];
+    for(i=1;i<v.length;i++){
+      var n = azcuNum_(v[i][1]); if(!n) continue;
+      var d = azcuDif_(hn, n); if(d<0 || d>=dias) continue;
+      var via = String(v[i][2]).trim(), cli = String(v[i][3]).trim(), res = String(v[i][5]).trim(), ve = String(v[i][9]||'').trim(), ic = '📞', t = 'Consulta por '+via;
+      if(res==='Visita agendada'){ ic = '📅'; t = 'Visita agendada'; }
+      else if(via==='Visita'){ ic = '🏠'; t = 'Visita realizada'; }
+      else if(/propuesta|oferta/i.test(res)){ ic = '💬'; t = res; }
+      out.push({ms:Date.UTC(Math.floor(n/10000), Math.floor(n/100)%100-1, n%100, 15), h:0, ic:ic, t:t, d:(cli ? cli+' · ' : '')+(res && res!==t ? res : ''), dir:dirs[String(v[i][0]).trim()] || '', q:ve});
+    }
+  }catch(e){}
+  try{
+    var lg = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Movimientos');
+    v = lg ? lg.getDataRange().getValues() : [];
+    for(i=1;i<v.length;i++){
+      var ms = +v[i][0]; if(!ms || ms<desde) continue;
+      var tp = String(v[i][2]);
+      out.push({ms:ms, h:1, ic:AZCU_LOGT_[tp] || '🔔', t:String(v[i][3]), d:'', dir:String(v[i][4]||''), q:String(v[i][1]||'')});
+    }
+  }catch(e){}
+  out.sort(function(a,b){ return b.ms-a.ms; });
+  return {items:out.slice(0,60), ahora:Date.now()};
+}
+function azcuMov(pin, dias){ azcuPin_(pin); return azcuMovimientos_(dias); }
 function azcuAvisoDiario(){
   azcuLimpiarCache_();
   var a = azcuHerrAlertas_(), p = [], lunes = new Date(Date.now()-3*3600000).getUTCDay()===1;
@@ -1049,6 +1094,7 @@ function azcuAvisoCambios(){
     }
   });
   azcuEstadosSet_(nuevo);
+  av.forEach(function(x){ azcuLog_(/Nueva/.test(x[0]) ? 'nueva' : 'etapa', x[0]+': '+x[1], x[1], ''); });
   av.slice(0,5).forEach(function(x){ azcuPush_(x[0], x[1]); });
   if(av.length>5) azcuPush_('Más cambios de etapa', 'Hubo '+(av.length-5)+' cambios más. Abrí AzcuBot para verlos.');
 }
