@@ -907,7 +907,7 @@ function azcuPoll(e){
 function doPost(e){ return azcuApi(e); }
 
 var AZCU_OS_APP = '26a05ded-18d0-4349-972b-b30e5e614805';
-var AZCU_WEB = 'https://glittery-shortbread-d3e96e.netlify.app';
+var AZCU_WEB = 'https://azcubot.pages.dev';
 function azcuFetchRetry_(u, o){
   var t, e;
   for(t=0;t<3;t++){ try{ return UrlFetchApp.fetch(u, o); }catch(x){ e = x; Utilities.sleep(1500*(t+1)); } }
