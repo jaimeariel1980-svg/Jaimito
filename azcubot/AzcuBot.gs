@@ -198,7 +198,7 @@ var AZCU_PREG_ = {
   'dueño1_email':{q:'¿Mail del propietario? (ahí le llega la confirmación)', ph:'nombre@mail.com', t:'mail'},
   'calle':{q:'¿En qué calle está la propiedad?', ph:'Calle'},
   'numero':{q:'¿Qué número?', ph:'Número'},
-  'pasillo':{q:'¿Tiene pasillo? Si no tiene, tocá "No tiene".', ph:'Pasillo', nada:true},
+  'pasillo':{q:'¿La propiedad tiene pasillo?', ph:'Sí o No', opciones:[{l:'Sí', v:'Si'}, {l:'No', v:'No'}]},
   'entrecalle1':{q:'¿Entre qué calles está? Decime la primera.', ph:'Entrecalle 1'},
   'entrecalle2':{q:'¿Y la segunda?', ph:'Entrecalle 2'},
   'ciudad':{q:'¿En qué ciudad?', ph:'Rosario', rapido:['Rosario']}
@@ -257,12 +257,12 @@ function azcuBoolFmt_(col, v){
     if(i>-1) for(j=1;j<data.length;j++){
       var t = String(data[j][i]).trim(); if(!t) continue;
       if(/^(si|sí)$/i.test(t)) return v ? t : 'No';
-      if(/^no$/i.test(t)) return v ? 'Sí' : t;
+      if(/^no$/i.test(t)) return v ? 'Si' : t;
       if(/^(true|false)$/i.test(t)) return v ? 'TRUE' : 'FALSE';
       break;
     }
   }catch(e){}
-  return v ? 'Sí' : 'No';
+  return v ? 'Si' : 'No';
 }
 function azcuCamposPropiedad_(pr, put){
   function num(v){ var n = parseFloat(v); return isNaN(n) ? null : n; }
@@ -273,7 +273,7 @@ function azcuCamposPropiedad_(pr, put){
   put('Baños', num(pr['baños']), 'Baños');
   put('Plantas', num(pr.plantas), 'Plantas');
   [['Cochera','cochera'],['Patio delantero','patio_delantero'],['Patio trasero','patio_trasero'],['Gas Natural','gas_natural'],['Cloaca','cloaca']].forEach(function(x){
-    if(pr[x[1]]===true || pr[x[1]]===false) put(x[0], azcuBoolFmt_(x[0], pr[x[1]]), x[0]);
+    if(pr[x[1]]===true || pr[x[1]]===false) put(x[0], azcuBoolFmt_(x[0], pr[x[1]]), x[0], true);
   });
   if(pr.tipo_propiedad) put('Tipo de propiedad', pr.tipo_propiedad, 'Tipo');
   if(pr.orientacion) put('Orientación', pr.orientacion, 'Orientación');
@@ -295,7 +295,18 @@ function azcuPlanExistente_(id, an){
   var p = azcuProp_(id);
   if(!p) throw new Error('No encontré la propiedad.');
   var r = azcuFilaMaestro_(p.id), pap = Object.keys(p.papeles||{}), duenos = p.duenos||[], arch = [], sin = [], campos = [], usadas = {}, ya = {};
-  function nc(col, val, etq){ if(val===null || val===undefined || val==='' || ya[col] || !azcuVac_(r, col)) return; ya[col] = 1; campos.push({col:col, valor:val, etq:etq||col}); }
+  function nc(col, val, etq, bool){
+    if(val===null || val===undefined || val==='' || ya[col]) return;
+    var i = r.head.indexOf(col); if(i<0) return;
+    var cur = String(r.row[i]).trim();
+    if(bool){
+      var yes = /^(si|sí|true)$/i.test(String(val));
+      if(!(cur==='' || (yes && /^no$/i.test(cur)))) return;
+      ya[col] = 1; campos.push({col:col, valor:val, etq:etq||col, bool:true}); return;
+    }
+    if(cur!=='') return;
+    ya[col] = 1; campos.push({col:col, valor:val, etq:etq||col});
+  }
   an.forEach(function(a){
     var d = a.d||{}, key = a.clave, label = null, k, n;
     if(a.error || !a.legible){ sin.push({i:a.i, nombre:a.n}); return; }
@@ -332,10 +343,10 @@ function azcuPlanNueva_(an){
       sp('inscripcionDominio', d.inscripcion_dominio); doc = 'escritura';
     } else if(CONFIG.DOCUMENTOS.some(function(x){ return x.key===key; })) doc = key;
     var pr = d.propiedad||{}; sp('calle', pr.direccion_calle); sp('numero', pr.direccion_numero); sp('ciudad', pr.ciudad);
-    azcuCamposPropiedad_(pr, function(col, val){ var k = AZCU_COL2KEY_[col]; if(k && val!==null && val!=='' && datos[k]===undefined) datos[k] = val; });
+    azcuCamposPropiedad_(pr, function(col, val, etq, esBool){ var k = AZCU_COL2KEY_[col]; if(esBool && /^no$/i.test(String(val))) return; if(k && val!==null && val!=='' && datos[k]===undefined) datos[k] = val; });
     if(doc && !usadas[doc]){ usadas[doc] = 1; arch.push({i:a.i, nombre:a.n, key:doc}); } else sin.push({i:a.i, nombre:a.n});
   });
-  var faltan = CONFIG.CAMPOS_OBLIGATORIOS_PRECARGA.filter(function(k){ return !datos[k]; }).map(function(k){ var q = AZCU_PREG_[k] || {q:'Falta: '+k, ph:''}; return {k:k, q:q.q, ph:q.ph||'', t:q.t||'', nada:!!q.nada, rapido:q.rapido||[]}; });
+  var faltan = CONFIG.CAMPOS_OBLIGATORIOS_PRECARGA.filter(function(k){ return !datos[k]; }).map(function(k){ var q = AZCU_PREG_[k] || {q:'Falta: '+k, ph:''}; return {k:k, q:q.q, ph:q.ph||'', t:q.t||'', opts:q.opciones||null, rapido:q.rapido||[]}; });
   return {datos:datos, archivos:arch, sin:sin, docs:CONFIG.DOCUMENTOS.map(function(d){ return {l:d.label, v:d.key}; }), faltan:faltan};
 }
 function azcuAdjPlan(pin, modo, id, arch){
@@ -353,7 +364,9 @@ function azcuCompletarCampos_(id, campos){
   var mae = hojaMaestra_(), hechos = [];
   (campos||[]).forEach(function(c){
     var i = r.head.indexOf(c.col);
-    if(i<0 || perm.indexOf(c.col)<0 || String(r.row[i]).trim()!=='' || c.valor===undefined || c.valor===null || String(c.valor)==='') return;
+    if(i<0 || perm.indexOf(c.col)<0 || c.valor===undefined || c.valor===null || String(c.valor)==='') return;
+    var cur = String(r.row[i]).trim();
+    if(cur!=='' && !(c.bool && ['Cochera','Patio delantero','Patio trasero','Gas Natural','Cloaca'].indexOf(c.col)>=0 && /^no$/i.test(cur) && /^(si|sí|true)$/i.test(String(c.valor)))) return;
     mae.getRange(r.fila, i+1).setValue(c.valor); hechos.push(c.etq||c.col);
   });
   return hechos;

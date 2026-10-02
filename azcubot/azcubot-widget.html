@@ -281,7 +281,7 @@
   function faltaStep(f){
     var tel = function(t){ var d = t.replace(/[^0-9]/g,''); return d.length>=6 ? d : null; }, mail = function(t){ return /^\S+@\S+\.\S+$/.test(t) ? t : null; }, dni = function(t){ var d = t.replace(/[^0-9]/g,''); return d.length>=7 && d.length<=9 ? d : null; };
     var parse = f.t==='tel' ? tel : f.t==='mail' ? mail : f.t==='dni' ? dni : f.t==='fecha' ? parseFecha : null;
-    return {k:f.k, q:f.q, kind:'text', ph:f.ph, parse:parse, opts:(f.rapido||[]).map(function(x){ return {l:x, v:x}; }).concat(f.nada ? [{l:'No tiene', v:'-'}] : [])};
+    return {k:f.k, q:f.q, kind:'text', ph:f.ph, parse:parse, opts:f.opts ? f.opts.map(function(o){ return {l:o.l, v:o.v}; }) : (f.rapido||[]).map(function(x){ return {l:x, v:x}; })};
   }
   function adjAnalizar(){
     var w = st.wz, nueva = w.t==='adjnew';
