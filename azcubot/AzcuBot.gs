@@ -552,6 +552,7 @@ function azcuTools_(){
     t('guia_pagina','Lee el texto de una página del tablero para explicarla o repasarla. Si hay varias partes, pedí la siguiente con parte.',{pagina:{type:'string',enum:['procedimiento_ventas','generador_documentos','formulario_captacion','encuesta']}, parte:{type:'number'}},['pagina']),
     t('dashboard','Panel inicial del tablero: totales, etapas, papeles, propuestas, sin movimiento y satisfacción. Se muestra además como tarjetas.',{}),
     t('listar_propiedades','Lista propiedades filtradas (como los detalles del tablero).',{filtro:{type:'string',enum:['sin_movimiento','sin_visitas','con_propuesta','papeles_faltan','papeles_incompletos','papeles_al_dia','con_encuesta','encuesta_baja']}, etapa:S, tipo:S, vendedor:S, origen:S}),
+    t('proponer_aviso_equipo','Prepara un aviso grupal (notificación push) para TODO el equipo que tenga la app con avisos activados. Pendiente de confirmación del usuario. No lleva propiedad.',{mensaje:S, titulo:S},['mensaje']),
     t('crear_recordatorio','Crea un recordatorio personal del usuario: le llega una notificación a la hora indicada. Usá en_minutos para "en 2 horas" (120) o fecha+hora para un día concreto. No pide confirmación.',{texto:{type:'string',description:'Qué recordar'}, en_minutos:{type:'number'}, fecha:F, hora:{type:'string',description:'HH:mm 24h'}, id:{type:'string',description:'Código de propiedad, opcional'}},['texto']),
     t('mis_recordatorios','Lista los recordatorios pendientes del usuario.',{}),
     t('cancelar_recordatorio','Cancela un recordatorio del usuario (id de la lista, o "ultimo" para el último creado).',{id:S}),
@@ -660,6 +661,7 @@ function azcuSistema_(ctx){
     'TODO EL TABLERO: tenés acceso a todo lo que tiene el tablero. Recordatorios y agenda personal: crear_recordatorio, mis_recordatorios, cancelar_recordatorio, agenda. Consultar: resumen_semana (cómo viene la semana, por vendedor), dashboard (panel inicial), listar_propiedades (como los detalles: sin movimiento, sin visitas, con propuesta, papeles, encuestas), encuestas, ficha_propiedad (datos, precio, documentos con archivo, propietarios, historial con fila, links), captacion_formulario (todo lo cargado en el formulario de captación/precarga: "repasame el formulario de captación de X"), guia_pagina (procedimiento_ventas, generador_documentos, formulario_captacion, encuesta: leé el texto y explicalo o repasalo paso a paso fiel al contenido; si dice "parte 1 de N" y hace falta, pedí las siguientes). Enviar/compartir: abrir_enlace, enviar_whatsapp (encuesta, formulario de captación, link de Tokko, documento), generar_pdf (ficha para cargar en Tokko). Cambiar: cargar visita/consulta, agendar, registrar propuesta, cambiar etapa, editar campos (precio, tipo, observaciones, Tokko, origen, colega, comisión, vendedor, motivo de suspensión, % de aviso, datos del propietario), marcar o borrar documentos, corregir o borrar interacciones del historial, eliminar una propiedad y enviar el reporte al propietario. Todo lo que modifica datos pasa por una tarjeta de confirmación. Si una propuesta fue aceptada, ofrecé pasar la propiedad a Reserva. Para repasar un procedimiento o formulario podés extenderte hasta ~350 palabras con pasos numerados.',
     'ENLACES: cualquier enlace (formulario de captación, encuesta, tablero, procedimiento, carpeta, Tokko) lo das con abrir_enlace, que deja abrir, mandar por WhatsApp y copiar. Si piden "el enlace" o "el formulario de captación" para mandar a alguien, usá abrir_enlace de una, SIN pedir ID (el de captación nuevo no lleva propiedad; la encuesta sí necesita elegir la propiedad). Si piden repasar lo cargado del formulario de una propiedad existente: usá captacion_formulario, resumí lo cargado y lo que falta, y cerrá con ofrecer_ayuda con que ambos para completar datos o subir papeles. Siempre que se pueda, ofrecé mandarlo por WhatsApp.',
     'PROPIEDAD CORRECTA: antes de proponer cualquier tarjeta (visita, consulta, propuesta, etapa, edición) resolvé la propiedad con buscar_propiedades usando la dirección que dijo el usuario y usá el id que devuelva; nunca adivines ni reutilices un id sin verificar. Si el usuario corrige la dirección o un dato, volvé a buscar y armá una tarjeta nueva con lo corregido (las tarjetas pendientes anteriores quedan sin efecto).',
+    'AVISOS AL EQUIPO: si piden avisar, notificar o mandar una alerta a todos/al equipo/al grupo, usá proponer_aviso_equipo con el mensaje redactado claro y corto (sin inventar datos). Nunca lo mandes sin que quede la tarjeta para confirmar.',
     'COLABORATIVO: sos un compañero que ayuda de verdad, con buena onda. Cuando mostrés papeles o datos del formulario que faltan, ofrecé ayuda con una frase breve ("pasame una foto o un PDF y lo subo yo" / "si querés completamos juntos lo que falta") y dejá los botones con ofrecer_ayuda. Ofrecelo una sola vez por charla, sin insistir. Para crear una captación nueva no la armes vos: pasá el link del formulario de captación (abrir_enlace o enviar_whatsapp).',
     'FECHAS: hoy es '+dia+' '+hoy+' y son las '+Utilities.formatDate(new Date(), AZCU_TZ, 'HH:mm')+' (Argentina). Resolvé "mañana", "el viernes", etc. a AAAA-MM-DD.',
     'RECORDATORIOS Y AGENDA: si el usuario pide que le recuerdes algo ("recordame en 2 horas", "el viernes a las 10 llamar a X") usá crear_recordatorio directo, sin pedir confirmación, y confirmá en una frase cuándo le vas a avisar y que le llega una notificación. Si no dice hora, preguntala. Para "qué tengo hoy/mañana/esta semana" usá agenda. Para ver o cancelar usá mis_recordatorios y cancelar_recordatorio.',
@@ -713,6 +715,11 @@ function azcuChat(pin, mensajes, ctx){
         else if(n==='encuestas') res = azcuHerrEncuestas_(args);
         else if(n==='resumen_semana') res = azcuHerrSemana_();
         else if(n==='ofrecer_ayuda') res = azcuHerrOfrecer_(args, adj);
+        else if(n==='proponer_aviso_equipo'){
+          if(!azcuPuedeAvisar_(ctx.nombre)) res = {error:'Por ahora solo algunas personas pueden mandar avisos al equipo.'};
+          else if(!String(args.mensaje||'').trim()) res = {error:'Falta el mensaje.'};
+          else { var ms = String(args.mensaje).trim().slice(0,300), ti = String(args.titulo||'').trim().slice(0,60); acciones.push({id:'a'+Date.now()+acciones.length, tipo:'aviso', datos:{id:'equipo', dir:'Todo el equipo', mensaje:ms, titulo:ti}, resumen:'Mandar aviso a TODO el equipo: «'+(ti ? ti+' — ' : '')+ms+'»', peligro:true}); res = {ok:true, estado:'pendiente de confirmación del usuario'}; }
+        }
         else if(n==='crear_recordatorio') res = azcuHerrCrearRec_(args, ctx);
         else if(n==='mis_recordatorios') res = azcuHerrMisRec_(ctx);
         else if(n==='cancelar_recordatorio') res = azcuHerrCancelarRec_(args, ctx);
@@ -741,16 +748,29 @@ function azcuSegVerif_(fila, id, huella){
   var r = seg.getRange(fila,1,1,10).getValues()[0];
   if(String(r[0]).trim()!==String(id).trim() || String(r[3]).trim()!==String(huella||'').trim()) throw new Error('El historial cambió. Pedí la ficha de nuevo y repetí.');
 }
-var AZCU_LOGT_ = {etapa:'🔶', campos:'✏️', doc:'📄', borrardoc:'📄', adjuntar:'📎', completar:'📝', agendar:'📅', reporte:'✉️', elimprop:'🗑', nueva:'🆕'};
+var AZCU_LOGT_ = {etapa:'🔶', campos:'✏️', doc:'📄', borrardoc:'📄', adjuntar:'📎', aviso:'📣', completar:'📝', agendar:'📅', reporte:'✉️', elimprop:'🗑', nueva:'🆕'};
 function azcuEjecutar(pin, accion){
   var r = azcuEjecutar_(pin, accion), t = accion && accion.tipo;
-  if(AZCU_LOGT_[t]){ var d = accion.datos || {}; azcuLog_(t, r && r.mensaje || '', d.dir || '', accion.quien); }
+  if(AZCU_LOGT_[t]){ var d = accion.datos || {}; azcuLog_(t, t==='aviso' ? '📣 Aviso al equipo: '+(d.mensaje||'') : (r && r.mensaje || ''), d.dir || '', accion.quien); }
   return r;
+}
+function azcuPuedeAvisar_(quien){
+  var l = String(PropertiesService.getScriptProperties().getProperty('AZCU_AVISADORES')||'').split(',').map(function(x){ return azcuSlug_(x); }).filter(function(x){ return x; });
+  if(!l.length) return true;
+  var q = azcuSlug_(quien||''), n = q.split('_')[0];
+  return l.indexOf(q)>=0 || l.indexOf(n)>=0;
 }
 function azcuEjecutar_(pin, accion){
   azcuPin_(pin);
   var d = accion && accion.datos, tipo = accion && accion.tipo;
   if(tipo==='nueva' && d){ azcuLimpiarCache_(); return azcuCrearCaptacion_(accion); }
+  if(tipo==='aviso' && d){
+    if(!azcuPuedeAvisar_(accion.quien)) throw new Error('No tenés permiso para mandar avisos al equipo.');
+    var de = String(accion.quien||'').trim().slice(0,40), msg = String(d.mensaje||'').trim().slice(0,300);
+    if(!msg) throw new Error('Falta el mensaje.');
+    var res = azcuPush_('📣 '+(d.titulo ? String(d.titulo).slice(0,60) : 'Aviso del equipo'+(de ? ' · '+de : '')), msg, AZCU_WEB);
+    return {ok:true, mensaje:/Nadie suscripto/.test(String(res)) ? 'No hay nadie con avisos activados todavía.' : 'Listo, mandé el aviso a todo el equipo 📣'};
+  }
   if(!d || !d.id) throw new Error('Acción inválida');
   var p = azcuProp_(d.id);
   if(!p) throw new Error('No encontré la propiedad');
