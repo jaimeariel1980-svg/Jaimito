@@ -244,7 +244,7 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
   var DN = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'], DL = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'], MN = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   function movLoad(){
     if(!st.nombre && st.nombre!=='') return;
-    call('azcuMov', [7], function(d){
+    call('azcuMov', [90], function(d){
       st.mov = d.items || [];
       var seen = +ls('mseen'); if(!seen){ seen = Date.now()-864e5; ls('mseen', String(seen)); }
       st.movN = st.view==='mov' ? 0 : st.mov.filter(function(x){ return x.ms>seen; }).length;
@@ -253,9 +253,9 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
     }, function(){});
   }
   function movHtml(){
-    var its = st.mov, last = '', h = '<div class="azb-agh"><b>Novedades</b><span>Últimos 7 días</span></div>';
+    var its = st.mov, last = '', h = '<div class="azb-agh"><b>Novedades</b><span>Últimos 5 movimientos</span></div>';
     if(!its) return h+'<div class="azb-empty">Cargando…</div>';
-    if(!its.length) return h+'<div class="azb-empty">No hubo movimientos en los últimos días.</div>';
+    if(!its.length) return h+'<div class="azb-empty">Todavía no hay movimientos.</div>';
     its.forEach(function(x){
       var lb = dayLbl(x.ms);
       if(lb!==last){ h += '<div class="azb-dsep"><span>'+lb+'</span></div>'; last = lb; }
