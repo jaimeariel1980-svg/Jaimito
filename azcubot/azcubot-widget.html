@@ -461,11 +461,13 @@
     else if(a==='agsave'){
       var tx = (root.querySelector('#azbAgT').value||'').trim(), hh = root.querySelector('#azbAgH').value;
       if(!tx || !hh){ alert('Escribí qué recordar y la hora.'); return; }
-      call('azcuRecNuevo', [st.nombre||'', tx, st.agSel, hh], function(r){ st.agForm = false; st.agNote = 'Listo, te aviso '+r.aviso_para+'.'; agLoad(); }, function(err){ st.agNote = 'No pude guardarlo: '+err; render(); });
+      st.agForm = false; st.agNote = 'Guardando…'; render();
+      call('azcuRecNuevo', [st.nombre||'', tx, st.agSel, hh], function(r){ if(st.ag && st.ag.items) st.ag.items.push({f:st.agSel, h:('0'+hh.split(':')[0]).slice(-2)+':'+hh.split(':')[1], t:'r', x:tx, v:'', m:true, id:r.id}); st.ag.items.sort(function(a,b){ return (a.f+a.h)<(b.f+b.h)?-1:1; }); st.agNote = 'Listo, te aviso '+r.aviso_para+'.'; render(); }, function(err){ st.agNote = 'No pude guardarlo: '+err; render(); });
     }
     else if(a==='agdel'){
       if(!window.confirm('¿Cancelo este recordatorio?')) return;
-      call('azcuRecCancelar', [st.nombre||'', t.dataset.id], function(){ st.agNote = 'Recordatorio cancelado.'; agLoad(); }, function(err){ st.agNote = 'No pude cancelarlo: '+err; render(); });
+      var rid = t.dataset.id; if(st.ag && st.ag.items) st.ag.items = st.ag.items.filter(function(x){ return x.id!==rid; }); st.agNote = 'Cancelando…'; render();
+      call('azcuRecCancelar', [st.nombre||'', rid], function(){ st.agNote = 'Recordatorio cancelado.'; render(); }, function(err){ st.agNote = 'No pude cancelarlo: '+err; agLoad(); });
     }
     else if(a==='enter'){ st.entered = true; render(); }
     else if(a==='home'){ st.entered = false; render(); }

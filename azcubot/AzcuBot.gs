@@ -24,18 +24,32 @@ function azcuDif_(a, b){
   return Math.round((d(a)-d(b))/86400000);
 }
 function azcuHoy_(){ return +Utilities.formatDate(new Date(), AZCU_TZ, 'yyyyMMdd'); }
-function azcuDatos_(){
-  if(AZCU_D_) return AZCU_D_;
-  var c = CacheService.getScriptCache(), n = +(c.get('azd_n') || 0), s = '', i, p, ok = n > 0;
-  for(i=0;i<n && ok;i++){ p = c.get('azd_'+i); if(p===null) ok = false; else s += p; }
-  if(ok){ try{ AZCU_D_ = JSON.parse(s); return AZCU_D_; }catch(e){} }
+function azcuDatos_(forzar){
+  if(!forzar){
+    if(AZCU_D_) return AZCU_D_;
+    var c0 = CacheService.getScriptCache(), n0 = +(c0.get('azd_n') || 0), s0 = '', i0, p0, ok0 = n0 > 0;
+    for(i0=0;i0<n0 && ok0;i0++){ p0 = c0.get('azd_'+i0); if(p0===null) ok0 = false; else s0 += p0; }
+    if(ok0){ try{ AZCU_D_ = JSON.parse(s0); return AZCU_D_; }catch(e){} }
+  }
   AZCU_D_ = getDatos();
   try{
-    var j = JSON.stringify(AZCU_D_), k = Math.ceil(j.length/90000);
-    for(i=0;i<k;i++) c.put('azd_'+i, j.slice(i*90000, (i+1)*90000), 120);
-    c.put('azd_n', String(k), 120);
+    var c = CacheService.getScriptCache(), j = JSON.stringify(AZCU_D_), k = Math.ceil(j.length/90000), i;
+    for(i=0;i<k;i++) c.put('azd_'+i, j.slice(i*90000, (i+1)*90000), 660);
+    c.put('azd_n', String(k), 660);
   }catch(e){}
   return AZCU_D_;
+}
+function azcuCalentar(){ azcuDatos_(true); }
+function azcuMapaDirs_(){
+  var c = CacheService.getScriptCache(), t = c.get('azdir');
+  if(t){ try{ return JSON.parse(t); }catch(e){} }
+  var m = {};
+  try{
+    var v = hojaMaestra_().getDataRange().getValues(), h = v[0], ic = h.indexOf('Código de Precarga'), ia = h.indexOf('Calle'), inn = h.indexOf('Número'), i;
+    for(i=1;i<v.length;i++) if(v[i][ic]) m[String(v[i][ic]).trim()] = (String(v[i][ia]||'')+' '+String(v[i][inn]||'')).trim();
+    c.put('azdir', JSON.stringify(m), 21600);
+  }catch(e){}
+  return m;
 }
 function azcuLimpiarCache_(){ try{ var c = CacheService.getScriptCache(), n = +(c.get('azd_n') || 0), i; for(i=0;i<n;i++) c.remove('azd_'+i); c.remove('azd_n'); AZCU_D_ = null; }catch(e){} }
 function azcuProp_(id){
@@ -894,7 +908,7 @@ function azcuAgendaItems_(quien, desde, dias){
   if(quien) azcuRecPend_(quien).forEach(function(r){ if(r.ms>=ini && r.ms<fin) items.push({ms:r.ms, tipo:'recordatorio', texto:r.texto, id:r.id}); });
   try{
     var v = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento').getDataRange().getValues(), mapa = {}, q = azcuSlug_(quien), q1 = azcuSlug_(String(quien).split(/\s+/)[0]);
-    azcuDatos_().forEach(function(p){ mapa[String(p.id).trim()] = p.dir; });
+    mapa = azcuMapaDirs_();
     for(i=1;i<v.length;i++){
       if(String(v[i][5]).trim()!=='Visita agendada') continue;
       m = String(v[i][6]).match(/^Visita (\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2})/); if(!m) continue;
@@ -938,7 +952,7 @@ function azcuAvisoRecordatorios(){
     var ms = +v[i][7]; if(!ms || ms>ahora) continue;
     if(ahora-ms>12*3600000){ h.getRange(i+1,6).setValue('vencido'); continue; }
     try{
-      var dir = ''; if(v[i][4]){ var p = azcuProp_(v[i][4]); dir = p ? p.dir : ''; }
+      var dir = v[i][4] ? (azcuMapaDirs_()[String(v[i][4]).trim()] || '') : '';
       var r = azcuPush_('⏰ Recordatorio', String(v[i][3])+(dir ? ' · '+dir : ''), AZCU_WEB, azcuDestinos_(v[i][1], true), true);
       if(!/Nadie|Sin destinatarios/.test(String(r))) h.getRange(i+1,6).setValue('enviado');
     }catch(e){}
@@ -946,15 +960,16 @@ function azcuAvisoRecordatorios(){
 }
 
 function azcuCrearAvisos(){
-  var nombres = ['azcuAvisoDiario','azcuAvisoCambios','azcuAvisoPostVisita','azcuResumenSemanal','azcuAvisoRecordatorios'];
+  var nombres = ['azcuAvisoDiario','azcuAvisoCambios','azcuAvisoPostVisita','azcuResumenSemanal','azcuAvisoRecordatorios','azcuCalentar'];
   ScriptApp.getProjectTriggers().forEach(function(t){ if(nombres.indexOf(t.getHandlerFunction())>=0) ScriptApp.deleteTrigger(t); });
   ScriptApp.newTrigger('azcuAvisoDiario').timeBased().everyDays(1).atHour(8).create();
   ScriptApp.newTrigger('azcuAvisoCambios').timeBased().everyMinutes(30).create();
   ScriptApp.newTrigger('azcuAvisoPostVisita').timeBased().everyMinutes(30).create();
   ScriptApp.newTrigger('azcuAvisoRecordatorios').timeBased().everyMinutes(5).create();
+  ScriptApp.newTrigger('azcuCalentar').timeBased().everyMinutes(10).create();
   ScriptApp.newTrigger('azcuResumenSemanal').timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(8).create();
   azcuAvisoCambios();
-  Logger.log('Listo: aviso diario 8 h, cambios de etapa y post-visita cada 30 min, resumen semanal los lunes 8 h, recordatorios personales cada 5 min.');
+  Logger.log('Listo: aviso diario 8 h, cambios de etapa y post-visita cada 30 min, resumen semanal los lunes 8 h, recordatorios personales cada 5 min, datos precalentados cada 10 min.');
 }
 
 function azcuDiagnostico(){
@@ -977,8 +992,8 @@ function azcuDiagnostico(){
     try{ var pdf = generarInformeTokko(cap.id); if(pdf && pdf.base64) ok('PDF ficha Tokko', Math.round(pdf.base64.length*0.75/1024)+' KB de '+cap.dir); else no('PDF ficha Tokko', 'vino vacío'); }catch(e){ no('PDF ficha Tokko', e); }
   }
   try{
-    var h = ScriptApp.getProjectTriggers().map(function(t){ return t.getHandlerFunction(); }), falta = ['azcuAvisoDiario','azcuAvisoCambios','azcuAvisoPostVisita','azcuResumenSemanal','azcuAvisoRecordatorios'].filter(function(n){ return h.indexOf(n)<0; });
-    if(falta.length) no('Activadores', 'faltan '+falta.join(', ')+' (ejecutá azcuCrearAvisos)'); else ok('Activadores', '5 de 5');
+    var h = ScriptApp.getProjectTriggers().map(function(t){ return t.getHandlerFunction(); }), falta = ['azcuAvisoDiario','azcuAvisoCambios','azcuAvisoPostVisita','azcuResumenSemanal','azcuAvisoRecordatorios','azcuCalentar'].filter(function(n){ return h.indexOf(n)<0; });
+    if(falta.length) no('Activadores', 'faltan '+falta.join(', ')+' (ejecutá azcuCrearAvisos)'); else ok('Activadores', '6 de 6');
   }catch(e){ no('Activadores', e); }
   try{
     var q = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {method:'post', contentType:'application/json', headers:{Authorization:'Bearer '+_openAiApiKey()}, muteHttpExceptions:true, payload:JSON.stringify({model:AZCU_MODEL, messages:[{role:'user', content:'Respondé solo: ok'}], max_tokens:5})});
@@ -990,4 +1005,18 @@ function azcuDiagnostico(){
   try{ azcuHojaRec_(); ok('Hoja Recordatorios'); }catch(e){ no('Hoja Recordatorios', e); }
   try{ var ag = azcuHerrAgenda_({dias:7}, {nombre:'Diagnóstico'}); ok('Agenda 7 días', ag.items.length+' eventos'); }catch(e){ no('Agenda', e); }
   Logger.log('\n===== DIAGNÓSTICO AZCUBOT =====\n'+r.join('\n')+'\n===============================');
+}
+
+function azcuMedir(){
+  var pin = PropertiesService.getScriptProperties().getProperty('AZCU_PIN') || '', r = [], t, id;
+  function med(n, fn){ var t0 = Date.now(); try{ fn(); r.push('✅ '+n+': '+((Date.now()-t0)/1000).toFixed(1)+' s'); }catch(e){ r.push('❌ '+n+': '+String((e && e.message) || e)); } }
+  med('Datos desde cero (sin copia)', function(){ azcuDatos_(true); });
+  med('Datos con copia', function(){ AZCU_D_ = null; azcuDatos_(); });
+  med('Lista de direcciones', function(){ CacheService.getScriptCache().remove('azdir'); azcuMapaDirs_(); });
+  med('Agenda (14 días)', function(){ azcuAgenda(pin, 'Medición', '', 14); });
+  med('Crear recordatorio', function(){ var d = new Date(Date.now()+3600000*5), p2 = function(n){ return ('0'+n).slice(-2); }; id = azcuRecNuevo(pin, 'Medición', 'prueba de velocidad', Utilities.formatDate(d, AZCU_TZ, 'yyyy-MM-dd'), Utilities.formatDate(d, AZCU_TZ, 'HH:mm')).id; });
+  med('Cancelar recordatorio', function(){ azcuRecCancelar(pin, 'Medición', id); });
+  med('Una consulta con el agente', function(){ azcuChat(pin, [{role:'user', content:'recordame en 5 horas probar esto'}], {nombre:'Medición'}); });
+  try{ azcuRecCancelar(pin, 'Medición', 'ultimo'); }catch(e){}
+  Logger.log('\n===== MEDICIÓN DE VELOCIDAD =====\n'+r.join('\n')+'\n=================================');
 }
