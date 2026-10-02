@@ -144,7 +144,7 @@
   function stash(ad){
     return (ad||[]).map(function(a){ if(a.k!=='f') return a; var id = 'f'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); st.fd[id] = {b64:a.base64, mime:a.mime}; return {k:'f', id:id, nombre:a.nombre}; });
   }
-  function reply(r){ st.msgs.push({role:'assistant', content:r.texto, acciones:(r.acciones||[]).map(function(a){ a.estado = 'pendiente'; return a; }), panel:r.panel||null, adj:stash(r.adjuntos)}); }
+  function reply(r){ if(st.vis && (r.acciones||[]).length) st.vis = null; st.msgs.push({role:'assistant', content:r.texto, acciones:(r.acciones||[]).map(function(a){ a.estado = 'pendiente'; return a; }), panel:r.panel||null, adj:stash(r.adjuntos)}); }
   function openFile(id, nombre){
     var m = st.fd[id]; if(!m){ alert('Ese archivo ya no está disponible. Pedilo de nuevo.'); return; }
     var bin = atob(m.b64), u = new Uint8Array(bin.length), i; for(i=0;i<bin.length;i++) u[i] = bin.charCodeAt(i);
@@ -282,7 +282,7 @@
     text = (text||'').trim(); if(!text || st.busy) return;
     st.msgs.push({role:'user', content:text}); st.busy = true; st.status = ''; save(); render();
     var hist = st.msgs.filter(function(m){ return !m.w; }).map(function(m){ return {role:m.role, content:m.content||''}; }).filter(function(m){ return m.content; });
-    call(atajo ? 'azcuAtajo' : 'azcuChat', atajo ? [atajo] : [hist, {nombre:st.nombre||'', fichaId:AZ.ctx||''}], function(r){
+    call(atajo ? 'azcuAtajo' : 'azcuChat', atajo ? [atajo] : [hist, {nombre:st.nombre||'', fichaId:AZ.ctx||'', visita:st.vis||null}], function(r){
       st.busy = false;
       reply(r);
       save(); render();
@@ -325,7 +325,7 @@
     if(yes && a.peligro && !window.confirm('¿Seguro? Esto no se puede deshacer.')) return;
     if(!yes){ a.estado = 'cancelado'; save(); render(); return; }
     a.estado = 'hecho'; a.resultado = 'Ejecutando…'; render();
-    call('azcuEjecutar', [a], function(r){
+    call('azcuEjecutar', [Object.assign({quien:st.nombre||''}, a)], function(r){
       a.resultado = r.mensaje; save(); render();
       if(typeof window.recargar==='function'){ try{ window.recargar(AZ.ctx||undefined); }catch(e){} }
     }, function(err){ a.estado = 'pendiente'; a.resultado = ''; st.msgs.push({role:'assistant', content:'No pude hacerlo: '+err}); save(); render(); });
@@ -361,7 +361,7 @@
         fr.onload = function(){
           var hist = st.msgs.filter(function(m){ return !m.w; }).map(function(m){ return {role:m.role, content:m.content||''}; }).filter(function(m){ return m.content; }), ph = {role:'user', content:'🎤 Escuchando…'};
           st.wz = null; st.msgs.push(ph); st.busy = true; st.status = ''; render();
-          call('azcuVoz', [fr.result.split(',')[1], blob.type, hist, {nombre:st.nombre||'', fichaId:AZ.ctx||''}], function(r){
+          call('azcuVoz', [fr.result.split(',')[1], blob.type, hist, {nombre:st.nombre||'', fichaId:AZ.ctx||'', visita:st.vis||null}], function(r){
             st.busy = false;
             if(r.transcripcion) ph.content = r.transcripcion; else st.msgs.splice(st.msgs.indexOf(ph), 1);
             reply(r);
@@ -431,6 +431,17 @@
     });
   }
   if(!APP){ hook(); setTimeout(hook, 1500); }
+  (function(){
+    if(!APP) return;
+    var q; try{ q = new URLSearchParams(location.search); }catch(e){ return; }
+    var id = q.get('cv'); if(!id) return;
+    var ci = q.get('ci') || '';
+    try{ history.replaceState(null, '', location.pathname); }catch(e){}
+    st.entered = true; st.vis = {id:id, interesado:ci};
+    var dir = id, say = function(){ st.msgs.push({role:'assistant', content:'¿Cómo te fue en la visita a **'+dir+'**'+(ci?' con **'+ci+'**':'')+'? Contame en un audio (mantené apretado el 🎤) o escribilo, y armo la tarjeta.', w:1}); save(); render(); };
+    if(st.props){ var f = st.props.filter(function(p){ return p.id===id; })[0]; if(f) dir = f.dir; say(); }
+    else call('azcuWarm', [], function(r){ if(Array.isArray(r)){ st.props = r; var f = r.filter(function(p){ return p.id===id; })[0]; if(f) dir = f.dir; } say(); }, function(){ say(); });
+  })();
   render(); pushCheck(); setTimeout(pushCheck, 2500);
   if(st.nombre!==null && !st.warmed){ st.warmed = true; setTimeout(function(){ call('azcuWarm', [], function(r){ if(Array.isArray(r)) st.props = r; }, function(){}); }, 600); }
   if(APP && window.AZCU_API && !logoSrc()){
