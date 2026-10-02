@@ -627,6 +627,9 @@ function azcuApi(e){
     req = JSON.parse(raw); var a = req.args || [];
     if(req.fn==='azcuChat'){ var cx = a[2] || {}; cx.reqId = String(req.id || '').replace(/[^A-Za-z0-9]/g, ''); out = {ok:true, data:azcuChat(a[0], a[1], cx)}; }
     else if(req.fn==='azcuVoz'){ var cv = a[4] || {}; cv.reqId = String(req.id || '').replace(/[^A-Za-z0-9]/g, ''); out = {ok:true, data:azcuVoz(a[0], a[1], a[2], a[3], cv)}; }
+    else if(req.fn==='azcuAgenda') out = {ok:true, data:azcuAgenda(a[0], a[1], a[2], a[3])};
+    else if(req.fn==='azcuRecNuevo') out = {ok:true, data:azcuRecNuevo(a[0], a[1], a[2], a[3], a[4])};
+    else if(req.fn==='azcuRecCancelar') out = {ok:true, data:azcuRecCancelar(a[0], a[1], a[2])};
     else if(req.fn==='azcuAtajo') out = {ok:true, data:azcuAtajo(a[0], a[1])};
     else if(req.fn==='azcuWarm') out = {ok:true, data:azcuWarm(a[0])};
     else if(req.fn==='azcuEjecutar') out = {ok:true, data:azcuEjecutar(a[0], a[1])};
@@ -887,13 +890,11 @@ function azcuHerrCancelarRec_(a, ctx){
   azcuHojaRec_().getRange(r.fila,6).setValue('cancelado');
   return {ok:true, cancelado:r.texto, cuando:r.cuando};
 }
-function azcuHerrAgenda_(a, ctx){
-  var quien = String((ctx && ctx.nombre)||'').trim(), dias = Math.min(Math.max(+a.dias||1,1),14);
-  var hoyIso = Utilities.formatDate(new Date(), AZCU_TZ, 'yyyy-MM-dd'), desde = /^\d{4}-\d{2}-\d{2}$/.test(a.desde||'') ? a.desde : hoyIso;
+function azcuAgendaItems_(quien, desde, dias){
   var ini = new Date(desde+'T00:00:00-03:00').getTime(), fin = ini+dias*86400000, items = [], i, m;
-  if(quien) azcuRecPend_(quien).forEach(function(r){ if(r.ms>=ini && r.ms<fin) items.push({ms:r.ms, tipo:'recordatorio', cuando:r.cuando, texto:r.texto}); });
+  if(quien) azcuRecPend_(quien).forEach(function(r){ if(r.ms>=ini && r.ms<fin) items.push({ms:r.ms, tipo:'recordatorio', texto:r.texto, id:r.id}); });
   try{
-    var v = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento').getDataRange().getValues(), mapa = {}, q = azcuSlug_(quien), q1 = azcuSlug_(quien.split(/\s+/)[0]);
+    var v = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento').getDataRange().getValues(), mapa = {}, q = azcuSlug_(quien), q1 = azcuSlug_(String(quien).split(/\s+/)[0]);
     azcuDatos_().forEach(function(p){ mapa[String(p.id).trim()] = p.dir; });
     for(i=1;i<v.length;i++){
       if(String(v[i][5]).trim()!=='Visita agendada') continue;
@@ -901,11 +902,35 @@ function azcuHerrAgenda_(a, ctx){
       var ms = new Date(m[3]+'-'+m[2]+'-'+m[1]+'T'+m[4]+':'+m[5]+':00-03:00').getTime();
       if(ms<ini || ms>=fin) continue;
       var ve = String(v[i][9]||'').trim(), vs = azcuSlug_(ve);
-      items.push({ms:ms, tipo:'visita', cuando:azcuFmtCuando_(ms), texto:(mapa[String(v[i][0]).trim()]||v[i][0])+(v[i][3] ? ' · '+v[i][3] : ''), vendedor:ve||'sin asignar', es_mia:!ve || vs===q || vs===q1});
+      items.push({ms:ms, tipo:'visita', texto:(mapa[String(v[i][0]).trim()]||v[i][0])+(v[i][3] ? ' · '+v[i][3] : ''), vendedor:ve||'sin asignar', es_mia:!ve || vs===q || vs===q1});
     }
   }catch(e){}
-  items.sort(function(x,y){ return x.ms-y.ms; });
-  return {desde:desde, dias:dias, items:items.slice(0,40).map(function(x){ delete x.ms; return x; })};
+  return items.sort(function(x,y){ return x.ms-y.ms; });
+}
+function azcuHerrAgenda_(a, ctx){
+  var quien = String((ctx && ctx.nombre)||'').trim(), dias = Math.min(Math.max(+a.dias||1,1),14);
+  var desde = /^\d{4}-\d{2}-\d{2}$/.test(a.desde||'') ? a.desde : Utilities.formatDate(new Date(), AZCU_TZ, 'yyyy-MM-dd');
+  var items = azcuAgendaItems_(quien, desde, dias).slice(0,40).map(function(x){ x.cuando = azcuFmtCuando_(x.ms); delete x.ms; delete x.id; return x; });
+  return {desde:desde, dias:dias, items:items};
+}
+function azcuAgenda(pin, nombre, desde, dias){
+  azcuPin_(pin);
+  var d = /^\d{4}-\d{2}-\d{2}$/.test(desde||'') ? desde : Utilities.formatDate(new Date(), AZCU_TZ, 'yyyy-MM-dd');
+  return {items:azcuAgendaItems_(String(nombre||'').trim(), d, Math.min(Math.max(+dias||14,1),31)).map(function(x){
+    return {f:Utilities.formatDate(new Date(x.ms), AZCU_TZ, 'yyyy-MM-dd'), h:Utilities.formatDate(new Date(x.ms), AZCU_TZ, 'HH:mm'), t:x.tipo==='recordatorio' ? 'r' : 'v', x:x.texto, v:x.vendedor||'', m:x.es_mia!==false, id:x.id||''};
+  })};
+}
+function azcuRecNuevo(pin, nombre, texto, fecha, hora){
+  azcuPin_(pin);
+  var r = azcuHerrCrearRec_({texto:texto, fecha:fecha, hora:hora}, {nombre:nombre});
+  if(r.error) throw new Error(r.error);
+  return r;
+}
+function azcuRecCancelar(pin, nombre, id){
+  azcuPin_(pin);
+  var r = azcuHerrCancelarRec_({id:id}, {nombre:nombre});
+  if(r.error) throw new Error(r.error);
+  return r;
 }
 function azcuAvisoRecordatorios(){
   var h = azcuHojaRec_(), v = h.getDataRange().getValues(), ahora = Date.now(), i;
