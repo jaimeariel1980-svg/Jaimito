@@ -553,6 +553,7 @@ function azcuTools_(){
     t('dashboard','Panel inicial del tablero: totales, etapas, papeles, propuestas, sin movimiento y satisfacción. Se muestra además como tarjetas.',{}),
     t('listar_propiedades','Lista propiedades filtradas (como los detalles del tablero).',{filtro:{type:'string',enum:['sin_movimiento','sin_visitas','con_propuesta','papeles_faltan','papeles_incompletos','papeles_al_dia','con_encuesta','encuesta_baja']}, etapa:S, tipo:S, vendedor:S, origen:S}),
     t('proponer_aviso_equipo','Prepara un aviso grupal (notificación push) para TODO el equipo que tenga la app con avisos activados. Pendiente de confirmación del usuario. No lleva propiedad.',{mensaje:S, titulo:S},['mensaje']),
+    t('proponer_aviso_persona','Prepara un aviso/recordatorio para OTRA persona del equipo (le llega una notificación en su celular a la hora indicada). Pendiente de confirmación. Si piden que insista/repita, usá repetir_cada_min: se repite hasta que la persona lo marque como hecho en la app (o repetir_dias).',{para:{type:'string',description:'Nombre de la persona del equipo, como se llama en la app'}, texto:S, en_minutos:{type:'number'}, fecha:F, hora:{type:'string',description:'HH:mm 24h'}, repetir_cada_min:{type:'number',description:'mínimo 10; omitir si no repite'}, repetir_dias:{type:'number',description:'máximo de días repitiendo, por defecto 3'}},['para','texto']),
     t('crear_recordatorio','Crea un recordatorio personal del usuario: le llega una notificación a la hora indicada. Usá en_minutos para "en 2 horas" (120) o fecha+hora para un día concreto. No pide confirmación.',{texto:{type:'string',description:'Qué recordar'}, en_minutos:{type:'number'}, fecha:F, hora:{type:'string',description:'HH:mm 24h'}, id:{type:'string',description:'Código de propiedad, opcional'}},['texto']),
     t('mis_recordatorios','Lista los recordatorios pendientes del usuario.',{}),
     t('cancelar_recordatorio','Cancela un recordatorio del usuario (id de la lista, o "ultimo" para el último creado).',{id:S}),
@@ -661,6 +662,7 @@ function azcuSistema_(ctx){
     'TODO EL TABLERO: tenés acceso a todo lo que tiene el tablero. Recordatorios y agenda personal: crear_recordatorio, mis_recordatorios, cancelar_recordatorio, agenda. Consultar: resumen_semana (cómo viene la semana, por vendedor), dashboard (panel inicial), listar_propiedades (como los detalles: sin movimiento, sin visitas, con propuesta, papeles, encuestas), encuestas, ficha_propiedad (datos, precio, documentos con archivo, propietarios, historial con fila, links), captacion_formulario (todo lo cargado en el formulario de captación/precarga: "repasame el formulario de captación de X"), guia_pagina (procedimiento_ventas, generador_documentos, formulario_captacion, encuesta: leé el texto y explicalo o repasalo paso a paso fiel al contenido; si dice "parte 1 de N" y hace falta, pedí las siguientes). Enviar/compartir: abrir_enlace, enviar_whatsapp (encuesta, formulario de captación, link de Tokko, documento), generar_pdf (ficha para cargar en Tokko). Cambiar: cargar visita/consulta, agendar, registrar propuesta, cambiar etapa, editar campos (precio, tipo, observaciones, Tokko, origen, colega, comisión, vendedor, motivo de suspensión, % de aviso, datos del propietario), marcar o borrar documentos, corregir o borrar interacciones del historial, eliminar una propiedad y enviar el reporte al propietario. Todo lo que modifica datos pasa por una tarjeta de confirmación. Si una propuesta fue aceptada, ofrecé pasar la propiedad a Reserva. Para repasar un procedimiento o formulario podés extenderte hasta ~350 palabras con pasos numerados.',
     'ENLACES: cualquier enlace (formulario de captación, encuesta, tablero, procedimiento, carpeta, Tokko) lo das con abrir_enlace, que deja abrir, mandar por WhatsApp y copiar. Si piden "el enlace" o "el formulario de captación" para mandar a alguien, usá abrir_enlace de una, SIN pedir ID (el de captación nuevo no lleva propiedad; la encuesta sí necesita elegir la propiedad). Si piden repasar lo cargado del formulario de una propiedad existente: usá captacion_formulario, resumí lo cargado y lo que falta, y cerrá con ofrecer_ayuda con que ambos para completar datos o subir papeles. Siempre que se pueda, ofrecé mandarlo por WhatsApp.',
     'PROPIEDAD CORRECTA: antes de proponer cualquier tarjeta (visita, consulta, propuesta, etapa, edición) resolvé la propiedad con buscar_propiedades usando la dirección que dijo el usuario y usá el id que devuelva; nunca adivines ni reutilices un id sin verificar. Si el usuario corrige la dirección o un dato, volvé a buscar y armá una tarjeta nueva con lo corregido (las tarjetas pendientes anteriores quedan sin efecto).',
+    'AVISO A OTRA PERSONA: si piden avisarle/recordarle algo a una persona concreta ("decile a Marcos que mañana vaya a…"), usá proponer_aviso_persona con el nombre, el mensaje y cuándo. Si piden que lo repita/insista/"porque se olvidan", poné repetir_cada_min (preguntá cada cuánto si no lo dijeron; sugerí 60). Se repite hasta que la persona lo marque como hecho. Si no dicen cuándo, preguntá la hora.',
     'AVISOS AL EQUIPO: si piden avisar, notificar o mandar una alerta a todos/al equipo/al grupo, usá proponer_aviso_equipo con el mensaje redactado claro y corto (sin inventar datos). Nunca lo mandes sin que quede la tarjeta para confirmar.',
     'COLABORATIVO: sos un compañero que ayuda de verdad, con buena onda. Cuando mostrés papeles o datos del formulario que faltan, ofrecé ayuda con una frase breve ("pasame una foto o un PDF y lo subo yo" / "si querés completamos juntos lo que falta") y dejá los botones con ofrecer_ayuda. Ofrecelo una sola vez por charla, sin insistir. Para crear una captación nueva no la armes vos: pasá el link del formulario de captación (abrir_enlace o enviar_whatsapp).',
     'FECHAS: hoy es '+dia+' '+hoy+' y son las '+Utilities.formatDate(new Date(), AZCU_TZ, 'HH:mm')+' (Argentina). Resolvé "mañana", "el viernes", etc. a AAAA-MM-DD.',
@@ -715,6 +717,15 @@ function azcuChat(pin, mensajes, ctx){
         else if(n==='encuestas') res = azcuHerrEncuestas_(args);
         else if(n==='resumen_semana') res = azcuHerrSemana_();
         else if(n==='ofrecer_ayuda') res = azcuHerrOfrecer_(args, adj);
+        else if(n==='proponer_aviso_persona'){
+          var pa = String(args.para||'').trim().slice(0,40), tx = String(args.texto||'').trim().slice(0,250), cm = azcuCuandoMs_(args);
+          if(!pa) res = {error:'¿A quién le aviso?'}; else if(!tx) res = {error:'Falta el mensaje.'}; else if(cm.error) res = cm;
+          else {
+            var cd = args.repetir_cada_min ? Math.max(10, Math.round(+args.repetir_cada_min)) : 0, hs = cd ? Math.min(Math.max(+args.repetir_dias||3, 1), 7) : 0;
+            acciones.push({id:'a'+Date.now()+acciones.length, tipo:'avisopersona', datos:{id:'persona', dir:'Aviso a '+pa, para:pa, texto:tx, ms:cm.ms, cada:cd, hasta:cd ? cm.ms+hs*86400000 : 0}, resumen:'Avisarle a '+pa+' ('+azcuFmtCuando_(cm.ms)+'): «'+tx+'»'+(cd ? ' · repetir cada '+(cd%60===0 ? (cd/60)+' h' : cd+' min')+' hasta que lo confirme (máx. '+hs+' días)' : '')});
+            res = {ok:true, estado:'pendiente de confirmación del usuario'};
+          }
+        }
         else if(n==='proponer_aviso_equipo'){
           if(!azcuPuedeAvisar_(ctx.nombre)) res = {error:'Por ahora solo algunas personas pueden mandar avisos al equipo.'};
           else if(!String(args.mensaje||'').trim()) res = {error:'Falta el mensaje.'};
@@ -748,7 +759,7 @@ function azcuSegVerif_(fila, id, huella){
   var r = seg.getRange(fila,1,1,10).getValues()[0];
   if(String(r[0]).trim()!==String(id).trim() || String(r[3]).trim()!==String(huella||'').trim()) throw new Error('El historial cambió. Pedí la ficha de nuevo y repetí.');
 }
-var AZCU_LOGT_ = {etapa:'🔶', campos:'✏️', doc:'📄', borrardoc:'📄', adjuntar:'📎', aviso:'📣', completar:'📝', agendar:'📅', reporte:'✉️', elimprop:'🗑', nueva:'🆕'};
+var AZCU_LOGT_ = {etapa:'🔶', campos:'✏️', doc:'📄', borrardoc:'📄', adjuntar:'📎', aviso:'📣', completar:'📝', agendar:'📅', reporte:'✉️', elimprop:'🗑', nueva:'🆕', avisopersona:'📣'};
 function azcuEjecutar(pin, accion){
   var r = azcuEjecutar_(pin, accion), t = accion && accion.tipo;
   if(AZCU_LOGT_[t]){ var d = accion.datos || {}; azcuLog_(t, t==='aviso' ? '📣 Aviso al equipo: '+(d.mensaje||'') : (r && r.mensaje || ''), d.dir || '', accion.quien); }
@@ -764,6 +775,13 @@ function azcuEjecutar_(pin, accion){
   azcuPin_(pin);
   var d = accion && accion.datos, tipo = accion && accion.tipo;
   if(tipo==='nueva' && d){ azcuLimpiarCache_(); return azcuCrearCaptacion_(accion); }
+  if(tipo==='avisopersona' && d){
+    var pe = String(d.para||'').trim().slice(0,40), tt = String(d.texto||'').trim().slice(0,250), mm = +d.ms, cd2 = +d.cada||0, hh = +d.hasta||0;
+    if(!pe || !tt || !mm) throw new Error('Datos incompletos');
+    var de2 = String(accion.quien||'').trim().slice(0,40), id2 = 'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+    azcuHojaRec_().appendRow([id2, pe, azcuFmtCuando_(mm), tt, '', 'pendiente', azcuFmtCuando_(Date.now()), mm, de2, cd2 ? Math.max(10, cd2) : '', hh || '']);
+    return {ok:true, mensaje:'Listo, le aviso a '+pe+' el '+azcuFmtCuando_(mm)+(cd2 ? ' y se lo repito cada '+(cd2%60===0 ? (cd2/60)+' h' : cd2+' min')+' hasta que lo confirme' : '')+'.'};
+  }
   if(tipo==='aviso' && d){
     if(!azcuPuedeAvisar_(accion.quien)) throw new Error('No tenés permiso para mandar avisos al equipo.');
     var de = String(accion.quien||'').trim().slice(0,40), msg = String(d.mensaje||'').trim().slice(0,300);
@@ -1232,7 +1250,8 @@ function azcuResumenSemanal(){
 
 function azcuHojaRec_(){
   var ss = SpreadsheetApp.openById(MAESTRO_ID), h = ss.getSheetByName('Recordatorios');
-  if(!h){ h = ss.insertSheet('Recordatorios'); h.appendRow(['ID','Quién','Cuándo','Texto','Propiedad','Estado','Creado','Cuándo (ms)']); }
+  if(!h){ h = ss.insertSheet('Recordatorios'); h.appendRow(['ID','Quién','Cuándo','Texto','Propiedad','Estado','Creado','Cuándo (ms)','De','Repetir (min)','Hasta (ms)']); }
+  else if(String(h.getRange(1,9).getValue())===''){ try{ h.getRange(1,9,1,3).setValues([['De','Repetir (min)','Hasta (ms)']]); }catch(e){} }
   return h;
 }
 function azcuFmtCuando_(ms){
@@ -1241,7 +1260,7 @@ function azcuFmtCuando_(ms){
 }
 function azcuRecPend_(quien){
   var v = azcuHojaRec_().getDataRange().getValues(), q = azcuSlug_(quien), o = [], i;
-  for(i=1;i<v.length;i++) if(String(v[i][5])==='pendiente' && azcuSlug_(v[i][1])===q) o.push({id:String(v[i][0]), ms:+v[i][7], cuando:azcuFmtCuando_(+v[i][7]), texto:String(v[i][3]), propiedad:String(v[i][4]||''), fila:i+1});
+  for(i=1;i<v.length;i++) if(String(v[i][5])==='pendiente' && azcuSlug_(v[i][1])===q) o.push({id:String(v[i][0]), ms:+v[i][7], cuando:azcuFmtCuando_(+v[i][7]), texto:String(v[i][3]), propiedad:String(v[i][4]||''), de:String(v[i][8]||''), fila:i+1});
   return o.sort(function(a,b){ return a.ms-b.ms; });
 }
 function azcuHerrCrearRec_(a, ctx){
@@ -1256,8 +1275,17 @@ function azcuHerrCrearRec_(a, ctx){
   if(isNaN(ms) || ms<Date.now()-60000) return {error:'Esa fecha y hora ya pasaron.'};
   if(ms>Date.now()+366*86400000) return {error:'Está demasiado lejos (máximo 1 año).'};
   var p = a.id ? azcuProp_(a.id) : null, id = 'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
-  azcuHojaRec_().appendRow([id, quien, azcuFmtCuando_(ms), texto, p ? p.id : '', 'pendiente', azcuFmtCuando_(Date.now()), ms]);
+  azcuHojaRec_().appendRow([id, quien, azcuFmtCuando_(ms), texto, p ? p.id : '', 'pendiente', azcuFmtCuando_(Date.now()), ms, quien, '', '']);
   return {ok:true, id:id, aviso_para:azcuFmtCuando_(ms), propiedad:p ? p.dir : ''};
+}
+function azcuCuandoMs_(a){
+  var ms;
+  if(+a.en_minutos>0) ms = Date.now()+Math.round(+a.en_minutos)*60000;
+  else if(/^\d{4}-\d{2}-\d{2}$/.test(a.fecha||'') && /^\d{1,2}:\d{2}$/.test(a.hora||'')) ms = new Date(a.fecha+'T'+('0'+a.hora.split(':')[0]).slice(-2)+':'+a.hora.split(':')[1]+':00-03:00').getTime();
+  else return {error:'Indicá cuándo: fecha y hora, o en cuántos minutos.'};
+  if(isNaN(ms) || ms<Date.now()-60000) return {error:'Esa fecha y hora ya pasaron.'};
+  if(ms>Date.now()+366*86400000) return {error:'Está demasiado lejos (máximo 1 año).'};
+  return {ms:ms};
 }
 function azcuHerrMisRec_(ctx){
   var quien = String((ctx && ctx.nombre)||'').trim();
@@ -1271,11 +1299,12 @@ function azcuHerrCancelarRec_(a, ctx){
   else r = l.reduce(function(m, x){ return !m || x.fila>m.fila ? x : m; }, null);
   if(!r) return {error:'No encontré ese recordatorio. Pedime tu lista.'};
   azcuHojaRec_().getRange(r.fila,6).setValue('cancelado');
+  if(r.de && azcuSlug_(r.de)!==azcuSlug_(quien)){ try{ azcuPush_('✅ '+quien+' confirmó', r.texto, AZCU_WEB, azcuDestinos_(r.de, true), true); }catch(e){} }
   return {ok:true, cancelado:r.texto, cuando:r.cuando};
 }
 function azcuAgendaItems_(quien, desde, dias){
   var ini = new Date(desde+'T00:00:00-03:00').getTime(), fin = ini+dias*86400000, items = [], i, m;
-  if(quien) azcuRecPend_(quien).forEach(function(r){ if(r.ms>=ini && r.ms<fin) items.push({ms:r.ms, tipo:'recordatorio', texto:r.texto, id:r.id}); });
+  if(quien) azcuRecPend_(quien).forEach(function(r){ if(r.ms>=ini && r.ms<fin) items.push({ms:r.ms, tipo:'recordatorio', texto:r.texto+(r.de && azcuSlug_(r.de)!==azcuSlug_(quien) ? ' (de '+r.de+')' : ''), id:r.id}); });
   try{
     var v = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento').getDataRange().getValues(), mapa = {}, q = azcuSlug_(quien), q1 = azcuSlug_(String(quien).split(/\s+/)[0]);
     mapa = azcuMapaDirs_();
@@ -1320,11 +1349,18 @@ function azcuAvisoRecordatorios(){
   for(i=1;i<v.length;i++){
     if(String(v[i][5])!=='pendiente') continue;
     var ms = +v[i][7]; if(!ms || ms>ahora) continue;
-    if(ahora-ms>12*3600000){ h.getRange(i+1,6).setValue('vencido'); continue; }
+    var de = String(v[i][8]||'').trim(), quien = String(v[i][1]||'').trim(), cada = +v[i][9]||0, hasta = +v[i][10]||0, ajeno = de && azcuSlug_(de)!==azcuSlug_(quien);
+    if(cada>0){ if(hasta && ahora>hasta){ h.getRange(i+1,6).setValue('vencido'); if(ajeno){ try{ azcuPush_('⚠️ '+quien+' no confirmó', String(v[i][3]), AZCU_WEB, azcuDestinos_(de, true), true); }catch(e){} } continue; } }
+    else if(ahora-ms>12*3600000){ h.getRange(i+1,6).setValue('vencido'); continue; }
     try{
       var dir = v[i][4] ? (azcuMapaDirs_()[String(v[i][4]).trim()] || '') : '';
-      var r = azcuPush_('⏰ Recordatorio', String(v[i][3])+(dir ? ' · '+dir : ''), AZCU_WEB, azcuDestinos_(v[i][1], true), true);
-      if(!/Nadie|Sin destinatarios/.test(String(r))) h.getRange(i+1,6).setValue('enviado');
+      var r = azcuPush_(ajeno ? '⏰ Aviso de '+de : '⏰ Recordatorio', String(v[i][3])+(dir ? ' · '+dir : '')+(cada>0 ? ' · Abrí la app y marcalo como hecho' : ''), AZCU_WEB+'?agenda=1', azcuDestinos_(quien, true), true);
+      if(/Nadie|Sin destinatarios/.test(String(r))){
+        if(ajeno){ h.getRange(i+1,6).setValue('sin_app'); try{ azcuPush_('No pude avisarle a '+quien, 'No tiene la app con avisos activados: «'+String(v[i][3])+'»', AZCU_WEB, azcuDestinos_(de, true), true); }catch(e){} }
+        continue;
+      }
+      if(cada>0){ var nx = ahora+cada*60000; h.getRange(i+1,8).setValue(nx); h.getRange(i+1,3).setValue(azcuFmtCuando_(nx)); }
+      else h.getRange(i+1,6).setValue('enviado');
     }catch(e){}
   }
 }
