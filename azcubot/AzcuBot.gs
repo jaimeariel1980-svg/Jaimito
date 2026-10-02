@@ -471,25 +471,29 @@ function azcuWa_(num, txt){
   return 'https://api.whatsapp.com/send?text='+encodeURIComponent(txt);
 }
 function azcuHerrEnlace_(a, adj){
-  var b = azcuBase_(), p = a.id ? azcuProp_(a.id) : null, c = a.cual, u = '', l = '';
-  if(c==='tablero'){ u = b+'?app=tablero'; l = '📋 Abrir el tablero'; }
-  else if(c==='procedimiento_ventas'){ u = b+'?app=procedimiento'; l = '📘 Procedimiento de ventas'; }
-  else if(c==='formulario_captacion'){ u = b+(p ? '?precarga='+encodeURIComponent(p.id) : ''); l = '📝 Formulario de captación'+(p?' · '+p.dir:' (nuevo)'); }
-  else if(c==='generador_documentos'){ if(!p) return {error:'Indicá la propiedad.'}; u = b+'?app=documentos&prop='+encodeURIComponent(p.id); l = '📄 Generador de documentos · '+p.dir; }
-  else if(c==='encuesta'){ if(!p) return {error:'Indicá la propiedad.'}; u = b+'?app=encuesta&prop='+encodeURIComponent(p.id); l = '⭐ Encuesta · '+p.dir; }
-  else if(c==='carpeta_drive'){ if(!p || !p.carpeta) return {error:'Esa propiedad no tiene carpeta de Drive.'}; u = p.carpeta; l = '📁 Carpeta de Drive · '+p.dir; }
-  else if(c==='link_tokko'){ if(!p || !p.tokko) return {error:'Esa propiedad no tiene link de Tokko cargado.'}; u = p.tokko; l = '🔗 Tokko · '+p.dir; }
+  var b = azcuBase_(), p = a.id ? azcuProp_(a.id) : null, c = a.cual, u = '', l = '', t = '';
+  if(c==='tablero'){ u = b+'?app=tablero'; l = '📋 Abrir el tablero'; t = 'Tablero de propiedades de Azcuénaga: '+u; }
+  else if(c==='procedimiento_ventas'){ u = b+'?app=procedimiento'; l = '📘 Procedimiento de ventas'; t = 'Procedimiento de ventas de Azcuénaga: '+u; }
+  else if(c==='formulario_captacion'){ u = b+(p ? '?precarga='+encodeURIComponent(p.id) : ''); l = '📝 Formulario de captación'+(p?' · '+p.dir:' (nuevo)'); t = 'Hola! Para avanzar con tu propiedad en Azcuénaga necesitamos que completes este formulario: '+u; }
+  else if(c==='generador_documentos'){ if(!p) return {error:'Indicá la propiedad.'}; u = b+'?app=documentos&prop='+encodeURIComponent(p.id); l = '📄 Generador de documentos · '+p.dir; t = 'Generador de documentos: '+u; }
+  else if(c==='encuesta'){ if(!p) return {error:'Indicá la propiedad.'}; u = b+'?app=encuesta&prop='+encodeURIComponent(p.id); l = '⭐ Encuesta · '+p.dir; t = 'Hola! Nos encantaría conocer tu experiencia con Azcuénaga. Te dejo una breve encuesta (2 min): '+u; }
+  else if(c==='carpeta_drive'){ if(!p || !p.carpeta) return {error:'Esa propiedad no tiene carpeta de Drive.'}; u = p.carpeta; l = '📁 Carpeta de Drive · '+p.dir; t = 'Carpeta de la propiedad: '+u; }
+  else if(c==='link_tokko'){ if(!p || !p.tokko) return {error:'Esa propiedad no tiene link de Tokko cargado.'}; u = p.tokko; l = '🔗 Tokko · '+p.dir; t = 'Mirá esta propiedad: '+u; }
   else return {error:'Enlace desconocido.'};
+  var ow = p && (p.duenos||[])[0] || {}, num = a.telefono || '';
   adj.push({k:'l', label:l, url:u});
-  return {ok:true, estado:'Botón con el enlace listo en el chat'};
+  adj.push({k:'l', label:'💬 Mandar por WhatsApp'+(num ? ' ('+num+')' : ' (elegís el contacto)'), url:azcuWa_(num, t)});
+  adj.push({k:'c', label:'📋 Copiar enlace', url:u});
+  return {ok:true, estado:'Listos 3 botones en el chat: abrir, mandar por WhatsApp y copiar el enlace', enlace:u};
 }
 function azcuHerrWhatsapp_(a, adj){
-  var p = azcuProp_(a.id); if(!p) return {error:'No encontré esa propiedad.'};
-  var b = azcuBase_(), q = a.que, txt = '', ow = (p.duenos||[])[0] || {}, num = a.telefono || ow.tel || '';
-  if(q==='encuesta') txt = 'Hola! Nos encantaría conocer tu experiencia con Azcuénaga. Te dejo una breve encuesta (2 min): '+b+'?app=encuesta&prop='+encodeURIComponent(p.id);
-  else if(q==='formulario_captacion') txt = 'Hola! Para avanzar con tu propiedad necesitamos que completes este formulario: '+b+'?precarga='+encodeURIComponent(p.id);
-  else if(q==='link_tokko'){ if(!p.tokko) return {error:'Esa propiedad no tiene link de Tokko cargado.'}; txt = 'Mirá esta propiedad: '+p.tokko; }
-  else if(q==='documento'){ var u = (p.docUrls||{})[a.documento]; if(!u) return {error:'Ese documento no está cargado todavía.'}; txt = a.documento+': '+u; }
+  var p = a.id ? azcuProp_(a.id) : null, b = azcuBase_(), q = a.que, txt = '', ow = p && (p.duenos||[])[0] || {}, num = a.telefono || ow.tel || '';
+  if(a.id && !p) return {error:'No encontré esa propiedad.'};
+  if(q==='encuesta'){ if(!p) return {error:'Indicá la propiedad.'}; txt = 'Hola! Nos encantaría conocer tu experiencia con Azcuénaga. Te dejo una breve encuesta (2 min): '+b+'?app=encuesta&prop='+encodeURIComponent(p.id); }
+  else if(q==='formulario_captacion') txt = 'Hola! Para avanzar con tu propiedad necesitamos que completes este formulario: '+b+(p ? '?precarga='+encodeURIComponent(p.id) : ''), num = a.telefono || '';
+  else if(q==='link_tokko'){ if(!p || !p.tokko) return {error:'Esa propiedad no tiene link de Tokko cargado.'}; txt = 'Mirá esta propiedad: '+p.tokko; }
+  else if(q==='documento'){ var u = p && (p.docUrls||{})[a.documento]; if(!u) return {error:'Ese documento no está cargado todavía.'}; txt = a.documento+': '+u; }
+  else if(q==='texto_libre'){ if(!a.texto) return {error:'Falta el texto.'}; txt = String(a.texto).slice(0,1500); num = a.telefono || ''; }
   else return {error:'Tipo de mensaje desconocido.'};
   adj.push({k:'l', label:'💬 Abrir WhatsApp'+(num?' ('+(ow.nombre||num)+')':' (elegís el contacto)'), url:azcuWa_(num, txt)});
   return {ok:true, estado:'Botón de WhatsApp listo en el chat', destinatario:num ? (ow.nombre||num) : 'a elegir'};
@@ -558,8 +562,8 @@ function azcuTools_(){
     t('documentos_faltantes','Documentos que faltan en TODAS las propiedades abiertas, en una sola consulta.',{}),
     t('alertas','Alertas de hoy: papeles, sin movimiento, propuestas sin respuesta, visitas de hoy, seguimientos.',{}),
     t('resumen_cartera','Números generales de la cartera.',{}),
-    t('abrir_enlace','Deja en el chat un botón con un enlace.',{cual:{type:'string',enum:['tablero','procedimiento_ventas','formulario_captacion','generador_documentos','encuesta','carpeta_drive','link_tokko']}, id:S},['cual']),
-    t('enviar_whatsapp','Deja un botón para abrir WhatsApp con el mensaje armado. Por defecto va al primer propietario.',{id:S, que:{type:'string',enum:['encuesta','formulario_captacion','link_tokko','documento']}, documento:S, telefono:S},['id','que']),
+    t('abrir_enlace','Deja en el chat botones para abrir un enlace, mandarlo por WhatsApp y copiarlo. El formulario_captacion NO necesita id (sirve para un cliente nuevo).',{cual:{type:'string',enum:['tablero','procedimiento_ventas','formulario_captacion','generador_documentos','encuesta','carpeta_drive','link_tokko']}, id:S, telefono:S},['cual']),
+    t('enviar_whatsapp','Deja un botón para abrir WhatsApp con el mensaje armado. Con id va por defecto al primer propietario; sin id (captación nueva, texto libre) el usuario elige el contacto.',{id:S, que:{type:'string',enum:['encuesta','formulario_captacion','link_tokko','documento','texto_libre']}, documento:S, telefono:S, texto:S},['que']),
     t('generar_pdf','Genera el PDF de la ficha-carga para Tokko de una propiedad y lo deja en el chat para descargar o compartir.',{id:S},['id']),
     t('proponer_cargar_interaccion','Registrar una consulta o visita ya ocurrida. Queda pendiente de confirmación.',{id:S, interesado:S, telefono:S, via:{type:'string',enum:AZCU_VIAS}, resultado:{type:'string',enum:AZCU_RESULTADOS}, proximo_paso:S, observaciones:{type:'string',description:'Detalle completo de lo que pasó'}},['id','interesado','via','resultado']),
     t('proponer_agendar_visita','Agendar una visita futura (Calendar + seguimiento). Pendiente de confirmación.',{id:S, fecha:F, hora:{type:'string',description:'HH:mm 24h'}, interesado:S, telefono:S, email:S, nota:S},['id','fecha','hora']),
@@ -654,6 +658,7 @@ function azcuSistema_(ctx){
     'EFICIENCIA: usá la menor cantidad de llamadas posible. Para documentos faltantes de varias propiedades usá documentos_faltantes (una sola llamada). Si necesitás varias fichas, pedilas todas juntas en la misma vuelta. Respondé directo, sin vueltas.',
     'PROPIEDADES (id|dirección|propietario). Si el usuario nombra una que está acá y no hay ambigüedad, usá el id directo SIN buscar_propiedades; si hay 2 o más coincidencias, preguntá cuál:\n'+azcuLista_(),
     'TODO EL TABLERO: tenés acceso a todo lo que tiene el tablero. Recordatorios y agenda personal: crear_recordatorio, mis_recordatorios, cancelar_recordatorio, agenda. Consultar: resumen_semana (cómo viene la semana, por vendedor), dashboard (panel inicial), listar_propiedades (como los detalles: sin movimiento, sin visitas, con propuesta, papeles, encuestas), encuestas, ficha_propiedad (datos, precio, documentos con archivo, propietarios, historial con fila, links), captacion_formulario (todo lo cargado en el formulario de captación/precarga: "repasame el formulario de captación de X"), guia_pagina (procedimiento_ventas, generador_documentos, formulario_captacion, encuesta: leé el texto y explicalo o repasalo paso a paso fiel al contenido; si dice "parte 1 de N" y hace falta, pedí las siguientes). Enviar/compartir: abrir_enlace, enviar_whatsapp (encuesta, formulario de captación, link de Tokko, documento), generar_pdf (ficha para cargar en Tokko). Cambiar: cargar visita/consulta, agendar, registrar propuesta, cambiar etapa, editar campos (precio, tipo, observaciones, Tokko, origen, colega, comisión, vendedor, motivo de suspensión, % de aviso, datos del propietario), marcar o borrar documentos, corregir o borrar interacciones del historial, eliminar una propiedad y enviar el reporte al propietario. Todo lo que modifica datos pasa por una tarjeta de confirmación. Si una propuesta fue aceptada, ofrecé pasar la propiedad a Reserva. Para repasar un procedimiento o formulario podés extenderte hasta ~350 palabras con pasos numerados.',
+    'ENLACES: cualquier enlace (formulario de captación, encuesta, tablero, procedimiento, carpeta, Tokko) lo das con abrir_enlace, que deja abrir, mandar por WhatsApp y copiar. Si piden "el enlace" o "el formulario de captación" para mandar a alguien, usá abrir_enlace de una, SIN pedir ID (el de captación nuevo no lleva propiedad; la encuesta sí necesita elegir la propiedad). Solo usá captacion_formulario si piden repasar lo ya cargado de una propiedad existente. Siempre que se pueda, ofrecé mandarlo por WhatsApp.',
     'COLABORATIVO: sos un compañero que ayuda de verdad, con buena onda. Cuando mostrés papeles o datos del formulario que faltan, ofrecé ayuda con una frase breve ("pasame una foto o un PDF y lo subo yo" / "si querés completamos juntos lo que falta") y dejá los botones con ofrecer_ayuda. Ofrecelo una sola vez por charla, sin insistir. Para crear una captación nueva no la armes vos: pasá el link del formulario de captación (abrir_enlace o enviar_whatsapp).',
     'FECHAS: hoy es '+dia+' '+hoy+' y son las '+Utilities.formatDate(new Date(), AZCU_TZ, 'HH:mm')+' (Argentina). Resolvé "mañana", "el viernes", etc. a AAAA-MM-DD.',
     'RECORDATORIOS Y AGENDA: si el usuario pide que le recuerdes algo ("recordame en 2 horas", "el viernes a las 10 llamar a X") usá crear_recordatorio directo, sin pedir confirmación, y confirmá en una frase cuándo le vas a avisar y que le llega una notificación. Si no dice hora, preguntala. Para "qué tengo hoy/mañana/esta semana" usá agenda. Para ver o cancelar usá mis_recordatorios y cancelar_recordatorio.',
@@ -677,13 +682,17 @@ function azcuOpenAI_(messages, tools){
 
 function azcuProg_(ctx, texto){ try{ if(ctx && ctx.reqId) azcuPut_(ctx.reqId+'p', {progress:texto}); }catch(e){} }
 var AZCU_NOMBRES_ = {buscar_propiedades:'Buscando propiedades…', ficha_propiedad:'Leyendo la ficha…', captacion_formulario:'Leyendo el formulario de captación…', guia_pagina:'Leyendo la guía…', dashboard:'Armando el panel…', resumen_semana:'Armando el resumen de la semana…', crear_recordatorio:'Guardando el recordatorio…', mis_recordatorios:'Buscando tus recordatorios…', agenda:'Revisando tu agenda…', listar_propiedades:'Filtrando propiedades…', encuestas:'Revisando encuestas…', alertas:'Revisando alertas…', resumen_cartera:'Armando el resumen…', documentos_faltantes:'Revisando documentos…', generar_pdf:'Generando el PDF…', ofrecer_ayuda:'Preparando la ayuda…', enviar_whatsapp:'Armando el mensaje…', abrir_enlace:'Buscando el enlace…'};
+function azcuAvisarListo_(nombre, t0, texto){
+  try{ if(nombre && Date.now()-t0>15000) azcuPush_('AzcuBot terminó ✅', texto, AZCU_WEB, azcuDestinos_(nombre, true), true); }catch(e){}
+}
 function azcuChat(pin, mensajes, ctx){
+  var t0 = Date.now();
   azcuPin_(pin);
   ctx = ctx || {};
   var msgs = [{role:'system', content:azcuSistema_(ctx)}].concat((mensajes||[]).slice(-12).map(function(m){ return {role:m.role==='assistant'?'assistant':'user', content:String(m.content||'')}; }));
   var tools = azcuTools_(), acciones = [], adj = [], panel = null, i;
   var mapa = {proponer_cargar_interaccion:'cargar', proponer_agendar_visita:'agendar', proponer_registrar_propuesta:'propuesta', proponer_cambiar_etapa:'etapa', proponer_editar_campos:'campos', proponer_marcar_documento:'doc', proponer_borrar_documento:'borrardoc', proponer_editar_interaccion:'editarint', proponer_eliminar_interaccion:'elimint', proponer_eliminar_propiedad:'elimprop', proponer_enviar_reporte:'reporte'};
-  function fin(t){ return {texto:t, acciones:acciones, adjuntos:adj, panel:panel}; }
+  function fin(t){ azcuAvisarListo_(ctx.nombre, t0, 'Ya tengo tu respuesta, abrí la app para verla.'); return {texto:t, acciones:acciones, adjuntos:adj, panel:panel}; }
   for(i=0;i<8;i++){
     azcuProg_(ctx, i===0 ? 'Pensando…' : 'Armando la respuesta…');
     var m = azcuOpenAI_(msgs, tools);
