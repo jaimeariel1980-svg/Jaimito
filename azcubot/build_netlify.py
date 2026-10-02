@@ -22,7 +22,7 @@ window.AZCU_TABLERO = "'''+EXEC+'''?app=tablero";
 window.AZCU_APP = true;
 window.AZCU_ONESIGNAL = "26a05ded-18d0-4349-972b-b30e5e614805";
 window.OneSignalDeferred = window.OneSignalDeferred || [];
-OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.init({appId: window.AZCU_ONESIGNAL})).catch(function(e){ window.__osErr = String((e && e.message) || e); }); });
+OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.init({appId: "26a05ded-18d0-4349-972b-b30e5e614805"})).catch(function(e){ window.__osErr = String((e && e.message) || e); }); });
 
 </script>
 '''
