@@ -165,6 +165,97 @@
 .azb-ft .lm{font:500 9.5px 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;opacity:.7;text-align:right;line-height:1.5}
 .azb-app .azb-in{padding-bottom:calc(10px + env(safe-area-inset-bottom))}
 .azb-app .azb-hd{padding-top:env(safe-area-inset-top);height:auto;min-height:58px}
+/* ===== LOOK AMIGABLE (bloque final: pisa los estilos anteriores) ===== */
+.azb{--n:#0a3d91;--nd:#072a66;--cr:#f6f7fb;--ln:#e6e9f2;--sh:0 8px 28px rgba(15,27,51,.09);--sh2:0 2px 10px rgba(15,27,51,.07);--r:20px;--tint:#eaf1ff}
+.azb button,.azb .azb-row,.azb a.azb-op{transition:transform .14s ease,box-shadow .2s ease,background .2s ease,border-color .2s ease;-webkit-tap-highlight-color:transparent}
+.azb button:active:not(:disabled){transform:scale(.97)}
+.azb-panel{background:var(--cr)}
+.azb-hd{height:66px;border:0;box-shadow:0 2px 14px rgba(15,27,51,.07);padding:0 12px 0 14px;gap:8px;position:relative;z-index:2}
+.azb-hd .azb-t{font:800 19px 'Archivo',sans-serif;letter-spacing:-.01em;text-transform:none;color:var(--n)}
+.azb-ib{width:40px;height:40px;border-radius:50%;font-size:19px}
+.azb-ib:hover,.azb-ib:active{background:var(--tint)}
+.azb-hm{height:40px;border-radius:999px;padding:0 16px;font:700 14px 'Inter',sans-serif;box-shadow:0 4px 12px rgba(10,61,145,.28)}
+.azb-body{padding:22px 18px 16px;}
+.azb-eyb{font:700 13px 'Inter',sans-serif;letter-spacing:0;text-transform:none;color:var(--n);margin:12px 0 6px}
+.azb-eyb:before{display:none}
+.azb-av{width:84px;height:84px;border:0;border-radius:50%;box-shadow:var(--sh);padding:9px;animation:azbfloat 4s ease-in-out infinite}
+@keyframes azbfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.azb h1{font-size:38px;line-height:1.02;margin:6px 0 12px;letter-spacing:-.03em}
+.azb p.azb-lead{font-size:16px;line-height:1.5;margin:0 0 20px}
+.azb-lbl{font:800 19px 'Archivo',sans-serif;letter-spacing:-.01em;text-transform:none;color:var(--ink);margin:24px 0 12px}
+.azb-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.azb-row{border:0;border-radius:var(--r);box-shadow:var(--sh2);padding:15px 16px;margin-bottom:10px;font:600 15px 'Inter',sans-serif;gap:12px;min-height:56px;justify-content:flex-start;animation:azbin .35s both}
+.azb-row:hover{box-shadow:var(--sh);color:var(--ink);transform:translateY(-2px)}
+.azb-row i{font-style:normal;font-size:22px;width:36px;height:36px;border-radius:12px;background:var(--tint);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.azb-row b{font-weight:600;flex:1}.azb-row span{margin-left:auto}
+.azb-tile{flex-direction:column;align-items:flex-start;justify-content:space-between;gap:18px;min-height:112px;margin:0;padding:16px;background:linear-gradient(160deg,#fff 55%,var(--tint))}
+.azb-tile i{width:44px;height:44px;font-size:26px;border-radius:14px;background:#fff;box-shadow:var(--sh2)}
+.azb-tile b{font:800 16.5px 'Archivo',sans-serif;flex:none;letter-spacing:-.01em}
+.azb-grid .azb-tile:nth-child(1){animation-delay:.02s}.azb-grid .azb-tile:nth-child(2){animation-delay:.07s}.azb-grid .azb-tile:nth-child(3){animation-delay:.12s}.azb-grid .azb-tile:nth-child(4){animation-delay:.17s}.azb-grid .azb-tile:nth-child(5){animation-delay:.22s}.azb-grid .azb-tile:nth-child(6){animation-delay:.27s}
+.azb-m{gap:9px;margin-bottom:14px;animation:azbpop .28s ease both}
+@keyframes azbpop{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+.azb-b{font-size:15.5px;line-height:1.5;padding:12px 16px}
+.azb-m.a .azb-b{border:0;border-radius:20px 20px 20px 6px;box-shadow:var(--sh2)}
+.azb-m.u .azb-b{background:linear-gradient(135deg,#0d4cb3,var(--n));border-radius:20px 20px 6px 20px;box-shadow:0 6px 16px rgba(10,61,145,.25)}
+.azb-tm{font-size:10.5px}
+.azb-dsep span{background:#e9edf6;font-size:11.5px;padding:4px 12px;border-radius:999px}
+.azb-card{margin-left:0;border:0;border-radius:var(--r);background:#fff;box-shadow:var(--sh);padding:16px 18px;animation:azbpop .3s ease both}
+.azb-card .azb-k{font:800 12.5px 'Inter',sans-serif;letter-spacing:.02em;text-transform:none;color:var(--n);display:flex;align-items:center;gap:6px}
+.azb-card:not(.ok):not(.no):not(.dg) .azb-k:before{content:"✨"}
+.azb-card .azb-s{font-size:15.5px;line-height:1.5;margin:6px 0 14px}
+.azb-card.ok{background:#f1faf5}
+.azb-card.no{background:#f4f4f6}
+.azb-card.dg{background:#fff6f7;box-shadow:0 8px 28px rgba(209,73,91,.14)}
+.azb-card .azb-bt{gap:10px}
+.azb-btn{border:0;border-radius:999px;padding:13px 22px;font:700 14.5px 'Inter',sans-serif;letter-spacing:0;text-transform:none;box-shadow:0 6px 16px rgba(10,61,145,.28);flex:1}
+.azb-btn.o{background:#eef1f8;color:var(--ink);box-shadow:none}
+.azb-chips{padding:10px 12px 6px;gap:8px;border:0;background:transparent}
+.azb-chip{border:0;border-radius:999px;background:#fff;box-shadow:var(--sh2);padding:10px 16px;font:600 13.5px 'Inter',sans-serif;letter-spacing:0;text-transform:none;color:var(--n)}
+.azb-chip:active{background:var(--n);color:#fff}
+.azb-in{background:transparent;border:0;padding:6px 12px 12px}
+.azb .azb-pill{border:0;background:#fff;border-radius:999px;box-shadow:0 10px 30px rgba(15,27,51,.14);min-height:60px;padding:5px 6px 5px 20px}
+.azb .azb-pill:focus-within{box-shadow:0 10px 30px rgba(10,61,145,.22),0 0 0 2px var(--n)}
+.azb .azb-pill input{font-size:16.5px}
+.azb-rb2{width:48px;height:48px;box-shadow:0 4px 12px rgba(10,61,145,.25)}
+.azb-rb2.clip{box-shadow:none;background:var(--tint)}.azb-rb2.del{box-shadow:none}
+.azb-opts{margin-left:0;gap:9px}
+.azb-op{border:0;border-radius:999px;background:#fff;box-shadow:var(--sh2);padding:12px 18px;font:600 14.5px 'Inter',sans-serif;color:var(--n)}
+.azb-op:active{background:var(--n);color:#fff}
+.azb-op.s{color:var(--mu);box-shadow:none;background:#eef0f5}.azb-op.x{background:none;box-shadow:none}
+.azb-pn{margin-left:0;border:0;border-radius:var(--r);box-shadow:var(--sh);padding:16px}
+.azb-k1{border:0;border-radius:16px;background:var(--tint);padding:12px 4px}.azb-k1 b{font-size:24px}.azb-k1 span{font:600 10.5px 'Inter',sans-serif;letter-spacing:0;text-transform:none}
+.azb-bt2{font:700 12.5px 'Inter',sans-serif;letter-spacing:0;text-transform:none;color:var(--ink)}
+.azb-br div{height:12px;border-radius:6px;overflow:hidden}
+.azb-pb{background:var(--tint);border:0;padding:10px 14px}
+.azb-note{border:0;border-radius:16px;background:var(--tint)}
+.azb-ev{border:0;border-radius:var(--r);box-shadow:var(--sh2);padding:14px 16px;margin-bottom:10px}
+.azb-ev .h{font-size:17px}
+.azb-mv{border:0;border-radius:var(--r);box-shadow:var(--sh2);padding:14px 16px;margin-bottom:10px;animation:azbpop .3s ease both}
+.azb-mv .ic{width:44px;height:44px;border-radius:14px;background:var(--tint);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.azb-mv b{font-size:15px}
+.azb-day{border:0;border-radius:16px;box-shadow:var(--sh2);flex:0 0 52px}
+.azb-agh b{font-size:24px;letter-spacing:-.02em}.azb-agh span{font:600 12px 'Inter',sans-serif;letter-spacing:0;text-transform:none}
+.azb-agf{border:0;border-radius:var(--r);box-shadow:var(--sh2)}.azb-agf input{border-radius:12px;padding:12px}
+.azb-tray{background:#fff;border:0;border-radius:24px 24px 0 0;box-shadow:0 -8px 28px rgba(15,27,51,.1)}
+.azb-tf{border-radius:14px;overflow:visible}.azb-tf img{border-radius:14px}
+.azb-sh{border-radius:28px 28px 0 0}.azb-sho{border:0;border-radius:18px;background:#f4f6fb;padding:16px}.azb-shc{border-radius:999px;padding:15px}
+.azb-fab{width:72px;height:72px;box-shadow:0 10px 30px rgba(10,61,145,.4),0 0 0 3px var(--n);animation:azbpulse 3.2s ease-out infinite}
+@keyframes azbpulse{0%{box-shadow:0 10px 30px rgba(10,61,145,.4),0 0 0 3px var(--n),0 0 0 3px rgba(10,61,145,.35)}70%,100%{box-shadow:0 10px 30px rgba(10,61,145,.4),0 0 0 3px var(--n),0 0 0 20px rgba(10,61,145,0)}}
+.azb-bd,.azb-fab .azb-dot.n{animation:azbbadge 1.6s ease-in-out infinite}
+@keyframes azbbadge{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
+.azb-tip{border-radius:18px 18px 4px 18px;font-size:14.5px;padding:11px 16px}
+.azb-port{background:linear-gradient(165deg,#0d4cb3,#082d6e 70%)}
+.azb-port .azb-box{border:0;border-radius:36px;background:rgba(255,255,255,.12);box-shadow:0 14px 40px rgba(0,0,0,.25);animation:azbfloat 4s ease-in-out infinite}
+.azb-port .azb-pe{font:700 13px 'Inter',sans-serif;letter-spacing:0;text-transform:none}.azb-port .azb-pe:before{display:none}
+.azb-port h2{font-size:44px}
+.azb-port .azb-rl{font:600 15px 'Inter',sans-serif;letter-spacing:0;text-transform:none}
+.azb-port input{border:0;border-radius:999px;background:rgba(255,255,255,.18);padding:16px}
+.azb-port .azb-go{border-radius:999px;font:800 16px 'Inter',sans-serif;letter-spacing:0;text-transform:none;padding:17px;box-shadow:0 10px 24px rgba(0,0,0,.22)}
+.azb-port .azb-sk{font:600 13.5px 'Inter',sans-serif;letter-spacing:0;text-transform:none}
+.azb-back{border-radius:999px;padding:14px;font-size:14.5px;box-shadow:0 6px 16px rgba(10,61,145,.25)}
+.azb-empty{font-size:15px}
+@media(max-width:480px){.azb-hd .azb-t{display:none}.azb-hd{justify-content:space-between}}
+@media(prefers-reduced-motion:reduce){.azb *{animation:none!important;transition:none!important}}
 </style>
 <script>
 (function(){
@@ -189,6 +280,12 @@
   var root = document.createElement('div'); root.className = 'azb'; document.body.appendChild(root);
   function save(){ ls('msgs', JSON.stringify(st.msgs.slice(-40))); }
   function scroll(){ var b = root.querySelector('.azb-body'); if(b) b.scrollTop = b.scrollHeight; }
+  var TILE = {'Cargar una visita':['🏠','Cargar visita'],'Agendar una visita':['📅','Agendar visita'],'Registrar una propuesta':['💬','Propuesta'],'Mi agenda y recordatorios':['⏰','Agenda'],'Adjuntar fotos o documentos':['📎','Adjuntar'],'¿Qué alertas tengo hoy?':['🔔','Alertas']};
+  function icoFor(l){
+    var x = [[/resumen|panel|dashboard/i,'📊'],[/documento/i,'📄'],[/encuesta/i,'⭐'],[/procedimiento/i,'📘'],[/formulario|captaci/i,'📝'],[/tokko|ficha/i,'🔗'],[/buscar|contame/i,'🔎'],[/estado/i,'🔄'],[/reporte/i,'✉️'],[/recordatorio/i,'⏰'],[/agendar/i,'📅']], i;
+    for(i=0;i<x.length;i++) if(x[i][0].test(l)) return x[i][1];
+    return '💬';
+  }
   function shortcuts(){
     return AZ.ctx ? [['Contame de esta propiedad'],['Agendar una visita acá'],['Cargar una consulta acá'],['¿Qué documentos le faltan?'],['Repasá el formulario y qué falta']] : [['¿Qué alertas tengo hoy?','alertas'],['Resumen de la cartera','resumen'],['Detalle de documentos faltantes','docs'],['Panel de la cartera (dashboard)','panel'],['Adjuntar fotos o documentos',0,'adjuntar'],['Mi agenda y recordatorios',0,'agenda'],['Mis recordatorios',0,0,'¿Qué recordatorios tengo pendientes?'],['Cargar una visita',0,'cargar'],['Agendar una visita',0,'agendar'],['Registrar una propuesta',0,'propuesta'],['Cambiar estado de una propiedad',0,'etapa'],['Enviar reporte al propietario',0,'reporte'],['Encuestas de satisfacción',0,0,'¿Cómo vienen las encuestas de satisfacción?'],['Procedimiento de ventas',0,0,'Repasame el procedimiento de ventas'],['Enlace del procedimiento (WhatsApp)',0,0,'Quiero el enlace del procedimiento de ventas para mandarlo por WhatsApp o copiarlo'],['Enlace del formulario de captación',0,0,'Quiero el enlace del formulario de captación para mandarlo a alguien'],['Repasar formulario de una propiedad',0,0,'Quiero repasar lo cargado en el formulario de captación de una propiedad y ver qué falta'],['Ficha para cargar en Tokko (PDF)',0,0,'Quiero la ficha para cargar en Tokko de una propiedad'],['Enlace de la encuesta (WhatsApp)',0,0,'Quiero el enlace de la encuesta de satisfacción de una propiedad para mandarlo por WhatsApp o copiarlo'],['Buscar una propiedad']];
   }
@@ -383,7 +480,15 @@
       if(st.view==='agenda') h += agendaHtml(); else if(st.view==='mov') h += movHtml(); else {
       if(!st.msgs.length || st.menu){
         h += (st.menu && st.msgs.length ? '<button type="button" class="azb-back" data-a="menux">💬 Volver a la charla</button>' : '')+'<div class="azb-av">'+mk(60)+'</div><div class="azb-eyb">Tu asistente, siempre disponible</div><h1>Hola'+(st.nombre?', <b>'+esc(st.nombre)+'</b>':'')+'.<br>¿Qué hacemos hoy?</h1><p class="azb-lead">Preguntame lo que quieras del tablero o pedime que cargue visitas, agende, cambie estados o mande reportes. Escribime como a un compañero.</p>'+(APP && window.OneSignalDeferred && !st.pushOn ? '<button class="azb-row" data-a="push" style="border-color:var(--n);background:#eef3ff">🔔 Activar avisos en este celular<span>→</span></button>' : '')+'<div class="azb-lbl">Atajos</div>';
-        shortcuts().forEach(function(s){ h += '<button class="azb-row" '+(s[2]==='agenda'?'data-a="agenda"':s[2]==='adjuntar'?'data-a="attach"':(s[2]?'data-w="'+s[2]+'"':'data-q="'+esc(s[3]||s[0])+'"'))+(s[1]?' data-at="'+s[1]+'"':'')+'>'+esc(s[0])+'<span>→</span></button>'; });
+        var sc = shortcuts(), big = '', small = '', bigs = {};
+        sc.forEach(function(s){
+          var at = (s[2]==='agenda'?'data-a="agenda"':s[2]==='adjuntar'?'data-a="attach"':(s[2]?'data-w="'+s[2]+'"':'data-q="'+esc(s[3]||s[0])+'"'))+(s[1]?' data-at="'+s[1]+'"':''), tl = TILE[s[0]];
+          if(tl && !AZ.ctx) bigs[s[0]] = '<button class="azb-row azb-tile" '+at+'><i>'+tl[0]+'</i><b>'+tl[1]+'</b></button>';
+          else small += '<button class="azb-row" '+at+'><i>'+icoFor(s[0])+'</i><b>'+esc(s[0])+'</b><span>→</span></button>';
+        });
+        Object.keys(TILE).forEach(function(k){ if(bigs[k]) big += bigs[k]; });
+        if(big) h = h.replace('<div class="azb-lbl">Atajos</div>', '<div class="azb-lbl">Lo de todos los días</div><div class="azb-grid">'+big+'</div>'+(small ? '<div class="azb-lbl">Más cosas</div>' : '')); 
+        h += small;
       } else st.msgs.forEach(function(m,mi){
         if(!m.ts) m.ts = Date.now();
         if(!mi || dayLbl(st.msgs[mi-1].ts||m.ts)!==dayLbl(m.ts)) h += '<div class="azb-dsep"><span>'+dayLbl(m.ts)+'</span></div>';
