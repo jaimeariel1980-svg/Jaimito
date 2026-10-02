@@ -521,12 +521,20 @@ function azcuFmtResumen_(){
 function azcuFmtDocs_(){
   var d = azcuHerrDocs_();
   if(!d.length) return 'Todas las propiedades tienen la documentación al día 🙌';
-  return '**Documentos faltantes ('+d.length+(d.length===1 ? ' propiedad' : ' propiedades')+')**\n'+d.slice(0,25).map(function(x){ return '- **'+x.direccion+'** ('+x.etapa+'): '+x.faltan.join(', '); }).join('\n')+(d.length>25 ? '\n- …y '+(d.length-25)+' más' : '');
+  return '**Documentos faltantes ('+d.length+(d.length===1 ? ' propiedad' : ' propiedades')+')**\n'+d.slice(0,25).map(function(x){ return '- **'+x.direccion+'** ('+x.etapa+'): '+x.faltan.join(', '); }).join('\n')+(d.length>25 ? '\n- …y '+(d.length-25)+' más' : '')+'\n\n¿Te ayudo? Pasame una foto o un PDF y lo subo yo 📎 Tocá la propiedad por la que quieras empezar 👇';
 }
 function azcuAtajo(pin, tipo){
   azcuPin_(pin); AZCU_D_ = null;
   if(tipo==='panel') return {texto:'Así está la cartera hoy 👇', acciones:[], panel:azcuPanel_()};
-  var t = tipo==='alertas' ? azcuFmtAlertas_() : tipo==='resumen' ? azcuFmtResumen_() : tipo==='docs' ? azcuFmtDocs_() : 'No conozco ese atajo.';
+  if(tipo==='docs'){
+    var l = azcuHerrDocs_();
+    return {texto:azcuFmtDocs_(), acciones:[], adjuntos:azcuBotones_(l, 5)};
+  }
+  if(tipo==='alertas'){
+    var pa = azcuHerrAlertas_().papeles;
+    return {texto:azcuFmtAlertas_(), acciones:[], adjuntos:azcuBotones_(pa, 3)};
+  }
+  var t = tipo==='resumen' ? azcuFmtResumen_() : 'No conozco ese atajo.';
   return {texto:t, acciones:[]};
 }
 function azcuWarm(pin){ azcuPin_(pin); return azcuDatos_().map(function(p){ return {id:p.id, dir:p.dir, prop:p.prop||'', etapa:p.etapa}; }); }
@@ -544,6 +552,7 @@ function azcuTools_(){
     t('mis_recordatorios','Lista los recordatorios pendientes del usuario.',{}),
     t('cancelar_recordatorio','Cancela un recordatorio del usuario (id de la lista, o "ultimo" para el último creado).',{id:S}),
     t('agenda','Agenda del usuario: visitas agendadas y recordatorios en los próximos días (por defecto hoy).',{dias:{type:'number',description:'Cantidad de días, 1 a 14'}, desde:F}),
+    t('ofrecer_ayuda','Deja botones de ayuda en el chat: subir documentos (foto o PDF) y/o completar los datos del formulario que faltan de una propiedad. Usala siempre que muestres papeles o datos faltantes.',{id:S, que:{type:'string',enum:['subir_documentos','completar_datos','ambos']}},['id','que']),
     t('resumen_semana','Resumen de gestión de la semana (últimos 7 días vs anteriores): interacciones, visitas, propuestas, captaciones nuevas, por vendedor, y qué atender.',{}),
     t('encuestas','Encuestas de satisfacción: sin id lista todas; con id trae la completa de esa propiedad.',{id:S}),
     t('documentos_faltantes','Documentos que faltan en TODAS las propiedades abiertas, en una sola consulta.',{}),
@@ -645,6 +654,7 @@ function azcuSistema_(ctx){
     'EFICIENCIA: usá la menor cantidad de llamadas posible. Para documentos faltantes de varias propiedades usá documentos_faltantes (una sola llamada). Si necesitás varias fichas, pedilas todas juntas en la misma vuelta. Respondé directo, sin vueltas.',
     'PROPIEDADES (id|dirección|propietario). Si el usuario nombra una que está acá y no hay ambigüedad, usá el id directo SIN buscar_propiedades; si hay 2 o más coincidencias, preguntá cuál:\n'+azcuLista_(),
     'TODO EL TABLERO: tenés acceso a todo lo que tiene el tablero. Recordatorios y agenda personal: crear_recordatorio, mis_recordatorios, cancelar_recordatorio, agenda. Consultar: resumen_semana (cómo viene la semana, por vendedor), dashboard (panel inicial), listar_propiedades (como los detalles: sin movimiento, sin visitas, con propuesta, papeles, encuestas), encuestas, ficha_propiedad (datos, precio, documentos con archivo, propietarios, historial con fila, links), captacion_formulario (todo lo cargado en el formulario de captación/precarga: "repasame el formulario de captación de X"), guia_pagina (procedimiento_ventas, generador_documentos, formulario_captacion, encuesta: leé el texto y explicalo o repasalo paso a paso fiel al contenido; si dice "parte 1 de N" y hace falta, pedí las siguientes). Enviar/compartir: abrir_enlace, enviar_whatsapp (encuesta, formulario de captación, link de Tokko, documento), generar_pdf (ficha para cargar en Tokko). Cambiar: cargar visita/consulta, agendar, registrar propuesta, cambiar etapa, editar campos (precio, tipo, observaciones, Tokko, origen, colega, comisión, vendedor, motivo de suspensión, % de aviso, datos del propietario), marcar o borrar documentos, corregir o borrar interacciones del historial, eliminar una propiedad y enviar el reporte al propietario. Todo lo que modifica datos pasa por una tarjeta de confirmación. Si una propuesta fue aceptada, ofrecé pasar la propiedad a Reserva. Para repasar un procedimiento o formulario podés extenderte hasta ~350 palabras con pasos numerados.',
+    'COLABORATIVO: sos un compañero que ayuda de verdad, con buena onda. Cuando mostrés papeles o datos del formulario que faltan, ofrecé ayuda con una frase breve ("pasame una foto o un PDF y lo subo yo" / "si querés completamos juntos lo que falta") y dejá los botones con ofrecer_ayuda. Ofrecelo una sola vez por charla, sin insistir. Para crear una captación nueva no la armes vos: pasá el link del formulario de captación (abrir_enlace o enviar_whatsapp).',
     'FECHAS: hoy es '+dia+' '+hoy+' y son las '+Utilities.formatDate(new Date(), AZCU_TZ, 'HH:mm')+' (Argentina). Resolvé "mañana", "el viernes", etc. a AAAA-MM-DD.',
     'RECORDATORIOS Y AGENDA: si el usuario pide que le recuerdes algo ("recordame en 2 horas", "el viernes a las 10 llamar a X") usá crear_recordatorio directo, sin pedir confirmación, y confirmá en una frase cuándo le vas a avisar y que le llega una notificación. Si no dice hora, preguntala. Para "qué tengo hoy/mañana/esta semana" usá agenda. Para ver o cancelar usá mis_recordatorios y cancelar_recordatorio.',
     (ctx.visita && ctx.visita.id) ? 'CONTEXTO VISITA: el usuario te va a contar cómo le fue en la visita a la propiedad '+String(ctx.visita.id).slice(0,40)+(ctx.visita.interesado ? ' con '+String(ctx.visita.interesado).slice(0,60) : '')+'. Usá proponer_cargar_interaccion con via=Visita y esos datos; poné en observaciones TODO lo que cuente y deducí el resultado (Le interesó, No le interesó, Hizo una propuesta, etc.). Si no queda claro, preguntalo en una sola línea.' : '',
@@ -666,7 +676,7 @@ function azcuOpenAI_(messages, tools){
 }
 
 function azcuProg_(ctx, texto){ try{ if(ctx && ctx.reqId) azcuPut_(ctx.reqId+'p', {progress:texto}); }catch(e){} }
-var AZCU_NOMBRES_ = {buscar_propiedades:'Buscando propiedades…', ficha_propiedad:'Leyendo la ficha…', captacion_formulario:'Leyendo el formulario de captación…', guia_pagina:'Leyendo la guía…', dashboard:'Armando el panel…', resumen_semana:'Armando el resumen de la semana…', crear_recordatorio:'Guardando el recordatorio…', mis_recordatorios:'Buscando tus recordatorios…', agenda:'Revisando tu agenda…', listar_propiedades:'Filtrando propiedades…', encuestas:'Revisando encuestas…', alertas:'Revisando alertas…', resumen_cartera:'Armando el resumen…', documentos_faltantes:'Revisando documentos…', generar_pdf:'Generando el PDF…', enviar_whatsapp:'Armando el mensaje…', abrir_enlace:'Buscando el enlace…'};
+var AZCU_NOMBRES_ = {buscar_propiedades:'Buscando propiedades…', ficha_propiedad:'Leyendo la ficha…', captacion_formulario:'Leyendo el formulario de captación…', guia_pagina:'Leyendo la guía…', dashboard:'Armando el panel…', resumen_semana:'Armando el resumen de la semana…', crear_recordatorio:'Guardando el recordatorio…', mis_recordatorios:'Buscando tus recordatorios…', agenda:'Revisando tu agenda…', listar_propiedades:'Filtrando propiedades…', encuestas:'Revisando encuestas…', alertas:'Revisando alertas…', resumen_cartera:'Armando el resumen…', documentos_faltantes:'Revisando documentos…', generar_pdf:'Generando el PDF…', ofrecer_ayuda:'Preparando la ayuda…', enviar_whatsapp:'Armando el mensaje…', abrir_enlace:'Buscando el enlace…'};
 function azcuChat(pin, mensajes, ctx){
   azcuPin_(pin);
   ctx = ctx || {};
@@ -692,6 +702,7 @@ function azcuChat(pin, mensajes, ctx){
         else if(n==='listar_propiedades') res = azcuHerrListar_(args);
         else if(n==='encuestas') res = azcuHerrEncuestas_(args);
         else if(n==='resumen_semana') res = azcuHerrSemana_();
+        else if(n==='ofrecer_ayuda') res = azcuHerrOfrecer_(args, adj);
         else if(n==='crear_recordatorio') res = azcuHerrCrearRec_(args, ctx);
         else if(n==='mis_recordatorios') res = azcuHerrMisRec_(ctx);
         else if(n==='cancelar_recordatorio') res = azcuHerrCancelarRec_(args, ctx);
@@ -787,6 +798,10 @@ function azcuEjecutar(pin, accion){
     eliminarPropiedad(p.id);
     return {ok:true, mensaje:'Eliminé '+p.dir+' del maestro.'};
   }
+  if(tipo==='completar'){
+    var cm2 = azcuCompletarCampos_(p.id, d.campos||[]);
+    return {ok:true, mensaje:cm2.length ? 'Listo, completé en '+p.dir+': '+cm2.join(', ')+'.' : 'No había nada para completar: ya estaba cargado.'};
+  }
   if(tipo==='adjuntar'){
     var files = accion.files||[], arch = d.archivos||[], hechos = [], q, ar, fl;
     for(q=0;q<arch.length;q++){
@@ -865,6 +880,7 @@ function azcuApi(e){
     else if(req.fn==='azcuAtajo') out = {ok:true, data:azcuAtajo(a[0], a[1])};
     else if(req.fn==='azcuWarm') out = {ok:true, data:azcuWarm(a[0])};
     else if(req.fn==='azcuEjecutar'){ var ac = a[1] || {}; ac.reqId = String(req.id || '').replace(/[^A-Za-z0-9]/g, ''); out = {ok:true, data:azcuEjecutar(a[0], ac)}; }
+    else if(req.fn==='azcuCompletarPlan') out = {ok:true, data:azcuCompletarPlan(a[0], a[1])};
     else if(req.fn==='azcuAdjPlan') out = {ok:true, data:azcuAdjPlan(a[0], a[1], a[2], a[3])};
     else if(req.fn==='azcuTranscribir') out = {ok:true, data:azcuTranscribir(a[0], a[1], a[2])};
     else if(req.fn==='azcuLogo') out = {ok:true, data:azcuLogo_()};
@@ -923,6 +939,66 @@ function azcuPush_(titulo, msg, url, dest, estricto){
   throw new Error('OneSignal 401: clave no aceptada ('+k.length+' caracteres, empieza con "'+k.slice(0,8)+'")');
 }
 function azcuProbarPush(){ Logger.log(azcuPush_('AzcuBot 🏠', 'Prueba de aviso: si lo ves, las notificaciones funcionan.')); }
+var AZCU_TIPOS_ = ['Terreno','Casa','Departamento','PH','Local Comercial','Oficina Comercial','Garage - Cochera','Depósito'];
+var AZCU_ORIENT_ = ['Norte','Sur','Este','Oeste','Noroeste','Noreste','Sudeste','Sudoeste'];
+function azcuFaltantesForm_(id){
+  var p = azcuProp_(id);
+  if(!p) throw new Error('No encontré la propiedad.');
+  var r = azcuFilaMaestro_(p.id);
+  if(!r) throw new Error('No encontré la fila de esa propiedad.');
+  var out = [], duenos = p.duenos||[], n, n0 = Math.max(duenos.length, 1);
+  function vac(c){ var i = r.head.indexOf(c); return i>-1 && String(r.row[i]).trim()===''; }
+  function add(col, q, ph, t, etq, opts){ if(vac(col)) out.push({col:col, q:q, ph:ph||'', t:t||'text', etq:etq||col, opts:opts||null}); }
+  for(n=1;n<=n0;n++){
+    var nom = (duenos[n-1] && duenos[n-1].nombre) || ('el propietario'+(n>1 ? ' '+n : '')), P = 'Dueño '+n+' - ', corto = String(nom).split(' ')[0];
+    add(P+'Celular', '¿Cuál es el celular de '+nom+'?', 'Con característica', 'tel', 'Celular de '+corto);
+    add(P+'E-mail', '¿Y el mail de '+nom+'?', 'nombre@mail.com', 'mail', 'Mail de '+corto);
+    add(P+'DNI', '¿Cuál es el DNI de '+nom+'?', 'Solo números', 'dni', 'DNI de '+corto);
+    add(P+'Fecha de Nacimiento', '¿Fecha de nacimiento de '+nom+'? (dd/mm/aaaa)', 'dd/mm/aaaa', 'fecha', 'Nacimiento de '+corto);
+    add(P+'Nacionalidad', '¿Qué nacionalidad tiene '+nom+'?', 'Argentina', 'text', 'Nacionalidad de '+corto, [{l:'Argentina', v:'Argentina'}]);
+    add(P+'Domicilio', '¿Dónde vive '+nom+'? (calle, número, ciudad)', 'Calle, número, ciudad', 'text', 'Domicilio de '+corto);
+  }
+  add('Tipo de propiedad', '¿Qué tipo de propiedad es?', '', 'sel', 'Tipo', AZCU_TIPOS_.map(function(x){ return {l:x, v:x}; }));
+  add('Superficie Total (m2)', '¿Cuántos m² de superficie total tiene?', 'Solo números', 'num', 'Superficie total');
+  add('Superficie Cubierta (m2)', '¿Y cuántos m² cubiertos?', 'Solo números', 'num', 'Superficie cubierta');
+  add('Dormitorios', '¿Cuántos dormitorios tiene?', 'Número', 'num', 'Dormitorios');
+  add('Ambientes (sin dormitorios)', '¿Cuántos ambientes tiene, sin contar los dormitorios?', 'Número', 'num', 'Ambientes');
+  add('Baños', '¿Cuántos baños?', 'Número', 'num', 'Baños');
+  add('Plantas', '¿Cuántas plantas tiene?', 'Número', 'num', 'Plantas');
+  add('Antigüedad (años)', '¿Qué antigüedad tiene? (en años)', 'Número', 'num', 'Antigüedad');
+  add('Orientación', '¿Qué orientación tiene?', '', 'sel', 'Orientación', AZCU_ORIENT_.map(function(x){ return {l:x, v:x}; }));
+  add('Inscripción del dominio', '¿Cuál es la inscripción del dominio? (matrícula, folio…)', 'Ej: Matrícula 12.345', 'text', 'Inscripción del dominio');
+  return {id:p.id, dir:p.dir, faltan:out.slice(0,14)};
+}
+function azcuCompletarPlan(pin, id){ azcuPin_(pin); return azcuFaltantesForm_(id); }
+function azcuBotones_(items, lim){
+  return items.slice().sort(function(a,b){ return a.faltan.length-b.faltan.length; }).slice(0, lim||5).map(function(x){ return {k:'b', label:'📎 Subir a '+x.direccion, act:'attprop', id:x.id}; });
+}
+function azcuHerrOfrecer_(a, adj){
+  var p = azcuProp_(a.id); if(!p) return {error:'No encontré esa propiedad.'};
+  if(a.que==='subir_documentos' || a.que==='ambos') adj.push({k:'b', label:'📎 Pasarle una foto o PDF a '+p.dir, act:'attprop', id:p.id});
+  if(a.que==='completar_datos' || a.que==='ambos') adj.push({k:'b', label:'📝 Completar los datos que faltan de '+p.dir, act:'compl', id:p.id});
+  return {ok:true, estado:'Botones de ayuda listos en el chat'};
+}
+function azcuAvisoPapeles(){
+  var d = azcuDatos_(), por = {}, sin = 0, tot = 0;
+  d.forEach(function(p){
+    if(!azcuActiva_(p)) return;
+    var f = azcuFalta_(p); if(!f.length) return;
+    tot++;
+    var v = String(p.vendedor||'').trim();
+    if(!v){ sin++; return; }
+    (por[v] = por[v] || []).push({dir:p.dir, faltan:f});
+  });
+  var vs = Object.keys(por);
+  vs.forEach(function(v){
+    var l = por[v].sort(function(a,b){ return a.faltan.length-b.faltan.length; }), x = l[0];
+    var msg = l.length===1 ? x.dir+': faltan '+x.faltan.slice(0,3).join(', ')+(x.faltan.length>3 ? ' y '+(x.faltan.length-3)+' más' : '')+'.' : 'Tenés '+l.length+' propiedades con papeles faltantes. Empezá por '+x.dir+' (faltan '+x.faltan.length+').';
+    try{ azcuPush_('Papeles pendientes 📎', msg+' Pasame una foto o PDF y lo subo.', AZCU_WEB+'?ayuda=docs', azcuDestinos_(v)); }catch(e){}
+  });
+  if(!vs.length && tot){ try{ azcuPush_('Papeles pendientes 📎', 'Hay '+tot+' propiedades con papeles faltantes. Pasame una foto o PDF y lo subo.', AZCU_WEB+'?ayuda=docs'); }catch(e){} }
+}
+
 function azcuAvisoDiario(){
   azcuLimpiarCache_();
   var a = azcuHerrAlertas_(), p = [], lunes = new Date(Date.now()-3*3600000).getUTCDay()===1;
@@ -931,7 +1007,7 @@ function azcuAvisoDiario(){
   if(a.propuestas_sin_respuesta.length) p.push('💬 '+a.propuestas_sin_respuesta.length+' propuesta'+(a.propuestas_sin_respuesta.length===1?'':'s')+' sin respuesta');
   if(lunes && a.papeles.length) p.push('⚠️ '+a.papeles.length+' con papeles incompletos');
   if(lunes && a.sin_movimiento.length) p.push('🛑 '+a.sin_movimiento.length+' sin movimiento');
-  if(p.length) azcuPush_('Buen día ☀️ Esto es lo de hoy', p.join(' · '));
+  if(p.length) azcuPush_('Buen día ☀️ Esto es lo de hoy', p.join(' · '), lunes && a.papeles.length ? AZCU_WEB+'?ayuda=docs' : undefined);
 }
 var AZCU_COD_ = {'Captación':'c','Publicada':'p','Publicadas':'p','Reserva':'r','Vendida':'v','Suspendida':'s'};
 function azcuEstadosGet_(pref){
@@ -1179,16 +1255,17 @@ function azcuAvisoRecordatorios(){
 }
 
 function azcuCrearAvisos(){
-  var nombres = ['azcuAvisoDiario','azcuAvisoCambios','azcuAvisoPostVisita','azcuResumenSemanal','azcuAvisoRecordatorios','azcuCalentar'];
+  var nombres = ['azcuAvisoDiario','azcuAvisoCambios','azcuAvisoPostVisita','azcuResumenSemanal','azcuAvisoRecordatorios','azcuCalentar','azcuAvisoPapeles'];
   ScriptApp.getProjectTriggers().forEach(function(t){ if(nombres.indexOf(t.getHandlerFunction())>=0) ScriptApp.deleteTrigger(t); });
   ScriptApp.newTrigger('azcuAvisoDiario').timeBased().everyDays(1).atHour(8).create();
   ScriptApp.newTrigger('azcuAvisoCambios').timeBased().everyMinutes(30).create();
   ScriptApp.newTrigger('azcuAvisoPostVisita').timeBased().everyMinutes(30).create();
   ScriptApp.newTrigger('azcuAvisoRecordatorios').timeBased().everyMinutes(5).create();
   ScriptApp.newTrigger('azcuCalentar').timeBased().everyMinutes(10).create();
+  ScriptApp.newTrigger('azcuAvisoPapeles').timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(9).create();
   ScriptApp.newTrigger('azcuResumenSemanal').timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(8).create();
   azcuAvisoCambios();
-  Logger.log('Listo: aviso diario 8 h, cambios de etapa y post-visita cada 30 min, resumen semanal los lunes 8 h, recordatorios personales cada 5 min, datos precalentados cada 10 min.');
+  Logger.log('Listo: aviso diario 8 h, cambios de etapa y post-visita cada 30 min, resumen semanal los lunes 8 h, recordatorios personales cada 5 min, datos precalentados cada 10 min, recordatorio de papeles los lunes 9 h.');
 }
 
 function azcuDiagnostico(){
@@ -1211,8 +1288,8 @@ function azcuDiagnostico(){
     try{ var pdf = generarInformeTokko(cap.id); if(pdf && pdf.base64) ok('PDF ficha Tokko', Math.round(pdf.base64.length*0.75/1024)+' KB de '+cap.dir); else no('PDF ficha Tokko', 'vino vacío'); }catch(e){ no('PDF ficha Tokko', e); }
   }
   try{
-    var h = ScriptApp.getProjectTriggers().map(function(t){ return t.getHandlerFunction(); }), falta = ['azcuAvisoDiario','azcuAvisoCambios','azcuAvisoPostVisita','azcuResumenSemanal','azcuAvisoRecordatorios','azcuCalentar'].filter(function(n){ return h.indexOf(n)<0; });
-    if(falta.length) no('Activadores', 'faltan '+falta.join(', ')+' (ejecutá azcuCrearAvisos)'); else ok('Activadores', '6 de 6');
+    var h = ScriptApp.getProjectTriggers().map(function(t){ return t.getHandlerFunction(); }), falta = ['azcuAvisoDiario','azcuAvisoCambios','azcuAvisoPostVisita','azcuResumenSemanal','azcuAvisoRecordatorios','azcuCalentar','azcuAvisoPapeles'].filter(function(n){ return h.indexOf(n)<0; });
+    if(falta.length) no('Activadores', 'faltan '+falta.join(', ')+' (ejecutá azcuCrearAvisos)'); else ok('Activadores', '7 de 7');
   }catch(e){ no('Activadores', e); }
   try{
     var q = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {method:'post', contentType:'application/json', headers:{Authorization:'Bearer '+_openAiApiKey()}, muteHttpExceptions:true, payload:JSON.stringify({model:AZCU_MODEL, messages:[{role:'user', content:'Respondé solo: ok'}], max_tokens:5})});

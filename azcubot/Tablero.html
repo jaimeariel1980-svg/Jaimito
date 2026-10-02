@@ -1344,7 +1344,7 @@ google.script.run
     return h+'</div>';
   }
   function adjHtml(ad){
-    return '<div class="azb-opts ad">'+ad.map(function(a){ return a.k==='l' ? '<a class="azb-op" href="'+esc(a.url)+'" target="_blank" rel="noopener" style="text-decoration:none">'+esc(a.label)+'</a>' : '<button type="button" class="azb-op" data-f="'+esc(a.id)+'" data-fn="'+esc(a.nombre)+'">📄 '+esc(a.nombre)+'</button>'; }).join('')+'</div>';
+    return '<div class="azb-opts ad">'+ad.map(function(a){ return a.k==='b' ? '<button type="button" class="azb-op" data-a="adjb" data-act="'+esc(a.act)+'" data-id="'+esc(a.id)+'">'+esc(a.label)+'</button>' : a.k==='l' ? '<a class="azb-op" href="'+esc(a.url)+'" target="_blank" rel="noopener" style="text-decoration:none">'+esc(a.label)+'</a>' : '<button type="button" class="azb-op" data-f="'+esc(a.id)+'" data-fn="'+esc(a.nombre)+'">📄 '+esc(a.nombre)+'</button>'; }).join('')+'</div>';
   }
   function stash(ad){
     return (ad||[]).map(function(a){ if(a.k!=='f') return a; var id = 'f'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); st.fd[id] = {b64:a.base64, mime:a.mime}; return {k:'f', id:id, nombre:a.nombre}; });
@@ -1385,7 +1385,7 @@ google.script.run
     if(!st.att.length) return '';
     var n = st.att.length;
     return '<div class="azb-tray"><div class="azb-th">'+st.att.map(function(a,i){ return '<div class="azb-tf">'+(a.t?'<img src="'+a.t+'" alt="">':'PDF')+'<button type="button" data-a="attdel" data-i="'+i+'" aria-label="Quitar">✕</button></div>'; }).join('')+(n<8?'<button type="button" class="azb-tadd" data-a="attach" aria-label="Agregar más">＋</button>':'')+'</div>'+
-      '<div class="azb-tq">¿Qué hacemos con '+(n===1?'este archivo':'estos '+n+' archivos')+'?</div><div class="azb-opts" style="margin:6px 0 0"><button type="button" class="azb-op" data-a="attsave">📁 Guardar en una propiedad</button><button type="button" class="azb-op" data-a="attnew">➕ Nueva captación</button><button type="button" class="azb-op" data-a="attread">🔍 Leer y explicar</button></div></div>';
+      '<div class="azb-tq">¿Qué hacemos con '+(n===1?'este archivo':'estos '+n+' archivos')+'?</div><div class="azb-opts" style="margin:6px 0 0"><button type="button" class="azb-op" data-a="attsave">📁 Guardar en una propiedad</button><button type="button" class="azb-op" data-a="attread">🔍 Leer y explicar</button></div></div>';
   }
   function sheetHtml(){
     return st.sheet ? '<div class="azb-ov" data-a="sheetx"><div class="azb-sh"><div class="azb-shh">Adjuntar</div><button type="button" class="azb-sho" data-a="attcam"><span>📷</span><div><b>Sacar foto</b><small>Con la cámara del celular</small></div></button><button type="button" class="azb-sho" data-a="attgal"><span>🖼</span><div><b>Elegir foto o PDF</b><small>De la galería o de tus archivos</small></div></button><button type="button" class="azb-shc" data-a="sheetx">Cancelar</button></div></div>' : '';
@@ -1445,6 +1445,30 @@ google.script.run
       (plan.faltan||[]).forEach(function(f){ extra.push(faltaStep(f)); });
       w.sp = w.sp.concat(extra); wzAsk();
     }, function(err){ st.busy = false; st.status = ''; st.wz = null; st.msgs.push({role:'assistant', content:'No pude analizar los archivos: '+err}); save(); render(); });
+  }
+  function complStart(id){
+    st.entered = true; st.view = 'chat'; st.busy = true; st.status = 'Viendo qué falta…'; save(); render();
+    call('azcuCompletarPlan', [id], function(pl){
+      st.busy = false; st.status = '';
+      if(!(pl.faltan||[]).length){ st.msgs.push({role:'assistant', content:'**'+pl.dir+'** ya tiene todos los datos del formulario cargados 🙌 ¿Revisamos los papeles?'}); save(); render(); return; }
+      var sp = pl.faltan.map(function(f){
+        var st1 = faltaStep({k:f.col, q:f.q, ph:f.ph, t:f.t, opts:f.opts});
+        if(f.t==='num') st1.parse = function(t){ var x = t.replace(',', '.').replace(/[^0-9.]/g,''); return x && !isNaN(+x) ? x : null; };
+        if(f.opts && f.opts.length && f.t==='sel') st1.kind = 'opt';
+        st1.opt = true; st1.etq = f.etq; return st1;
+      });
+      st.wz = {t:'compl', sp:sp, i:0, d:{}, opts:[], skip:false, ph:'', plan:pl};
+      st.msgs.push({role:'assistant', content:'Dale, completemos juntos lo que falta de **'+pl.dir+'**. Son '+sp.length+' datos, contestá de a uno o tocá Omitir 👍', w:1}); wzAsk();
+    }, function(err){ st.busy = false; st.status = ''; st.msgs.push({role:'assistant', content:'No pude ver qué falta: '+err}); save(); render(); });
+  }
+  function complFin(){
+    var w = st.wz, pl = w.plan, cs = [], a = {id:'a'+Date.now(), estado:'pendiente'};
+    st.wz = null;
+    w.sp.forEach(function(sp){ var v = w.d[sp.k]; if(v===undefined || v==='') return; if(/^\d{4}-\d{2}-\d{2}$/.test(v)) v = v.split('-').reverse().join('/'); cs.push({col:sp.k, valor:v, etq:sp.etq||sp.k}); });
+    if(!cs.length){ st.msgs.push({role:'assistant', content:'Listo, no cargamos nada. Cuando quieras retomamos 👍'}); save(); render(); return; }
+    a.tipo = 'completar'; a.datos = {id:pl.id, dir:pl.dir, campos:cs};
+    a.resumen = 'Completar en '+pl.dir+': '+cs.map(function(c){ return c.etq+' → '+c.valor; }).join(' · ');
+    st.msgs.push({role:'assistant', content:'Listo, revisá y confirmá 👇', acciones:[a]}); save(); render();
   }
   function adjFinal(){
     var w = st.wz, plan = w.plan, d = w.d, a = {id:'a'+Date.now(), estado:'pendiente'}, arch = [];
@@ -1566,6 +1590,7 @@ google.script.run
     if(st.busy) return;
     var go = function(){
       st.wz = {t:t, sp:steps(t), i:0, d:{}, opts:[], skip:false, ph:''};
+      if(t==='adjex' && st.pre){ var pp = (st.props||[]).filter(function(x){ return x.id===st.pre; })[0]; st.pre = null; if(pp){ st.wz.d.id = pp.id; st.wz.d.dir = pp.dir; st.wz.i = 1; wzSay('Perfecto: **'+pp.dir+'**'); } }
       if(t==='cargar' || t==='agendar'){ st.wz.i = -1; st.wz.opts = [{l:'🎤 Todo por audio', v:'libre'},{l:'👣 Paso a paso', v:'paso'}]; wzSay('¿Cómo '+(t==='cargar'?'cargamos la visita':'agendamos')+'?'); save(); render(); }
       else wzAsk();
     };
@@ -1574,6 +1599,7 @@ google.script.run
     call('azcuWarm', [], function(r){ st.busy = false; st.status = ''; st.props = Array.isArray(r) ? r : []; go(); }, function(){ st.busy = false; st.status = ''; st.props = []; go(); });
   }
   function wzFin(){
+    if(st.wz && st.wz.t==='compl') return complFin();
     if(st.wz && (st.wz.t==='adjex' || st.wz.t==='adjnew')){ if(!st.wz.plan) return adjAnalizar(); return adjFinal(); }
     var w = st.wz, d = w.d, a = {id:'a'+Date.now(), estado:'pendiente'}, pr = (st.props||[]).filter(function(p){ return p.id===d.id; })[0] || {}, fd = function(f){ return f.split('-').reverse().join('/'); };
     st.wz = null;
@@ -1734,7 +1760,7 @@ google.script.run
     else if(a==='attgal'){ st.sheet = false; render(); fGal.click(); }
     else if(a==='attdel'){ st.att.splice(+t.dataset.i, 1); render(); }
     else if(a==='attsave'){ attMsg('guardar en una propiedad'); wzStart('adjex'); }
-    else if(a==='attnew'){ attMsg('nueva captación'); wzStart('adjnew'); }
+    else if(a==='adjb'){ if(t.dataset.act==='attprop'){ st.pre = t.dataset.id; st.sheet = true; render(); } else if(t.dataset.act==='compl'){ complStart(t.dataset.id); } }
     else if(a==='attread'){ attRead(); }
     else if(a==='mic'){ startRec(); }
     else if(a==='recsend'){ stopRec(true); }
@@ -1777,6 +1803,7 @@ google.script.run
   (function(){
     if(!APP) return;
     var q; try{ q = new URLSearchParams(location.search); }catch(e){ return; }
+    if(q.get('ayuda')==='docs'){ try{ history.replaceState(null, '', location.pathname); }catch(e){} st.entered = true; setTimeout(function(){ if(!st.busy) ask('¿Qué documentos faltan?', 'docs'); }, 900); return; }
     var id = q.get('cv'); if(!id) return;
     var ci = q.get('ci') || '';
     try{ history.replaceState(null, '', location.pathname); }catch(e){}
@@ -1794,4 +1821,5 @@ google.script.run
   if(!APP && !st.msgs.length && !ls('tip')){ setTimeout(function(){ if(st.open) return; var t = document.createElement('div'); t.className = 'azb azb-tip'; t.textContent = '¿Te doy una mano? 👋'; document.body.appendChild(t); ls('tip','1'); setTimeout(function(){ t.remove(); }, 7000); }, 2500); }
 })();
 </script>
+
 </body></html>
