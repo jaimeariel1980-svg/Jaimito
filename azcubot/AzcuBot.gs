@@ -1024,7 +1024,7 @@ function azcuLog_(tipo, texto, dir, quien){
   }catch(e){}
 }
 function azcuMovimientos_(dias){
-  dias = Math.max(1, Math.min(+dias||5, 31));
+  dias = Math.max(1, Math.min(+dias||90, 365));
   var hn = azcuHoy_(), desde = Date.now()-dias*86400000, out = [], dirs = {}, i, v;
   azcuDatos_().forEach(function(p){ dirs[String(p.id).trim()] = p.dir; });
   try{
@@ -1050,7 +1050,7 @@ function azcuMovimientos_(dias){
     }
   }catch(e){}
   out.sort(function(a,b){ return b.ms-a.ms; });
-  return {items:out.slice(0,15), ahora:Date.now()};
+  return {items:out.slice(0,5), ahora:Date.now()};
 }
 function azcuMov(pin, dias){ azcuPin_(pin); return azcuMovimientos_(dias); }
 function azcuAvisoDiario(){

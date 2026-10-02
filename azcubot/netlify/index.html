@@ -31,7 +31,7 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
 .azb-fab:hover{transform:scale(1.07)}
 .azb-fab .azb-dot.n{background:#d1495b;width:22px;height:22px;top:-2px;right:-2px;display:flex;align-items:center;justify-content:center;color:#fff;font:700 11px 'Inter',sans-serif}
 .azb-nv{position:relative}.azb-bd{position:absolute;top:0;right:0;min-width:16px;height:16px;border-radius:8px;background:#d1495b;color:#fff;font:700 10px/16px 'Inter',sans-serif;font-style:normal;text-align:center;padding:0 3px}
-.azb-mv{display:flex;gap:10px;background:#fff;border:1px solid var(--ln);padding:10px 12px;margin-bottom:8px}.azb-mv .ic{font-size:20px}.azb-mv b{display:block;font:600 13.5px 'Inter',sans-serif}.azb-mv em{display:block;font:normal 13px 'Inter',sans-serif;color:var(--n)}.azb-mv small{display:block;font:11.5px 'Inter',sans-serif;color:var(--mu)}.azb-empty{padding:20px;text-align:center;color:var(--mu);font:13px 'Inter',sans-serif}
+.azb-mv{display:flex;gap:10px;background:#fff;border:1px solid var(--ln);padding:10px 12px;margin-bottom:8px}.azb-mv .ic{font-size:20px}.azb-mv b{display:block;font:600 13.5px 'Inter',sans-serif}.azb-mv em{display:block;font:normal 13px 'Inter',sans-serif;color:var(--n)}.azb-mv small{display:block;font:11.5px 'Inter',sans-serif;color:var(--mu)}.azb-nw{text-decoration:none;background:#d1495b;color:#fff;font:700 9.5px 'Inter',sans-serif;padding:2px 6px;border-radius:8px;margin-left:6px;vertical-align:middle}.azb-empty{padding:20px;text-align:center;color:var(--mu);font:13px 'Inter',sans-serif}
 .azb-fab .azb-dot{position:absolute;top:2px;right:2px;width:14px;height:14px;border-radius:50%;background:#2e9e5b;border:2px solid #fff}
 .azb-tip{position:fixed;right:102px;bottom:36px;background:var(--n);color:#fff;font-size:13.5px;font-weight:600;padding:9px 14px;border-radius:12px 12px 2px 12px;z-index:9000;box-shadow:0 4px 14px rgba(0,0,0,.2);animation:azbin .3s}
 .azb-tip:after{content:"";position:absolute;right:-7px;bottom:0;border:7px solid transparent;border-left-color:var(--n);border-bottom-color:var(--n)}
@@ -244,7 +244,7 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
   var DN = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'], DL = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'], MN = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   function movLoad(){
     if(!st.nombre && st.nombre!=='') return;
-    call('azcuMov', [5], function(d){
+    call('azcuMov', [90], function(d){
       st.mov = d.items || [];
       var seen = +ls('mseen'); if(!seen){ seen = Date.now()-864e5; ls('mseen', String(seen)); }
       st.movN = st.view==='mov' ? 0 : st.mov.filter(function(x){ return x.ms>seen; }).length;
@@ -253,13 +253,13 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
     }, function(){});
   }
   function movHtml(){
-    var its = st.mov, last = '', h = '<div class="azb-agh"><b>Novedades</b><span>Últimos 5 días</span></div>';
+    var its = st.mov, last = '', h = '<div class="azb-agh"><b>Novedades</b><span>Últimas novedades</span></div>';
     if(!its) return h+'<div class="azb-empty">Cargando…</div>';
-    if(!its.length) return h+'<div class="azb-empty">Sin movimientos recientes 🙂</div>';
+    if(!its.length) return h+'<div class="azb-empty">Todavía no hay novedades 🙂</div>';
     its.forEach(function(x){
       var lb = dayLbl(x.ms);
       if(lb!==last){ h += '<div class="azb-dsep"><span>'+lb+'</span></div>'; last = lb; }
-      h += '<div class="azb-mv"><span class="ic">'+x.ic+'</span><div><b>'+esc(x.t)+'</b>'+(x.dir?'<em>'+esc(x.dir)+'</em>':'')+(x.d?'<small>'+esc(x.d)+'</small>':'')+'<small>'+(x.h?hhmm(x.ms)+' · ':'')+(x.q?esc(x.q):'')+'</small></div></div>';
+      h += '<div class="azb-mv"><span class="ic">'+x.ic+'</span><div><b>'+esc(x.t)+(x.ms>(st.movSeen||0)?' <u class="azb-nw">NUEVO</u>':'')+'</b>'+(x.dir?'<em>'+esc(x.dir)+'</em>':'')+(x.d?'<small>'+esc(x.d)+'</small>':'')+'<small>'+(x.h?hhmm(x.ms)+' · ':'')+(x.q?esc(x.q):'')+'</small></div></div>';
     });
     return h;
   }
@@ -678,7 +678,7 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
     else if(a==='mic'){ startRec(); }
     else if(a==='recsend'){ stopRec(true); }
     else if(a==='reccancel'){ stopRec(false); }
-    else if(a==='mov'){ if(st.view==='mov'){ st.view = 'chat'; render(); } else { st.menu = false; st.entered = true; st.view = 'mov'; st.movN = 0; ls('mseen', String(Date.now())); render(); movLoad(); } }
+    else if(a==='mov'){ if(st.view==='mov'){ st.view = 'chat'; render(); } else { st.menu = false; st.entered = true; st.view = 'mov'; st.movSeen = +ls('mseen') || 0; st.movN = 0; ls('mseen', String(Date.now())); render(); movLoad(); } }
     else if(a==='agenda'){ if(st.view==='agenda'){ st.view = 'chat'; render(); } else { st.menu = false; st.view = 'agenda'; st.agSel = iso(new Date()); st.agForm = false; st.agNote = ''; st.entered = true; render(); agLoad(); } }
     else if(a==='agnew'){ st.agForm = true; render(); var ti = root.querySelector('#azbAgT'); if(ti) ti.focus(); }
     else if(a==='agcancel'){ st.agForm = false; render(); }
