@@ -99,6 +99,7 @@
 .azb-br em{font-style:normal;width:26px;text-align:right;font-weight:700}
 .azb-card.dg{border-left-color:var(--rj);background:#fff5f6;border-color:#f1c9cf}.azb-card.dg .azb-k{color:var(--rj)}
 .azb-opts.ad{margin-top:-4px}
+.azb-cxb{width:44px;border:1px solid var(--rj);background:#fff;color:var(--rj);font-size:17px;cursor:pointer;flex-shrink:0}
 .azb-days{display:flex;gap:6px;overflow-x:auto;padding:0 0 10px;scrollbar-width:none}.azb-days::-webkit-scrollbar{display:none}
 .azb-day{flex:0 0 46px;border:1px solid var(--ln);background:#fff;padding:7px 0 6px;text-align:center;cursor:pointer;font-family:inherit;color:var(--ink)}
 .azb-day i{display:block;font:500 9.5px 'JetBrains Mono',monospace;font-style:normal;letter-spacing:.08em;color:var(--mu)}
@@ -225,8 +226,8 @@
       if(st.busy) h += '<div class="azb-m a">'+mk(22)+'<div class="azb-b azb-ty"><span></span><span></span><span></span>'+(st.status?'<em class="azb-st">'+esc(st.status)+'</em>':'')+'</div></div>';
       }
       h += '</div>'+(st.rec||st.wz||st.view==='agenda'?'':'<div class="azb-chips">'+[['Cargar visita',0,0,'cargar'],['Agendar',0,0,'agendar'],['Propuesta',0,0,'propuesta'],['Panel','Panel de la cartera','panel'],['Agenda',0,0,'agenda'],['Recordame','Quiero crear un recordatorio'],['Alertas','¿Qué alertas tengo hoy?','alertas'],['Resumen','Resumen de la cartera','resumen'],['Documentos','Detalle de documentos faltantes','docs'],['Cambiar estado',0,0,'etapa'],['Reporte',0,0,'reporte'],['Encuestas','¿Cómo vienen las encuestas de satisfacción?'],['Procedimiento','Repasame el procedimiento de ventas'],['Captación','Quiero repasar el formulario de captación de una propiedad'],['Ficha Tokko','Quiero la ficha para cargar en Tokko de una propiedad'],['Enviar encuesta','Quiero enviar la encuesta de satisfacción a un propietario'],['Buscar propiedad','Quiero buscar una propiedad']].map(function(c){ return '<button type="button" class="azb-chip" '+(c[3]==='agenda'?'data-a="agenda"':(c[3]?'data-w="'+c[3]+'"':'data-q="'+esc(c[1])+'"'))+(c[2]?' data-at="'+c[2]+'"':'')+'>'+c[0]+'</button>'; }).join('')+'</div>')+'<form class="azb-in" id="azbForm">'+
-        (st.rec ? '<div class="azb-rb'+(st.rec.cancel?' cx':'')+'"><span class="rd"></span><span id="azbT">0:00</span><span class="rh" id="azbH">'+(st.rec.cancel?'Soltá para cancelar':(st.rec.mode==='tap'?'Tocá el 🎤 para enviar':'Soltá para enviar · ← cancelar'))+'</span></div>' : '<input id="azbInp" placeholder="'+(st.wz&&st.wz.ph?esc(st.wz.ph):'Escribime acá…')+'" autocomplete="off"'+(st.busy?' disabled':'')+'>')+
-        '<button type="button" class="azb-mic'+(st.rec?' rec':'')+'" data-a="mic" title="Mantené apretado para hablar">🎤</button>'+(st.rec?'':'<button class="azb-sd" type="submit"'+(st.busy?' disabled':'')+'>➤</button>')+'</form>';
+        (st.rec ? '<div class="azb-rb'+(st.rec.cancel?' cx':'')+'"><span class="rd"></span><span id="azbT">0:00</span><span class="rh" id="azbH">'+(st.rec.cancel?'Soltá para cancelar':(st.rec.mode==='tap'?'Tocá 🎤 para enviar · ✕ cancela':'Soltá para enviar · ← cancelar'))+'</span></div>' : '<input id="azbInp" placeholder="'+(st.wz&&st.wz.ph?esc(st.wz.ph):'Escribime acá…')+'" autocomplete="off"'+(st.busy?' disabled':'')+'>')+
+        (st.rec?'<button type="button" class="azb-cxb" data-a="reccancel" title="Cancelar audio">✕</button>':'')+'<button type="button" class="azb-mic'+(st.rec?' rec':'')+'" data-a="mic" title="Mantené apretado para hablar">🎤</button>'+(st.rec?'':'<button class="azb-sd" type="submit"'+(st.busy?' disabled':'')+'>➤</button>')+'</form>';
     }
     h += '</div>';
     root.innerHTML = h;
@@ -379,7 +380,7 @@
     if(st.rec || st.busy) return;
     var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if(SR && !st.noSR){
-      var sr = new SR(), q = { mr:{stop:function(){ sr.stop(); }}, t0:Date.now(), mode: micDown ? 'hold' : 'tap', cancel:false, send:true, txt:'', err:'' };
+      var sr = new SR(), q = { mr:{stop:function(){ sr.stop(); }, abort:function(){ try{ sr.abort(); }catch(e){ sr.stop(); } }}, t0:Date.now(), mode: micDown ? 'hold' : 'tap', cancel:false, send:true, txt:'', err:'' };
       sr.lang = 'es-AR'; sr.continuous = false; sr.interimResults = true;
       sr.onresult = function(e){ var o = []; Array.prototype.forEach.call(e.results, function(x){ var t = x[0].transcript.trim(), l = o.length ? o[o.length-1] : ''; if(l && (t.indexOf(l)===0 || l.indexOf(t)===0)) o[o.length-1] = t.length>=l.length ? t : l; else if(t) o.push(t); }); q.txt = o.join(' ').trim(); };
       sr.onerror = function(e){ q.err = e.error || 'error'; };
@@ -416,7 +417,7 @@
       mr.start(); st.rec = r; r.timer = setInterval(recTick, 250); render();
     }).catch(function(){ alert('No pude usar el micrófono. Revisá el permiso del navegador, o usá el dictado del teclado del celular 🎤'); });
   }
-  function stopRec(send){ var r = st.rec; if(!r) return; r.send = !!send && !r.cancel; try{ r.mr.stop(); }catch(e){ st.rec = null; render(); } }
+  function stopRec(send){ var r = st.rec; if(!r) return; r.send = !!send && !r.cancel; try{ if(!r.send && r.mr.abort) r.mr.abort(); else r.mr.stop(); }catch(e){ st.rec = null; render(); } }
   document.addEventListener('pointerdown', function(e){
     var m = e.target.closest && e.target.closest('.azb-mic'); if(!m) return;
     e.preventDefault(); micDown = true; startX = e.clientX;
@@ -431,7 +432,7 @@
   function micUp(){
     if(!micDown) return; micDown = false;
     var r = st.rec; if(!r || r.mode!=='hold') return;
-    if(Date.now()-r.t0 < 500 && !r.cancel){ r.mode = 'tap'; var h = document.getElementById('azbH'); if(h) h.textContent = 'Tocá el 🎤 para enviar'; }
+    if(Date.now()-r.t0 < 500 && !r.cancel){ r.mode = 'tap'; var h = document.getElementById('azbH'); if(h) h.textContent = 'Tocá 🎤 para enviar · ✕ cancela'; }
     else stopRec(true);
   }
   document.addEventListener('pointerup', micUp);
@@ -455,6 +456,7 @@
     else if(a==='start'){ var v = (root.querySelector('#azbName').value||'').trim(); st.nombre = v; ls('nombre', v); st.entered = true; render(); if(!st.warmed){ st.warmed = true; call('azcuWarm', [], function(r){ if(Array.isArray(r)) st.props = r; }, function(){}); } }
     else if(a==='skip'){ st.nombre = ''; ls('nombre', ''); st.entered = true; render(); if(!st.warmed){ st.warmed = true; call('azcuWarm', [], function(r){ if(Array.isArray(r)) st.props = r; }, function(){}); } }
     else if(a==='push'){ pushOn(); }
+    else if(a==='reccancel'){ stopRec(false); }
     else if(a==='agenda'){ if(st.view==='agenda'){ st.view = 'chat'; render(); } else { st.view = 'agenda'; st.agSel = iso(new Date()); st.agForm = false; st.agNote = ''; st.entered = true; render(); agLoad(); } }
     else if(a==='agnew'){ st.agForm = true; render(); var ti = root.querySelector('#azbAgT'); if(ti) ti.focus(); }
     else if(a==='agcancel'){ st.agForm = false; render(); }
