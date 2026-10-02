@@ -808,7 +808,6 @@ function azcuStatsSemana_(){
   return {semana:act, semana_anterior:ant, por_vendedor:vend, visitas_proximos_7_dias:prox, captaciones_nuevas:nuevas, captaciones_nuevas_semana_anterior:nuevasAnt};
 }
 function azcuHerrSemana_(){
-  azcuLimpiarCache_();
   var S = azcuStatsSemana_(), D = azcuHerrDashboard_(), A = azcuHerrAlertas_();
   return {actividad:S, cartera:{propiedades:D.propiedades, activas:D.activas, en_captacion:D.en_captacion, vendidas:D.vendidas, suspendidas:D.suspendidas, satisfaccion:D.encuestas.satisfaccion_promedio},
     atencion:{sin_movimiento_30d:D.activas_sin_movimiento_30d, sin_visitas:D.activas_sin_visitas, papeles_faltan:D.papeles['Faltan papeles'], propuestas_sin_respuesta:A.propuestas_sin_respuesta.length}};
