@@ -511,6 +511,10 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
     st.menu = false;
     if(st.wz && !atajo){ wzIn(text); return; }
     text = (text||'').trim(); if(!text || st.busy) return;
+    if(!atajo && /^(hola+|buenas|buen d[ií]a|buenos d[ií]as|buenas tardes|buenas noches|hey|che|gracias|muchas gracias|ok|oka|dale|listo|genial|perfecto|bien|joya|barbaro|bárbaro)[\s!.¡]*$/i.test(text)){
+      var gr = /gracia/i.test(text) ? '¡De nada! Para eso estoy 🙌' : /^(ok|oka|dale|listo|genial|perfecto|bien|joya|barbaro|bárbaro)/i.test(text) ? '¡Genial! Si necesitás algo más, avisame 👍' : '¡Hola'+(st.nombre?' '+st.nombre:'')+'! ¿En qué te doy una mano? Podés pedirme cargar una visita, agendar, ver alertas o consultar una propiedad.';
+      st.msgs.push({role:'user', content:text}); st.msgs.push({role:'assistant', content:gr}); save(); render(); return;
+    }
     st.msgs.push({role:'user', content:text}); st.busy = true; st.status = ''; save(); render();
     var hist = st.msgs.filter(function(m){ return !m.w; }).map(function(m){ return {role:m.role, content:m.content||''}; }).filter(function(m){ return m.content; });
     call(atajo ? 'azcuAtajo' : 'azcuChat', atajo ? [atajo] : [hist, {nombre:st.nombre||'', fichaId:AZ.ctx||'', visita:st.vis||null}], function(r){
