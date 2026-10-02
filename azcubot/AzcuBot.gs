@@ -844,3 +844,36 @@ function azcuCrearAvisos(){
   azcuAvisoCambios();
   Logger.log('Listo: aviso diario 8 h, cambios de etapa y post-visita cada 30 min, resumen semanal los lunes 8 h.');
 }
+
+function azcuDiagnostico(){
+  var r = [], P = PropertiesService.getScriptProperties(), d = null;
+  function ok(n, x){ r.push('✅ '+n+(x ? ': '+x : '')); }
+  function no(n, e){ r.push('❌ '+n+': '+String((e && e.message) || e)); }
+  ['AZCU_PIN','OPENAI_API_KEY','ONESIGNAL_KEY'].forEach(function(k){ if(P.getProperty(k)) ok('Propiedad '+k); else no('Propiedad '+k, 'falta'); });
+  r.push(P.getProperty('AZCU_GERENCIA') ? '✅ AZCU_GERENCIA: '+P.getProperty('AZCU_GERENCIA') : 'ℹ️ AZCU_GERENCIA no está: el resumen semanal va a tu mail');
+  try{ azcuLimpiarCache_(); d = azcuDatos_(); ok('Lectura de propiedades', d.length+' propiedades'); }catch(e){ no('Lectura de propiedades', e); }
+  try{ var x = azcuHerrDashboard_(); ok('Panel', x.activas+' activas, '+x.encuestas.cantidad+' encuestas'); }catch(e){ no('Panel', e); }
+  try{ var a = azcuHerrAlertas_(); ok('Alertas', a.visitas_hoy.length+' visitas hoy, '+a.sin_movimiento.length+' sin movimiento'); }catch(e){ no('Alertas', e); }
+  try{ var s = azcuHerrSemana_(); ok('Resumen semanal', s.actividad.semana.interacciones+' interacciones esta semana'); }catch(e){ no('Resumen semanal', e); }
+  Object.keys(AZCU_PAGINAS_).forEach(function(k){
+    try{ var t = azcuTextoPagina_(AZCU_PAGINAS_[k]); if(t.length>200) ok('Página '+k, t.length+' caracteres'); else no('Página '+k, 'casi no se pudo leer ('+t.length+' caracteres)'); }catch(e){ no('Página '+k, e); }
+  });
+  if(d && d.length){
+    var p = d[0], cap = d.filter(function(q){ return q.etapa==='Captación'; })[0] || p;
+    try{ var c = azcuHerrCaptacion_({id:p.id}); ok('Formulario de captación', Object.keys(c.formulario_captacion||{}).length+' campos de '+p.dir); }catch(e){ no('Formulario de captación', e); }
+    try{ var f = azcuHerrFicha_({id:p.id}); ok('Ficha', f.direccion+' · '+f.ultimas_interacciones.length+' interacciones'); }catch(e){ no('Ficha', e); }
+    try{ var pdf = generarInformeTokko(cap.id); if(pdf && pdf.base64) ok('PDF ficha Tokko', Math.round(pdf.base64.length*0.75/1024)+' KB de '+cap.dir); else no('PDF ficha Tokko', 'vino vacío'); }catch(e){ no('PDF ficha Tokko', e); }
+  }
+  try{
+    var h = ScriptApp.getProjectTriggers().map(function(t){ return t.getHandlerFunction(); }), falta = ['azcuAvisoDiario','azcuAvisoCambios','azcuAvisoPostVisita','azcuResumenSemanal'].filter(function(n){ return h.indexOf(n)<0; });
+    if(falta.length) no('Activadores', 'faltan '+falta.join(', ')+' (ejecutá azcuCrearAvisos)'); else ok('Activadores', '4 de 4');
+  }catch(e){ no('Activadores', e); }
+  try{
+    var q = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {method:'post', contentType:'application/json', headers:{Authorization:'Bearer '+_openAiApiKey()}, muteHttpExceptions:true, payload:JSON.stringify({model:AZCU_MODEL, messages:[{role:'user', content:'Respondé solo: ok'}], max_tokens:5})});
+    if(q.getResponseCode()===200) ok('OpenAI', 'responde'); else no('OpenAI', q.getResponseCode()+' '+q.getContentText().slice(0,120));
+  }catch(e){ no('OpenAI', e); }
+  try{ var t0 = Date.now(), c2 = azcuChat(P.getProperty('AZCU_PIN')||'', [{role:'user', content:'¿Cómo viene la semana?'}], {nombre:'Diagnóstico'}); ok('Agente completo', Math.round((Date.now()-t0)/1000)+' s · «'+String(c2.texto).slice(0,100)+'…»'); }catch(e){ no('Agente completo', e); }
+  try{ var rp = azcuPush_('AzcuBot ✅', 'Diagnóstico: las notificaciones funcionan.'); ok('Notificación', rp); }catch(e){ no('Notificación', e); }
+  try{ SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento').getLastRow(); ok('Hoja Seguimiento'); }catch(e){ no('Hoja Seguimiento', e); }
+  Logger.log('\n===== DIAGNÓSTICO AZCUBOT =====\n'+r.join('\n')+'\n===============================');
+}
