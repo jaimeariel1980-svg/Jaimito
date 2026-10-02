@@ -219,7 +219,7 @@
   var DN = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'], DL = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'], MN = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   function movLoad(){
     if(!st.nombre && st.nombre!=='') return;
-    call('azcuMov', [90], function(d){
+    call('azcuMov', [5], function(d){
       st.mov = d.items || [];
       var seen = +ls('mseen'); if(!seen){ seen = Date.now()-864e5; ls('mseen', String(seen)); }
       st.movN = st.view==='mov' ? 0 : st.mov.filter(function(x){ return x.ms>seen; }).length;
@@ -228,9 +228,9 @@
     }, function(){});
   }
   function movHtml(){
-    var its = st.mov, last = '', h = '<div class="azb-agh"><b>Novedades</b><span>Últimos 5 movimientos</span></div>';
+    var its = st.mov, last = '', h = '<div class="azb-agh"><b>Novedades</b><span>Últimos 5 días</span></div>';
     if(!its) return h+'<div class="azb-empty">Cargando…</div>';
-    if(!its.length) return h+'<div class="azb-empty">Todavía no hay movimientos.</div>';
+    if(!its.length) return h+'<div class="azb-empty">Sin movimientos recientes 🙂</div>';
     its.forEach(function(x){
       var lb = dayLbl(x.ms);
       if(lb!==last){ h += '<div class="azb-dsep"><span>'+lb+'</span></div>'; last = lb; }
