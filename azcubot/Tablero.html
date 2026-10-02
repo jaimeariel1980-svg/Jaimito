@@ -1269,6 +1269,20 @@ google.script.run
 .azb-wv s{display:block;width:3px;border-radius:2px;background:var(--n);height:6px;animation:azbwv 1s ease-in-out infinite}
 .azb-wv s:nth-child(2){animation-delay:.12s}.azb-wv s:nth-child(3){animation-delay:.24s}.azb-wv s:nth-child(4){animation-delay:.36s}.azb-wv s:nth-child(5){animation-delay:.18s}.azb-wv s:nth-child(6){animation-delay:.3s}.azb-wv s:nth-child(7){animation-delay:.06s}
 @keyframes azbwv{0%,100%{height:6px}50%{height:24px}}
+.azb-rb2.clip{background:#eef3ff;color:var(--n)}
+.azb-tray{padding:10px 12px 6px;background:#fff;border-top:1px solid var(--ln);flex-shrink:0}
+.azb-th{display:flex;gap:10px;overflow-x:auto;align-items:center;padding:6px 6px 2px 2px}
+.azb-tf{position:relative;flex:0 0 58px;height:58px;border:1px solid var(--ln);background:#f3f7ff;display:flex;align-items:center;justify-content:center;font:700 11px 'JetBrains Mono',monospace;color:var(--n)}
+.azb-tf img{width:100%;height:100%;object-fit:cover;display:block}
+.azb-tf button{position:absolute;top:-7px;right:-7px;width:22px;height:22px;border-radius:50%;border:0;background:var(--rj);color:#fff;font-size:11px;cursor:pointer;padding:0;line-height:22px}
+.azb-tadd{flex:0 0 58px;height:58px;border:1.5px dashed var(--n);background:#fff;color:var(--n);font-size:24px;cursor:pointer}
+.azb-tq{font:600 13.5px 'Inter',sans-serif;margin:10px 0 2px}
+.azb-ov{position:fixed;inset:0;background:rgba(15,27,51,.45);z-index:9300;display:flex;align-items:flex-end;justify-content:center}
+.azb-sh{background:#fff;width:100%;max-width:520px;padding:16px 16px calc(16px + env(safe-area-inset-bottom));border-radius:18px 18px 0 0}
+.azb-shh{font:800 18px 'Archivo',sans-serif;margin:2px 0 14px}
+.azb-sho{display:flex;align-items:center;gap:14px;width:100%;text-align:left;border:1px solid var(--ln);background:#fff;padding:14px;margin-bottom:10px;cursor:pointer;font-family:inherit;color:var(--ink)}
+.azb-sho span{font-size:26px}.azb-sho b{display:block;font-size:15px}.azb-sho small{color:var(--mu);font-size:12.5px}
+.azb-shc{width:100%;border:0;background:#f3f1ec;padding:14px;font:600 14px 'Inter',sans-serif;cursor:pointer;color:var(--mu)}
 .azb-rhint{font-size:11.5px;color:var(--mu);text-align:center;margin-top:7px}
 .azb-cxb{width:44px;border:1px solid var(--rj);background:#fff;color:var(--rj);font-size:17px;cursor:pointer;flex-shrink:0}
 .azb-days{display:flex;gap:6px;overflow-x:auto;padding:0 0 10px;scrollbar-width:none}.azb-days::-webkit-scrollbar{display:none}
@@ -1303,7 +1317,7 @@ google.script.run
   var LSK = 'azcu_', AZ = window.AZCU = {ctx:null};
   function ls(k,v){ try{ if(v===undefined) return localStorage.getItem(LSK+k); if(v===null) localStorage.removeItem(LSK+k); else localStorage.setItem(LSK+k,v); }catch(e){ return null; } }
   var APP = !!window.AZCU_APP;
-  var st = { view:'chat', ag:null, agSel:null, agForm:false, agNote:'', agLoading:false, fd:{}, open:APP, entered:false, busy:false, rec:null, nombre:ls('nombre'), pin:ls('pin')||'', msgs:[] };
+  var st = { att:[], sheet:false, fz:{}, view:'chat', ag:null, agSel:null, agForm:false, agNote:'', agLoading:false, fd:{}, open:APP, entered:false, busy:false, rec:null, nombre:ls('nombre'), pin:ls('pin')||'', msgs:[] };
   try{ st.msgs = JSON.parse(ls('msgs')||'[]'); }catch(e){}
   st.noSR = true;
   var gf = document.createElement('link'); gf.rel='stylesheet'; gf.href='https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap'; document.head.appendChild(gf);
@@ -1319,7 +1333,7 @@ google.script.run
   function save(){ ls('msgs', JSON.stringify(st.msgs.slice(-40))); }
   function scroll(){ var b = root.querySelector('.azb-body'); if(b) b.scrollTop = b.scrollHeight; }
   function shortcuts(){
-    return AZ.ctx ? [['Contame de esta propiedad'],['Agendar una visita acá'],['Cargar una consulta acá'],['¿Qué documentos le faltan?']] : [['¿Qué alertas tengo hoy?','alertas'],['Resumen de la cartera','resumen'],['Detalle de documentos faltantes','docs'],['Panel de la cartera (dashboard)','panel'],['Mi agenda y recordatorios',0,'agenda'],['Mis recordatorios',0,0,'¿Qué recordatorios tengo pendientes?'],['Cargar una visita',0,'cargar'],['Agendar una visita',0,'agendar'],['Registrar una propuesta',0,'propuesta'],['Cambiar estado de una propiedad',0,'etapa'],['Enviar reporte al propietario',0,'reporte'],['Encuestas de satisfacción',0,0,'¿Cómo vienen las encuestas de satisfacción?'],['Procedimiento de ventas',0,0,'Repasame el procedimiento de ventas'],['Formulario de captación',0,0,'Quiero repasar o enviar el formulario de captación de una propiedad'],['Ficha para cargar en Tokko (PDF)',0,0,'Quiero la ficha para cargar en Tokko de una propiedad'],['Enviar encuesta por WhatsApp',0,0,'Quiero enviar la encuesta de satisfacción a un propietario'],['Buscar una propiedad']];
+    return AZ.ctx ? [['Contame de esta propiedad'],['Agendar una visita acá'],['Cargar una consulta acá'],['¿Qué documentos le faltan?']] : [['¿Qué alertas tengo hoy?','alertas'],['Resumen de la cartera','resumen'],['Detalle de documentos faltantes','docs'],['Panel de la cartera (dashboard)','panel'],['Adjuntar fotos o documentos',0,'adjuntar'],['Mi agenda y recordatorios',0,'agenda'],['Mis recordatorios',0,0,'¿Qué recordatorios tengo pendientes?'],['Cargar una visita',0,'cargar'],['Agendar una visita',0,'agendar'],['Registrar una propuesta',0,'propuesta'],['Cambiar estado de una propiedad',0,'etapa'],['Enviar reporte al propietario',0,'reporte'],['Encuestas de satisfacción',0,0,'¿Cómo vienen las encuestas de satisfacción?'],['Procedimiento de ventas',0,0,'Repasame el procedimiento de ventas'],['Formulario de captación',0,0,'Quiero repasar o enviar el formulario de captación de una propiedad'],['Ficha para cargar en Tokko (PDF)',0,0,'Quiero la ficha para cargar en Tokko de una propiedad'],['Enviar encuesta por WhatsApp',0,0,'Quiero enviar la encuesta de satisfacción a un propietario'],['Buscar una propiedad']];
   }
   function panelHtml(pn){
     var h = '<div class="azb-pn"><div class="azb-kp">'+pn.kpis.map(function(k){ return '<div class="azb-k1 '+(k.c||'')+'"><b>'+esc(k.n)+'</b><span>'+esc(k.l)+'</span></div>'; }).join('')+'</div>';
@@ -1343,7 +1357,7 @@ google.script.run
     if(f && navigator.canShare && navigator.canShare({files:[f]})){ navigator.share({files:[f], title:nombre}).catch(function(){}); return; }
     var url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = nombre; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
   }
-  var ICO = {trash:'<svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v7M14 10v7"/></svg>', mic:'<svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>', send:'<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>'};
+  var ICO = {trash:'<svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v7M14 10v7"/></svg>', mic:'<svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>', clip:'<svg viewBox="0 0 24 24"><path d="M21 12.5l-8.5 8.5a5.5 5.5 0 0 1-7.8-7.8l9-9a3.7 3.7 0 0 1 5.2 5.2l-9 9a1.8 1.8 0 0 1-2.6-2.6l8.3-8.3"/></svg>', send:'<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>'};
   var COARSE = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
   var DN = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'], DL = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'], MN = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   function agLoad(){
@@ -1367,6 +1381,92 @@ google.script.run
     else h += '<button type="button" class="azb-op" data-a="agnew" style="margin-top:4px">+ Recordatorio para este día</button>';
     return h+'<div style="font-size:12px;color:var(--mu);margin-top:14px">También podés decirlo o escribirlo abajo: «recordame el viernes a las 10 llamar a Marcos».</div>';
   }
+  function trayHtml(){
+    if(!st.att.length) return '';
+    var n = st.att.length;
+    return '<div class="azb-tray"><div class="azb-th">'+st.att.map(function(a,i){ return '<div class="azb-tf">'+(a.t?'<img src="'+a.t+'" alt="">':'PDF')+'<button type="button" data-a="attdel" data-i="'+i+'" aria-label="Quitar">✕</button></div>'; }).join('')+(n<8?'<button type="button" class="azb-tadd" data-a="attach" aria-label="Agregar más">＋</button>':'')+'</div>'+
+      '<div class="azb-tq">¿Qué hacemos con '+(n===1?'este archivo':'estos '+n+' archivos')+'?</div><div class="azb-opts" style="margin:6px 0 0"><button type="button" class="azb-op" data-a="attsave">📁 Guardar en una propiedad</button><button type="button" class="azb-op" data-a="attnew">➕ Nueva captación</button><button type="button" class="azb-op" data-a="attread">🔍 Leer y explicar</button></div></div>';
+  }
+  function sheetHtml(){
+    return st.sheet ? '<div class="azb-ov" data-a="sheetx"><div class="azb-sh"><div class="azb-shh">Adjuntar</div><button type="button" class="azb-sho" data-a="attcam"><span>📷</span><div><b>Sacar foto</b><small>Con la cámara del celular</small></div></button><button type="button" class="azb-sho" data-a="attgal"><span>🖼</span><div><b>Elegir foto o PDF</b><small>De la galería o de tus archivos</small></div></button><button type="button" class="azb-shc" data-a="sheetx">Cancelar</button></div></div>' : '';
+  }
+  var fCam = document.createElement('input'), fGal = document.createElement('input');
+  fCam.type = fGal.type = 'file'; fCam.accept = 'image/*'; fCam.setAttribute('capture', 'environment'); fGal.accept = 'image/*,application/pdf'; fGal.multiple = true;
+  [fCam, fGal].forEach(function(f){ f.style.display = 'none'; document.body.appendChild(f); f.addEventListener('change', function(){ attAdd(f.files); f.value = ''; }); });
+  function attProcess(file){
+    return new Promise(function(res, rej){
+      if(file.type==='application/pdf'){
+        if(file.size>6*1024*1024){ rej(new Error('«'+file.name+'» pesa más de 6 MB.')); return; }
+        var fr = new FileReader(); fr.onload = function(){ res({n:file.name||'documento.pdf', m:'application/pdf', b:String(fr.result).split(',')[1], t:null}); }; fr.onerror = function(){ rej(new Error('No pude leer «'+file.name+'».')); }; fr.readAsDataURL(file); return;
+      }
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function(){
+        var k = Math.min(1, 1800/Math.max(img.width, img.height)), c = document.createElement('canvas'); c.width = Math.round(img.width*k); c.height = Math.round(img.height*k);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        var d = c.toDataURL('image/jpeg', 0.82), tk = Math.min(1, 110/Math.max(c.width, c.height)), t = document.createElement('canvas'); t.width = Math.round(c.width*tk); t.height = Math.round(c.height*tk);
+        t.getContext('2d').drawImage(c, 0, 0, t.width, t.height); URL.revokeObjectURL(url);
+        res({n:((file.name||'foto').replace(/\.[^.]+$/, '') || 'foto')+'.jpg', m:'image/jpeg', b:d.split(',')[1], t:t.toDataURL('image/jpeg', 0.6)});
+      };
+      img.onerror = function(){ URL.revokeObjectURL(url); rej(new Error('No pude abrir «'+(file.name||'la foto')+'».')); };
+      img.src = url;
+    });
+  }
+  function attAdd(list){
+    var files = Array.prototype.slice.call(list||[]); if(!files.length) return;
+    var room = 8 - st.att.length; if(room<=0){ alert('Máximo 8 archivos por vez.'); return; }
+    files = files.slice(0, room); st.busy = true; st.status = 'Preparando '+(files.length===1?'el archivo…':'los archivos…'); render();
+    var chain = Promise.resolve(), errs = [];
+    files.forEach(function(f){ chain = chain.then(function(){ return attProcess(f).then(function(a){
+      var tot = st.att.reduce(function(s,x){ return s+x.b.length; }, 0)+a.b.length;
+      if(tot*0.75 > 12*1024*1024){ errs.push('Con «'+a.n+'» se pasa del límite de 12 MB. Mandalo en otra tanda.'); return; }
+      a.id = 'x'+Date.now().toString(36)+Math.random().toString(36).slice(2,5); st.att.push(a);
+    }).catch(function(e){ errs.push(e.message||String(e)); }); }); });
+    chain.then(function(){ st.busy = false; st.status = ''; if(errs.length) alert(errs.join('\n')); render(); });
+  }
+  function attFiles(){ return st.att.map(function(a){ return {n:a.n, m:a.m, b:a.b}; }); }
+  function attMsg(txt){ st.msgs.push({role:'user', content:'📎 '+st.att.length+(st.att.length===1?' archivo':' archivos')+' · '+txt, w:1}); }
+  function attRead(){
+    attMsg('leer y explicar'); st.busy = true; st.status = 'Leyendo los archivos…'; save(); render();
+    call('azcuAdjPlan', ['leer', '', attFiles()], function(r){ st.busy = false; st.status = ''; st.msgs.push({role:'assistant', content:r.texto}); save(); render(); },
+      function(err){ st.busy = false; st.status = ''; st.msgs.push({role:'assistant', content:'No pude leer los archivos: '+err}); save(); render(); });
+  }
+  function faltaStep(f){
+    var tel = function(t){ var d = t.replace(/[^0-9]/g,''); return d.length>=6 ? d : null; }, mail = function(t){ return /^\S+@\S+\.\S+$/.test(t) ? t : null; }, dni = function(t){ var d = t.replace(/[^0-9]/g,''); return d.length>=7 && d.length<=9 ? d : null; };
+    var parse = f.t==='tel' ? tel : f.t==='mail' ? mail : f.t==='dni' ? dni : f.t==='fecha' ? parseFecha : null;
+    return {k:f.k, q:f.q, kind:'text', ph:f.ph, parse:parse, opts:(f.rapido||[]).map(function(x){ return {l:x, v:x}; }).concat(f.nada ? [{l:'No tiene', v:'-'}] : [])};
+  }
+  function adjAnalizar(){
+    var w = st.wz, nueva = w.t==='adjnew';
+    st.busy = true; st.status = 'Leyendo los documentos… puede tardar un poco'; save(); render();
+    call('azcuAdjPlan', [nueva ? 'nueva' : 'existente', w.d.id||'', attFiles()], function(plan){
+      st.busy = false; st.status = ''; w.plan = plan;
+      var extra = [];
+      (plan.sin||[]).forEach(function(s){ extra.push({k:'doc_'+s.i, q:'No pude identificar «'+s.nombre+'». ¿Qué documento es?', kind:'opt', opts:(plan.docs||[]).map(function(d){ return {l:d.l, v:d.v}; }).concat([{l:'No guardarlo', v:''}])}); });
+      (plan.faltan||[]).forEach(function(f){ extra.push(faltaStep(f)); });
+      w.sp = w.sp.concat(extra); wzAsk();
+    }, function(err){ st.busy = false; st.status = ''; st.wz = null; st.msgs.push({role:'assistant', content:'No pude analizar los archivos: '+err}); save(); render(); });
+  }
+  function adjFinal(){
+    var w = st.wz, plan = w.plan, d = w.d, a = {id:'a'+Date.now(), estado:'pendiente'}, arch = [];
+    st.wz = null;
+    function lab(v){ var x = (plan.docs||[]).filter(function(y){ return y.v===v; })[0]; return x ? x.l : v; }
+    if(w.t==='adjex'){
+      (plan.archivos||[]).forEach(function(x){ arch.push({i:x.i, doc:x.doc, nombre:x.nombre}); });
+      (plan.sin||[]).forEach(function(s){ var v = d['doc_'+s.i]; if(v) arch.push({i:s.i, doc:v, nombre:s.nombre}); });
+      if(!arch.length){ st.msgs.push({role:'assistant', content:'No quedó ningún archivo para guardar. Probá con una foto más clara.'}); save(); render(); return; }
+      a.tipo = 'adjuntar'; a.datos = {id:plan.id, dir:plan.dir, archivos:arch, campos:plan.campos||[]};
+      a.resumen = 'Guardar en '+plan.dir+': '+arch.map(function(x){ return x.nombre+' → '+x.doc; }).join(' · ')+((plan.campos||[]).length ? ' · Completar datos que estaban vacíos: '+plan.campos.map(function(c){ return c.etq+' '+c.valor; }).join('; ') : '');
+    } else {
+      var datos = {}; Object.keys(plan.datos||{}).forEach(function(k){ datos[k] = plan.datos[k]; });
+      (plan.faltan||[]).forEach(function(f){ var v = d[f.k]; if(v!==undefined && v!=='') datos[f.k] = v; });
+      (plan.archivos||[]).forEach(function(x){ arch.push({i:x.i, key:x.key, nombre:x.nombre}); });
+      (plan.sin||[]).forEach(function(s){ var v = d['doc_'+s.i]; if(v) arch.push({i:s.i, key:v, nombre:s.nombre}); });
+      a.tipo = 'nueva'; a.datos = {id:'nueva', datos:datos, archivos:arch};
+      a.resumen = 'Crear captación nueva: '+(datos.calle||'?')+' '+(datos.numero||'')+', '+(datos.ciudad||'')+' · Propietario: '+(datos['dueño1_nombre']||'?')+' (DNI '+(datos['dueño1_dni']||'?')+', cel '+(datos['dueño1_celular']||'?')+')'+(arch.length ? ' · Documentos: '+arch.map(function(x){ return x.nombre+' → '+lab(x.key); }).join(', ') : '')+' · Se le manda un mail de confirmación a '+(datos['dueño1_email']||'?');
+    }
+    st.fz[a.id] = st.att.slice(); st.att = [];
+    st.msgs.push({role:'assistant', content:'Listo, revisá y confirmá 👇', acciones:[a]}); save(); render();
+  }
   function render(){
     var h = APP ? '' : '<button class="azb-fab" id="azbFab" aria-label="Abrir AzcuBot">'+mk(62)+'<span class="azb-dot"></span></button>';
     h += '<div class="azb-panel'+(st.open?' on':'')+(APP?' azb-app':'')+'">';
@@ -1381,7 +1481,7 @@ google.script.run
       if(st.view==='agenda') h += agendaHtml(); else {
       if(!st.msgs.length){
         h += '<div class="azb-av">'+mk(60)+'</div><div class="azb-eyb">Tu asistente, siempre disponible</div><h1>Hola'+(st.nombre?', <b>'+esc(st.nombre)+'</b>':'')+'.<br>¿Qué hacemos hoy?</h1><p class="azb-lead">Preguntame lo que quieras del tablero o pedime que cargue visitas, agende, cambie estados o mande reportes. Escribime como a un compañero.</p>'+(APP && window.OneSignalDeferred && !st.pushOn ? '<button class="azb-row" data-a="push" style="border-color:var(--n);background:#eef3ff">🔔 Activar avisos en este celular<span>→</span></button>' : '')+'<div class="azb-lbl">Atajos</div>';
-        shortcuts().forEach(function(s){ h += '<button class="azb-row" '+(s[2]==='agenda'?'data-a="agenda"':(s[2]?'data-w="'+s[2]+'"':'data-q="'+esc(s[3]||s[0])+'"'))+(s[1]?' data-at="'+s[1]+'"':'')+'>'+esc(s[0])+'<span>→</span></button>'; });
+        shortcuts().forEach(function(s){ h += '<button class="azb-row" '+(s[2]==='agenda'?'data-a="agenda"':s[2]==='adjuntar'?'data-a="attach"':(s[2]?'data-w="'+s[2]+'"':'data-q="'+esc(s[3]||s[0])+'"'))+(s[1]?' data-at="'+s[1]+'"':'')+'>'+esc(s[0])+'<span>→</span></button>'; });
       } else st.msgs.forEach(function(m,mi){
         if(m.role==='user') h += '<div class="azb-m u"><div class="azb-b">'+fmt(m.content)+'</div></div>';
         else {
@@ -1390,7 +1490,7 @@ google.script.run
           if(m.adj && m.adj.length) h += adjHtml(m.adj);
           (m.acciones||[]).forEach(function(a,ai){
             var done = a.estado==='hecho', canc = a.estado==='cancelado';
-            h += '<div class="azb-card'+(done?' ok':'')+(canc?' no':'')+(a.peligro&&!done&&!canc?' dg':'')+'"><div class="azb-k">'+(done?'✓ Hecho':canc?'Cancelado':(a.peligro?'⚠️ Confirmá con cuidado':'Confirmá esta acción'))+'</div><div class="azb-s">'+esc(done&&a.resultado?a.resultado:a.resumen)+'</div>'+
+            h += '<div class="azb-card'+(done?' ok':'')+(canc?' no':'')+(a.peligro&&!done&&!canc?' dg':'')+'"><div class="azb-k">'+(done?'✓ Hecho':canc?'Cancelado':(a.peligro?'⚠️ Confirmá con cuidado':'Confirmá esta acción'))+'</div><div class="azb-s">'+esc(done&&a.resultado?(a.resultado==='Ejecutando…'&&st.status?st.status:a.resultado):a.resumen)+'</div>'+
               (a.estado==='pendiente'?'<div class="azb-bt"><button class="azb-btn" data-ok="'+mi+':'+ai+'">Confirmar</button><button class="azb-btn o" data-no="'+mi+':'+ai+'">Cancelar</button></div>':'')+'</div>';
           });
         }
@@ -1398,12 +1498,12 @@ google.script.run
       if(st.wz && !st.busy && (st.wz.opts.length || st.wz.skip)){ h += '<div class="azb-opts">'+st.wz.opts.map(function(o,i){ return '<button type="button" class="azb-op" data-wo="'+i+'">'+esc(o.l)+'</button>'; }).join('')+(st.wz.skip?'<button type="button" class="azb-op s" data-ws="1">Omitir →</button>':'')+'<button type="button" class="azb-op x" data-wx="1">✕ Cancelar</button></div>'; }
       if(st.busy) h += '<div class="azb-m a">'+mk(22)+'<div class="azb-b azb-ty"><span></span><span></span><span></span>'+(st.status?'<em class="azb-st">'+esc(st.status)+'</em>':'')+'</div></div>';
       }
-      h += '</div>'+(st.rec||st.wz||st.view==='agenda'?'':'<div class="azb-chips">'+[['Cargar visita',0,0,'cargar'],['Agendar',0,0,'agendar'],['Propuesta',0,0,'propuesta'],['Panel','Panel de la cartera','panel'],['Agenda',0,0,'agenda'],['Recordame','Quiero crear un recordatorio'],['Alertas','¿Qué alertas tengo hoy?','alertas'],['Resumen','Resumen de la cartera','resumen'],['Documentos','Detalle de documentos faltantes','docs'],['Cambiar estado',0,0,'etapa'],['Reporte',0,0,'reporte'],['Encuestas','¿Cómo vienen las encuestas de satisfacción?'],['Procedimiento','Repasame el procedimiento de ventas'],['Captación','Quiero repasar el formulario de captación de una propiedad'],['Ficha Tokko','Quiero la ficha para cargar en Tokko de una propiedad'],['Enviar encuesta','Quiero enviar la encuesta de satisfacción a un propietario'],['Buscar propiedad','Quiero buscar una propiedad']].map(function(c){ return '<button type="button" class="azb-chip" '+(c[3]==='agenda'?'data-a="agenda"':(c[3]?'data-w="'+c[3]+'"':'data-q="'+esc(c[1])+'"'))+(c[2]?' data-at="'+c[2]+'"':'')+'>'+c[0]+'</button>'; }).join('')+'</div>')+'<form class="azb-in" id="azbForm">'+
+      h += '</div>'+(st.rec||st.wz||st.view==='agenda'||st.att.length?'':'<div class="azb-chips">'+[['Cargar visita',0,0,'cargar'],['Agendar',0,0,'agendar'],['Propuesta',0,0,'propuesta'],['Panel','Panel de la cartera','panel'],['Agenda',0,0,'agenda'],['Recordame','Quiero crear un recordatorio'],['Alertas','¿Qué alertas tengo hoy?','alertas'],['Resumen','Resumen de la cartera','resumen'],['Documentos','Detalle de documentos faltantes','docs'],['Cambiar estado',0,0,'etapa'],['Reporte',0,0,'reporte'],['Encuestas','¿Cómo vienen las encuestas de satisfacción?'],['Procedimiento','Repasame el procedimiento de ventas'],['Captación','Quiero repasar el formulario de captación de una propiedad'],['Ficha Tokko','Quiero la ficha para cargar en Tokko de una propiedad'],['Enviar encuesta','Quiero enviar la encuesta de satisfacción a un propietario'],['Buscar propiedad','Quiero buscar una propiedad']].map(function(c){ return '<button type="button" class="azb-chip" '+(c[3]==='agenda'?'data-a="agenda"':(c[3]?'data-w="'+c[3]+'"':'data-q="'+esc(c[1])+'"'))+(c[2]?' data-at="'+c[2]+'"':'')+'>'+c[0]+'</button>'; }).join('')+'</div>')+(!st.rec&&!st.wz&&!st.busy&&st.view!=='agenda'?trayHtml():'')+'<form class="azb-in" id="azbForm">'+
         '<div class="azb-pill'+(st.rec?' rec':'')+'">'+(st.rec
           ? '<button type="button" class="azb-rb2 del" data-a="reccancel" aria-label="Descartar audio">'+ICO.trash+'</button><div class="azb-wv"><span class="rd"></span><b id="azbT">0:00</b><i><s></s><s></s><s></s><s></s><s></s><s></s><s></s></i></div><button type="button" class="azb-rb2 go" data-a="recsend" aria-label="Enviar audio">'+ICO.send+'</button>'
-          : '<input id="azbInp" placeholder="'+(st.wz&&st.wz.ph?esc(st.wz.ph):'Escribime acá…')+'" autocomplete="off" enterkeyhint="send"'+(st.busy?' disabled':'')+'><button type="button" class="azb-rb2 m2" data-a="mic" aria-label="Hablar"'+(st.busy?' disabled':'')+'>'+ICO.mic+'</button><button class="azb-rb2 go snd" type="submit" aria-label="Enviar"'+(st.busy?' disabled':'')+'>'+ICO.send+'</button>')+'</div>'+(st.rec?'<div class="azb-rhint">Hablá tranquilo · flecha verde para enviar · tacho para descartar</div>':'')+'</form>';
+          : '<input id="azbInp" placeholder="'+(st.wz&&st.wz.ph?esc(st.wz.ph):'Escribime acá…')+'" autocomplete="off" enterkeyhint="send"'+(st.busy?' disabled':'')+'><button type="button" class="azb-rb2 clip" data-a="attach" aria-label="Adjuntar foto o archivo"'+(st.busy?' disabled':'')+'>'+ICO.clip+'</button><button type="button" class="azb-rb2 m2" data-a="mic" aria-label="Hablar"'+(st.busy?' disabled':'')+'>'+ICO.mic+'</button><button class="azb-rb2 go snd" type="submit" aria-label="Enviar"'+(st.busy?' disabled':'')+'>'+ICO.send+'</button>')+'</div>'+(st.rec?'<div class="azb-rhint">Hablá tranquilo · flecha verde para enviar · tacho para descartar</div>':'')+'</form>';
     }
-    h += '</div>';
+    h += '</div>'+sheetHtml();
     root.innerHTML = h;
     scroll();
     var inp = root.querySelector('#azbInp'); if(inp && st.open && !st.busy && st.view!=='agenda' && !COARSE) inp.focus();
@@ -1422,6 +1522,8 @@ google.script.run
     var tel = function(t){ var d = t.replace(/[^0-9]/g,''); return d.length>=6 ? d : null; }, mail = function(t){ return /^\S+@\S+\.\S+$/.test(t) ? t : null; };
     if(t==='cargar') return [P, T('interesado','¿Quién consultó o vino? (nombre)','Nombre del interesado'), {k:'via',q:'¿Por qué vía fue?',kind:'opt',opts:OP(VIAS)}, {k:'resultado',q:'¿Cómo resultó?',kind:'opt',opts:OP(RES)}, T('obs','Contame el detalle de lo que pasó (podés dictarlo 🎤)','Qué pasó, qué dijo, qué quiere…',1), T('prox','Próximo paso','Ej: llamarlo el viernes',1), T('tel','Teléfono del interesado','Teléfono',1,tel)];
     if(t==='agendar') return [P, {k:'fecha',q:'¿Qué día? Elegí o escribí dd/mm.',kind:'opt',opts:fechas(),parse:parseFecha,ph:'dd/mm'}, {k:'hora',q:'¿A qué hora? Elegí o escribila (ej 16:30).',kind:'opt',opts:OP(HORAS),parse:parseHora,ph:'hh:mm'}, T('interesado','¿Quién es el interesado?','Nombre',1), T('tel','Teléfono','Teléfono',1,tel), T('mail','Mail (le llega la invitación al Calendar)','mail@ejemplo.com',1,mail)];
+    if(t==='adjex') return [P];
+    if(t==='adjnew') return [];
     if(t==='propuesta') return [P, T('cliente','¿Quién hizo la propuesta?','Nombre'), T('monto','¿De cuánto? (monto y moneda)','Ej: U$S 85.000'), T('obs','Condiciones o detalle de la propuesta','Condiciones',1), T('tel','Teléfono del interesado','Teléfono',1,tel)];
     if(t==='etapa') return [P, {k:'etapa',q:'¿A qué etapa la pasamos?',kind:'opt',opts:OP(ETAPAS)}];
     return [P];
@@ -1472,6 +1574,7 @@ google.script.run
     call('azcuWarm', [], function(r){ st.busy = false; st.status = ''; st.props = Array.isArray(r) ? r : []; go(); }, function(){ st.busy = false; st.status = ''; st.props = []; go(); });
   }
   function wzFin(){
+    if(st.wz && (st.wz.t==='adjex' || st.wz.t==='adjnew')){ if(!st.wz.plan) return adjAnalizar(); return adjFinal(); }
     var w = st.wz, d = w.d, a = {id:'a'+Date.now(), estado:'pendiente'}, pr = (st.props||[]).filter(function(p){ return p.id===d.id; })[0] || {}, fd = function(f){ return f.split('-').reverse().join('/'); };
     st.wz = null;
     if(w.t==='cargar'){ a.tipo = 'cargar'; a.datos = {id:d.id, dir:d.dir, interesado:d.interesado||'', tel:d.tel||'', via:d.via, resultado:d.resultado, prox:d.prox||'', obs:d.obs||''}; a.resumen = 'Cargar en '+d.dir+': '+d.interesado+' · '+d.via+' · '+d.resultado+(d.prox?' · próximo paso: '+d.prox:'')+(d.obs?' · detalle: '+d.obs:''); }
@@ -1518,7 +1621,7 @@ google.script.run
     function finish(){ done = true; clearTimeout(pollT); if(scr) scr.remove(); setTimeout(function(){ ifr.remove(); form.remove(); }, 300); }
     function poll(){
       if(done) return;
-      if(Date.now()-t0 > 150000){ finish(); onErr(new Error('El servidor no respondió. Revisá la URL y que el despliegue esté actualizado y sea para "Cualquier persona".')); return; }
+      if(Date.now()-t0 > 330000){ finish(); onErr(new Error('El servidor no respondió. Revisá la URL y que el despliegue esté actualizado y sea para "Cualquier persona".')); return; }
       var cb = 'azbcb'+Math.random().toString(36).slice(2,9);
       window[cb] = function(d){ delete window[cb]; if(scr) scr.remove(); if(done) return; if(d && d.progress && d.ok===undefined){ if(st.status!==d.progress){ st.status = d.progress; render(); } pollT = setTimeout(poll, 400); } else if(d){ st.status = ''; finish(); if(d.ok) ok(d.data); else onErr(new Error(d.error || 'error')); } else pollT = setTimeout(poll, 450); };
       scr = document.createElement('script'); scr.src = window.AZCU_API+'?azr='+id+'&cb='+cb+'&_='+Date.now();
@@ -1541,10 +1644,18 @@ google.script.run
   function doAction(mi, ai, yes){
     var a = st.msgs[mi].acciones[ai];
     if(yes && a.peligro && !window.confirm('¿Seguro? Esto no se puede deshacer.')) return;
-    if(!yes){ a.estado = 'cancelado'; save(); render(); return; }
+    if(!yes){ a.estado = 'cancelado'; delete st.fz[a.id]; save(); render(); return; }
+    var fl = [];
+    if(a.tipo==='adjuntar' || a.tipo==='nueva'){
+      var fz = st.fz[a.id] || [];
+      (a.datos.archivos||[]).forEach(function(x){ var f = fz[x.i]; if(f) fl.push({i:x.i, n:f.n, m:f.m, b:f.b}); });
+      if(fl.length < (a.datos.archivos||[]).length){ alert('Los archivos ya no están en la app (se cerró o se recargó). Volvé a adjuntarlos.'); return; }
+    }
     a.estado = 'hecho'; a.resultado = 'Ejecutando…'; render();
-    call('azcuEjecutar', [Object.assign({quien:st.nombre||''}, a)], function(r){
-      a.resultado = r.mensaje; save(); render();
+    call('azcuEjecutar', [Object.assign({quien:st.nombre||'', files:fl}, a)], function(r){
+      a.resultado = r.mensaje; delete st.fz[a.id];
+      if(r.enlaces && r.enlaces.length) st.msgs.push({role:'assistant', content:'', adj:r.enlaces});
+      save(); render();
       if(typeof window.recargar==='function'){ try{ window.recargar(AZ.ctx||undefined); }catch(e){} }
     }, function(err){ a.estado = 'pendiente'; a.resultado = ''; st.msgs.push({role:'assistant', content:'No pude hacerlo: '+err}); save(); render(); });
   }
@@ -1578,6 +1689,12 @@ google.script.run
         if(!r.send || !chunks.length) return;
         var blob = new Blob(chunks, {type:mr.mimeType||'audio/webm'}), fr = new FileReader();
         fr.onload = function(){
+          if(st.wz){
+            st.busy = true; st.status = 'Escuchando…'; render();
+            call('azcuTranscribir', [fr.result.split(',')[1], blob.type], function(res){ st.busy = false; st.status = ''; if(res.texto) wzIn(res.texto); else { wzSay('No te escuché bien. ¿Probás de nuevo?'); save(); render(); } },
+              function(err){ st.busy = false; st.status = ''; wzSay('No pude entender el audio: '+err); save(); render(); });
+            return;
+          }
           var hist = st.msgs.filter(function(m){ return !m.w; }).map(function(m){ return {role:m.role, content:m.content||''}; }).filter(function(m){ return m.content; }), ph = {role:'user', content:'🎤 Escuchando…'};
           st.wz = null; st.msgs.push(ph); st.busy = true; st.status = ''; render();
           call('azcuVoz', [fr.result.split(',')[1], blob.type, hist, {nombre:st.nombre||'', fichaId:AZ.ctx||'', visita:st.vis||null}], function(r){
@@ -1611,6 +1728,14 @@ google.script.run
     else if(a==='start'){ var v = (root.querySelector('#azbName').value||'').trim(); st.nombre = v; ls('nombre', v); st.entered = true; render(); if(!st.warmed){ st.warmed = true; call('azcuWarm', [], function(r){ if(Array.isArray(r)) st.props = r; }, function(){}); } }
     else if(a==='skip'){ st.nombre = ''; ls('nombre', ''); st.entered = true; render(); if(!st.warmed){ st.warmed = true; call('azcuWarm', [], function(r){ if(Array.isArray(r)) st.props = r; }, function(){}); } }
     else if(a==='push'){ pushOn(); }
+    else if(a==='attach'){ st.sheet = true; render(); }
+    else if(a==='sheetx'){ if(t.classList.contains('azb-ov') && e.target!==t) return; st.sheet = false; render(); }
+    else if(a==='attcam'){ st.sheet = false; render(); fCam.click(); }
+    else if(a==='attgal'){ st.sheet = false; render(); fGal.click(); }
+    else if(a==='attdel'){ st.att.splice(+t.dataset.i, 1); render(); }
+    else if(a==='attsave'){ attMsg('guardar en una propiedad'); wzStart('adjex'); }
+    else if(a==='attnew'){ attMsg('nueva captación'); wzStart('adjnew'); }
+    else if(a==='attread'){ attRead(); }
     else if(a==='mic'){ startRec(); }
     else if(a==='recsend'){ stopRec(true); }
     else if(a==='reccancel'){ stopRec(false); }

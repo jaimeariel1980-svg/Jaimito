@@ -186,6 +186,198 @@ function azcuTextoPagina_(nombre){
   return t;
 }
 var AZCU_PAGINAS_ = {procedimiento_ventas:'ProcedimientoVentas', generador_documentos:'Documentos', formulario_captacion:'Precarga', encuesta:'Encuesta'};
+var AZCU_MIMES_ = ['image/jpeg','image/png','application/pdf'];
+var AZCU_COL2KEY_ = {'Superficie Total (m2)':'superficieTotal','Superficie Cubierta (m2)':'superficieCubierta','Dormitorios':'dormitorios','Ambientes (sin dormitorios)':'ambientes','Baños':'baños','Plantas':'plantas','Cochera':'cochera','Patio delantero':'patioDelantero','Patio trasero':'patioTrasero','Gas Natural':'gasNatural','Cloaca':'cloaca','Tipo de propiedad':'tipoPropiedad','Orientación':'orientacion','Antigüedad (años)':'antiguedad'};
+var AZCU_PREG_ = {
+  'dueño1_nombre':{q:'¿Cómo se llama el propietario? (nombre y apellido)', ph:'Nombre y apellido'},
+  'dueño1_dni':{q:'¿Cuál es el DNI del propietario?', ph:'Solo números', t:'dni'},
+  'dueño1_fechaNac':{q:'¿Fecha de nacimiento del propietario? (dd/mm/aaaa)', ph:'dd/mm/aaaa', t:'fecha'},
+  'dueño1_nacionalidad':{q:'¿Qué nacionalidad tiene?', ph:'Argentina', rapido:['Argentina']},
+  'dueño1_domicilio':{q:'¿Domicilio del propietario?', ph:'Calle, número, ciudad'},
+  'dueño1_celular':{q:'¿Celular del propietario?', ph:'Con característica', t:'tel'},
+  'dueño1_email':{q:'¿Mail del propietario? (ahí le llega la confirmación)', ph:'nombre@mail.com', t:'mail'},
+  'calle':{q:'¿En qué calle está la propiedad?', ph:'Calle'},
+  'numero':{q:'¿Qué número?', ph:'Número'},
+  'pasillo':{q:'¿Tiene pasillo? Si no tiene, tocá "No tiene".', ph:'Pasillo', nada:true},
+  'entrecalle1':{q:'¿Entre qué calles está? Decime la primera.', ph:'Entrecalle 1'},
+  'entrecalle2':{q:'¿Y la segunda?', ph:'Entrecalle 2'},
+  'ciudad':{q:'¿En qué ciudad?', ph:'Rosario', rapido:['Rosario']}
+};
+
+function azcuAdjValidar_(arch){
+  if(!arch || !arch.length) throw new Error('No llegó ningún archivo.');
+  if(arch.length>8) throw new Error('Son demasiados archivos juntos (máximo 8).');
+  arch.forEach(function(a){
+    if(!a || !a.b) throw new Error('Un archivo llegó vacío.');
+    if(AZCU_MIMES_.indexOf(a.m)<0) throw new Error('Formato no soportado: '+(a.n||a.m)+' (usá foto o PDF).');
+  });
+}
+function azcuInstrDoc_(){
+  var cat = CONFIG.DOCUMENTOS.filter(function(d){ return !/dueño\d/.test(d.key); }).map(function(d){ return d.key+' = '+d.label; }).join('; ');
+  return 'Sos un asistente de una inmobiliaria argentina que clasifica y lee documentación de propiedades. Mirá el archivo con atención y respondé ÚNICAMENTE con un JSON válido, sin texto adicional ni bloques de código, con esta forma: '+
+    '{"clave":"<una de las claves del catálogo, o otro>","legible":<true o false>,"titular":"<nombre y apellido de la persona titular si figura, o cadena vacía>","dni":"<solo dígitos o cadena vacía>","fecha_nacimiento":"<AAAA-MM-DD o cadena vacía>","nacionalidad":"","domicilio":"",'+
+    '"titulares":[{"nombre":"","apellido":"","dni":"","domicilio":"","nacionalidad":"","fecha_nacimiento":""}],"inscripcion_dominio":"",'+
+    '"propiedad":{"direccion_calle":"","direccion_numero":"","ciudad":"","superficie_total_m2":null,"superficie_cubierta_m2":null,"dormitorios":null,"ambientes_sin_dormitorios":null,"baños":null,"plantas":null,"cochera":null,"patio_delantero":null,"patio_trasero":null,"gas_natural":null,"cloaca":null,"tipo_propiedad":null,"orientacion":null,"antigüedad_años":null},"resumen":"<una frase corta: qué es y qué dice lo más importante>","observacion":"<problema si el archivo no se lee bien, o cadena vacía>"}. '+
+    'Catálogo de claves: '+cat+'. Usá dni_propietario para CUALQUIER DNI y cuil_propietario para cualquier constancia de CUIL. Reglas: nunca inventes datos, usá null o cadena vacía si no figuran. DNI: completá titular, dni, fecha_nacimiento, nacionalidad y domicilio si figura. Escritura: completá titulares (todas las personas), inscripcion_dominio y los datos de la propiedad que figuren. Planos: completá los datos de la propiedad (superficies, ambientes, plantas, orientación). Facturas de servicios o impuestos: completá titular y la dirección del inmueble en propiedad.direccion_calle, direccion_numero y ciudad.';
+}
+function azcuAnalizarArchivos_(arch){
+  var key = _openAiApiKey();
+  if(!key) throw new Error('Falta configurar OPENAI_API_KEY');
+  var instr = azcuInstrDoc_();
+  var reqs = arch.map(function(a){
+    var uri = 'data:'+a.m+';base64,'+a.b, content = [{type:'input_text', text:instr}];
+    if(a.m==='application/pdf') content.push({type:'input_file', filename:a.n||'documento.pdf', file_data:uri}); else content.push({type:'input_image', image_url:uri});
+    return {url:'https://api.openai.com/v1/responses', method:'post', contentType:'application/json', headers:{Authorization:'Bearer '+key}, muteHttpExceptions:true, payload:JSON.stringify({model:AZCU_MODEL, input:[{role:'user', content:content}]})};
+  });
+  return UrlFetchApp.fetchAll(reqs).map(function(r, i){
+    var o = {i:i, n:arch[i].n||('archivo '+(i+1)), clave:'otro', legible:true, d:{}, error:''};
+    try{
+      if(r.getResponseCode()<200 || r.getResponseCode()>=300){ o.error = 'OpenAI '+r.getResponseCode(); return o; }
+      var d = _parsearJsonIA(_extraerTextoRespuestaOpenAI(JSON.parse(r.getContentText())));
+      if(!d){ o.error = 'No pude interpretar la lectura'; return o; }
+      o.d = d; o.legible = d.legible!==false;
+      o.clave = CONFIG.DOCUMENTOS.some(function(x){ return x.key===d.clave; }) ? d.clave : 'otro';
+    }catch(e){ o.error = String(e.message||e); }
+    return o;
+  });
+}
+function azcuLabelDoc_(key){ var d = CONFIG.DOCUMENTOS.filter(function(x){ return x.key===key; })[0]; return d ? d.label : null; }
+function azcuClaveDueno_(base, n){ return n===1 ? base+'_propietario' : base+'_dueño'+n; }
+function azcuTokens_(x){ return azcuSinAc_(x).split(/[^a-z0-9]+/).filter(function(t){ return t.length>=3; }); }
+function azcuMismoNombre_(a, b){
+  var x = azcuTokens_(a), y = azcuTokens_(b);
+  if(!x.length || !y.length) return false;
+  var c = x.length<=y.length ? [x,y] : [y,x];
+  return c[0].every(function(t){ return c[1].indexOf(t)>=0; });
+}
+function azcuVac_(r, col){ var i = r.head.indexOf(col); return i>-1 && String(r.row[i]).trim()===''; }
+function azcuBoolFmt_(col, v){
+  try{
+    var data = hojaMaestra_().getDataRange().getValues(), i = data[0].indexOf(col), j;
+    if(i>-1) for(j=1;j<data.length;j++){
+      var t = String(data[j][i]).trim(); if(!t) continue;
+      if(/^(si|sí)$/i.test(t)) return v ? t : 'No';
+      if(/^no$/i.test(t)) return v ? 'Sí' : t;
+      if(/^(true|false)$/i.test(t)) return v ? 'TRUE' : 'FALSE';
+      break;
+    }
+  }catch(e){}
+  return v ? 'Sí' : 'No';
+}
+function azcuCamposPropiedad_(pr, put){
+  function num(v){ var n = parseFloat(v); return isNaN(n) ? null : n; }
+  put('Superficie Total (m2)', num(pr.superficie_total_m2), 'Superficie total');
+  put('Superficie Cubierta (m2)', num(pr.superficie_cubierta_m2), 'Superficie cubierta');
+  put('Dormitorios', num(pr.dormitorios), 'Dormitorios');
+  put('Ambientes (sin dormitorios)', num(pr.ambientes_sin_dormitorios), 'Ambientes');
+  put('Baños', num(pr['baños']), 'Baños');
+  put('Plantas', num(pr.plantas), 'Plantas');
+  [['Cochera','cochera'],['Patio delantero','patio_delantero'],['Patio trasero','patio_trasero'],['Gas Natural','gas_natural'],['Cloaca','cloaca']].forEach(function(x){
+    if(pr[x[1]]===true || pr[x[1]]===false) put(x[0], azcuBoolFmt_(x[0], pr[x[1]]), x[0]);
+  });
+  if(pr.tipo_propiedad) put('Tipo de propiedad', pr.tipo_propiedad, 'Tipo');
+  if(pr.orientacion) put('Orientación', pr.orientacion, 'Orientación');
+  put('Antigüedad (años)', num(pr['antigüedad_años']), 'Antigüedad');
+}
+function azcuTextoAnalisis_(an){
+  return an.map(function(a){
+    var d = a.d||{}, l = a.clave!=='otro' ? azcuLabelDoc_(a.clave) : null, t = '📄 **'+a.n+'** → '+(l ? l : 'documento no identificado');
+    if(a.error) return t+'\n- No pude leerlo: '+a.error;
+    if(d.resumen) t += '\n- '+d.resumen;
+    if(d.titular) t += '\n- Titular: '+d.titular+(d.dni ? ' · DNI '+d.dni : '');
+    (d.titulares||[]).forEach(function(x){ var nm = [x.nombre,x.apellido].filter(Boolean).join(' '); if(nm) t += '\n- Titular: '+nm+(x.dni ? ' · DNI '+x.dni : ''); });
+    if(d.inscripcion_dominio) t += '\n- Inscripción del dominio: '+d.inscripcion_dominio;
+    if(d.legible===false || d.observacion) t += '\n- ⚠️ '+(d.observacion || 'Se lee con dificultad');
+    return t;
+  }).join('\n\n');
+}
+function azcuPlanExistente_(id, an){
+  var p = azcuProp_(id);
+  if(!p) throw new Error('No encontré la propiedad.');
+  var r = azcuFilaMaestro_(p.id), pap = Object.keys(p.papeles||{}), duenos = p.duenos||[], arch = [], sin = [], campos = [], usadas = {}, ya = {};
+  function nc(col, val, etq){ if(val===null || val===undefined || val==='' || ya[col] || !azcuVac_(r, col)) return; ya[col] = 1; campos.push({col:col, valor:val, etq:etq||col}); }
+  an.forEach(function(a){
+    var d = a.d||{}, key = a.clave, label = null, k, n;
+    if(a.error || !a.legible){ sin.push({i:a.i, nombre:a.n}); return; }
+    if(/^(dni|cuil)_propietario$/.test(key)){
+      var base = key.split('_')[0]; n = 0;
+      for(k=0;k<duenos.length;k++) if(azcuMismoNombre_(d.titular, duenos[k].nombre)){ n = k+1; break; }
+      if(!n) for(k=1;k<=Math.max(duenos.length,1);k++){ var lb = azcuLabelDoc_(azcuClaveDueno_(base,k)); if(lb && pap.indexOf(lb)>=0 && !p.papeles[lb] && !usadas[lb]){ n = k; break; } }
+      if(!n) n = 1;
+      label = azcuLabelDoc_(azcuClaveDueno_(base, n));
+      if(base==='dni'){ nc('Dueño '+n+' - DNI', String(d.dni||'').replace(/\D/g,''), 'DNI del propietario '+n); nc('Dueño '+n+' - Fecha de Nacimiento', d.fecha_nacimiento, 'Fecha de nacimiento'); nc('Dueño '+n+' - Nacionalidad', d.nacionalidad, 'Nacionalidad'); nc('Dueño '+n+' - Domicilio', d.domicilio, 'Domicilio'); }
+    } else label = azcuLabelDoc_(key);
+    if(key==='escritura') (d.titulares||[]).forEach(function(t){
+      var nom = [t.nombre, t.apellido].filter(Boolean).join(' '), q;
+      for(q=0;q<duenos.length;q++) if(azcuMismoNombre_(nom, duenos[q].nombre)){ var m = q+1; nc('Dueño '+m+' - DNI', String(t.dni||'').replace(/\D/g,''), 'DNI'); nc('Dueño '+m+' - Domicilio', t.domicilio, 'Domicilio'); nc('Dueño '+m+' - Nacionalidad', t.nacionalidad, 'Nacionalidad'); nc('Dueño '+m+' - Fecha de Nacimiento', t.fecha_nacimiento, 'Fecha de nacimiento'); }
+    });
+    azcuCamposPropiedad_(d.propiedad||{}, nc);
+    if(label && pap.indexOf(label)>=0){ usadas[label] = 1; arch.push({i:a.i, nombre:a.n, doc:label, clave:key}); } else sin.push({i:a.i, nombre:a.n});
+  });
+  return {id:p.id, dir:p.dir, archivos:arch, sin:sin, docs:pap.map(function(l){ return {l:l, v:l}; }), campos:campos};
+}
+function azcuPlanNueva_(an){
+  var datos = {}, arch = [], sin = [], owners = [], usadas = {};
+  function dueno(nombre){ var k; for(k=0;k<owners.length;k++) if(azcuMismoNombre_(nombre, owners[k])) return k+1; if(owners.length>=CONFIG.MAX_DUEÑOS) return 0; owners.push(nombre); return owners.length; }
+  function sd(n, clave, v){ if(!n || v===undefined || v===null || String(v).trim()==='') return; var k = 'dueño'+n+'_'+clave; if(datos[k]===undefined) datos[k] = String(v).trim(); }
+  function sp(k, v){ if(v!==undefined && v!==null && String(v).trim()!=='' && datos[k]===undefined) datos[k] = String(v).trim(); }
+  an.forEach(function(a){
+    var d = a.d||{}, key = a.clave, doc = null, n;
+    if(a.error || !a.legible){ sin.push({i:a.i, nombre:a.n}); return; }
+    if(/^(dni|cuil)_propietario$/.test(key)){
+      var base = key.split('_')[0]; n = d.titular ? dueno(d.titular) : 1;
+      if(n){ sd(n,'nombre',d.titular); if(base==='dni'){ sd(n,'dni',String(d.dni||'').replace(/\D/g,'')); sd(n,'fechaNac',d.fecha_nacimiento); sd(n,'nacionalidad',d.nacionalidad); sd(n,'domicilio',d.domicilio); } doc = azcuClaveDueno_(base, n); }
+    } else if(key==='escritura'){
+      (d.titulares||[]).forEach(function(t){ var nom = [t.nombre, t.apellido].filter(Boolean).join(' '); if(!nom) return; var m = dueno(nom); sd(m,'nombre',nom); sd(m,'dni',String(t.dni||'').replace(/\D/g,'')); sd(m,'domicilio',t.domicilio); sd(m,'nacionalidad',t.nacionalidad); sd(m,'fechaNac',t.fecha_nacimiento); });
+      sp('inscripcionDominio', d.inscripcion_dominio); doc = 'escritura';
+    } else if(CONFIG.DOCUMENTOS.some(function(x){ return x.key===key; })) doc = key;
+    var pr = d.propiedad||{}; sp('calle', pr.direccion_calle); sp('numero', pr.direccion_numero); sp('ciudad', pr.ciudad);
+    azcuCamposPropiedad_(pr, function(col, val){ var k = AZCU_COL2KEY_[col]; if(k && val!==null && val!=='' && datos[k]===undefined) datos[k] = val; });
+    if(doc && !usadas[doc]){ usadas[doc] = 1; arch.push({i:a.i, nombre:a.n, key:doc}); } else sin.push({i:a.i, nombre:a.n});
+  });
+  var faltan = CONFIG.CAMPOS_OBLIGATORIOS_PRECARGA.filter(function(k){ return !datos[k]; }).map(function(k){ var q = AZCU_PREG_[k] || {q:'Falta: '+k, ph:''}; return {k:k, q:q.q, ph:q.ph||'', t:q.t||'', nada:!!q.nada, rapido:q.rapido||[]}; });
+  return {datos:datos, archivos:arch, sin:sin, docs:CONFIG.DOCUMENTOS.map(function(d){ return {l:d.label, v:d.key}; }), faltan:faltan};
+}
+function azcuAdjPlan(pin, modo, id, arch){
+  azcuPin_(pin);
+  azcuAdjValidar_(arch);
+  var an = azcuAnalizarArchivos_(arch);
+  if(modo==='leer') return {texto:azcuTextoAnalisis_(an)};
+  if(modo==='existente') return azcuPlanExistente_(id, an);
+  if(modo==='nueva') return azcuPlanNueva_(an);
+  throw new Error('Modo inválido');
+}
+function azcuCompletarCampos_(id, campos){
+  var r = azcuFilaMaestro_(id); if(!r) return [];
+  var perm = COLUMNAS_PROPIEDAD.filter(function(c){ return ['Carpeta Drive (URL)','Estado de la propiedad','% Completitud','Última alerta de documentación enviada','Calle','Número'].indexOf(c)<0; }).concat(_columnasDueños());
+  var mae = hojaMaestra_(), hechos = [];
+  (campos||[]).forEach(function(c){
+    var i = r.head.indexOf(c.col);
+    if(i<0 || perm.indexOf(c.col)<0 || String(r.row[i]).trim()!=='' || c.valor===undefined || c.valor===null || String(c.valor)==='') return;
+    mae.getRange(r.fila, i+1).setValue(c.valor); hechos.push(c.etq||c.col);
+  });
+  return hechos;
+}
+function azcuClavesForm_(){
+  var k = ['calle','numero','departamento','piso','pasillo','entrecalle1','entrecalle2','ciudad','tipoPropiedad','superficieTotal','superficieCubierta','dormitorios','ambientes','baños','plantas','cochera','patioDelantero','patioTrasero','gasNatural','cloaca','antiguedad','orientacion','inscripcionDominio'], n;
+  for(n=1;n<=CONFIG.MAX_DUEÑOS;n++) CAMPOS_DUEÑO.forEach(function(c){ k.push('dueño'+n+'_'+c.clave); });
+  return k;
+}
+function azcuCrearCaptacion_(accion){
+  var d = accion.datos||{}, datos = {}, files = accion.files||[], pk = {}, perm = azcuClavesForm_(), cat = CONFIG.DOCUMENTOS.map(function(x){ return x.key; }), n = 0;
+  Object.keys(d.datos||{}).forEach(function(k){ var v = d.datos[k]; if(perm.indexOf(k)>=0 && v!==undefined && v!==null && String(v)!=='') datos[k] = v; });
+  (d.archivos||[]).forEach(function(x){
+    var f = files.filter(function(y){ return +y.i===+x.i; })[0];
+    if(!f || cat.indexOf(x.key)<0 || pk[x.key]) return;
+    pk[x.key] = {base64:f.b, mimeType:f.m, filename:f.n}; n++;
+  });
+  azcuProg_(accion, 'Creando la captación y guardando '+n+' documento(s)… puede tardar un minuto');
+  var r = precargarDatos(datos, pk);
+  azcuLimpiarCache_();
+  return {ok:true, mensaje:'Listo: creé la captación '+r.codigoPrecarga+(datos['dueño1_email'] ? '. Le mandé un mail de confirmación a '+datos['dueño1_email'] : '')+'.',
+    enlaces:[{k:'l', label:'📝 Abrir el formulario de '+(datos.calle||'la propiedad')+' '+(datos.numero||''), url:azcuBase_()+'?precarga='+encodeURIComponent(r.codigoPrecarga)}]};
+}
+
 function azcuHerrGuia_(a){
   var n = AZCU_PAGINAS_[a.pagina]; if(!n) return {error:'Página desconocida.'};
   var t; try{ t = azcuTextoPagina_(n); }catch(e){ return {error:'No pude leer esa página: '+String(e.message||e)}; }
@@ -518,6 +710,7 @@ function azcuSegVerif_(fila, id, huella){
 function azcuEjecutar(pin, accion){
   azcuPin_(pin);
   var d = accion && accion.datos, tipo = accion && accion.tipo;
+  if(tipo==='nueva' && d){ azcuLimpiarCache_(); return azcuCrearCaptacion_(accion); }
   if(!d || !d.id) throw new Error('Acción inválida');
   var p = azcuProp_(d.id);
   if(!p) throw new Error('No encontré la propiedad');
@@ -580,6 +773,18 @@ function azcuEjecutar(pin, accion){
   if(tipo==='elimprop'){
     eliminarPropiedad(p.id);
     return {ok:true, mensaje:'Eliminé '+p.dir+' del maestro.'};
+  }
+  if(tipo==='adjuntar'){
+    var files = accion.files||[], arch = d.archivos||[], hechos = [], q, ar, fl;
+    for(q=0;q<arch.length;q++){
+      ar = arch[q]; fl = files.filter(function(y){ return +y.i===+ar.i; })[0];
+      if(!fl || Object.keys(p.papeles||{}).indexOf(ar.doc)<0) continue;
+      azcuProg_(accion, 'Guardando y verificando '+(q+1)+' de '+arch.length+': '+ar.doc+'…');
+      subirDocumento(p.id, ar.doc, fl.b, fl.n, fl.m); hechos.push(ar.doc);
+    }
+    var cm = azcuCompletarCampos_(p.id, d.campos||[]), fr = azcuFilaMaestro_(p.id);
+    var est = hechos.map(function(doc){ var vi = fr ? fr.head.indexOf('Verificación IA: '+doc) : -1; return doc+' ('+(vi>-1 && fr.row[vi] ? fr.row[vi] : 'cargado')+')'; });
+    return {ok:true, mensaje:'Guardé '+hechos.length+' documento(s) en '+p.dir+': '+est.join(' · ')+(cm.length ? '. Completé: '+cm.join(', ') : '')+'.'};
   }
   if(tipo==='reporte'){
     var r = enviarReportePropietario(p.id, '');
@@ -646,7 +851,8 @@ function azcuApi(e){
     else if(req.fn==='azcuRecCancelar') out = {ok:true, data:azcuRecCancelar(a[0], a[1], a[2])};
     else if(req.fn==='azcuAtajo') out = {ok:true, data:azcuAtajo(a[0], a[1])};
     else if(req.fn==='azcuWarm') out = {ok:true, data:azcuWarm(a[0])};
-    else if(req.fn==='azcuEjecutar') out = {ok:true, data:azcuEjecutar(a[0], a[1])};
+    else if(req.fn==='azcuEjecutar'){ var ac = a[1] || {}; ac.reqId = String(req.id || '').replace(/[^A-Za-z0-9]/g, ''); out = {ok:true, data:azcuEjecutar(a[0], ac)}; }
+    else if(req.fn==='azcuAdjPlan') out = {ok:true, data:azcuAdjPlan(a[0], a[1], a[2], a[3])};
     else if(req.fn==='azcuTranscribir') out = {ok:true, data:azcuTranscribir(a[0], a[1], a[2])};
     else if(req.fn==='azcuLogo') out = {ok:true, data:azcuLogo_()};
     else out = {ok:false, error:'Función desconocida'};
