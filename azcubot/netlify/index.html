@@ -111,6 +111,19 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catc
 .azb-op:active{background:var(--n);color:#fff}
 .azb-op.s{border-color:var(--ln);color:var(--mu)}.azb-op.x{border:0;color:var(--rj);background:none}
 .azb-pb{display:flex;align-items:center;gap:10px;padding:8px 14px;background:#eef3ff;border-bottom:1px solid #c9d8f5;font:600 13px 'Inter',sans-serif;color:var(--n);flex-shrink:0}.azb-pb .azb-btn{margin-left:auto;white-space:nowrap}
+.azb-pn{margin:0 0 12px 30px;background:#fff;border:1px solid var(--ln);padding:12px}
+.azb-kp{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.azb-k1{background:#f3f7ff;border:1px solid #c9d8f5;padding:8px 4px;text-align:center}
+.azb-k1 b{display:block;font:800 20px 'Archivo',sans-serif;color:var(--n)}
+.azb-k1 span{font:500 9.5px 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.05em;color:var(--mu)}
+.azb-k1.g b{color:#1f7a44}.azb-k1.a b{color:#b57a14}.azb-k1.r b{color:var(--rj)}
+.azb-bt2{font:500 10.5px 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.14em;color:var(--mu);margin:12px 0 6px}
+.azb-br{display:flex;align-items:center;gap:8px;font-size:12.5px;margin-bottom:5px}
+.azb-br i{font-style:normal;width:92px;flex-shrink:0}
+.azb-br div{flex:1;background:#eef0f4;height:10px}.azb-br u{display:block;height:100%}
+.azb-br em{font-style:normal;width:26px;text-align:right;font-weight:700}
+.azb-card.dg{border-left-color:var(--rj);background:#fff5f6;border-color:#f1c9cf}.azb-card.dg .azb-k{color:var(--rj)}
+.azb-opts.ad{margin-top:-4px}
 @media print{.azb,.azb-tip{display:none!important}}
 .azb-panel.azb-app{inset:0;width:100%;height:100vh;height:100dvh;max-width:none;border:0;box-shadow:none;animation:none}
 .azb-ft{position:absolute;left:0;right:0;bottom:0;padding:16px 22px calc(16px + env(safe-area-inset-bottom));display:flex;align-items:center;justify-content:space-between;gap:14px;z-index:1}
@@ -125,7 +138,7 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catc
   var LSK = 'azcu_', AZ = window.AZCU = {ctx:null};
   function ls(k,v){ try{ if(v===undefined) return localStorage.getItem(LSK+k); if(v===null) localStorage.removeItem(LSK+k); else localStorage.setItem(LSK+k,v); }catch(e){ return null; } }
   var APP = !!window.AZCU_APP;
-  var st = { open:APP, entered:false, busy:false, rec:null, nombre:ls('nombre'), pin:ls('pin')||'', msgs:[] };
+  var st = { fd:{}, open:APP, entered:false, busy:false, rec:null, nombre:ls('nombre'), pin:ls('pin')||'', msgs:[] };
   try{ st.msgs = JSON.parse(ls('msgs')||'[]'); }catch(e){}
   var gf = document.createElement('link'); gf.rel='stylesheet'; gf.href='https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap'; document.head.appendChild(gf);
   function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -140,7 +153,29 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catc
   function save(){ ls('msgs', JSON.stringify(st.msgs.slice(-40))); }
   function scroll(){ var b = root.querySelector('.azb-body'); if(b) b.scrollTop = b.scrollHeight; }
   function shortcuts(){
-    return AZ.ctx ? [['Contame de esta propiedad'],['Agendar una visita acá'],['Cargar una consulta acá'],['¿Qué documentos le faltan?']] : [['¿Qué alertas tengo hoy?','alertas'],['Resumen de la cartera','resumen'],['Detalle de documentos faltantes','docs'],['Cargar una visita',0,'cargar'],['Agendar una visita',0,'agendar'],['Cambiar estado de una propiedad',0,'etapa'],['Enviar reporte al propietario',0,'reporte'],['Buscar una propiedad']];
+    return AZ.ctx ? [['Contame de esta propiedad'],['Agendar una visita acá'],['Cargar una consulta acá'],['¿Qué documentos le faltan?']] : [['¿Qué alertas tengo hoy?','alertas'],['Resumen de la cartera','resumen'],['Detalle de documentos faltantes','docs'],['Panel de la cartera (dashboard)','panel'],['Cargar una visita',0,'cargar'],['Agendar una visita',0,'agendar'],['Registrar una propuesta',0,'propuesta'],['Cambiar estado de una propiedad',0,'etapa'],['Enviar reporte al propietario',0,'reporte'],['Encuestas de satisfacción',0,0,'¿Cómo vienen las encuestas de satisfacción?'],['Procedimiento de ventas',0,0,'Repasame el procedimiento de ventas'],['Formulario de captación',0,0,'Quiero repasar o enviar el formulario de captación de una propiedad'],['Ficha para cargar en Tokko (PDF)',0,0,'Quiero la ficha para cargar en Tokko de una propiedad'],['Enviar encuesta por WhatsApp',0,0,'Quiero enviar la encuesta de satisfacción a un propietario'],['Buscar una propiedad']];
+  }
+  function panelHtml(pn){
+    var h = '<div class="azb-pn"><div class="azb-kp">'+pn.kpis.map(function(k){ return '<div class="azb-k1 '+(k.c||'')+'"><b>'+esc(k.n)+'</b><span>'+esc(k.l)+'</span></div>'; }).join('')+'</div>';
+    [['Cartera por etapa', pn.etapas], ['Papeles', pn.papeles]].forEach(function(g){
+      var t = g[1].reduce(function(a,x){ return a+x.v; }, 0) || 1;
+      h += '<div class="azb-bt2">'+g[0]+'</div>'+g[1].map(function(x){ return '<div class="azb-br"><i>'+esc(x.l)+'</i><div><u style="width:'+Math.round(x.v/t*100)+'%;background:'+x.c+'"></u></div><em>'+x.v+'</em></div>'; }).join('');
+    });
+    return h+'</div>';
+  }
+  function adjHtml(ad){
+    return '<div class="azb-opts ad">'+ad.map(function(a){ return a.k==='l' ? '<a class="azb-op" href="'+esc(a.url)+'" target="_blank" rel="noopener" style="text-decoration:none">'+esc(a.label)+'</a>' : '<button type="button" class="azb-op" data-f="'+esc(a.id)+'" data-fn="'+esc(a.nombre)+'">📄 '+esc(a.nombre)+'</button>'; }).join('')+'</div>';
+  }
+  function stash(ad){
+    return (ad||[]).map(function(a){ if(a.k!=='f') return a; var id = 'f'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); st.fd[id] = {b64:a.base64, mime:a.mime}; return {k:'f', id:id, nombre:a.nombre}; });
+  }
+  function reply(r){ st.msgs.push({role:'assistant', content:r.texto, acciones:(r.acciones||[]).map(function(a){ a.estado = 'pendiente'; return a; }), panel:r.panel||null, adj:stash(r.adjuntos)}); }
+  function openFile(id, nombre){
+    var m = st.fd[id]; if(!m){ alert('Ese archivo ya no está disponible. Pedilo de nuevo.'); return; }
+    var bin = atob(m.b64), u = new Uint8Array(bin.length), i; for(i=0;i<bin.length;i++) u[i] = bin.charCodeAt(i);
+    var blob = new Blob([u], {type:m.mime}), f; try{ f = new File([blob], nombre, {type:m.mime}); }catch(e){}
+    if(f && navigator.canShare && navigator.canShare({files:[f]})){ navigator.share({files:[f], title:nombre}).catch(function(){}); return; }
+    var url = URL.createObjectURL(blob), a = document.createElement('a'); a.href = url; a.download = nombre; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
   }
   function render(){
     var h = APP ? '' : '<button class="azb-fab" id="azbFab" aria-label="Abrir AzcuBot">'+mk(62)+'<span class="azb-dot"></span></button>';
@@ -155,21 +190,23 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catc
       h += '<div class="azb-hd">'+(APP?'<button class="azb-ib" data-a="home" title="Volver al inicio">←</button>':'')+mk(30)+'<span class="azb-t">AzcuBot'+(APP?'':' · '+(AZ.ctx?'Ficha '+esc(AZ.ctx):'Asistente interno'))+'</span>'+(APP?'<button class="azb-ib" data-q="¿Qué alertas tengo hoy?" data-at="alertas" title="Alertas">🔔</button><a class="azb-ib" href="'+esc(window.AZCU_TABLERO||'#')+'" target="_blank" rel="noopener" title="Abrir tablero" style="text-decoration:none">📋</a>':'')+'<button class="azb-ib" data-a="clear" title="Borrar charla">🗑</button>'+(APP?'':'<button class="azb-ib" data-a="close">✕</button>')+'</div>'+(APP && window.OneSignalDeferred && !st.pushOn ? '<div class="azb-pb"><span>🔔 Recibí avisos en este celular</span><button type="button" class="azb-btn" data-a="push">Activar avisos</button></div>' : '')+'<div class="azb-body">';
       if(!st.msgs.length){
         h += '<div class="azb-av">'+mk(60)+'</div><div class="azb-eyb">Tu asistente, siempre disponible</div><h1>Hola'+(st.nombre?', <b>'+esc(st.nombre)+'</b>':'')+'.<br>¿Qué hacemos hoy?</h1><p class="azb-lead">Preguntame lo que quieras del tablero o pedime que cargue visitas, agende, cambie estados o mande reportes. Escribime como a un compañero.</p>'+(APP && window.OneSignalDeferred && !st.pushOn ? '<button class="azb-row" data-a="push" style="border-color:var(--n);background:#eef3ff">🔔 Activar avisos en este celular<span>→</span></button>' : '')+'<div class="azb-lbl">Atajos</div>';
-        shortcuts().forEach(function(s){ h += '<button class="azb-row" '+(s[2]?'data-w="'+s[2]+'"':'data-q="'+esc(s[0])+'"')+(s[1]?' data-at="'+s[1]+'"':'')+'>'+esc(s[0])+'<span>→</span></button>'; });
+        shortcuts().forEach(function(s){ h += '<button class="azb-row" '+(s[2]?'data-w="'+s[2]+'"':'data-q="'+esc(s[3]||s[0])+'"')+(s[1]?' data-at="'+s[1]+'"':'')+'>'+esc(s[0])+'<span>→</span></button>'; });
       } else st.msgs.forEach(function(m,mi){
         if(m.role==='user') h += '<div class="azb-m u"><div class="azb-b">'+fmt(m.content)+'</div></div>';
         else {
           if(m.content) h += '<div class="azb-m a">'+mk(22)+'<div class="azb-b">'+fmt(m.content)+'</div></div>';
+          if(m.panel) h += panelHtml(m.panel);
+          if(m.adj && m.adj.length) h += adjHtml(m.adj);
           (m.acciones||[]).forEach(function(a,ai){
             var done = a.estado==='hecho', canc = a.estado==='cancelado';
-            h += '<div class="azb-card'+(done?' ok':'')+(canc?' no':'')+'"><div class="azb-k">'+(done?'✓ Hecho':canc?'Cancelado':'Confirmá esta acción')+'</div><div class="azb-s">'+esc(done&&a.resultado?a.resultado:a.resumen)+'</div>'+
+            h += '<div class="azb-card'+(done?' ok':'')+(canc?' no':'')+(a.peligro&&!done&&!canc?' dg':'')+'"><div class="azb-k">'+(done?'✓ Hecho':canc?'Cancelado':(a.peligro?'⚠️ Confirmá con cuidado':'Confirmá esta acción'))+'</div><div class="azb-s">'+esc(done&&a.resultado?a.resultado:a.resumen)+'</div>'+
               (a.estado==='pendiente'?'<div class="azb-bt"><button class="azb-btn" data-ok="'+mi+':'+ai+'">Confirmar</button><button class="azb-btn o" data-no="'+mi+':'+ai+'">Cancelar</button></div>':'')+'</div>';
           });
         }
       });
       if(st.wz && !st.busy && (st.wz.opts.length || st.wz.skip)){ h += '<div class="azb-opts">'+st.wz.opts.map(function(o,i){ return '<button type="button" class="azb-op" data-wo="'+i+'">'+esc(o.l)+'</button>'; }).join('')+(st.wz.skip?'<button type="button" class="azb-op s" data-ws="1">Omitir →</button>':'')+'<button type="button" class="azb-op x" data-wx="1">✕ Cancelar</button></div>'; }
       if(st.busy) h += '<div class="azb-m a">'+mk(22)+'<div class="azb-b azb-ty"><span></span><span></span><span></span>'+(st.status?'<em class="azb-st">'+esc(st.status)+'</em>':'')+'</div></div>';
-      h += '</div>'+(st.rec||st.wz?'':'<div class="azb-chips">'+[['Cargar visita',0,0,'cargar'],['Agendar',0,0,'agendar'],['Alertas','¿Qué alertas tengo hoy?','alertas'],['Resumen','Resumen de la cartera','resumen'],['Documentos','Detalle de documentos faltantes','docs'],['Cambiar estado',0,0,'etapa'],['Reporte',0,0,'reporte'],['Buscar propiedad','Quiero buscar una propiedad']].map(function(c){ return '<button type="button" class="azb-chip" '+(c[3]?'data-w="'+c[3]+'"':'data-q="'+esc(c[1])+'"')+(c[2]?' data-at="'+c[2]+'"':'')+'>'+c[0]+'</button>'; }).join('')+'</div>')+'<form class="azb-in" id="azbForm">'+
+      h += '</div>'+(st.rec||st.wz?'':'<div class="azb-chips">'+[['Cargar visita',0,0,'cargar'],['Agendar',0,0,'agendar'],['Propuesta',0,0,'propuesta'],['Panel','Panel de la cartera','panel'],['Alertas','¿Qué alertas tengo hoy?','alertas'],['Resumen','Resumen de la cartera','resumen'],['Documentos','Detalle de documentos faltantes','docs'],['Cambiar estado',0,0,'etapa'],['Reporte',0,0,'reporte'],['Encuestas','¿Cómo vienen las encuestas de satisfacción?'],['Procedimiento','Repasame el procedimiento de ventas'],['Captación','Quiero repasar el formulario de captación de una propiedad'],['Ficha Tokko','Quiero la ficha para cargar en Tokko de una propiedad'],['Enviar encuesta','Quiero enviar la encuesta de satisfacción a un propietario'],['Buscar propiedad','Quiero buscar una propiedad']].map(function(c){ return '<button type="button" class="azb-chip" '+(c[3]?'data-w="'+c[3]+'"':'data-q="'+esc(c[1])+'"')+(c[2]?' data-at="'+c[2]+'"':'')+'>'+c[0]+'</button>'; }).join('')+'</div>')+'<form class="azb-in" id="azbForm">'+
         (st.rec ? '<div class="azb-rb'+(st.rec.cancel?' cx':'')+'"><span class="rd"></span><span id="azbT">0:00</span><span class="rh" id="azbH">'+(st.rec.cancel?'Soltá para cancelar':(st.rec.mode==='tap'?'Tocá el 🎤 para enviar':'Soltá para enviar · ← cancelar'))+'</span></div>' : '<input id="azbInp" placeholder="'+(st.wz&&st.wz.ph?esc(st.wz.ph):'Escribime acá…')+'" autocomplete="off"'+(st.busy?' disabled':'')+'>')+
         '<button type="button" class="azb-mic'+(st.rec?' rec':'')+'" data-a="mic" title="Mantené apretado para hablar">🎤</button>'+(st.rec?'':'<button class="azb-sd" type="submit"'+(st.busy?' disabled':'')+'>➤</button>')+'</form>';
     }
@@ -192,6 +229,7 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catc
     var tel = function(t){ var d = t.replace(/[^0-9]/g,''); return d.length>=6 ? d : null; }, mail = function(t){ return /^\S+@\S+\.\S+$/.test(t) ? t : null; };
     if(t==='cargar') return [P, T('interesado','¿Quién consultó o vino? (nombre)','Nombre del interesado'), {k:'via',q:'¿Por qué vía fue?',kind:'opt',opts:OP(VIAS)}, {k:'resultado',q:'¿Cómo resultó?',kind:'opt',opts:OP(RES)}, T('obs','Contame el detalle de lo que pasó (podés dictarlo 🎤)','Qué pasó, qué dijo, qué quiere…',1), T('prox','Próximo paso','Ej: llamarlo el viernes',1), T('tel','Teléfono del interesado','Teléfono',1,tel)];
     if(t==='agendar') return [P, {k:'fecha',q:'¿Qué día? Elegí o escribí dd/mm.',kind:'opt',opts:fechas(),parse:parseFecha,ph:'dd/mm'}, {k:'hora',q:'¿A qué hora? Elegí o escribila (ej 16:30).',kind:'opt',opts:OP(HORAS),parse:parseHora,ph:'hh:mm'}, T('interesado','¿Quién es el interesado?','Nombre',1), T('tel','Teléfono','Teléfono',1,tel), T('mail','Mail (le llega la invitación al Calendar)','mail@ejemplo.com',1,mail)];
+    if(t==='propuesta') return [P, T('cliente','¿Quién hizo la propuesta?','Nombre'), T('monto','¿De cuánto? (monto y moneda)','Ej: U$S 85.000'), T('obs','Condiciones o detalle de la propuesta','Condiciones',1), T('tel','Teléfono del interesado','Teléfono',1,tel)];
     if(t==='etapa') return [P, {k:'etapa',q:'¿A qué etapa la pasamos?',kind:'opt',opts:OP(ETAPAS)}];
     return [P];
   }
@@ -245,6 +283,7 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catc
     st.wz = null;
     if(w.t==='cargar'){ a.tipo = 'cargar'; a.datos = {id:d.id, dir:d.dir, interesado:d.interesado||'', tel:d.tel||'', via:d.via, resultado:d.resultado, prox:d.prox||'', obs:d.obs||''}; a.resumen = 'Cargar en '+d.dir+': '+d.interesado+' · '+d.via+' · '+d.resultado+(d.prox?' · próximo paso: '+d.prox:'')+(d.obs?' · detalle: '+d.obs:''); }
     else if(w.t==='agendar'){ a.tipo = 'agendar'; a.datos = {id:d.id, dir:d.dir, fecha:d.fecha, hora:d.hora, interesado:d.interesado||'', tel:d.tel||'', mail:d.mail||'', obs:''}; a.resumen = 'Agendar visita en '+d.dir+': '+fd(d.fecha)+' '+d.hora+(d.interesado?' · '+d.interesado:'')+(d.mail?' · invitación a '+d.mail:''); }
+    else if(w.t==='propuesta'){ a.tipo = 'propuesta'; a.datos = {id:d.id, dir:d.dir, cliente:d.cliente||'', monto:d.monto||'', tel:d.tel||'', obs:d.obs||''}; a.resumen = 'Registrar propuesta en '+d.dir+': '+d.cliente+' · '+d.monto+(d.obs?' · '+d.obs:''); }
     else if(w.t==='etapa'){ a.tipo = 'etapa'; a.datos = {id:d.id, dir:d.dir, etapa:d.etapa}; a.resumen = 'Pasar '+d.dir+(pr.etapa?' de '+pr.etapa:'')+' a '+d.etapa; }
     else { a.tipo = 'reporte'; a.datos = {id:d.id, dir:d.dir}; a.resumen = 'Enviar por mail el informe de gestión de '+d.dir+' a los propietarios con mail cargado'; }
     st.msgs.push({role:'assistant', content:'Listo, revisá y confirmá 👇', acciones:[a]}); save(); render();
@@ -270,7 +309,7 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catc
     var hist = st.msgs.filter(function(m){ return !m.w; }).map(function(m){ return {role:m.role, content:m.content||''}; }).filter(function(m){ return m.content; });
     call(atajo ? 'azcuAtajo' : 'azcuChat', atajo ? [atajo] : [hist, {nombre:st.nombre||'', fichaId:AZ.ctx||''}], function(r){
       st.busy = false;
-      st.msgs.push({role:'assistant', content:r.texto, acciones:(r.acciones||[]).map(function(a){ a.estado='pendiente'; return a; })});
+      reply(r);
       save(); render();
     }, function(err){
       st.busy = false;
@@ -308,6 +347,7 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catc
   }
   function doAction(mi, ai, yes){
     var a = st.msgs[mi].acciones[ai];
+    if(yes && a.peligro && !window.confirm('¿Seguro? Esto no se puede deshacer.')) return;
     if(!yes){ a.estado = 'cancelado'; save(); render(); return; }
     a.estado = 'hecho'; a.resultado = 'Ejecutando…'; render();
     call('azcuEjecutar', [a], function(r){
@@ -349,7 +389,7 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catc
           call('azcuVoz', [fr.result.split(',')[1], blob.type, hist, {nombre:st.nombre||'', fichaId:AZ.ctx||''}], function(r){
             st.busy = false;
             if(r.transcripcion) ph.content = r.transcripcion; else st.msgs.splice(st.msgs.indexOf(ph), 1);
-            st.msgs.push({role:'assistant', content:r.texto, acciones:(r.acciones||[]).map(function(a){ a.estado='pendiente'; return a; })});
+            reply(r);
             save(); render();
           }, function(err){ st.busy = false; st.msgs.splice(st.msgs.indexOf(ph), 1); st.msgs.push({role:'assistant', content:'No pude entender el audio: '+err}); save(); render(); });
         };
@@ -380,7 +420,8 @@ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catc
   document.addEventListener('pointercancel', function(){ if(micDown && st.rec && st.rec.mode==='hold'){ micDown = false; stopRec(true); } });
   document.addEventListener('contextmenu', function(e){ if(e.target.closest && e.target.closest('.azb-mic')) e.preventDefault(); });
   root.addEventListener('click', function(e){
-    var t = e.target.closest('[data-a],[data-q],[data-ok],[data-no],[data-w],[data-wo],[data-ws],[data-wx],#azbFab'); if(!t) return;
+    var t = e.target.closest('[data-a],[data-q],[data-ok],[data-no],[data-w],[data-wo],[data-ws],[data-wx],[data-f],#azbFab'); if(!t) return;
+    if(t.dataset.f){ openFile(t.dataset.f, t.dataset.fn||'archivo'); return; }
     if(t.dataset.w){ wzStart(t.dataset.w); return; }
     if(t.dataset.wo!==undefined){ var o = st.wz && st.wz.opts[+t.dataset.wo]; if(o){ if(st.wz.i<0) wzMode(o.v); else wzPick(o); } return; }
     if(t.dataset.ws){ wzSkip(); return; }
