@@ -1775,6 +1775,7 @@ function guardarPropiedad(codigo, cambios){
     }
   });
   set('Última actualización', new Date());
+  try{ if(typeof azcuLimpiarCache_==='function') azcuLimpiarCache_(); }catch(e){}
   var dir=_dirDe_(mae,fila,head);
   if(difs.length) _audit_(etapaA?'etapa':'campos', (etapaA?'🔶 ':'✏️ ')+difs.join('; ').slice(0,200), dir, quien);
   if(etapaA && !(typeof AZCU_NOAUDIT_!=='undefined' && AZCU_NOAUDIT_)){ try{ if(typeof azcuNotificarEtapa_==='function') azcuNotificarEtapa_(codigo, dir, etapaDe, etapaA, quien); }catch(e){} }

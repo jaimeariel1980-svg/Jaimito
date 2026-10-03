@@ -2385,7 +2385,7 @@ google.script.run
     }
     if(q.get('agenda')){ var rec = q.get('rec'); try{ history.replaceState(null, '', location.pathname); }catch(e){} st.entered = true; st.view = 'agenda'; st.agFrom = null; st.agSel = iso(new Date()); st.agForm = false; st.agNote = ''; setTimeout(function(){ if(rec) call('azcuRecCancelar', [st.nombre||'', rec], function(){ st.agNote = '✅ Aviso confirmado: no te lo vuelvo a repetir.'; render(); agLoad(); }, function(){ agLoad(); }); else agLoad(); }, 700); return; }
     function waLink(tel, tx){ var d = String(tel||'').replace(/\D/g, ''); if(!d) return 'https://api.whatsapp.com/send?text='+encodeURIComponent(tx); if(d.indexOf('54')!==0) d = '549'+d.replace(/^0/, '').replace(/^15/, ''); return 'https://wa.me/'+d+'?text='+encodeURIComponent(tx); }
-    var guiaTipo = q.get('rep') ? 'rep' : q.get('res') ? 'res' : q.get('pr') ? 'prop' : q.get('enc') ? 'enc' : q.get('sm') ? 'sm' : q.get('pl') ? 'pl' : q.get('com') ? 'com' : '', guiaIds = q.get('rep') || q.get('res') || q.get('pr') || q.get('enc') || q.get('sm') || q.get('pl') || q.get('com'), guiaCi = q.get('ci') || q.get('t') || '';
+    var guiaTipo = q.get('rep') ? 'rep' : q.get('res') ? 'res' : q.get('pr') ? 'prop' : q.get('enc') ? 'enc' : q.get('sm') ? 'sm' : q.get('pl') ? 'pl' : q.get('com') ? 'com' : q.get('pa') ? 'pap' : '', guiaIds = q.get('pa') || q.get('rep') || q.get('res') || q.get('pr') || q.get('enc') || q.get('sm') || q.get('pl') || q.get('com'), guiaCi = q.get('ci') || q.get('t') || '';
     if(guiaIds){
       try{ history.replaceState(null, '', location.pathname); }catch(e){}
       st.entered = true; st.menu = false; st.view = 'chat';
@@ -2404,6 +2404,9 @@ google.script.run
             } else if(g.tipo==='enc'){
               adj.push({k:'l', label:'📋 Ver la ficha en el tablero', url:(window.AZCU_TABLERO || 'tablero.html')+'?ficha='+encodeURIComponent(g.id)});
               cont = '🎉 **Propiedad vendida**: **'+g.dir+'**. Pedile al comprador'+((g.para && g.para.nombre) ? ' **'+g.para.nombre+'**' : '')+' que complete la encuesta de satisfacción (2 minutos). Te dejo el mensaje con el enlace.';
+            } else if(g.tipo==='pap'){
+              adj = [{k:'b', label:'📎 Subir los papeles ahora', act:'attprop', id:g.id}, {k:'l', label:'📋 Ver la ficha en el tablero', url:(window.AZCU_TABLERO || 'tablero.html')+'?ficha='+encodeURIComponent(g.id)}];
+              cont = g.total ? '🚨 **Reserva con papeles faltantes**: **'+g.dir+'** está en Reserva y faltan **'+g.total+'** documentos: '+g.faltan.slice(0,6).join(', ')+(g.total>6 ? ' y '+(g.total-6)+' más' : '')+'. Para poder vender tienen que estar **todos**. Pasame las fotos o PDF y los subo yo (tocá «Subir los papeles ahora»). Te lo recuerdo todos los días hasta que estén completos.' : '✅ **'+g.dir+'** ya tiene todos los papeles al día. ¡Bien!';
             } else if(g.tipo==='pl'){
               var vencP = g.dias!=null && g.dias<0, nomP = g.plazo==='escritura' ? 'escritura' : 'boleto';
               adj.push({k:'b', label:(nomP==='boleto' ? '✅ Ya se firmó el boleto' : '✅ Ya se firmó la escritura'), act:'plok', id:g.id+'|'+nomP});

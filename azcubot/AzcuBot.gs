@@ -791,6 +791,7 @@ function azcuNotificarEtapa_(id, dir, de, a, quien){
     var c = AZCU_COD_[a] || 'x', m = azcuEstadosGet_();
     azcuReservaMarca_(id, c);
     if(c==='v') azcuEncuestaAviso_(id);
+    if(c==='r'){ try{ azcuAvisoPapelesReserva(true, id); }catch(e){} }
     if(m){ m[String(id).trim().replace(/[;=]/g,'')] = c; azcuEstadosSet_(m); }
     var q = String(quien||'').trim() || 'Alguien';
     var t = c==='r' ? '🔶 '+q+' pasó a RESERVA' : c==='v' ? '✅ '+q+' marcó como VENDIDA' : '🔁 '+q+' cambió la etapa';
@@ -1117,7 +1118,7 @@ function azcuHerrOfrecer_(a, adj){
 function azcuAvisoPapeles(){
   var d = azcuDatos_(), por = {}, sin = 0, tot = 0;
   d.forEach(function(p){
-    if(!azcuActiva_(p)) return;
+    if(!azcuActiva_(p) || p.etapa==='Reserva') return;
     var f = azcuFalta_(p); if(!f.length) return;
     tot++;
     var v = String(p.vendedor||'').trim();
@@ -1217,7 +1218,7 @@ function azcuAvisoCambios(){
     if(!ant) return;
     if(ant[id]===undefined) av.push(c==='c' ? ['Nueva captación 🆕', p.dir] : ['Nueva propiedad 🆕', p.dir+' ('+p.etapa+')']);
     else if(ant[id]!==c){
-      if(c==='r') av.push(['🔶 Pasó a RESERVA', p.dir]);
+      if(c==='r'){ av.push(['🔶 Pasó a RESERVA', p.dir]); try{ azcuAvisoPapelesReserva(true, id); }catch(e){} }
       else if(c==='v'){ av.push(['✅ VENDIDA', p.dir]); try{ azcuEncuestaAviso_(id); }catch(e){} }
       else av.push(['Cambió de etapa', p.dir+' → '+p.etapa]);
     }
@@ -1768,6 +1769,10 @@ function azcuSegGuia(pin, tipo, id, ci){
     return {tipo:'rep', id:p.id, dir:p.dir, para:{nombre:ow.nombre||'', tel:String(ow.tel||''), mail:ow.mail||''},
       texto:'Hola'+(nom ? ' '+nom : '')+'! Te cuento cómo viene '+p.dir+': '+cons+' consulta'+(cons===1?'':'s')+', '+vis+' visita'+(vis===1?'':'s')+' y '+prop.length+' propuesta'+(prop.length===1?'':'s')+'. '+frase+' Cualquier duda me avisás.'};
   }
+  if(tipo==='pap'){
+    var fl = azcuFalta_(p);
+    return {tipo:'pap', id:p.id, dir:p.dir, etapa:p.etapa, faltan:fl, total:fl.length};
+  }
   if(tipo==='sm'){
     return {tipo:'sm', id:p.id, dir:p.dir, dias:p.dias, etapa:p.etapa};
   }
@@ -1864,6 +1869,7 @@ function azcuAvisoSinMov(forzar){
   if(cambio) azcuMapaSet_('AZCU_SM', m);
 }
 function azcuAvisoVendedor(forzar){
+  try{ azcuAvisoPapelesReserva(forzar); }catch(e){}
   try{ azcuAvisoPlazos(forzar); }catch(e){}
   try{ azcuAvisoComprador(forzar); }catch(e){}
   try{ azcuAvisoPropuestas(forzar); }catch(e){}
@@ -1917,4 +1923,25 @@ function azcuAvisoComprador(forzar){
     }catch(e){}
   });
   if(cambio) azcuMapaSet_('AZCU_COMP', m);
+}
+
+function azcuAvisoPapelesReserva(forzar, soloId){
+  var h = +Utilities.formatDate(new Date(), AZCU_TZ, 'H');
+  if(forzar!==true && (h<10 || h>=20)) return;
+  var datos = azcuDatos_(), m = azcuMapaGet_('AZCU_PAPR'), ahora = Date.now(), cambio = false;
+  datos.forEach(function(p){
+    var id = String(p.id).trim();
+    if(soloId && id!==String(soloId).trim()) return;
+    if(p.etapa!=='Reserva'){ if(m[id]!==undefined){ delete m[id]; cambio = true; } return; }
+    var f = azcuFalta_(p);
+    if(!f.length){ if(m[id]!==undefined){ delete m[id]; cambio = true; } return; }
+    if(m[id] && ahora-m[id] < 20*3600000) return;
+    var ve = String(p.vendedor||'').trim(), lista = f.slice(0,4).join(', ')+(f.length>4 ? ' y '+(f.length-4)+' más' : '');
+    try{
+      azcuPush_(m[id] ? '🚨 Reserva: SIGUEN faltando papeles' : '🚨 Reserva: hay que completar los papeles', p.dir+' · faltan '+f.length+': '+lista+'. Para vender tienen que estar todos.'+(ve ? '' : ' (sin vendedor asignado)'),
+        AZCU_WEB+'?pa='+encodeURIComponent(id), ve ? azcuDestinos_(ve, true) : null, !!ve);
+      m[id] = ahora; cambio = true;
+    }catch(e){}
+  });
+  if(cambio) azcuMapaSet_('AZCU_PAPR', m);
 }
