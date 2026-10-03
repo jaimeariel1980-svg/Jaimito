@@ -1714,16 +1714,18 @@ google.script.run
   }
   function movLoad(){
     if(!st.nombre && st.nombre!=='') return;
+    if(!st.mov){ try{ var mc = JSON.parse(ls('movc')||'null'); if(mc && mc.length){ st.mov = mc; if(st.view==='mov') render(); } }catch(e){} }
+    st.movBusy = true;
     call('azcuMov', [90], function(d){
-      st.mov = d.items || []; st.movErr = '';
+      st.movBusy = false; st.mov = d.items || []; st.movErr = ''; try{ ls('movc', JSON.stringify(st.mov)); }catch(e){}
       var seen = +ls('mseen'); if(!seen){ seen = Date.now()-864e5; ls('mseen', String(seen)); }
       st.movN = st.view==='mov' ? 0 : st.mov.filter(function(x){ return x.ms>seen; }).length;
       if(st.view==='mov') ls('mseen', String(Date.now()));
       render();
-    }, function(err){ st.mov = []; st.movErr = String(err||'error'); render(); });
+    }, function(err){ st.movBusy = false; if(!st.mov || !st.mov.length) st.mov = []; st.movErr = String(err||'error'); render(); });
   }
   function movHtml(){
-    var its = st.mov, last = '', h = '<div class="azb-agh"><b>Novedades</b><span>Últimas novedades</span></div>';
+    var its = st.mov, last = '', h = '<div class="azb-agh"><b>Novedades</b><span>'+(st.movBusy?'Actualizando…':'Últimas novedades')+'</span></div>';
     if(!its) return h+'<div class="azb-empty">Cargando…</div>';
     if(st.movErr) return h+es('bell','No pude cargar las novedades', /desconocida/i.test(st.movErr) ? 'Falta actualizar el servidor (AzcuBot.gs en Apps Script).' : esc(st.movErr))+'<button type="button" class="azb-back" data-a="movretry">Reintentar</button>';
     if(!its.length) return h+es('bell','Todo tranquilo','Cuando haya novedades, las vas a ver acá.');
@@ -2368,7 +2370,7 @@ google.script.run
     if(go){
       try{ history.replaceState(null, '', location.pathname); }catch(e){}
       st.entered = true; st.menu = false;
-      if(go==='novedades'){ st.view = 'mov'; st.movSeen = +ls('mseen') || 0; st.movN = 0; ls('mseen', String(Date.now())); setTimeout(movLoad, 700); }
+      if(go==='novedades'){ st.view = 'mov'; st.movSeen = +ls('mseen') || 0; st.movN = 0; ls('mseen', String(Date.now())); setTimeout(movLoad, 50); }
       else if(go==='agenda'){ st.view = 'agenda'; st.agFrom = null; st.agSel = iso(new Date()); st.agForm = false; st.agNote = ''; setTimeout(agLoad, 700); }
       else if(go==='chat'){ st.view = 'chat'; }
       else if(go==='alertas'){ setTimeout(function(){ if(!st.busy) ask('¿Qué alertas tengo hoy?', 'alertas'); }, 900); }

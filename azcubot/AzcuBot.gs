@@ -40,8 +40,8 @@ function azcuDatos_(forzar){
   return AZCU_D_;
 }
 function azcuCalentar(){ azcuDatos_(true); }
-function azcuMapaDirs_(){
-  var c = CacheService.getScriptCache(), t = c.get('azdir');
+function azcuMapaDirs_(forzar){
+  var c = CacheService.getScriptCache(), t = forzar ? null : c.get('azdir');
   if(t){ try{ return JSON.parse(t); }catch(e){} }
   var m = {};
   try{
@@ -51,7 +51,7 @@ function azcuMapaDirs_(){
   }catch(e){}
   return m;
 }
-function azcuLimpiarCache_(){ try{ var c = CacheService.getScriptCache(), n = +(c.get('azd_n') || 0), i; for(i=0;i<n;i++) c.remove('azd_'+i); c.remove('azd_n'); AZCU_D_ = null; }catch(e){} }
+function azcuLimpiarCache_(){ try{ var c = CacheService.getScriptCache(), n = +(c.get('azd_n') || 0), i; c.remove('azmov_90'); c.remove('azmov_30'); for(i=0;i<n;i++) c.remove('azd_'+i); c.remove('azd_n'); AZCU_D_ = null; }catch(e){} }
 function azcuProp_(id){
   var d = azcuDatos_(), q = azcuSinAc_(id), i;
   for(i=0;i<d.length;i++) if(String(d[i].id).trim()===String(id).trim()) return d[i];
@@ -1119,17 +1119,23 @@ function azcuLog_(tipo, texto, dir, quien){
     var ss = SpreadsheetApp.openById(MAESTRO_ID), h = ss.getSheetByName('Movimientos');
     if(!h){ h = ss.insertSheet('Movimientos'); h.appendRow(['Cuándo (ms)','Quién','Tipo','Texto','Propiedad']); }
     h.appendRow([Date.now(), String(quien||'').slice(0,40), tipo, String(texto||'').slice(0,220), String(dir||'').slice(0,80)]);
+    try{ var c9 = CacheService.getScriptCache(); c9.remove('azmov_90'); c9.remove('azmov_30'); }catch(e1){}
   }catch(e){}
 }
 function azcuMovimientos_(dias){
   dias = Math.max(1, Math.min(+dias||90, 365));
-  var hn = azcuHoy_(), desde = Date.now()-dias*86400000, out = [], dirs = {}, i, v;
-  var rev = {};
-  azcuDatos_().forEach(function(p){ dirs[String(p.id).trim()] = p.dir; rev[String(p.dir).trim()] = String(p.id).trim(); });
+  var cc = CacheService.getScriptCache(), ck = 'azmov_'+dias, hit = cc.get(ck);
+  if(hit){ try{ var hj = JSON.parse(hit); hj.ahora = Date.now(); return hj; }catch(e){} }
+  var hn = azcuHoy_(), desde = Date.now()-dias*86400000, out = [], dirs = azcuMapaDirs_(), i, v;
+  var rev = {}, ss0 = SpreadsheetApp.openById(MAESTRO_ID);
+  function leerUlt_(sh, max){ if(!sh) return []; var n = sh.getLastRow(); if(n<2) return []; var ini = Math.max(2, n-max+1); return sh.getRange(ini, 1, n-ini+1, Math.max(sh.getLastColumn(),1)).getValues(); }
   try{
-    var seg = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento');
-    v = seg ? seg.getDataRange().getValues() : [];
-    for(i=1;i<v.length;i++){
+    var seg = ss0.getSheetByName('Seguimiento');
+    v = leerUlt_(seg, 600);
+    var falta = false; v.forEach(function(r0){ var k0 = String(r0[0]).trim(); if(k0 && !(k0 in dirs)) falta = true; });
+    if(falta) dirs = azcuMapaDirs_(true);
+    Object.keys(dirs).forEach(function(k){ rev[String(dirs[k]).trim()] = k; });
+    for(i=0;i<v.length;i++){
       var n = azcuNum_(v[i][1]); if(!n) continue;
       var d = azcuDif_(hn, n); if(d<0 || d>=dias) continue;
       var via = String(v[i][2]).trim(), cli = String(v[i][3]).trim(), res = String(v[i][5]).trim(), ve = String(v[i][9]||'').trim(), ic = '📞', t = 'Consulta por '+via;
@@ -1141,16 +1147,18 @@ function azcuMovimientos_(dias){
     }
   }catch(e){}
   try{
-    var lg = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Movimientos');
-    v = lg ? lg.getDataRange().getValues() : [];
-    for(i=1;i<v.length;i++){
+    var lg = ss0.getSheetByName('Movimientos');
+    v = leerUlt_(lg, 300);
+    for(i=0;i<v.length;i++){
       var ms = +v[i][0]; if(!ms || ms<desde) continue;
       var tp = String(v[i][2]);
       out.push({ms:ms, h:1, ic:AZCU_LOGT_[tp] || '🔔', t:String(v[i][3]), d:'', dir:String(v[i][4]||''), q:String(v[i][1]||''), id:rev[String(v[i][4]||'').trim()] || ''});
     }
   }catch(e){}
   out.sort(function(a,b){ return b.ms-a.ms; });
-  return {items:out.slice(0,5), ahora:Date.now()};
+  var res = {items:out.slice(0,5), ahora:Date.now()};
+  try{ cc.put(ck, JSON.stringify(res), 20); }catch(e){}
+  return res;
 }
 function azcuHoy(pin){ azcuPin_(pin); var a = azcuHerrAlertas_(); return {v:a.visitas_hoy.length, c:a.seguimientos_para_hoy.length, p:a.propuestas_sin_respuesta.length, d:a.papeles.length}; }
 function azcuMov(pin, dias){ azcuPin_(pin); return azcuMovimientos_(dias); }
