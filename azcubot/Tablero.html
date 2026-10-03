@@ -111,7 +111,7 @@ td{padding:7px 8px;border-bottom:1px solid #f1f0ec;vertical-align:top}
 <div class="top"><div class="chip"><img id="logoimg" alt="Azcuénaga"></div>
 <div class="sep"></div><h1>Tablero de propiedades</h1><div class="dir">Mendoza 4873 · Rosario</div><button class="dlbtn" onclick="descargar()">Descargar</button></div>
 <div class="wrap">
-  <div class="nav"><button class="tab on" id="tabR" onclick="ver('resumen')">Resumen</button><button class="tab" id="tabP" onclick="ver('props')">Propiedades</button><a class="tab" style="text-decoration:none;display:inline-block" href="https://script.google.com/macros/s/AKfycbw82JqJx-WAAah3rd9V1U-KObnkWLmMKIASwDhrHK9CX4fkDGJPiO2fAnmMjofsPiHBFg/exec" target="_blank" rel="noopener">Ir a Precarga</a><a class="tab" style="text-decoration:none;display:inline-block" href="https://script.google.com/macros/s/AKfycbw82JqJx-WAAah3rd9V1U-KObnkWLmMKIASwDhrHK9CX4fkDGJPiO2fAnmMjofsPiHBFg/exec?app=procedimiento" target="_blank" rel="noopener">Ir a Procedimiento de Ventas</a></div>
+  <div class="nav"><button class="tab on" id="tabR" onclick="ver('resumen')">Resumen</button><button class="tab" id="tabP" onclick="ver('props')">Propiedades</button><a class="tab" style="text-decoration:none;display:inline-block" href="#" onclick="irApp('');return false" rel="noopener">Ir a Precarga</a><a class="tab" style="text-decoration:none;display:inline-block" href="#" onclick="irApp('?app=procedimiento');return false" rel="noopener">Ir a Procedimiento de Ventas</a></div>
   <div id="resumen">
   <div class="dash" id="dash"></div>
   <div class="panel"><div class="bar2">
@@ -888,6 +888,7 @@ function drill(tipo){
     document.getElementById('ov2').classList.add('on');return;
   }
 }
+function irApp(q){google.script.run.withSuccessHandler(function(u){window.open(u+(q||''),'_blank');}).withFailureHandler(function(e){alert('No pude abrir el enlace: '+(e&&e.message?e.message:e));}).getAppUrl();}
 function genDoc(id){
   google.script.run.withSuccessHandler(function(url){
     window.open(url+'?app=documentos&prop='+encodeURIComponent(id),'_blank');
