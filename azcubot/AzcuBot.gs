@@ -1912,12 +1912,13 @@ function azcuAvisoComprador(forzar){
   var dias = azcuNum2_('AZCU_COMP_DIAS', 20), datos = azcuDatos_(), m = azcuMapaGet_('AZCU_COMP'), ahora = Date.now(), cambio = false;
   datos.forEach(function(p){
     var id = String(p.id).trim(), c = AZCU_COD_[p.etapa] || 'x';
-    if(c!=='r' || p.escrituraOk){ if(m[id]!==undefined){ delete m[id]; cambio = true; } return; }
+    var sigue = !p.escrituraOk && (c==='r' || (c==='v' && p.escritura));
+    if(!sigue){ if(m[id]!==undefined){ delete m[id]; cambio = true; } return; }
     if(m[id]===undefined){ m[id] = ahora; cambio = true; return; }
     if(ahora-m[id] < dias*86400000) return;
     var ve = String(p.vendedor||'').trim();
     try{
-      azcuPush_('💬 Contale al comprador cómo viene', p.dir+' · Escribile al comprador para contarle en qué estado está la operación.'+(ve ? '' : ' (sin vendedor asignado)'),
+      azcuPush_('💬 Contale al comprador cómo viene', p.dir+' · Escribile al comprador para contarle en qué estado está el trámite (hasta la escritura).'+(ve ? '' : ' (sin vendedor asignado)'),
         AZCU_WEB+'?com='+encodeURIComponent(id), ve ? azcuDestinos_(ve, true) : null, !!ve);
       m[id] = ahora; cambio = true;
     }catch(e){}
