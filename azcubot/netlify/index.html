@@ -77,6 +77,7 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
 .azb-b{max-width:86%;padding:10px 13px;font-size:14px;line-height:1.5;word-wrap:break-word}
 .azb-m.a .azb-b{background:#fff;border:1px solid var(--ln);border-radius:14px 14px 14px 3px}
 .azb-tm{display:block;text-align:right;font-size:10px;opacity:.6;margin-top:3px}
+.azb-mv.tap{cursor:pointer}.azb-mv.tap:active{opacity:.7}
 .azb-dsep{text-align:center;margin:6px 0 12px}.azb-dsep span{background:#e8ebf2;color:#55607a;font:600 11px 'Inter',sans-serif;padding:3px 10px;border-radius:10px}
 .azb-back{display:block;width:100%;margin:0 0 12px;padding:11px;background:var(--n);color:#fff;border:0;border-radius:10px;font:600 13px 'Inter',sans-serif;cursor:pointer}
 .azb-hm{background:var(--n);color:#fff;border:0;border-radius:18px;height:34px;padding:0 13px;font:700 13px 'Inter',sans-serif;cursor:pointer;flex-shrink:0;white-space:nowrap}
@@ -418,7 +419,7 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
     its.forEach(function(x){
       var lb = dayLbl(x.ms);
       if(lb!==last){ h += '<div class="azb-dsep"><span>'+lb+'</span></div>'; last = lb; }
-      h += '<div class="azb-mv"><span class="ic">'+x.ic+'</span><div><b>'+esc(x.t)+(x.ms>(st.movSeen||0)?' <u class="azb-nw">NUEVO</u>':'')+'</b>'+(x.dir?'<em>'+esc(x.dir)+'</em>':'')+(x.d?'<small>'+esc(x.d)+'</small>':'')+'<small>'+(x.h?hhmm(x.ms)+' · ':'')+(x.q?esc(x.q):'')+'</small></div></div>';
+      h += '<div class="azb-mv'+((x.vf||x.id)?' tap':'')+'" '+((x.vf||x.id)?'data-mvi="'+its.indexOf(x)+'" role="button"':'')+'><span class="ic">'+x.ic+'</span><div><b>'+esc(x.t)+(x.ms>(st.movSeen||0)?' <u class="azb-nw">NUEVO</u>':'')+'</b>'+(x.dir?'<em>'+esc(x.dir)+'</em>':'')+(x.d?'<small>'+esc(x.d)+'</small>':'')+'<small>'+(x.h?hhmm(x.ms)+' · ':'')+(x.q?esc(x.q):'')+'</small></div></div>';
     });
     return h;
   }
@@ -475,6 +476,25 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
       img.onerror = function(){ URL.revokeObjectURL(url); rej(new Error('No pude abrir «'+(file.name||'la foto')+'».')); };
       img.src = url;
     });
+  }
+  function camOpen(){
+    if(!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)){ fCam.click(); return; }
+    navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}, width:{ideal:1920}}, audio:false}).then(function(stream){
+      var ov = document.createElement('div'), n = 0;
+      ov.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:#000;display:flex;flex-direction:column';
+      ov.innerHTML = '<video playsinline autoplay muted style="flex:1;min-height:0;width:100%;object-fit:contain;background:#000"></video><div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px calc(18px + env(safe-area-inset-bottom));background:#000"><button type="button" data-c="x" style="background:none;border:0;color:#fff;font:600 16px Inter,sans-serif;padding:12px">Cancelar</button><button type="button" data-c="s" aria-label="Sacar foto" style="width:68px;height:68px;border-radius:50%;border:4px solid #fff;background:rgba(255,255,255,.25)"></button><button type="button" data-c="ok" style="background:none;border:0;color:#fff;font:700 16px Inter,sans-serif;padding:12px;min-width:80px">Listo</button></div>';
+      document.body.appendChild(ov);
+      var v = ov.querySelector('video'); v.srcObject = stream; try{ v.play(); }catch(e){}
+      function cerrar(){ try{ stream.getTracks().forEach(function(t){ t.stop(); }); }catch(e){} ov.remove(); }
+      ov.addEventListener('click', function(e){
+        var c = e.target.getAttribute && e.target.getAttribute('data-c'); if(!c) return;
+        if(c==='x'){ cerrar(); return; }
+        if(c==='ok'){ cerrar(); return; }
+        var w = v.videoWidth, h = v.videoHeight; if(!w) return;
+        var k = Math.min(1, 1600/Math.max(w,h)), cv = document.createElement('canvas'); cv.width = Math.round(w*k); cv.height = Math.round(h*k); cv.getContext('2d').drawImage(v, 0, 0, cv.width, cv.height);
+        cv.toBlob(function(b){ if(!b) return; n++; attAdd([new File([b], 'foto'+Date.now()+'.jpg', {type:'image/jpeg'})]); ov.querySelector('[data-c=ok]').textContent = 'Listo ('+n+')'; }, 'image/jpeg', 0.85);
+      });
+    }).catch(function(){ fCam.click(); });
   }
   function attAdd(list){
     var files = Array.prototype.slice.call(list||[]); if(!files.length) return;
@@ -863,7 +883,14 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
     }).catch(function(){ alert('No pude usar el micrófono. Revisá el permiso del navegador, o usá el dictado del teclado del celular 🎤'); });
   }
   function stopRec(send){ var r = st.rec; if(!r) return; r.send = !!send && !r.cancel; try{ if(!r.send && r.mr.abort) r.mr.abort(); else r.mr.stop(); }catch(e){ st.rec = null; render(); } }
+  function mvGo(x){
+    if(x.vf){ st.menu = false; st.view = 'agenda'; st.agFrom = x.vf; st.agSel = x.vf; st.ag = null; st.agForm = false; st.agNote = ''; render(); agLoad(); return; }
+    if(!x.id) return;
+    if(typeof window.ficha==='function' && !APP){ st.open = false; render(); try{ window.ficha(x.id); }catch(e){} return; }
+    location.href = (window.AZCU_TABLERO || 'tablero.html')+'?ficha='+encodeURIComponent(x.id);
+  }
   root.addEventListener('click', function(e){
+    var mvEl = e.target.closest && e.target.closest('[data-mvi]'); if(mvEl && st.mov){ var xi = st.mov[+mvEl.getAttribute('data-mvi')]; if(xi){ mvGo(xi); return; } }
     var t = e.target.closest('[data-a],[data-q],[data-ok],[data-no],[data-w],[data-wo],[data-ws],[data-wx],[data-f],[data-d],#azbFab'); if(!t) return;
     if(t.id==='azbAgJ') return;
     if(t.dataset.d){ st.agSel = t.dataset.d; st.agForm = false; render(); return; }
@@ -886,7 +913,7 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
     else if(a==='pinok'){ var pv = (root.querySelector('#azbPin')||{}).value||''; pv = pv.trim(); if(!pv) return; var rq = st.pinReq; st.pinReq = null; st.pin = pv; ls('pin', pv); render(); call(rq.fn, rq.args, rq.ok, rq.fail, false); }
     else if(a==='pinx'){ var rq2 = st.pinReq; st.pinReq = null; render(); if(rq2) rq2.fail('Falta el PIN para usar Azcu.'); }
     else if(a==='sheetx'){ if(t.classList.contains('azb-ov') && e.target!==t) return; st.sheet = false; render(); }
-    else if(a==='attcam'){ st.sheet = false; render(); fCam.click(); }
+    else if(a==='attcam'){ st.sheet = false; render(); camOpen(); }
     else if(a==='attgal'){ st.sheet = false; render(); fGal.click(); }
     else if(a==='attdel'){ st.att.splice(+t.dataset.i, 1); render(); }
     else if(a==='attsave'){ attMsg('guardar en una propiedad'); wzStart('adjex'); }

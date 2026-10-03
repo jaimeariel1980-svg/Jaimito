@@ -995,7 +995,11 @@ function enviarReportePropietario(codigo, logoDataUri, resumenCustom, ownerCusto
   else frase = 'No se registraron consultas, sugerimos revisar precio.';
 
   var resumen = 'Durante el período, la propiedad ' + dir + ' registró ' + cons + ' consulta(s), ' + vis + ' visita(s) y ' + ofertas + ' propuesta(s). ' + frase;
-  if (resumenCustom && String(resumenCustom).trim()) resumen = String(resumenCustom).trim();
+  var resumenTxt = resumen;
+  if (resumenCustom && String(resumenCustom).trim()) {
+    resumen = String(resumenCustom).trim().replace(/<(?!\/?(b|i|u|br|span)\b)[^>]*>/gi, '').replace(/<span(?![^>]*style="font-size:\d+%")[^>]*>/gi, '<span>');
+    resumenTxt = resumen.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&');
+  }
 
   var destinatarios = [];
   var sinMail = [];
@@ -1028,7 +1032,7 @@ function enviarReportePropietario(codigo, logoDataUri, resumenCustom, ownerCusto
     var textoPlano = 'Informe de gestión — ' + dir + '\n\n' +
       'Hola ' + dest.nombre + ', te compartimos el resumen de gestión de tu propiedad ' + dir + '.\n\n' +
       'Consultas: ' + cons + ' | Visitas: ' + vis + ' | Propuestas: ' + ofertas + ' | Días s/mov: ' + (dias === null ? '—' : dias) + '\n\n' +
-      resumen + '\n\nSaludos,\n' + CONFIG.REMITENTE_NOMBRE;
+      resumenTxt + '\n\nSaludos,\n' + CONFIG.REMITENTE_NOMBRE;
     MailApp.sendEmail({
       to: dest.email,
       subject: 'Informe de gestión — ' + dir,

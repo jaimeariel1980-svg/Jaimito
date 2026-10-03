@@ -938,7 +938,7 @@ function azcuGet_(id){
   return s;
 }
 var AZCU_PUB_ = ['obtenerDatosOFallar','extraerDatosDNI','extraerDatosPropiedad','extraerDatosEscritura','precargarDatos','guardarEncuesta'];
-var AZCU_TB_ = ['obtenerPropiedadesDoc','obtenerImagenes','obtenerPropiedades','guardarDocumento','getDatos','guardarPropiedad','registrarInteraccion','editarInteraccion','eliminarInteraccion','eliminarPropiedad','agendarVisita','registrarPropuesta','subirDocumento','borrarDocumento','obtenerEncuesta','enviarReportePropietario','generarInformeTokko','getAppUrl','getEncuestaUrl'];
+var AZCU_TB_ = ['revisarTextoIA','obtenerPropiedadesDoc','obtenerImagenes','obtenerPropiedades','guardarDocumento','getDatos','guardarPropiedad','registrarInteraccion','editarInteraccion','eliminarInteraccion','eliminarPropiedad','agendarVisita','registrarPropuesta','subirDocumento','borrarDocumento','obtenerEncuesta','enviarReportePropietario','generarInformeTokko','getAppUrl','getEncuestaUrl'];
 function azcuApi(e){
   var raw = (e && e.parameter && e.parameter.payload) || (e && e.postData && e.postData.contents) || '{}', req = {}, out;
   try{
@@ -1114,7 +1114,8 @@ function azcuLog_(tipo, texto, dir, quien){
 function azcuMovimientos_(dias){
   dias = Math.max(1, Math.min(+dias||90, 365));
   var hn = azcuHoy_(), desde = Date.now()-dias*86400000, out = [], dirs = {}, i, v;
-  azcuDatos_().forEach(function(p){ dirs[String(p.id).trim()] = p.dir; });
+  var rev = {};
+  azcuDatos_().forEach(function(p){ dirs[String(p.id).trim()] = p.dir; rev[String(p.dir).trim()] = String(p.id).trim(); });
   try{
     var seg = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento');
     v = seg ? seg.getDataRange().getValues() : [];
@@ -1125,7 +1126,8 @@ function azcuMovimientos_(dias){
       if(res==='Visita agendada'){ ic = '📅'; t = 'Visita agendada'; }
       else if(via==='Visita'){ ic = '🏠'; t = 'Visita realizada'; }
       else if(/propuesta|oferta/i.test(res)){ ic = '💬'; t = res; }
-      out.push({ms:Date.UTC(Math.floor(n/10000), Math.floor(n/100)%100-1, n%100, 15), h:0, ic:ic, t:t, d:(cli ? cli+' · ' : '')+(res && res!==t ? res : ''), dir:dirs[String(v[i][0]).trim()] || '', q:ve});
+      var vf = ''; if(res==='Visita agendada'){ var mv = String(v[i][6]).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); if(mv) vf = mv[3]+'-'+('0'+mv[2]).slice(-2)+'-'+('0'+mv[1]).slice(-2); }
+      out.push({ms:Date.UTC(Math.floor(n/10000), Math.floor(n/100)%100-1, n%100, 15), h:0, ic:ic, t:t, d:(cli ? cli+' · ' : '')+(res && res!==t ? res : ''), dir:dirs[String(v[i][0]).trim()] || '', q:ve, id:String(v[i][0]).trim(), vf:vf});
     }
   }catch(e){}
   try{
@@ -1134,7 +1136,7 @@ function azcuMovimientos_(dias){
     for(i=1;i<v.length;i++){
       var ms = +v[i][0]; if(!ms || ms<desde) continue;
       var tp = String(v[i][2]);
-      out.push({ms:ms, h:1, ic:AZCU_LOGT_[tp] || '🔔', t:String(v[i][3]), d:'', dir:String(v[i][4]||''), q:String(v[i][1]||'')});
+      out.push({ms:ms, h:1, ic:AZCU_LOGT_[tp] || '🔔', t:String(v[i][3]), d:'', dir:String(v[i][4]||''), q:String(v[i][1]||''), id:rev[String(v[i][4]||'').trim()] || ''});
     }
   }catch(e){}
   out.sort(function(a,b){ return b.ms-a.ms; });
@@ -1513,4 +1515,16 @@ function obtenerPropiedadesDoc(){
     });
   }
   return out;
+}
+
+function revisarTextoIA(texto, datos){
+  texto = String(texto||'').slice(0,2500);
+  if(!texto.trim()) throw new Error('No hay texto para revisar.');
+  var key = _openAiApiKey(); if(!key) throw new Error('Falta OPENAI_API_KEY');
+  var sis = 'Revisás textos de informes de gestión de una inmobiliaria argentina. Hacé dos cosas: 1) corregí ortografía, puntuación y redacción sin cambiar el sentido, el tono ni agregar información; 2) verificá que las cifras y datos del texto coincidan con DATOS. Respondé SOLO un JSON: {"texto":"<texto corregido>","avisos":["<problema concreto de datos o contenido, breve>"]}. Si todo está bien, avisos es [].';
+  var r = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {method:'post', contentType:'application/json', headers:{Authorization:'Bearer '+key}, muteHttpExceptions:true,
+    payload:JSON.stringify({model:AZCU_MODEL, temperature:0.1, max_tokens:900, response_format:{type:'json_object'}, messages:[{role:'system', content:sis}, {role:'user', content:'DATOS: '+JSON.stringify(datos||{})+'\n\nTEXTO:\n'+texto}]})});
+  if(r.getResponseCode()<200 || r.getResponseCode()>=300) throw new Error('OpenAI '+r.getResponseCode());
+  var o = {}; try{ o = JSON.parse(JSON.parse(r.getContentText()).choices[0].message.content); }catch(e){}
+  return {texto:String(o.texto||texto), avisos:(o.avisos||[]).map(String).slice(0,6)};
 }

@@ -367,7 +367,7 @@ function cargarPropiedades(){
       })
       .obtenerPropiedades();
   }
-  google.script.run.withSuccessHandler(_ponerProps).withFailureHandler(viejo).obtenerPropiedadesDoc();
+  google.script.run.withSuccessHandler(function(l){ if(Array.isArray(l)) _ponerProps(l); else viejo(); }).withFailureHandler(viejo).obtenerPropiedadesDoc();
 }
 
 function elegir(k){

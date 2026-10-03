@@ -907,7 +907,8 @@ function genRep(id){
   '<h2>INFORME DE GESTIÓN</h2>'+
   '<p>Estimado/a <b id="rp_own" contenteditable="true">'+owner+'</b>, te compartimos el resumen de gestión de tu propiedad <b>'+p.dir+'</b>.</p>'+
   '<div class="repmet"><div class="m"><div class="n">'+p.cons+'</div><div class="l">Consultas</div></div><div class="m"><div class="n">'+p.vis+'</div><div class="l">Visitas</div></div><div class="m"><div class="n">'+ofertas+'</div><div class="l">Propuestas</div></div><div class="m"><div class="n">'+(p.dias===null?'—':p.dias)+'</div><div class="l">Días s/mov</div></div></div>'+
-  '<p id="rp_res" contenteditable="true" style="outline:1px dashed #b8c4d8;padding:6px;border-radius:6px">'+resumen+'</p><div style="font-size:11px;color:var(--gris)">✎ Tocá el texto para editarlo antes de enviar</div></div>'+
+  '<div class="rptb" style="display:flex;gap:6px;flex-wrap:wrap;margin:6px 0"><button type="button" class="btn s" style="padding:6px 12px;font-weight:700" onmousedown="event.preventDefault();_rpCmd(\'bold\')">B</button><button type="button" class="btn s" style="padding:6px 12px;text-decoration:underline" onmousedown="event.preventDefault();_rpCmd(\'underline\')">U</button><button type="button" class="btn s" style="padding:6px 12px" onmousedown="event.preventDefault();_rpSize(-1)">A−</button><button type="button" class="btn s" style="padding:6px 12px;font-size:16px" onmousedown="event.preventDefault();_rpSize(1)">A+</button><button type="button" class="btn s" id="rp_ia" style="padding:6px 12px" onclick="_rpRevisar(\''+id+'\')">✨ Revisar con IA</button></div>'+
+  '<p id="rp_res" contenteditable="true" style="outline:1px dashed #b8c4d8;padding:6px;border-radius:6px">'+resumen+'</p><div id="rp_ai"></div><div style="font-size:11px;color:var(--gris)">✎ Tocá el texto para editarlo; seleccioná y usá B, U, A−, A+</div></div>'+
   '<div class="dlbtns"><button class="btn p" onclick="enviarReporte(\''+id+'\')">📲 Enviar imagen por WhatsApp</button><button class="btn g" onclick="enviarReporteMail(\''+id+'\')">✉ Enviar reporte por mail</button><button class="btn s" onclick="closeDL()">Cerrar</button></div></div>';
   document.getElementById('ov2').classList.add('on');
 }
@@ -928,7 +929,7 @@ function enviarReporteMail(id){
       if(btn){btn.disabled=false;btn.textContent='✉ Enviar reporte por mail';}
       alert('Error al enviar: '+(e&&e.message?e.message:e));
     })
-    .enviarReportePropietario(id, LOGO, _repTxt().res, _repTxt().own);
+    .enviarReportePropietario(id, LOGO, _repTxt().html, _repTxt().own);
 }
 function cargarForm(id, nombre, tel){
   const p=DATA.find(x=>x.id===id);
@@ -964,24 +965,38 @@ function _fechaAr(iso){ if(!iso)return ''; const q=iso.split('-'); return q.leng
 function recargar(reabrir){
   google.script.run.withSuccessHandler(function(datos){ DATA=adaptar(datos); render(); if(reabrir)ficha(reabrir); }).getDatos();
 }
+function _subOv(txt){
+  var o=document.getElementById('subOv');
+  if(!txt){ if(o)o.remove(); return; }
+  if(!o){ o=document.createElement('div'); o.id='subOv'; o.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(15,30,60,.55);display:flex;align-items:center;justify-content:center';
+    o.innerHTML='<style>@keyframes subspin{to{transform:rotate(360deg)}}</style><div style="background:#fff;border-radius:16px;padding:26px 30px;text-align:center;min-width:220px;box-shadow:0 10px 40px rgba(0,0,0,.3)"><div style="width:46px;height:46px;margin:0 auto 14px;border:5px solid #dbe4f3;border-top-color:#1b3866;border-radius:50%;animation:subspin .8s linear infinite"></div><div id="subTxt" style="font:600 15px Arial,sans-serif;color:#1b3866"></div><div style="font:12px Arial,sans-serif;color:#6b7280;margin-top:6px">No cierres esta pantalla</div></div>'; document.body.appendChild(o); }
+  document.getElementById('subTxt').textContent=txt;
+}
+function _comprimir(f,cb){
+  if(!/^image\//.test(f.type)||f.size<400000){ var r0=new FileReader(); r0.onload=function(){ cb(r0.result.split(',')[1],f.name,f.type); }; r0.readAsDataURL(f); return; }
+  var img=new Image(), u=URL.createObjectURL(f);
+  img.onload=function(){ var k=Math.min(1,2000/Math.max(img.naturalWidth,img.naturalHeight)), c=document.createElement('canvas'); c.width=Math.round(img.naturalWidth*k); c.height=Math.round(img.naturalHeight*k); c.getContext('2d').drawImage(img,0,0,c.width,c.height); URL.revokeObjectURL(u);
+    var d=c.toDataURL('image/jpeg',0.82); cb(d.split(',')[1], f.name.replace(/\.[^.]+$/,'')+'.jpg','image/jpeg'); };
+  img.onerror=function(){ var r1=new FileReader(); r1.onload=function(){ cb(r1.result.split(',')[1],f.name,f.type); }; r1.readAsDataURL(f); };
+  img.src=u;
+}
 function subirDoc(id,doc){
   const inp=document.createElement('input');inp.type='file';
   inp.onchange=function(){
     const f=inp.files[0];if(!f)return;
-    const r=new FileReader();
-    r.onload=function(){
-         const b64=r.result.split(',')[1];
-      alert('Subiendo… tocá OK y esperá unos segundos.');
+    _subOv('Preparando el archivo…');
+    _comprimir(f,function(b64,nombre,tipo){
+      _subOv('Subiendo y verificando '+doc+'…');
       google.script.run
         .withSuccessHandler(function(res){
+          _subOv('');
           const p=DATA.find(x=>x.id===id);
           if(p){ if(!p.papeles)p.papeles={}; p.papeles[doc]=1; if(!p.docUrls)p.docUrls={}; if(res&&res.url)p.docUrls[doc]=res.url; }
           ficha(id);
         })
-        .withFailureHandler(function(e){alert('Error al subir: '+(e&&e.message?e.message:e));})
-        .subirDocumento(id,doc,b64,f.name,f.type);
-    };
-    r.readAsDataURL(f);
+        .withFailureHandler(function(e){ _subOv(''); alert('Error al subir: '+(e&&e.message?e.message:e));})
+        .subirDocumento(id,doc,b64,nombre,tipo);
+    });
   };
   inp.click();
 }
@@ -1133,8 +1148,40 @@ function guardarAgenda(id,dirEnc){
     .withFailureHandler(function(e){alert('Error: '+(e&&e.message?e.message:e));if(btn){btn.textContent='Agendar';btn.disabled=false;}})
     .agendarVisita(id,datos);
 }
-function _repTxt(){var r=document.getElementById('rp_res'),o=document.getElementById('rp_own');return {res:r?r.innerText.trim():'',own:o?o.innerText.trim():''};}
-function _repImg(id,cb){
+function _rpCmd(c){var e=document.getElementById('rp_res');if(e)e.focus();document.execCommand(c,false,null);}
+function _rpSize(d){var e=document.getElementById('rp_res');if(e)e.focus();var v=parseInt(document.queryCommandValue('fontSize'))||3;document.execCommand('fontSize',false,Math.max(2,Math.min(6,v+d)));}
+function _rpLimpio(el){
+  var PX={1:65,2:80,3:100,4:125,5:150,6:175,7:210};
+  function w(n){
+    if(n.nodeType===3)return n.nodeValue.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    if(n.nodeType!==1)return '';
+    var t=n.tagName.toLowerCase(),in_=Array.prototype.map.call(n.childNodes,w).join('');
+    if(t==='b'||t==='strong')return '<b>'+in_+'</b>';
+    if(t==='i'||t==='em')return '<i>'+in_+'</i>';
+    if(t==='u')return '<u>'+in_+'</u>';
+    if(t==='br')return '<br/>';
+    if(t==='font'&&n.getAttribute('size')){var px=PX[parseInt(n.getAttribute('size'))]||100;return '<span style="font-size:'+px+'%">'+in_+'</span>';}
+    if(t==='span'){var m=(n.getAttribute('style')||'').match(/font-size:\s*(\d+)%/);var b=/bold|700/.test(n.style.fontWeight||'')?['<b>','</b>']:['',''];var u=/underline/.test(n.style.textDecorationLine||n.style.textDecoration||'')?['<u>','</u>']:['',''];var x=b[0]+u[0]+in_+u[1]+b[1];return m?'<span style="font-size:'+m[1]+'%">'+x+'</span>':x;}
+    if(t==='div'||t==='p')return in_+'<br/>';
+    return in_;
+  }
+  return w(el).replace(/(<br\/>)+$/,'');
+}
+function _repTxt(){var r=document.getElementById('rp_res'),o=document.getElementById('rp_own');return {res:r?r.innerText.trim():'',html:r?_rpLimpio(r):'',own:o?o.innerText.trim():''};}
+function _rpRevisar(id){
+  var p=DATA.find(function(x){return x.id===id}),t=_repTxt(),b=document.getElementById('rp_ia'),box=document.getElementById('rp_ai');
+  var of=(p.seg||[]).filter(function(x){return /propuesta|oferta/i.test(x.res);}).length;
+  if(b){b.disabled=true;b.textContent='Revisando…';}
+  google.script.run.withSuccessHandler(function(r){
+    if(b){b.disabled=false;b.textContent='✨ Revisar con IA';}
+    window.__rpSug=(r&&r.texto)||'';
+    box.innerHTML='<div style="background:#eef4ff;border:1px solid #c9d8f5;border-radius:8px;padding:10px;margin:8px 0;font-size:12.5px"><b>Sugerencia de la IA</b><div style="margin:6px 0;white-space:pre-wrap">'+String(window.__rpSug).replace(/</g,'&lt;')+'</div>'+((r&&r.avisos&&r.avisos.length)?'<ul style="margin:6px 0 8px 16px;padding:0">'+r.avisos.map(function(a){return '<li>'+String(a).replace(/</g,'&lt;')+'</li>';}).join('')+'</ul>':'<div style="color:#2a7a3b;margin:4px 0">Sin problemas con los datos.</div>')+'<button type="button" class="btn p" style="padding:6px 12px" onclick="document.getElementById(\'rp_res\').innerText=window.__rpSug;document.getElementById(\'rp_ai\').innerHTML=\'\'">Aplicar sugerencia</button> <button type="button" class="btn s" style="padding:6px 12px" onclick="document.getElementById(\'rp_ai\').innerHTML=\'\'">Descartar</button></div>';
+  }).withFailureHandler(function(e){
+    if(b){b.disabled=false;b.textContent='✨ Revisar con IA';}
+    alert('No pude revisar: '+(e&&e.message?e.message:e));
+  }).revisarTextoIA(t.res,{consultas:p.cons,visitas:p.vis,propuestas:of,dias_sin_movimiento:p.dias,direccion:p.dir,propietario:t.own});
+}
+function _repImgCanvas(id,cb){
   var p=DATA.find(function(x){return x.id===id}),sm=SIM[id]||{},t=_repTxt();
   var of=(p.seg||[]).filter(function(x){return /propuesta|oferta/i.test(x.res);}).length;
   if(!t.res)t.res='Durante el período, la propiedad '+p.dir+' registró '+p.cons+' consulta(s), '+p.vis+' visita(s) y '+of+' propuesta(s). '+_resumenActividad(p,of);
@@ -1151,6 +1198,21 @@ function _repImg(id,cb){
     y+=20;g.fillStyle='#eee';g.fillRect(pad,y,W-2*pad,2);y+=40;g.fillStyle='#1b3866';g.font='bold 22px Arial';g.fillText('Azcuénaga Inmobiliaria',pad,y);g.fillStyle='#999';g.font='18px Arial';g.fillText('Mendoza 4873 · Rosario · '+new Date().toLocaleDateString('es-AR'),pad,y+30);
     var o=document.createElement('canvas');o.width=W;o.height=y+70;o.getContext('2d').drawImage(c,0,0);o.toBlob(function(b){cb(b,p)},'image/png');
   };im.src=LOGO;
+}
+function _repImg(id,cb){
+  var p=DATA.find(function(x){return x.id===id}),sm=SIM[id]||{},t=_repTxt();
+  var of=(p.seg||[]).filter(function(x){return /propuesta|oferta/i.test(x.res);}).length;
+  if(!t.res||!/<(b|u|i|span)[ >]/.test(t.html)){_repImgCanvas(id,cb);return;}
+  var met=[[p.cons,'Consultas'],[p.vis,'Visitas'],[of,'Propuestas'],[p.dias===null?'—':p.dias,'Días s/mov']].map(function(q){return '<div style="flex:1;background:#f0f4fa;text-align:center;padding:14px 4px;margin:0 5px"><div style="font:bold 44px Arial;color:#1b3866">'+q[0]+'</div><div style="font:17px Arial;color:#6b7280;text-transform:uppercase">'+q[1]+'</div></div>';}).join('');
+  var html='<div xmlns="http://www.w3.org/1999/xhtml" style="width:800px;background:#fff;font-family:Arial,sans-serif"><div style="background:#1b3866;height:110px;display:flex;align-items:center;padding:0 48px"><img src="'+LOGO+'" style="width:60px;height:60px;border-radius:50%;margin-right:20px"/><div><div style="color:#b0c4e0;font-size:20px">Reporte de gestión</div><div style="color:#fff;font-size:30px;font-weight:bold">INFORME DE GESTIÓN</div></div></div><div style="padding:36px 48px 30px"><div style="font-size:24px;color:#333;line-height:1.4">Estimado/a '+String(t.own||sm.prop||p.prop||'propietario/a').replace(/</g,'&lt;')+', te compartimos el resumen de gestión de tu propiedad '+String(p.dir).replace(/</g,'&lt;')+'.</div><div style="display:flex;margin:24px -5px">'+met+'</div><div style="font-size:22px;color:#444;line-height:1.45">'+t.html+'</div><div style="border-top:2px solid #eee;margin-top:26px;padding-top:24px"><div style="font:bold 22px Arial;color:#1b3866">Azcuénaga Inmobiliaria</div><div style="font:18px Arial;color:#999;margin-top:6px">Mendoza 4873 · Rosario · '+new Date().toLocaleDateString('es-AR')+'</div></div></div></div>';
+  var m=document.createElement('div');m.style.cssText='position:fixed;left:-9999px;top:0;width:800px';m.innerHTML=html;document.body.appendChild(m);
+  var H=m.firstChild.offsetHeight||900;m.remove();
+  var svg='<svg xmlns="http://www.w3.org/2000/svg" width="800" height="'+H+'"><foreignObject width="800" height="'+H+'">'+html+'</foreignObject></svg>';
+  var im=new Image(),done=false;
+  im.onload=function(){try{var c=document.createElement('canvas');c.width=800;c.height=H;var g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,800,H);g.drawImage(im,0,0);c.toBlob(function(b){if(done)return;done=true;if(b)cb(b,p);else _repImgCanvas(id,cb);},'image/png');}catch(e){if(!done){done=true;_repImgCanvas(id,cb);}}};
+  im.onerror=function(){if(!done){done=true;_repImgCanvas(id,cb);}};
+  setTimeout(function(){if(!done){done=true;_repImgCanvas(id,cb);}},6000);
+  im.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
 }
 function enviarReporte(id){
   _repImg(id,function(b,p){
@@ -1172,7 +1234,7 @@ function adaptar(datos){
 }
 document.getElementById('dash').innerHTML='<div style="padding:22px;color:var(--gris);font-size:15px">Cargando propiedades del maestro…</div>';
 google.script.run
-  .withSuccessHandler(function(datos){ DATA=adaptar(datos); if(DATA[0]) DOCLIST=Object.keys(DATA[0].papeles); render(); })
+  .withSuccessHandler(function(datos){ DATA=adaptar(datos); if(DATA[0]) DOCLIST=Object.keys(DATA[0].papeles); render(); try{ var _f=new URLSearchParams(location.search).get('ficha'); if(_f && DATA.some(function(x){return x.id===_f;})) ficha(_f); }catch(e){} })
   .withFailureHandler(function(err){ document.getElementById('dash').innerHTML='<div style="padding:22px;color:#c0392b">Error al cargar: '+(err&&err.message?err.message:err)+'</div>'; })
   .getDatos();
 </script>
@@ -1230,6 +1292,7 @@ google.script.run
 .azb-b{max-width:86%;padding:10px 13px;font-size:14px;line-height:1.5;word-wrap:break-word}
 .azb-m.a .azb-b{background:#fff;border:1px solid var(--ln);border-radius:14px 14px 14px 3px}
 .azb-tm{display:block;text-align:right;font-size:10px;opacity:.6;margin-top:3px}
+.azb-mv.tap{cursor:pointer}.azb-mv.tap:active{opacity:.7}
 .azb-dsep{text-align:center;margin:6px 0 12px}.azb-dsep span{background:#e8ebf2;color:#55607a;font:600 11px 'Inter',sans-serif;padding:3px 10px;border-radius:10px}
 .azb-back{display:block;width:100%;margin:0 0 12px;padding:11px;background:var(--n);color:#fff;border:0;border-radius:10px;font:600 13px 'Inter',sans-serif;cursor:pointer}
 .azb-hm{background:var(--n);color:#fff;border:0;border-radius:18px;height:34px;padding:0 13px;font:700 13px 'Inter',sans-serif;cursor:pointer;flex-shrink:0;white-space:nowrap}
@@ -1571,7 +1634,7 @@ google.script.run
     its.forEach(function(x){
       var lb = dayLbl(x.ms);
       if(lb!==last){ h += '<div class="azb-dsep"><span>'+lb+'</span></div>'; last = lb; }
-      h += '<div class="azb-mv"><span class="ic">'+x.ic+'</span><div><b>'+esc(x.t)+(x.ms>(st.movSeen||0)?' <u class="azb-nw">NUEVO</u>':'')+'</b>'+(x.dir?'<em>'+esc(x.dir)+'</em>':'')+(x.d?'<small>'+esc(x.d)+'</small>':'')+'<small>'+(x.h?hhmm(x.ms)+' · ':'')+(x.q?esc(x.q):'')+'</small></div></div>';
+      h += '<div class="azb-mv'+((x.vf||x.id)?' tap':'')+'" '+((x.vf||x.id)?'data-mvi="'+its.indexOf(x)+'" role="button"':'')+'><span class="ic">'+x.ic+'</span><div><b>'+esc(x.t)+(x.ms>(st.movSeen||0)?' <u class="azb-nw">NUEVO</u>':'')+'</b>'+(x.dir?'<em>'+esc(x.dir)+'</em>':'')+(x.d?'<small>'+esc(x.d)+'</small>':'')+'<small>'+(x.h?hhmm(x.ms)+' · ':'')+(x.q?esc(x.q):'')+'</small></div></div>';
     });
     return h;
   }
@@ -1628,6 +1691,25 @@ google.script.run
       img.onerror = function(){ URL.revokeObjectURL(url); rej(new Error('No pude abrir «'+(file.name||'la foto')+'».')); };
       img.src = url;
     });
+  }
+  function camOpen(){
+    if(!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)){ fCam.click(); return; }
+    navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}, width:{ideal:1920}}, audio:false}).then(function(stream){
+      var ov = document.createElement('div'), n = 0;
+      ov.style.cssText = 'position:fixed;inset:0;z-index:2147483647;background:#000;display:flex;flex-direction:column';
+      ov.innerHTML = '<video playsinline autoplay muted style="flex:1;min-height:0;width:100%;object-fit:contain;background:#000"></video><div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px calc(18px + env(safe-area-inset-bottom));background:#000"><button type="button" data-c="x" style="background:none;border:0;color:#fff;font:600 16px Inter,sans-serif;padding:12px">Cancelar</button><button type="button" data-c="s" aria-label="Sacar foto" style="width:68px;height:68px;border-radius:50%;border:4px solid #fff;background:rgba(255,255,255,.25)"></button><button type="button" data-c="ok" style="background:none;border:0;color:#fff;font:700 16px Inter,sans-serif;padding:12px;min-width:80px">Listo</button></div>';
+      document.body.appendChild(ov);
+      var v = ov.querySelector('video'); v.srcObject = stream; try{ v.play(); }catch(e){}
+      function cerrar(){ try{ stream.getTracks().forEach(function(t){ t.stop(); }); }catch(e){} ov.remove(); }
+      ov.addEventListener('click', function(e){
+        var c = e.target.getAttribute && e.target.getAttribute('data-c'); if(!c) return;
+        if(c==='x'){ cerrar(); return; }
+        if(c==='ok'){ cerrar(); return; }
+        var w = v.videoWidth, h = v.videoHeight; if(!w) return;
+        var k = Math.min(1, 1600/Math.max(w,h)), cv = document.createElement('canvas'); cv.width = Math.round(w*k); cv.height = Math.round(h*k); cv.getContext('2d').drawImage(v, 0, 0, cv.width, cv.height);
+        cv.toBlob(function(b){ if(!b) return; n++; attAdd([new File([b], 'foto'+Date.now()+'.jpg', {type:'image/jpeg'})]); ov.querySelector('[data-c=ok]').textContent = 'Listo ('+n+')'; }, 'image/jpeg', 0.85);
+      });
+    }).catch(function(){ fCam.click(); });
   }
   function attAdd(list){
     var files = Array.prototype.slice.call(list||[]); if(!files.length) return;
@@ -2016,7 +2098,14 @@ google.script.run
     }).catch(function(){ alert('No pude usar el micrófono. Revisá el permiso del navegador, o usá el dictado del teclado del celular 🎤'); });
   }
   function stopRec(send){ var r = st.rec; if(!r) return; r.send = !!send && !r.cancel; try{ if(!r.send && r.mr.abort) r.mr.abort(); else r.mr.stop(); }catch(e){ st.rec = null; render(); } }
+  function mvGo(x){
+    if(x.vf){ st.menu = false; st.view = 'agenda'; st.agFrom = x.vf; st.agSel = x.vf; st.ag = null; st.agForm = false; st.agNote = ''; render(); agLoad(); return; }
+    if(!x.id) return;
+    if(typeof window.ficha==='function' && !APP){ st.open = false; render(); try{ window.ficha(x.id); }catch(e){} return; }
+    location.href = (window.AZCU_TABLERO || 'tablero.html')+'?ficha='+encodeURIComponent(x.id);
+  }
   root.addEventListener('click', function(e){
+    var mvEl = e.target.closest && e.target.closest('[data-mvi]'); if(mvEl && st.mov){ var xi = st.mov[+mvEl.getAttribute('data-mvi')]; if(xi){ mvGo(xi); return; } }
     var t = e.target.closest('[data-a],[data-q],[data-ok],[data-no],[data-w],[data-wo],[data-ws],[data-wx],[data-f],[data-d],#azbFab'); if(!t) return;
     if(t.id==='azbAgJ') return;
     if(t.dataset.d){ st.agSel = t.dataset.d; st.agForm = false; render(); return; }
@@ -2039,7 +2128,7 @@ google.script.run
     else if(a==='pinok'){ var pv = (root.querySelector('#azbPin')||{}).value||''; pv = pv.trim(); if(!pv) return; var rq = st.pinReq; st.pinReq = null; st.pin = pv; ls('pin', pv); render(); call(rq.fn, rq.args, rq.ok, rq.fail, false); }
     else if(a==='pinx'){ var rq2 = st.pinReq; st.pinReq = null; render(); if(rq2) rq2.fail('Falta el PIN para usar Azcu.'); }
     else if(a==='sheetx'){ if(t.classList.contains('azb-ov') && e.target!==t) return; st.sheet = false; render(); }
-    else if(a==='attcam'){ st.sheet = false; render(); fCam.click(); }
+    else if(a==='attcam'){ st.sheet = false; render(); camOpen(); }
     else if(a==='attgal'){ st.sheet = false; render(); fGal.click(); }
     else if(a==='attdel'){ st.att.splice(+t.dataset.i, 1); render(); }
     else if(a==='attsave'){ attMsg('guardar en una propiedad'); wzStart('adjex'); }
