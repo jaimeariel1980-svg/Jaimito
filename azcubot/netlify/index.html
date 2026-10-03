@@ -307,6 +307,14 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
 .azb-tile i{width:54px;height:54px;border-radius:17px}.azb-tile i .azb-sv{width:32px;height:32px}
 .azb-row i{width:42px;height:42px;border-radius:14px}.azb-row i .azb-sv{width:26px;height:26px}
 .azb-tile{min-height:132px}
+.azb-hd{height:80px}.azb-app .azb-hd{min-height:80px}
+.azb-hd .azb-t{font-size:23px}
+.azb-ib{width:46px;height:46px}.azb-ib .azb-sv{width:27px;height:27px}
+.azb-tbp{height:46px;font-size:15.5px;padding:0 16px 0 13px}.azb-tbp .azb-sv{width:25px;height:25px}
+.azb-tile i{width:64px;height:64px;border-radius:20px}.azb-tile i .azb-sv{width:38px;height:38px}
+.azb-tile{min-height:146px}.azb-tile b{font-size:19px}
+.azb-row i{width:50px;height:50px;border-radius:16px}.azb-row i .azb-sv{width:30px;height:30px}
+.azb-tab .azb-sv{width:29px;height:29px}.azb-tab{font-size:11.5px}
 @media(prefers-reduced-motion:reduce){.azb *{animation:none!important;transition:none!important}}
 </style>
 <script>
@@ -549,7 +557,7 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
       h += (APP?'':'<div class="azb-hd"><span class="azb-t">AzcuBot · Asistente interno</span><button class="azb-ib" data-a="close">✕</button></div>')+
         '<div class="azb-port"><div class="azb-wm">AZCU</div><div class="azb-box">'+mk(108)+'</div><div class="azb-pe">Azcuénaga Inmobiliaria</div><h2>Hola, soy AzcuBot</h2><div class="azb-rl">Tu compañero de laburo</div><p>¿Cómo te llamás? Así te doy una mano con el tablero, las visitas y todo lo de todos los días.</p><input id="azbName" placeholder="Tu nombre" autocomplete="off"><button class="azb-go" data-a="start">Empezar →</button><button class="azb-sk" data-a="skip">Prefiero no decirlo</button>'+foot+'</div>';
     } else {
-      h += '<div class="azb-hd">'+mk(30)+'<span class="azb-t">AzcuBot'+(APP?'':' · '+(AZ.ctx?'Ficha '+esc(AZ.ctx):'Asistente interno'))+'</span>'+(APP?'<a class="azb-tbp" href="'+esc(window.AZCU_TABLERO||'#')+'" target="_blank" rel="noopener" title="Abrir el tablero">'+sv('board')+'<span>Tablero</span></a>':'')+(APP?'':'<button class="azb-ib azb-nv" data-a="mov" title="Novedades">'+sv('hist')+(st.movN?'<i class="azb-bd">'+(st.movN>9?'9+':st.movN)+'</i>':'')+'</button><button class="azb-ib" data-a="agenda" title="Agenda">'+sv(st.view==='agenda'?'chat':'cal')+'</button>')+'<button class="azb-ib" data-a="clear" title="Borrar charla">'+sv('trash')+'</button>'+(APP?'':'<button class="azb-ib" data-a="close">✕</button>')+'</div>'+(APP && window.OneSignalDeferred && !st.pushOn ? '<div class="azb-pb"><span>🔔 Recibí avisos en este celular</span><button type="button" class="azb-btn" data-a="push">Activar avisos</button></div>' : '')+'<div class="azb-body">';
+      h += '<div class="azb-hd">'+mk(48)+'<span class="azb-t">AzcuBot'+(APP?'':' · '+(AZ.ctx?'Ficha '+esc(AZ.ctx):'Asistente interno'))+'</span>'+(APP?'<a class="azb-tbp" href="'+esc(window.AZCU_TABLERO||'#')+'" target="_blank" rel="noopener" title="Abrir el tablero">'+sv('board')+'<span>Tablero</span></a>':'')+(APP?'':'<button class="azb-ib azb-nv" data-a="mov" title="Novedades">'+sv('hist')+(st.movN?'<i class="azb-bd">'+(st.movN>9?'9+':st.movN)+'</i>':'')+'</button><button class="azb-ib" data-a="agenda" title="Agenda">'+sv(st.view==='agenda'?'chat':'cal')+'</button>')+'<button class="azb-ib" data-a="clear" title="Borrar charla">'+sv('trash')+'</button>'+(APP?'':'<button class="azb-ib" data-a="close">✕</button>')+'</div>'+(APP && window.OneSignalDeferred && !st.pushOn ? '<div class="azb-pb"><span>🔔 Recibí avisos en este celular</span><button type="button" class="azb-btn" data-a="push">Activar avisos</button></div>' : '')+'<div class="azb-body">';
       if(st.view==='agenda') h += agendaHtml(); else if(st.view==='mov') h += movHtml(); else {
       if(!st.msgs.length || st.menu){
         h += (st.menu && st.msgs.length ? '<button type="button" class="azb-back" data-a="menux">💬 Volver a la charla</button>' : '')+'<div class="azb-av">'+mk(60)+'</div><div class="azb-eyb">Tu asistente, siempre disponible</div><h1>Hola'+(st.nombre?', <b>'+esc(st.nombre)+'</b>':'')+'.<br>¿Qué hacemos hoy?</h1><p class="azb-lead">Preguntame lo que quieras del tablero o pedime que cargue visitas, agende, cambie estados o mande reportes. Escribime como a un compañero.</p>'+(APP && window.OneSignalDeferred && !st.pushOn ? '<button class="azb-row" data-a="push" style="border-color:var(--n);background:#eef3ff">🔔 Activar avisos en este celular<span>→</span></button>' : '')+'<div class="azb-lbl">Atajos</div>';
