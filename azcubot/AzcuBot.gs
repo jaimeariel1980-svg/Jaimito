@@ -786,7 +786,7 @@ function azcuEjecutar_(pin, accion){
     if(!azcuPuedeAvisar_(accion.quien)) throw new Error('No tenés permiso para mandar avisos al equipo.');
     var de = String(accion.quien||'').trim().slice(0,40), msg = String(d.mensaje||'').trim().slice(0,300);
     if(!msg) throw new Error('Falta el mensaje.');
-    var res = azcuPush_('📣 '+(d.titulo ? String(d.titulo).slice(0,60) : 'Aviso del equipo'+(de ? ' · '+de : '')), msg, AZCU_WEB);
+    var res = azcuPush_('📣 '+(d.titulo ? String(d.titulo).slice(0,60) : 'Aviso del equipo'+(de ? ' · '+de : '')), msg, AZCU_WEB+'?go=novedades');
     return {ok:true, mensaje:/Nadie suscripto/.test(String(res)) ? 'No hay nadie con avisos activados todavía.' : 'Listo, mandé el aviso a todo el equipo 📣'};
   }
   if(!d || !d.id) throw new Error('Acción inválida');
@@ -1101,7 +1101,7 @@ function azcuAvisoDiario(){
   if(a.propuestas_sin_respuesta.length) p.push('💬 '+a.propuestas_sin_respuesta.length+' propuesta'+(a.propuestas_sin_respuesta.length===1?'':'s')+' sin respuesta');
   if(lunes && a.papeles.length) p.push('⚠️ '+a.papeles.length+' con papeles incompletos');
   if(lunes && a.sin_movimiento.length) p.push('🛑 '+a.sin_movimiento.length+' sin movimiento');
-  if(p.length) azcuPush_('Buen día ☀️ Esto es lo de hoy', p.join(' · '), lunes && a.papeles.length ? AZCU_WEB+'?ayuda=docs' : undefined);
+  if(p.length) azcuPush_('Buen día ☀️ Esto es lo de hoy', p.join(' · '), lunes && a.papeles.length && p.length===1 ? AZCU_WEB+'?ayuda=docs' : (a.visitas_hoy.length && !a.seguimientos_para_hoy.length && !a.propuestas_sin_respuesta.length ? AZCU_WEB+'?go=agenda' : AZCU_WEB+'?go=alertas'));
 }
 var AZCU_COD_ = {'Captación':'c','Publicada':'p','Publicadas':'p','Reserva':'r','Vendida':'v','Suspendida':'s'};
 function azcuEstadosGet_(pref){
@@ -1135,8 +1135,8 @@ function azcuAvisoCambios(){
   });
   azcuEstadosSet_(nuevo);
   av.forEach(function(x){ azcuLog_(/Nueva/.test(x[0]) ? 'nueva' : 'etapa', x[0]+': '+x[1], x[1], ''); });
-  av.slice(0,5).forEach(function(x){ azcuPush_(x[0], x[1]); });
-  if(av.length>5) azcuPush_('Más cambios de etapa', 'Hubo '+(av.length-5)+' cambios más. Abrí Azcu para verlos.');
+  av.slice(0,5).forEach(function(x){ azcuPush_(x[0], x[1], AZCU_WEB+'?go=novedades'); });
+  if(av.length>5) azcuPush_('Más cambios de etapa', 'Hubo '+(av.length-5)+' cambios más. Abrí Azcu para verlos.', AZCU_WEB+'?go=novedades');
 }
 function azcuMarcaVendedor_(quien){
   quien = String(quien||'').trim().slice(0,40);

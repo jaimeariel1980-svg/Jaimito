@@ -2021,6 +2021,15 @@ google.script.run
     if(!APP) return;
     var q; try{ q = new URLSearchParams(location.search); }catch(e){ return; }
     if(q.get('ayuda')==='docs'){ try{ history.replaceState(null, '', location.pathname); }catch(e){} st.entered = true; setTimeout(function(){ if(!st.busy) ask('¿Qué documentos faltan?', 'docs'); }, 900); return; }
+    var go = q.get('go');
+    if(go){
+      try{ history.replaceState(null, '', location.pathname); }catch(e){}
+      st.entered = true; st.menu = false;
+      if(go==='novedades'){ st.view = 'mov'; st.movSeen = +ls('mseen') || 0; st.movN = 0; ls('mseen', String(Date.now())); setTimeout(movLoad, 700); }
+      else if(go==='agenda'){ st.view = 'agenda'; st.agSel = iso(new Date()); st.agForm = false; st.agNote = ''; setTimeout(agLoad, 700); }
+      else if(go==='alertas'){ setTimeout(function(){ if(!st.busy) ask('¿Qué alertas tengo hoy?', 'alertas'); }, 900); }
+      return;
+    }
     if(q.get('agenda')){ try{ history.replaceState(null, '', location.pathname); }catch(e){} st.entered = true; st.view = 'agenda'; st.agSel = iso(new Date()); st.agForm = false; st.agNote = ''; setTimeout(agLoad, 700); return; }
     var id = q.get('cv'); if(!id) return;
     var ci = q.get('ci') || '';
