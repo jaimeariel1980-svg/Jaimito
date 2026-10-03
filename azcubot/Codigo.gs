@@ -1749,6 +1749,7 @@ function guardarPropiedad(codigo, cambios){
     }
   });
   set('Última actualización', new Date());
+  try{ if(typeof azcuLimpiarCache_==='function') azcuLimpiarCache_(); }catch(e){}
   return {ok:true};
 }
 function _invalidaNovedades_(){ try{ var c=CacheService.getScriptCache(); c.remove('azmov_90'); c.remove('azmov_30'); }catch(e){} }

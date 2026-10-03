@@ -820,21 +820,20 @@ function azcuEjecutar_(pin, accion){
   azcuLimpiarCache_();
   if(tipo==='cargar'){
     if(AZCU_VIAS.indexOf(d.via)<0 || AZCU_RESULTADOS.indexOf(d.resultado)<0) throw new Error('Datos inválidos');
-    registrarInteraccion(p.id, {fecha:hoy, via:d.via, interesado:d.interesado, tel:d.tel, resultado:d.resultado, prox:d.prox, obs:d.obs, vendedor:quien});
+    registrarInteraccion(p.id, {fecha:hoy, via:d.via, interesado:d.interesado, tel:d.tel, resultado:d.resultado, prox:d.prox, obs:d.obs, vendedor:(p.vendedor||quien)});
     return {ok:true, mensaje:'Listo, quedó cargado en el historial de '+p.dir+'.'};
   }
   if(tipo==='agendar'){
     var ini = new Date(d.fecha+'T'+d.hora+':00-03:00');
     if(isNaN(ini.getTime())) throw new Error('Fecha u hora inválidas');
     agendarVisita(p.id, {cuando:ini.toISOString(), interesado:d.interesado, tel:d.tel, mail:d.mail, obs:d.obs, dir:p.dir});
-    azcuMarcaVendedor_(quien);
+    azcuMarcaVendedor_(p.vendedor||quien);
     return {ok:true, mensaje:'Visita agendada en Calendar para el '+d.fecha.split('-').reverse().join('/')+' a las '+d.hora+'.'};
   }
   if(tipo==='propuesta'){
     if(!d.cliente || !d.monto) throw new Error('Faltan datos');
     registrarPropuesta(p.id, {fecha:hoy, cliente:d.cliente, tel:d.tel, monto:d.monto, obs:d.obs});
-    azcuMarcaVendedor_(quien);
-    azcuMarcaVendedor_(quien);
+    azcuMarcaVendedor_(p.vendedor||quien);
     return {ok:true, mensaje:'Propuesta registrada en '+p.dir+'.'};
   }
   if(tipo==='etapa'){

@@ -126,7 +126,6 @@ td{padding:7px 8px;border-bottom:1px solid #f1f0ec;vertical-align:top}
     <select id="ftipo" onchange="render()"><option value="">Todos los tipos</option></select>
     <select id="orden" onchange="render()"><option value="urg">Orden: más paradas primero</option><option value="fecha">Orden: + reciente</option><option value="precio">Orden: precio</option></select>
     <button id="editbtn" class="btn s" onclick="toggleEdit()">Modo edición: OFF</button>
-    <button id="vendbtn" class="btn s" onclick="cambiarVend()" title="Tu nombre: queda como vendedor en lo que cargues"></button>
     <span id="edithint" style="display:none;font-size:12.5px;color:var(--azul);font-weight:600">Arrastrá las tarjetas para cambiar de etapa</span>
   </div>
   <div class="board" id="board"></div>
@@ -812,7 +811,7 @@ function ficha(id){
     p.seg.forEach(s=>{const k=((s.tel&&(''+s.tel).replace(/\D/g,''))||(s.cli||'—').trim().toLowerCase());(byKey[k]=byKey[k]||[]).push(s);});
     seg=Object.keys(byKey).map(function(k){
       const arr=byKey[k];const nombre=(arr.find(s=>s.cli)||{}).cli||'—';const tel=(arr.find(s=>s.tel)||{}).tel||'';
-      const rows=arr.slice().reverse().map(s=>'<tr><td>'+s.fecha+'</td><td><span class="tag">'+s.tipo+'</span></td><td>'+s.res+(s.obs?'<div style="color:var(--gris);font-size:11px;margin-top:2px">'+s.obs+'</div>':'')+(s.vend?'<div style="color:var(--acento);font-size:11px;margin-top:2px">👤 '+s.vend+'</div>':'')+'</td><td>'+(s.prox||'—')+(s._row?' <span onclick="editarForm(\''+p.id+'\','+s._row+')" style="cursor:pointer;color:var(--acento);font-size:11px;margin-left:4px">editar</span> <span onclick="borrarInteraccion(\''+p.id+'\','+s._row+')" style="cursor:pointer;color:var(--rojo);font-size:11px">borrar</span>':'')+'</td></tr>').join('');
+      const rows=arr.slice().reverse().map(s=>'<tr><td>'+s.fecha+'</td><td><span class="tag">'+s.tipo+'</span></td><td>'+s.res+(s.obs?'<div style="color:var(--gris);font-size:11px;margin-top:2px">'+s.obs+'</div>':'')+'</td><td>'+(s.prox||'—')+(s._row?' <span onclick="editarForm(\''+p.id+'\','+s._row+')" style="cursor:pointer;color:var(--acento);font-size:11px;margin-left:4px">editar</span> <span onclick="borrarInteraccion(\''+p.id+'\','+s._row+')" style="cursor:pointer;color:var(--rojo);font-size:11px">borrar</span>':'')+'</td></tr>').join('');
       return '<div style="margin-bottom:14px;border:1px solid var(--linea);border-radius:10px;padding:10px 12px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-weight:700;font-size:13.5px">'+nombre+'</span><span style="color:var(--gris);font-weight:400;font-size:12px">· '+arr.length+' interacción(es)</span>'+(tel?' · <a href="https://wa.me/'+wa(tel)+'" target="_blank">WhatsApp</a>':'')+'<button class="btn s" style="margin-left:auto;padding:3px 9px;font-size:11px" onclick="cargarForm(\''+p.id+'\',\''+encodeURIComponent(nombre)+'\',\''+encodeURIComponent(tel)+'\')">+ interacción</button></div><table><tr><th>Fecha</th><th>Vía</th><th>Resultado</th><th>Próx. paso</th></tr>'+rows+'</table></div>';
     }).join('');
   } else seg='<div class="empty">Sin consultas ni visitas registradas todavía.</div>';
@@ -954,16 +953,16 @@ function cargarForm(id, nombre, tel){
 function _vendNombres(){var s={};try{var n=(localStorage.getItem('azcu_nombre')||'').trim();if(n)s[n]=1;}catch(e){}(DATA||[]).forEach(x=>{if(x.vendedor)s[x.vendedor]=1;});return Object.keys(s);}
 function _pintaVend(){var b=document.getElementById('vendbtn');if(!b)return;var n='';try{n=(localStorage.getItem('azcu_nombre')||'').trim();}catch(e){}b.textContent=n?('👤 '+n):'👤 Poné tu nombre';}
 function cambiarVend(){var n='';try{n=(localStorage.getItem('azcu_nombre')||'').trim();}catch(e){}var v=prompt('Tu nombre (queda como vendedor en lo que cargues; usá el mismo en Azcu):',n);if(v===null)return;v=v.trim();try{localStorage.setItem('azcu_nombre',v);}catch(e){}_pintaVend();}
-setTimeout(_pintaVend,300);
-function _vend(){
+function _vend(id){
+  var pv=(DATA||[]).find(x=>x.id===id); if(pv&&pv.vendedor) return pv.vendedor;
   var n=''; try{ n=(localStorage.getItem('azcu_nombre')||'').trim(); }catch(e){}
-  if(!n){ try{ n=(prompt('¿Con qué nombre cargás? (el mismo que usás en Azcu)')||'').trim(); if(n) localStorage.setItem('azcu_nombre',n); }catch(e){} _pintaVend(); }
+  if(!n){ try{ n=(prompt('Esta propiedad no tiene vendedor asignado. ¿Con qué nombre cargás esto? (el mismo que usás en Azcu)')||'').trim(); if(n) localStorage.setItem('azcu_nombre',n); }catch(e){} }
   return n;
 }
 function guardarConsulta(id){
   const g=x=>document.getElementById(x)?document.getElementById(x).value:'';
   const datos={ fecha:_fechaAr(g('cf_fecha')), via:g('cf_via'), interesado:g('cf_cli'),
-    tel:g('cf_tel'), resultado:g('cf_res'), prox:g('cf_prox'), obs:g('cf_obs'), vendedor:_vend() };
+    tel:g('cf_tel'), resultado:g('cf_res'), prox:g('cf_prox'), obs:g('cf_obs'), vendedor:_vend(id) };
   if(!datos.interesado){ alert('Poné al menos el nombre del interesado'); return; }
   const btn=document.getElementById('cf_btn'); if(btn){btn.textContent='Guardando…';btn.disabled=true;}
   google.script.run
@@ -1154,7 +1153,7 @@ function agendarForm(id){
 function guardarAgenda(id,dirEnc){
   var g=x=>document.getElementById(x)?document.getElementById(x).value:'';
   var cuando=g('ag_fecha'); if(!cuando){alert('Poné la fecha y hora');return;}
-  var datos={cuando:new Date(cuando).toISOString(),interesado:g('ag_cli'),tel:g('ag_tel'),mail:g('ag_mail')||'',obs:g('ag_obs'),dir:decodeURIComponent(dirEnc),vendedor:_vend()};
+  var datos={cuando:new Date(cuando).toISOString(),interesado:g('ag_cli'),tel:g('ag_tel'),mail:g('ag_mail')||'',obs:g('ag_obs'),dir:decodeURIComponent(dirEnc),vendedor:_vend(id)};
   var btn=document.getElementById('ag_btn'); if(btn){btn.textContent='Agendando…';btn.disabled=true;}
   google.script.run
     .withSuccessHandler(function(){closeDL();recargar(id);})
