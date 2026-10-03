@@ -1751,6 +1751,7 @@ function guardarPropiedad(codigo, cambios){
   set('Última actualización', new Date());
   return {ok:true};
 }
+function _invalidaNovedades_(){ try{ var c=CacheService.getScriptCache(); c.remove('azmov_90'); c.remove('azmov_30'); }catch(e){} }
 function registrarInteraccion(codigo, datos){
   var ss=SpreadsheetApp.openById(MAESTRO_ID);
   var seg=ss.getSheetByName('Seguimiento');
@@ -1780,6 +1781,7 @@ function registrarInteraccion(codigo, datos){
     codigo, fecha, datos.via||'', datos.interesado||'', datos.tel||'',
     datos.resultado||'', datos.prox||'', fechaProx, datos.obs||'', datos.vendedor||''
   ]);
+  _invalidaNovedades_();
   return {ok:true};
 }
 function editarInteraccion(filaSeg, datos){
@@ -1791,6 +1793,7 @@ function editarInteraccion(filaSeg, datos){
   set('Fecha',datos.fecha); set('Vía',datos.via); set('Interesado',datos.interesado);
   set('Teléfono',datos.tel); set('Resultado',datos.resultado); set('Próximo paso',datos.prox);
   set('Observaciones',datos.obs);
+  _invalidaNovedades_();
   return {ok:true};
 }
 function eliminarPropiedad(codigo){
@@ -2041,6 +2044,7 @@ function eliminarInteraccion(filaSeg){
   var seg=ss.getSheetByName('Seguimiento');
   if(!seg || filaSeg<2)throw new Error('Fila inválida');
   seg.deleteRow(filaSeg);
+  _invalidaNovedades_();
   return {ok:true};
 }
 

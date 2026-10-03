@@ -866,7 +866,7 @@ function cardHTML(p,col){
   const ult=p.seg.length?p.seg[p.seg.length-1]:null;
   return '<div class="card '+(hot?'hot':'')+' '+(EDIT?'edit':'')+'" '+(EDIT?'draggable="true" ondragstart="drag(event,\''+p.id+'\')"':'')+' onclick=\'ficha("'+p.id+'")\'><div class="strip" style="background:'+col+'"></div><div class="body">'+
     '<div class="r1"><span class="idpill">'+p.id+'</span><span style="font-size:11.5px;color:var(--gris)">'+(p.tipo||'')+'</span><span onclick="event.stopPropagation();verUbicacion(\''+p.id+'\')" title="Ver ubicación" style="margin-left:auto;cursor:pointer;font-size:15px;padding:0 6px">📍</span><span onclick="event.stopPropagation();eliminarProp(\''+p.id+'\')" title="Eliminar propiedad" style="cursor:pointer;color:var(--gris);font-size:16px;padding:0 4px;font-weight:700">✕</span></div>'+
-    '<div class="dir">'+p.dir+'</div>'+(p.etapa==='Suspendida'&&p.motivo?'<div style="font-size:11.5px;color:var(--gris);margin:-2px 0 7px"><b>Motivo:</b> '+p.motivo+'</div>':'')+warn+warnSeg+papBadge(p)+ofB+(p.origen==='Compartida'?'<div><span class="pap" style="background:#ede7fb;color:#5b3ea8">compartida</span></div>':'')+(p.precio?'<div class="precio">'+p.precio+'</div>':'<div class="precio" style="color:var(--gris);font-weight:500;font-size:12px">sin precio</div>')+
+    '<div class="dir">'+p.dir+'</div>'+(p.vendedor?'<div style="font-size:11.5px;color:var(--gris);margin:-2px 0 6px">👤 '+p.vendedor+'</div>':'')+(p.etapa==='Suspendida'&&p.motivo?'<div style="font-size:11.5px;color:var(--gris);margin:-2px 0 7px"><b>Motivo:</b> '+p.motivo+'</div>':'')+warn+warnSeg+papBadge(p)+ofB+(p.origen==='Compartida'?'<div><span class="pap" style="background:#ede7fb;color:#5b3ea8">compartida</span></div>':'')+(p.precio?'<div class="precio">'+p.precio+'</div>':'<div class="precio" style="color:var(--gris);font-weight:500;font-size:12px">sin precio</div>')+
     '<div class="sem"><div class="b"><div class="num" style="color:'+sc+'">'+dtxt+'</div><div class="lab">días s/mov</div></div>'+
     '<div class="b"><div class="num" style="color:var(--azul)">'+p.vis+'</div><div class="lab">visitas</div></div></div>'+hp+(ult?'<div style="font-size:11.5px;color:var(--gris);margin-top:8px;border-top:1px dashed var(--linea);padding-top:7px"><b style="color:var(--texto)">Última:</b> '+ult.fecha+' · '+ult.res+'</div>':'')+'</div></div>';
 }
@@ -922,7 +922,7 @@ function ficha(id){
       '<div class="fi"><div class="k">Salud del aviso (%)</div><div class="v"><input type="number" min="0" max="100" value="'+(p.pct===null?'':p.pct)+'" onchange="setPct(\''+p.id+'\',this.value)" style="width:72px;padding:5px 8px;border:1px solid var(--linea);border-radius:7px;font-size:14px"> %</div>'+(p.pct===null?'':av)+'</div>'+
     '</div>'+
     '<h3 class="sec">Observaciones</h3><textarea class="inp" rows="2" placeholder="Notas de esta propiedad…" onchange="setC(\''+p.id+'\',\'obs\',this.value)">'+(p.obs||'')+'</textarea>'+
-    '<h3 class="sec">Origen de la propiedad</h3><div class="grid"><div class="fi"><div class="k">Tipo</div><select class="inp" onchange="setOrigen(\''+p.id+'\',this.value)"><option value="Propia" '+(p.origen!=='Compartida'?'selected':'')+'>Propia</option><option value="Compartida" '+(p.origen==='Compartida'?'selected':'')+'>Compartida (colega)</option></select></div>'+compHtml+'</div>'+
+    '<h3 class="sec">Origen de la propiedad</h3><div class="grid"><div class="fi"><div class="k">Tipo</div><select class="inp" onchange="setOrigen(\''+p.id+'\',this.value)"><option value="Propia" '+(p.origen!=='Compartida'?'selected':'')+'>Propia</option><option value="Compartida" '+(p.origen==='Compartida'?'selected':'')+'>Compartida (colega)</option></select></div><div class="fi"><div class="k">Vendedor asignado</div><input class="inp" list="vendList" placeholder="Sin asignar" value="'+(p.vendedor||'').replace(/"/g,'&quot;')+'" onchange="setP(\''+p.id+'\',\'vendedor\',this.value)"><datalist id="vendList">'+_vendNombres().map(n=>'<option value="'+n.replace(/"/g,'&quot;')+'">').join('')+'</datalist></div>'+compHtml+'</div>'+
     '<h3 class="sec">Ficha de la propiedad</h3><div class="grid"><div class="fi" style="grid-column:1/-1"><div class="k">URL de ficha colega '+tokLink+' <span style="color:var(--gris);font-weight:400;text-transform:none">— las fotos las trae la ficha</span></div><input class="inp" placeholder="URL de ficha colega" value="'+(sm.tokko||'')+'" onchange="setC(\''+p.id+'\',\'tokko\',this.value)"></div></div>'+
     '<div style="margin:2px 0 10px;display:flex;align-items:center;gap:8px"><span style="font-size:12px;color:var(--gris)">Cambiar etapa:</span><select onchange="changeEtapa(\''+p.id+'\',this.value)" style="padding:6px 10px;border:1px solid var(--linea);border-radius:8px">'+ET.map(e=>'<option '+(p.etapa===e[0]?'selected':'')+'>'+e[0]+'</option>').join('')+'</select></div>'+suspHtml+
     '<h3 class="sec">Datos del propietario '+waProp+'</h3><div class="grid">'+
@@ -1035,6 +1035,7 @@ function cargarForm(id, nombre, tel){
   '<div class="dlbtns"><button class="btn g" id="cf_btn" onclick="guardarConsulta(\''+id+'\')">Registrar</button><button class="btn s" onclick="closeDL()">Cancelar</button></div></div>';
   document.getElementById('ov2').classList.add('on');
 }
+function _vendNombres(){var s={};try{var n=(localStorage.getItem('azcu_nombre')||'').trim();if(n)s[n]=1;}catch(e){}(DATA||[]).forEach(x=>{if(x.vendedor)s[x.vendedor]=1;});return Object.keys(s);}
 function _pintaVend(){var b=document.getElementById('vendbtn');if(!b)return;var n='';try{n=(localStorage.getItem('azcu_nombre')||'').trim();}catch(e){}b.textContent=n?('👤 '+n):'👤 Poné tu nombre';}
 function cambiarVend(){var n='';try{n=(localStorage.getItem('azcu_nombre')||'').trim();}catch(e){}var v=prompt('Tu nombre (queda como vendedor en lo que cargues; usá el mismo en Azcu):',n);if(v===null)return;v=v.trim();try{localStorage.setItem('azcu_nombre',v);}catch(e){}_pintaVend();}
 setTimeout(_pintaVend,300);
@@ -1100,7 +1101,7 @@ function setP(id,field,val){const p=DATA.find(x=>x.id===id);if(p)p[field]=val;}
 function guardar(id){
   const p=DATA.find(x=>x.id===id); if(!p)return;
   const sm=SIM[id]||{};
-  const cambios={precio:p.precio,tipo:p.tipo,obs:p.obs,etapa:p.etapa,origen:p.origen,colega:p.colega,colegaTel:p.colegaTel,comision:p.comision,pct:p.pct,papeles:p.papeles,motivo:p.motivo,prop:sm.prop,tel:sm.tel,mail:sm.mail,dni:sm.dni,dom:sm.dom,tokko:sm.tokko};
+  const cambios={precio:p.precio,tipo:p.tipo,obs:p.obs,etapa:p.etapa,origen:p.origen,colega:p.colega,colegaTel:p.colegaTel,comision:p.comision,vendedor:p.vendedor,pct:p.pct,papeles:p.papeles,motivo:p.motivo,prop:sm.prop,tel:sm.tel,mail:sm.mail,dni:sm.dni,dom:sm.dom,tokko:sm.tokko};
   const btn=event&&event.target; if(btn){btn.textContent='Guardando…';btn.disabled=true;}
   google.script.run
     .withSuccessHandler(function(){ if(btn){btn.textContent='✓ Guardado';setTimeout(function(){btn.textContent='Guardar cambios';btn.disabled=false;},1500);} })
