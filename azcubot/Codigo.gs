@@ -1497,7 +1497,7 @@ function getDatos(){
     seg.forEach(function(s){ if(s._d){ var dd=Math.floor((hoy-s._d)/86400000); if(dias===null||dd<dias)dias=dd; } });
     var segOut=seg.map(function(s){return {_row:s._row,fecha:s.fecha,tipo:s.tipo,cli:s.cli,tel:s.tel,res:s.res,prox:s.prox,obs:s.obs,fechaProx:s.fechaProx};});
     out.push({
-      id:id, dir:(calle+' '+num).trim(), tipo:row[c('Tipo de propiedad')]||'',
+      id:id, dir:(calle+' '+num).trim(), ciudad:row[c('Ciudad')]||'', tipo:row[c('Tipo de propiedad')]||'',
       etapa:row[c('Etapa')]||'Publicada', estadoCarga:row[c('Estado de la propiedad')]||'',
       precio:fmtPrecio_(row[c('Precio')], row[c('Moneda')]), operacion:row[c('Tipo de operación')]||'',
       pct:pct, plan:row[c('Plan Tokko')]||'',
