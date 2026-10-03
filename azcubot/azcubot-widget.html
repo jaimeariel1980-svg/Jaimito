@@ -254,12 +254,29 @@
 .azb-port .azb-sk{font:600 13.5px 'Inter',sans-serif;letter-spacing:0;text-transform:none}
 .azb-back{border-radius:999px;padding:14px;font-size:14.5px;box-shadow:0 6px 16px rgba(10,61,145,.25)}
 .azb-empty{font-size:15px}
-@media(max-width:480px){.azb-hd .azb-t{display:none}.azb-hd{justify-content:space-between}}
 .azb-sv{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;display:block}
 .azb-ib{color:var(--n)}.azb-ib .azb-sv{width:23px;height:23px}
 .azb-row i{color:var(--n)}.azb-row i .azb-sv{width:22px;height:22px}
 .azb-tile i .azb-sv{width:26px;height:26px}
 .azb-sho span{width:46px;height:46px;border-radius:14px;background:#fff;color:var(--n);display:flex;align-items:center;justify-content:center;box-shadow:var(--sh2);flex-shrink:0}.azb-sho span .azb-sv{width:24px;height:24px}
+
+.azb-tabs{display:flex;background:#fff;border-top:1px solid var(--ln);padding:6px 4px calc(6px + env(safe-area-inset-bottom));flex-shrink:0;box-shadow:0 -6px 24px rgba(15,27,51,.06)}
+.azb-tab{flex:1;background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:3px;color:#8a93a8;font:600 11px 'Inter',sans-serif;padding:6px 0;position:relative;cursor:pointer}
+.azb-tab .azb-sv{width:25px;height:25px}.azb-tab span{letter-spacing:0}
+.azb-tab.on{color:var(--n)}.azb-tab.on .azb-sv{stroke-width:2.3}
+.azb-tab .azb-bd{top:0;right:calc(50% - 22px)}
+.azb-app .azb-in{padding-bottom:8px}
+.azb-kpis{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 0 6px}
+.azb-kc{background:#fff;border:0;border-radius:24px;box-shadow:var(--sh);padding:16px 18px;text-align:left;display:flex;flex-direction:column;gap:2px;cursor:pointer;font-family:inherit;animation:azbin .35s both}
+.azb-kc small{font:700 15px 'Archivo',sans-serif;color:var(--ink)}
+.azb-kc b{font:900 44px/1.05 'Archivo',sans-serif;color:var(--n);letter-spacing:-.03em;margin-top:10px}
+.azb-kc.hot b{color:var(--rj)}
+.azb-kc em{font:500 12.5px 'Inter',sans-serif;font-style:normal;color:var(--mu)}
+.azb-es{text-align:center;padding:28px 10px}
+.azb-il{width:190px;max-width:70%;height:auto;animation:azbfloat 4s ease-in-out infinite}
+.azb-es h3{font:800 26px 'Archivo',sans-serif;letter-spacing:-.02em;margin:10px 0 6px;color:var(--ink)}
+.azb-es p{font-size:15px;color:var(--mu);margin:0 auto;max-width:260px;line-height:1.45}
+.azb-hd .azb-t{display:block}
 @media(prefers-reduced-motion:reduce){.azb *{animation:none!important;transition:none!important}}
 </style>
 <script>
@@ -321,6 +338,25 @@
   var ICO = {trash:'<svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v7M14 10v7"/></svg>', mic:'<svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>', clip:'<svg viewBox="0 0 24 24"><path d="M21 12.5l-8.5 8.5a5.5 5.5 0 0 1-7.8-7.8l9-9a3.7 3.7 0 0 1 5.2 5.2l-9 9a1.8 1.8 0 0 1-2.6-2.6l8.3-8.3"/></svg>', send:'<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>'};
   var COARSE = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
   var DN = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'], DL = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'], MN = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  function tabsHtml(){
+    var cur = st.view==='agenda' ? 'agenda' : st.view==='mov' ? 'mov' : (st.menu || !st.msgs.length) ? 'home' : 'chat';
+    var T = [['home','Inicio','home'],['chat','Chat','chat'],['agenda','Agenda','cal'],['mov','Novedades','hist'],['alert','Alertas','bell']];
+    return '<nav class="azb-tabs">'+T.map(function(x){ return '<button type="button" class="azb-tab'+(cur===x[0]?' on':'')+'" data-a="tab" data-t="'+x[0]+'">'+sv(x[2])+(x[0]==='mov' && st.movN ? '<i class="azb-bd">'+(st.movN>9?'9+':st.movN)+'</i>' : '')+'<span>'+x[1]+'</span></button>'; }).join('')+'</nav>';
+  }
+  function ill(n){
+    var sh = '<ellipse cx="80" cy="108" rx="52" ry="8" fill="#0a3d91" opacity=".12"/>', b = {
+      house:'<path d="M28 56L80 18l52 38v46H28z" fill="#eaf1ff" stroke="#0a3d91" stroke-width="3" stroke-linejoin="round"/><path d="M20 58L80 12l60 46" fill="none" stroke="#0a3d91" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><rect x="66" y="68" width="28" height="34" rx="4" fill="#0a3d91"/><circle cx="88" cy="86" r="2.4" fill="#fff"/><rect x="38" y="64" width="18" height="16" rx="3" fill="#fff" stroke="#0a3d91" stroke-width="2.5"/><rect x="104" y="64" width="18" height="16" rx="3" fill="#fff" stroke="#0a3d91" stroke-width="2.5"/>',
+      book:'<path d="M24 34l56 10 56-10v58l-56 10-56-10z" fill="#fff" stroke="#0a3d91" stroke-width="3" stroke-linejoin="round"/><path d="M80 44v58" stroke="#0a3d91" stroke-width="3"/><path d="M36 50l34 6M36 62l34 6M36 74l34 6M124 50l-34 6M124 62l-34 6M124 74l-34 6" stroke="#9db8e8" stroke-width="3" stroke-linecap="round"/><path d="M104 38v26l8-6 8 6V36z" fill="#d1495b"/>',
+      bell:'<path d="M44 82V62a36 36 0 0 1 72 0v20l10 12H34z" fill="#eaf1ff" stroke="#0a3d91" stroke-width="3.5" stroke-linejoin="round"/><circle cx="80" cy="22" r="6" fill="#0a3d91"/><path d="M68 98a12 12 0 0 0 24 0z" fill="#0a3d91"/><circle cx="118" cy="38" r="11" fill="#d1495b"/>'};
+    return '<svg class="azb-il" viewBox="0 0 160 120">'+sh+(b[n]||b.house)+'</svg>';
+  }
+  function es(n, ti, tx){ return '<div class="azb-es">'+ill(n)+'<h3>'+ti+'</h3><p>'+tx+'</p></div>'; }
+  function hoyLoad(){ if(!APP) return; call('azcuHoy', [], function(d){ st.hoy = d; render(); }, function(){}); }
+  function hoyHtml(){
+    var h = st.hoy; if(!h) return '';
+    function k(l, n, f, q, at, hot){ return '<button type="button" class="azb-kc'+(n && hot?' hot':'')+'" data-q="'+q+'" data-at="'+at+'"><small>'+l+'</small><b>'+n+'</b><em>'+f+'</em></button>'; }
+    return '<div class="azb-kpis">'+k('Visitas hoy', h.v, h.v ? 'Ver el detalle' : 'Sin visitas', '¿Qué alertas tengo hoy?', 'alertas')+k('Para contactar', h.c, h.c ? 'Seguimientos de hoy' : 'Al día', '¿Qué alertas tengo hoy?', 'alertas')+k('Propuestas', h.p, 'Sin respuesta', '¿Qué alertas tengo hoy?', 'alertas', 1)+k('Papeles', h.d, 'Propiedades incompletas', 'Detalle de documentos faltantes', 'docs', 1)+'</div>';
+  }
   function movLoad(){
     if(!st.nombre && st.nombre!=='') return;
     call('azcuMov', [90], function(d){
@@ -334,7 +370,7 @@
   function movHtml(){
     var its = st.mov, last = '', h = '<div class="azb-agh"><b>Novedades</b><span>Últimas novedades</span></div>';
     if(!its) return h+'<div class="azb-empty">Cargando…</div>';
-    if(!its.length) return h+'<div class="azb-empty">Todavía no hay novedades 🙂</div>';
+    if(!its.length) return h+es('bell','Todo tranquilo','Cuando haya novedades, las vas a ver acá.');
     its.forEach(function(x){
       var lb = dayLbl(x.ms);
       if(lb!==last){ h += '<div class="azb-dsep"><span>'+lb+'</span></div>'; last = lb; }
@@ -358,7 +394,7 @@
     h += its.length ? its.map(function(x){
       var r = x.t==='r';
       return '<div class="azb-ev'+(r?' r':'')+(!r && x.m===false?' o':'')+'"><span class="h">'+esc(x.h)+'</span><div class="c"><b>'+esc(x.x)+'</b><small>'+(r?'⏰ Recordatorio':'🗓 Visita · '+esc(x.v||'sin asignar')+(x.m===false?' (de otro vendedor)':''))+'</small></div>'+(r?'<button type="button" class="azb-xb" data-a="agdel" data-id="'+esc(x.id)+'" title="Cancelar">✕</button>':'')+'</div>';
-    }).join('') : '<div class="azb-empty">Nada para este día 🙌</div>';
+    }).join('') : es('book','Nada para este día','Tocá el botón de agregar para sumar un recordatorio.');
     if(st.agForm){ var nx = new Date(); nx.setHours(nx.getHours()+1, 0, 0, 0); var dh = st.agSel===hoy ? ('0'+nx.getHours()).slice(-2)+':00' : '09:00'; h += '<div class="azb-agf"><input id="azbAgT" placeholder="¿Qué querés recordar?" autocomplete="off"><div><input id="azbAgH" type="time" value="'+dh+'"><button type="button" class="azb-btn" data-a="agsave">Guardar</button><button type="button" class="azb-btn o" data-a="agcancel">Cancelar</button></div></div>'; }
     else h += '<button type="button" class="azb-op" data-a="agnew" style="margin-top:4px">+ Recordatorio para este día</button>';
     return h+'<div style="font-size:12px;color:var(--mu);margin-top:14px">También podés decirlo o escribirlo abajo: «recordame el viernes a las 10 llamar a Marcos».</div>';
@@ -483,10 +519,10 @@
       h += (APP?'':'<div class="azb-hd"><span class="azb-t">AzcuBot · Asistente interno</span><button class="azb-ib" data-a="close">✕</button></div>')+
         '<div class="azb-port"><div class="azb-wm">AZCU</div><div class="azb-box">'+mk(108)+'</div><div class="azb-pe">Azcuénaga Inmobiliaria</div><h2>Hola, soy AzcuBot</h2><div class="azb-rl">Tu compañero de laburo</div><p>¿Cómo te llamás? Así te doy una mano con el tablero, las visitas y todo lo de todos los días.</p><input id="azbName" placeholder="Tu nombre" autocomplete="off"><button class="azb-go" data-a="start">Empezar →</button><button class="azb-sk" data-a="skip">Prefiero no decirlo</button>'+foot+'</div>';
     } else {
-      h += '<div class="azb-hd">'+(APP?'<button class="azb-hm" data-a="home" title="Menú">'+(st.menu?'✕ Cerrar':'☰ Menú')+'</button>':'')+mk(30)+'<span class="azb-t">AzcuBot'+(APP?'':' · '+(AZ.ctx?'Ficha '+esc(AZ.ctx):'Asistente interno'))+'</span>'+(APP?'<button class="azb-ib" data-q="¿Qué alertas tengo hoy?" data-at="alertas" title="Alertas">'+sv('bell')+'</button><a class="azb-ib" href="'+esc(window.AZCU_TABLERO||'#')+'" target="_blank" rel="noopener" title="Abrir tablero" style="text-decoration:none">'+sv('board')+'</a>':'')+'<button class="azb-ib azb-nv" data-a="mov" title="Novedades">'+sv('hist')+(st.movN?'<i class="azb-bd">'+(st.movN>9?'9+':st.movN)+'</i>':'')+'</button><button class="azb-ib" data-a="agenda" title="Agenda">'+sv(st.view==='agenda'?'chat':'cal')+'</button><button class="azb-ib" data-a="clear" title="Borrar charla">'+sv('trash')+'</button>'+(APP?'':'<button class="azb-ib" data-a="close">✕</button>')+'</div>'+(APP && window.OneSignalDeferred && !st.pushOn ? '<div class="azb-pb"><span>🔔 Recibí avisos en este celular</span><button type="button" class="azb-btn" data-a="push">Activar avisos</button></div>' : '')+'<div class="azb-body">';
+      h += '<div class="azb-hd">'+mk(30)+'<span class="azb-t">AzcuBot'+(APP?'':' · '+(AZ.ctx?'Ficha '+esc(AZ.ctx):'Asistente interno'))+'</span>'+(APP?'<a class="azb-ib" href="'+esc(window.AZCU_TABLERO||'#')+'" target="_blank" rel="noopener" title="Abrir tablero" style="text-decoration:none">'+sv('board')+'</a>':'')+(APP?'':'<button class="azb-ib azb-nv" data-a="mov" title="Novedades">'+sv('hist')+(st.movN?'<i class="azb-bd">'+(st.movN>9?'9+':st.movN)+'</i>':'')+'</button><button class="azb-ib" data-a="agenda" title="Agenda">'+sv(st.view==='agenda'?'chat':'cal')+'</button>')+'<button class="azb-ib" data-a="clear" title="Borrar charla">'+sv('trash')+'</button>'+(APP?'':'<button class="azb-ib" data-a="close">✕</button>')+'</div>'+(APP && window.OneSignalDeferred && !st.pushOn ? '<div class="azb-pb"><span>🔔 Recibí avisos en este celular</span><button type="button" class="azb-btn" data-a="push">Activar avisos</button></div>' : '')+'<div class="azb-body">';
       if(st.view==='agenda') h += agendaHtml(); else if(st.view==='mov') h += movHtml(); else {
       if(!st.msgs.length || st.menu){
-        h += (st.menu && st.msgs.length ? '<button type="button" class="azb-back" data-a="menux">💬 Volver a la charla</button>' : '')+'<div class="azb-av">'+mk(60)+'</div><div class="azb-eyb">Tu asistente, siempre disponible</div><h1>Hola'+(st.nombre?', <b>'+esc(st.nombre)+'</b>':'')+'.<br>¿Qué hacemos hoy?</h1><p class="azb-lead">Preguntame lo que quieras del tablero o pedime que cargue visitas, agende, cambie estados o mande reportes. Escribime como a un compañero.</p>'+(APP && window.OneSignalDeferred && !st.pushOn ? '<button class="azb-row" data-a="push" style="border-color:var(--n);background:#eef3ff">🔔 Activar avisos en este celular<span>→</span></button>' : '')+'<div class="azb-lbl">Atajos</div>';
+        h += (st.menu && st.msgs.length ? '<button type="button" class="azb-back" data-a="menux">💬 Volver a la charla</button>' : '')+'<div class="azb-av">'+mk(60)+'</div><div class="azb-eyb">Tu asistente, siempre disponible</div><h1>Hola'+(st.nombre?', <b>'+esc(st.nombre)+'</b>':'')+'.<br>¿Qué hacemos hoy?</h1><p class="azb-lead">Preguntame lo que quieras del tablero o pedime que cargue visitas, agende, cambie estados o mande reportes. Escribime como a un compañero.</p>'+(APP && window.OneSignalDeferred && !st.pushOn ? '<button class="azb-row" data-a="push" style="border-color:var(--n);background:#eef3ff">🔔 Activar avisos en este celular<span>→</span></button>' : '')+hoyHtml()+'<div class="azb-lbl">Atajos</div>';
         var sc = shortcuts(), big = '', small = '', bigs = {};
         sc.forEach(function(s){
           var at = (s[2]==='agenda'?'data-a="agenda"':s[2]==='adjuntar'?'data-a="attach"':(s[2]?'data-w="'+s[2]+'"':'data-q="'+esc(s[3]||s[0])+'"'))+(s[1]?' data-at="'+s[1]+'"':''), tl = TILE[s[0]];
@@ -520,7 +556,7 @@
           ? '<button type="button" class="azb-rb2 del" data-a="reccancel" aria-label="Descartar audio">'+ICO.trash+'</button><div class="azb-wv"><span class="rd"></span><b id="azbT">0:00</b><i><s></s><s></s><s></s><s></s><s></s><s></s><s></s></i></div><button type="button" class="azb-rb2 go" data-a="recsend" aria-label="Enviar audio">'+ICO.send+'</button>'
           : '<input id="azbInp" placeholder="'+(st.wz&&st.wz.ph?esc(st.wz.ph):'Escribime acá…')+'" autocomplete="off" enterkeyhint="send"'+(st.busy?' disabled':'')+'><button type="button" class="azb-rb2 clip" data-a="attach" aria-label="Adjuntar foto o archivo"'+(st.busy?' disabled':'')+'>'+ICO.clip+'</button><button type="button" class="azb-rb2 m2" data-a="mic" aria-label="Hablar"'+(st.busy?' disabled':'')+'>'+ICO.mic+'</button><button class="azb-rb2 go snd" type="submit" aria-label="Enviar"'+(st.busy?' disabled':'')+'>'+ICO.send+'</button>')+'</div>'+(st.rec?'<div class="azb-rhint">Hablá tranquilo · flecha verde para enviar · tacho para descartar</div>':'')+'</form>';
     }
-    h += '</div>'+sheetHtml();
+    h += (APP && st.nombre!==null && st.entered ? tabsHtml() : '')+'</div>'+sheetHtml();
     root.innerHTML = h;
     scroll();
     var inp = root.querySelector('#azbInp'); if(inp && st.open && !st.busy && st.view!=='agenda' && !COARSE) inp.focus();
@@ -765,6 +801,14 @@
     else if(a==='mic'){ startRec(); }
     else if(a==='recsend'){ stopRec(true); }
     else if(a==='reccancel'){ stopRec(false); }
+    else if(a==='tab'){
+      var tb = t.dataset.t; st.entered = true; st.sheet = false;
+      if(tb==='home'){ st.view = 'chat'; st.menu = true; render(); hoyLoad(); }
+      else if(tb==='chat'){ st.view = 'chat'; st.menu = false; render(); }
+      else if(tb==='agenda'){ if(st.view!=='agenda'){ st.menu = false; st.view = 'agenda'; st.agSel = iso(new Date()); st.agForm = false; st.agNote = ''; render(); agLoad(); } }
+      else if(tb==='mov'){ if(st.view!=='mov'){ st.menu = false; st.view = 'mov'; st.movSeen = +ls('mseen') || 0; st.movN = 0; ls('mseen', String(Date.now())); render(); movLoad(); } }
+      else if(tb==='alert'){ st.view = 'chat'; st.menu = false; ask('¿Qué alertas tengo hoy?', 'alertas'); }
+    }
     else if(a==='mov'){ if(st.view==='mov'){ st.view = 'chat'; render(); } else { st.menu = false; st.entered = true; st.view = 'mov'; st.movSeen = +ls('mseen') || 0; st.movN = 0; ls('mseen', String(Date.now())); render(); movLoad(); } }
     else if(a==='agenda'){ if(st.view==='agenda'){ st.view = 'chat'; render(); } else { st.menu = false; st.view = 'agenda'; st.agSel = iso(new Date()); st.agForm = false; st.agNote = ''; st.entered = true; render(); agLoad(); } }
     else if(a==='agnew'){ st.agForm = true; render(); var ti = root.querySelector('#azbAgT'); if(ti) ti.focus(); }
@@ -816,7 +860,7 @@
     else call('azcuWarm', [], function(r){ if(Array.isArray(r)){ st.props = r; var f = r.filter(function(p){ return p.id===id; })[0]; if(f) dir = f.dir; } say(); }, function(){ say(); });
   })();
   render(); pushCheck(); setTimeout(pushCheck, 2500);
-  setTimeout(movLoad, 2000); setInterval(function(){ if(!document.hidden) movLoad(); }, 300000); document.addEventListener('visibilitychange', function(){ if(!document.hidden) movLoad(); });
+  setTimeout(hoyLoad, 1200); setTimeout(movLoad, 2000); setInterval(function(){ if(!document.hidden) movLoad(); }, 300000); document.addEventListener('visibilitychange', function(){ if(!document.hidden) movLoad(); });
   if(st.nombre!==null && !st.warmed){ st.warmed = true; setTimeout(function(){ call('azcuWarm', [], function(r){ if(Array.isArray(r)) st.props = r; }, function(){}); }, 600); }
   if(APP && window.AZCU_API && !logoSrc()){
     var cl = ls('logo'); if(cl){ window.AZCU_LOGO = cl; render(); }
