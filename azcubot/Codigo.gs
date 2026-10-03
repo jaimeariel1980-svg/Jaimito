@@ -1505,6 +1505,7 @@ function getDatos(){
             papeles:papeles, docUrls:docUrls, encuesta:(encMap[id]||null),
       origen:row[c('Origen')]||'Propia', colega:row[c('Inmobiliaria colega')]||'', colegaTel:row[c('Contacto colega')]||'',
       comision:row[c('Reparto de comisión')]||'', vendedor:row[c('Vendedor asignado')]||'', tokko:row[c('Link Tokko')]||'',
+      boleto:_fechaISO_(c('Plazo de boleto')>-1?row[c('Plazo de boleto')]:''), boletoOk:_fechaISO_(c('Boleto firmado')>-1?row[c('Boleto firmado')]:''), escritura:_fechaISO_(c('Plazo de escritura')>-1?row[c('Plazo de escritura')]:''), escrituraOk:_fechaISO_(c('Escritura firmada')>-1?row[c('Escritura firmada')]:''),
       carpeta:row[c('Carpeta Drive (URL)')]||'', motivo:row[c('Motivo de suspensión')]||'',
       obs:row[c('Observaciones comerciales')]||'',
       duenos:duenos, prop:duenos.length?duenos[0].nombre:'',
@@ -1722,8 +1723,17 @@ var MAP_CAMPOS = {
   tokko:'Link Tokko', prop:'Dueño 1 - Nombre y Apellido', tel:'Dueño 1 - Celular',
   mail:'Dueño 1 - E-mail', dni:'Dueño 1 - DNI', dom:'Dueño 1 - Domicilio',
   colega:'Inmobiliaria colega', colegaTel:'Contacto colega', comision:'Reparto de comisión',
-  origen:'Origen', pct:'% Aviso Tokko', vendedor:'Vendedor asignado', motivo:'Motivo de suspensión'
+  origen:'Origen', pct:'% Aviso Tokko', vendedor:'Vendedor asignado', motivo:'Motivo de suspensión',
+  boleto:'Plazo de boleto', boletoOk:'Boleto firmado', escritura:'Plazo de escritura', escrituraOk:'Escritura firmada'
 };
+var COLS_PLAZOS = ['Plazo de boleto','Boleto firmado','Plazo de escritura','Escritura firmada'];
+function _fechaISO_(v){
+  if(v===null || v===undefined || v==='') return '';
+  if(v.getMonth!==undefined) return Utilities.formatDate(v,'GMT-3','yyyy-MM-dd');
+  var s=String(v).trim(), m=s.match(/^(\d{4})-(\d{2})-(\d{2})/); if(m) return m[1]+'-'+m[2]+'-'+m[3];
+  m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/); if(m) return m[3]+'-'+('0'+m[2]).slice(-2)+'-'+('0'+m[1]).slice(-2);
+  return '';
+}
 function _filaPorCodigo_(mae, codigo){
   var col=mae.getRange(1,1,1,mae.getLastColumn()).getValues()[0].indexOf('Código de Precarga')+1;
   if(col<1)throw new Error('No hay columna Código de Precarga');
@@ -1737,8 +1747,11 @@ function guardarPropiedad(codigo, cambios){
   var fila=_filaPorCodigo_(mae, codigo);
   if(fila<0)throw new Error('No encontré la propiedad '+codigo);
   var head=mae.getRange(1,1,1,mae.getLastColumn()).getValues()[0];
+  if(cambios && ('boleto' in cambios || 'boletoOk' in cambios || 'escritura' in cambios || 'escrituraOk' in cambios)){
+    COLS_PLAZOS.forEach(function(nm){ if(head.indexOf(nm)<0){ mae.getRange(1,mae.getLastColumn()+1).setValue(nm); head=mae.getRange(1,1,1,mae.getLastColumn()).getValues()[0]; } });
+  }
   var quien=String((cambios&&(cambios.quien||cambios.cargo))||'').trim().slice(0,40), difs=[], etapaDe='', etapaA='';
-  var ETQ={precio:'Precio',tipo:'Tipo',obs:'Observaciones',tokko:'URL de ficha',origen:'Origen',colega:'Colega',colegaTel:'Contacto colega',comision:'Comisión',pct:'% aviso',vendedor:'Vendedor',motivo:'Motivo de suspensión',prop:'Propietario',tel:'Tel. propietario',mail:'Mail propietario',dni:'DNI propietario',dom:'Domicilio propietario'};
+  var ETQ={precio:'Precio',tipo:'Tipo',obs:'Observaciones',tokko:'URL de ficha',origen:'Origen',colega:'Colega',colegaTel:'Contacto colega',comision:'Comisión',pct:'% aviso',vendedor:'Vendedor',motivo:'Motivo de suspensión',prop:'Propietario',tel:'Tel. propietario',mail:'Mail propietario',dni:'DNI propietario',dom:'Domicilio propietario',boleto:'Plazo de boleto',boletoOk:'Boleto firmado',escritura:'Plazo de escritura',escrituraOk:'Escritura firmada'};
   function leer(col){ var i=head.indexOf(col); return i>-1 ? String(mae.getRange(fila,i+1).getValue()==null?'':mae.getRange(fila,i+1).getValue()).trim() : ''; }
   function set(colName, val){ var i=head.indexOf(colName); if(i>-1) mae.getRange(fila,i+1).setValue(val); }
   Object.keys(cambios||{}).forEach(function(campo){
@@ -1756,6 +1769,7 @@ function guardarPropiedad(codigo, cambios){
       set('Etapa', et);
     } else if(MAP_CAMPOS[campo]){
       var col=MAP_CAMPOS[campo], av=leer(col), nv=(cambios[campo]==null?'':String(cambios[campo])).trim();
+      if(/^(boleto|boletoOk|escritura|escrituraOk)$/.test(campo)){ av=_fechaISO_(mae.getRange(fila,head.indexOf(col)+1).getValue()); nv=_fechaISO_(nv); }
       if(av.replace(/\s+/g,' ')!==nv.replace(/\s+/g,' ') && ETQ[campo] && !(av==='' && (nv==='' || (campo==='origen' && nv==='Propia')))) difs.push(ETQ[campo]+': '+(av||'—')+' → '+(nv||'—'));
       set(col, cambios[campo]);
     }

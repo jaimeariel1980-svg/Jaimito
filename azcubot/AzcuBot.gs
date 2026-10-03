@@ -74,6 +74,7 @@ function azcuHerrFicha_(a){
     id:p.id, direccion:p.dir, tipo:p.tipo, operacion:p.operacion, etapa:p.etapa, estado_carga:p.estadoCarga, motivo_suspension:p.motivo, precio:p.precio, origen:p.origen,
     colega:p.colega, contacto_colega:p.colegaTel, comision:p.comision, vendedor:p.vendedor, link_tokko:p.tokko, plan_tokko:p.plan, carpeta_drive:p.carpeta,
     salud_aviso_pct:p.pct, observaciones:p.obs, consultas:p.cons, visitas:p.vis, propuestas:(p.seg||[]).filter(function(s){ return /propuesta|oferta/i.test(s.res); }).length, estado_propuesta:azcuPropEstado_(p),
+    plazo_boleto:p.boleto||'', boleto_firmado:p.boletoOk||'', plazo_escritura:p.escritura||'', escritura_firmada:p.escrituraOk||'',
     dias_sin_movimiento:p.dias, documentos_al_dia:docs.length-azcuFalta_(p).length, documentos_total:docs.length, documentos_faltan:azcuFalta_(p), documentos_con_archivo:Object.keys(p.docUrls||{}),
     propietarios:(p.duenos||[]).map(function(d){ return {nombre:d.nombre, dni:d.dni, telefono:d.tel, mail:d.mail, domicilio:d.dom}; }),
     encuesta:p.encuesta ? {nota:p.encuesta.cal, nombre:p.encuesta.nombre, recomienda:p.encuesta.rec} : null,
@@ -575,7 +576,7 @@ function azcuTools_(){
     t('proponer_agendar_visita','Agendar una visita futura (Calendar + seguimiento). Pendiente de confirmación.',{id:S, fecha:F, hora:{type:'string',description:'HH:mm 24h'}, interesado:S, telefono:S, email:S, nota:S},['id','fecha','hora']),
     t('proponer_registrar_propuesta','Registrar una propuesta u oferta recibida. Pendiente de confirmación.',{id:S, cliente:S, monto:{type:'string',description:'Monto y moneda'}, telefono:S, observaciones:S},['id','cliente','monto']),
     t('proponer_cambiar_etapa','Cambiar la etapa de una propiedad. Pendiente de confirmación.',{id:S, etapa:{type:'string',enum:AZCU_ETAPAS}},['id','etapa']),
-    t('proponer_editar_campos','Editar datos de la propiedad o del primer propietario. Pendiente de confirmación.',{id:S, precio:S, observaciones:S, tipo:S, link_tokko:S, origen:S, colega:S, contacto_colega:S, comision:S, vendedor:S, motivo_suspension:S, pct_aviso:{type:'string',description:'0 a 100'}, propietario_nombre:S, propietario_telefono:S, propietario_mail:S, propietario_dni:S, propietario_domicilio:S},['id']),
+    t('proponer_editar_campos','Editar datos de la propiedad o del primer propietario. Pendiente de confirmación.',{id:S, precio:S, observaciones:S, tipo:S, link_tokko:S, origen:S, colega:S, contacto_colega:S, comision:S, vendedor:S, motivo_suspension:S, pct_aviso:{type:'string',description:'0 a 100'}, propietario_nombre:S, propietario_telefono:S, propietario_mail:S, propietario_dni:S, propietario_domicilio:S, plazo_boleto:{type:'string',description:'Fecha AAAA-MM-DD del plazo para firmar el boleto'}, boleto_firmado:{type:'string',description:'Fecha AAAA-MM-DD en que se firmó el boleto'}, plazo_escritura:{type:'string',description:'Fecha AAAA-MM-DD del plazo de la escritura'}, escritura_firmada:{type:'string',description:'Fecha AAAA-MM-DD en que se firmó la escritura'}},['id']),
     t('proponer_marcar_documento','Marcar un documento como cargado o pendiente. Pendiente de confirmación.',{id:S, documento:S, estado:{type:'string',enum:['cargado','pendiente']}},['id','documento','estado']),
     t('proponer_borrar_documento','Borrar un documento subido (se saca de Drive). Pendiente de confirmación.',{id:S, documento:S},['id','documento']),
     t('proponer_editar_interaccion','Corregir una interacción del historial (usar la fila de la ficha). Pendiente de confirmación.',{id:S, fila:{type:'number'}, fecha:F, via:S, interesado:S, telefono:S, resultado:S, proximo_paso:S, observaciones:S},['id','fila']),
@@ -584,7 +585,7 @@ function azcuTools_(){
     t('proponer_enviar_reporte','Enviar por mail el informe de gestión a los propietarios. Pendiente de confirmación.',{id:S},['id'])
   ];
 }
-var AZCU_MAPC_ = {precio:'precio', observaciones:'obs', tipo:'tipo', link_tokko:'tokko', origen:'origen', colega:'colega', contacto_colega:'colegaTel', comision:'comision', vendedor:'vendedor', motivo_suspension:'motivo', pct_aviso:'pct', propietario_nombre:'prop', propietario_telefono:'tel', propietario_mail:'mail', propietario_dni:'dni', propietario_domicilio:'dom'};
+var AZCU_MAPC_ = {precio:'precio', observaciones:'obs', tipo:'tipo', link_tokko:'tokko', origen:'origen', colega:'colega', contacto_colega:'colegaTel', comision:'comision', vendedor:'vendedor', motivo_suspension:'motivo', pct_aviso:'pct', propietario_nombre:'prop', propietario_telefono:'tel', propietario_mail:'mail', propietario_dni:'dni', propietario_domicilio:'dom', plazo_boleto:'boleto', boleto_firmado:'boletoOk', plazo_escritura:'escritura', escritura_firmada:'escrituraOk'};
 function azcuFechaAr_(iso){ return /^\d{4}-\d{2}-\d{2}$/.test(iso||'') ? iso.split('-').reverse().join('/') : ''; }
 function azcuSegFila_(p, fila){ var i, s = p.seg||[]; for(i=0;i<s.length;i++) if(+s[i]._row===+fila) return s[i]; return null; }
 function azcuValidarAccion_(tipo, a){
@@ -987,6 +988,7 @@ function azcuApi(e){
     else if(req.fn==='azcuMov') out = {ok:true, data:azcuMov(a[0], a[1])};
     else if(req.fn==='azcuAtajo') out = {ok:true, data:azcuAtajo(a[0], a[1])};
     else if(req.fn==='azcuSegGuia') out = {ok:true, data:azcuSegGuia(a[0], a[1], a[2], a[3])};
+    else if(req.fn==='azcuPlazoOk') out = {ok:true, data:azcuPlazoOk(a[0], a[1], a[2], a[3])};
     else if(req.fn==='azcuReporteEnviado') out = {ok:true, data:azcuReporteEnviado(a[0], a[1], a[2])};
     else if(req.fn==='azcuWarm') out = {ok:true, data:azcuWarm(a[0])};
     else if(req.fn==='azcuEjecutar'){ var ac = a[1] || {}; ac.reqId = String(req.id || '').replace(/[^A-Za-z0-9]/g, ''); out = {ok:true, data:azcuEjecutar(a[0], ac)}; }
@@ -1699,7 +1701,7 @@ function azcuMapaSet_(k, m){ PropertiesService.getScriptProperties().setProperty
 function azcuReservaMarca_(id, c){
   try{
     var m = azcuMapaGet_('AZCU_RESD'), k = String(id).trim();
-    if(c==='r'){ m[k] = Date.now(); delete m[k+'_n']; } else if(m[k]!==undefined){ delete m[k]; delete m[k+'_n']; } else return;
+    if(c==='r'){ m[k] = Date.now(); delete m[k+'_n']; var mcc = azcuMapaGet_('AZCU_COMP'); mcc[k] = Date.now(); azcuMapaSet_('AZCU_COMP', mcc); } else if(m[k]!==undefined){ delete m[k]; delete m[k+'_n']; } else return;
     azcuMapaSet_('AZCU_RESD', m);
   }catch(e){}
 }
@@ -1779,6 +1781,21 @@ function azcuSegGuia(pin, tipo, id, ci){
   var ult = null, i; for(i=seg.length-1;i>=0;i--) if(/propuesta aceptada/i.test(seg[i].res)){ ult = seg[i]; break; }
   if(!ult) for(i=seg.length-1;i>=0;i--) if(/propuesta|oferta/i.test(seg[i].res)){ ult = seg[i]; break; }
   var cn = ult ? String(ult.cli||'').split(/\s+/)[0] : '';
+  if(tipo==='pl' || tipo==='com'){
+    var cb2 = ult ? String(ult.cli||'').split(/\s+/)[0] : '', fm = function(iso){ return iso ? iso.split('-').reverse().join('/') : ''; };
+    var partesE = [];
+    if(p.boleto && !p.boletoOk) partesE.push('el boleto está previsto para el '+fm(p.boleto));
+    if(p.boletoOk) partesE.push('el boleto ya se firmó ('+fm(p.boletoOk)+')');
+    if(p.escritura && !p.escrituraOk) partesE.push('la escritura está prevista para el '+fm(p.escritura));
+    if(p.escrituraOk) partesE.push('la escritura ya se firmó ('+fm(p.escrituraOk)+')');
+    var falt = azcuFalta_(p).length;
+    var estado = (partesE.length ? partesE.join(' y ')+'. ' : 'Seguimos avanzando con los papeles. ')+(falt ? 'Estamos terminando de reunir la documentación. ' : 'La documentación está al día. ');
+    var textoE = 'Hola'+(cb2 ? ' '+cb2 : '')+'! Te cuento cómo viene la compra de '+p.dir+': '+estado+'Cualquier duda o dato que necesites, avisame. ¡Gracias!';
+    if(tipo==='com'){ try{ var mc = azcuMapaGet_('AZCU_COMP'); mc[kid] = ahoraG; azcuMapaSet_('AZCU_COMP', mc); }catch(e){} }
+    var pl = String(ci||'').toLowerCase()==='escritura' ? 'escritura' : 'boleto', iso = pl==='escritura' ? p.escritura : p.boleto, nn = azcuNumIso_(iso);
+    return {tipo:tipo, id:p.id, dir:p.dir, plazo:pl, fecha:fm(iso), dias:nn ? azcuDif_(nn, azcuHoy_()) : null, enReserva:null, para:{nombre:ult ? ult.cli : '', tel:ult ? String(ult.tel||'') : ''}, texto:textoE,
+      boleto:fm(p.boleto), boletoOk:fm(p.boletoOk), escritura:fm(p.escritura), escrituraOk:fm(p.escrituraOk), faltan:falt};
+  }
   if(tipo==='enc'){
     var cb = ult ? String(ult.cli||'').split(/\s+/)[0] : '';
     return {tipo:'enc', id:p.id, dir:p.dir, para:{nombre:ult ? ult.cli : '', tel:ult ? String(ult.tel||'') : ''},
@@ -1847,6 +1864,57 @@ function azcuAvisoSinMov(forzar){
   if(cambio) azcuMapaSet_('AZCU_SM', m);
 }
 function azcuAvisoVendedor(forzar){
+  try{ azcuAvisoPlazos(forzar); }catch(e){}
+  try{ azcuAvisoComprador(forzar); }catch(e){}
   try{ azcuAvisoPropuestas(forzar); }catch(e){}
   try{ azcuAvisoSinMov(forzar); }catch(e){}
+}
+
+function azcuNumIso_(iso){ var m = String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? +(m[1]+m[2]+m[3]) : null; }
+function azcuPlazoOk(pin, id, plazo, quien){
+  azcuPin_(pin);
+  var p = azcuProp_(id); if(!p) throw new Error('No encontré la propiedad.');
+  var hoy = Utilities.formatDate(new Date(), AZCU_TZ, 'yyyy-MM-dd'), c = {quien:String(quien||'')};
+  if(plazo==='escritura') c.escrituraOk = hoy; else c.boletoOk = hoy;
+  guardarPropiedad(p.id, c);
+  return true;
+}
+function azcuAvisoPlazos(forzar){
+  var h = +Utilities.formatDate(new Date(), AZCU_TZ, 'H');
+  if(forzar!==true && (h<10 || h>=20)) return;
+  var datos = azcuDatos_(), hoy = azcuHoy_(), m = azcuMapaGet_('AZCU_PLZ'), ahora = Date.now(), cambio = false;
+  datos.forEach(function(p){
+    var c = AZCU_COD_[p.etapa] || 'x'; if(c!=='r' && c!=='v') return;
+    [['boleto','Boleto',p.boleto,p.boletoOk],['escritura','Escritura',p.escritura,p.escrituraOk]].forEach(function(pl){
+      var n = azcuNumIso_(pl[2]); if(!n || pl[3]) return;
+      var dd = azcuDif_(n, hoy), id = String(p.id).trim(), key = id+'|'+pl[0]+'|'+n, ve = String(p.vendedor||'').trim(), tit = null, rep = false;
+      if(dd===7 || dd===3 || dd===0){ if(m[key+'|'+dd]) return; tit = dd===0 ? '📅 Hoy vence el plazo de '+pl[0] : '📅 '+pl[1]+' en '+dd+' días'; m[key+'|'+dd] = ahora; }
+      else if(dd<0){ if(m[key] && ahora-m[key] < 2*86400000) return; tit = '⚠️ Plazo de '+pl[0]+' VENCIDO hace '+(-dd)+(dd===-1 ? ' día' : ' días'); m[key] = ahora; rep = true; }
+      else return;
+      cambio = true;
+      try{
+        azcuPush_(tit, p.dir+(rep ? ' · ¿Se firmó? Marcalo o actualizá la fecha.' : ' · Revisá cómo viene y avisale al comprador.')+(ve ? '' : ' (sin vendedor asignado)'),
+          AZCU_WEB+'?pl='+encodeURIComponent(id)+'&t='+pl[0], ve ? azcuDestinos_(ve, true) : null, !!ve);
+      }catch(e){}
+    });
+  });
+  if(cambio) azcuMapaSet_('AZCU_PLZ', m);
+}
+function azcuAvisoComprador(forzar){
+  var h = +Utilities.formatDate(new Date(), AZCU_TZ, 'H');
+  if(forzar!==true && (h<10 || h>=20)) return;
+  var dias = azcuNum2_('AZCU_COMP_DIAS', 20), datos = azcuDatos_(), m = azcuMapaGet_('AZCU_COMP'), ahora = Date.now(), cambio = false;
+  datos.forEach(function(p){
+    var id = String(p.id).trim(), c = AZCU_COD_[p.etapa] || 'x';
+    if(c!=='r' || p.escrituraOk){ if(m[id]!==undefined){ delete m[id]; cambio = true; } return; }
+    if(m[id]===undefined){ m[id] = ahora; cambio = true; return; }
+    if(ahora-m[id] < dias*86400000) return;
+    var ve = String(p.vendedor||'').trim();
+    try{
+      azcuPush_('💬 Contale al comprador cómo viene', p.dir+' · Escribile al comprador para contarle en qué estado está la operación.'+(ve ? '' : ' (sin vendedor asignado)'),
+        AZCU_WEB+'?com='+encodeURIComponent(id), ve ? azcuDestinos_(ve, true) : null, !!ve);
+      m[id] = ahora; cambio = true;
+    }catch(e){}
+  });
+  if(cambio) azcuMapaSet_('AZCU_COMP', m);
 }

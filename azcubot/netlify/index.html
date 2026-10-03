@@ -998,7 +998,7 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
     else if(a==='attdel'){ st.att.splice(+t.dataset.i, 1); render(); }
     else if(a==='attsave'){ attMsg('guardar en una propiedad'); wzStart('adjex'); }
     else if(a==='copy'){ var cu = t.dataset.u, okc = function(){ t.textContent = '✓ Enlace copiado'; }; try{ navigator.clipboard.writeText(cu).then(okc, function(){ window.prompt('Copiá el enlace:', cu); }); }catch(e){ window.prompt('Copiá el enlace:', cu); } }
-    else if(a==='adjb'){ if(t.dataset.act==='repok'){ call('azcuReporteEnviado', [t.dataset.id, st.nombre||''], function(){ st.msgs.push({role:'assistant', content:'✅ Anotado: ya está enviado. Te lo vuelvo a recordar en unos días.', w:1}); save(); render(); }, function(err){ st.msgs.push({role:'assistant', content:'No pude anotarlo: '+err, w:1}); render(); }); } else if(t.dataset.act==='attprop'){ st.pre = t.dataset.id; st.sheet = true; render(); } else if(t.dataset.act==='compl'){ complStart(t.dataset.id); } }
+    else if(a==='adjb'){ if(t.dataset.act==='plok'){ var pp = String(t.dataset.id||'').split('|'); call('azcuPlazoOk', [pp[0], pp[1], st.nombre||''], function(){ st.msgs.push({role:'assistant', content:'✅ Anotado: '+(pp[1]==='escritura' ? 'la escritura' : 'el boleto')+' quedó como firmado. Dejo de avisarte por eso.', w:1}); save(); render(); }, function(err){ st.msgs.push({role:'assistant', content:'No pude anotarlo: '+err, w:1}); render(); }); } else if(t.dataset.act==='repok'){ call('azcuReporteEnviado', [t.dataset.id, st.nombre||''], function(){ st.msgs.push({role:'assistant', content:'✅ Anotado: ya está enviado. Te lo vuelvo a recordar en unos días.', w:1}); save(); render(); }, function(err){ st.msgs.push({role:'assistant', content:'No pude anotarlo: '+err, w:1}); render(); }); } else if(t.dataset.act==='attprop'){ st.pre = t.dataset.id; st.sheet = true; render(); } else if(t.dataset.act==='compl'){ complStart(t.dataset.id); } }
     else if(a==='attread'){ attRead(); }
     else if(a==='mic'){ startRec(); }
     else if(a==='recsend'){ stopRec(true); }
@@ -1067,7 +1067,7 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
     }
     if(q.get('agenda')){ var rec = q.get('rec'); try{ history.replaceState(null, '', location.pathname); }catch(e){} st.entered = true; st.view = 'agenda'; st.agFrom = null; st.agSel = iso(new Date()); st.agForm = false; st.agNote = ''; setTimeout(function(){ if(rec) call('azcuRecCancelar', [st.nombre||'', rec], function(){ st.agNote = '✅ Aviso confirmado: no te lo vuelvo a repetir.'; render(); agLoad(); }, function(){ agLoad(); }); else agLoad(); }, 700); return; }
     function waLink(tel, tx){ var d = String(tel||'').replace(/\D/g, ''); if(!d) return 'https://api.whatsapp.com/send?text='+encodeURIComponent(tx); if(d.indexOf('54')!==0) d = '549'+d.replace(/^0/, '').replace(/^15/, ''); return 'https://wa.me/'+d+'?text='+encodeURIComponent(tx); }
-    var guiaTipo = q.get('rep') ? 'rep' : q.get('res') ? 'res' : q.get('pr') ? 'prop' : q.get('enc') ? 'enc' : q.get('sm') ? 'sm' : '', guiaIds = q.get('rep') || q.get('res') || q.get('pr') || q.get('enc') || q.get('sm'), guiaCi = q.get('ci') || '';
+    var guiaTipo = q.get('rep') ? 'rep' : q.get('res') ? 'res' : q.get('pr') ? 'prop' : q.get('enc') ? 'enc' : q.get('sm') ? 'sm' : q.get('pl') ? 'pl' : q.get('com') ? 'com' : '', guiaIds = q.get('rep') || q.get('res') || q.get('pr') || q.get('enc') || q.get('sm') || q.get('pl') || q.get('com'), guiaCi = q.get('ci') || q.get('t') || '';
     if(guiaIds){
       try{ history.replaceState(null, '', location.pathname); }catch(e){}
       st.entered = true; st.menu = false; st.view = 'chat';
@@ -1086,6 +1086,14 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
             } else if(g.tipo==='enc'){
               adj.push({k:'l', label:'📋 Ver la ficha en el tablero', url:(window.AZCU_TABLERO || 'tablero.html')+'?ficha='+encodeURIComponent(g.id)});
               cont = '🎉 **Propiedad vendida**: **'+g.dir+'**. Pedile al comprador'+((g.para && g.para.nombre) ? ' **'+g.para.nombre+'**' : '')+' que complete la encuesta de satisfacción (2 minutos). Te dejo el mensaje con el enlace.';
+            } else if(g.tipo==='pl'){
+              var vencP = g.dias!=null && g.dias<0, nomP = g.plazo==='escritura' ? 'escritura' : 'boleto';
+              adj.push({k:'b', label:(nomP==='boleto' ? '✅ Ya se firmó el boleto' : '✅ Ya se firmó la escritura'), act:'plok', id:g.id+'|'+nomP});
+              adj.push({k:'l', label:'📋 Cambiar la fecha en el tablero', url:(window.AZCU_TABLERO || 'tablero.html')+'?ficha='+encodeURIComponent(g.id)});
+              cont = (vencP ? '⚠️ **Plazo de '+nomP+' vencido**' : '📅 **Plazo de '+nomP+'**')+' de **'+g.dir+'**: '+(g.fecha || 's/f')+(g.dias!=null ? (g.dias<0 ? ' (hace '+(-g.dias)+' días)' : g.dias===0 ? ' (es hoy)' : ' (en '+g.dias+' días)') : '')+'. '+(vencP ? '¿Se firmó? Tocá «Ya se firmó» o cambiá la fecha. ' : 'Revisá cómo viene. ')+'Te dejo un mensaje para contarle al comprador'+((g.para && g.para.nombre) ? ' **'+g.para.nombre+'**' : '')+' en qué estado está.';
+            } else if(g.tipo==='com'){
+              adj.push({k:'l', label:'📋 Ver la ficha en el tablero', url:(window.AZCU_TABLERO || 'tablero.html')+'?ficha='+encodeURIComponent(g.id)});
+              cont = '💬 **Contale al comprador cómo viene**: **'+g.dir+'** sigue en Reserva. Te dejo el mensaje con el estado (boleto, escritura y documentación) para'+((g.para && g.para.nombre) ? ' **'+g.para.nombre+'**' : ' el comprador')+'. Lo revisás y lo mandás vos.';
             } else if(g.tipo==='sm'){
               adj = [{k:'l', label:'📋 Abrir la ficha en el tablero', url:(window.AZCU_TABLERO || 'tablero.html')+'?ficha='+encodeURIComponent(g.id)}];
               cont = '🛑 **Sin movimiento**: **'+g.dir+'** lleva '+(g.dias!=null ? g.dias+' días' : 'mucho tiempo')+' sin movimiento. Hay que moverla: revisá precio y difusión, contactá a interesados o hablá con el propietario, y cargá lo que hagas (decime y lo cargo). Te lo recuerdo cada 15 días hasta que haya movimiento. Si está en pausa a propósito, pasala a **Suspendida** con el motivo y dejo de avisar.';
