@@ -5,8 +5,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="AzcuBot">
-<title>AzcuBot — Azcuénaga</title>
+<meta name="apple-mobile-web-app-title" content="Azcu">
+<title>Azcu — Azcuénaga</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -553,19 +553,19 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
     st.msgs.push({role:'assistant', content:'Listo, revisá y confirmá 👇', acciones:[a]}); save(); render();
   }
   function render(){
-    var h = APP ? '' : '<button class="azb-fab" id="azbFab" aria-label="Abrir AzcuBot">'+mk(62)+'<span class="azb-dot'+(st.movN?' n':'')+'">'+(st.movN?(st.movN>9?'9+':st.movN):'')+'</span></button>';
+    var h = APP ? '' : '<button class="azb-fab" id="azbFab" aria-label="Abrir Azcu">'+mk(62)+'<span class="azb-dot'+(st.movN?' n':'')+'">'+(st.movN?(st.movN>9?'9+':st.movN):'')+'</span></button>';
     h += '<div class="azb-panel'+(st.open?' on':'')+(APP?' azb-app':'')+'">';
     var foot = APP ? '<div class="azb-ft"><span class="lg">'+mk(26)+'AZCUÉNAGA</span><span class="lm">Siempre dedicada<br>a lo que necesitás</span></div>' : '';
     if(APP && st.nombre!==null && !st.entered){
-      h += '<div class="azb-port"><div class="azb-wm">AZCU</div><div class="azb-box">'+mk(108)+'</div><div class="azb-pe">Azcuénaga Inmobiliaria</div><h2>Hola'+(st.nombre?', '+esc(st.nombre):'')+'</h2><div class="azb-rl">Soy AzcuBot · tu compañero de laburo</div><p>Estoy acá para tu día a día: cargar visitas, agendar, ver fichas y alertas. Escribime o mandame un audio.</p><button class="azb-go" data-a="enter">Entrar →</button>'+foot+'</div>';
+      h += '<div class="azb-port"><div class="azb-wm">AZCU</div><div class="azb-box">'+mk(108)+'</div><div class="azb-pe">Azcuénaga Inmobiliaria</div><h2>Hola'+(st.nombre?', '+esc(st.nombre):'')+'</h2><div class="azb-rl">Soy Azcu · tu asistente en Azcuénaga</div><p>Estoy acá para tu día a día: cargar visitas, agendar, ver fichas y alertas. Escribime o mandame un audio.</p><button class="azb-go" data-a="enter">Entrar →</button>'+foot+'</div>';
     } else if(st.nombre===null){
-      h += (APP?'':'<div class="azb-hd"><span class="azb-t">AzcuBot · Asistente interno</span><button class="azb-ib" data-a="close">✕</button></div>')+
-        '<div class="azb-port"><div class="azb-wm">AZCU</div><div class="azb-box">'+mk(108)+'</div><div class="azb-pe">Azcuénaga Inmobiliaria</div><h2>Hola, soy AzcuBot</h2><div class="azb-rl">Tu compañero de laburo</div><p>¿Cómo te llamás? Así te doy una mano con el tablero, las visitas y todo lo de todos los días.</p><input id="azbName" placeholder="Tu nombre" autocomplete="off"><button class="azb-go" data-a="start">Empezar →</button><button class="azb-sk" data-a="skip">Prefiero no decirlo</button>'+foot+'</div>';
+      h += (APP?'':'<div class="azb-hd"><span class="azb-t">Azcu · Asistente interno</span><button class="azb-ib" data-a="close">✕</button></div>')+
+        '<div class="azb-port"><div class="azb-wm">AZCU</div><div class="azb-box">'+mk(108)+'</div><div class="azb-pe">Azcuénaga Inmobiliaria</div><h2>Hola, soy Azcu</h2><div class="azb-rl">Tu asistente en Azcuénaga</div><p>¿Cómo te llamás? Así te doy una mano con el tablero, las visitas y todo lo de todos los días.</p><input id="azbName" placeholder="Tu nombre" autocomplete="off"><button class="azb-go" data-a="start">Empezar →</button><button class="azb-sk" data-a="skip">Prefiero no decirlo</button>'+foot+'</div>';
     } else {
-      h += '<div class="azb-hd">'+mk(46)+'<span class="azb-t">AzcuBot'+(APP?'':' · '+(AZ.ctx?'Ficha '+esc(AZ.ctx):'Asistente interno'))+'</span>'+(APP?'<a class="azb-tbp" href="'+esc(window.AZCU_TABLERO||'#')+'" target="_blank" rel="noopener" title="Abrir el tablero">'+sv('board')+'<span>Tablero</span></a>':'')+(APP?'':'<button class="azb-ib azb-nv" data-a="mov" title="Novedades">'+sv('hist')+(st.movN?'<i class="azb-bd">'+(st.movN>9?'9+':st.movN)+'</i>':'')+'</button><button class="azb-ib" data-a="agenda" title="Agenda">'+sv(st.view==='agenda'?'chat':'cal')+'</button>')+'<button class="azb-ib" data-a="clear" title="Borrar charla">'+sv('trash')+'</button>'+(APP?'':'<button class="azb-ib" data-a="close">✕</button>')+'</div>'+(APP && window.OneSignalDeferred && !st.pushOn ? '<div class="azb-pb"><span>🔔 Recibí avisos en este celular</span><button type="button" class="azb-btn" data-a="push">Activar avisos</button></div>' : '')+'<div class="azb-body">';
+      h += '<div class="azb-hd">'+mk(46)+'<span class="azb-t">Azcu'+(APP?'':' · '+(AZ.ctx?'Ficha '+esc(AZ.ctx):'Asistente interno'))+'</span>'+(APP?'<a class="azb-tbp" href="'+esc(window.AZCU_TABLERO||'#')+'" target="_blank" rel="noopener" title="Abrir el tablero">'+sv('board')+'<span>Tablero</span></a>':'')+(APP?'':'<button class="azb-ib azb-nv" data-a="mov" title="Novedades">'+sv('hist')+(st.movN?'<i class="azb-bd">'+(st.movN>9?'9+':st.movN)+'</i>':'')+'</button><button class="azb-ib" data-a="agenda" title="Agenda">'+sv(st.view==='agenda'?'chat':'cal')+'</button>')+'<button class="azb-ib" data-a="clear" title="Borrar charla">'+sv('trash')+'</button>'+(APP?'':'<button class="azb-ib" data-a="close">✕</button>')+'</div>'+(APP && window.OneSignalDeferred && !st.pushOn ? '<div class="azb-pb"><span>🔔 Recibí avisos en este celular</span><button type="button" class="azb-btn" data-a="push">Activar avisos</button></div>' : '')+'<div class="azb-body">';
       if(st.view==='agenda') h += agendaHtml(); else if(st.view==='mov') h += movHtml(); else {
       if(!st.msgs.length || st.menu){
-        h += (st.menu && st.msgs.length ? '<button type="button" class="azb-back" data-a="menux">💬 Volver a la charla</button>' : '')+'<div class="azb-av">'+mk(60)+'</div><div class="azb-eyb">Tu asistente, siempre disponible</div><h1>Hola'+(st.nombre?', <b>'+esc(st.nombre)+'</b>':'')+'.<br>¿Qué hacemos hoy?</h1><p class="azb-lead">Preguntame lo que quieras del tablero o pedime que cargue visitas, agende, cambie estados o mande reportes. Escribime como a un compañero.</p>'+(APP && window.OneSignalDeferred && !st.pushOn ? '<button class="azb-row" data-a="push" style="border-color:var(--n);background:#eef3ff">🔔 Activar avisos en este celular<span>→</span></button>' : '')+'<div class="azb-lbl">Atajos</div>';
+        h += (st.menu && st.msgs.length ? '<button type="button" class="azb-back" data-a="menux">💬 Volver a la charla</button>' : '')+'<div class="azb-av">'+mk(60)+'</div><div class="azb-eyb">Tu asistente, siempre disponible</div><h1>Hola'+(st.nombre?', <b>'+esc(st.nombre)+'</b>':'')+'.<br>¿Qué hacemos hoy?</h1><p class="azb-lead">Preguntame lo que quieras del tablero o pedime que cargue visitas, agende, cambie estados o mande reportes. Escribime con confianza.</p>'+(APP && window.OneSignalDeferred && !st.pushOn ? '<button class="azb-row" data-a="push" style="border-color:var(--n);background:#eef3ff">🔔 Activar avisos en este celular<span>→</span></button>' : '')+'<div class="azb-lbl">Atajos</div>';
         var sc = shortcuts(), big = '', small = '', bigs = {};
         sc.forEach(function(s){
           var at = (s[2]==='agenda'?'data-a="agenda"':s[2]==='adjuntar'?'data-a="attach"':(s[2]?'data-w="'+s[2]+'"':'data-q="'+esc(s[3]||s[0])+'"'))+(s[1]?' data-at="'+s[1]+'"':''), tl = TILE[s[0]];
@@ -686,7 +686,7 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
   function slug(n){ return ns(n).replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'') || 'anon'; }
   function pushOn(){
     var ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
-    if(ios && !navigator.standalone){ alert('En iPhone: primero tocá Compartir → "Añadir a pantalla de inicio", y abrí AzcuBot desde ese ícono. Ahí activás los avisos.'); return; }
+    if(ios && !navigator.standalone){ alert('En iPhone: primero tocá Compartir → "Añadir a pantalla de inicio", y abrí Azcu desde ese ícono. Ahí activás los avisos.'); return; }
     if(!window.OneSignalDeferred || !('Notification' in window)){ alert('Este navegador no permite avisos.'); return; }
     if(window.__osErr){ alert('Los avisos no se pudieron iniciar: '+window.__osErr+'\nAbrí la app desde: '+location.origin); return; }
     OneSignalDeferred.push(function(OS){
@@ -738,7 +738,7 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
   function call(fn, args, ok, fail, retried){
     function onErr(e){
       var msg = (e && e.message) ? e.message : String(e);
-      if(/PIN/.test(msg) && !retried){ var p = window.prompt('Poné el PIN de AzcuBot:'); if(p){ st.pin = p; ls('pin', p); return call(fn, args, ok, fail, true); } }
+      if(/PIN/.test(msg) && !retried){ var p = window.prompt('Poné el PIN de Azcu:'); if(p){ st.pin = p; ls('pin', p); return call(fn, args, ok, fail, true); } }
       fail(msg.replace(/^Error:\s*/,''));
     }
     if(window.AZCU_API){ frameCall(fn, args, ok, onErr); return; }

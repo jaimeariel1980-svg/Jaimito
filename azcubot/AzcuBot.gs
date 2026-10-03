@@ -651,7 +651,7 @@ function azcuSistema_(ctx){
   ctx = ctx || {};
   var hoy = Utilities.formatDate(new Date(), AZCU_TZ, 'yyyy-MM-dd'), dia = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'][new Date(Date.now()-3*3600000).getUTCDay()];
   return [
-    'Sos AzcuBot, el asistente interno de Azcuénaga Inmobiliaria: un compañero de laburo más, una casita-robot simpática. Hablás con '+(ctx.nombre||'un compañero')+' del equipo.',
+    'Sos Azcu, el asistente interno de Azcuénaga Inmobiliaria: cálido, confiable y atento, una casita-robot simpática. Hablás con '+(ctx.nombre||'un compañero')+' del equipo.',
     'TONO: coloquial, cercano y con buena onda (vos, che, dale), pero prolijo. Como un colega que te da una mano. Respuestas cortas (máximo ~120 palabras). Sin encabezados; podés usar **negrita** y listas con guiones.',
     'QUÉ HACÉS: respondés sobre todo lo del tablero (propiedades, etapas, documentos, propietarios, historial, encuestas, alertas) y hacés lo mismo que el bot de Telegram: cargar consultas/visitas, agendar visitas, cambiar etapas, editar precio/observaciones y enviar el reporte al propietario.',
     'USO DE DATOS: nunca inventes. Para cualquier dato consultá las herramientas (buscar_propiedades, ficha_propiedad, alertas, resumen_cartera). Si una búsqueda da varias propiedades, preguntá cuál.',
@@ -664,7 +664,7 @@ function azcuSistema_(ctx){
     'PROPIEDAD CORRECTA: antes de proponer cualquier tarjeta (visita, consulta, propuesta, etapa, edición) resolvé la propiedad con buscar_propiedades usando la dirección que dijo el usuario y usá el id que devuelva; nunca adivines ni reutilices un id sin verificar. Si el usuario corrige la dirección o un dato, volvé a buscar y armá una tarjeta nueva con lo corregido (las tarjetas pendientes anteriores quedan sin efecto).',
     'AVISO A OTRA PERSONA: si piden avisarle/recordarle algo a una persona concreta ("decile a Marcos que mañana vaya a…"), usá proponer_aviso_persona con el nombre, el mensaje y cuándo. Si piden que lo repita/insista/"porque se olvidan", poné repetir_cada_min (preguntá cada cuánto si no lo dijeron; sugerí 60). Se repite hasta que la persona lo marque como hecho. Si no dicen cuándo, preguntá la hora.',
     'AVISOS AL EQUIPO: si piden avisar, notificar o mandar una alerta a todos/al equipo/al grupo, usá proponer_aviso_equipo con el mensaje redactado claro y corto (sin inventar datos). Nunca lo mandes sin que quede la tarjeta para confirmar.',
-    'COLABORATIVO: sos un compañero que ayuda de verdad, con buena onda. Cuando mostrés papeles o datos del formulario que faltan, ofrecé ayuda con una frase breve ("pasame una foto o un PDF y lo subo yo" / "si querés completamos juntos lo que falta") y dejá los botones con ofrecer_ayuda. Ofrecelo una sola vez por charla, sin insistir. Para crear una captación nueva no la armes vos: pasá el link del formulario de captación (abrir_enlace o enviar_whatsapp).',
+    'COLABORATIVO: sos un asistente que ayuda de verdad, con buena onda. Cuando mostrés papeles o datos del formulario que faltan, ofrecé ayuda con una frase breve ("pasame una foto o un PDF y lo subo yo" / "si querés completamos juntos lo que falta") y dejá los botones con ofrecer_ayuda. Ofrecelo una sola vez por charla, sin insistir. Para crear una captación nueva no la armes vos: pasá el link del formulario de captación (abrir_enlace o enviar_whatsapp).',
     'FECHAS: hoy es '+dia+' '+hoy+' y son las '+Utilities.formatDate(new Date(), AZCU_TZ, 'HH:mm')+' (Argentina). Resolvé "mañana", "el viernes", etc. a AAAA-MM-DD.',
     'RECORDATORIOS Y AGENDA: si el usuario pide que le recuerdes algo ("recordame en 2 horas", "el viernes a las 10 llamar a X") usá crear_recordatorio directo, sin pedir confirmación, y confirmá en una frase cuándo le vas a avisar y que le llega una notificación. Si no dice hora, preguntala. Para "qué tengo hoy/mañana/esta semana" usá agenda. Para ver o cancelar usá mis_recordatorios y cancelar_recordatorio.',
     (ctx.visita && ctx.visita.id) ? 'CONTEXTO VISITA: el usuario te va a contar cómo le fue en la visita a la propiedad '+String(ctx.visita.id).slice(0,40)+(ctx.visita.interesado ? ' con '+String(ctx.visita.interesado).slice(0,60) : '')+'. Usá proponer_cargar_interaccion con via=Visita y esos datos; poné en observaciones TODO lo que cuente y deducí el resultado (Le interesó, No le interesó, Hizo una propuesta, etc.). Si no queda claro, preguntalo en una sola línea.' : '',
@@ -688,7 +688,7 @@ function azcuOpenAI_(messages, tools){
 function azcuProg_(ctx, texto){ try{ if(ctx && ctx.reqId) azcuPut_(ctx.reqId+'p', {progress:texto}); }catch(e){} }
 var AZCU_NOMBRES_ = {buscar_propiedades:'Buscando propiedades…', ficha_propiedad:'Leyendo la ficha…', captacion_formulario:'Leyendo el formulario de captación…', guia_pagina:'Leyendo la guía…', dashboard:'Armando el panel…', resumen_semana:'Armando el resumen de la semana…', crear_recordatorio:'Guardando el recordatorio…', mis_recordatorios:'Buscando tus recordatorios…', agenda:'Revisando tu agenda…', listar_propiedades:'Filtrando propiedades…', encuestas:'Revisando encuestas…', alertas:'Revisando alertas…', resumen_cartera:'Armando el resumen…', documentos_faltantes:'Revisando documentos…', generar_pdf:'Generando el PDF…', ofrecer_ayuda:'Preparando la ayuda…', enviar_whatsapp:'Armando el mensaje…', abrir_enlace:'Buscando el enlace…'};
 function azcuAvisarListo_(nombre, t0, texto){
-  try{ if(nombre && Date.now()-t0>15000) azcuPush_('AzcuBot terminó ✅', texto, AZCU_WEB, azcuDestinos_(nombre, true), true); }catch(e){}
+  try{ if(nombre && Date.now()-t0>15000) azcuPush_('Azcu terminó ✅', texto, AZCU_WEB, azcuDestinos_(nombre, true), true); }catch(e){}
 }
 function azcuChat(pin, mensajes, ctx){
   var t0 = Date.now();
@@ -994,7 +994,7 @@ function azcuPush_(titulo, msg, url, dest, estricto){
   }
   throw new Error('OneSignal 401: clave no aceptada ('+k.length+' caracteres, empieza con "'+k.slice(0,8)+'")');
 }
-function azcuProbarPush(){ Logger.log(azcuPush_('AzcuBot 🏠', 'Prueba de aviso: si lo ves, las notificaciones funcionan.')); }
+function azcuProbarPush(){ Logger.log(azcuPush_('Azcu 🏠', 'Prueba de aviso: si lo ves, las notificaciones funcionan.')); }
 var AZCU_TIPOS_ = ['Terreno','Casa','Departamento','PH','Local Comercial','Oficina Comercial','Garage - Cochera','Depósito'];
 var AZCU_ORIENT_ = ['Norte','Sur','Este','Oeste','Noroeste','Noreste','Sudeste','Sudoeste'];
 function azcuFaltantesForm_(id){
@@ -1136,7 +1136,7 @@ function azcuAvisoCambios(){
   azcuEstadosSet_(nuevo);
   av.forEach(function(x){ azcuLog_(/Nueva/.test(x[0]) ? 'nueva' : 'etapa', x[0]+': '+x[1], x[1], ''); });
   av.slice(0,5).forEach(function(x){ azcuPush_(x[0], x[1]); });
-  if(av.length>5) azcuPush_('Más cambios de etapa', 'Hubo '+(av.length-5)+' cambios más. Abrí AzcuBot para verlos.');
+  if(av.length>5) azcuPush_('Más cambios de etapa', 'Hubo '+(av.length-5)+' cambios más. Abrí Azcu para verlos.');
 }
 function azcuMarcaVendedor_(quien){
   quien = String(quien||'').trim().slice(0,40);
@@ -1244,7 +1244,7 @@ function azcuResumenSemanal(){
   var top = A.sin_movimiento.slice().sort(function(x,y){ return (y.dias===null?9999:y.dias)-(x.dias===null?9999:x.dias); }).slice(0,5);
   if(top.length) H += '<div style="font-size:13px;color:#4a5264;margin-top:10px"><b>Más tiempo sin movimiento:</b><br>'+top.map(function(x){ return '• '+x.direccion+(x.dias===null?' (sin actividad)':' ('+x.dias+' días)'); }).join('<br>')+'</div>';
   if(A.propuestas_sin_respuesta.length) H += '<div style="font-size:13px;color:#4a5264;margin-top:10px"><b>Propuestas esperando respuesta:</b><br>'+A.propuestas_sin_respuesta.slice(0,5).map(function(x){ return '• '+x.direccion+' · '+x.cliente+' (hace '+x.dias+' días)'; }).join('<br>')+'</div>';
-  H += '<div style="margin-top:22px;font-size:12px;color:#6b7280">Generado automáticamente por AzcuBot.</div></div></div>';
+  H += '<div style="margin-top:22px;font-size:12px;color:#6b7280">Generado automáticamente por Azcu.</div></div></div>';
   var to = PropertiesService.getScriptProperties().getProperty('AZCU_GERENCIA') || Session.getEffectiveUser().getEmail();
   MailApp.sendEmail({to:to, subject:'Resumen semanal de ventas — Azcuénaga', htmlBody:H});
   Logger.log('Resumen enviado a: '+to);
@@ -1409,7 +1409,7 @@ function azcuDiagnostico(){
     if(q.getResponseCode()===200) ok('OpenAI', 'responde'); else no('OpenAI', q.getResponseCode()+' '+q.getContentText().slice(0,120));
   }catch(e){ no('OpenAI', e); }
   try{ var t0 = Date.now(), c2 = azcuChat(P.getProperty('AZCU_PIN')||'', [{role:'user', content:'¿Cómo viene la semana?'}], {nombre:'Diagnóstico'}); ok('Agente completo', Math.round((Date.now()-t0)/1000)+' s · «'+String(c2.texto).slice(0,100)+'…»'); }catch(e){ no('Agente completo', e); }
-  try{ var rp = azcuPush_('AzcuBot ✅', 'Diagnóstico: las notificaciones funcionan.'); ok('Notificación', rp); }catch(e){ no('Notificación', e); }
+  try{ var rp = azcuPush_('Azcu ✅', 'Diagnóstico: las notificaciones funcionan.'); ok('Notificación', rp); }catch(e){ no('Notificación', e); }
   try{ SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento').getLastRow(); ok('Hoja Seguimiento'); }catch(e){ no('Hoja Seguimiento', e); }
   try{ azcuHojaRec_(); ok('Hoja Recordatorios'); }catch(e){ no('Hoja Recordatorios', e); }
   try{ var ag = azcuHerrAgenda_({dias:7}, {nombre:'Diagnóstico'}); ok('Agenda 7 días', ag.items.length+' eventos'); }catch(e){ no('Agenda', e); }

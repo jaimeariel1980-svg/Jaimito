@@ -1,7 +1,7 @@
 {
-  "name": "AzcuBot — Azcuénaga Inmobiliaria",
-  "short_name": "AzcuBot",
-  "description": "Asistente interno de Azcuénaga Inmobiliaria",
+  "name": "Azcu — Azcuénaga Inmobiliaria",
+  "short_name": "Azcu",
+  "description": "Asistente de Azcuénaga Inmobiliaria",
   "lang": "es-AR",
   "start_url": "./",
   "scope": "./",
