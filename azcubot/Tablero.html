@@ -126,6 +126,7 @@ td{padding:7px 8px;border-bottom:1px solid #f1f0ec;vertical-align:top}
     <select id="ftipo" onchange="render()"><option value="">Todos los tipos</option></select>
     <select id="orden" onchange="render()"><option value="urg">Orden: más paradas primero</option><option value="fecha">Orden: + reciente</option><option value="precio">Orden: precio</option></select>
     <button id="editbtn" class="btn s" onclick="toggleEdit()">Modo edición: OFF</button>
+    <button id="vendbtn" class="btn s" onclick="cambiarVend()" title="Con este nombre queda registrado todo lo que hagas: quién cargó, cambió o borró cada cosa"></button>
     <span id="edithint" style="display:none;font-size:12.5px;color:var(--azul);font-weight:600">Arrastrá las tarjetas para cambiar de etapa</span>
   </div>
   <div class="board" id="board"></div>
@@ -811,7 +812,7 @@ function ficha(id){
     p.seg.forEach(s=>{const k=((s.tel&&(''+s.tel).replace(/\D/g,''))||(s.cli||'—').trim().toLowerCase());(byKey[k]=byKey[k]||[]).push(s);});
     seg=Object.keys(byKey).map(function(k){
       const arr=byKey[k];const nombre=(arr.find(s=>s.cli)||{}).cli||'—';const tel=(arr.find(s=>s.tel)||{}).tel||'';
-      const rows=arr.slice().reverse().map(s=>'<tr><td>'+s.fecha+'</td><td><span class="tag">'+s.tipo+'</span></td><td>'+s.res+(s.obs?'<div style="color:var(--gris);font-size:11px;margin-top:2px">'+s.obs+'</div>':'')+'</td><td>'+(s.prox||'—')+(s._row?' <span onclick="editarForm(\''+p.id+'\','+s._row+')" style="cursor:pointer;color:var(--acento);font-size:11px;margin-left:4px">editar</span> <span onclick="borrarInteraccion(\''+p.id+'\','+s._row+')" style="cursor:pointer;color:var(--rojo);font-size:11px">borrar</span>':'')+'</td></tr>').join('');
+      const rows=arr.slice().reverse().map(s=>'<tr><td>'+s.fecha+'</td><td><span class="tag">'+s.tipo+'</span></td><td>'+s.res+(s.obs?'<div style="color:var(--gris);font-size:11px;margin-top:2px">'+s.obs+'</div>':'')+(s.cargo?'<div style="color:var(--gris);font-size:10.5px;margin-top:2px">cargó: '+s.cargo+'</div>':'')+'</td><td>'+(s.prox||'—')+(s._row?' <span onclick="editarForm(\''+p.id+'\','+s._row+')" style="cursor:pointer;color:var(--acento);font-size:11px;margin-left:4px">editar</span> <span onclick="borrarInteraccion(\''+p.id+'\','+s._row+')" style="cursor:pointer;color:var(--rojo);font-size:11px">borrar</span>':'')+'</td></tr>').join('');
       return '<div style="margin-bottom:14px;border:1px solid var(--linea);border-radius:10px;padding:10px 12px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-weight:700;font-size:13.5px">'+nombre+'</span><span style="color:var(--gris);font-weight:400;font-size:12px">· '+arr.length+' interacción(es)</span>'+(tel?' · <a href="https://wa.me/'+wa(tel)+'" target="_blank">WhatsApp</a>':'')+'<button class="btn s" style="margin-left:auto;padding:3px 9px;font-size:11px" onclick="cargarForm(\''+p.id+'\',\''+encodeURIComponent(nombre)+'\',\''+encodeURIComponent(tel)+'\')">+ interacción</button></div><table><tr><th>Fecha</th><th>Vía</th><th>Resultado</th><th>Próx. paso</th></tr>'+rows+'</table></div>';
     }).join('');
   } else seg='<div class="empty">Sin consultas ni visitas registradas todavía.</div>';
@@ -950,9 +951,11 @@ function cargarForm(id, nombre, tel){
   '<div class="dlbtns"><button class="btn g" id="cf_btn" onclick="guardarConsulta(\''+id+'\')">Registrar</button><button class="btn s" onclick="closeDL()">Cancelar</button></div></div>';
   document.getElementById('ov2').classList.add('on');
 }
+setTimeout(function(){_pintaVend();var n='';try{n=(localStorage.getItem('azcu_nombre')||'').trim();}catch(e){}if(!n)setTimeout(_yo,1500);},400);
 function _vendNombres(){var s={};try{var n=(localStorage.getItem('azcu_nombre')||'').trim();if(n)s[n]=1;}catch(e){}(DATA||[]).forEach(x=>{if(x.vendedor)s[x.vendedor]=1;});return Object.keys(s);}
-function _pintaVend(){var b=document.getElementById('vendbtn');if(!b)return;var n='';try{n=(localStorage.getItem('azcu_nombre')||'').trim();}catch(e){}b.textContent=n?('👤 '+n):'👤 Poné tu nombre';}
-function cambiarVend(){var n='';try{n=(localStorage.getItem('azcu_nombre')||'').trim();}catch(e){}var v=prompt('Tu nombre (queda como vendedor en lo que cargues; usá el mismo en Azcu):',n);if(v===null)return;v=v.trim();try{localStorage.setItem('azcu_nombre',v);}catch(e){}_pintaVend();}
+function _pintaVend(){var b=document.getElementById('vendbtn');if(!b)return;var n='';try{n=(localStorage.getItem('azcu_nombre')||'').trim();}catch(e){}b.textContent=n?('👤 Usuario: '+n):'👤 ¿Quién sos?';}
+function cambiarVend(){var n='';try{n=(localStorage.getItem('azcu_nombre')||'').trim();}catch(e){}var v=prompt('Tu nombre: queda registrado en todo lo que hagas (quién cargó, cambió o borró cada cosa). Usá el mismo en Azcu:',n);if(v===null)return;v=v.trim();try{localStorage.setItem('azcu_nombre',v);}catch(e){}_pintaVend();}
+function _yo(){var n='';try{n=(localStorage.getItem('azcu_nombre')||'').trim();}catch(e){}if(!n){try{n=(prompt('¿Quién sos? Tu nombre queda registrado en todo lo que hagas (quién cargó o cambió cada cosa). Usá el mismo en Azcu.')||'').trim();if(n)localStorage.setItem('azcu_nombre',n);}catch(e){}_pintaVend();}return n;}
 function _vend(id){
   var pv=(DATA||[]).find(x=>x.id===id); if(pv&&pv.vendedor) return pv.vendedor;
   var n=''; try{ n=(localStorage.getItem('azcu_nombre')||'').trim(); }catch(e){}
@@ -962,11 +965,11 @@ function _vend(id){
 function guardarConsulta(id){
   const g=x=>document.getElementById(x)?document.getElementById(x).value:'';
   const datos={ fecha:_fechaAr(g('cf_fecha')), via:g('cf_via'), interesado:g('cf_cli'),
-    tel:g('cf_tel'), resultado:g('cf_res'), prox:g('cf_prox'), obs:g('cf_obs'), vendedor:_vend(id) };
+    tel:g('cf_tel'), resultado:g('cf_res'), prox:g('cf_prox'), obs:g('cf_obs'), vendedor:_vend(id), cargo:_yo() };
   if(!datos.interesado){ alert('Poné al menos el nombre del interesado'); return; }
   const btn=document.getElementById('cf_btn'); if(btn){btn.textContent='Guardando…';btn.disabled=true;}
   google.script.run
-    .withSuccessHandler(function(){ if(/Propuesta aceptada/i.test(datos.resultado)){google.script.run.guardarPropiedad(id,{etapa:'Reserva'});} closeDL(); recargar(id); })
+    .withSuccessHandler(function(){ if(/Propuesta aceptada/i.test(datos.resultado)){google.script.run.guardarPropiedad(id,{etapa:'Reserva',quien:_yo()});} closeDL(); recargar(id); })
     .withFailureHandler(function(e){ alert('Error: '+(e&&e.message?e.message:e)); if(btn){btn.textContent='Registrar';btn.disabled=false;} })
     .registrarInteraccion(id, datos);
 }
@@ -1004,7 +1007,7 @@ function subirDoc(id,doc){
           ficha(id);
         })
         .withFailureHandler(function(e){ _subOv(''); alert('Error al subir: '+(e&&e.message?e.message:e));})
-        .subirDocumento(id,doc,b64,nombre,tipo);
+        .subirDocumento(id,doc,b64,nombre,tipo,_yo());
     });
   };
   inp.click();
@@ -1016,7 +1019,7 @@ function setP(id,field,val){const p=DATA.find(x=>x.id===id);if(p)p[field]=val;}
 function guardar(id){
   const p=DATA.find(x=>x.id===id); if(!p)return;
   const sm=SIM[id]||{};
-  const cambios={precio:p.precio,tipo:p.tipo,obs:p.obs,etapa:p.etapa,origen:p.origen,colega:p.colega,colegaTel:p.colegaTel,comision:p.comision,vendedor:p.vendedor,pct:p.pct,papeles:p.papeles,motivo:p.motivo,prop:sm.prop,tel:sm.tel,mail:sm.mail,dni:sm.dni,dom:sm.dom,tokko:sm.tokko};
+  const cambios={precio:p.precio,tipo:p.tipo,obs:p.obs,etapa:p.etapa,origen:p.origen,colega:p.colega,colegaTel:p.colegaTel,comision:p.comision,vendedor:p.vendedor,pct:p.pct,papeles:p.papeles,motivo:p.motivo,prop:sm.prop,tel:sm.tel,mail:sm.mail,dni:sm.dni,dom:sm.dom,tokko:sm.tokko,quien:_yo()};
   const btn=event&&event.target; if(btn){btn.textContent='Guardando…';btn.disabled=true;}
   google.script.run
     .withSuccessHandler(function(){ if(btn){btn.textContent='✓ Guardado';setTimeout(function(){btn.textContent='Guardar cambios';btn.disabled=false;},1500);} })
@@ -1029,7 +1032,7 @@ function setPct(id,v){const p=DATA.find(x=>x.id===id);if(p){p.pct=v===''?null:Ma
 function changeEtapa(id,et){const p=DATA.find(x=>x.id===id);if(p){p.etapa=et;p.estado=ET2EST[et]||p.estado;}ficha(id);}
 let DRAG=null;
 function drag(e,id){if(!EDIT)return;DRAG=id;e.dataTransfer.effectAllowed='move';}
-function drop(e,et){e.preventDefault();document.querySelectorAll('.col.over').forEach(c=>c.classList.remove('over'));if(!DRAG)return;const p=DATA.find(x=>x.id===DRAG);if(p){p.etapa=et;p.estado=ET2EST[et]||p.estado;google.script.run.guardarPropiedad(DRAG,{etapa:et});}DRAG=null;render();}
+function drop(e,et){e.preventDefault();document.querySelectorAll('.col.over').forEach(c=>c.classList.remove('over'));if(!DRAG)return;const p=DATA.find(x=>x.id===DRAG);if(p){p.etapa=et;p.estado=ET2EST[et]||p.estado;google.script.run.guardarPropiedad(DRAG,{etapa:et,quien:_yo()});}DRAG=null;render();}
 function descargar(){window.print();}
 function editarForm(id, row){
   const p=DATA.find(x=>x.id===id); const s=(p.seg||[]).find(x=>x._row===row); if(!s)return;
@@ -1051,9 +1054,9 @@ function editarForm(id, row){
 }
 function guardarEdicion(id, row){
   const g=x=>document.getElementById(x)?document.getElementById(x).value:'';
-  const datos={ fecha:_fechaAr(g('ef_fecha')), via:g('ef_via'), interesado:g('ef_cli'), tel:g('ef_tel'), resultado:g('ef_res'), prox:g('ef_prox'), obs:g('ef_obs') };
+  const datos={ fecha:_fechaAr(g('ef_fecha')), via:g('ef_via'), interesado:g('ef_cli'), tel:g('ef_tel'), resultado:g('ef_res'), prox:g('ef_prox'), obs:g('ef_obs'), cargo:_yo() };
   const btn=document.getElementById('ef_btn'); if(btn){btn.textContent='Guardando…';btn.disabled=true;}
-  google.script.run.withSuccessHandler(function(){ if(/Propuesta aceptada/i.test(datos.resultado)){google.script.run.guardarPropiedad(id,{etapa:'Reserva'});} closeDL(); recargar(id); }).withFailureHandler(function(e){ alert('Error: '+(e&&e.message?e.message:e)); if(btn){btn.textContent='Guardar cambios';btn.disabled=false;} }).editarInteraccion(row, datos);
+  google.script.run.withSuccessHandler(function(){ if(/Propuesta aceptada/i.test(datos.resultado)){google.script.run.guardarPropiedad(id,{etapa:'Reserva',quien:_yo()});} closeDL(); recargar(id); }).withFailureHandler(function(e){ alert('Error: '+(e&&e.message?e.message:e)); if(btn){btn.textContent='Guardar cambios';btn.disabled=false;} }).editarInteraccion(row, datos);
 }
 function enviarWA(msg){window.open('https://api.whatsapp.com/send?text='+encodeURIComponent(msg),'_blank');}
 function _mapsUrl(p){return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent([p.dir,p.ciudad||'Rosario','Santa Fe','Argentina'].join(', '));}
@@ -1098,16 +1101,16 @@ function borrarDoc(id,doc){
       ficha(id);
     })
     .withFailureHandler(function(e){alert('Error: '+(e&&e.message?e.message:e));})
-    .borrarDocumento(id,doc);
+    .borrarDocumento(id,doc,_yo());
 }
 function borrarInteraccion(id,row){
   if(!confirm('¿Borrar esta interacción? No se puede deshacer.'))return;
-  google.script.run.withSuccessHandler(function(){recargar(id);}).withFailureHandler(function(e){alert('Error: '+(e&&e.message?e.message:e));}).eliminarInteraccion(row);
+  google.script.run.withSuccessHandler(function(){recargar(id);}).withFailureHandler(function(e){alert('Error: '+(e&&e.message?e.message:e));}).eliminarInteraccion(row,_yo());
 }
 function eliminarProp(id){
   const p=DATA.find(x=>x.id===id);
   if(!confirm('¿Eliminar la propiedad '+(p?p.dir:id)+'? Se borra del maestro y no se puede deshacer.'))return;
-  google.script.run.withSuccessHandler(function(){close_();recargar();}).withFailureHandler(function(e){alert('Error: '+(e&&e.message?e.message:e));}).eliminarPropiedad(id);
+  google.script.run.withSuccessHandler(function(){close_();recargar();}).withFailureHandler(function(e){alert('Error: '+(e&&e.message?e.message:e));}).eliminarPropiedad(id,_yo());
 }
 function enviarEncuesta(id){
   google.script.run.withSuccessHandler(function(url){
@@ -1153,7 +1156,7 @@ function agendarForm(id){
 function guardarAgenda(id,dirEnc){
   var g=x=>document.getElementById(x)?document.getElementById(x).value:'';
   var cuando=g('ag_fecha'); if(!cuando){alert('Poné la fecha y hora');return;}
-  var datos={cuando:new Date(cuando).toISOString(),interesado:g('ag_cli'),tel:g('ag_tel'),mail:g('ag_mail')||'',obs:g('ag_obs'),dir:decodeURIComponent(dirEnc),vendedor:_vend(id)};
+  var datos={cuando:new Date(cuando).toISOString(),interesado:g('ag_cli'),tel:g('ag_tel'),mail:g('ag_mail')||'',obs:g('ag_obs'),dir:decodeURIComponent(dirEnc),vendedor:_vend(id),quien:_yo()};
   var btn=document.getElementById('ag_btn'); if(btn){btn.textContent='Agendando…';btn.disabled=true;}
   google.script.run
     .withSuccessHandler(function(){closeDL();recargar(id);})

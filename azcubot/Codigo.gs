@@ -1430,13 +1430,13 @@ function leerSeguimiento_(){
   if(!seg || seg.getLastRow()<2)return map;
   var d=seg.getRange(1,1,seg.getLastRow(),seg.getLastColumn()).getValues(), h=d[0];
   function c(n){for(var x=0;x<h.length;x++){if((''+h[x]).toLowerCase().indexOf(n.toLowerCase())>-1)return x;}return -1;}
-  var cId=c('Código'), cF=c('Fecha'), cV=c('Vía'), cCli=c('Interesado'), cTel=c('Tel'), cRes=c('Resultado'), cProx=c('Próximo'), cObs=c('Observ'), cFProx=c('próximo contacto'), cVend=c('Vendedor');
+  var cId=c('Código'), cF=c('Fecha'), cV=c('Vía'), cCli=c('Interesado'), cTel=c('Tel'), cRes=c('Resultado'), cProx=c('Próximo'), cObs=c('Observ'), cFProx=c('próximo contacto'), cVend=c('Vendedor'), cCargo=c('Cargó');
   for(var r=1;r<d.length;r++){
     var id=(''+d[r][cId]).trim(); if(!id)continue;
     if(!map[id])map[id]=[];
     var f=d[r][cF];
     map[id].push({ _row:(r+1), fechaProx:cFProx>-1?(''+d[r][cFProx]):'', fecha:(f&&f.getMonth!==undefined)?Utilities.formatDate(f,'GMT-3','dd/MM/yyyy'):(''+f), _d:_pdias_(f),
-      tipo:(''+d[r][cV])||'', cli:(''+d[r][cCli])||'', tel:cTel>-1?(''+d[r][cTel]):'', res:(''+d[r][cRes])||'', prox:cProx>-1?(''+d[r][cProx]):'', obs:cObs>-1?(''+d[r][cObs]):'', vend:cVend>-1?(''+d[r][cVend]).trim():'' });
+      tipo:(''+d[r][cV])||'', cli:(''+d[r][cCli])||'', tel:cTel>-1?(''+d[r][cTel]):'', res:(''+d[r][cRes])||'', prox:cProx>-1?(''+d[r][cProx]):'', obs:cObs>-1?(''+d[r][cObs]):'', vend:cVend>-1?(''+d[r][cVend]).trim():'', cargo:cCargo>-1?(''+d[r][cCargo]).trim():'' });
   }
   return map;
 }
@@ -1495,7 +1495,7 @@ function getDatos(){
     var vis=seg.filter(function(s){return /visita/i.test(s.tipo)||/visitó|oferta/i.test(s.res);}).length;
     var dias=null;
     seg.forEach(function(s){ if(s._d){ var dd=Math.floor((hoy-s._d)/86400000); if(dias===null||dd<dias)dias=dd; } });
-    var segOut=seg.map(function(s){return {_row:s._row,fecha:s.fecha,tipo:s.tipo,cli:s.cli,tel:s.tel,res:s.res,prox:s.prox,obs:s.obs,fechaProx:s.fechaProx,vend:s.vend||''};});
+    var segOut=seg.map(function(s){return {_row:s._row,fecha:s.fecha,tipo:s.tipo,cli:s.cli,tel:s.tel,res:s.res,prox:s.prox,obs:s.obs,fechaProx:s.fechaProx,vend:s.vend||'',cargo:s.cargo||''};});
     out.push({
       id:id, dir:(calle+' '+num).trim(), ciudad:row[c('Ciudad')]||'', tipo:row[c('Tipo de propiedad')]||'',
       etapa:row[c('Etapa')]||'Publicada', estadoCarga:row[c('Estado de la propiedad')]||'',
@@ -1736,22 +1736,38 @@ function guardarPropiedad(codigo, cambios){
   var fila=_filaPorCodigo_(mae, codigo);
   if(fila<0)throw new Error('No encontré la propiedad '+codigo);
   var head=mae.getRange(1,1,1,mae.getLastColumn()).getValues()[0];
+  var quien=String((cambios&&(cambios.quien||cambios.cargo))||'').trim().slice(0,40), difs=[], etapaDe='', etapaA='';
+  var ETQ={precio:'Precio',tipo:'Tipo',obs:'Observaciones',tokko:'URL de ficha',origen:'Origen',colega:'Colega',colegaTel:'Contacto colega',comision:'Comisión',pct:'% aviso',vendedor:'Vendedor',motivo:'Motivo de suspensión',prop:'Propietario',tel:'Tel. propietario',mail:'Mail propietario',dni:'DNI propietario',dom:'Domicilio propietario'};
+  function leer(col){ var i=head.indexOf(col); return i>-1 ? String(mae.getRange(fila,i+1).getValue()==null?'':mae.getRange(fila,i+1).getValue()).trim() : ''; }
   function set(colName, val){ var i=head.indexOf(colName); if(i>-1) mae.getRange(fila,i+1).setValue(val); }
   Object.keys(cambios||{}).forEach(function(campo){
     if(campo==='papeles'){
       var pap=cambios.papeles||{};
-      Object.keys(pap).forEach(function(doc){ set('Doc: '+doc, pap[doc]?'Cargado':'Pendiente'); });
+      Object.keys(pap).forEach(function(doc){
+        var antes=leer('Doc: '+doc), antesOk=!!antes && !/^(pendiente|falta|no|—|-)$/i.test(antes);
+        if(!!pap[doc]!==antesOk) difs.push('«'+doc+'» '+(pap[doc]?'marcado como cargado':'marcado como pendiente'));
+        set('Doc: '+doc, pap[doc]?'Cargado':'Pendiente');
+      });
     } else if(campo==='etapa'){
       var et=cambios.etapa==='Publicadas'?'Publicada':cambios.etapa;
+      var ea=leer('Etapa')||'Publicada';
+      if(ea!==et){ difs.push('Etapa: '+ea+' → '+et); etapaDe=ea; etapaA=et; }
       set('Etapa', et);
     } else if(MAP_CAMPOS[campo]){
-      set(MAP_CAMPOS[campo], cambios[campo]);
+      var col=MAP_CAMPOS[campo], av=leer(col), nv=(cambios[campo]==null?'':String(cambios[campo])).trim();
+      if(av.replace(/\s+/g,' ')!==nv.replace(/\s+/g,' ') && ETQ[campo] && !(av==='' && (nv==='' || (campo==='origen' && nv==='Propia')))) difs.push(ETQ[campo]+': '+(av||'—')+' → '+(nv||'—'));
+      set(col, cambios[campo]);
     }
   });
   set('Última actualización', new Date());
+  var dir=_dirDe_(mae,fila,head);
+  if(difs.length) _audit_(etapaA?'etapa':'campos', (etapaA?'🔶 ':'✏️ ')+difs.join('; ').slice(0,200), dir, quien);
+  if(etapaA && !(typeof AZCU_NOAUDIT_!=='undefined' && AZCU_NOAUDIT_)){ try{ if(typeof azcuNotificarEtapa_==='function') azcuNotificarEtapa_(codigo, dir, etapaDe, etapaA, quien); }catch(e){} }
   try{ if(typeof azcuLimpiarCache_==='function') azcuLimpiarCache_(); }catch(e){}
   return {ok:true};
 }
+function _audit_(tipo, texto, dir, quien){ try{ if(typeof azcuAudit_==='function') azcuAudit_(tipo, texto, dir, quien); }catch(e){} }
+function _dirDe_(mae, fila, head){ try{ return (String(mae.getRange(fila, head.indexOf('Calle')+1).getValue())+' '+String(mae.getRange(fila, head.indexOf('Número')+1).getValue())).trim(); }catch(e){ return ''; } }
 function _invalidaNovedades_(){ try{ var c=CacheService.getScriptCache(); c.remove('azmov_90'); c.remove('azmov_30'); }catch(e){} }
 function registrarInteraccion(codigo, datos){
   var ss=SpreadsheetApp.openById(MAESTRO_ID);
@@ -1780,8 +1796,9 @@ function registrarInteraccion(codigo, datos){
   }
   seg.appendRow([
     codigo, fecha, datos.via||'', datos.interesado||'', datos.tel||'',
-    datos.resultado||'', datos.prox||'', fechaProx, datos.obs||'', datos.vendedor||''
+    datos.resultado||'', datos.prox||'', fechaProx, datos.obs||'', datos.vendedor||'', datos.cargo||''
   ]);
+  try{ if(!String(seg.getRange(1,11).getValue()).trim()) seg.getRange(1,11).setValue('Cargó'); }catch(e){}
   _invalidaNovedades_();
   return {ok:true};
 }
@@ -1794,20 +1811,22 @@ function editarInteraccion(filaSeg, datos){
   set('Fecha',datos.fecha); set('Vía',datos.via); set('Interesado',datos.interesado);
   set('Teléfono',datos.tel); set('Resultado',datos.resultado); set('Próximo paso',datos.prox);
   set('Observaciones',datos.obs);
+  try{ var rowE=seg.getRange(filaSeg,1,1,Math.max(seg.getLastColumn(),4)).getValues()[0]; _audit_('campos','✏️ Editó la interacción de '+(datos.interesado||rowE[3]||'—')+' ('+(datos.resultado||rowE[5]||'')+')', (typeof azcuMapaDirs_==='function'?(azcuMapaDirs_()[String(rowE[0]).trim()]||''):''), datos.cargo||datos.quien||''); }catch(e){}
   _invalidaNovedades_();
   return {ok:true};
 }
-function eliminarPropiedad(codigo){
+function eliminarPropiedad(codigo, quien){
   var mae=hojaMaestra_();
   var fila=_filaPorCodigo_(mae, codigo);
   if(fila<0)throw new Error('No encontré la propiedad '+codigo);
+  try{ var hE=mae.getRange(1,1,1,mae.getLastColumn()).getValues()[0]; var dE=_dirDe_(mae,fila,hE); _audit_('elimprop','🗑 Eliminó la propiedad '+(dE||codigo), dE, quien||''); }catch(e){}
   mae.deleteRow(fila);
   return {ok:true};
 }
 function testGuardar(){
   Logger.log(JSON.stringify(guardarPropiedad('MIG-P001', {obs:'prueba desde código'})));
 }
-function subirDocumento(codigo, docNombre, base64, filename, mime){
+function subirDocumento(codigo, docNombre, base64, filename, mime, quien){
   var mae=hojaMaestra_();
   var fila=_filaPorCodigo_(mae, codigo);
   if(fila<0)throw new Error('No encontré la propiedad '+codigo);
@@ -1864,10 +1883,11 @@ function subirDocumento(codigo, docNombre, base64, filename, mime){
     }
   }
 
+  _audit_('doc','📄 Subió «'+docNombre+'»', _dirDe_(mae,fila,head), quien||'');
   return {ok:true, url:archivo.getUrl()};
 }
 
-function borrarDocumento(codigo, docNombre){
+function borrarDocumento(codigo, docNombre, quien){
   var mae=hojaMaestra_();
   var fila=_filaPorCodigo_(mae, codigo);
   if(fila<0)throw new Error('No encontré la propiedad '+codigo);
@@ -1878,6 +1898,7 @@ function borrarDocumento(codigo, docNombre){
   var m=val.match(/[-\w]{25,}/);
   if(m){ try{ DriveApp.getFileById(m[0]).setTrashed(true); }catch(e){} }
   mae.getRange(fila,i+1).setValue('Pendiente');
+  _audit_('borrardoc','📄 Borró el documento «'+docNombre+'»', _dirDe_(mae,fila,head), quien||'');
   return {ok:true};
 }
 function testSubir(){
@@ -2035,15 +2056,17 @@ function agendarVisita(codigo, datos){
     resultado: 'Visita agendada',
     prox: 'Visita '+Utilities.formatDate(ini,'GMT-3','dd/MM/yyyy HH:mm'),
     obs: datos.obs||'',
-    vendedor: datos.vendedor||''
+    vendedor: datos.vendedor||'',
+    cargo: datos.quien||datos.cargo||''
   });
   return {ok:true, eventId:ev.getId()};
 }
 
-function eliminarInteraccion(filaSeg){
+function eliminarInteraccion(filaSeg, quien){
   var ss=SpreadsheetApp.openById(MAESTRO_ID);
   var seg=ss.getSheetByName('Seguimiento');
   if(!seg || filaSeg<2)throw new Error('Fila inválida');
+  try{ var rowD=seg.getRange(filaSeg,1,1,Math.max(seg.getLastColumn(),6)).getValues()[0]; _audit_('elimint','🗑 Eliminó la interacción de '+(rowD[3]||'—')+' ('+(rowD[2]||'')+', '+(rowD[5]||'')+')', (typeof azcuMapaDirs_==='function'?(azcuMapaDirs_()[String(rowD[0]).trim()]||''):''), quien||''); }catch(e){}
   seg.deleteRow(filaSeg);
   _invalidaNovedades_();
   return {ok:true};
@@ -2057,7 +2080,9 @@ function registrarPropuesta(codigo, datos){
     tel: datos.tel||'',
     resultado: 'Hizo propuesta',
     prox: 'Responder propuesta',
-    obs: 'Propuesta: '+(datos.monto||'') + (datos.obs?(' — '+datos.obs):'')
+    obs: 'Propuesta: '+(datos.monto||'') + (datos.obs?(' — '+datos.obs):''),
+    vendedor: datos.vendedor||'',
+    cargo: datos.quien||datos.cargo||''
   });
   return {ok:true};
 }

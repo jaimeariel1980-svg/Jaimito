@@ -783,9 +783,23 @@ function azcuSegVerif_(fila, id, huella){
   var r = seg.getRange(fila,1,1,10).getValues()[0];
   if(String(r[0]).trim()!==String(id).trim() || String(r[3]).trim()!==String(huella||'').trim()) throw new Error('El historial cambió. Pedí la ficha de nuevo y repetí.');
 }
-var AZCU_LOGT_ = {etapa:'🔶', campos:'✏️', doc:'📄', borrardoc:'📄', adjuntar:'📎', aviso:'📣', completar:'📝', agendar:'📅', reporte:'✉️', elimprop:'🗑', nueva:'🆕', avisopersona:'📣'};
+var AZCU_NOAUDIT_ = false;
+function azcuAudit_(tipo, texto, dir, quien){ if(AZCU_NOAUDIT_) return; azcuLog_(tipo, texto, dir, quien); }
+function azcuNotificarEtapa_(id, dir, de, a, quien){
+  try{
+    var c = AZCU_COD_[a] || 'x', m = azcuEstadosGet_();
+    if(m){ m[String(id).trim().replace(/[;=]/g,'')] = c; azcuEstadosSet_(m); }
+    var q = String(quien||'').trim() || 'Alguien';
+    var t = c==='r' ? '🔶 '+q+' pasó a RESERVA' : c==='v' ? '✅ '+q+' marcó como VENDIDA' : '🔁 '+q+' cambió la etapa';
+    azcuPush_(t, dir+(c==='r'||c==='v' ? '' : ' → '+a), AZCU_WEB+'?go=novedades');
+  }catch(e){}
+}
+var AZCU_LOGT_ = {elimint:'🗑', etapa:'🔶', campos:'✏️', doc:'📄', borrardoc:'📄', adjuntar:'📎', aviso:'📣', completar:'📝', agendar:'📅', reporte:'✉️', elimprop:'🗑', nueva:'🆕', avisopersona:'📣'};
 function azcuEjecutar(pin, accion){
-  var r = azcuEjecutar_(pin, accion), t = accion && accion.tipo;
+  var r, t = accion && accion.tipo;
+  AZCU_NOAUDIT_ = true;
+  try{ r = azcuEjecutar_(pin, accion); } finally { AZCU_NOAUDIT_ = false; }
+  if(t==='etapa' && accion.datos){ var dq = accion.datos; azcuNotificarEtapa_(dq.id, dq.dir||'', '', dq.etapa, accion.quien); }
   if(AZCU_LOGT_[t]){ var d = accion.datos || {}; azcuLog_(t, t==='aviso' ? '📣 Aviso al equipo: '+(d.mensaje||'') : (r && r.mensaje || ''), d.dir || '', accion.quien); }
   return r;
 }
@@ -820,20 +834,20 @@ function azcuEjecutar_(pin, accion){
   azcuLimpiarCache_();
   if(tipo==='cargar'){
     if(AZCU_VIAS.indexOf(d.via)<0 || AZCU_RESULTADOS.indexOf(d.resultado)<0) throw new Error('Datos inválidos');
-    registrarInteraccion(p.id, {fecha:hoy, via:d.via, interesado:d.interesado, tel:d.tel, resultado:d.resultado, prox:d.prox, obs:d.obs, vendedor:(p.vendedor||quien)});
+    registrarInteraccion(p.id, {fecha:hoy, via:d.via, interesado:d.interesado, tel:d.tel, resultado:d.resultado, prox:d.prox, obs:d.obs, vendedor:(p.vendedor||quien), cargo:quien});
     return {ok:true, mensaje:'Listo, quedó cargado en el historial de '+p.dir+'.'};
   }
   if(tipo==='agendar'){
     var ini = new Date(d.fecha+'T'+d.hora+':00-03:00');
     if(isNaN(ini.getTime())) throw new Error('Fecha u hora inválidas');
     agendarVisita(p.id, {cuando:ini.toISOString(), interesado:d.interesado, tel:d.tel, mail:d.mail, obs:d.obs, dir:p.dir});
-    azcuMarcaVendedor_(p.vendedor||quien);
+    azcuMarcaVendedor_(p.vendedor||quien, quien);
     return {ok:true, mensaje:'Visita agendada en Calendar para el '+d.fecha.split('-').reverse().join('/')+' a las '+d.hora+'.'};
   }
   if(tipo==='propuesta'){
     if(!d.cliente || !d.monto) throw new Error('Faltan datos');
     registrarPropuesta(p.id, {fecha:hoy, cliente:d.cliente, tel:d.tel, monto:d.monto, obs:d.obs});
-    azcuMarcaVendedor_(p.vendedor||quien);
+    azcuMarcaVendedor_(p.vendedor||quien, quien);
     return {ok:true, mensaje:'Propuesta registrada en '+p.dir+'.'};
   }
   if(tipo==='etapa'){
@@ -1137,7 +1151,7 @@ function azcuMovimientos_(dias){
     for(i=0;i<v.length;i++){
       var n = azcuNum_(v[i][1]); if(!n) continue;
       var d = azcuDif_(hn, n); if(d<0 || d>=dias) continue;
-      var via = String(v[i][2]).trim(), cli = String(v[i][3]).trim(), res = String(v[i][5]).trim(), ve = String(v[i][9]||'').trim(), ic = '📞', t = 'Consulta por '+via;
+      var via = String(v[i][2]).trim(), cli = String(v[i][3]).trim(), res = String(v[i][5]).trim(), ve = String(v[i][10]||v[i][9]||'').trim(), ic = '📞', t = 'Consulta por '+via;
       if(res==='Visita agendada'){ ic = '📅'; t = 'Visita agendada'; }
       else if(via==='Visita'){ ic = '🏠'; t = 'Visita realizada'; }
       else if(/propuesta|oferta/i.test(res)){ ic = '💬'; t = res; }
@@ -1206,12 +1220,12 @@ function azcuAvisoCambios(){
   av.slice(0,5).forEach(function(x){ azcuPush_(x[0], x[1], AZCU_WEB+'?go=novedades'); });
   if(av.length>5) azcuPush_('Más cambios de etapa', 'Hubo '+(av.length-5)+' cambios más. Abrí Azcu para verlos.', AZCU_WEB+'?go=novedades');
 }
-function azcuMarcaVendedor_(quien){
-  quien = String(quien||'').trim().slice(0,40);
-  if(!quien) return;
+function azcuMarcaVendedor_(vend, cargo){
+  vend = String(vend||'').trim().slice(0,40); cargo = String(cargo||'').trim().slice(0,40);
   try{
     var seg = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento'), n = seg.getLastRow();
-    if(n>1 && !String(seg.getRange(n,10).getValue()).trim()) seg.getRange(n,10).setValue(quien);
+    if(n>1 && vend && !String(seg.getRange(n,10).getValue()).trim()) seg.getRange(n,10).setValue(vend);
+    if(n>1 && cargo && !String(seg.getRange(n,11).getValue()).trim()){ seg.getRange(n,11).setValue(cargo); if(!String(seg.getRange(1,11).getValue()).trim()) seg.getRange(1,11).setValue('Cargó'); }
   }catch(e){}
 }
 
@@ -1633,7 +1647,7 @@ function azcuHerrUltimas_(a, ctx){
     var num = azcuNum_(v[i][1]); if(!num || num>azcuHoy_() || !String(v[i][0]).trim()) continue;
     if(a.id && String(v[i][0]).trim()!==String(a.id).trim()) continue;
     var ve = String(v[i][9]||'').trim(), vs = azcuSlug_(ve);
-    rows.push({n:num, r:i+1, fila:i+1, fecha:Utilities.formatDate(new Date(Date.UTC(Math.floor(num/10000), Math.floor(num/100)%100-1, num%100, 12)), 'UTC', 'dd/MM/yyyy'), propiedad:dirs[String(v[i][0]).trim()]||String(v[i][0]), id:String(v[i][0]).trim(), via:String(v[i][2]).trim(), interesado:String(v[i][3]).trim(), resultado:String(v[i][5]).trim(), obs:String(v[i][8]||'').trim().slice(0,160), vendedor:ve, mia:!!vs && (vs===q || vs===q1)});
+    rows.push({n:num, r:i+1, fila:i+1, fecha:Utilities.formatDate(new Date(Date.UTC(Math.floor(num/10000), Math.floor(num/100)%100-1, num%100, 12)), 'UTC', 'dd/MM/yyyy'), propiedad:dirs[String(v[i][0]).trim()]||String(v[i][0]), id:String(v[i][0]).trim(), via:String(v[i][2]).trim(), interesado:String(v[i][3]).trim(), resultado:String(v[i][5]).trim(), obs:String(v[i][8]||'').trim().slice(0,160), vendedor:ve, cargo:String(v[i][10]||'').trim(), mia:!!vs && (vs===q || vs===q1)});
   }
   var aviso = '';
   if(a.solo_mias){
