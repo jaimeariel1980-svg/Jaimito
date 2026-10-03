@@ -696,6 +696,83 @@
     });
   }
   function pushCheck(){ if(!APP || !window.OneSignalDeferred) return; OneSignalDeferred.push(function(OS){ try{ st.pushOn = !!(OS.Notifications.permission && OS.User.PushSubscription.optedIn); if(st.pushOn && st.nombre) OS.login(slug(st.nombre)); render(); }catch(e){} }); }
+  function calcLocal(raw){
+    var s = String(raw||'').toLowerCase().normalize ? String(raw||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') : String(raw||'').toLowerCase();
+    s = s.replace(/[¿?¡!]/g,' ').trim();
+    if(!s || s.length>140) return null;
+    if(/\b\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4}\b/.test(s) || /\d{5,}\s*-\s*\d|\b\d{4}\s+\d{2}-\d{4}\b/.test(s)) return null;
+    var mon = /u\$s|us\$|usd|dolar|dolares|dolar(es)?\b|u\$d/.test(s) ? 'U$S ' : (/\$|peso/.test(s) ? '$ ' : '');
+    s = s.replace(/u\$s|us\$|u\$d|usd|dolares|dolar|pesos|peso|\$/g,' ');
+    s = s.replace(/\b(cuanto|cuantos)\s+(es|son|da|dan|seria|serian|queda|quedan|sale|salen|me da)\b/g,' ').replace(/\b(calcula(me)?|calcular|resultado|cuenta|cuanto|decime|dame|haceme|hace|resolve|resolveme|sumame|restame)\b/g,' ');
+    s = s.replace(/\bla mitad de\b/g,' (1/2) * ').replace(/\bel doble de\b/g,' 2 * ').replace(/\bel triple de\b/g,' 3 * ');
+    s = s.replace(/\bpor ciento\b|\bporciento\b|\bpor cien\b/g,'%').replace(/\bmultiplicado por\b|\bmultiplicado\b|\bveces\b/g,' * ').replace(/\bdividido (por|entre)\b|\bdividido\b|\bentre\b|\bsobre\b/g,' / ').replace(/\belevado a(l)?\b/g,' ^ ');
+    s = s.replace(/\bmas\b/g,' + ').replace(/\bmenos\b/g,' - ').replace(/\bpor\b/g,' * ').replace(/(\d)\s*[x×]\s*(?=\d)/g,'$1 * ').replace(/[×·]/g,'*').replace(/÷/g,'/').replace(/\bmas el\b/g,' + ');
+    s = s.replace(/\b(el|la|los|las|un|una)\b(?=\s*[\d(])/g,' ');
+    s = s.replace(/(\d+(?:\.\d{3})*(?:,\d+)?|\d+(?:\.\d+)?)\s*(millones|millon|mil|k)\b/g, function(_, n, u){
+      var v = /^\d{1,3}(\.\d{3})+(,\d+)?$/.test(n) ? parseFloat(n.replace(/\./g,'').replace(',','.')) : parseFloat(n.replace(',','.'));
+      return ' '+String(Math.round(v*(/^mill/.test(u) ? 1e6 : 1000)))+' ';
+    });
+    s = s.replace(/\bde\b/g,' de ');
+    var toks = [], i = 0, m;
+    while(i < s.length){
+      var ch = s.charAt(i);
+      if(/\s/.test(ch)){ i++; continue; }
+      if((m = s.slice(i).match(/^\d+(?:\.\d{3})*(?:,\d+)?|^\d+(?:\.\d+)?|^,\d+/))){
+        var t = m[0], v;
+        if(/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(t)) v = parseFloat(t.replace(/\./g,'').replace(',','.'));
+        else if(t.indexOf(',')>=0) v = parseFloat(t.replace('.','').replace(',','.'));
+        else v = parseFloat(t);
+        if(isNaN(v)) return null;
+        toks.push({n:v}); i += t.length; continue;
+      }
+      if(/[+\-*\/^()%]/.test(ch)){ toks.push({o:ch}); i++; continue; }
+      if((m = s.slice(i).match(/^de\b/))){ toks.push({o:'de'}); i += 2; continue; }
+      return null;
+    }
+    var nums = toks.filter(function(x){ return x.n!==undefined; }).length;
+    var ops = toks.filter(function(x){ return x.o && x.o!=='(' && x.o!==')'; }).length;
+    if(!nums || !ops || (nums<2 && !toks.some(function(x){ return x.o==='%'; }))) return null;
+    var p = 0;
+    function pk(){ return toks[p]; }
+    function isO(o){ return toks[p] && toks[p].o===o; }
+    function factor(){
+      var neg = false, r;
+      while(isO('-') || isO('+')){ if(toks[p].o==='-') neg = !neg; p++; }
+      if(isO('(')){ p++; r = expr(); if(!isO(')')) throw 1; p++; r = {v:r.v, pct:false}; }
+      else if(pk() && pk().n!==undefined){ r = {v:pk().n, pct:false}; p++; }
+      else throw 1;
+      if(isO('%')){ p++; r = {v:r.v/100, pct:true}; }
+      if(isO('^')){ p++; var e = factor(); r = {v:Math.pow(r.v, e.v), pct:false}; }
+      if(neg) r.v = -r.v;
+      return r;
+    }
+    function term(){
+      var l = factor();
+      for(;;){
+        if(isO('de') && l.pct){ p++; var r0 = factor(); l = {v:l.v*r0.v, pct:false}; }
+        else if(isO('*')){ p++; var r1 = factor(); l = {v:l.v*(r1.pct ? r1.v : r1.v), pct:false}; }
+        else if(isO('/')){ p++; var r2 = factor(); if(r2.v===0) throw 2; l = {v:l.v/r2.v, pct:false}; }
+        else break;
+      }
+      return l;
+    }
+    function expr(){
+      var l = term();
+      while(isO('+') || isO('-')){
+        var op = toks[p].o; p++;
+        var r = term(); var rv = r.pct ? l.v*r.v : r.v;
+        l = {v:op==='+' ? l.v+rv : l.v-rv, pct:false};
+      }
+      return l;
+    }
+    var res;
+    try{ res = expr(); if(p<toks.length) return null; }catch(e){ return e===2 ? {texto:'No se puede dividir por cero.'} : null; }
+    var v = res.v; if(!isFinite(v)) return null;
+    var r2 = Math.round(v*100)/100, neg2 = r2<0, a = Math.abs(r2), ent = String(Math.floor(a)).replace(/\B(?=(\d{3})+(?!\d))/g,'.'), dec = Math.round((a-Math.floor(a))*100);
+    var out = (neg2?'-':'')+mon+ent+(dec ? ','+('0'+dec).slice(-2).replace(/0$/,'') : '');
+    return {texto:'**'+out+'**'};
+  }
+  
   function ask(text, atajo){
     st.menu = false;
     if(st.wz && !atajo){ wzIn(text); return; }
@@ -704,6 +781,7 @@
       var gr = /gracia/i.test(text) ? '¡De nada! Para eso estoy 🙌' : /^(ok|oka|dale|listo|genial|perfecto|bien|joya|barbaro|bárbaro)/i.test(text) ? '¡Genial! Si necesitás algo más, avisame 👍' : '¡Hola'+(st.nombre?' '+st.nombre:'')+'! ¿En qué te doy una mano? Podés pedirme cargar una visita, agendar, ver alertas o consultar una propiedad.';
       st.msgs.push({role:'user', content:text}); st.msgs.push({role:'assistant', content:gr}); save(); render(); return;
     }
+    if(!atajo){ var cr = null; try{ cr = calcLocal(text); }catch(e){} if(cr){ st.msgs.push({role:'user', content:text}); st.msgs.push({role:'assistant', content:cr.texto}); save(); render(); return; } }
     st.msgs.push({role:'user', content:text}); st.busy = true; st.status = ''; save(); render();
     var hist = st.msgs.filter(function(m){ return !m.w; }).map(function(m){ return {role:m.role, content:(m.content||'')+(m.acciones||[]).map(function(a){ return '\n[Tarjeta '+(a.estado||'')+': '+a.resumen+(a.datos&&a.datos.id?' (id '+a.datos.id+')':'')+']'; }).join('')}; }).filter(function(m){ return m.content; });
     call(atajo ? 'azcuAtajo' : 'azcuChat', atajo ? [atajo] : [hist, {nombre:st.nombre||'', fichaId:AZ.ctx||'', visita:st.vis||null}], function(r){
