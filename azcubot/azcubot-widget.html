@@ -701,11 +701,23 @@
     var form = document.createElement('form'); form.method = 'POST'; form.action = window.AZCU_API; form.target = ifr.name; form.style.display = 'none';
     var inp = document.createElement('input'); inp.type = 'hidden'; inp.name = 'payload'; inp.value = JSON.stringify({id:id, fn:fn, args:[st.pin].concat(args)}); form.appendChild(inp);
     function finish(){ done = true; clearTimeout(pollT); if(scr) scr.remove(); setTimeout(function(){ ifr.remove(); form.remove(); }, 300); }
+    var got = false, fbOn = false;
+    function fallback(){
+      if(done || got || fbOn) return; fbOn = true;
+      var pl; try{ pl = btoa(unescape(encodeURIComponent(inp.value))); }catch(e){ return; }
+      if(pl.length > 6500) return;
+      var fcb = 'azbfb'+Math.random().toString(36).slice(2,9), fs;
+      window[fcb] = function(d){ delete window[fcb]; if(fs) fs.remove(); if(done || !d || d.ok===undefined) return; st.status = ''; finish(); if(d.ok) ok(d.data); else onErr(new Error(d.error || 'error')); };
+      fs = document.createElement('script'); fs.src = window.AZCU_API+'?azr='+id+'&azc='+encodeURIComponent(pl)+'&cb='+fcb+'&_='+Date.now();
+      fs.onerror = function(){ delete window[fcb]; fs.remove(); };
+      document.head.appendChild(fs);
+    }
     function poll(){
       if(done) return;
+      if(!got && !fbOn && Date.now()-t0 > 9000) fallback();
       if(Date.now()-t0 > (/^azcu(Chat|Atajo|Voz|Mov|Warm|Agenda)$/.test(fn) ? 100000 : 330000)){ finish(); onErr(new Error('Azcu no recibió respuesta del servidor. Revisá que tengas internet y probá de nuevo. Si pasa siempre en este celular, abrí Azcu desde Chrome.')); return; }
       var cb = 'azbcb'+Math.random().toString(36).slice(2,9);
-      window[cb] = function(d){ delete window[cb]; if(scr) scr.remove(); if(done) return; if(d && d.progress && d.ok===undefined){ if(st.status!==d.progress){ st.status = d.progress; render(); } pollT = setTimeout(poll, 400); } else if(d){ st.status = ''; finish(); if(d.ok) ok(d.data); else onErr(new Error(d.error || 'error')); } else pollT = setTimeout(poll, 450); };
+      window[cb] = function(d){ delete window[cb]; if(scr) scr.remove(); if(done) return; if(d) got = true; if(d && d.progress && d.ok===undefined){ if(st.status!==d.progress){ st.status = d.progress; render(); } pollT = setTimeout(poll, 400); } else if(d){ st.status = ''; finish(); if(d.ok) ok(d.data); else onErr(new Error(d.error || 'error')); } else pollT = setTimeout(poll, 450); };
       scr = document.createElement('script'); scr.src = window.AZCU_API+'?azr='+id+'&cb='+cb+'&_='+Date.now();
       scr.onerror = function(){ delete window[cb]; if(scr) scr.remove(); if(!done) pollT = setTimeout(poll, 2000); };
       document.head.appendChild(scr);

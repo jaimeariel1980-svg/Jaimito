@@ -925,6 +925,14 @@ function azcuGet_(id){
 function azcuApi(e){
   var raw = (e && e.parameter && e.parameter.payload) || (e && e.postData && e.postData.contents) || '{}', req = {}, out;
   try{
+    var pid = String((JSON.parse(raw) || {}).id || '').replace(/[^A-Za-z0-9]/g, '');
+    if(pid && !(e && e.__viaGet)){
+      var cc = CacheService.getScriptCache();
+      if(cc.get('azs_'+pid)) return ContentService.createTextOutput('{"ok":true}').setMimeType(ContentService.MimeType.JSON);
+      cc.put('azs_'+pid, '1', 600);
+    }
+  }catch(e0){}
+  try{
     req = JSON.parse(raw); var a = req.args || [];
     if(req.fn==='azcuChat'){ var cx = a[2] || {}; cx.reqId = String(req.id || '').replace(/[^A-Za-z0-9]/g, ''); out = {ok:true, data:azcuChat(a[0], a[1], cx)}; }
     else if(req.fn==='azcuVoz'){ var cv = a[4] || {}; cv.reqId = String(req.id || '').replace(/[^A-Za-z0-9]/g, ''); out = {ok:true, data:azcuVoz(a[0], a[1], a[2], a[3], cv)}; }
@@ -946,8 +954,17 @@ function azcuApi(e){
   if(id){ azcuPut_(id, out); return ContentService.createTextOutput('{"ok":true}').setMimeType(ContentService.MimeType.JSON); }
   return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
 }
+function azcuViaGet_(id, azc){
+  var c = CacheService.getScriptCache();
+  if(c.get('azs_'+id)) return null;
+  c.put('azs_'+id, '1', 600);
+  var json = Utilities.newBlob(Utilities.base64Decode(String(azc).replace(/ /g, '+'))).getDataAsString('UTF-8');
+  azcuApi({parameter:{payload:json}, __viaGet:true});
+  return azcuGet_(id);
+}
 function azcuPoll(e){
   var cb = String(e.parameter.cb || 'azbcb').replace(/[^A-Za-z0-9_]/g, ''), id = String(e.parameter.azr || '').replace(/[^A-Za-z0-9]/g, ''), s = id ? azcuGet_(id) : null;
+  if(!s && id && e.parameter.azc) s = azcuViaGet_(id, e.parameter.azc);
   if(!s && id) s = azcuGet_(id+'p');
   return ContentService.createTextOutput(cb+'('+(s || 'null')+');').setMimeType(ContentService.MimeType.JAVASCRIPT);
 }
