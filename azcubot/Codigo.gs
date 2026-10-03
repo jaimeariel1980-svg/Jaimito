@@ -970,7 +970,7 @@ function _enviarMailConfirmacionPrecarga(datos) {
 
 /* ── Reporte al propietario por e-mail ── */
 
-function enviarReportePropietario(codigo, logoDataUri, resumenCustom, ownerCustom) {
+function enviarReportePropietario(codigo, logoDataUri, resumenCustom, ownerCustom, quien) {
   var mae = hojaMaestra_();
   var fila = _filaPorCodigo_(mae, codigo);
   if (fila < 0) throw new Error('No encontré la propiedad ' + codigo);
@@ -1044,6 +1044,7 @@ function enviarReportePropietario(codigo, logoDataUri, resumenCustom, ownerCusto
     enviados.push(dest.nombre + ' (' + dest.email + ')');
   });
 
+  if (enviados.length) { try { if (typeof azcuReporteEnviado_ === 'function') azcuReporteEnviado_(codigo, quien || ''); } catch (e) {} }
   return { ok: true, enviados: enviados, sinMail: sinMail };
 }
 

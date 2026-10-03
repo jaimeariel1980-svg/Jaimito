@@ -931,7 +931,7 @@ function enviarReporteMail(id){
       if(btn){btn.disabled=false;btn.textContent='✉ Enviar reporte por mail';}
       alert('Error al enviar: '+(e&&e.message?e.message:e));
     })
-    .enviarReportePropietario(id, LOGO, _repTxt().html, _repTxt().own);
+    .enviarReportePropietario(id, LOGO, _repTxt().html, _repTxt().own, _yo());
 }
 function cargarForm(id, nombre, tel){
   const p=DATA.find(x=>x.id===id);
@@ -1233,9 +1233,9 @@ function _repImg(id,cb){
 function enviarReporte(id){
   _repImg(id,function(b,p){
     var f=new File([b],'Reporte_'+p.id+'.png',{type:'image/png'});
-    if(navigator.canShare&&navigator.canShare({files:[f]})){navigator.share({files:[f],text:'Informe de gestión — '+p.dir}).catch(function(){});return;}
+    if(navigator.canShare&&navigator.canShare({files:[f]})){navigator.share({files:[f],text:'Informe de gestión — '+p.dir}).then(function(){try{google.script.run.marcarReporteEnviado(id,_yo());}catch(e){}}).catch(function(){});return;}
     var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=f.name;document.body.appendChild(a);a.click();a.remove();
-    alert('Se descargó la imagen del reporte. Adjuntala en WhatsApp.');enviarWA('Informe de gestión — '+p.dir);
+    alert('Se descargó la imagen del reporte. Adjuntala en WhatsApp.');enviarWA('Informe de gestión — '+p.dir);try{google.script.run.marcarReporteEnviado(id,_yo());}catch(e){}
   });
 }
 function close_(){document.getElementById('ov').classList.remove('on');}
@@ -2229,7 +2229,7 @@ google.script.run
     else if(a==='attdel'){ st.att.splice(+t.dataset.i, 1); render(); }
     else if(a==='attsave'){ attMsg('guardar en una propiedad'); wzStart('adjex'); }
     else if(a==='copy'){ var cu = t.dataset.u, okc = function(){ t.textContent = '✓ Enlace copiado'; }; try{ navigator.clipboard.writeText(cu).then(okc, function(){ window.prompt('Copiá el enlace:', cu); }); }catch(e){ window.prompt('Copiá el enlace:', cu); } }
-    else if(a==='adjb'){ if(t.dataset.act==='attprop'){ st.pre = t.dataset.id; st.sheet = true; render(); } else if(t.dataset.act==='compl'){ complStart(t.dataset.id); } }
+    else if(a==='adjb'){ if(t.dataset.act==='repok'){ call('azcuReporteEnviado', [t.dataset.id, st.nombre||''], function(){ st.msgs.push({role:'assistant', content:'✅ Anotado: ya está enviado. Te lo vuelvo a recordar en unos días.', w:1}); save(); render(); }, function(err){ st.msgs.push({role:'assistant', content:'No pude anotarlo: '+err, w:1}); render(); }); } else if(t.dataset.act==='attprop'){ st.pre = t.dataset.id; st.sheet = true; render(); } else if(t.dataset.act==='compl'){ complStart(t.dataset.id); } }
     else if(a==='attread'){ attRead(); }
     else if(a==='mic'){ startRec(); }
     else if(a==='recsend'){ stopRec(true); }
@@ -2297,6 +2297,29 @@ google.script.run
       return;
     }
     if(q.get('agenda')){ var rec = q.get('rec'); try{ history.replaceState(null, '', location.pathname); }catch(e){} st.entered = true; st.view = 'agenda'; st.agFrom = null; st.agSel = iso(new Date()); st.agForm = false; st.agNote = ''; setTimeout(function(){ if(rec) call('azcuRecCancelar', [st.nombre||'', rec], function(){ st.agNote = '✅ Aviso confirmado: no te lo vuelvo a repetir.'; render(); agLoad(); }, function(){ agLoad(); }); else agLoad(); }, 700); return; }
+    function waLink(tel, tx){ var d = String(tel||'').replace(/\D/g, ''); if(!d) return 'https://api.whatsapp.com/send?text='+encodeURIComponent(tx); if(d.indexOf('54')!==0) d = '549'+d.replace(/^0/, '').replace(/^15/, ''); return 'https://wa.me/'+d+'?text='+encodeURIComponent(tx); }
+    var guiaIds = q.get('rep') || q.get('res'), guiaTipo = q.get('rep') ? 'rep' : 'res';
+    if(guiaIds){
+      try{ history.replaceState(null, '', location.pathname); }catch(e){}
+      st.entered = true; st.menu = false; st.view = 'chat';
+      guiaIds.split(',').slice(0, 6).forEach(function(gid, k){
+        setTimeout(function(){
+          call('azcuSegGuia', [guiaTipo, decodeURIComponent(gid)], function(g){
+            var adj = [{k:'l', label:'💬 '+(g.para && g.para.tel ? 'Escribirle por WhatsApp'+(g.para.nombre ? ' a '+g.para.nombre.split(/\s+/)[0] : '') : 'Abrir WhatsApp (elegís el contacto)'), url:waLink(g.para && g.para.tel, g.texto)}];
+            var cont;
+            if(g.tipo==='rep'){
+              adj.push({k:'l', label:'📋 Armar el informe con diseño (tablero)', url:(window.AZCU_TABLERO || 'tablero.html')+'?ficha='+encodeURIComponent(g.id)});
+              adj.push({k:'b', label:'✅ Ya se lo mandé', act:'repok', id:g.id});
+              cont = '📊 **Informe al propietario**: toca enviarle a **'+((g.para && g.para.nombre) || 'el propietario')+'** cómo viene **'+g.dir+'**. Te dejo un resumen listo (podés editarlo en WhatsApp), o armá el informe con diseño en el tablero. Cuando lo mandes, tocá «Ya se lo mandé» y dejo de recordártelo.';
+            } else {
+              cont = '🔶 **Reserva sin movimiento**: **'+g.dir+'** lleva '+(g.enReserva!=null ? g.enReserva+' días' : 'tiempo')+' en Reserva'+(g.dias!=null ? ' (último movimiento hace '+g.dias+' d)' : ' sin movimientos')+'. Avisale al comprador'+((g.para && g.para.nombre) ? ' **'+g.para.nombre+'**' : '')+' que estamos trabajando con la documentación para cerrar lo antes posible. Te dejo el mensaje listo; después contame cómo viene y lo cargo (por ejemplo «se pasa a Vendida» o una nota).';
+            }
+            st.msgs.push({role:'assistant', content:cont, w:1, adj:adj}); save(); render();
+          }, function(err){ st.msgs.push({role:'assistant', content:'No pude armar el recordatorio: '+err, w:1}); save(); render(); });
+        }, 900+k*400);
+      });
+      return;
+    }
     var sgId = q.get('seg');
     if(sgId){
       var sci = q.get('ci') || '', stel = (q.get('tel') || '').replace(/\D/g, '');
