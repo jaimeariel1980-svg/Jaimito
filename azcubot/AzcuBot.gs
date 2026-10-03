@@ -931,7 +931,6 @@ function azcuApi(e){
     else if(req.fn==='azcuAgenda') out = {ok:true, data:azcuAgenda(a[0], a[1], a[2], a[3])};
     else if(req.fn==='azcuRecNuevo') out = {ok:true, data:azcuRecNuevo(a[0], a[1], a[2], a[3], a[4])};
     else if(req.fn==='azcuRecCancelar') out = {ok:true, data:azcuRecCancelar(a[0], a[1], a[2])};
-    else if(req.fn==='azcuHoy') out = {ok:true, data:azcuHoy(a[0])};
     else if(req.fn==='azcuMov') out = {ok:true, data:azcuMov(a[0], a[1])};
     else if(req.fn==='azcuAtajo') out = {ok:true, data:azcuAtajo(a[0], a[1])};
     else if(req.fn==='azcuWarm') out = {ok:true, data:azcuWarm(a[0])};
@@ -1091,7 +1090,6 @@ function azcuMovimientos_(dias){
   out.sort(function(a,b){ return b.ms-a.ms; });
   return {items:out.slice(0,5), ahora:Date.now()};
 }
-function azcuHoy(pin){ azcuPin_(pin); var a = azcuHerrAlertas_(); return {v:a.visitas_hoy.length, c:a.seguimientos_para_hoy.length, p:a.propuestas_sin_respuesta.length, d:a.papeles.length}; }
 function azcuMov(pin, dias){ azcuPin_(pin); return azcuMovimientos_(dias); }
 function azcuAvisoDiario(){
   azcuLimpiarCache_();
