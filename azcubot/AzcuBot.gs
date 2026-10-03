@@ -464,7 +464,7 @@ function azcuHerrEncuestas_(a){
   return {total:l.length, encuestas:l.slice(0,30)};
 }
 
-function azcuBase_(){ try{ return ScriptApp.getService().getUrl(); }catch(e){ return AZCU_WEB; } }
+function azcuBase_(){ return AZCU_WEB+'/go.html'; }
 function azcuWa_(num, txt){
   var d = String(num||'').replace(/\D/g,'');
   if(d){ if(d.indexOf('54')!==0) d = '549'+d.replace(/^0/,'').replace(/^15/,''); return 'https://wa.me/'+d+'?text='+encodeURIComponent(txt); }
@@ -922,7 +922,8 @@ function azcuGet_(id){
   for(i=0;i<n;i++){ p = c.get('azr_'+id+'_'+i); if(p===null) return null; s += p; }
   return s;
 }
-var AZCU_TB_ = ['getDatos','guardarPropiedad','registrarInteraccion','editarInteraccion','eliminarInteraccion','eliminarPropiedad','agendarVisita','registrarPropuesta','subirDocumento','borrarDocumento','obtenerEncuesta','enviarReportePropietario','generarInformeTokko','getAppUrl','getEncuestaUrl'];
+var AZCU_PUB_ = ['obtenerDatosOFallar','extraerDatosDNI','extraerDatosPropiedad','extraerDatosEscritura','precargarDatos','guardarEncuesta'];
+var AZCU_TB_ = ['obtenerImagenes','obtenerPropiedades','guardarDocumento','getDatos','guardarPropiedad','registrarInteraccion','editarInteraccion','eliminarInteraccion','eliminarPropiedad','agendarVisita','registrarPropuesta','subirDocumento','borrarDocumento','obtenerEncuesta','enviarReportePropietario','generarInformeTokko','getAppUrl','getEncuestaUrl'];
 function azcuApi(e){
   var raw = (e && e.parameter && e.parameter.payload) || (e && e.postData && e.postData.contents) || '{}', req = {}, out;
   try{
@@ -949,6 +950,11 @@ function azcuApi(e){
     else if(req.fn==='azcuAdjPlan') out = {ok:true, data:azcuAdjPlan(a[0], a[1], a[2], a[3])};
     else if(req.fn==='azcuTranscribir') out = {ok:true, data:azcuTranscribir(a[0], a[1], a[2])};
     else if(req.fn==='azcuLogo') out = {ok:true, data:azcuLogo_()};
+    else if(AZCU_PUB_.indexOf(req.fn)>=0){
+      var pf = globalThis[req.fn];
+      if(typeof pf!=='function') throw new Error('Función no disponible: '+req.fn);
+      out = {ok:true, data:pf.apply(null, a.slice(1))};
+    }
     else if(AZCU_TB_.indexOf(req.fn)>=0){
       azcuPin_(a[0]);
       var tf = globalThis[req.fn];

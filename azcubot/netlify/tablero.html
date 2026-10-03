@@ -40,6 +40,7 @@ function transport(fn, args, ok, onErr){
   (document.body || document.documentElement).appendChild(ifr); (document.body || document.documentElement).appendChild(form);
   form.submit(); pollT = setTimeout(poll, 500); if(ls('azcu_via')==='anon') setTimeout(fallback, 300);
 }
+var PUBLIC = ['obtenerDatosOFallar','extraerDatosDNI','extraerDatosPropiedad','extraerDatosEscritura','precargarDatos','guardarEncuesta'];
 var pinQ = null;
 function askPin(msg, cb){
   if(pinQ){ pinQ.push(cb); return; } pinQ = [cb];
@@ -54,7 +55,8 @@ function askPin(msg, cb){
   i.onkeydown = function(e){ if(e.key==='Enter'){ var v = (i.value||'').trim(); if(v) close(v); } };
 }
 function send(fn, args, ok, fail, retried){
-  var az = /^azcu/.test(fn), a = az ? args : [ls('azcu_pin')||''].concat(args);
+  if(fn==='getAppUrl' || fn==='getEncuestaUrl'){ setTimeout(function(){ ok(location.origin+'/go.html'); }, 0); return; }
+  var az = /^azcu/.test(fn) || PUBLIC.indexOf(fn) >= 0, a = az ? args : [ls('azcu_pin')||''].concat(args);
   transport(fn, a, ok, function(e){
     var m = (e && e.message) || String(e);
     if(!az && /PIN/.test(m) && !retried){
@@ -74,7 +76,7 @@ function mk(h){
     if(k==='withUserObject') return function(){ return mk(h); };
     return function(){
       var args = Array.prototype.slice.call(arguments);
-      send(k, args, h.ok || function(){}, h.fail || function(e){ try{ console.error(e); }catch(x){} });
+      send(k, args, h.ok || function(){}, h.fail || function(e){ try{ console.error(e); alert('No se pudo completar la operación: '+((e && e.message) || e)); }catch(x){} });
     };
   }});
 }
@@ -193,7 +195,7 @@ td{padding:7px 8px;border-bottom:1px solid #f1f0ec;vertical-align:top}
 <div class="top"><div class="chip"><img id="logoimg" alt="Azcuénaga"></div>
 <div class="sep"></div><h1>Tablero de propiedades</h1><div class="dir">Mendoza 4873 · Rosario</div><button class="dlbtn" onclick="descargar()">Descargar</button></div>
 <div class="wrap">
-  <div class="nav"><button class="tab on" id="tabR" onclick="ver('resumen')">Resumen</button><button class="tab" id="tabP" onclick="ver('props')">Propiedades</button><a class="tab" style="text-decoration:none;display:inline-block" href="https://script.google.com/macros/s/AKfycbw82JqJx-WAAah3rd9V1U-KObnkWLmMKIASwDhrHK9CX4fkDGJPiO2fAnmMjofsPiHBFg/exec" target="_blank" rel="noopener">Ir a Precarga</a><a class="tab" style="text-decoration:none;display:inline-block" href="https://script.google.com/macros/s/AKfycbw82JqJx-WAAah3rd9V1U-KObnkWLmMKIASwDhrHK9CX4fkDGJPiO2fAnmMjofsPiHBFg/exec?app=procedimiento" target="_blank" rel="noopener">Ir a Procedimiento de Ventas</a></div>
+  <div class="nav"><button class="tab on" id="tabR" onclick="ver('resumen')">Resumen</button><button class="tab" id="tabP" onclick="ver('props')">Propiedades</button><a class="tab" style="text-decoration:none;display:inline-block" href="go.html" target="_blank" rel="noopener">Ir a Precarga</a><a class="tab" style="text-decoration:none;display:inline-block" href="go.html?app=procedimiento" target="_blank" rel="noopener">Ir a Procedimiento de Ventas</a></div>
   <div id="resumen">
   <div class="dash" id="dash"></div>
   <div class="panel"><div class="bar2">

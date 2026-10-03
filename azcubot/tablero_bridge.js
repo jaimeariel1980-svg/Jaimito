@@ -38,6 +38,7 @@ function transport(fn, args, ok, onErr){
   (document.body || document.documentElement).appendChild(ifr); (document.body || document.documentElement).appendChild(form);
   form.submit(); pollT = setTimeout(poll, 500); if(ls('azcu_via')==='anon') setTimeout(fallback, 300);
 }
+var PUBLIC = ['obtenerDatosOFallar','extraerDatosDNI','extraerDatosPropiedad','extraerDatosEscritura','precargarDatos','guardarEncuesta'];
 var pinQ = null;
 function askPin(msg, cb){
   if(pinQ){ pinQ.push(cb); return; } pinQ = [cb];
@@ -52,7 +53,8 @@ function askPin(msg, cb){
   i.onkeydown = function(e){ if(e.key==='Enter'){ var v = (i.value||'').trim(); if(v) close(v); } };
 }
 function send(fn, args, ok, fail, retried){
-  var az = /^azcu/.test(fn), a = az ? args : [ls('azcu_pin')||''].concat(args);
+  if(fn==='getAppUrl' || fn==='getEncuestaUrl'){ setTimeout(function(){ ok(location.origin+'/go.html'); }, 0); return; }
+  var az = /^azcu/.test(fn) || PUBLIC.indexOf(fn) >= 0, a = az ? args : [ls('azcu_pin')||''].concat(args);
   transport(fn, a, ok, function(e){
     var m = (e && e.message) || String(e);
     if(!az && /PIN/.test(m) && !retried){
@@ -72,7 +74,7 @@ function mk(h){
     if(k==='withUserObject') return function(){ return mk(h); };
     return function(){
       var args = Array.prototype.slice.call(arguments);
-      send(k, args, h.ok || function(){}, h.fail || function(e){ try{ console.error(e); }catch(x){} });
+      send(k, args, h.ok || function(){}, h.fail || function(e){ try{ console.error(e); alert('No se pudo completar la operación: '+((e && e.message) || e)); }catch(x){} });
     };
   }});
 }
