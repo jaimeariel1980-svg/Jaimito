@@ -1580,8 +1580,11 @@ google.script.run
     return '<div class="azb-tray"><div class="azb-th">'+st.att.map(function(a,i){ return '<div class="azb-tf">'+(a.t?'<img src="'+a.t+'" alt="">':'PDF')+'<button type="button" data-a="attdel" data-i="'+i+'" aria-label="Quitar">✕</button></div>'; }).join('')+(n<8?'<button type="button" class="azb-tadd" data-a="attach" aria-label="Agregar más">＋</button>':'')+'</div>'+
       '<div class="azb-tq">¿Qué hacemos con '+(n===1?'este archivo':'estos '+n+' archivos')+'?</div><div class="azb-opts" style="margin:6px 0 0"><button type="button" class="azb-op" data-a="attsave">📁 Guardar en una propiedad</button><button type="button" class="azb-op" data-a="attread">🔍 Leer y explicar</button></div></div>';
   }
+  function pinHtml(){
+    return st.pinReq ? '<div class="azb-ov"><div class="azb-sh"><div class="azb-shh">Ingresá el PIN de Azcu</div>'+(st.pinReq.msg ? '<p style="color:var(--rj);margin:0 0 10px;font-size:14px">'+st.pinReq.msg+'</p>' : '<p style="color:var(--mu);margin:0 0 10px;font-size:14px">Te lo da quien administra Azcu. Se guarda en este celular.</p>')+'<input id="azbPin" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN" style="width:100%;border:1.5px solid var(--ln);border-radius:14px;padding:14px;font:600 18px Inter,sans-serif;margin-bottom:10px"><button type="button" class="azb-back" data-a="pinok" style="margin:0 0 8px">Entrar</button><button type="button" class="azb-shc" data-a="pinx">Cancelar</button></div></div>' : '';
+  }
   function sheetHtml(){
-    return st.sheet ? '<div class="azb-ov" data-a="sheetx"><div class="azb-sh"><div class="azb-shh">Adjuntar</div><button type="button" class="azb-sho" data-a="attcam"><span>'+sv('cam')+'</span><div><b>Sacar foto</b><small>Con la cámara del celular</small></div></button><button type="button" class="azb-sho" data-a="attgal"><span>'+sv('img')+'</span><div><b>Elegir foto o PDF</b><small>De la galería o de tus archivos</small></div></button><button type="button" class="azb-shc" data-a="sheetx">Cancelar</button></div></div>' : '';
+    return pinHtml()+(st.sheet ? '<div class="azb-ov" data-a="sheetx"><div class="azb-sh"><div class="azb-shh">Adjuntar</div><button type="button" class="azb-sho" data-a="attcam"><span>'+sv('cam')+'</span><div><b>Sacar foto</b><small>Con la cámara del celular</small></div></button><button type="button" class="azb-sho" data-a="attgal"><span>'+sv('img')+'</span><div><b>Elegir foto o PDF</b><small>De la galería o de tus archivos</small></div></button><button type="button" class="azb-shc" data-a="sheetx">Cancelar</button></div></div>' : '');
   }
   var fCam = document.createElement('input'), fGal = document.createElement('input');
   fCam.type = fGal.type = 'file'; fCam.accept = 'image/*'; fCam.setAttribute('capture', 'environment'); fGal.accept = 'image/*,application/pdf'; fGal.multiple = true;
@@ -1857,7 +1860,7 @@ google.script.run
     function finish(){ done = true; clearTimeout(pollT); if(scr) scr.remove(); setTimeout(function(){ ifr.remove(); form.remove(); }, 300); }
     function poll(){
       if(done) return;
-      if(Date.now()-t0 > 330000){ finish(); onErr(new Error('El servidor no respondió. Revisá la URL y que el despliegue esté actualizado y sea para "Cualquier persona".')); return; }
+      if(Date.now()-t0 > (/^azcu(Chat|Atajo|Voz|Mov|Warm|Agenda)$/.test(fn) ? 100000 : 330000)){ finish(); onErr(new Error('Azcu no recibió respuesta del servidor. Revisá que tengas internet y probá de nuevo. Si pasa siempre en este celular, abrí Azcu desde Chrome.')); return; }
       var cb = 'azbcb'+Math.random().toString(36).slice(2,9);
       window[cb] = function(d){ delete window[cb]; if(scr) scr.remove(); if(done) return; if(d && d.progress && d.ok===undefined){ if(st.status!==d.progress){ st.status = d.progress; render(); } pollT = setTimeout(poll, 400); } else if(d){ st.status = ''; finish(); if(d.ok) ok(d.data); else onErr(new Error(d.error || 'error')); } else pollT = setTimeout(poll, 450); };
       scr = document.createElement('script'); scr.src = window.AZCU_API+'?azr='+id+'&cb='+cb+'&_='+Date.now();
@@ -1870,7 +1873,7 @@ google.script.run
   function call(fn, args, ok, fail, retried){
     function onErr(e){
       var msg = (e && e.message) ? e.message : String(e);
-      if(/PIN/.test(msg) && !retried){ var p = window.prompt('Poné el PIN de Azcu:'); if(p){ st.pin = p; ls('pin', p); return call(fn, args, ok, fail, true); } }
+      if(/PIN/.test(msg) && !retried){ st.pinReq = {fn:fn, args:args, ok:ok, fail:fail, msg:/incorrecto/i.test(msg) && st.pin ? 'Ese PIN no es correcto, probá de nuevo.' : ''}; st.busy = false; st.status = ''; render(); setTimeout(function(){ var i = root.querySelector('#azbPin'); if(i) i.focus(); }, 200); return; }
       fail(msg.replace(/^Error:\s*/,''));
     }
     if(window.AZCU_API){ frameCall(fn, args, ok, onErr); return; }
@@ -1965,6 +1968,8 @@ google.script.run
     else if(a==='skip'){ st.nombre = ''; ls('nombre', ''); st.entered = true; ls('entered','1'); render(); if(!st.warmed){ st.warmed = true; call('azcuWarm', [], function(r){ if(Array.isArray(r)) st.props = r; }, function(){}); } }
     else if(a==='push'){ pushOn(); }
     else if(a==='attach'){ st.menu = false; st.sheet = true; render(); }
+    else if(a==='pinok'){ var pv = (root.querySelector('#azbPin')||{}).value||''; pv = pv.trim(); if(!pv) return; var rq = st.pinReq; st.pinReq = null; st.pin = pv; ls('pin', pv); render(); call(rq.fn, rq.args, rq.ok, rq.fail, false); }
+    else if(a==='pinx'){ var rq2 = st.pinReq; st.pinReq = null; render(); if(rq2) rq2.fail('Falta el PIN para usar Azcu.'); }
     else if(a==='sheetx'){ if(t.classList.contains('azb-ov') && e.target!==t) return; st.sheet = false; render(); }
     else if(a==='attcam'){ st.sheet = false; render(); fCam.click(); }
     else if(a==='attgal'){ st.sheet = false; render(); fGal.click(); }
