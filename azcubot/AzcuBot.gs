@@ -980,7 +980,7 @@ function azcuApi(e){
     else if(AZCU_PUB_.indexOf(req.fn)>=0){
       var pf = globalThis[req.fn];
       if(typeof pf!=='function') throw new Error('Función no disponible: '+req.fn);
-      out = {ok:true, data:pf.apply(null, a.slice(1))};
+      out = {ok:true, data:pf.apply(null, a)};
     }
     else if(AZCU_TB_.indexOf(req.fn)>=0){
       azcuPin_(a[0]);

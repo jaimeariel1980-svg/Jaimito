@@ -16,6 +16,50 @@ Fecha: 03/10/2026. Prueba de punta a punta con Google, OpenAI y OneSignal **simu
 5. Cámara y micrófono de cada modelo de celular (S22, Redmi, iPhone).
 6. Velocidad real (la mejora de caché del prompt y el servidor caliente se miden con uso).
 
+## Prueba de proceso completo por pantalla (navegador real contra el código real del servidor)
+
+Se manejó el navegador como un usuario (formulario del cliente en el celular, tablero de la compu, encuesta, Azcu en el celular) contra el código real de `Código.gs` y `AzcuBot.gs`. Resultado: **30 ✅ / 0 ❌**, sin errores de JavaScript.
+
+**Encontró y corrigió un error grave:** los formularios públicos hospedados (captación/precarga, lectura de DNI y encuesta) llegaban al servidor sin sus datos ("Faltan datos obligatorios"). El servidor descartaba el primer dato recibido. Corregido en `AzcuBot.gs`.
+
+## 1. CAPTACIÓN — formulario público en el celular del cliente
+✅ El cliente envía el formulario con DNI y recibe su código → PRE-2026-0001
+✅ La propiedad quedó en la planilla maestra con dueño y dirección
+✅ El DNI se guardó en Drive y se verificó con IA → Verificado OK
+✅ El cliente recibió el mail con su código
+✅ Retomar con el código vuelve a cargar lo ya completado
+
+## 2. TABLERO — la compu del equipo (hospedado, mismo código que el de Apps Script)
+✅ El tablero carga con el PIN y muestra la propiedad nueva
+✅ Aparece la tarjeta con el 📍
+✅ El 📍 de la tarjeta abre Google Maps
+✅ La ficha abre con documentos y datos del dueño
+✅ Botones de la ficha presentes
+✅ La ficha dice "URL de ficha colega" y no "Tokko"
+✅ Al subir un documento aparece la ruedita "Subiendo…"
+✅ El documento quedó en Drive, la inscripción del dominio se extrajo y la IA lo verificó → Matrícula 12-345
+✅ La consulta se guardó con el vendedor (Ariel) → ["PRE-2026-0001","03/10/2026","WhatsApp","Matias","3416110967","Solo consulta","","","Quiere visitar
+✅ La visita agendada quedó en el Seguimiento con su fecha y el vendedor → ["PRE-2026-0001","06/10/2026","Visita","Sabrina","3416110967","Visita agendada","Visita 06/10/2026 10:30","","
+✅ El reporte tiene editor (B, U, A−, A+, Revisar con IA)
+✅ "Revisar con IA" devuelve una sugerencia
+✅ El mail del reporte sale con el formato elegido y el logo → juan@test.com
+✅ "Ver ubicación" de la ficha abre Maps
+✅ "Enviar ubicación" abre WhatsApp con el enlace
+
+## 3. ENCUESTA DE SATISFACCIÓN — el comprador, y cómo impacta en el tablero
+✅ El comprador completa la encuesta y ve el agradecimiento
+✅ La respuesta quedó en la planilla
+✅ El tablero muestra la satisfacción en el resumen
+✅ La ficha muestra la encuesta del cliente con su nota
+
+## 4. AZCU — asistente en el celular del vendedor
+✅ Calculadora en el chat: respuesta inmediata sin IA
+✅ Pregunta al asistente (herramienta + respuesta) por el transporte real → azcuMov,azcuChat
+✅ La Agenda muestra la visita agendada desde el tablero
+✅ Servidor: la Agenda trae la visita de Sabrina como mía → ["2026-10-06 Mendoza 7201 · Sabrina"]
+✅ Novedades muestra las cargas de la propiedad → 1 avisos
+✅ Los avisos de Novedades se pueden tocar
+
 ## Detalle de las pruebas de servidor
 
 ## 1. CAPTACIÓN (formulario de precarga)
