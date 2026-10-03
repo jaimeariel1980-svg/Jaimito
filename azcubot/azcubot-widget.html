@@ -377,16 +377,17 @@
   function movLoad(){
     if(!st.nombre && st.nombre!=='') return;
     call('azcuMov', [90], function(d){
-      st.mov = d.items || [];
+      st.mov = d.items || []; st.movErr = '';
       var seen = +ls('mseen'); if(!seen){ seen = Date.now()-864e5; ls('mseen', String(seen)); }
       st.movN = st.view==='mov' ? 0 : st.mov.filter(function(x){ return x.ms>seen; }).length;
       if(st.view==='mov') ls('mseen', String(Date.now()));
       render();
-    }, function(){});
+    }, function(err){ st.mov = []; st.movErr = String(err||'error'); render(); });
   }
   function movHtml(){
     var its = st.mov, last = '', h = '<div class="azb-agh"><b>Novedades</b><span>Últimas novedades</span></div>';
     if(!its) return h+'<div class="azb-empty">Cargando…</div>';
+    if(st.movErr) return h+es('bell','No pude cargar las novedades', /desconocida/i.test(st.movErr) ? 'Falta actualizar el servidor (AzcuBot.gs en Apps Script).' : esc(st.movErr))+'<button type="button" class="azb-back" data-a="movretry">Reintentar</button>';
     if(!its.length) return h+es('bell','Todo tranquilo','Cuando haya novedades, las vas a ver acá.');
     its.forEach(function(x){
       var lb = dayLbl(x.ms);
@@ -826,6 +827,7 @@
       else if(tb==='mov'){ if(st.view!=='mov'){ st.menu = false; st.view = 'mov'; st.movSeen = +ls('mseen') || 0; st.movN = 0; ls('mseen', String(Date.now())); render(); movLoad(); } }
       else if(tb==='alert'){ st.view = 'chat'; st.menu = false; ask('¿Qué alertas tengo hoy?', 'alertas'); }
     }
+    else if(a==='movretry'){ st.movErr = ''; st.mov = null; render(); movLoad(); }
     else if(a==='mov'){ if(st.view==='mov'){ st.view = 'chat'; render(); } else { st.menu = false; st.entered = true; st.view = 'mov'; st.movSeen = +ls('mseen') || 0; st.movN = 0; ls('mseen', String(Date.now())); render(); movLoad(); } }
     else if(a==='agenda'){ if(st.view==='agenda'){ st.view = 'chat'; render(); } else { st.menu = false; st.view = 'agenda'; st.agSel = iso(new Date()); st.agForm = false; st.agNote = ''; st.entered = true; render(); agLoad(); } }
     else if(a==='agnew'){ st.agForm = true; render(); var ti = root.querySelector('#azbAgT'); if(ti) ti.focus(); }
