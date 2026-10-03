@@ -1521,7 +1521,7 @@ function azcuDiagnostico(){
   }
   try{
     var h = ScriptApp.getProjectTriggers().map(function(t){ return t.getHandlerFunction(); }), falta = ['azcuAvisoDiario','azcuAvisoCambios','azcuAvisoPostVisita','azcuAvisoSeguimiento','azcuResumenSemanal','azcuAvisoRecordatorios','azcuCalentar','azcuAvisoPapeles'].filter(function(n){ return h.indexOf(n)<0; });
-    if(falta.length) no('Activadores', 'faltan '+falta.join(', ')+' (ejecutá azcuCrearAvisos)'); else ok('Activadores', '7 de 7');
+    if(falta.length) no('Activadores', 'faltan '+falta.join(', ')+' (ejecutá azcuCrearAvisos)'); else ok('Activadores', (8-falta.length)+' de 8');
   }catch(e){ no('Activadores', e); }
   try{
     var q = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {method:'post', contentType:'application/json', headers:{Authorization:'Bearer '+_openAiApiKey()}, muteHttpExceptions:true, payload:JSON.stringify({model:AZCU_MODEL, messages:[{role:'user', content:'Respondé solo: ok'}], max_tokens:5})});
