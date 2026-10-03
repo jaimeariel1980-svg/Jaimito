@@ -1517,13 +1517,14 @@ function obtenerPropiedadesDoc(){
   return out;
 }
 
-function revisarTextoIA(texto, datos){
-  texto = String(texto||'').slice(0,2500);
+function revisarTextoIA(texto, datos, modo){
+  var doc = modo==='documento';
+  texto = String(texto||'').slice(0, doc ? 14000 : 2500);
   if(!texto.trim()) throw new Error('No hay texto para revisar.');
   var key = _openAiApiKey(); if(!key) throw new Error('Falta OPENAI_API_KEY');
-  var sis = 'Revisás textos de informes de gestión de una inmobiliaria argentina. Hacé dos cosas: 1) corregí ortografía, puntuación y redacción sin cambiar el sentido, el tono ni agregar información; 2) verificá que las cifras y datos del texto coincidan con DATOS. Respondé SOLO un JSON: {"texto":"<texto corregido>","avisos":["<problema concreto de datos o contenido, breve>"]}. Si todo está bien, avisos es [].';
+  var sis = (doc ? 'Revisás documentos de una inmobiliaria argentina (reservas, ofertas, boletos, contratos). Hacé dos cosas: 1) corregí SOLO errores de ortografía, tildes y puntuación; NO cambies cláusulas, montos, fechas, nombres, DNI ni el estilo legal, y conservá todos los saltos de línea y las líneas de firma; 2) avisá inconsistencias: montos en números que no coinciden con los montos en letras, fechas incoherentes, nombres o DNI que aparecen distintos, datos que quedaron entre corchetes [ ] sin completar. ' : 'Revisás textos de informes de gestión de una inmobiliaria argentina. Hacé dos cosas: 1) corregí ortografía, puntuación y redacción sin cambiar el sentido, el tono ni agregar información; 2) verificá que las cifras y datos del texto coincidan con DATOS. ') + ' Respondé SOLO un JSON: {"texto":"<texto corregido>","avisos":["<problema concreto de datos o contenido, breve>"]}. Si todo está bien, avisos es [].';
   var r = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {method:'post', contentType:'application/json', headers:{Authorization:'Bearer '+key}, muteHttpExceptions:true,
-    payload:JSON.stringify({model:AZCU_MODEL, temperature:0.1, max_tokens:900, response_format:{type:'json_object'}, messages:[{role:'system', content:sis}, {role:'user', content:'DATOS: '+JSON.stringify(datos||{})+'\n\nTEXTO:\n'+texto}]})});
+    payload:JSON.stringify({model:AZCU_MODEL, temperature:0.1, max_tokens:doc ? 4500 : 900, response_format:{type:'json_object'}, messages:[{role:'system', content:sis}, {role:'user', content:'DATOS: '+JSON.stringify(datos||{})+'\n\nTEXTO:\n'+texto}]})});
   if(r.getResponseCode()<200 || r.getResponseCode()>=300) throw new Error('OpenAI '+r.getResponseCode());
   var o = {}; try{ o = JSON.parse(JSON.parse(r.getContentText()).choices[0].message.content); }catch(e){}
   return {texto:String(o.texto||texto), avisos:(o.avisos||[]).map(String).slice(0,6)};

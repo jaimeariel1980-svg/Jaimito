@@ -146,6 +146,8 @@ select:focus{outline:none;border-color:var(--accent);}
 .preview .miss{background:#fde8e8;color:#a33;border-radius:3px;padding:0 3px;}
 .editor{width:100%;min-height:440px;border:1px solid var(--line);border-radius:8px;padding:22px 26px;font-family:var(--serif);font-size:13.5px;line-height:1.75;color:var(--ink);background:#fdfcfa;resize:vertical;}
 .editor:focus{outline:none;border-color:var(--accent);}
+.editor{white-space:pre-wrap;overflow-wrap:anywhere}
+.edtb{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px}.edtb button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 14px;font-size:15px;cursor:pointer;color:var(--ink)}
 .gar-box{border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:12px;background:#fbfaf8;position:relative;}
 .gar-box .gar-tit{font-size:12px;font-weight:700;color:var(--accent);margin-bottom:10px;}
 .gar-del{position:absolute;top:12px;right:12px;background:none;border:none;color:#a33;cursor:pointer;font-size:12px;font-weight:600;}
@@ -194,7 +196,9 @@ select:focus{outline:none;border-color:var(--accent);}
   <div class="card hide" id="card3">
     <h2>Documento listo</h2>
     <p class="hint">Podés <b>editar el texto acá mismo</b> antes de generar el PDF, por si necesitás ajustar algo puntual.</p>
-    <textarea id="editor" class="editor"></textarea>
+    <div class="edtb"><button type="button" onmousedown="event.preventDefault();edCmd('bold')"><b>B</b></button><button type="button" onmousedown="event.preventDefault();edCmd('underline')"><u>U</u></button><button type="button" onmousedown="event.preventDefault();edSize(-1)">A&minus;</button><button type="button" onmousedown="event.preventDefault();edSize(1)" style="font-size:17px">A+</button><button type="button" id="edIA" onclick="edRevisar()">&#10024; Revisar con IA</button></div>
+    <div id="edAI"></div>
+    <div id="editor" class="editor" contenteditable="true"></div>
     <div class="btnrow">
       <button class="btn" onclick="generarPDF()">Descargar PDF</button>
       <button class="btn ghost" onclick="paso(2)">&larr; Corregir datos</button>
@@ -845,7 +849,7 @@ function verDoc(){
   }
 
   var final=texto.replace(/\{([^}]+)\}/g,function(m,k){ var v=datos[k.trim()]; return (v&&v.length)?v:('['+k.trim().replace(/_/g,' ')+']'); });
-  document.getElementById('editor').value=final; paso(3);
+  document.getElementById('editor').textContent=final; document.getElementById('edAI').innerHTML=''; paso(3);
 }
 
 function membrete(doc){
@@ -879,8 +883,54 @@ function marcaAgua(doc){
     if(doc.GState) doc.setGState(doc.GState({opacity:1}));
   }catch(e){ console.warn('marca de agua no dibujada:', e); }
 }
+var ED_F=[0.65,0.8,1,1.25,1.5,1.75,2.1];
+function edCmd(c){ var e=document.getElementById('editor'); e.focus(); document.execCommand(c,false,null); }
+function edSize(d){ var e=document.getElementById('editor'); e.focus(); var v=parseInt(document.queryCommandValue('fontSize'))||3; document.execCommand('fontSize',false,Math.max(1,Math.min(7,v+d))); }
+function edLineas(){
+  var lines=[[]], ed=document.getElementById('editor');
+  function nl(){ lines.push([]); }
+  function cur(){ return lines[lines.length-1]; }
+  function walk(n,st){
+    if(n.nodeType===3){
+      var parts=n.nodeValue.replace(/ /g,' ').split('\n');
+      parts.forEach(function(t,i){ if(i>0) nl(); if(t) cur().push({t:t,b:st.b,u:st.u,f:st.f}); });
+      return;
+    }
+    if(n.nodeType!==1) return;
+    var tg=n.tagName.toLowerCase();
+    if(tg==='br'){ nl(); return; }
+    var ns={b:st.b,u:st.u,f:st.f};
+    if(tg==='b'||tg==='strong') ns.b=true;
+    if(tg==='u') ns.u=true;
+    if(tg==='font'&&n.getAttribute('size')) ns.f=ED_F[(parseInt(n.getAttribute('size'))||3)-1]||1;
+    var cs=n.style||{};
+    if(/bold|700|800|900/.test(cs.fontWeight||'')) ns.b=true;
+    if(/underline/.test(cs.textDecorationLine||cs.textDecoration||'')) ns.u=true;
+    var blk=(tg==='div'||tg==='p');
+    if(blk && (cur().length||lines.length>1) ) { if(cur().length) nl(); }
+    Array.prototype.forEach.call(n.childNodes,function(c){ walk(c,ns); });
+    if(blk && cur().length) nl();
+  }
+  Array.prototype.forEach.call(ed.childNodes,function(c){ walk(c,{b:false,u:false,f:1}); });
+  while(lines.length>1&&!lines[lines.length-1].length) lines.pop();
+  return lines;
+}
+function edTexto(){ return edLineas().map(function(l){ return l.map(function(r){return r.t;}).join(''); }).join('\n'); }
+function edRevisar(){
+  var b=document.getElementById('edIA'), box=document.getElementById('edAI'), t=edTexto();
+  if(!t.trim()) return;
+  b.disabled=true; b.innerHTML='Revisando&hellip;';
+  google.script.run.withSuccessHandler(function(r){
+    b.disabled=false; b.innerHTML='&#10024; Revisar con IA';
+    window.__edSug=(r&&r.texto)||'';
+    var av=(r&&r.avisos&&r.avisos.length)?'<ul style="margin:8px 0 8px 18px;padding:0">'+r.avisos.map(function(a){return '<li>'+escapar(String(a))+'</li>';}).join('')+'</ul>':'<div style="color:#2a7a3b;margin:6px 0">Sin problemas detectados en los datos.</div>';
+    box.innerHTML='<div style="background:#eef4ff;border:1px solid #c9d8f5;border-radius:8px;padding:12px;margin:0 0 10px;font-size:13px"><b>Revisión de la IA</b>'+av+'<div style="color:#555;font-size:12px">La sugerencia corrige ortografía y redacción. Si la aplicás se reemplaza el texto (se pierde el formato que hayas puesto).</div><div style="margin-top:8px"><button type="button" class="btn" onclick="edAplicar()">Aplicar sugerencia</button> <button type="button" class="btn ghost" onclick="document.getElementById(\'edAI\').innerHTML=\'\'">Descartar</button></div></div>';
+  }).withFailureHandler(function(e){ b.disabled=false; b.innerHTML='&#10024; Revisar con IA'; alert('No pude revisar: '+(e&&e.message?e.message:e)); }).revisarTextoIA(t,{documento:DOCS[docSel].nombre},'documento');
+}
+function edAplicar(){ document.getElementById('editor').textContent=window.__edSug||''; document.getElementById('edAI').innerHTML=''; }
+
 function generarPDF(){
-  var final = document.getElementById('editor').value;
+  var LIN = edLineas(), final = LIN.map(function(l){ return l.map(function(r){return r.t;}).join(''); }).join('\n');
   var jsPDF=window.jspdf.jsPDF, doc=new jsPDF({unit:'pt',format:'a4'});
   try{
     doc.addFileToVFS('Roboto-Regular.ttf', FONT_REG);
@@ -905,17 +955,42 @@ function generarPDF(){
   function textoJustificado(linea, esUltima){
     var palabras = linea.split(' ');
     if(esUltima || palabras.length===1){ doc.text(linea, margin, y); return; }
-    var anchoTexto = doc.getStringUnitWidth(palabras.join('')) * doc.getFontSize();
+    var anchoTexto = doc.getStringUnitWidth(palabras.join(''),{kerning:true}) * doc.getFontSize();
     var espacioTotal = width - anchoTexto;
     var espacioCada = espacioTotal / (palabras.length-1);
     var x = margin;
     for(var i=0;i<palabras.length;i++){
       doc.text(palabras[i], x, y);
-      x += doc.getStringUnitWidth(palabras[i]) * doc.getFontSize() + espacioCada;
+      x += doc.getStringUnitWidth(palabras[i],{kerning:true}) * doc.getFontSize() + espacioCada;
     }
   }
 
-  var parrafos = final.replace(new RegExp('^'+DOCS[docSel].titulo,'i'),'').split(/\n/);
+  var tm=final.match(new RegExp('^'+DOCS[docSel].titulo,'i')), cut=tm?tm[0].length:0;
+  if(cut){ var rest=cut; LIN[0]=LIN[0].map(function(r){ if(rest<=0) return r; if(r.t.length<=rest){ rest-=r.t.length; return null; } var q={t:r.t.slice(rest),b:r.b,u:r.u,f:r.f}; rest=0; return q; }).filter(Boolean); }
+  var parrafos = LIN.map(function(l){ return l.map(function(r){return r.t;}).join(''); });
+  var BASE=10.5;
+  function parrafoRico(runs){
+    var toks=[];
+    runs.forEach(function(r){ r.t.split(/(\s+)/).forEach(function(w){ if(w==='') return; if(/^\s+$/.test(w)) toks.push({sp:true,b:r.b,u:r.u,f:r.f}); else toks.push({w:w,b:r.b,u:r.u,f:r.f}); }); });
+    function medir(k){ doc.setFont(FUENTE,k.b?'bold':'normal'); doc.setFontSize(BASE*k.f); return doc.getStringUnitWidth(k.sp?' ':k.w,{kerning:true})*BASE*k.f; }
+    var linea=[], ancho=0, lineas=[];
+    toks.forEach(function(k){ k.m=medir(k); if(k.sp&&!linea.length) return; if(!k.sp && linea.length && ancho+k.m>width){ while(linea.length&&linea[linea.length-1].sp){ ancho-=linea.pop().m; } lineas.push(linea); linea=[]; ancho=0; } linea.push(k); ancho+=k.m; });
+    while(linea.length&&linea[linea.length-1].sp){ ancho-=linea.pop().m; }
+    if(linea.length) lineas.push(linea);
+    lineas.forEach(function(L,li){
+      var fmax=1; L.forEach(function(k){ if(k.f>fmax) fmax=k.f; });
+      chequear(interlinea*fmax);
+      var ult=li===lineas.length-1, gaps=L.filter(function(k){return k.sp;}).length, pal=L.reduce(function(a,k){return a+(k.sp?0:k.m);},0), extra=(!ult&&gaps>0)?(width-pal)/gaps:0, x=margin;
+      L.forEach(function(k,i){
+        if(k.sp){ x+=(extra?extra:k.m); return; }
+        doc.setFont(FUENTE,k.b?'bold':'normal'); doc.setFontSize(BASE*k.f); doc.text(k.w,x,y);
+        if(k.u){ var xe=x+k.m, nx=L[i+1], nn=L[i+2]; if(nx&&nx.sp&&nn&&nn.u) xe+=(extra?extra:nx.m); doc.setDrawColor(0,0,0); doc.setLineWidth(0.5); doc.line(x,y+1.6,xe,y+1.6); }
+        x+=k.m;
+      });
+      y+=interlinea*fmax;
+    });
+    doc.setFont(FUENTE,'normal'); doc.setFontSize(BASE); y+=5;
+  }
 
   var esperaRoles=false;  // true justo despues de una linea de rayas
   for(var p=0;p<parrafos.length;p++){
@@ -950,6 +1025,8 @@ function generarPDF(){
       doc.setFontSize(10.5); y+=16; continue;
     }
 
+    // Parrafo con formato (negrita/subrayado/tamano)
+    if(LIN[p].some(function(r){ return r.b||r.u||r.f!==1; })){ parrafoRico(LIN[p]); continue; }
     // Parrafo normal justificado
     var wrapped = doc.splitTextToSize(t, width);
     for(var k=0;k<wrapped.length;k++){
@@ -984,8 +1061,8 @@ function descargarPDF(doc, nombre){
 function linkPDF(){
   var p=window.__PDF; if(!p) return;
   var d=document.getElementById('pdf-link');
-  if(!d){ d=document.createElement('div'); d.id='pdf-link'; d.style.cssText='margin-top:14px'; document.querySelector('#card3').appendChild(d); }
-  d.innerHTML='<a href="'+p.url+'" download="'+p.nombre+'" target="_blank" style="display:inline-block;padding:12px 18px;border-radius:8px;background:#1b3866;color:#fff;font-weight:600;text-decoration:none">⬇ Descargar PDF</a>';
+  if(!d){ d=document.createElement('div'); d.id='pdf-link'; d.style.cssText='margin-top:10px;font-size:12.5px;color:#666'; document.querySelector('#card3').appendChild(d); }
+  d.innerHTML='¿No se descargó? <a href="'+p.url+'" download="'+p.nombre+'" target="_blank" style="color:#1b3866">Abrilo desde acá</a>';
 }
 function mostrarAviso(txt, url){
   var d=document.getElementById('aviso-drive');
