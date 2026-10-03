@@ -302,26 +302,6 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
 .azb-es h3{font:800 26px 'Archivo',sans-serif;letter-spacing:-.02em;margin:10px 0 6px;color:var(--ink)}
 .azb-es p{font-size:15px;color:var(--mu);margin:0 auto;max-width:260px;line-height:1.45}
 .azb-hd .azb-t{display:block}
-
-.azb-tile{position:relative;overflow:hidden;min-height:138px;justify-content:flex-end;align-items:flex-start;padding:16px}
-.azb-tile .azb-ti{position:absolute;right:-2px;top:6px;width:92px;height:92px;transition:transform .25s ease}
-.azb-tile:hover .azb-ti,.azb-tile:active .azb-ti{transform:scale(1.08) rotate(-3deg)}
-.azb-ts{width:100%;height:100%;display:block}
-.azb-tile b{font:800 18px/1.15 'Archivo',sans-serif;max-width:60%}
-.tl-home{background:linear-gradient(150deg,#f3f8ff,#d3e4ff)}
-.tl-cal{background:linear-gradient(150deg,#fffaf0,#ffeab4)}
-.tl-chat{background:linear-gradient(150deg,#f2fcf7,#c9f0de)}
-.tl-alarm{background:linear-gradient(150deg,#fff6f4,#ffd5cf)}
-.tl-clip{background:linear-gradient(150deg,#f7f3ff,#ddd2ff)}
-.tl-bell{background:linear-gradient(150deg,#fff8f0,#ffdcb8)}
-.azb-row.r0 i{background:#dbe8ff;color:#0a3d91}.azb-row.r1 i{background:#fff0c7;color:#9a6a00}.azb-row.r2 i{background:#d6f4e6;color:#14804f}.azb-row.r3 i{background:#ffdcd7;color:#c2382a}.azb-row.r4 i{background:#e6dcff;color:#5a3bb5}
-
-.azb-banner{display:flex;align-items:center;justify-content:space-between;gap:10px;text-decoration:none;color:var(--ink);background:linear-gradient(135deg,#0d4cb3,#0a3d91 60%,#082d6e);border-radius:24px;box-shadow:0 12px 30px rgba(10,61,145,.32);padding:18px 14px 18px 20px;margin:4px 0 4px;animation:azbin .35s both;position:relative;overflow:hidden}
-.azb-banner small{display:block;font:700 12.5px 'Inter',sans-serif;color:#bcd2ff}
-.azb-banner b{display:block;font:900 26px/1.05 'Archivo',sans-serif;color:#fff;letter-spacing:-.02em;margin:4px 0 6px}
-.azb-banner em{display:block;font:500 13px/1.35 'Inter',sans-serif;font-style:normal;color:#dbe7ff;max-width:190px}
-.azb-bi{width:100px;height:100px;flex-shrink:0;transition:transform .25s}
-.azb-banner:active .azb-bi{transform:scale(1.08) rotate(-3deg)}
 .azb-tbp{display:flex;align-items:center;gap:7px;height:40px;padding:0 14px 0 11px;border-radius:999px;background:var(--tint);color:var(--n);text-decoration:none;font:700 14px 'Inter',sans-serif;margin-left:auto}
 .azb-tbp .azb-sv{width:21px;height:21px}
 @media(prefers-reduced-motion:reduce){.azb *{animation:none!important;transition:none!important}}
@@ -385,18 +365,6 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
   var ICO = {trash:'<svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v7M14 10v7"/></svg>', mic:'<svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>', clip:'<svg viewBox="0 0 24 24"><path d="M21 12.5l-8.5 8.5a5.5 5.5 0 0 1-7.8-7.8l9-9a3.7 3.7 0 0 1 5.2 5.2l-9 9a1.8 1.8 0 0 1-2.6-2.6l8.3-8.3"/></svg>', send:'<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>'};
   var COARSE = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
   var DN = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'], DL = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'], MN = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-  var TIL = {
-    home:'<rect x="20" y="42" width="56" height="40" rx="4" fill="#fff" stroke="#0a3d91" stroke-width="3"/><path d="M12 46L48 16l36 30z" fill="#0a3d91"/><rect x="64" y="22" width="8" height="14" fill="#ff6b6b"/><rect x="40" y="58" width="16" height="24" rx="3" fill="#ffc857" stroke="#0a3d91" stroke-width="3"/><rect x="24" y="52" width="12" height="12" rx="2" fill="#cfe0ff" stroke="#0a3d91" stroke-width="2.5"/><rect x="60" y="52" width="12" height="12" rx="2" fill="#cfe0ff" stroke="#0a3d91" stroke-width="2.5"/>',
-    cal:'<rect x="14" y="20" width="68" height="62" rx="10" fill="#fff" stroke="#0a3d91" stroke-width="3"/><path d="M14 30a10 10 0 0 1 10-10h48a10 10 0 0 1 10 10v6H14z" fill="#0a3d91"/><rect x="28" y="11" width="7" height="15" rx="3.5" fill="#ffc857" stroke="#0a3d91" stroke-width="2"/><rect x="61" y="11" width="7" height="15" rx="3.5" fill="#ffc857" stroke="#0a3d91" stroke-width="2"/><g fill="#cfe0ff"><circle cx="28" cy="48" r="4"/><circle cx="44" cy="48" r="4"/><circle cx="60" cy="48" r="4"/><circle cx="28" cy="64" r="4"/><circle cx="44" cy="64" r="4"/></g><circle cx="64" cy="66" r="13" fill="#34c38f" stroke="#fff" stroke-width="3"/><path d="M58 66l5 5 9-10" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>',
-    chat:'<rect x="16" y="10" width="52" height="68" rx="8" fill="#fff" stroke="#0a3d91" stroke-width="3"/><path d="M26 26h32M26 36h32M26 46h20" stroke="#9db8e8" stroke-width="4" stroke-linecap="round"/><circle cx="64" cy="64" r="18" fill="#ffc857" stroke="#0a3d91" stroke-width="3"/><text x="64" y="72" text-anchor="middle" font-family="Archivo,Arial,sans-serif" font-weight="800" font-size="22" fill="#0a3d91">$</text>',
-    alarm:'<circle cx="24" cy="24" r="11" fill="#ff6b6b" stroke="#0a3d91" stroke-width="3"/><circle cx="72" cy="24" r="11" fill="#ff6b6b" stroke="#0a3d91" stroke-width="3"/><circle cx="48" cy="54" r="29" fill="#fff" stroke="#0a3d91" stroke-width="3.5"/><path d="M48 36v18l12 8" stroke="#0a3d91" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/><circle cx="48" cy="54" r="3" fill="#0a3d91"/>',
-    clip:'<rect x="12" y="24" width="60" height="52" rx="8" fill="#fff" stroke="#0a3d91" stroke-width="3"/><circle cx="30" cy="40" r="6" fill="#ffc857"/><path d="M12 68l18-16 14 12 12-10 16 14v8H12z" fill="#cfe0ff" stroke="#0a3d91" stroke-width="3" stroke-linejoin="round"/><path d="M70 12v32a8 8 0 0 0 16 0V20" stroke="#ff6b6b" stroke-width="5" stroke-linecap="round" fill="none"/>',
-    bell:'<path d="M22 68V50a26 26 0 0 1 52 0v18l8 9H14z" fill="#ffc857" stroke="#0a3d91" stroke-width="3" stroke-linejoin="round"/><circle cx="48" cy="18" r="5" fill="#0a3d91"/><path d="M40 82a8 8 0 0 0 16 0z" fill="#0a3d91"/><circle cx="72" cy="24" r="10" fill="#ff6b6b" stroke="#fff" stroke-width="3"/>'};
-  function til(n){ return '<svg class="azb-ts" viewBox="0 0 96 96"><ellipse cx="48" cy="88" rx="30" ry="4.5" fill="#0a3d91" opacity=".13"/>'+(TIL[n]||TIL.home)+'</svg>'; }
-  function tabBanner(){
-    var ill = '<svg class="azb-ts" viewBox="0 0 96 96"><ellipse cx="48" cy="88" rx="34" ry="4.5" fill="#0a3d91" opacity=".13"/><rect x="8" y="14" width="80" height="60" rx="9" fill="#fff" stroke="#fff" stroke-width="3"/><path d="M8 24a9 9 0 0 1 9-10h62a9 9 0 0 1 9 10v4H8z" fill="#9db8e8"/><circle cx="18" cy="21" r="2.4" fill="#fff"/><circle cx="26" cy="21" r="2.4" fill="#fff"/><rect x="18" y="38" width="16" height="26" rx="3" fill="#ffc857" stroke="#0a3d91" stroke-width="2.5"/><rect x="40" y="46" width="16" height="18" rx="3" fill="#34c38f" stroke="#0a3d91" stroke-width="2.5"/><rect x="62" y="34" width="16" height="30" rx="3" fill="#ff6b6b" stroke="#0a3d91" stroke-width="2.5"/></svg>';
-    return '<a class="azb-banner" href="'+esc(window.AZCU_TABLERO)+'" target="_blank" rel="noopener"><div><small>Todas tus propiedades</small><b>Abrir el tablero</b><em>Fichas, etapas, encuestas y documentos</em></div><span class="azb-bi">'+ill+'</span></a>';
-  }
   function tabsHtml(){
     var cur = st.view==='agenda' ? 'agenda' : st.view==='mov' ? 'mov' : (st.menu || !st.msgs.length) ? 'home' : 'chat';
     var T = [['home','Inicio','home'],['chat','Chat','chat'],['agenda','Agenda','cal'],['mov','Novedades','hist'],['alert','Alertas','bell']];
@@ -582,11 +550,11 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
       if(st.view==='agenda') h += agendaHtml(); else if(st.view==='mov') h += movHtml(); else {
       if(!st.msgs.length || st.menu){
         h += (st.menu && st.msgs.length ? '<button type="button" class="azb-back" data-a="menux">💬 Volver a la charla</button>' : '')+'<div class="azb-av">'+mk(60)+'</div><div class="azb-eyb">Tu asistente, siempre disponible</div><h1>Hola'+(st.nombre?', <b>'+esc(st.nombre)+'</b>':'')+'.<br>¿Qué hacemos hoy?</h1><p class="azb-lead">Preguntame lo que quieras del tablero o pedime que cargue visitas, agende, cambie estados o mande reportes. Escribime como a un compañero.</p>'+(APP && window.OneSignalDeferred && !st.pushOn ? '<button class="azb-row" data-a="push" style="border-color:var(--n);background:#eef3ff">🔔 Activar avisos en este celular<span>→</span></button>' : '')+'<div class="azb-lbl">Atajos</div>';
-        var sc = shortcuts(), big = '', small = '', bigs = {}, rc = 0;
+        var sc = shortcuts(), big = '', small = '', bigs = {};
         sc.forEach(function(s){
           var at = (s[2]==='agenda'?'data-a="agenda"':s[2]==='adjuntar'?'data-a="attach"':(s[2]?'data-w="'+s[2]+'"':'data-q="'+esc(s[3]||s[0])+'"'))+(s[1]?' data-at="'+s[1]+'"':''), tl = TILE[s[0]];
-          if(tl && !AZ.ctx) bigs[s[0]] = '<button class="azb-row azb-tile tl-'+tl[0]+'" '+at+'><span class="azb-ti">'+til(tl[0])+'</span><b>'+tl[1]+'</b></button>';
-          else small += '<button class="azb-row r'+(rc++ % 5)+'" '+at+'><i>'+sv(icoFor(s[0]))+'</i><b>'+esc(s[0])+'</b><span>→</span></button>';
+          if(tl && !AZ.ctx) bigs[s[0]] = '<button class="azb-row azb-tile" '+at+'><i>'+sv(tl[0])+'</i><b>'+tl[1]+'</b></button>';
+          else small += '<button class="azb-row" '+at+'><i>'+sv(icoFor(s[0]))+'</i><b>'+esc(s[0])+'</b><span>→</span></button>';
         });
         Object.keys(TILE).forEach(function(k){ if(bigs[k]) big += bigs[k]; });
         if(big) h = h.replace('<div class="azb-lbl">Atajos</div>', '<div class="azb-lbl">Lo de todos los días</div><div class="azb-grid">'+big+'</div>'+(small ? '<div class="azb-lbl">Más cosas</div>' : '')); 
