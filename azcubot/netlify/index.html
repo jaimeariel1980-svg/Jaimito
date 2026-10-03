@@ -589,7 +589,7 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
           else small += '<button class="azb-row r'+(rc++ % 5)+'" '+at+'><i>'+sv(icoFor(s[0]))+'</i><b>'+esc(s[0])+'</b><span>→</span></button>';
         });
         Object.keys(TILE).forEach(function(k){ if(bigs[k]) big += bigs[k]; });
-        if(big) h = h.replace('<div class="azb-lbl">Atajos</div>', (APP && window.AZCU_TABLERO ? tabBanner() : '')+'<div class="azb-lbl">Lo de todos los días</div><div class="azb-grid">'+big+'</div>'+(small ? '<div class="azb-lbl">Más cosas</div>' : '')); 
+        if(big) h = h.replace('<div class="azb-lbl">Atajos</div>', '<div class="azb-lbl">Lo de todos los días</div><div class="azb-grid">'+big+'</div>'+(small ? '<div class="azb-lbl">Más cosas</div>' : '')); 
         h += small;
       } else st.msgs.forEach(function(m,mi){
         if(!m.ts) m.ts = Date.now();
