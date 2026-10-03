@@ -16,7 +16,7 @@
 <script>
 /* ===== CONFIGURACIÓN — editar estas dos líneas ===== */
 window.AZCU_API = "https://script.google.com/macros/s/AKfycbw82JqJx-WAAah3rd9V1U-KObnkWLmMKIASwDhrHK9CX4fkDGJPiO2fAnmMjofsPiHBFg/exec";      // URL /exec del despliegue de Apps Script del tablero
-window.AZCU_TABLERO = "https://script.google.com/macros/s/AKfycbw82JqJx-WAAah3rd9V1U-KObnkWLmMKIASwDhrHK9CX4fkDGJPiO2fAnmMjofsPiHBFg/exec?app=tablero";
+window.AZCU_TABLERO = "tablero.html";
 window.AZCU_APP = true;
 window.AZCU_ONESIGNAL = "26a05ded-18d0-4349-972b-b30e5e614805";
 window.OneSignalDeferred = window.OneSignalDeferred || [];
@@ -732,32 +732,32 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
       var pl; try{ pl = btoa(unescape(encodeURIComponent(inp.value))); }catch(e){ return; }
       if(pl.length > 6500) return;
       var fcb = 'azbfb'+Math.random().toString(36).slice(2,9), fs;
-      window[fcb] = function(d){ delete window[fcb]; if(fs) fs.remove(); if(done || !d || d.ok===undefined) return; st.status = ''; finish(); if(d.ok) ok(d.data); else onErr(new Error(d.error || 'error')); };
+      window[fcb] = function(d){ delete window[fcb]; if(fs) fs.remove(); if(done || !d || d.ok===undefined) return; st.status = ''; ls('via','anon'); finish(); if(d.ok) ok(d.data); else onErr(new Error(d.error || 'error')); };
       fs = document.createElement('script'); fs.src = window.AZCU_API+'?azr='+id+'&azc='+encodeURIComponent(pl)+'&cb='+fcb+'&_='+Date.now();
       fs.onerror = function(){ delete window[fcb]; fs.remove(); };
       document.head.appendChild(fs);
       setTimeout(function(){
         if(done) return;
         var acb = 'azbfa'+Math.random().toString(36).slice(2,9), as;
-        window[acb] = function(d){ delete window[acb]; if(as) as.remove(); if(done || !d || d.ok===undefined) return; st.status = ''; finish(); if(d.ok) ok(d.data); else onErr(new Error(d.error || 'error')); };
+        window[acb] = function(d){ delete window[acb]; if(as) as.remove(); if(done || !d || d.ok===undefined) return; st.status = ''; ls('via','anon'); finish(); if(d.ok) ok(d.data); else onErr(new Error(d.error || 'error')); };
         as = document.createElement('script'); as.crossOrigin = 'anonymous'; as.src = window.AZCU_API+'?azr='+id+'&azc='+encodeURIComponent(pl)+'&cb='+acb+'&_='+Date.now();
         as.onerror = function(){ delete window[acb]; as.remove(); };
         document.head.appendChild(as);
-      }, 3000);
+      }, ls('via')==='anon' ? 0 : 3000);
     }
     function poll(){
       if(done) return;
       if(!got && !fbOn && Date.now()-t0 > 9000) fallback();
       if(Date.now()-t0 > (/^azcu(Chat|Atajo|Voz|Mov|Warm|Agenda)$/.test(fn) ? 100000 : 330000)){ finish(); onErr(new Error('Azcu no recibió respuesta del servidor. Revisá que tengas internet y probá de nuevo. Si pasa siempre en este celular, abrí Azcu desde Chrome.')); return; }
       var cb = 'azbcb'+Math.random().toString(36).slice(2,9), wd;
-      window[cb] = function(d){ delete window[cb]; clearTimeout(wd); if(scr) scr.remove(); if(done) return; if(d) got = true; if(d && d.progress && d.ok===undefined){ if(st.status!==d.progress){ st.status = d.progress; render(); } pollT = setTimeout(poll, 400); } else if(d){ st.status = ''; finish(); if(d.ok) ok(d.data); else onErr(new Error(d.error || 'error')); } else pollT = setTimeout(poll, 450); };
+      window[cb] = function(d){ delete window[cb]; clearTimeout(wd); if(scr) scr.remove(); if(done) return; if(d) got = true; if(d && d.progress && d.ok===undefined){ if(st.status!==d.progress){ st.status = d.progress; render(); } pollT = setTimeout(poll, 400); } else if(d){ st.status = ''; ls('via', fbOn ? 'anon' : ''); finish(); if(d.ok) ok(d.data); else onErr(new Error(d.error || 'error')); } else pollT = setTimeout(poll, 450); };
       scr = document.createElement('script'); if(fbOn && (pollN++ % 2)) scr.crossOrigin = 'anonymous'; scr.src = window.AZCU_API+'?azr='+id+'&cb='+cb+'&_='+Date.now();
       var sc0 = scr; wd = setTimeout(function(){ if(window[cb]){ delete window[cb]; if(sc0) sc0.remove(); if(!done) pollT = setTimeout(poll, 600); } }, 4000);
       scr.onerror = function(){ clearTimeout(wd); delete window[cb]; if(scr) scr.remove(); if(!done) pollT = setTimeout(poll, 2000); };
       document.head.appendChild(scr);
     }
     document.body.appendChild(ifr); document.body.appendChild(form); form.submit();
-    pollT = setTimeout(poll, 500);
+    pollT = setTimeout(poll, 500); if(ls('via')==='anon') setTimeout(fallback, 300);
   }
   function call(fn, args, ok, fail, retried){
     function onErr(e){

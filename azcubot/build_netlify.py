@@ -18,7 +18,7 @@ head = '''<!DOCTYPE html>
 <script>
 /* ===== CONFIGURACIÓN — editar estas dos líneas ===== */
 window.AZCU_API = "'''+EXEC+'''";      // URL /exec del despliegue de Apps Script del tablero
-window.AZCU_TABLERO = "'''+EXEC+'''?app=tablero";
+window.AZCU_TABLERO = "tablero.html";
 window.AZCU_APP = true;
 window.AZCU_ONESIGNAL = "26a05ded-18d0-4349-972b-b30e5e614805";
 window.OneSignalDeferred = window.OneSignalDeferred || [];
@@ -27,3 +27,8 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
 </script>
 '''
 open('netlify/index.html', 'w', encoding='utf8').write(head + w + '\n</body></html>\n')
+
+b = open('tablero_bridge.js', encoding='utf8').read().replace('__API__', EXEC)
+t = open('Tablero.html', encoding='utf8').read()
+t = t.replace('<head>', '<head>\n<script>' + b + '</script>', 1)
+open('netlify/tablero.html', 'w', encoding='utf8').write(t)

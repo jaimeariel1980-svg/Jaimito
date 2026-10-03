@@ -922,6 +922,7 @@ function azcuGet_(id){
   for(i=0;i<n;i++){ p = c.get('azr_'+id+'_'+i); if(p===null) return null; s += p; }
   return s;
 }
+var AZCU_TB_ = ['getDatos','guardarPropiedad','registrarInteraccion','editarInteraccion','eliminarInteraccion','eliminarPropiedad','agendarVisita','registrarPropuesta','subirDocumento','borrarDocumento','obtenerEncuesta','enviarReportePropietario','generarInformeTokko','getAppUrl','getEncuestaUrl'];
 function azcuApi(e){
   var raw = (e && e.parameter && e.parameter.payload) || (e && e.postData && e.postData.contents) || '{}', req = {}, out;
   try{
@@ -948,6 +949,12 @@ function azcuApi(e){
     else if(req.fn==='azcuAdjPlan') out = {ok:true, data:azcuAdjPlan(a[0], a[1], a[2], a[3])};
     else if(req.fn==='azcuTranscribir') out = {ok:true, data:azcuTranscribir(a[0], a[1], a[2])};
     else if(req.fn==='azcuLogo') out = {ok:true, data:azcuLogo_()};
+    else if(AZCU_TB_.indexOf(req.fn)>=0){
+      azcuPin_(a[0]);
+      var tf = globalThis[req.fn];
+      if(typeof tf!=='function') throw new Error('Función no disponible: '+req.fn);
+      out = {ok:true, data:tf.apply(null, a.slice(1))};
+    }
     else out = {ok:false, error:'Función desconocida'};
   }catch(err){ out = {ok:false, error:String(err.message || err)}; }
   var id = String(req.id || '').replace(/[^A-Za-z0-9]/g, '');
