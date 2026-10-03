@@ -1506,7 +1506,7 @@ function azcuCrearAvisos(){
   ScriptApp.newTrigger('azcuAvisoVendedor').timeBased().everyDays(1).atHour(11).create();
   ScriptApp.newTrigger('azcuAvisoRecordatorios').timeBased().everyMinutes(5).create();
   ScriptApp.newTrigger('azcuCalentar').timeBased().everyMinutes(5).create();
-  ScriptApp.newTrigger('azcuAvisoPapeles').timeBased().everyDays(3).atHour(9).create();
+  ScriptApp.newTrigger('azcuAvisoPapeles').timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(9).create();
   ScriptApp.newTrigger('azcuResumenSemanal').timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(8).create();
   azcuAvisoCambios();
   Logger.log('Listo: aviso diario 8 h, cambios de etapa y post-visita cada 30 min, resumen semanal los lunes 8 h, recordatorios personales cada 5 min, datos precalentados cada 10 min, recordatorio de papeles los lunes 9 h.');
