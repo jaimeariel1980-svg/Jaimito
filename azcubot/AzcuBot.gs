@@ -1239,24 +1239,24 @@ function azcuAvisoSeguimiento(forzar){
   if(forzar!==true && (h<10 || h>=20)) return;
   var seg = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento');
   if(!seg || seg.getLastRow()<2) return;
-  var v = seg.getDataRange().getValues(), hn = azcuHoy_(), pr = PropertiesService.getScriptProperties(), env = String(pr.getProperty('AZCU_SEG')||'').split(';').filter(Boolean), ult = {}, i, datos = null, cambio = false;
+  var v = seg.getDataRange().getValues(), hn = azcuHoy_(), ahora = Date.now(), envM = azcuMapaGet_('AZCU_SEG2'), ult = {}, i, datos = null, cambio = false;
   for(i=1;i<v.length;i++) if(v[i][0]) ult[String(v[i][0]).trim()+'|'+(String(v[i][4]).replace(/\D/g,'')||azcuSinAc_(v[i][3]))] = v[i];
   Object.keys(ult).forEach(function(k){
     var r = ult[k], n = azcuNum_(r[7]);
     if(!n || /cerrar/i.test(String(r[6])) || /no le interes/i.test(String(r[5])) || String(r[5]).trim()==='Visita agendada') return;
-    var dd = azcuDif_(hn, n); if(dd<0 || dd>3) return;
-    var key = k+'|'+n+'|'+hn; if(env.indexOf(key)>=0) return;
+    var dd = azcuDif_(hn, n); if(dd<0 || dd>14) return;
+    var key = k+'|'+n; if(envM[key] && ahora-envM[key] < 2*86400000) return;
     var id = String(r[0]).trim(), cli = String(r[3]||'').trim(), tel = String(r[4]||'').replace(/\D/g,'');
     try{
       datos = datos || azcuDatos_();
       var p = null; datos.forEach(function(x){ if(String(x.id).trim()===id) p = x; });
       var ve = String((p && p.vendedor) || r[9] || r[10] || '').trim(), dir = p ? p.dir : id;
-      azcuPush_('📞 Escribile a '+(cli || 'el interesado'), dir+(/interes/i.test(String(r[5])) ? ' · le interesó' : '')+(dd>0 ? ' · pendiente hace '+dd+(dd===1?' día':' días') : '')+(ve ? '' : ' · (sin vendedor asignado)'),
+      azcuPush_((envM[key] ? '⚠️ Todavía falta escribirle a ' : '📞 Escribile a ')+(cli || 'el interesado'), dir+(/interes/i.test(String(r[5])) ? ' · le interesó' : '')+(dd>0 ? ' · pendiente hace '+dd+(dd===1?' día':' días') : '')+(ve ? '' : ' · (sin vendedor asignado)'),
         AZCU_WEB+'?seg='+encodeURIComponent(id)+'&ci='+encodeURIComponent(cli)+'&tel='+encodeURIComponent(tel), ve ? azcuDestinos_(ve, true) : null, !!ve);
-      env.push(key); cambio = true;
+      envM[key] = ahora; cambio = true;
     }catch(e){}
   });
-  if(cambio) pr.setProperty('AZCU_SEG', env.slice(-150).join(';'));
+  if(cambio){ var ks2 = Object.keys(envM); if(ks2.length>200) ks2.slice(0, ks2.length-200).forEach(function(k2){ delete envM[k2]; }); azcuMapaSet_('AZCU_SEG2', envM); }
 }
 function azcuAvisoPostVisita(){
   var h = +Utilities.formatDate(new Date(), AZCU_TZ, 'H');
@@ -1264,15 +1264,15 @@ function azcuAvisoPostVisita(){
   var seg = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento');
   if(!seg) return;
   var v = seg.getDataRange().getValues(), ahora = Date.now(), cand = [], i, j, m;
-  var pr = PropertiesService.getScriptProperties(), env = String(pr.getProperty('AZCU_PV')||'').split(';').filter(Boolean);
+  var pr = PropertiesService.getScriptProperties(), env = azcuMapaGet_('AZCU_PV2'), cambio = false;
   for(i=1;i<v.length;i++){
     if(String(v[i][5]).trim()!=='Visita agendada') continue;
     m = String(v[i][6]).match(/^Visita (\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2})/);
     if(!m) continue;
     var dt = ahora - new Date(m[3]+'-'+m[2]+'-'+m[1]+'T'+m[4]+':'+m[5]+':00-03:00').getTime();
-    if(dt<2*3600000 || dt>30*3600000) continue;
+    if(dt<2*3600000 || dt>14*86400000) continue;
     var id = String(v[i][0]).trim(), key = id+'|'+m[3]+m[2]+m[1]+m[4]+m[5]+'|'+azcuSlug_(v[i][3]).slice(0,8);
-    if(env.indexOf(key)>=0) continue;
+    if(env[key] && ahora-env[key] < 2*86400000) continue;
     var tel = String(v[i][4]).replace(/\D/g,''), nom = azcuSinAc_(v[i][3]), vn = +(m[3]+m[2]+m[1]), hecho = false;
     for(j=i+1;j<v.length;j++){
       if(String(v[j][0]).trim()!==id || String(v[j][5]).trim()==='Visita agendada') continue;
@@ -1280,7 +1280,7 @@ function azcuAvisoPostVisita(){
       if(nj!==null && nj<vn) continue;
       if((!nom && !tel) || (nom && azcuSinAc_(v[j][3])===nom) || (tel && String(v[j][4]).replace(/\D/g,'')===tel)){ hecho = true; break; }
     }
-    cand.push({key:key, id:id, cli:String(v[i][3]||'').trim(), quien:String(v[i][9]||'').trim(), hora:m[4]+':'+m[5], hecho:hecho});
+    cand.push({key:key, id:id, cli:String(v[i][3]||'').trim(), quien:String(v[i][9]||'').trim(), hora:m[4]+':'+m[5], hecho:hecho, veces:env[key] ? 1 : 0});
   }
   if(!cand.length) return;
   var datos = null;
@@ -1289,13 +1289,14 @@ function azcuAvisoPostVisita(){
       try{
         datos = datos || azcuDatos_();
         var p = null; datos.forEach(function(x){ if(String(x.id).trim()===c.id) p = x; });
-        azcuPush_('¿Cómo te fue en la visita? 🏠', (p ? p.dir : c.id)+(c.cli ? ' con '+c.cli : '')+' · '+c.hora+'. Contame en un audio cómo estuvo.',
+        azcuPush_(c.veces ? '⚠️ Falta cargar cómo te fue en la visita' : '¿Cómo te fue en la visita? 🏠', (p ? p.dir : c.id)+(c.cli ? ' con '+c.cli : '')+' · '+c.hora+'. Contame en un audio cómo estuvo.'+(c.veces ? ' Te lo recuerdo cada 2 días hasta que lo cargues.' : ''),
           AZCU_WEB+'?cv='+encodeURIComponent(c.id)+'&ci='+encodeURIComponent(c.cli), azcuDestinos_(c.quien || (p && p.vendedor)));
       }catch(e){ return; }
     }
-    env.push(c.key);
+    if(c.hecho){ if(env[c.key]!==undefined){ delete env[c.key]; cambio = true; } return; }
+    env[c.key] = ahora; cambio = true;
   });
-  pr.setProperty('AZCU_PV', env.slice(-120).join(';'));
+  if(cambio){ var ks = Object.keys(env); if(ks.length>200) ks.slice(0, ks.length-200).forEach(function(k){ delete env[k]; }); azcuMapaSet_('AZCU_PV2', env); }
 }
 
 function azcuStatsSemana_(){
@@ -1502,7 +1503,7 @@ function azcuCrearAvisos(){
   ScriptApp.newTrigger('azcuAvisoVendedor').timeBased().everyDays(1).atHour(11).create();
   ScriptApp.newTrigger('azcuAvisoRecordatorios').timeBased().everyMinutes(5).create();
   ScriptApp.newTrigger('azcuCalentar').timeBased().everyMinutes(5).create();
-  ScriptApp.newTrigger('azcuAvisoPapeles').timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(9).create();
+  ScriptApp.newTrigger('azcuAvisoPapeles').timeBased().everyDays(3).atHour(9).create();
   ScriptApp.newTrigger('azcuResumenSemanal').timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(8).create();
   azcuAvisoCambios();
   Logger.log('Listo: aviso diario 8 h, cambios de etapa y post-visita cada 30 min, resumen semanal los lunes 8 h, recordatorios personales cada 5 min, datos precalentados cada 10 min, recordatorio de papeles los lunes 9 h.');
@@ -1766,13 +1767,11 @@ function azcuSegGuia(pin, tipo, id, ci){
       texto:'Hola'+(nom ? ' '+nom : '')+'! Te cuento cómo viene '+p.dir+': '+cons+' consulta'+(cons===1?'':'s')+', '+vis+' visita'+(vis===1?'':'s')+' y '+prop.length+' propuesta'+(prop.length===1?'':'s')+'. '+frase+' Cualquier duda me avisás.'};
   }
   if(tipo==='sm'){
-    try{ var ms2 = azcuMapaGet_('AZCU_SM'); ms2[kid] = ahoraG; azcuMapaSet_('AZCU_SM', ms2); }catch(e){}
     return {tipo:'sm', id:p.id, dir:p.dir, dias:p.dias, etapa:p.etapa};
   }
   if(tipo==='prop'){
     var pu = null, k; for(k=prop.length-1;k>=0;k--){ if(!ci || azcuSinAc_(prop[k].cli)===azcuSinAc_(ci)){ pu = prop[k]; break; } }
     if(!pu && prop.length) pu = prop[prop.length-1];
-    if(pu){ try{ var mp = azcuMapaGet_('AZCU_PROP'); var kp = kid+'|'+(azcuNum_(pu.fecha)||''); mp[kp] = ahoraG; mp[kp+'_s'] = 1; azcuMapaSet_('AZCU_PROP', mp); }catch(e){} }
     var monto = pu ? String(pu.obs||'').replace(/^Propuesta:\s*/i,'').slice(0,80) : '', nomo = String(ow.nombre||'').split(/\s+/)[0] || '', n2 = pu ? azcuNum_(pu.fecha) : null;
     return {tipo:'prop', id:p.id, dir:p.dir, cliente:pu ? pu.cli : '', dias:n2 ? azcuDif_(azcuHoy_(), n2) : null, para:{nombre:ow.nombre||'', tel:String(ow.tel||'')},
       texto:'Hola'+(nomo ? ' '+nomo : '')+'! Recibimos una propuesta por '+p.dir+(pu && pu.cli ? ' de '+pu.cli : '')+(monto ? ': '+monto : '')+'. ¿Podemos coordinar para que la puedas evaluar y darnos una respuesta? Gracias!'};
@@ -1812,12 +1811,12 @@ function azcuAvisoPropuestas(forzar){
     if(!props.length) return;
     var u = props[props.length-1], n = azcuNum_(u.fecha);
     if(!n || /acept|rechaz/i.test(u.res)) return;
-    var dd = azcuDif_(hn, n); if(dd<3 || dd>30) return;
+    var dd = azcuDif_(hn, n); if(dd<3 || dd>60) return;
     var key = String(p.id).trim()+'|'+n;
-    if(m[key]){ if(m[key+'_s']) return; if(ahora-m[key] < 7*86400000) return; }
+    if(m[key] && ahora-m[key] < 3*86400000) return;
     var ve = String(p.vendedor||'').trim();
     try{
-      azcuPush_('💬 Propuesta sin respuesta', (u.cli ? u.cli+' · ' : '')+p.dir+' · hace '+dd+' días'+(ve ? '' : ' (sin vendedor asignado)'),
+      azcuPush_(m[key] ? '⚠️ Propuesta SIN respuesta' : '💬 Propuesta sin respuesta', (u.cli ? u.cli+' · ' : '')+p.dir+' · hace '+dd+' días'+(m[key] ? ' · hay que responderla' : '')+(ve ? '' : ' (sin vendedor asignado)'),
         AZCU_WEB+'?pr='+encodeURIComponent(String(p.id).trim())+'&ci='+encodeURIComponent(u.cli||''), ve ? azcuDestinos_(ve, true) : null, !!ve);
       m[key] = ahora; cambio = true;
     }catch(e){}
@@ -1833,7 +1832,7 @@ function azcuAvisoSinMov(forzar){
     if(!(AZCU_COD_[p.etapa]==='p')) return;
     if(!(p.dias===null || p.dias>30)) { if(m[id]!==undefined){ delete m[id]; cambio = true; } return; }
     if(m[id]===undefined){ m[id] = ahora; cambio = true; return; }
-    if(ahora-m[id] < 30*86400000) return;
+    if(ahora-m[id] < 15*86400000) return;
     var ve = String(p.vendedor||'').trim();
     (por[ve] = por[ve] || []).push(p);
   });
