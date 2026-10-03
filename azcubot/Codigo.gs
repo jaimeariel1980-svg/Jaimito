@@ -1430,13 +1430,13 @@ function leerSeguimiento_(){
   if(!seg || seg.getLastRow()<2)return map;
   var d=seg.getRange(1,1,seg.getLastRow(),seg.getLastColumn()).getValues(), h=d[0];
   function c(n){for(var x=0;x<h.length;x++){if((''+h[x]).toLowerCase().indexOf(n.toLowerCase())>-1)return x;}return -1;}
-  var cId=c('Código'), cF=c('Fecha'), cV=c('Vía'), cCli=c('Interesado'), cTel=c('Tel'), cRes=c('Resultado'), cProx=c('Próximo'), cObs=c('Observ'), cFProx=c('próximo contacto');
+  var cId=c('Código'), cF=c('Fecha'), cV=c('Vía'), cCli=c('Interesado'), cTel=c('Tel'), cRes=c('Resultado'), cProx=c('Próximo'), cObs=c('Observ'), cFProx=c('próximo contacto'), cVend=c('Vendedor');
   for(var r=1;r<d.length;r++){
     var id=(''+d[r][cId]).trim(); if(!id)continue;
     if(!map[id])map[id]=[];
     var f=d[r][cF];
     map[id].push({ _row:(r+1), fechaProx:cFProx>-1?(''+d[r][cFProx]):'', fecha:(f&&f.getMonth!==undefined)?Utilities.formatDate(f,'GMT-3','dd/MM/yyyy'):(''+f), _d:_pdias_(f),
-      tipo:(''+d[r][cV])||'', cli:(''+d[r][cCli])||'', tel:cTel>-1?(''+d[r][cTel]):'', res:(''+d[r][cRes])||'', prox:cProx>-1?(''+d[r][cProx]):'', obs:cObs>-1?(''+d[r][cObs]):'' });
+      tipo:(''+d[r][cV])||'', cli:(''+d[r][cCli])||'', tel:cTel>-1?(''+d[r][cTel]):'', res:(''+d[r][cRes])||'', prox:cProx>-1?(''+d[r][cProx]):'', obs:cObs>-1?(''+d[r][cObs]):'', vend:cVend>-1?(''+d[r][cVend]).trim():'' });
   }
   return map;
 }
@@ -1495,7 +1495,7 @@ function getDatos(){
     var vis=seg.filter(function(s){return /visita/i.test(s.tipo)||/visitó|oferta/i.test(s.res);}).length;
     var dias=null;
     seg.forEach(function(s){ if(s._d){ var dd=Math.floor((hoy-s._d)/86400000); if(dias===null||dd<dias)dias=dd; } });
-    var segOut=seg.map(function(s){return {_row:s._row,fecha:s.fecha,tipo:s.tipo,cli:s.cli,tel:s.tel,res:s.res,prox:s.prox,obs:s.obs,fechaProx:s.fechaProx};});
+    var segOut=seg.map(function(s){return {_row:s._row,fecha:s.fecha,tipo:s.tipo,cli:s.cli,tel:s.tel,res:s.res,prox:s.prox,obs:s.obs,fechaProx:s.fechaProx,vend:s.vend||''};});
     out.push({
       id:id, dir:(calle+' '+num).trim(), ciudad:row[c('Ciudad')]||'', tipo:row[c('Tipo de propiedad')]||'',
       etapa:row[c('Etapa')]||'Publicada', estadoCarga:row[c('Estado de la propiedad')]||'',

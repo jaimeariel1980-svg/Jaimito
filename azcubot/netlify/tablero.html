@@ -210,6 +210,7 @@ td{padding:7px 8px;border-bottom:1px solid #f1f0ec;vertical-align:top}
     <select id="ftipo" onchange="render()"><option value="">Todos los tipos</option></select>
     <select id="orden" onchange="render()"><option value="urg">Orden: más paradas primero</option><option value="fecha">Orden: + reciente</option><option value="precio">Orden: precio</option></select>
     <button id="editbtn" class="btn s" onclick="toggleEdit()">Modo edición: OFF</button>
+    <button id="vendbtn" class="btn s" onclick="cambiarVend()" title="Tu nombre: queda como vendedor en lo que cargues"></button>
     <span id="edithint" style="display:none;font-size:12.5px;color:var(--azul);font-weight:600">Arrastrá las tarjetas para cambiar de etapa</span>
   </div>
   <div class="board" id="board"></div>
@@ -895,7 +896,7 @@ function ficha(id){
     p.seg.forEach(s=>{const k=((s.tel&&(''+s.tel).replace(/\D/g,''))||(s.cli||'—').trim().toLowerCase());(byKey[k]=byKey[k]||[]).push(s);});
     seg=Object.keys(byKey).map(function(k){
       const arr=byKey[k];const nombre=(arr.find(s=>s.cli)||{}).cli||'—';const tel=(arr.find(s=>s.tel)||{}).tel||'';
-      const rows=arr.slice().reverse().map(s=>'<tr><td>'+s.fecha+'</td><td><span class="tag">'+s.tipo+'</span></td><td>'+s.res+(s.obs?'<div style="color:var(--gris);font-size:11px;margin-top:2px">'+s.obs+'</div>':'')+'</td><td>'+(s.prox||'—')+(s._row?' <span onclick="editarForm(\''+p.id+'\','+s._row+')" style="cursor:pointer;color:var(--acento);font-size:11px;margin-left:4px">editar</span> <span onclick="borrarInteraccion(\''+p.id+'\','+s._row+')" style="cursor:pointer;color:var(--rojo);font-size:11px">borrar</span>':'')+'</td></tr>').join('');
+      const rows=arr.slice().reverse().map(s=>'<tr><td>'+s.fecha+'</td><td><span class="tag">'+s.tipo+'</span></td><td>'+s.res+(s.obs?'<div style="color:var(--gris);font-size:11px;margin-top:2px">'+s.obs+'</div>':'')+(s.vend?'<div style="color:var(--acento);font-size:11px;margin-top:2px">👤 '+s.vend+'</div>':'')+'</td><td>'+(s.prox||'—')+(s._row?' <span onclick="editarForm(\''+p.id+'\','+s._row+')" style="cursor:pointer;color:var(--acento);font-size:11px;margin-left:4px">editar</span> <span onclick="borrarInteraccion(\''+p.id+'\','+s._row+')" style="cursor:pointer;color:var(--rojo);font-size:11px">borrar</span>':'')+'</td></tr>').join('');
       return '<div style="margin-bottom:14px;border:1px solid var(--linea);border-radius:10px;padding:10px 12px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-weight:700;font-size:13.5px">'+nombre+'</span><span style="color:var(--gris);font-weight:400;font-size:12px">· '+arr.length+' interacción(es)</span>'+(tel?' · <a href="https://wa.me/'+wa(tel)+'" target="_blank">WhatsApp</a>':'')+'<button class="btn s" style="margin-left:auto;padding:3px 9px;font-size:11px" onclick="cargarForm(\''+p.id+'\',\''+encodeURIComponent(nombre)+'\',\''+encodeURIComponent(tel)+'\')">+ interacción</button></div><table><tr><th>Fecha</th><th>Vía</th><th>Resultado</th><th>Próx. paso</th></tr>'+rows+'</table></div>';
     }).join('');
   } else seg='<div class="empty">Sin consultas ni visitas registradas todavía.</div>';
@@ -1034,9 +1035,12 @@ function cargarForm(id, nombre, tel){
   '<div class="dlbtns"><button class="btn g" id="cf_btn" onclick="guardarConsulta(\''+id+'\')">Registrar</button><button class="btn s" onclick="closeDL()">Cancelar</button></div></div>';
   document.getElementById('ov2').classList.add('on');
 }
+function _pintaVend(){var b=document.getElementById('vendbtn');if(!b)return;var n='';try{n=(localStorage.getItem('azcu_nombre')||'').trim();}catch(e){}b.textContent=n?('👤 '+n):'👤 Poné tu nombre';}
+function cambiarVend(){var n='';try{n=(localStorage.getItem('azcu_nombre')||'').trim();}catch(e){}var v=prompt('Tu nombre (queda como vendedor en lo que cargues; usá el mismo en Azcu):',n);if(v===null)return;v=v.trim();try{localStorage.setItem('azcu_nombre',v);}catch(e){}_pintaVend();}
+setTimeout(_pintaVend,300);
 function _vend(){
   var n=''; try{ n=(localStorage.getItem('azcu_nombre')||'').trim(); }catch(e){}
-  if(!n){ try{ n=(prompt('¿Con qué nombre cargás? (el mismo que usás en Azcu)')||'').trim(); if(n) localStorage.setItem('azcu_nombre',n); }catch(e){} }
+  if(!n){ try{ n=(prompt('¿Con qué nombre cargás? (el mismo que usás en Azcu)')||'').trim(); if(n) localStorage.setItem('azcu_nombre',n); }catch(e){} _pintaVend(); }
   return n;
 }
 function guardarConsulta(id){
