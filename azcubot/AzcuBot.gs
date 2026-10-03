@@ -829,6 +829,7 @@ function azcuEjecutar_(pin, accion){
     if(!d.cliente || !d.monto) throw new Error('Faltan datos');
     registrarPropuesta(p.id, {fecha:hoy, cliente:d.cliente, tel:d.tel, monto:d.monto, obs:d.obs});
     azcuMarcaVendedor_(quien);
+    azcuMarcaVendedor_(quien);
     return {ok:true, mensaje:'Propuesta registrada en '+p.dir+'.'};
   }
   if(tipo==='etapa'){
@@ -1617,7 +1618,7 @@ function azcuHerrUltimas_(a, ctx){
   var seg = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento');
   v = seg ? seg.getDataRange().getValues() : [];
   for(i=1;i<v.length;i++){
-    var num = azcuNum_(v[i][1]); if(!num || !String(v[i][0]).trim()) continue;
+    var num = azcuNum_(v[i][1]); if(!num || num>azcuHoy_() || !String(v[i][0]).trim()) continue;
     if(a.id && String(v[i][0]).trim()!==String(a.id).trim()) continue;
     var ve = String(v[i][9]||'').trim(), vs = azcuSlug_(ve);
     rows.push({n:num, r:i+1, fila:i+1, fecha:Utilities.formatDate(new Date(Date.UTC(Math.floor(num/10000), Math.floor(num/100)%100-1, num%100, 12)), 'UTC', 'dd/MM/yyyy'), propiedad:dirs[String(v[i][0]).trim()]||String(v[i][0]), id:String(v[i][0]).trim(), via:String(v[i][2]).trim(), interesado:String(v[i][3]).trim(), resultado:String(v[i][5]).trim(), obs:String(v[i][8]||'').trim().slice(0,160), vendedor:ve, mia:!!vs && (vs===q || vs===q1)});
