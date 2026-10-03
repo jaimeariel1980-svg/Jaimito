@@ -2296,6 +2296,24 @@ google.script.run
       return;
     }
     if(q.get('agenda')){ var rec = q.get('rec'); try{ history.replaceState(null, '', location.pathname); }catch(e){} st.entered = true; st.view = 'agenda'; st.agFrom = null; st.agSel = iso(new Date()); st.agForm = false; st.agNote = ''; setTimeout(function(){ if(rec) call('azcuRecCancelar', [st.nombre||'', rec], function(){ st.agNote = '✅ Aviso confirmado: no te lo vuelvo a repetir.'; render(); agLoad(); }, function(){ agLoad(); }); else agLoad(); }, 700); return; }
+    var sgId = q.get('seg');
+    if(sgId){
+      var sci = q.get('ci') || '', stel = (q.get('tel') || '').replace(/\D/g, '');
+      try{ history.replaceState(null, '', location.pathname); }catch(e){}
+      st.entered = true; st.menu = false; st.view = 'chat';
+      var sdir = sgId, sdo = function(){
+        var num = stel ? (stel.indexOf('54')===0 ? stel : '549'+stel.replace(/^0/, '').replace(/^15/, '')) : '';
+        var nom = (sci.split(/\s+/)[0] || ''), yo = st.nombre ? ' Soy '+st.nombre+' de Azcuénaga Inmobiliaria.' : ' Te escribo de Azcuénaga Inmobiliaria.';
+        var tx = 'Hola'+(nom ? ' '+nom : '')+'!'+yo+' ¿Qué te pareció la propiedad de '+sdir+'? ¿Querés que coordinemos otra visita o que te mostremos más opciones?';
+        var adj = [];
+        if(num){ adj.push({k:'l', label:'💬 Escribirle por WhatsApp'+(nom ? ' a '+nom : ''), url:'https://wa.me/'+num+'?text='+encodeURIComponent(tx)}); adj.push({k:'l', label:'📞 Llamar'+(nom ? ' a '+nom : ''), url:'tel:+'+num}); }
+        else adj.push({k:'l', label:'💬 Abrir WhatsApp (elegís el contacto)', url:'https://api.whatsapp.com/send?text='+encodeURIComponent(tx)});
+        st.msgs.push({role:'assistant', content:'📞 **Seguimiento pendiente**: escribile a **'+(sci || 'el interesado')+'** por **'+sdir+'** (le interesó). Te dejo el mensaje listo; después contame cómo te fue y lo cargo.', w:1, adj:adj}); save(); render();
+      };
+      if(st.props){ var sf = st.props.filter(function(p){ return p.id===sgId; })[0]; if(sf) sdir = sf.dir; sdo(); }
+      else call('azcuWarm', [], function(r){ if(Array.isArray(r)){ st.props = r; var sf2 = r.filter(function(p){ return p.id===sgId; })[0]; if(sf2) sdir = sf2.dir; } sdo(); }, function(){ sdo(); });
+      return;
+    }
     var id = q.get('cv'); if(!id) return;
     var ci = q.get('ci') || '';
     try{ history.replaceState(null, '', location.pathname); }catch(e){}

@@ -1229,6 +1229,30 @@ function azcuMarcaVendedor_(vend, cargo){
   }catch(e){}
 }
 
+function azcuAvisoSeguimiento(forzar){
+  var h = +Utilities.formatDate(new Date(), AZCU_TZ, 'H');
+  if(forzar!==true && (h<10 || h>=20)) return;
+  var seg = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento');
+  if(!seg || seg.getLastRow()<2) return;
+  var v = seg.getDataRange().getValues(), hn = azcuHoy_(), pr = PropertiesService.getScriptProperties(), env = String(pr.getProperty('AZCU_SEG')||'').split(';').filter(Boolean), ult = {}, i, datos = null, cambio = false;
+  for(i=1;i<v.length;i++) if(v[i][0]) ult[String(v[i][0]).trim()+'|'+(String(v[i][4]).replace(/\D/g,'')||azcuSinAc_(v[i][3]))] = v[i];
+  Object.keys(ult).forEach(function(k){
+    var r = ult[k], n = azcuNum_(r[7]);
+    if(!n || /cerrar/i.test(String(r[6])) || /no le interes/i.test(String(r[5])) || String(r[5]).trim()==='Visita agendada') return;
+    var dd = azcuDif_(hn, n); if(dd<0 || dd>3) return;
+    var key = k+'|'+n+'|'+hn; if(env.indexOf(key)>=0) return;
+    var id = String(r[0]).trim(), cli = String(r[3]||'').trim(), tel = String(r[4]||'').replace(/\D/g,'');
+    try{
+      datos = datos || azcuDatos_();
+      var p = null; datos.forEach(function(x){ if(String(x.id).trim()===id) p = x; });
+      var ve = String((p && p.vendedor) || r[9] || r[10] || '').trim(), dir = p ? p.dir : id;
+      azcuPush_('📞 Escribile a '+(cli || 'el interesado'), dir+(/interes/i.test(String(r[5])) ? ' · le interesó' : '')+(dd>0 ? ' · pendiente hace '+dd+(dd===1?' día':' días') : '')+(ve ? '' : ' · (sin vendedor asignado)'),
+        AZCU_WEB+'?seg='+encodeURIComponent(id)+'&ci='+encodeURIComponent(cli)+'&tel='+encodeURIComponent(tel), ve ? azcuDestinos_(ve, true) : null, !!ve);
+      env.push(key); cambio = true;
+    }catch(e){}
+  });
+  if(cambio) pr.setProperty('AZCU_SEG', env.slice(-150).join(';'));
+}
 function azcuAvisoPostVisita(){
   var h = +Utilities.formatDate(new Date(), AZCU_TZ, 'H');
   if(h<8 || h>=21) return;
@@ -1462,11 +1486,12 @@ function azcuAvisoRecordatorios(){
 }
 
 function azcuCrearAvisos(){
-  var nombres = ['azcuAvisoDiario','azcuAvisoCambios','azcuAvisoPostVisita','azcuResumenSemanal','azcuAvisoRecordatorios','azcuCalentar','azcuAvisoPapeles'];
+  var nombres = ['azcuAvisoDiario','azcuAvisoCambios','azcuAvisoPostVisita','azcuAvisoSeguimiento','azcuResumenSemanal','azcuAvisoRecordatorios','azcuCalentar','azcuAvisoPapeles'];
   ScriptApp.getProjectTriggers().forEach(function(t){ if(nombres.indexOf(t.getHandlerFunction())>=0) ScriptApp.deleteTrigger(t); });
   ScriptApp.newTrigger('azcuAvisoDiario').timeBased().everyDays(1).atHour(8).create();
   ScriptApp.newTrigger('azcuAvisoCambios').timeBased().everyMinutes(30).create();
   ScriptApp.newTrigger('azcuAvisoPostVisita').timeBased().everyMinutes(30).create();
+  ScriptApp.newTrigger('azcuAvisoSeguimiento').timeBased().everyHours(1).create();
   ScriptApp.newTrigger('azcuAvisoRecordatorios').timeBased().everyMinutes(5).create();
   ScriptApp.newTrigger('azcuCalentar').timeBased().everyMinutes(5).create();
   ScriptApp.newTrigger('azcuAvisoPapeles').timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(9).create();
@@ -1495,7 +1520,7 @@ function azcuDiagnostico(){
     try{ var pdf = generarInformeTokko(cap.id); if(pdf && pdf.base64) ok('PDF ficha propiedad', Math.round(pdf.base64.length*0.75/1024)+' KB de '+cap.dir); else no('PDF ficha propiedad', 'vino vacío'); }catch(e){ no('PDF ficha propiedad', e); }
   }
   try{
-    var h = ScriptApp.getProjectTriggers().map(function(t){ return t.getHandlerFunction(); }), falta = ['azcuAvisoDiario','azcuAvisoCambios','azcuAvisoPostVisita','azcuResumenSemanal','azcuAvisoRecordatorios','azcuCalentar','azcuAvisoPapeles'].filter(function(n){ return h.indexOf(n)<0; });
+    var h = ScriptApp.getProjectTriggers().map(function(t){ return t.getHandlerFunction(); }), falta = ['azcuAvisoDiario','azcuAvisoCambios','azcuAvisoPostVisita','azcuAvisoSeguimiento','azcuResumenSemanal','azcuAvisoRecordatorios','azcuCalentar','azcuAvisoPapeles'].filter(function(n){ return h.indexOf(n)<0; });
     if(falta.length) no('Activadores', 'faltan '+falta.join(', ')+' (ejecutá azcuCrearAvisos)'); else ok('Activadores', '7 de 7');
   }catch(e){ no('Activadores', e); }
   try{
