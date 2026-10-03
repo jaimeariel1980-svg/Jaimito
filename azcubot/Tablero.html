@@ -1091,6 +1091,11 @@ function verEncuesta(id){
   var p=DATA.find(x=>x.id===id);
   google.script.run.withSuccessHandler(function(e){ if(!e){alert('Sin encuesta');return;} pintarEncuesta(p,e); }).obtenerEncuesta(id);
 }
+function pintarEncuestaFicha(e){
+  function q(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  var cal=parseInt(e['Calificación']||e.cal)||0, col=cal>=8?'var(--verde)':(cal>=5?'var(--amarillo)':'var(--rojo)');
+  return '<h3 class="sec">Encuesta de satisfacción del cliente</h3><div style="display:flex;gap:14px;align-items:center;background:var(--beige);border-radius:10px;padding:10px 14px"><div style="font-size:34px;font-weight:800;line-height:1;color:'+col+'">'+(cal||'—')+'<span style="font-size:15px;color:var(--gris)">/10</span></div><div style="font-size:13px">'+(e['Recomendación']?'¿Recomendaría? <b>'+q(e['Recomendación'])+'</b><br>':'')+(e.Comentarios?'<i>'+q(e.Comentarios)+'</i>':'')+'</div></div>';
+}
 function pintarEncuesta(p,e){
   function row(k,v){return '<tr><td style="color:var(--gris)">'+k+'</td><td style="font-weight:600">'+(v||'—')+'</td></tr>';}
   var cal=parseInt(e['Calificación']||e.cal)||0; var col=cal>=8?'var(--verde)':(cal>=5?'var(--amarillo)':'var(--rojo)');
