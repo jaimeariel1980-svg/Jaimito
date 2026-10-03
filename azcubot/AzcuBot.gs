@@ -698,11 +698,11 @@ function azcuAvisoPedir_(id, nombre){
   if(s && !c.get('azd1_'+id)){ c.put('azd1_'+id, '1', 600); try{ d = JSON.parse(s); }catch(e){} azcuAvisarListo_(nombre, d && d.data && d.data.texto); }
   return true;
 }
-function azcuFinAviso_(id, nombre, out, ms){
+function azcuFinAviso_(id, nombre, out, t0){
   try{
     if(!id || !nombre || !out || !out.ok) return;
-    var c = CacheService.getScriptCache();
-    if((ms>8000 || c.get('azw_'+id)!==null) && !c.get('azd1_'+id)){ c.put('azd1_'+id, '1', 600); azcuAvisarListo_(nombre, out.data && out.data.texto); }
+    var c = CacheService.getScriptCache(), last = Math.max(+c.get('azl_'+id) || 0, t0), ausente = Date.now()-last > 6000;
+    if((ausente || c.get('azw_'+id)!==null) && !c.get('azd1_'+id)){ c.put('azd1_'+id, '1', 600); azcuAvisarListo_(nombre, out.data && out.data.texto); }
   }catch(e){}
 }
 function azcuChat(pin, mensajes, ctx){
@@ -982,7 +982,7 @@ function azcuApi(e){
   }catch(err){ out = {ok:false, error:String(err.message || err)}; }
   var id = String(req.id || '').replace(/[^A-Za-z0-9]/g, '');
   if(id && /^azcu(Chat|Voz|AdjPlan|CompletarPlan|Ejecutar)$/.test(req.fn||'')){ try{ var a0 = req.args || []; nomA = String((req.fn==='azcuChat' ? (a0[2]||{}).nombre : req.fn==='azcuVoz' ? (a0[4]||{}).nombre : req.fn==='azcuEjecutar' ? (a0[1]||{}).quien : (a0[3]||{}).nombre) || ''); }catch(e){} }
-  if(id){ azcuPut_(id, out); if(nomA) azcuFinAviso_(id, nomA, out, Date.now()-tA); return ContentService.createTextOutput('{"ok":true}').setMimeType(ContentService.MimeType.JSON); }
+  if(id){ azcuPut_(id, out); if(nomA) azcuFinAviso_(id, nomA, out, tA); return ContentService.createTextOutput('{"ok":true}').setMimeType(ContentService.MimeType.JSON); }
   return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
 }
 function azcuViaGet_(id, azc){
@@ -995,6 +995,7 @@ function azcuViaGet_(id, azc){
 }
 function azcuPoll(e){
   var cb = String(e.parameter.cb || 'azbcb').replace(/[^A-Za-z0-9_]/g, ''), id = String(e.parameter.azr || '').replace(/[^A-Za-z0-9]/g, ''), s = id ? azcuGet_(id) : null;
+  if(id && !s){ try{ CacheService.getScriptCache().put('azl_'+id, String(Date.now()), 600); }catch(e1){} }
   if(!s && id && e.parameter.azc) s = azcuViaGet_(id, e.parameter.azc);
   if(!s && id) s = azcuGet_(id+'p');
   return ContentService.createTextOutput(cb+'('+(s || 'null')+');').setMimeType(ContentService.MimeType.JAVASCRIPT);
