@@ -2111,7 +2111,7 @@ google.script.run
       else if(go==='alertas'){ setTimeout(function(){ if(!st.busy) ask('¿Qué alertas tengo hoy?', 'alertas'); }, 900); }
       return;
     }
-    if(q.get('agenda')){ try{ history.replaceState(null, '', location.pathname); }catch(e){} st.entered = true; st.view = 'agenda'; st.agFrom = null; st.agSel = iso(new Date()); st.agForm = false; st.agNote = ''; setTimeout(agLoad, 700); return; }
+    if(q.get('agenda')){ var rec = q.get('rec'); try{ history.replaceState(null, '', location.pathname); }catch(e){} st.entered = true; st.view = 'agenda'; st.agFrom = null; st.agSel = iso(new Date()); st.agForm = false; st.agNote = ''; setTimeout(function(){ if(rec) call('azcuRecCancelar', [st.nombre||'', rec], function(){ st.agNote = '✅ Aviso confirmado: no te lo vuelvo a repetir.'; render(); agLoad(); }, function(){ agLoad(); }); else agLoad(); }, 700); return; }
     var id = q.get('cv'); if(!id) return;
     var ci = q.get('ci') || '';
     try{ history.replaceState(null, '', location.pathname); }catch(e){}

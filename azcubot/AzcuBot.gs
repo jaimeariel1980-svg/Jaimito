@@ -1416,7 +1416,7 @@ function azcuAvisoRecordatorios(){
     else if(ahora-ms>12*3600000){ h.getRange(i+1,6).setValue('vencido'); continue; }
     try{
       var dir = v[i][4] ? (azcuMapaDirs_()[String(v[i][4]).trim()] || '') : '';
-      var r = azcuPush_(ajeno ? '⏰ Aviso de '+de : '⏰ Recordatorio', String(v[i][3])+(dir ? ' · '+dir : '')+(cada>0 ? ' · Abrí la app y marcalo como hecho' : ''), AZCU_WEB+'?agenda=1', azcuDestinos_(quien, true), true);
+      var r = azcuPush_(ajeno ? '⏰ Aviso de '+de : '⏰ Recordatorio', String(v[i][3])+(dir ? ' · '+dir : '')+(cada>0 ? ' · Tocá para confirmar y frenar los avisos' : ''), AZCU_WEB+'?agenda=1'+(cada>0 ? '&rec='+encodeURIComponent(String(v[i][0])) : ''), azcuDestinos_(quien, true), true);
       if(/Nadie|Sin destinatarios/.test(String(r))){
         if(ajeno){ h.getRange(i+1,6).setValue('sin_app'); try{ azcuPush_('No pude avisarle a '+quien, 'No tiene la app con avisos activados: «'+String(v[i][3])+'»', AZCU_WEB, azcuDestinos_(de, true), true); }catch(e){} }
         continue;
