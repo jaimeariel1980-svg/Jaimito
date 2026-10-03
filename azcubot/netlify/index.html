@@ -1067,19 +1067,28 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
     }
     if(q.get('agenda')){ var rec = q.get('rec'); try{ history.replaceState(null, '', location.pathname); }catch(e){} st.entered = true; st.view = 'agenda'; st.agFrom = null; st.agSel = iso(new Date()); st.agForm = false; st.agNote = ''; setTimeout(function(){ if(rec) call('azcuRecCancelar', [st.nombre||'', rec], function(){ st.agNote = '✅ Aviso confirmado: no te lo vuelvo a repetir.'; render(); agLoad(); }, function(){ agLoad(); }); else agLoad(); }, 700); return; }
     function waLink(tel, tx){ var d = String(tel||'').replace(/\D/g, ''); if(!d) return 'https://api.whatsapp.com/send?text='+encodeURIComponent(tx); if(d.indexOf('54')!==0) d = '549'+d.replace(/^0/, '').replace(/^15/, ''); return 'https://wa.me/'+d+'?text='+encodeURIComponent(tx); }
-    var guiaIds = q.get('rep') || q.get('res'), guiaTipo = q.get('rep') ? 'rep' : 'res';
+    var guiaTipo = q.get('rep') ? 'rep' : q.get('res') ? 'res' : q.get('pr') ? 'prop' : q.get('enc') ? 'enc' : q.get('sm') ? 'sm' : '', guiaIds = q.get('rep') || q.get('res') || q.get('pr') || q.get('enc') || q.get('sm'), guiaCi = q.get('ci') || '';
     if(guiaIds){
       try{ history.replaceState(null, '', location.pathname); }catch(e){}
       st.entered = true; st.menu = false; st.view = 'chat';
       guiaIds.split(',').slice(0, 6).forEach(function(gid, k){
         setTimeout(function(){
-          call('azcuSegGuia', [guiaTipo, decodeURIComponent(gid)], function(g){
+          call('azcuSegGuia', [guiaTipo, decodeURIComponent(gid), guiaCi], function(g){
             var adj = [{k:'l', label:'💬 '+(g.para && g.para.tel ? 'Escribirle por WhatsApp'+(g.para.nombre ? ' a '+g.para.nombre.split(/\s+/)[0] : '') : 'Abrir WhatsApp (elegís el contacto)'), url:waLink(g.para && g.para.tel, g.texto)}];
             var cont;
             if(g.tipo==='rep'){
               adj.push({k:'l', label:'📋 Armar el informe con diseño (tablero)', url:(window.AZCU_TABLERO || 'tablero.html')+'?ficha='+encodeURIComponent(g.id)});
               adj.push({k:'b', label:'✅ Ya se lo mandé', act:'repok', id:g.id});
               cont = '📊 **Informe al propietario**: toca enviarle a **'+((g.para && g.para.nombre) || 'el propietario')+'** cómo viene **'+g.dir+'**. Te dejo un resumen listo (podés editarlo en WhatsApp), o armá el informe con diseño en el tablero. Cuando lo mandes, tocá «Ya se lo mandé» y dejo de recordártelo.';
+            } else if(g.tipo==='prop'){
+              adj.push({k:'l', label:'📋 Ver la ficha en el tablero', url:(window.AZCU_TABLERO || 'tablero.html')+'?ficha='+encodeURIComponent(g.id)});
+              cont = '💬 **Propuesta sin respuesta**: '+(g.cliente ? '**'+g.cliente+'** hizo' : 'hay') +' una propuesta por **'+g.dir+'**'+(g.dias!=null ? ' hace '+g.dias+' días' : '')+' y sigue abierta. Avisale al propietario'+((g.para && g.para.nombre) ? ' **'+g.para.nombre+'**' : '')+' para que la evalúe. Te dejo el mensaje listo; cuando tengas la respuesta, contame y la cargo.';
+            } else if(g.tipo==='enc'){
+              adj.push({k:'l', label:'📋 Ver la ficha en el tablero', url:(window.AZCU_TABLERO || 'tablero.html')+'?ficha='+encodeURIComponent(g.id)});
+              cont = '🎉 **Propiedad vendida**: **'+g.dir+'**. Pedile al comprador'+((g.para && g.para.nombre) ? ' **'+g.para.nombre+'**' : '')+' que complete la encuesta de satisfacción (2 minutos). Te dejo el mensaje con el enlace.';
+            } else if(g.tipo==='sm'){
+              adj = [{k:'l', label:'📋 Abrir la ficha en el tablero', url:(window.AZCU_TABLERO || 'tablero.html')+'?ficha='+encodeURIComponent(g.id)}];
+              cont = '🛑 **Sin movimiento**: **'+g.dir+'** lleva '+(g.dias!=null ? g.dias+' días' : 'mucho tiempo')+' sin movimiento. Si la tenés en pausa a propósito, no hace falta hacer nada: ya quedó anotado que lo viste y no te lo vuelvo a avisar por un mes. Si querés reactivarla, revisá precio y difusión, o decime y cargo una nota.';
             } else {
               cont = '🔶 **Reserva sin movimiento**: **'+g.dir+'** lleva '+(g.enReserva!=null ? g.enReserva+' días' : 'tiempo')+' en Reserva'+(g.dias!=null ? ' (último movimiento hace '+g.dias+' d)' : ' sin movimientos')+'. Avisale al comprador'+((g.para && g.para.nombre) ? ' **'+g.para.nombre+'**' : '')+' que estamos trabajando con la documentación para cerrar lo antes posible. Te dejo el mensaje listo; después contame cómo viene y lo cargo (por ejemplo «se pasa a Vendida» o una nota).';
             }
