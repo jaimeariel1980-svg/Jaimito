@@ -2030,7 +2030,8 @@ function agendarVisita(codigo, datos){
     tel: datos.tel||'',
     resultado: 'Visita agendada',
     prox: 'Visita '+Utilities.formatDate(ini,'GMT-3','dd/MM/yyyy HH:mm'),
-    obs: datos.obs||''
+    obs: datos.obs||'',
+    vendedor: datos.vendedor||''
   });
   return {ok:true, eventId:ev.getId()};
 }

@@ -1034,10 +1034,15 @@ function cargarForm(id, nombre, tel){
   '<div class="dlbtns"><button class="btn g" id="cf_btn" onclick="guardarConsulta(\''+id+'\')">Registrar</button><button class="btn s" onclick="closeDL()">Cancelar</button></div></div>';
   document.getElementById('ov2').classList.add('on');
 }
+function _vend(){
+  var n=''; try{ n=(localStorage.getItem('azcu_nombre')||'').trim(); }catch(e){}
+  if(!n){ try{ n=(prompt('¿Con qué nombre cargás? (el mismo que usás en Azcu)')||'').trim(); if(n) localStorage.setItem('azcu_nombre',n); }catch(e){} }
+  return n;
+}
 function guardarConsulta(id){
   const g=x=>document.getElementById(x)?document.getElementById(x).value:'';
   const datos={ fecha:_fechaAr(g('cf_fecha')), via:g('cf_via'), interesado:g('cf_cli'),
-    tel:g('cf_tel'), resultado:g('cf_res'), prox:g('cf_prox'), obs:g('cf_obs') };
+    tel:g('cf_tel'), resultado:g('cf_res'), prox:g('cf_prox'), obs:g('cf_obs'), vendedor:_vend() };
   if(!datos.interesado){ alert('Poné al menos el nombre del interesado'); return; }
   const btn=document.getElementById('cf_btn'); if(btn){btn.textContent='Guardando…';btn.disabled=true;}
   google.script.run
@@ -1225,7 +1230,7 @@ function agendarForm(id){
 function guardarAgenda(id,dirEnc){
   var g=x=>document.getElementById(x)?document.getElementById(x).value:'';
   var cuando=g('ag_fecha'); if(!cuando){alert('Poné la fecha y hora');return;}
-  var datos={cuando:new Date(cuando).toISOString(),interesado:g('ag_cli'),tel:g('ag_tel'),mail:g('ag_mail')||'',obs:g('ag_obs'),dir:decodeURIComponent(dirEnc)};
+  var datos={cuando:new Date(cuando).toISOString(),interesado:g('ag_cli'),tel:g('ag_tel'),mail:g('ag_mail')||'',obs:g('ag_obs'),dir:decodeURIComponent(dirEnc),vendedor:_vend()};
   var btn=document.getElementById('ag_btn'); if(btn){btn.textContent='Agendando…';btn.disabled=true;}
   google.script.run
     .withSuccessHandler(function(){closeDL();recargar(id);})
