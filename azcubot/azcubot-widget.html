@@ -140,6 +140,7 @@
 .azb-shc{width:100%;border:0;background:#f3f1ec;padding:14px;font:600 14px 'Inter',sans-serif;cursor:pointer;color:var(--mu)}
 .azb-rhint{font-size:11.5px;color:var(--mu);text-align:center;margin-top:7px}
 .azb-cxb{width:44px;border:1px solid var(--rj);background:#fff;color:var(--rj);font-size:17px;cursor:pointer;flex-shrink:0}
+.azb-agn{display:flex;gap:6px;margin:0 0 8px}.azb-agn button{border:1px solid var(--ln);background:#fff;border-radius:12px;padding:8px 14px;font:600 14px 'Inter',sans-serif;color:var(--n);cursor:pointer}.azb-agn input{flex:1;min-width:0;border:1px solid var(--ln);border-radius:12px;padding:8px;font:500 14px 'Inter',sans-serif;color:var(--ink);background:#fff}
 .azb-days{display:flex;gap:6px;overflow-x:auto;padding:0 0 10px;scrollbar-width:none}.azb-days::-webkit-scrollbar{display:none}
 .azb-day{flex:0 0 46px;border:1px solid var(--ln);background:#fff;padding:7px 0 6px;text-align:center;cursor:pointer;font-family:inherit;color:var(--ink)}
 .azb-day i{display:block;font:500 9.5px 'JetBrains Mono',monospace;font-style:normal;letter-spacing:.08em;color:var(--mu)}
@@ -398,14 +399,14 @@
   }
   function agLoad(){
     st.agLoading = true;
-    call('azcuAgenda', [st.nombre||'', iso(new Date()), 14], function(d){ st.ag = d; st.agLoading = false; render(); }, function(err){ st.agLoading = false; st.agNote = 'No pude cargar la agenda: '+err; render(); });
+    call('azcuAgenda', [st.nombre||'', st.agFrom||iso(new Date()), 31], function(d){ st.ag = d; st.agLoading = false; render(); }, function(err){ st.agLoading = false; st.agNote = 'No pude cargar la agenda: '+err; render(); });
   }
   function agendaHtml(){
     var by = {}, hoy = iso(new Date()), i, d, days = '';
     ((st.ag && st.ag.items) || []).forEach(function(x){ (by[x.f] = by[x.f] || []).push(x); });
-    for(i=0;i<14;i++){ d = new Date(); d.setDate(d.getDate()+i); var k = iso(d); days += '<button type="button" class="azb-day'+(k===st.agSel?' on':'')+'" data-d="'+k+'"><i>'+DN[d.getDay()]+'</i><b>'+d.getDate()+'</b><u'+((by[k]||[]).length?' class="y"':'')+'></u></button>'; }
+    var f0 = new Date((st.agFrom||iso(new Date()))+'T12:00:00'); for(i=0;i<14;i++){ d = new Date(f0); d.setDate(d.getDate()+i); var k = iso(d); days += '<button type="button" class="azb-day'+(k===st.agSel?' on':'')+'" data-d="'+k+'"><i>'+DN[d.getDay()]+'</i><b>'+d.getDate()+'</b><u'+((by[k]||[]).length?' class="y"':'')+'></u></button>'; }
     var sd = new Date(st.agSel+'T12:00:00'), its = by[st.agSel] || [];
-    var h = '<div class="azb-days">'+days+'</div><div class="azb-agh"><b>'+(st.agSel===hoy?'Hoy · ':'')+DL[sd.getDay()]+' '+sd.getDate()+' de '+MN[sd.getMonth()]+'</b><span>'+its.length+(its.length===1?' evento':' eventos')+'</span></div>';
+    var h = '<div class="azb-agn"><button type="button" data-a="agprev" aria-label="Anteriores">‹</button><button type="button" data-a="aghoy">Hoy</button><input type="date" id="azbAgJ" value="'+st.agSel+'" aria-label="Ir a fecha"><button type="button" data-a="agnext" aria-label="Siguientes">›</button></div><div class="azb-days">'+days+'</div><div class="azb-agh"><b>'+(st.agSel===hoy?'Hoy · ':'')+DL[sd.getDay()]+' '+sd.getDate()+' de '+MN[sd.getMonth()]+'</b><span>'+its.length+(its.length===1?' evento':' eventos')+'</span></div>';
     if(st.busy) h += '<div class="azb-note">'+esc(st.status||'Pensando…')+'</div>';
     else if(st.agNote) h += '<div class="azb-note">'+fmt(st.agNote)+'</div>';
     if(st.agLoading && !st.ag) h += '<div class="azb-note">Cargando tu agenda…</div>';
@@ -543,7 +544,7 @@
       h += '<div class="azb-hd">'+mk(46)+'<span class="azb-t">Azcu'+(APP?'':' · '+(AZ.ctx?'Ficha '+esc(AZ.ctx):'Asistente interno'))+'</span>'+(APP?'<a class="azb-tbp" href="'+esc(window.AZCU_TABLERO||'#')+'" target="_blank" rel="noopener" title="Abrir el tablero">'+sv('board')+'<span>Tablero</span></a>':'')+(APP?'':'<button class="azb-ib azb-nv" data-a="mov" title="Novedades">'+sv('hist')+(st.movN?'<i class="azb-bd">'+(st.movN>9?'9+':st.movN)+'</i>':'')+'</button><button class="azb-ib" data-a="agenda" title="Agenda">'+sv(st.view==='agenda'?'chat':'cal')+'</button>')+'<button class="azb-ib" data-a="clear" title="Borrar charla">'+sv('trash')+'</button>'+(APP?'':'<button class="azb-ib" data-a="close">✕</button>')+'</div>'+(APP && window.OneSignalDeferred && !st.pushOn ? '<div class="azb-pb"><span>🔔 Recibí avisos en este celular</span><button type="button" class="azb-btn" data-a="push">Activar avisos</button></div>' : '')+'<div class="azb-body">';
       if(st.view==='agenda') h += agendaHtml(); else if(st.view==='mov') h += movHtml(); else {
       if(!st.msgs.length || st.menu){
-        h += (st.menu && st.msgs.length ? '<button type="button" class="azb-back" data-a="menux">💬 Volver a la charla</button>' : '')+'<div class="azb-av">'+mk(60)+'</div><div class="azb-eyb">Tu asistente, siempre disponible</div><h1>Hola'+(st.nombre?', <b>'+esc(st.nombre)+'</b>':'')+'.<br>¿Qué hacemos hoy?</h1><p class="azb-lead">Preguntame lo que quieras del tablero o pedime que cargue visitas, agende, cambie estados o mande reportes. Escribime con confianza.</p>'+(APP && window.OneSignalDeferred && !st.pushOn ? '<button class="azb-row" data-a="push" style="border-color:var(--n);background:#eef3ff">🔔 Activar avisos en este celular<span>→</span></button>' : '')+'<div class="azb-lbl">Atajos</div>';
+        h += '<div class="azb-av">'+mk(60)+'</div><div class="azb-eyb">Tu asistente, siempre disponible</div><h1>Hola'+(st.nombre?', <b>'+esc(st.nombre)+'</b>':'')+'.<br>¿Qué hacemos hoy?</h1><p class="azb-lead">Preguntame lo que quieras del tablero o pedime que cargue visitas, agende, cambie estados o mande reportes. Escribime con confianza.</p>'+(APP && window.OneSignalDeferred && !st.pushOn ? '<button class="azb-row" data-a="push" style="border-color:var(--n);background:#eef3ff">🔔 Activar avisos en este celular<span>→</span></button>' : '')+'<div class="azb-lbl">Atajos</div>';
         var sc = shortcuts(), big = '', small = '', bigs = {};
         sc.forEach(function(s){
           var at = (s[2]==='agenda'?'data-a="agenda"':s[2]==='adjuntar'?'data-a="attach"':(s[2]?'data-w="'+s[2]+'"':'data-q="'+esc(s[3]||s[0])+'"'))+(s[1]?' data-at="'+s[1]+'"':''), tl = TILE[s[0]];
@@ -594,7 +595,7 @@
     var P = {k:'prop', q:'¿De qué propiedad? Escribí parte de la dirección o el propietario.', kind:'prop', ph:'Ej: Mendoza 7201'};
     var T = function(k,q,ph,opt,parse){ return {k:k, q:q, kind:'text', ph:ph, opt:opt, parse:parse}; };
     var tel = function(t){ var d = t.replace(/[^0-9]/g,''); return d.length>=6 ? d : null; }, mail = function(t){ return /^\S+@\S+\.\S+$/.test(t) ? t : null; };
-    if(t==='cargar') return [P, T('interesado','¿Quién consultó o vino? (nombre)','Nombre del interesado'), {k:'via',q:'¿Por qué vía fue?',kind:'opt',opts:OP(VIAS)}, {k:'resultado',q:'¿Cómo resultó?',kind:'opt',opts:OP(RES)}, T('obs','Contame el detalle de lo que pasó (podés dictarlo 🎤)','Qué pasó, qué dijo, qué quiere…',1), T('prox','Próximo paso','Ej: llamarlo el viernes',1), T('tel','Teléfono del interesado','Teléfono',1,tel)];
+    if(t==='cargar') return [P, T('interesado','¿Quién consultó o vino? (nombre)','Nombre del interesado'), {k:'via',q:'¿Por qué vía fue?',kind:'opt',opts:VIAS.map(function(x){return {l:x==='Visita'?'Realizar visita':x,v:x};})}, {k:'resultado',q:'¿Cómo resultó?',kind:'opt',opts:OP(RES)}, T('obs','Contame el detalle de lo que pasó (podés dictarlo 🎤)','Qué pasó, qué dijo, qué quiere…',1), T('prox','Próximo paso','Ej: llamarlo el viernes',1), T('tel','Teléfono del interesado','Teléfono',1,tel)];
     if(t==='agendar') return [P, {k:'fecha',q:'¿Qué día? Elegí o escribí dd/mm.',kind:'opt',opts:fechas(),parse:parseFecha,ph:'dd/mm'}, {k:'hora',q:'¿A qué hora? Elegí o escribila (ej 16:30).',kind:'opt',opts:OP(HORAS),parse:parseHora,ph:'hh:mm'}, T('interesado','¿Quién es el interesado?','Nombre',1), T('tel','Teléfono','Teléfono',1,tel), T('mail','Mail (le llega la invitación al Calendar)','mail@ejemplo.com',1,mail)];
     if(t==='adjex') return [P];
     if(t==='adjnew') return [];
@@ -700,7 +701,9 @@
     var ifr = document.createElement('iframe'); ifr.name = 'azbf_'+id; ifr.style.display = 'none';
     var form = document.createElement('form'); form.method = 'POST'; form.action = window.AZCU_API; form.target = ifr.name; form.style.display = 'none';
     var inp = document.createElement('input'); inp.type = 'hidden'; inp.name = 'payload'; inp.value = JSON.stringify({id:id, fn:fn, args:[st.pin].concat(args)}); form.appendChild(inp);
-    function finish(){ done = true; clearTimeout(pollT); if(scr) scr.remove(); setTimeout(function(){ ifr.remove(); form.remove(); }, 300); }
+    var largo = /^azcu(Chat|Voz|AdjPlan|CompletarPlan|Ejecutar)$/.test(fn);
+    if(largo){ window.__azId = id; ls('pend', JSON.stringify({id:id, fn:fn, t:Date.now()})); }
+    function finish(){ done = true; if(largo){ if(window.__azId===id) window.__azId = null; ls('pend', null); } clearTimeout(pollT); if(scr) scr.remove(); setTimeout(function(){ ifr.remove(); form.remove(); }, 300); }
     var got = false, fbOn = false, pollN = 0;
     function fallback(){
       if(done || got || fbOn) return; fbOn = true;
@@ -734,6 +737,28 @@
     document.body.appendChild(ifr); document.body.appendChild(form); form.submit();
     pollT = setTimeout(poll, 500); if(ls('via')==='anon') setTimeout(fallback, 300);
   }
+  function avisoPedir(){
+    if(!window.AZCU_API || !window.__azId || !st.nombre) return;
+    var nid = 'w'+Date.now().toString(36)+Math.random().toString(36).slice(2,8), pl;
+    try{ pl = btoa(unescape(encodeURIComponent(JSON.stringify({id:nid, fn:'azcuAvisoPedir', args:['', window.__azId, st.nombre]})))); }catch(e){ return; }
+    window.azbnop = function(){};
+    var sc = document.createElement('script'); sc.src = window.AZCU_API+'?azr='+nid+'&azc='+encodeURIComponent(pl)+'&cb=azbnop&_='+Date.now(); sc.onload = sc.onerror = function(){ sc.remove(); }; document.head.appendChild(sc);
+  }
+  document.addEventListener('visibilitychange', function(){ if(document.hidden && st.busy) avisoPedir(); });
+  window.addEventListener('pagehide', function(){ if(st.busy) avisoPedir(); });
+  function resumir(){
+    var p; try{ p = JSON.parse(ls('pend')||'null'); }catch(e){ p = null; }
+    if(!p || !window.AZCU_API || p.fn!=='azcuChat' || Date.now()-p.t>600000 || st.busy) return;
+    ls('pend', null); st.busy = true; st.status = 'Recuperando tu respuesta…'; render();
+    var n = 0;
+    (function tick(){
+      if(n++ > 40){ st.busy = false; st.status = ''; render(); return; }
+      var cb = 'azbrs'+Math.random().toString(36).slice(2,9), sc;
+      window[cb] = function(d){ delete window[cb]; if(sc) sc.remove(); if(d && d.ok!==undefined){ st.busy = false; st.status = ''; if(d.ok && d.data) reply(d.data); else render(); } else setTimeout(tick, 3000); };
+      sc = document.createElement('script'); sc.src = window.AZCU_API+'?azr='+p.id+'&cb='+cb+'&_='+Date.now(); sc.onerror = function(){ delete window[cb]; sc.remove(); setTimeout(tick, 3000); }; document.head.appendChild(sc);
+    })();
+  }
+  setTimeout(resumir, 1200);
   function call(fn, args, ok, fail, retried){
     function onErr(e){
       var msg = (e && e.message) ? e.message : String(e);
@@ -815,6 +840,7 @@
   function stopRec(send){ var r = st.rec; if(!r) return; r.send = !!send && !r.cancel; try{ if(!r.send && r.mr.abort) r.mr.abort(); else r.mr.stop(); }catch(e){ st.rec = null; render(); } }
   root.addEventListener('click', function(e){
     var t = e.target.closest('[data-a],[data-q],[data-ok],[data-no],[data-w],[data-wo],[data-ws],[data-wx],[data-f],[data-d],#azbFab'); if(!t) return;
+    if(t.id==='azbAgJ') return;
     if(t.dataset.d){ st.agSel = t.dataset.d; st.agForm = false; render(); return; }
     if(t.dataset.f){ openFile(t.dataset.f, t.dataset.fn||'archivo'); return; }
     if(t.dataset.w){ wzStart(t.dataset.w); return; }
@@ -849,13 +875,14 @@
       var tb = t.dataset.t; st.entered = true; st.sheet = false;
       if(tb==='home'){ st.view = 'chat'; st.menu = true; render(); }
       else if(tb==='chat'){ st.view = 'chat'; st.menu = false; render(); }
-      else if(tb==='agenda'){ if(st.view!=='agenda'){ st.menu = false; st.view = 'agenda'; st.agSel = iso(new Date()); st.agForm = false; st.agNote = ''; render(); agLoad(); } }
+      else if(tb==='agenda'){ if(st.view!=='agenda'){ st.menu = false; st.view = 'agenda'; st.agFrom = null; st.agSel = iso(new Date()); st.agForm = false; st.agNote = ''; render(); agLoad(); } }
       else if(tb==='mov'){ if(st.view!=='mov'){ st.menu = false; st.view = 'mov'; st.movSeen = +ls('mseen') || 0; st.movN = 0; ls('mseen', String(Date.now())); render(); movLoad(); } }
       else if(tb==='alert'){ st.view = 'chat'; st.menu = false; ask('¿Qué alertas tengo hoy?', 'alertas'); }
     }
     else if(a==='movretry'){ st.movErr = ''; st.mov = null; render(); movLoad(); }
     else if(a==='mov'){ if(st.view==='mov'){ st.view = 'chat'; render(); } else { st.menu = false; st.entered = true; st.view = 'mov'; st.movSeen = +ls('mseen') || 0; st.movN = 0; ls('mseen', String(Date.now())); render(); movLoad(); } }
-    else if(a==='agenda'){ if(st.view==='agenda'){ st.view = 'chat'; render(); } else { st.menu = false; st.view = 'agenda'; st.agSel = iso(new Date()); st.agForm = false; st.agNote = ''; st.entered = true; render(); agLoad(); } }
+    else if(a==='agenda'){ if(st.view==='agenda'){ st.view = 'chat'; render(); } else { st.menu = false; st.view = 'agenda'; st.agFrom = null; st.agSel = iso(new Date()); st.agForm = false; st.agNote = ''; st.entered = true; render(); agLoad(); } }
+    else if(a==='agprev'||a==='agnext'||a==='aghoy'){ var b0 = new Date((st.agFrom||iso(new Date()))+'T12:00:00'); if(a==='aghoy') b0 = new Date(); else b0.setDate(b0.getDate()+(a==='agnext'?14:-14)); st.agFrom = iso(b0); st.agSel = st.agFrom; st.ag = null; st.agForm = false; render(); agLoad(); }
     else if(a==='agnew'){ st.agForm = true; render(); var ti = root.querySelector('#azbAgT'); if(ti) ti.focus(); }
     else if(a==='agcancel'){ st.agForm = false; render(); }
     else if(a==='agsave'){
@@ -873,6 +900,7 @@
     else if(a==='home'){ st.menu = !st.menu; st.view = 'chat'; render(); }
     else if(a==='menux'){ st.menu = false; render(); }
   });
+  root.addEventListener('change', function(e){ if(e.target && e.target.id==='azbAgJ' && e.target.value){ st.agFrom = e.target.value; st.agSel = st.agFrom; st.ag = null; st.agForm = false; render(); agLoad(); } });
   root.addEventListener('input', function(e){ if(e.target && e.target.id==='azbInp'){ var pl = e.target.closest('.azb-pill'); if(pl) pl.classList.toggle('has', !!e.target.value.trim()); } });
   root.addEventListener('submit', function(e){ if(e.target.id==='azbForm'){ e.preventDefault(); var i = root.querySelector('#azbInp'); var v = i.value; i.value = ''; if(st.wz) wzIn(v); else ask(v); } });
   root.addEventListener('keydown', function(e){ if(e.key==='Enter' && e.target.id==='azbName'){ e.preventDefault(); root.querySelector('[data-a="start"]').click(); } });
@@ -900,11 +928,12 @@
       try{ history.replaceState(null, '', location.pathname); }catch(e){}
       st.entered = true; st.menu = false;
       if(go==='novedades'){ st.view = 'mov'; st.movSeen = +ls('mseen') || 0; st.movN = 0; ls('mseen', String(Date.now())); setTimeout(movLoad, 700); }
-      else if(go==='agenda'){ st.view = 'agenda'; st.agSel = iso(new Date()); st.agForm = false; st.agNote = ''; setTimeout(agLoad, 700); }
+      else if(go==='agenda'){ st.view = 'agenda'; st.agFrom = null; st.agSel = iso(new Date()); st.agForm = false; st.agNote = ''; setTimeout(agLoad, 700); }
+      else if(go==='chat'){ st.view = 'chat'; }
       else if(go==='alertas'){ setTimeout(function(){ if(!st.busy) ask('¿Qué alertas tengo hoy?', 'alertas'); }, 900); }
       return;
     }
-    if(q.get('agenda')){ try{ history.replaceState(null, '', location.pathname); }catch(e){} st.entered = true; st.view = 'agenda'; st.agSel = iso(new Date()); st.agForm = false; st.agNote = ''; setTimeout(agLoad, 700); return; }
+    if(q.get('agenda')){ try{ history.replaceState(null, '', location.pathname); }catch(e){} st.entered = true; st.view = 'agenda'; st.agFrom = null; st.agSel = iso(new Date()); st.agForm = false; st.agNote = ''; setTimeout(agLoad, 700); return; }
     var id = q.get('cv'); if(!id) return;
     var ci = q.get('ci') || '';
     try{ history.replaceState(null, '', location.pathname); }catch(e){}
