@@ -699,7 +699,7 @@ function azcuOpenAI_(messages, tools){
 function azcuProg_(ctx, texto){ try{ if(ctx && ctx.reqId) azcuPut_(ctx.reqId+'p', {progress:texto}); }catch(e){} }
 var AZCU_NOMBRES_ = {buscar_propiedades:'Buscando propiedades…', ficha_propiedad:'Leyendo la ficha…', captacion_formulario:'Leyendo el formulario de captación…', guia_pagina:'Leyendo la guía…', dashboard:'Armando el panel…', resumen_semana:'Armando el resumen de la semana…', crear_recordatorio:'Guardando el recordatorio…', mis_recordatorios:'Buscando tus recordatorios…', agenda:'Revisando tu agenda…', listar_propiedades:'Filtrando propiedades…', encuestas:'Revisando encuestas…', alertas:'Revisando alertas…', resumen_cartera:'Armando el resumen…', documentos_faltantes:'Revisando documentos…', generar_pdf:'Generando el PDF…', ofrecer_ayuda:'Preparando la ayuda…', enviar_whatsapp:'Armando el mensaje…', abrir_enlace:'Buscando el enlace…'};
 function azcuAvisarListo_(nombre, texto){
-  try{ if(nombre) azcuPush_('Azcu terminó ✅', String(texto||'Ya tengo tu respuesta.').replace(/[*_`#]/g,'').slice(0,110), AZCU_WEB+'/?go=chat', azcuDestinos_(nombre, true), true); }catch(e){}
+  try{ if(nombre) azcuPush_('Azcu terminó ✅', String(texto||'Ya tengo tu respuesta.').replace(/[*_`#]/g,'').slice(0,110), AZCU_WEB+'/?go=chat', azcuDestinos_(nombre, true), true, true); }catch(e){}
 }
 function azcuAvisoPedir_(id, nombre){
   var c = CacheService.getScriptCache(); id = String(id||'').replace(/[^A-Za-z0-9]/g,''); if(!id) return false;
@@ -831,7 +831,7 @@ function azcuEjecutar_(pin, accion){
     if(!azcuPuedeAvisar_(accion.quien)) throw new Error('No tenés permiso para mandar avisos al equipo.');
     var de = String(accion.quien||'').trim().slice(0,40), msg = String(d.mensaje||'').trim().slice(0,300);
     if(!msg) throw new Error('Falta el mensaje.');
-    var res = azcuPush_('📣 '+(d.titulo ? String(d.titulo).slice(0,60) : 'Aviso del equipo'+(de ? ' · '+de : '')), msg, AZCU_WEB+'?go=novedades');
+    var res = azcuPush_('📣 '+(d.titulo ? String(d.titulo).slice(0,60) : 'Aviso del equipo'+(de ? ' · '+de : '')), msg, AZCU_WEB+'?go=novedades', null, false, true);
     return {ok:true, mensaje:/Nadie suscripto/.test(String(res)) ? 'No hay nadie con avisos activados todavía.' : 'Listo, mandé el aviso a todo el equipo 📣'};
   }
   if(!d || !d.id) throw new Error('Acción inválida');
@@ -1050,7 +1050,26 @@ function azcuDestinos_(quien, exacto){
   if(a) o.push(a); if(!exacto && b && b!==a) o.push(b);
   return o;
 }
-function azcuPush_(titulo, msg, url, dest, estricto){
+var AZCU_SIN_SILENCIO_ = false;
+function azcuEnSilencio_(ts){ if(!ts && AZCU_SIN_SILENCIO_) return false; var d = new Date((ts||Date.now())-3*3600000), dw = d.getUTCDay(), h = d.getUTCHours(); return (dw===5 && h>=18) || dw===6 || dw===0 || (dw===1 && h<8); }
+function azcuColaPush_(x){
+  try{
+    var pr = PropertiesService.getScriptProperties(), q = []; try{ q = JSON.parse(pr.getProperty('AZCU_COLA')||'[]') || []; }catch(e){}
+    var k = x.t+'|'+x.m; if(q.some(function(y){ return y.t+'|'+y.m===k; })) return;
+    q.push(x); if(q.length>40) q = q.slice(-40);
+    pr.setProperty('AZCU_COLA', JSON.stringify(q));
+  }catch(e){}
+}
+function azcuVaciarCola_(){
+  if(azcuEnSilencio_() && !AZCU_SIN_SILENCIO_) return 0;
+  var pr = PropertiesService.getScriptProperties(), q = []; try{ q = JSON.parse(pr.getProperty('AZCU_COLA')||'[]') || []; }catch(e){}
+  if(!q.length) return 0;
+  pr.setProperty('AZCU_COLA', '[]');
+  q.forEach(function(x){ try{ azcuPush_(x.t, x.m, x.u, x.d, x.e, true); }catch(e){} });
+  return q.length;
+}
+function azcuPush_(titulo, msg, url, dest, estricto, libre){
+  if(!libre && !AZCU_SIN_SILENCIO_ && azcuEnSilencio_()){ azcuColaPush_({t:titulo, m:msg, u:url||null, d:dest||null, e:!!estricto}); return 'En silencio hasta el lunes 8 h: queda en cola'; }
   var k = PropertiesService.getScriptProperties().getProperty('ONESIGNAL_KEY');
   if(!k) throw new Error('Falta ONESIGNAL_KEY en las propiedades del script');
   k = String(k).replace(/\s/g,'');
@@ -1076,7 +1095,7 @@ function azcuPush_(titulo, msg, url, dest, estricto){
   }
   throw new Error('OneSignal 401: clave no aceptada ('+k.length+' caracteres, empieza con "'+k.slice(0,8)+'")');
 }
-function azcuProbarPush(){ Logger.log(azcuPush_('Azcu 🏠', 'Prueba de aviso: si lo ves, las notificaciones funcionan.')); }
+function azcuProbarPush(){ Logger.log(azcuPush_('Azcu 🏠', 'Prueba de aviso: si lo ves, las notificaciones funcionan.', null, null, false, true)); }
 var AZCU_TIPOS_ = ['Terreno','Casa','Departamento','PH','Local Comercial','Oficina Comercial','Garage - Cochera','Depósito'];
 var AZCU_ORIENT_ = ['Norte','Sur','Este','Oeste','Noroeste','Noreste','Sudeste','Sudoeste'];
 function azcuFaltantesForm_(id){
@@ -1119,6 +1138,7 @@ function azcuHerrOfrecer_(a, adj){
   return {ok:true, estado:'Botones de ayuda listos en el chat'};
 }
 function azcuAvisoPapeles(){
+  if(azcuEnSilencio_()) return;
   var d = azcuDatos_(), por = {}, sin = 0, tot = 0;
   d.forEach(function(p){
     if(!azcuActiva_(p) || p.etapa==='Reserva') return;
@@ -1186,6 +1206,7 @@ function azcuMovimientos_(dias){
 function azcuHoy(pin){ azcuPin_(pin); var a = azcuHerrAlertas_(); return {v:a.visitas_hoy.length, c:a.seguimientos_para_hoy.length, p:a.propuestas_sin_respuesta.length, d:a.papeles.length}; }
 function azcuMov(pin, dias){ azcuPin_(pin); return azcuMovimientos_(dias); }
 function azcuAvisoDiario(){
+  if(azcuEnSilencio_()) return;
   azcuLimpiarCache_();
   var a = azcuHerrAlertas_(), p = [], lunes = new Date(Date.now()-3*3600000).getUTCDay()===1;
   if(a.visitas_hoy.length) p.push('🗓 '+a.visitas_hoy.length+(a.visitas_hoy.length===1?' visita':' visitas')+' hoy');
@@ -1212,6 +1233,8 @@ function azcuEstadosSet_(m, pref){
   pr.setProperties(o);
 }
 function azcuAvisoCambios(){
+  azcuVaciarCola_();
+  if(azcuEnSilencio_() && !AZCU_SIN_SILENCIO_) return;
   azcuLimpiarCache_();
   var d = azcuDatos_(), ant = azcuEstadosGet_(), nuevo = {}, av = [];
   d.forEach(function(p){
@@ -1242,7 +1265,7 @@ function azcuMarcaVendedor_(vend, cargo){
 
 function azcuAvisoSeguimiento(forzar){
   var h = +Utilities.formatDate(new Date(), AZCU_TZ, 'H');
-  if(forzar!==true && (h<10 || h>=20)) return;
+  if(forzar!==true && (h<10 || h>=20 || azcuEnSilencio_())) return;
   var seg = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento');
   if(!seg || seg.getLastRow()<2) return;
   var v = seg.getDataRange().getValues(), hn = azcuHoy_(), ahora = Date.now(), envM = azcuMapaGet_('AZCU_SEG2'), ult = {}, i, datos = null, cambio = false;
@@ -1266,7 +1289,7 @@ function azcuAvisoSeguimiento(forzar){
 }
 function azcuAvisoPostVisita(){
   var h = +Utilities.formatDate(new Date(), AZCU_TZ, 'H');
-  if(h<8 || h>=21) return;
+  if(h<8 || h>=21 || azcuEnSilencio_()) return;
   var seg = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento');
   if(!seg) return;
   var v = seg.getDataRange().getValues(), ahora = Date.now(), cand = [], i, j, m;
@@ -1429,7 +1452,7 @@ function azcuHerrCancelarRec_(a, ctx){
   else r = l.reduce(function(m, x){ return !m || x.fila>m.fila ? x : m; }, null);
   if(!r) return {error:'No encontré ese recordatorio. Pedime tu lista.'};
   azcuHojaRec_().getRange(r.fila,6).setValue('cancelado');
-  if(r.de && azcuSlug_(r.de)!==azcuSlug_(quien)){ try{ azcuPush_('✅ '+quien+' confirmó', r.texto, AZCU_WEB, azcuDestinos_(r.de, true), true); }catch(e){} }
+  if(r.de && azcuSlug_(r.de)!==azcuSlug_(quien)){ try{ azcuPush_('✅ '+quien+' confirmó', r.texto, AZCU_WEB, azcuDestinos_(r.de, true), true, true); }catch(e){} }
   return {ok:true, cancelado:r.texto, cuando:r.cuando};
 }
 function azcuAgendaItems_(quien, desde, dias){
@@ -1482,13 +1505,13 @@ function azcuAvisoRecordatorios(){
     if(String(v[i][5])!=='pendiente') continue;
     var ms = +v[i][7]; if(!ms || ms>ahora) continue;
     var de = String(v[i][8]||'').trim(), quien = String(v[i][1]||'').trim(), cada = +v[i][9]||0, hasta = +v[i][10]||0, ajeno = de && azcuSlug_(de)!==azcuSlug_(quien);
-    if(cada>0){ if(hasta && ahora>hasta){ h.getRange(i+1,6).setValue('vencido'); if(ajeno){ try{ azcuPush_('⚠️ '+quien+' no confirmó', String(v[i][3]), AZCU_WEB, azcuDestinos_(de, true), true); }catch(e){} } continue; } }
+    if(cada>0){ if(hasta && ahora>hasta){ h.getRange(i+1,6).setValue('vencido'); if(ajeno){ try{ azcuPush_('⚠️ '+quien+' no confirmó', String(v[i][3]), AZCU_WEB, azcuDestinos_(de, true), true, true); }catch(e){} } continue; } }
     else if(ahora-ms>12*3600000){ h.getRange(i+1,6).setValue('vencido'); continue; }
     try{
       var dir = v[i][4] ? (azcuMapaDirs_()[String(v[i][4]).trim()] || '') : '';
-      var r = azcuPush_(ajeno ? '⏰ Aviso de '+de : '⏰ Recordatorio', String(v[i][3])+(dir ? ' · '+dir : '')+(cada>0 ? ' · Tocá para confirmar y frenar los avisos' : ''), AZCU_WEB+'?agenda=1'+(cada>0 ? '&rec='+encodeURIComponent(String(v[i][0])) : ''), azcuDestinos_(quien, true), true);
+      var r = azcuPush_(ajeno ? '⏰ Aviso de '+de : '⏰ Recordatorio', String(v[i][3])+(dir ? ' · '+dir : '')+(cada>0 ? ' · Tocá para confirmar y frenar los avisos' : ''), AZCU_WEB+'?agenda=1'+(cada>0 ? '&rec='+encodeURIComponent(String(v[i][0])) : ''), azcuDestinos_(quien, true), true, true);
       if(/Nadie|Sin destinatarios/.test(String(r))){
-        if(ajeno){ h.getRange(i+1,6).setValue('sin_app'); try{ azcuPush_('No pude avisarle a '+quien, 'No tiene la app con avisos activados: «'+String(v[i][3])+'»', AZCU_WEB, azcuDestinos_(de, true), true); }catch(e){} }
+        if(ajeno){ h.getRange(i+1,6).setValue('sin_app'); try{ azcuPush_('No pude avisarle a '+quien, 'No tiene la app con avisos activados: «'+String(v[i][3])+'»', AZCU_WEB, azcuDestinos_(de, true), true, true); }catch(e){} }
         continue;
       }
       if(cada>0){ var nx = ahora+cada*60000; h.getRange(i+1,8).setValue(nx); h.getRange(i+1,3).setValue(azcuFmtCuando_(nx)); }
@@ -1544,7 +1567,7 @@ function azcuDiagnostico(){
     if(q.getResponseCode()===200) ok('OpenAI', 'responde'); else no('OpenAI', q.getResponseCode()+' '+q.getContentText().slice(0,120));
   }catch(e){ no('OpenAI', e); }
   try{ var t0 = Date.now(), c2 = azcuChat(P.getProperty('AZCU_PIN')||'', [{role:'user', content:'¿Cómo viene la semana?'}], {nombre:'Diagnóstico'}); ok('Agente completo', Math.round((Date.now()-t0)/1000)+' s · «'+String(c2.texto).slice(0,100)+'…»'); }catch(e){ no('Agente completo', e); }
-  try{ var rp = azcuPush_('Azcu ✅', 'Diagnóstico: las notificaciones funcionan.'); ok('Notificación', rp); }catch(e){ no('Notificación', e); }
+  try{ var rp = azcuPush_('Azcu ✅', 'Diagnóstico: las notificaciones funcionan.', null, null, false, true); ok('Notificación', rp); }catch(e){ no('Notificación', e); }
   try{ SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento').getLastRow(); ok('Hoja Seguimiento'); }catch(e){ no('Hoja Seguimiento', e); }
   try{ azcuHojaRec_(); ok('Hoja Recordatorios'); }catch(e){ no('Hoja Recordatorios', e); }
   try{ var ag = azcuHerrAgenda_({dias:7}, {nombre:'Diagnóstico'}); ok('Agenda 7 días', ag.items.length+' eventos'); }catch(e){ no('Agenda', e); }
@@ -1720,7 +1743,7 @@ function azcuReporteEnviado(pin, id, quien){ azcuPin_(pin); return azcuReporteEn
 function marcarReporteEnviado(id, quien){ return azcuReporteEnviado_(id, quien); }
 function azcuAvisoReportes(forzar){
   var h = +Utilities.formatDate(new Date(), AZCU_TZ, 'H');
-  if(forzar!==true && (h<10 || h>=20)) return;
+  if(forzar!==true && (h<10 || h>=20 || azcuEnSilencio_())) return;
   var dias = azcuNum2_('AZCU_REP_DIAS', 30), datos = azcuDatos_(), m = azcuMapaGet_('AZCU_REP'), ahora = Date.now(), por = {}, cambio = false;
   datos.forEach(function(p){
     var id = String(p.id).trim(), c = AZCU_COD_[p.etapa] || 'x';
@@ -1743,7 +1766,7 @@ function azcuAvisoReportes(forzar){
 }
 function azcuAvisoReservas(forzar){
   var h = +Utilities.formatDate(new Date(), AZCU_TZ, 'H');
-  if(forzar!==true && (h<10 || h>=20)) return;
+  if(forzar!==true && (h<10 || h>=20 || azcuEnSilencio_())) return;
   var dias = azcuNum2_('AZCU_RES_DIAS', 20), datos = azcuDatos_(), m = azcuMapaGet_('AZCU_RESD'), ahora = Date.now(), cambio = false;
   datos.forEach(function(p){
     var id = String(p.id).trim(), c = AZCU_COD_[p.etapa] || 'x';
@@ -1835,7 +1858,7 @@ function azcuEncuestaAviso_(id){
 }
 function azcuAvisoPropuestas(forzar){
   var h = +Utilities.formatDate(new Date(), AZCU_TZ, 'H');
-  if(forzar!==true && (h<10 || h>=20)) return;
+  if(forzar!==true && (h<10 || h>=20 || azcuEnSilencio_())) return;
   var datos = azcuDatos_(), hn = azcuHoy_(), m = azcuMapaGet_('AZCU_PROP'), ahora = Date.now(), cambio = false;
   datos.forEach(function(p){
     if(!azcuActiva_(p) || p.etapa==='Reserva') return;
@@ -1857,7 +1880,7 @@ function azcuAvisoPropuestas(forzar){
 }
 function azcuAvisoSinMov(forzar){
   var h = +Utilities.formatDate(new Date(), AZCU_TZ, 'H');
-  if(forzar!==true && (h<10 || h>=20)) return;
+  if(forzar!==true && (h<10 || h>=20 || azcuEnSilencio_())) return;
   var datos = azcuDatos_(), m = azcuMapaGet_('AZCU_SM'), ahora = Date.now(), por = {}, cambio = false;
   datos.forEach(function(p){
     var id = String(p.id).trim();
@@ -1899,7 +1922,7 @@ function azcuPlazoOk(pin, id, plazo, quien){
 }
 function azcuAvisoPlazos(forzar){
   var h = +Utilities.formatDate(new Date(), AZCU_TZ, 'H');
-  if(forzar!==true && (h<10 || h>=20)) return;
+  if(forzar!==true && (h<10 || h>=20 || azcuEnSilencio_())) return;
   var datos = azcuDatos_(), hoy = azcuHoy_(), m = azcuMapaGet_('AZCU_PLZ'), ahora = Date.now(), cambio = false;
   datos.forEach(function(p){
     var c = AZCU_COD_[p.etapa] || 'x'; if(c!=='r' && c!=='v') return;
@@ -1920,7 +1943,7 @@ function azcuAvisoPlazos(forzar){
 }
 function azcuAvisoComprador(forzar){
   var h = +Utilities.formatDate(new Date(), AZCU_TZ, 'H');
-  if(forzar!==true && (h<10 || h>=20)) return;
+  if(forzar!==true && (h<10 || h>=20 || azcuEnSilencio_())) return;
   var dias = azcuNum2_('AZCU_COMP_DIAS', 20), datos = azcuDatos_(), m = azcuMapaGet_('AZCU_COMP'), ahora = Date.now(), cambio = false;
   datos.forEach(function(p){
     var id = String(p.id).trim(), c = AZCU_COD_[p.etapa] || 'x';
@@ -1940,7 +1963,7 @@ function azcuAvisoComprador(forzar){
 
 function azcuAvisoPapelesReserva(forzar, soloId){
   var h = +Utilities.formatDate(new Date(), AZCU_TZ, 'H');
-  if(forzar!==true && (h<10 || h>=20)) return;
+  if(forzar!==true && (h<10 || h>=20 || azcuEnSilencio_())) return;
   var datos = azcuDatos_(), m = azcuMapaGet_('AZCU_PAPR'), ahora = Date.now(), cambio = false;
   datos.forEach(function(p){
     var id = String(p.id).trim();
@@ -2023,7 +2046,7 @@ function azcuHerrAtrasos_(a, ctx){
 }
 function azcuAvisoGerencia(forzar){
   var h = +Utilities.formatDate(new Date(), AZCU_TZ, 'H'), dow = new Date(Date.now()-3*3600000).getUTCDay();
-  if(forzar!==true && (h<10 || h>=20 || dow===0 || dow===6)) return;
+  if(forzar!==true && (h<10 || h>=20 || azcuEnSilencio_() || (dow!==1 && dow!==3 && dow!==5))) return;
   var gs = azcuGerentes_(); if(!gs.length) return;
   var it = azcuAtrasos_(); if(!it.length) return;
   var gr = azcuGrupos_(it), graves = it.filter(function(x){ return x.grave; }).length;
@@ -2033,7 +2056,7 @@ function azcuAvisoGerencia(forzar){
 }
 function azcuAvisoCaptacion(forzar){
   var h = +Utilities.formatDate(new Date(), AZCU_TZ, 'H');
-  if(forzar!==true && (h<10 || h>=20)) return;
+  if(forzar!==true && (h<10 || h>=20 || azcuEnSilencio_())) return;
   var dias = azcuNum2_('AZCU_CAP_DIAS', 15), datos = azcuDatos_(), m = azcuMapaGet_('AZCU_CAP'), ahora = Date.now(), hn = azcuHoy_(), cambio = false;
   datos.forEach(function(p){
     var id = String(p.id).trim(), c = AZCU_COD_[p.etapa] || 'x';
