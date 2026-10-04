@@ -338,6 +338,7 @@ function cargarImagenes(){
 }
 
 function _ponerProps(lista){
+  if(!Array.isArray(lista)) lista=[];
   var sel=document.getElementById('propSel');
   PROPIEDADES={};
   sel.innerHTML='<option value="">— Sin propiedad / cargar a mano —</option>';
