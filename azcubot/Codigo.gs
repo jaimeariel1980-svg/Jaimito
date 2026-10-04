@@ -1505,6 +1505,7 @@ function getDatos(){
             papeles:papeles, docUrls:docUrls, encuesta:(encMap[id]||null),
       origen:row[c('Origen')]||'Propia', colega:row[c('Inmobiliaria colega')]||'', colegaTel:row[c('Contacto colega')]||'',
       comision:row[c('Reparto de comisión')]||'', vendedor:row[c('Vendedor asignado')]||'', tokko:row[c('Link Tokko')]||'',
+      creada:_fechaISO_(c('Fecha de creación')>-1?row[c('Fecha de creación')]:''),
       boleto:_fechaISO_(c('Plazo de boleto')>-1?row[c('Plazo de boleto')]:''), boletoOk:_fechaISO_(c('Boleto firmado')>-1?row[c('Boleto firmado')]:''), escritura:_fechaISO_(c('Plazo de escritura')>-1?row[c('Plazo de escritura')]:''), escrituraOk:_fechaISO_(c('Escritura firmada')>-1?row[c('Escritura firmada')]:''),
       carpeta:row[c('Carpeta Drive (URL)')]||'', motivo:row[c('Motivo de suspensión')]||'',
       obs:row[c('Observaciones comerciales')]||'',
