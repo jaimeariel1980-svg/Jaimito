@@ -157,7 +157,10 @@ NIVEL_AJUSTE:
     [PERFIL, 'p2', '¿Tenés matrícula profesional vigente?', 'select', 'Sí|En trámite|No', 'SI'],
     [PERFIL, 'p3', '¿Cuántos años de experiencia tenés en prácticas de enfermería?', 'select', 'Menos de 1 año|1 a 3 años|3 a 5 años|Más de 5 años', 'SI'],
     [PERFIL, 'p4', '¿Tenés experiencia con adultos mayores (geriatría, internación, domiciliaria)?', 'select', 'Sí, mucha|Sí, alguna|No', 'SI'],
-    [PERFIL, 'p5', '¿Tenés disponibilidad para turnos rotativos (L-V de 7 hs y sábados, domingos y feriados de 12 hs)?', 'select', 'Sí|No|A confirmar', 'SI']
+    [PERFIL, 'p5', '¿Tenés disponibilidad para turnos rotativos (L-V de 7 hs y sábados, domingos y feriados de 12 hs)?', 'select', 'Sí|No|A confirmar', 'SI'],
+    [PERFIL, 'p6', '¿Quién te recomendó para esta búsqueda?', 'select', 'Sindicato|Director|Empleado', 'NO'],
+    [PERFIL, 'p7', 'Si te recomendó un sindicato, ¿cuál?', 'select', 'NORTE|UTI|UTERA|APPAMIA|ATE|UPCN|SUTEPA', 'NO'],
+    [PERFIL, 'p8', 'Si te recomendó un director o un empleado, ¿quién? (nombre y apellido)', 'texto', '', 'NO']
   ]);
 
   // ---------- 8) Mail_Routing ----------
@@ -170,21 +173,4 @@ NIVEL_AJUSTE:
   Logger.log('✅ Mail_Routing');
 
   Logger.log('LISTO — ' + PERFIL + ' configurado. Link postulación: ' + URL_DEPLOY + '?tipo=postulacion&perfil=' + PERFIL);
-}
-
-function agregarColumnasRecomendacionPAMI() {
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
-  const rows = ss.getSheetByName('Config').getDataRange().getValues();
-  const r = rows.slice(1).find(x => /pami|enfermer/i.test([x[0], x[1], x[3]].join(' ')));
-  if (!r) throw new Error('No encontré el perfil PAMI en Config');
-  const hoja = ss.getSheetByName(r[3]);
-  const C1 = 47, C2 = 48;
-  if (hoja.getMaxColumns() < C2) hoja.insertColumnsAfter(hoja.getMaxColumns(), C2 - hoja.getMaxColumns());
-  hoja.getRange(1, C1, 1, 2).setValues([['Recomendó', 'Recomendado por']]).setFontWeight('bold').setBackground('#1A6645').setFontColor('#FFFFFF');
-  const n = Math.max(hoja.getMaxRows() - 1, 1);
-  hoja.getRange(2, C1, n, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['Sindicato', 'Director', 'Empleado'], true).build());
-  hoja.getRange(2, C2, n, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['NORTE', 'UTI', 'UTERA', 'APPAMIA', 'ATE', 'UPCN', 'SUTEPA'], true).setAllowInvalid(true).build());
-  hoja.setColumnWidth(C1, 120);
-  hoja.setColumnWidth(C2, 200);
-  Logger.log('✅ Columnas Recomendó / Recomendado por en "' + hoja.getName() + '" (AU y AV)');
 }
