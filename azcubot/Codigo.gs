@@ -2187,3 +2187,15 @@ function marcarConsultaWS(fila, quien){
   try{ _audit_('campos','✅ Marcó atendida una consulta de WhatsApp', '', quien||''); }catch(e){}
   return {ok:true, valor:val};
 }
+function obtenerUrlDocumento(codigo, docNombre){
+  var mae=hojaMaestra_(), fila=_filaPorCodigo_(mae, codigo);
+  if(fila<0) throw new Error('No encontré la propiedad '+codigo);
+  var head=mae.getRange(1,1,1,mae.getLastColumn()).getValues()[0], i=head.indexOf('Doc: '+docNombre);
+  if(i>-1){ var v=String(mae.getRange(fila,i+1).getValue()||'').trim(); if(/^https?:/i.test(v)) return v; }
+  var doc=_docPorLabel(docNombre), key=doc ? doc.key : '';
+  var ic=head.indexOf('Carpeta Drive (URL)'), url=ic>-1 ? String(mae.getRange(fila,ic+1).getValue()||'') : '', idc=url.match(/[-\w]{25,}/), carpeta=null;
+  try{ if(idc) carpeta=DriveApp.getFolderById(idc[0]); else carpeta=_getOrCreatePropertyFolder(codigo, mae.getRange(fila, head.indexOf('Calle')+1).getValue(), mae.getRange(fila, head.indexOf('Número')+1).getValue()); }catch(e){ return ''; }
+  var it=carpeta.getFiles(), nd=_sanear(docNombre).toLowerCase();
+  while(it.hasNext()){ var f=it.next(), n=f.getName(); if((key && n.indexOf('.'+key+'.')>-1) || n.indexOf(docNombre+' - ')===0 || _sanear(n).toLowerCase().indexOf(nd)===0) return f.getUrl(); }
+  return '';
+}
