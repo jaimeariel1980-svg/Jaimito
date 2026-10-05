@@ -40,7 +40,8 @@ const CONFIG = {
     { key: 'epe_luz',           label: 'EPE Luz',              obligatorio: false },
     { key: 'aguas_santafesinas',label: 'Aguas Santafesinas',   obligatorio: false },
     { key: 'litoral_gas',       label: 'Litoral Gas',          obligatorio: false },
-    { key: 'autorizacion_venta',label: 'Autorización de venta',obligatorio: false }
+    { key: 'autorizacion_venta',label: 'Autorización de venta',obligatorio: false },
+    { key: 'declaratoria_herederos', label: 'Declaratoria de herederos', obligatorio: false }
   ],
 
   // Campos personales/de propiedad mínimos para el primer envío de precarga
@@ -420,14 +421,15 @@ function calcularEstadoDocumentacion(codigoPrecarga) {
  */
 function _calcularEstadoDesdeCarpeta(carpeta) {
   const estado = {};
+  var allFiles = [];
+  var it = carpeta.getFiles();
+  while (it.hasNext()) { var f = it.next(); allFiles.push({ name: f.getName(), url: f.getUrl() }); }
   CONFIG.DOCUMENTOS.forEach(doc => {
-    const it = carpeta.getFiles();
-    let encontrado = false;
-    while (it.hasNext()) {
-      const nombre = it.next().getName();
-      if (nombre.indexOf('.' + doc.key + '.') !== -1) { encontrado = true; break; }
+    var match = null;
+    for (var i = 0; i < allFiles.length; i++) {
+      if (allFiles[i].name.indexOf('.' + doc.key + '.') !== -1) { match = allFiles[i]; break; }
     }
-    estado[doc.key] = encontrado ? 'Presentado' : 'Pendiente';
+    estado[doc.key] = match ? match.url : 'Pendiente';
   });
   return estado;
 }
@@ -491,6 +493,36 @@ function _infoEsperadaDocumento(key, nombresDueños) {
 
 function _docPorLabel(label) {
   return CONFIG.DOCUMENTOS.filter(d => d.label === label)[0] || null;
+}
+
+/**
+ * Devuelve la URL del archivo en Drive para un documento de una propiedad.
+ * Se usa desde el Tablero cuando la celda Doc: tiene "Presentado" en vez de URL.
+ */
+function obtenerUrlDocumento(codigo, docNombre) {
+  var doc = _docPorLabel(docNombre);
+  if (!doc) return null;
+  var sheet = hojaMaestra_();
+  var fila = _filaPorCodigo_(sheet, codigo);
+  if (fila < 0) return null;
+  var head = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  var calle = sheet.getRange(fila, head.indexOf('Calle') + 1).getValue() || '';
+  var numero = sheet.getRange(fila, head.indexOf('Número') + 1).getValue() || '';
+  try {
+    var carpeta = _getOrCreatePropertyFolder(codigo, calle, numero);
+    var it = carpeta.getFiles();
+    while (it.hasNext()) {
+      var f = it.next();
+      if (f.getName().indexOf('.' + doc.key + '.') !== -1) {
+        var colDoc = head.indexOf('Doc: ' + docNombre);
+        if (colDoc > -1) sheet.getRange(fila, colDoc + 1).setValue(f.getUrl());
+        return f.getUrl();
+      }
+    }
+  } catch(e) {
+    Logger.log('obtenerUrlDocumento error: ' + e.message);
+  }
+  return null;
 }
 
 /**
@@ -907,6 +939,15 @@ function _guardarFila(sheet, datos, urlCarpeta, estadoDocs, verificacionIA) {
     });
   }
 
+  var lastCol = headers.length;
+  Object.keys(mapaValores).forEach(function(k) {
+    if (mapaValores[k] !== undefined && headers.indexOf(k) === -1) {
+      lastCol++;
+      sheet.getRange(1, lastCol).setValue(k);
+      headers.push(k);
+    }
+  });
+
   const fila = filaExistente || sheet.getLastRow() + 1;
   headers.forEach((h, i) => {
     if (mapaValores[h] !== undefined) {
@@ -916,7 +957,7 @@ function _guardarFila(sheet, datos, urlCarpeta, estadoDocs, verificacionIA) {
 
   // % de completitud simple: proporción de documentos presentados
   const totalDocs = CONFIG.DOCUMENTOS.length;
-  const presentados = Object.values(estadoDocs).filter(v => v === 'Presentado').length;
+  const presentados = Object.values(estadoDocs).filter(v => v && v !== 'Pendiente').length;
   const pctCol = headers.indexOf('% Completitud') + 1;
   if (pctCol) sheet.getRange(fila, pctCol).setValue(Math.round((presentados / totalDocs) * 100) + '%');
 }
@@ -2187,15 +2228,49 @@ function marcarConsultaWS(fila, quien){
   try{ _audit_('campos','✅ Marcó atendida una consulta de WhatsApp', '', quien||''); }catch(e){}
   return {ok:true, valor:val};
 }
-function obtenerUrlDocumento(codigo, docNombre){
-  var mae=hojaMaestra_(), fila=_filaPorCodigo_(mae, codigo);
-  if(fila<0) throw new Error('No encontré la propiedad '+codigo);
-  var head=mae.getRange(1,1,1,mae.getLastColumn()).getValues()[0], i=head.indexOf('Doc: '+docNombre);
-  if(i>-1){ var v=String(mae.getRange(fila,i+1).getValue()||'').trim(); if(/^https?:/i.test(v)) return v; }
-  var doc=_docPorLabel(docNombre), key=doc ? doc.key : '';
-  var ic=head.indexOf('Carpeta Drive (URL)'), url=ic>-1 ? String(mae.getRange(fila,ic+1).getValue()||'') : '', idc=url.match(/[-\w]{25,}/), carpeta=null;
-  try{ if(idc) carpeta=DriveApp.getFolderById(idc[0]); else carpeta=_getOrCreatePropertyFolder(codigo, mae.getRange(fila, head.indexOf('Calle')+1).getValue(), mae.getRange(fila, head.indexOf('Número')+1).getValue()); }catch(e){ return ''; }
-  var it=carpeta.getFiles(), nd=_sanear(docNombre).toLowerCase();
-  while(it.hasNext()){ var f=it.next(), n=f.getName(); if((key && n.indexOf('.'+key+'.')>-1) || n.indexOf(docNombre+' - ')===0 || _sanear(n).toLowerCase().indexOf(nd)===0) return f.getUrl(); }
-  return '';
+
+function migrarDocsPresentadoAUrl() {
+  var sheet = hojaMaestra_();
+  var data = sheet.getRange(1, 1, sheet.getLastRow(), sheet.getLastColumn()).getValues();
+  var head = data[0];
+  var colCodigo = head.indexOf('Código de Precarga');
+  var colCalle = head.indexOf('Calle');
+  var colNumero = head.indexOf('Número');
+  var docCols = [];
+  head.forEach(function(h, i) {
+    if ((''+h).indexOf('Doc:') === 0) {
+      var label = (''+h).replace('Doc:', '').trim();
+      var doc = null;
+      CONFIG.DOCUMENTOS.forEach(function(d) { if (d.label === label) doc = d; });
+      if (doc) docCols.push({ col: i, key: doc.key, label: label });
+    }
+  });
+  var actualizadas = 0;
+  for (var r = 1; r < data.length; r++) {
+    var codigo = data[r][colCodigo];
+    if (!codigo) continue;
+    var calle = data[r][colCalle] || '';
+    var numero = data[r][colNumero] || '';
+    var necesita = docCols.some(function(dc) {
+      var v = (''+data[r][dc.col]).trim();
+      return v && !/^https?:/i.test(v) && v !== 'Pendiente';
+    });
+    if (!necesita) continue;
+    try {
+      var carpeta = _getOrCreatePropertyFolder(codigo, calle, numero);
+      var archivos = [];
+      var it = carpeta.getFiles();
+      while (it.hasNext()) { var f = it.next(); archivos.push({ name: f.getName(), url: f.getUrl() }); }
+      docCols.forEach(function(dc) {
+        var v = (''+data[r][dc.col]).trim();
+        if (!v || /^https?:/i.test(v) || v === 'Pendiente') return;
+        var match = null;
+        for (var i = 0; i < archivos.length; i++) {
+          if (archivos[i].name.indexOf('.' + dc.key + '.') !== -1) { match = archivos[i]; break; }
+        }
+        if (match) { sheet.getRange(r + 1, dc.col + 1).setValue(match.url); actualizadas++; }
+      });
+    } catch(e) { Logger.log('Error migrando ' + codigo + ': ' + e.message); }
+  }
+  Logger.log('Migración completada: ' + actualizadas + ' celdas actualizadas con URLs.');
 }
