@@ -781,7 +781,16 @@ function azcuChat(pin, mensajes, ctx){
   azcuPin_(pin);
   ctx = ctx || {};
   try{ var lm = (mensajes||[]).length ? mensajes[mensajes.length-1] : null, cr = lm && lm.role==='user' ? azcuCalc_(lm.content) : null; if(cr) return {texto:cr.texto, acciones:[], adjuntos:[], panel:null}; }catch(e){}
-  try{ var tx2 = (mensajes||[]).length && mensajes[mensajes.length-1].role==='user' ? String(mensajes[mensajes.length-1].content||'') : ''; if(ctx.fichaId && tx2 && /contame|cont[aá] de|info|datos|ficha|completo|detalle|todo/i.test(tx2) && !/cu[aá]nto|cu[aá]ndo|qui[eé]n|d[oó]nde|precio|tel[eé]fono|mail|historial|interacci|papeles|falta|document/i.test(tx2)){ var dd = azcuFmtFicha_(ctx.fichaId); if(dd) return {texto:dd, acciones:[], adjuntos:[], panel:null}; } }catch(e){}
+  try{ var tx2 = (mensajes||[]).length && mensajes[mensajes.length-1].role==='user' ? String(mensajes[mensajes.length-1].content||'') : ''; if(ctx.fichaId && tx2 && /contame|cont[aá] de|info|datos|ficha|completo|detalle|todo/i.test(tx2) && !/cu[aá]nto|cu[aá]ndo|qui[eé]n|d[oó]nde|precio|tel[eé]fono|mail|historial|interacci|papeles|falta|document|\bmand|\benvi|compart|pdf/i.test(tx2)){ var dd = azcuFmtFicha_(ctx.fichaId); if(dd) return {texto:dd, acciones:[], adjuntos:[], panel:null}; } }catch(e){}
+  try{
+    var tx3 = (mensajes||[]).length && mensajes[mensajes.length-1].role==='user' ? String(mensajes[mensajes.length-1].content||'') : '';
+    if(ctx.fichaId && tx3 && /\b(mand|envi|pas[aá]me|compart|dame)/i.test(tx3)){
+      var cual3 = /ubicaci[oó]n|mapa|direcci[oó]n/i.test(tx3) ? 'ubicacion' : /encuesta/i.test(tx3) ? 'encuesta' : /ficha|link|enlace|propiedad/i.test(tx3) && !/pdf|document|papeles/i.test(tx3) ? 'link_tokko' : '';
+      if(cual3){ var adj3 = [], r3 = azcuHerrEnlace_({cual:cual3, id:ctx.fichaId}, adj3), p3 = azcuProp_(ctx.fichaId);
+        if(r3.error) return {texto:r3.error, acciones:[], adjuntos:[], panel:null};
+        return {texto:(cual3==='ubicacion' ? 'Listo, la ubicación' : cual3==='encuesta' ? 'Listo, la encuesta' : 'Listo, la ficha')+(p3 ? ' de **'+p3.dir+'**' : '')+'. Elegí qué hacer 👇', acciones:[], adjuntos:adj3, panel:null}; }
+    }
+  }catch(e){}
   var msgs = [{role:'system', content:azcuSistema_(ctx)}].concat((mensajes||[]).slice(-12).map(function(m){ return {role:m.role==='assistant'?'assistant':'user', content:String(m.content||'')}; }));
   var tools = azcuTools_(), acciones = [], adj = [], panel = null, i;
   var mapa = {proponer_cargar_interaccion:'cargar', proponer_agendar_visita:'agendar', proponer_registrar_propuesta:'propuesta', proponer_cambiar_etapa:'etapa', proponer_editar_campos:'campos', proponer_marcar_documento:'doc', proponer_borrar_documento:'borrardoc', proponer_editar_interaccion:'editarint', proponer_eliminar_interaccion:'elimint', proponer_eliminar_propiedad:'elimprop', proponer_enviar_reporte:'reporte'};

@@ -1734,9 +1734,12 @@ google.script.run
     });
     return h;
   }
+  function agKey(){ return 'agc_'+(st.nombre||'')+'_'+(st.agFrom||iso(new Date())); }
   function agLoad(){
-    st.agLoading = true;
-    call('azcuAgenda', [st.nombre||'', st.agFrom||iso(new Date()), 31], function(d){ st.ag = d; st.agLoading = false; render(); }, function(err){ st.agLoading = false; st.agNote = 'No pude cargar la agenda: '+err; render(); });
+    var k = agKey(), cc = null;
+    if(!st.ag){ try{ cc = JSON.parse(ls(k)||'null'); }catch(e){} if(cc && cc.d && Date.now()-cc.t < 86400000){ st.ag = cc.d; st.agLoading = false; render(); } }
+    st.agLoading = !st.ag;
+    call('azcuAgenda', [st.nombre||'', st.agFrom||iso(new Date()), 31], function(d){ st.ag = d; st.agLoading = false; try{ ls(k, JSON.stringify({t:Date.now(), d:d})); }catch(e){} render(); }, function(err){ st.agLoading = false; st.agNote = 'No pude cargar la agenda: '+err; render(); });
   }
   function agendaHtml(){
     var by = {}, hoy = iso(new Date()), i, d, days = '';
@@ -2118,10 +2121,19 @@ google.script.run
       st.msgs.push({role:'user', content:text}); st.msgs.push({role:'assistant', content:gr}); save(); render(); return;
     }
     if(!atajo){ var cr = null; try{ cr = calcLocal(text); }catch(e){} if(cr){ st.msgs.push({role:'user', content:text}); st.msgs.push({role:'assistant', content:cr.texto}); save(); render(); return; } }
+    if(atajo==='alertas'){
+      var ac = null; try{ ac = JSON.parse(ls('alc')||'null'); }catch(e){}
+      if(ac && ac.r && Date.now()-ac.t < 1800000){
+        st.msgs.push({role:'user', content:text}); reply(ac.r); var mi = st.msgs.length-1; save(); render();
+        call('azcuAtajo', [atajo], function(r){ try{ ls('alc', JSON.stringify({t:Date.now(), r:r})); }catch(e){} if(r && r.texto!==ac.r.texto && st.msgs[mi] && st.msgs[mi].role==='assistant'){ reply(r); var nm = st.msgs.pop(); st.msgs[mi] = nm; save(); render(); } }, function(){});
+        return;
+      }
+    }
     st.msgs.push({role:'user', content:text}); st.busy = true; st.status = ''; save(); render();
     var hist = st.msgs.filter(function(m){ return !m.w; }).map(function(m){ return {role:m.role, content:(m.content||'')+(m.acciones||[]).map(function(a){ return '\n[Tarjeta '+(a.estado||'')+': '+a.resumen+(a.datos&&a.datos.id?' (id '+a.datos.id+')':'')+']'; }).join('')}; }).filter(function(m){ return m.content; });
     call(atajo ? 'azcuAtajo' : 'azcuChat', atajo ? [atajo] : [hist, {nombre:st.nombre||'', fichaId:AZ.ctx||'', visita:st.vis||null}], function(r){
       st.busy = false;
+      if(atajo==='alertas'){ try{ ls('alc', JSON.stringify({t:Date.now(), r:r})); }catch(e){} }
       reply(r); if(st.view==='agenda'){ st.agNote = r.texto; agLoad(); }
       save(); render();
     }, function(err){
@@ -2209,6 +2221,14 @@ google.script.run
       sc = document.createElement('script'); sc.src = window.AZCU_API+'?azr='+p.id+'&cb='+cb+'&_='+Date.now(); sc.onerror = function(){ delete window[cb]; sc.remove(); setTimeout(tick, 3000); }; document.head.appendChild(sc);
     })();
   }
+  function prefetch(){
+    if(!st.pin || !st.nombre || st.busy || document.hidden) return;
+    var ac = null; try{ ac = JSON.parse(ls('alc')||'null'); }catch(e){}
+    if(!ac || Date.now()-ac.t > 300000) call('azcuAtajo', ['alertas'], function(r){ try{ ls('alc', JSON.stringify({t:Date.now(), r:r})); }catch(e){} }, function(){});
+    var k = 'agc_'+(st.nombre||'')+'_'+iso(new Date()), cc = null; try{ cc = JSON.parse(ls(k)||'null'); }catch(e){}
+    if(!cc || Date.now()-cc.t > 300000) call('azcuAgenda', [st.nombre||'', iso(new Date()), 31], function(d){ try{ ls(k, JSON.stringify({t:Date.now(), d:d})); }catch(e){} }, function(){});
+  }
+  setTimeout(prefetch, 4000); document.addEventListener('visibilitychange', function(){ if(!document.hidden) setTimeout(prefetch, 800); });
   setTimeout(resumir, 1200);
   function call(fn, args, ok, fail, retried){
     function onErr(e){
