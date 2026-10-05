@@ -610,7 +610,7 @@ function azcuTools_(){
   return [
     t('buscar_propiedades','Busca propiedades por dirección, código, propietario o tipo.',{texto:S},['texto']),
     t('consultas_whatsapp','Consultas/mensajes recibidos por WhatsApp (pestaña Consultas del Sheet, con las respuestas automáticas). Filtros: finde (desde el viernes 18 h), hoy, semana, pendientes (sin atender, 14 días), todas.',{filtro:{type:'string',enum:['finde','hoy','semana','pendientes','todas']}}),
-    t('ficha_propiedad','Ficha completa de una propiedad: datos, precio, documentos, propietarios, historial con número de fila, encuesta, links.',{id:{type:'string',description:'Código, ej PRE-2026-0004 o MIG-P004'},completa:{type:'boolean',description:'true cuando piden la info/datos/ficha/"contame" de la propiedad: el sistema arma y devuelve directamente el texto completo ordenado (no escribas nada más)'}},['id']),
+    t('ficha_propiedad','Ficha completa de una propiedad: datos, precio, documentos, propietarios, historial con número de fila, encuesta, links.',{id:{type:'string',description:'Código, ej PRE-2026-0004 o MIG-P004'},puntual:{type:'boolean',description:'true SOLO si preguntan un único dato concreto (un precio, un teléfono, una fecha). Por defecto (omitido) el sistema arma y devuelve directamente la ficha completa y ordenada'}},['id']),
     t('captacion_formulario','Todo lo cargado en el formulario de captación/precarga de una propiedad (superficies, ambientes, servicios, dueños, datos del inmueble, etc.).',{id:S},['id']),
     t('guia_pagina','Lee el texto de una página del tablero para explicarla o repasarla. Si hay varias partes, pedí la siguiente con parte.',{pagina:{type:'string',enum:['procedimiento_ventas','generador_documentos','formulario_captacion','encuesta']}, parte:{type:'number'}},['pagina']),
     t('dashboard','Panel inicial del tablero: totales, etapas, papeles, propuestas, sin movimiento y satisfacción. Se muestra además como tarjetas.',{}),
@@ -737,7 +737,7 @@ function azcuSistema_(ctx){
     'SOBRE LA EMPRESA: '+AZCU_KB,
     'ATRASOS: si preguntan qué está atrasado, vencido, qué no se cumplió, o cómo viene el equipo / un vendedor, usá la herramienta atrasos y mostralos agrupados por vendedor, empezando por lo más grave; no inventes ninguno.',
     'CONSULTAS DE WHATSAPP: si preguntan por consultas/mensajes de WhatsApp (por ejemplo del fin de semana) usá consultas_whatsapp y listalas TODAS con fecha, nombre, teléfono, propiedad y mensaje; decí cuántas siguen sin atender.',
-    'INFO DE UNA PROPIEDAD (REGLA): cuando pidan la info, datos, ficha, "pasame completo" o "contame" de una propiedad, llamá UNA sola vez ficha_propiedad con completa:true: el sistema devuelve directo el texto completo y ordenado; no llames otras herramientas ni lo reescribas. Si piden solo un dato puntual, usá ficha_propiedad sin completa.',
+    'INFO DE UNA PROPIEDAD (REGLA): cuando pidan la info, datos, ficha, "pasame completo" o "contame" de una propiedad, llamá UNA sola vez ficha_propiedad SIN puntual: el sistema devuelve directo la ficha completa y ordenada; no llames otras herramientas ni la reescribas. Solo si preguntan un único dato concreto usá puntual:true y respondé ese dato.',
     'ÚLTIMAS INTERACCIONES: si piden las últimas interacciones/consultas/visitas cargadas (de todas las propiedades o del usuario) usá ultimas_interacciones; NUNCA las saques de ficha_propiedad salvo que pregunten por una propiedad puntual. Mostrá primero la más reciente y la fecha de cada una.',
     'USUARIO: hablás con '+(ctx.nombre||'un compañero')+'.',
     'FECHAS: hoy es '+dia+' '+hoy+' y son las '+Utilities.formatDate(new Date(), AZCU_TZ, 'HH:mm')+' (Argentina). Resolvé "mañana", "el viernes", etc. a AAAA-MM-DD.',
@@ -781,10 +781,11 @@ function azcuChat(pin, mensajes, ctx){
   azcuPin_(pin);
   ctx = ctx || {};
   try{ var lm = (mensajes||[]).length ? mensajes[mensajes.length-1] : null, cr = lm && lm.role==='user' ? azcuCalc_(lm.content) : null; if(cr) return {texto:cr.texto, acciones:[], adjuntos:[], panel:null}; }catch(e){}
+  try{ var tx2 = (mensajes||[]).length && mensajes[mensajes.length-1].role==='user' ? String(mensajes[mensajes.length-1].content||'') : ''; if(ctx.fichaId && tx2 && /contame|cont[aá] de|info|datos|ficha|completo|detalle|todo/i.test(tx2) && !/cu[aá]nto|cu[aá]ndo|qui[eé]n|d[oó]nde|precio|tel[eé]fono|mail|historial|interacci|papeles|falta|document/i.test(tx2)){ var dd = azcuFmtFicha_(ctx.fichaId); if(dd) return {texto:dd, acciones:[], adjuntos:[], panel:null}; } }catch(e){}
   var msgs = [{role:'system', content:azcuSistema_(ctx)}].concat((mensajes||[]).slice(-12).map(function(m){ return {role:m.role==='assistant'?'assistant':'user', content:String(m.content||'')}; }));
   var tools = azcuTools_(), acciones = [], adj = [], panel = null, i;
   var mapa = {proponer_cargar_interaccion:'cargar', proponer_agendar_visita:'agendar', proponer_registrar_propuesta:'propuesta', proponer_cambiar_etapa:'etapa', proponer_editar_campos:'campos', proponer_marcar_documento:'doc', proponer_borrar_documento:'borrardoc', proponer_editar_interaccion:'editarint', proponer_eliminar_interaccion:'elimint', proponer_eliminar_propiedad:'elimprop', proponer_enviar_reporte:'reporte'};
-  var directo = null;
+  var directo = null, ult = (mensajes||[]).length ? mensajes[mensajes.length-1] : null, esAcc = !!(ult && /carg|agend|registr|propuesta|cambi|pas[aá] a|edit|borr|elimin|marc|sub[ií]|envi|mand|record|avis|visita|document|papeles|falta|cu[aá]nto|cu[aá]ndo|qui[eé]n|tel[eé]fono|mail|historial|interacci/i.test(String(ult.content||'')) && !/^(info|datos|ficha|contame)/i.test(String(ult.content||'').trim()));
   function fin(t){ return {texto:t, acciones:acciones, adjuntos:adj, panel:panel}; }
   for(i=0;i<8;i++){
     azcuProg_(ctx, i===0 ? 'Pensando…' : 'Armando la respuesta…');
@@ -796,9 +797,9 @@ function azcuChat(pin, mensajes, ctx){
       var args = {}, res, n = tc.function.name; azcuProg_(ctx, AZCU_NOMBRES_[n] || 'Preparando la tarjeta…');
       try{ args = JSON.parse(tc.function.arguments||'{}'); }catch(e){}
       try{
-        if(n==='buscar_propiedades') res = azcuHerrBuscar_(args);
+        if(n==='buscar_propiedades'){ res = azcuHerrBuscar_(args); if(res.length===1 && !directo && !esAcc && !args.puntual) directo = azcuFmtFicha_(res[0].id); }
         else if(n==='consultas_whatsapp') res = azcuHerrConsWS_(args);
-        else if(n==='ficha_propiedad'){ res = azcuHerrFicha_(args); if(args.completa && !res.error && !directo) directo = azcuFmtFicha_(args.id); }
+        else if(n==='ficha_propiedad'){ res = azcuHerrFicha_(args); if(!args.puntual && !res.error && !directo && !esAcc) directo = azcuFmtFicha_(args.id); }
         else if(n==='ultimas_interacciones') res = azcuHerrUltimas_(args, ctx);
         else if(n==='captacion_formulario') res = azcuHerrCaptacion_(args);
         else if(n==='guia_pagina') res = azcuHerrGuia_(args);
