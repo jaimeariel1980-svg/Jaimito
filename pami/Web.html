@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<base target="_top">
+<title><?= sitio ?></title>
+<style>
+:root{--c:<?!= color ?>;--bg:#F5F7FA;--line:#D9DEE5;--txt:#1B2430;--mut:#5C6777;--err:#C0392B}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Plus Jakarta Sans',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--txt);line-height:1.5}
+header{background:var(--c);color:#fff;padding:18px 20px}
+header .in,.wrap{max-width:760px;margin:0 auto}
+header h1{font-size:20px;font-weight:800;letter-spacing:-.01em}
+header a{color:#fff;text-decoration:none}
+.wrap{padding:22px 16px 60px}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:20px;margin-bottom:14px}
+.job{display:block;text-decoration:none;color:inherit}
+.job:hover{border-color:var(--c)}
+.job h2{font-size:19px;margin-bottom:4px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.chip{background:#E8EEF7;color:var(--c);padding:4px 10px;border-radius:99px;font-size:12px;font-weight:700}
+.btn{display:inline-block;background:var(--c);color:#fff;border:none;border-radius:8px;padding:13px 22px;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit;width:100%}
+.btn:disabled{opacity:.6;cursor:default}
+h3{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--c);margin:18px 0 8px}
+.txt{white-space:pre-line;font-size:15px}
+ul.req{padding-left:18px;font-size:15px}
+.group{margin-bottom:16px}
+label{display:block;font-weight:700;font-size:14px;margin-bottom:5px}
+.req-s{color:var(--err)}
+small{display:block;color:var(--mut);font-size:12px;margin-bottom:5px}
+input[type=text],input[type=email],input[type=tel],input[type=number],select,textarea{width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:8px;font-size:15px;font-family:inherit;background:#fff;color:var(--txt)}
+input:focus,select:focus{outline:none;border-color:var(--c)}
+.group.invalid input,.group.invalid select,.group.invalid .drop{border-color:var(--err)}
+.errmsg{display:none;color:var(--err);font-size:12px;margin-top:4px}
+.group.invalid .errmsg{display:block}
+.drop{display:block;border:2px dashed var(--line);border-radius:10px;padding:20px;text-align:center;cursor:pointer;color:var(--mut);font-size:14px}
+.drop.has{border-color:var(--c);color:var(--c);font-weight:700}
+.drop input{display:none}
+.check{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--mut);font-weight:400}
+.check input{margin-top:3px}
+#err{display:none;background:#FDECEA;border:1px solid #E6A19A;color:#7A1F12;padding:12px 14px;border-radius:8px;margin-bottom:14px;font-size:14px}
+.ok{text-align:center;padding:30px 10px}
+.ok .tick{width:56px;height:56px;border-radius:50%;background:var(--c);color:#fff;font-size:30px;line-height:56px;margin:0 auto 14px}
+.back{display:inline-block;margin-bottom:14px;color:var(--c);font-weight:700;font-size:14px;text-decoration:none}
+.loading{padding:60px 0;text-align:center;color:var(--mut)}
+</style>
+</head>
+<body>
+<header><div class="in"><h1><a href="" id="home"><?= sitio ?></a></h1></div></header>
+<div class="wrap" id="app"><div class="loading">Cargando…</div></div>
+<script>
+var BID = <?!= JSON.stringify(bid) ?>;
+var app = document.getElementById('app');
+function esc(t){return String(t==null?'':t).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+var BASE = <?!= JSON.stringify(url) ?>;
+function base(){return BASE;}
+document.getElementById('home').href = base();
+
+function portada(){
+  google.script.run.withSuccessHandler(function(list){
+    if(!list.length){app.innerHTML='<div class="card"><h2>Por el momento no hay búsquedas abiertas</h2><p class="txt" style="margin-top:6px">Volvé a visitarnos pronto.</p></div>';return;}
+    app.innerHTML='<h2 style="margin-bottom:14px;font-size:22px">Búsquedas abiertas</h2>'+list.map(function(b){
+      return '<a class="card job" href="'+base()+'?b='+encodeURIComponent(b.id)+'"><h2>'+esc(b.titulo)+'</h2><div class="chips">'+
+        (b.ubicacion?'<span class="chip">📍 '+esc(b.ubicacion)+'</span>':'')+(b.modalidad?'<span class="chip">🕒 '+esc(b.modalidad)+'</span>':'')+'</div></a>';
+    }).join('');
+  }).withFailureHandler(fallo).getPortada();
+}
+
+function fallo(e){app.innerHTML='<div class="card">No pudimos cargar la página. Probá de nuevo en unos minutos.</div>';}
+
+function detalle(){
+  google.script.run.withSuccessHandler(function(b){
+    if(!b){app.innerHTML='<a class="back" href="'+base()+'">← Ver búsquedas</a><div class="card">Esta búsqueda no existe.</div>';return;}
+    var reqs=String(b.requisitos||'').split('\n').filter(function(x){return x.trim();}).map(function(x){return '<li>'+esc(x)+'</li>';}).join('');
+    var h='<a class="back" href="'+base()+'">← Ver búsquedas</a><div class="card"><h2 style="font-size:22px">'+esc(b.titulo)+'</h2><div class="chips">'+
+      (b.ubicacion?'<span class="chip">📍 '+esc(b.ubicacion)+'</span>':'')+(b.modalidad?'<span class="chip">🕒 '+esc(b.modalidad)+'</span>':'')+'</div>'+
+      (b.descripcion?'<h3>El puesto</h3><div class="txt">'+esc(b.descripcion)+'</div>':'')+
+      (reqs?'<h3>Requisitos</h3><ul class="req">'+reqs+'</ul>':'')+'</div>';
+    if(!b.abierta){app.innerHTML=h+'<div class="card">Esta búsqueda está cerrada.</div>';return;}
+    h+='<form id="form" class="card" novalidate><h2 style="font-size:19px;margin-bottom:14px">Postulate</h2><div id="err"></div>'+
+      campo('nombre','Nombre y apellido','text',true)+campo('email','Email','email',true)+campo('telefono','Teléfono / WhatsApp','tel',true)+
+      campo('dni','DNI','text',true,'Sin puntos')+campo('localidad','¿En qué localidad vivís?','text',true)+
+      campo('pretension','Remuneración pretendida','text',false,'Bruto mensual en pesos')+
+      b.preguntas.map(function(q){
+        var f=q.tipo==='select'?'<select data-q="'+esc(q.id)+'"><option value="">Elegí una opción</option>'+String(q.opciones).split('|').filter(Boolean).map(function(o){return '<option>'+esc(o)+'</option>';}).join('')+'</select>'
+          :'<input type="text" data-q="'+esc(q.id)+'">';
+        return '<div class="group" '+(q.requerido?'data-req':'')+'><label>'+esc(q.etiqueta)+(q.requerido?' <span class="req-s">*</span>':' <span style="font-weight:400;color:#5C6777">(opcional)</span>')+'</label>'+f+'<div class="errmsg">Completá este campo</div></div>';
+      }).join('')+
+      '<div class="group" data-req data-file><label>Tu CV <span class="req-s">*</span></label><small>PDF o Word. Máximo 8 MB.</small><label class="drop" id="drop"><span id="dtxt">Tocá para subir tu CV</span><input type="file" id="cv" accept=".pdf,.doc,.docx"></label><div class="errmsg">Subí tu CV para continuar</div></div>'+
+      '<div class="group" data-req data-chk><label class="check"><input type="checkbox" id="ok"> <span>Acepto que mis datos se traten para este proceso de selección.</span></label><div class="errmsg">Tenés que aceptar para continuar</div></div>'+
+      '<button class="btn" type="submit" id="btn">Enviar postulación</button></form>';
+    app.innerHTML=h;
+    var cv=document.getElementById('cv');
+    cv.addEventListener('change',function(){
+      var d=document.getElementById('drop');
+      if(cv.files.length){d.classList.add('has');document.getElementById('dtxt').textContent='✓ '+cv.files[0].name;}else{d.classList.remove('has');document.getElementById('dtxt').textContent='Tocá para subir tu CV';}
+    });
+    document.getElementById('form').addEventListener('submit',function(ev){ev.preventDefault();enviar(b);});
+    ['input','change'].forEach(function(t){document.getElementById('form').addEventListener(t,function(e){var g=e.target.closest('.group');if(g)g.classList.remove('invalid');});});
+  }).withFailureHandler(fallo).getBusquedaPublica(BID);
+}
+
+function campo(id,label,type,req,ph){
+  return '<div class="group" '+(req?'data-req':'')+'><label>'+label+(req?' <span class="req-s">*</span>':' <span style="font-weight:400;color:#5C6777">(opcional)</span>')+'</label><input type="'+type+'" id="'+id+'"'+(ph?' placeholder="'+ph+'"':'')+'><div class="errmsg">Completá este campo</div></div>';
+}
+
+function enviar(b){
+  var bad=null;
+  document.querySelectorAll('.group[data-req]').forEach(function(g){
+    var ok=true;
+    if(g.hasAttribute('data-file')) ok=document.getElementById('cv').files.length>0;
+    else if(g.hasAttribute('data-chk')) ok=document.getElementById('ok').checked;
+    else{var f=g.querySelector('input,select');ok=!!f.value.trim();
+      if(ok&&f.id==='email')ok=/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.value.trim());
+      if(ok&&f.id==='dni')ok=f.value.replace(/\D/g,'').length>=6;}
+    g.classList.toggle('invalid',!ok);
+    if(!ok&&!bad)bad=g;
+  });
+  if(bad){bad.scrollIntoView({behavior:'smooth',block:'center'});return;}
+  var file=document.getElementById('cv').files[0];
+  if(file.size>8*1024*1024){mostrarErr('El CV pesa más de 8 MB. Subí uno más liviano.');return;}
+  var btn=document.getElementById('btn');btn.disabled=true;btn.textContent='Enviando…';
+  var v=function(id){return document.getElementById(id).value.trim();};
+  var decl={};document.querySelectorAll('[data-q]').forEach(function(e){decl[e.getAttribute('data-q')]=e.value.trim();});
+  var r=new FileReader();
+  r.onload=function(){
+    google.script.run.withSuccessHandler(function(res){
+      if(res==='DUPLICADO'){btn.disabled=false;btn.textContent='Enviar postulación';mostrarErr('Ya recibimos una postulación con estos datos para esta búsqueda. ¡Gracias!');return;}
+      if(res==='CERRADA'){btn.disabled=false;btn.textContent='Enviar postulación';mostrarErr('Esta búsqueda ya está cerrada.');return;}
+      app.innerHTML='<div class="card ok"><div class="tick">✓</div><h2>¡Postulación enviada!</h2><p style="margin-top:8px">Gracias por postularte. Ya recibimos tu CV y tus datos. Si tu perfil avanza, nos vamos a comunicar con vos.</p><p style="margin-top:14px"><a class="back" href="'+base()+'">Ver otras búsquedas</a></p></div>';
+      window.scrollTo(0,0);
+    }).withFailureHandler(function(){
+      btn.disabled=false;btn.textContent='Enviar postulación';
+      mostrarErr('No pudimos procesar tu postulación en este momento. Probá de nuevo en unos minutos.');
+    }).recibirPostulacion({b:b.id,datos:{nombre:v('nombre'),email:v('email'),telefono:v('telefono'),dni:v('dni'),localidad:v('localidad'),pretension:v('pretension')},declaradas:decl,cvNombre:file.name,cvBase64:r.result.split(',')[1]});
+  };
+  r.readAsDataURL(file);
+}
+function mostrarErr(m){var e=document.getElementById('err');e.textContent=m;e.style.display='block';e.scrollIntoView({behavior:'smooth',block:'center'});}
+
+if(BID)detalle();else portada();
+</script>
+</body>
+</html>
