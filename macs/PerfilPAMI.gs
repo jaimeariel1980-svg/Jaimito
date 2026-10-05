@@ -1,6 +1,5 @@
 function cargarPerfil_EnfermeroPAMI() {
   const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
-  const PERFIL = 'enfermero-pami';
   const NOMBRE = 'Enfermero PAMI';
   const EMPRESA = 'PAMI';
   const ROOT_ID = '18bhn7cD2PkcK_SldSfKHrjiieHvO3tYH';
@@ -33,60 +32,59 @@ NIVEL_AJUSTE:
 - Medio: cumple el título pero le falta algo no excluyente (menos de 3 años, sin geriatría, zona dudosa) O borderline con factores compensatorios → "REVISAR:" en el resumen.
 - Bajo: auxiliar o sin título habilitante completo, sin experiencia real en enfermería, alta rotación injustificada marcada, o banderas rojas.`;
 
-  // ---------- 1) Drive + Config ----------
+  // ---------- 1) Config: reutiliza la fila PAMI existente, completa lo que falte ----------
   const config = ss.getSheetByName('Config');
   const cfgData = config.getDataRange().getValues();
   const cfgHeaders = cfgData[0];
+  const col = h => cfgHeaders.indexOf(h) + 1;
   let filaCfg = -1;
-  for (let i = 1; i < cfgData.length; i++) if (cfgData[i][0] === PERFIL) { filaCfg = i + 1; break; }
-
-  let folders;
-  if (filaCfg === -1) {
-    const carpetaPerfil = DriveApp.getFolderById(ROOT_ID).createFolder(NOMBRE);
-    folders = [
-      carpetaPerfil.createFolder('CVs nuevos').getId(),
-      carpetaPerfil.createFolder('CVs procesados').getId(),
-      carpetaPerfil.createFolder('Screening PDFs').getId(),
-      carpetaPerfil.createFolder('Competencias PDFs').getId()
-    ];
-    Logger.log('✅ Carpetas Drive: ' + carpetaPerfil.getUrl());
-    const fila = new Array(cfgHeaders.length).fill('');
-    const set = (h, v) => { const ix = cfgHeaders.indexOf(h); if (ix > -1) fila[ix] = v; };
-    set('perfil_id', PERFIL); set('nombre_perfil', NOMBRE); set('sheet_id', SHEET_MASTER_ID); set('hoja_nombre', NOMBRE);
-    set('folder_madre', folders[0]); set('folder_recibidos', folders[1]);
-    set('folder_pdf_screening', folders[2]); set('folder_pdf_competencias', folders[3]);
-    set('prompt_extra', promptExtra); set('empresa', EMPRESA);
-    config.appendRow(fila);
-    filaCfg = config.getLastRow();
-  } else {
-    config.getRange(filaCfg, cfgHeaders.indexOf('prompt_extra') + 1).setValue(promptExtra);
-    config.getRange(filaCfg, cfgHeaders.indexOf('empresa') + 1).setValue(EMPRESA);
+  for (let i = 1; i < cfgData.length; i++) {
+    if (cfgData[i][0] === 'enfermero-pami' || /pami|enfermer/i.test([cfgData[i][0], cfgData[i][1], cfgData[i][3]].join(' '))) { filaCfg = i + 1; break; }
   }
-  Logger.log('✅ Config cargada');
+  if (filaCfg === -1) { config.appendRow(['enfermero-pami']); filaCfg = config.getLastRow(); }
+  const celda = h => config.getRange(filaCfg, col(h));
+  const vacia = h => !String(celda(h).getValue()).trim();
+  const PERFIL = String(celda('perfil_id').getValue()).trim() || 'enfermero-pami';
+  if (vacia('perfil_id')) celda('perfil_id').setValue(PERFIL);
+  if (vacia('nombre_perfil')) celda('nombre_perfil').setValue(NOMBRE);
+  if (vacia('sheet_id')) celda('sheet_id').setValue(SHEET_MASTER_ID);
 
-  // ---------- 2) Pestaña de candidatos (clon de estructura de coord-rrhh) ----------
-  let hoja = ss.getSheetByName(NOMBRE);
-  if (!hoja) {
-    const modelo = ss.getSheetByName(getConfig('coord-rrhh').hoja_nombre);
-    hoja = ss.insertSheet(NOMBRE);
-    const lastCol = modelo.getLastColumn();
+  const hojaCfg = String(celda('hoja_nombre').getValue()).trim();
+  let hoja = (hojaCfg && ss.getSheetByName(hojaCfg)) || ss.getSheetByName('Efermero/a') || ss.getSheetByName('Enfermero/a') || ss.getSheetByName(NOMBRE);
+  if (!hoja) hoja = ss.insertSheet(hojaCfg || NOMBRE);
+  if (hoja.getName() !== hojaCfg) celda('hoja_nombre').setValue(hoja.getName());
+
+  const folderCols = ['folder_madre', 'folder_recibidos', 'folder_pdf_screening', 'folder_pdf_competencias'];
+  if (folderCols.some(vacia)) {
+    const carpetaPerfil = DriveApp.getFolderById(ROOT_ID).createFolder(NOMBRE);
+    const nombres = ['CVs nuevos', 'CVs procesados', 'Screening PDFs', 'Competencias PDFs'];
+    folderCols.forEach((h, i) => { if (vacia(h)) celda(h).setValue(carpetaPerfil.createFolder(nombres[i]).getId()); });
+    Logger.log('✅ Carpetas Drive: ' + carpetaPerfil.getUrl());
+  }
+  celda('prompt_extra').setValue(promptExtra);
+  celda('empresa').setValue(EMPRESA);
+  Logger.log('✅ Config completa para ' + PERFIL);
+
+  // ---------- 2) Pestaña de candidatos (encabezados clonados de coord-rrhh si está vacía) ----------
+  const modelo = ss.getSheetByName(getConfig('coord-rrhh').hoja_nombre);
+  const lastCol = modelo.getLastColumn();
+  if (!String(hoja.getRange(1, 1).getValue()).trim()) {
     modelo.getRange(1, 1, 1, lastCol).copyTo(hoja.getRange(1, 1));
     for (let c = 1; c <= lastCol; c++) hoja.setColumnWidth(c, modelo.getColumnWidth(c));
     hoja.setFrozenRows(1);
-    [9, 12, 16].forEach(col => {
-      const regla = modelo.getRange(2, col).getDataValidation();
-      if (regla) hoja.getRange(2, col, 100, 1).setDataValidation(regla);
-    });
-    const reglaEntrev = SpreadsheetApp.newDataValidation().requireValueInList(ENTREVISTADORES, true).build();
-    hoja.getRange(2, 14, 100, 1).setDataValidation(reglaEntrev);
-    hoja.getRange(2, 18, 100, 1).setDataValidation(reglaEntrev);
-    Logger.log('✅ Pestaña "' + NOMBRE + '" creada');
   }
+  [9, 12, 16].forEach(c => {
+    const regla = modelo.getRange(2, c).getDataValidation();
+    if (regla) hoja.getRange(2, c, 100, 1).setDataValidation(regla);
+  });
+  const reglaEntrev = SpreadsheetApp.newDataValidation().requireValueInList(ENTREVISTADORES, true).build();
+  hoja.getRange(2, 14, 100, 1).setDataValidation(reglaEntrev);
+  hoja.getRange(2, 18, 100, 1).setDataValidation(reglaEntrev);
   for (let i = 2; i <= 101; i++) {
     hoja.getRange(i, 11).setFormula('=IF(B' + i + '<>"";HYPERLINK("' + URL_DEPLOY + '?perfil=' + PERFIL + '&nombre="&ENCODEURL(B' + i + ')&"&entrevistador="&ENCODEURL(N' + i + ');"Iniciar Screening");"")');
     hoja.getRange(i, 15).setFormula('=IF(B' + i + '<>"";HYPERLINK("' + URL_DEPLOY + '?tipo=competencias&perfil=' + PERFIL + '&nombre="&ENCODEURL(B' + i + ')&"&entrevistador="&ENCODEURL(R' + i + ');"Evaluar competencias");"")');
   }
-  Logger.log('✅ Links de screening/competencias');
+  Logger.log('✅ Pestaña "' + hoja.getName() + '" lista');
 
   const reemplazar = (nombreHoja, filas) => {
     const sh = ss.getSheetByName(nombreHoja);
