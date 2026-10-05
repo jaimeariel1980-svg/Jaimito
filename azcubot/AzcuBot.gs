@@ -25,7 +25,7 @@ function azcuDif_(a, b){
 }
 function azcuHoy_(){ return +Utilities.formatDate(new Date(), AZCU_TZ, 'yyyyMMdd'); }
 function azcuDatosTb_(){
-  try{ var t = +CacheService.getScriptCache().get('azd_t') || 0; if(Date.now()-t < 60000) return azcuDatos_(); }catch(e){}
+  try{ var t = +CacheService.getScriptCache().get('azd_t') || 0; if(Date.now()-t < 330000) return azcuDatos_(); }catch(e){}
   return azcuDatos_(true);
 }
 function azcuDatos_(forzar){
