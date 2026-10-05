@@ -141,6 +141,7 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
         </div></div>
 
 
+      <div id="blkConoc">
       <div class="sep"><span>Conocimientos</span></div>
 
       <div class="group" data-req><label>Excel <span class="req">*</span></label>
@@ -158,6 +159,8 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
       <div class="group" id="iaToolsGroup" style="display:none"><label>¿Qué herramientas de IA usás?</label>
         <small>Mencioná cuáles. Ej: ChatGPT, Copilot, Claude, Gemini, n8n…</small>
         <input type="text" id="iaTools" placeholder="ChatGPT, Copilot, Claude…"></div>
+
+      </div>
 
       <div class="sep"><span>Sobre la búsqueda</span></div>
 
@@ -211,6 +214,8 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
 </div>
 
 <script>
+var CONOC="<?= conoc ?>";
+if(CONOC==='NO'){var bc=document.getElementById('blkConoc');bc.style.display='none';bc.querySelectorAll('[data-req]').forEach(function(g){g.removeAttribute('data-req');});}
 var PERFIL="<?= perfil ?>"||(new URLSearchParams(location.search)).get('perfil')||'';
 function escH(t){return String(t==null?'':t).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 function renderDyn(rows){
