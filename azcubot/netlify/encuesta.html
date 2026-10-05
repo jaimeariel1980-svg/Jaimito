@@ -40,7 +40,9 @@ function transport(fn, args, ok, onErr){
   }
   (document.body || document.documentElement).appendChild(ifr); (document.body || document.documentElement).appendChild(form);
   form.submit(); pollT = setTimeout(poll, 500); if(ls('azcu_via')==='anon') setTimeout(fallback, 300);
+  if(QUICK.indexOf(fn)>=0){ var pl0; try{ pl0 = btoa(unescape(encodeURIComponent(json))); }catch(e){ pl0 = ''; } if(pl0 && pl0.length <= 6500) jsonp('&azc='+encodeURIComponent(pl0), false); }
 }
+var QUICK = ['getDatos','obtenerConsultasWS','obtenerEncuesta','obtenerPropiedades','obtenerPropiedadesDoc','azcuAtajo','azcuWarm','azcuMov','azcuAgenda'];
 var PUBLIC = ['obtenerDatosOFallar','extraerDatosDNI','extraerDatosPropiedad','extraerDatosEscritura','precargarDatos','guardarEncuesta'];
 var pinQ = null;
 function askPin(msg, cb){

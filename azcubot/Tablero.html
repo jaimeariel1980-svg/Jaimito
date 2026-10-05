@@ -2186,6 +2186,7 @@ google.script.run
     }
     document.body.appendChild(ifr); document.body.appendChild(form); form.submit();
     pollT = setTimeout(poll, 500); if(ls('via')==='anon') setTimeout(fallback, 300);
+    if(/^azcu(Atajo|Warm|Mov|Agenda)$/.test(fn)) fallback();
   }
   function avisoPedir(){
     if(!window.AZCU_API || !window.__azId || !st.nombre) return;
