@@ -986,7 +986,7 @@ function guardarConsulta(id){
 }
 function _fechaAr(iso){ if(!iso)return ''; const q=iso.split('-'); return q.length===3?(q[2]+'/'+q[1]+'/'+q[0]):iso; }
 function recargar(reabrir){
-  google.script.run.withSuccessHandler(function(datos){ DATA=adaptar(datos); render(); if(reabrir)ficha(reabrir); }).getDatos();
+  google.script.run.withSuccessHandler(function(datos){ DATA=adaptar(datos); try{ _ck=JSON.stringify(datos); localStorage.setItem('azdatos_v1',_ck); }catch(e){} render(); if(reabrir)ficha(reabrir); }).getDatos();
 }
 function _subOv(txt){
   var o=document.getElementById('subOv');
@@ -1264,10 +1264,23 @@ function adaptar(datos){
     return {id:p.id,creada:p.creada||'',boleto:p.boleto||'',boletoOk:p.boletoOk||'',escritura:p.escritura||'',escrituraOk:p.escrituraOk||'',ciudad:norm(p.ciudad||''),dir:norm(p.dir),tipo:norm(p.tipo),prop:norm(p.prop),precio:p.precio,estado:estFromEt(p.etapa),etapa:normEt(p.etapa),obs:p.obs,pct:(function(v){var n=parseInt(v);return (v==null||v===''||isNaN(n))?null:n;})(p.pct),papeles:p.papeles||{},duenos:p.duenos||[],origen:p.origen||'Propia',colega:p.colega||'',colegaTel:p.colegaTel||'',comision:p.comision||'',vendedor:p.vendedor||'',tokko:p.tokko||'',estadoCarga:p.estadoCarga||'',operacion:p.operacion||'',seg:p.seg||[],cons:p.cons||0,vis:p.vis||0,dias:(p.dias==null?null:p.dias),seguimientoPendiente:(function(seg){var hoy=new Date(); hoy.setHours(0,0,0,0);return (seg||[]).some(function(s){if(!/Le interesó/i.test(s.res||''))return false;if(!s.fechaProx)return true;var fp=s.fechaProx;var m=(''+fp).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);if(!m)return true;var d=new Date(parseInt(m[3]),parseInt(m[2])-1,parseInt(m[1]));return d<=hoy;});})(p.seg),plan:p.plan||'',carpeta:p.carpeta||'',motivo:p.motivo||'',docUrls:p.docUrls||{},encuesta:p.encuesta||null};
   });
 }
-document.getElementById('dash').innerHTML='<div style="padding:22px;color:var(--gris);font-size:15px">Cargando propiedades del maestro…</div>';
+if(!(function(){try{return localStorage.getItem('azdatos_v1');}catch(e){return null;}})()) document.getElementById('dash').innerHTML='<div style="padding:22px;color:var(--gris);font-size:15px">Cargando propiedades del maestro…</div>';
+var _CK='azdatos_v1', _ck=null, _fdone=false, _hayCache=false;
+try{ _ck=localStorage.getItem(_CK); }catch(e){}
+function _cargaDatos(datos){
+  DATA=adaptar(datos); if(DATA[0]) DOCLIST=Object.keys(DATA[0].papeles); render();
+  if(!_fdone){ _fdone=true; try{ var _f=new URLSearchParams(location.search).get('ficha'); if(_f && DATA.some(function(x){return x.id===_f;})) ficha(_f); }catch(e){} }
+}
+if(_ck){ try{ _cargaDatos(JSON.parse(_ck)); _hayCache=true; }catch(e){ _ck=null; } }
 google.script.run
-  .withSuccessHandler(function(datos){ DATA=adaptar(datos); if(DATA[0]) DOCLIST=Object.keys(DATA[0].papeles); render(); try{ var _f=new URLSearchParams(location.search).get('ficha'); if(_f && DATA.some(function(x){return x.id===_f;})) ficha(_f); }catch(e){} })
-  .withFailureHandler(function(err){ document.getElementById('dash').innerHTML='<div style="padding:22px;color:#c0392b">Error al cargar: '+(err&&err.message?err.message:err)+'</div>'; })
+  .withSuccessHandler(function(datos){
+    var j; try{ j=JSON.stringify(datos); }catch(e){ j=null; }
+    if(_hayCache && j && j===_ck) return;
+    try{ if(j){ localStorage.setItem(_CK,j); _ck=j; } }catch(e){}
+    if(_hayCache && document.getElementById('ov') && document.getElementById('ov').classList.contains('on')) return;
+    _cargaDatos(datos);
+  })
+  .withFailureHandler(function(err){ if(_hayCache) return; document.getElementById('dash').innerHTML='<div style="padding:22px;color:#c0392b">Error al cargar: '+(err&&err.message?err.message:err)+'</div>'; })
   .getDatos();
 </script>
 <!-- ===== AZCUBOT — pegar justo antes de </body> en Tablero.html ===== -->
@@ -2075,8 +2088,11 @@ google.script.run
     var inp = document.createElement('input'); inp.type = 'hidden'; inp.name = 'payload'; inp.value = JSON.stringify({id:id, fn:fn, args:[st.pin].concat(args)}); form.appendChild(inp);
     var largo = /^azcu(Chat|Voz|AdjPlan|CompletarPlan|Ejecutar)$/.test(fn);
     if(largo){ window.__azId = id; ls('pend', JSON.stringify({id:id, fn:fn, t:Date.now()})); }
-    function finish(){ done = true; if(largo){ if(window.__azId===id) window.__azId = null; ls('pend', null); } clearTimeout(pollT); if(scr) scr.remove(); setTimeout(function(){ ifr.remove(); form.remove(); }, 300); }
+    function finish(){ done = true; if(largo){ if(window.__azId===id) window.__azId = null; ls('pend', null); document.removeEventListener('visibilitychange', bye); window.removeEventListener('pagehide', bye); } clearTimeout(pollT); if(scr) scr.remove(); setTimeout(function(){ ifr.remove(); form.remove(); }, 300); }
     var got = false, fbOn = false, pollN = 0;
+    var beaconed = false;
+    function bye(){ if(done || got || beaconed) return; if(this===document && document.visibilityState!=='hidden') return; beaconed = true; try{ if(inp.value.length < 60000 && navigator.sendBeacon) navigator.sendBeacon(window.AZCU_API, new URLSearchParams({payload:inp.value})); }catch(x){} }
+    if(largo){ document.addEventListener('visibilitychange', bye); window.addEventListener('pagehide', bye); }
     function fallback(){
       if(done || got || fbOn) return; fbOn = true;
       var pl; try{ pl = btoa(unescape(encodeURIComponent(inp.value))); }catch(e){ return; }

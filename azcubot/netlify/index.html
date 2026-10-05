@@ -828,8 +828,11 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
     var inp = document.createElement('input'); inp.type = 'hidden'; inp.name = 'payload'; inp.value = JSON.stringify({id:id, fn:fn, args:[st.pin].concat(args)}); form.appendChild(inp);
     var largo = /^azcu(Chat|Voz|AdjPlan|CompletarPlan|Ejecutar)$/.test(fn);
     if(largo){ window.__azId = id; ls('pend', JSON.stringify({id:id, fn:fn, t:Date.now()})); }
-    function finish(){ done = true; if(largo){ if(window.__azId===id) window.__azId = null; ls('pend', null); } clearTimeout(pollT); if(scr) scr.remove(); setTimeout(function(){ ifr.remove(); form.remove(); }, 300); }
+    function finish(){ done = true; if(largo){ if(window.__azId===id) window.__azId = null; ls('pend', null); document.removeEventListener('visibilitychange', bye); window.removeEventListener('pagehide', bye); } clearTimeout(pollT); if(scr) scr.remove(); setTimeout(function(){ ifr.remove(); form.remove(); }, 300); }
     var got = false, fbOn = false, pollN = 0;
+    var beaconed = false;
+    function bye(){ if(done || got || beaconed) return; if(this===document && document.visibilityState!=='hidden') return; beaconed = true; try{ if(inp.value.length < 60000 && navigator.sendBeacon) navigator.sendBeacon(window.AZCU_API, new URLSearchParams({payload:inp.value})); }catch(x){} }
+    if(largo){ document.addEventListener('visibilitychange', bye); window.addEventListener('pagehide', bye); }
     function fallback(){
       if(done || got || fbOn) return; fbOn = true;
       var pl; try{ pl = btoa(unescape(encodeURIComponent(inp.value))); }catch(e){ return; }

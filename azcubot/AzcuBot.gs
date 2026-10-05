@@ -24,6 +24,10 @@ function azcuDif_(a, b){
   return Math.round((d(a)-d(b))/86400000);
 }
 function azcuHoy_(){ return +Utilities.formatDate(new Date(), AZCU_TZ, 'yyyyMMdd'); }
+function azcuDatosTb_(){
+  try{ var t = +CacheService.getScriptCache().get('azd_t') || 0; if(Date.now()-t < 60000) return azcuDatos_(); }catch(e){}
+  return azcuDatos_(true);
+}
 function azcuDatos_(forzar){
   if(!forzar){
     if(AZCU_D_) return AZCU_D_;
@@ -31,11 +35,11 @@ function azcuDatos_(forzar){
     for(i0=0;i0<n0 && ok0;i0++){ p0 = c0.get('azd_'+i0); if(p0===null) ok0 = false; else s0 += p0; }
     if(ok0){ try{ AZCU_D_ = JSON.parse(s0); return AZCU_D_; }catch(e){} }
   }
-  AZCU_D_ = getDatos();
+  AZCU_D_ = getDatosRaw_();
   try{
     var c = CacheService.getScriptCache(), j = JSON.stringify(AZCU_D_), k = Math.ceil(j.length/90000), i;
     for(i=0;i<k;i++) c.put('azd_'+i, j.slice(i*90000, (i+1)*90000), 660);
-    c.put('azd_n', String(k), 660);
+    c.put('azd_n', String(k), 660); c.put('azd_t', String(Date.now()), 660);
   }catch(e){}
   return AZCU_D_;
 }
@@ -51,7 +55,7 @@ function azcuMapaDirs_(forzar){
   }catch(e){}
   return m;
 }
-function azcuLimpiarCache_(){ try{ var c = CacheService.getScriptCache(), n = +(c.get('azd_n') || 0), i; c.remove('azmov_90'); c.remove('azmov_30'); for(i=0;i<n;i++) c.remove('azd_'+i); c.remove('azd_n'); AZCU_D_ = null; }catch(e){} }
+function azcuLimpiarCache_(){ try{ var c = CacheService.getScriptCache(), n = +(c.get('azd_n') || 0), i; c.remove('azmov_90'); c.remove('azmov_30'); for(i=0;i<n;i++) c.remove('azd_'+i); c.remove('azd_n'); c.remove('azd_t'); AZCU_D_ = null; }catch(e){} }
 function azcuProp_(id){
   var d = azcuDatos_(), q = azcuSinAc_(id), i;
   for(i=0;i<d.length;i++) if(String(d[i].id).trim()===String(id).trim()) return d[i];
@@ -64,7 +68,7 @@ function azcuCorta_(p){ return {id:p.id, direccion:p.dir, tipo:p.tipo, etapa:p.e
 
 function azcuHerrBuscar_(a){
   var q = azcuSinAc_(a.texto);
-  return azcuDatos_().filter(function(p){ return azcuSinAc_([p.id,p.dir,p.prop,p.tipo].join(' ')).indexOf(q)>=0; }).slice(0,8).map(azcuCorta_);
+  return azcuDatos_().filter(function(p){ return azcuSinAc_([p.id,p.dir,p.prop,p.tipo].join(' ')).indexOf(q)>=0; }).slice(0,20).map(azcuCorta_);
 }
 function azcuHerrFicha_(a){
   var p = azcuProp_(a.id);
@@ -453,7 +457,7 @@ function azcuHerrListar_(a){
     if(f==='encuesta_baja') return !isNaN(cal) && cal<7;
     return true;
   });
-  return {total:out.length, propiedades:out.slice(0,25).map(function(p){ var c = azcuCorta_(p); c.dias_sin_movimiento = p.dias; c.visitas = p.vis; c.consultas = p.cons; c.salud_aviso_pct = p.pct; c.vendedor = p.vendedor; return c; })};
+  return {total:out.length, propiedades:out.slice(0,80).map(function(p){ var c = azcuCorta_(p); c.dias_sin_movimiento = p.dias; c.visitas = p.vis; c.consultas = p.cons; c.salud_aviso_pct = p.pct; c.vendedor = p.vendedor; return c; })};
 }
 function azcuHerrEncuestas_(a){
   if(a && a.id){
@@ -462,7 +466,7 @@ function azcuHerrEncuestas_(a){
     return e ? {id:p.id, direccion:p.dir, encuesta:e} : {id:p.id, direccion:p.dir, encuesta:null, nota:'Esa propiedad no tiene encuesta cargada.'};
   }
   var l = azcuDatos_().filter(function(p){ return p.encuesta && p.encuesta.cal; }).map(function(p){ return {id:p.id, direccion:p.dir, calificacion:p.encuesta.cal, cliente:p.encuesta.nombre, recomienda:p.encuesta.rec}; });
-  return {total:l.length, encuestas:l.slice(0,30)};
+  return {total:l.length, encuestas:l.slice(0,100)};
 }
 
 function azcuBase_(){ return AZCU_WEB+'/go.html'; }
@@ -512,11 +516,11 @@ function azcuHerrPdf_(a, adj){
 
 function azcuFmtAlertas_(){
   var a = azcuHerrAlertas_(), t = '';
-  function sec(titulo, arr, fn){ if(arr.length) t += '**'+titulo+' ('+arr.length+')**\n'+arr.slice(0,12).map(fn).join('\n')+(arr.length>12 ? '\n- …y '+(arr.length-12)+' más' : '')+'\n\n'; }
+  function sec(titulo, arr, fn){ if(arr.length) t += '**'+titulo+' ('+arr.length+')**\n'+arr.map(fn).join('\n')+'\n\n'; }
   sec('🗓 Visitas de hoy', a.visitas_hoy, function(x){ return '- '+x.hora+' · '+x.direccion+(x.interesado?' · '+x.interesado:'')+(x.telefono?' ('+x.telefono+')':''); });
   sec('📞 Para contactar hoy', a.seguimientos_para_hoy, function(x){ return '- '+x.interesado+(x.telefono?' ('+x.telefono+')':'')+' · '+x.id+(x.proximo_paso?' · '+x.proximo_paso:'')+(x.vencido_hace_dias?' (vencido hace '+x.vencido_hace_dias+' d)':''); });
   sec('💬 Propuestas sin respuesta', a.propuestas_sin_respuesta, function(x){ return '- '+x.direccion+' · '+x.cliente+' (hace '+x.dias+' días)'; });
-  sec('⚠️ Papeles incompletos', a.papeles, function(x){ return '- '+x.direccion+': '+x.faltan.slice(0,4).join(', ')+(x.faltan.length>4 ? ' +'+(x.faltan.length-4)+' más' : ''); });
+  sec('⚠️ Papeles incompletos', a.papeles, function(x){ return '- '+x.direccion+': '+x.faltan.join(', '); });
   sec('🛑 Sin movimiento +30 días', a.sin_movimiento, function(x){ return '- '+x.direccion+(x.dias===null ? ' (sin actividad)' : ' ('+x.dias+' días)'); });
   return t.trim() || 'Todo tranquilo: hoy no hay alertas 🙌';
 }
@@ -529,7 +533,7 @@ function azcuFmtResumen_(){
 function azcuFmtDocs_(){
   var d = azcuHerrDocs_();
   if(!d.length) return 'Todas las propiedades tienen la documentación al día 🙌';
-  return '**Documentos faltantes ('+d.length+(d.length===1 ? ' propiedad' : ' propiedades')+')**\n'+d.slice(0,25).map(function(x){ return '- **'+x.direccion+'** ('+x.etapa+'): '+x.faltan.join(', '); }).join('\n')+(d.length>25 ? '\n- …y '+(d.length-25)+' más' : '')+'\n\n¿Te ayudo? Pasame una foto o un PDF y lo subo yo 📎 Tocá la propiedad por la que quieras empezar 👇';
+  return '**Documentos faltantes ('+d.length+(d.length===1 ? ' propiedad' : ' propiedades')+')**\n'+d.map(function(x){ return '- **'+x.direccion+'** ('+x.etapa+'): '+x.faltan.join(', '); }).join('\n')+'\n\n¿Te ayudo? Pasame una foto o un PDF y lo subo yo 📎 Tocá la propiedad por la que quieras empezar 👇';
 }
 function azcuAtajo(pin, tipo){
   azcuPin_(pin); AZCU_D_ = null;
@@ -658,7 +662,7 @@ function azcuSistema_(ctx){
   var hoy = Utilities.formatDate(new Date(), AZCU_TZ, 'yyyy-MM-dd'), dia = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'][new Date(Date.now()-3*3600000).getUTCDay()];
   return [
     'Sos Azcu, el asistente interno de Azcuénaga Inmobiliaria: cálido, confiable y atento, una casita-robot simpática. Hablás con un compañero del equipo (su nombre va al final).',
-    'TONO: coloquial, cercano y con buena onda (vos, che, dale), pero prolijo. Como un colega que te da una mano. Respuestas cortas (máximo ~120 palabras). Sin encabezados; podés usar **negrita** y listas con guiones.',
+    'TONO: coloquial, cercano y con buena onda (vos, che, dale), pero prolijo. Como un colega que te da una mano. Respuestas cortas en charla normal; PERO cuando pidan listas, datos, detalle, resúmenes de la cartera, documentos faltantes, interacciones o cualquier información, dala COMPLETA: todos los ítems, sin resumir, sin recortar y sin «y N más» (si son muchos, listalos igual). Sin encabezados; podés usar **negrita** y listas con guiones.',
     'QUÉ HACÉS: respondés sobre todo lo del tablero (propiedades, etapas, documentos, propietarios, historial, encuestas, alertas) y hacés lo mismo que el bot de Telegram: cargar consultas/visitas, agendar visitas, cambiar etapas, editar precio/observaciones y enviar el reporte al propietario.',
     'USO DE DATOS (REGLA CRÍTICA, son datos sensibles de clientes y operaciones): NUNCA inventes, supongas ni completes de memoria nombres, teléfonos, DNI, mails, precios, fechas, montos, direcciones, estados, cantidades ni resultados. Todo dato que digas tiene que salir de lo que devolvió una herramienta en esta conversación o de lo que dijo el usuario. Si no lo tenés, la herramienta no lo devolvió, vino vacío o dio error, decí claramente "no tengo ese dato" o "no figura cargado" y ofrecé buscarlo o cargarlo; no lo rellenes ni lo estimes. Si un dato es dudoso o hay varias coincidencias, preguntá antes de afirmar. No hagas cuentas de cabeza: para totales o porcentajes usá solo cifras que devolvió una herramienta o decile que use la calculadora. Si dudás de algo, decilo en vez de afirmarlo. Para consultar usá las herramientas (buscar_propiedades, ficha_propiedad, ultimas_interacciones, alertas, resumen_cartera). Si una búsqueda da varias propiedades, preguntá cuál.',
     'CAMBIOS: para escribir datos usá SIEMPRE las herramientas proponer_*: eso arma una tarjeta que el usuario confirma con un botón. Nunca digas que algo ya está hecho: decí que dejaste la tarjeta para confirmar. Inferí lo que puedas del mensaje y preguntá solo lo indispensable (propiedad, quién, resultado / fecha y hora).',
@@ -775,7 +779,7 @@ function azcuChat(pin, mensajes, ctx){
         } else res = {error:'Herramienta desconocida'};
       }catch(e){ res = {error:String(e.message||e)}; }
       if(!mapa[n] || (res && res.error)) solo = false;
-      msgs.push({role:'tool', tool_call_id:tc.id, content:JSON.stringify(res).slice(0,9000)});
+      msgs.push({role:'tool', tool_call_id:tc.id, content:JSON.stringify(res).slice(0,24000)});
     });
     if(solo && acciones.length>antes) return fin((m.content||'').trim() || '¡Dale! Dejé la tarjeta lista, confirmala acá abajo 👇');
   }
@@ -1007,7 +1011,7 @@ function azcuApi(e){
     }
     else if(AZCU_TB_.indexOf(req.fn)>=0){
       azcuPin_(a[0]);
-      var tf = globalThis[req.fn];
+      var tf = req.fn==='getDatos' ? azcuDatosTb_ : globalThis[req.fn];
       if(typeof tf!=='function') throw new Error('Función no disponible: '+req.fn);
       out = {ok:true, data:tf.apply(null, a.slice(1))};
     }

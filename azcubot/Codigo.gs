@@ -1399,11 +1399,15 @@ function volcarVentas(){
 }
 var MAESTRO_ID='1O8VKF9ZUC073kGNYIc3SgKPcIrVpnvynpQQ69RAk9W8';
 
+var _MAE_=null;
 function hojaMaestra_(){
-  var sh=SpreadsheetApp.openById(MAESTRO_ID).getSheets();
-  for(var i=0;i<sh.length;i++){
+  if(_MAE_) return _MAE_;
+  var ss=SpreadsheetApp.openById(MAESTRO_ID), sh=ss.getSheetByName(CONFIG.SHEET_NAME), i;
+  if(sh && sh.getLastColumn()>0 && sh.getRange(1,1,1,sh.getLastColumn()).getValues()[0].join('|').indexOf('Código de Precarga')>-1) return (_MAE_=sh);
+  sh=ss.getSheets();
+  for(i=0;i<sh.length;i++){
     var head=sh[i].getRange(1,1,1,sh[i].getLastColumn()).getValues()[0].join('|');
-    if(head.indexOf('Código de Precarga')>-1)return sh[i];
+    if(head.indexOf('Código de Precarga')>-1) return (_MAE_=sh[i]);
   }
   throw new Error('No encontré la pestaña con "Código de Precarga"');
 }
@@ -1441,7 +1445,8 @@ function leerSeguimiento_(){
   }
   return map;
 }
-function getDatos(){
+function getDatos(){ return (typeof azcuDatosTb_==='function') ? azcuDatosTb_() : getDatosRaw_(); }
+function getDatosRaw_(){
   var h=hojaMaestra_();
   if(h.getLastRow()<2)return [];
   var data=h.getRange(1,1,h.getLastRow(),h.getLastColumn()).getValues();
@@ -1753,15 +1758,17 @@ function guardarPropiedad(codigo, cambios){
   }
   var quien=String((cambios&&(cambios.quien||cambios.cargo))||'').trim().slice(0,40), difs=[], etapaDe='', etapaA='';
   var ETQ={precio:'Precio',tipo:'Tipo',obs:'Observaciones',tokko:'URL de ficha',origen:'Origen',colega:'Colega',colegaTel:'Contacto colega',comision:'Comisión',pct:'% aviso',vendedor:'Vendedor',motivo:'Motivo de suspensión',prop:'Propietario',tel:'Tel. propietario',mail:'Mail propietario',dni:'DNI propietario',dom:'Domicilio propietario',boleto:'Plazo de boleto',boletoOk:'Boleto firmado',escritura:'Plazo de escritura',escrituraOk:'Escritura firmada'};
-  function leer(col){ var i=head.indexOf(col); return i>-1 ? String(mae.getRange(fila,i+1).getValue()==null?'':mae.getRange(fila,i+1).getValue()).trim() : ''; }
-  function set(colName, val){ var i=head.indexOf(colName); if(i>-1) mae.getRange(fila,i+1).setValue(val); }
+  var fv=mae.getRange(fila,1,1,mae.getLastColumn()).getValues()[0];
+  function crudo(col){ var i=head.indexOf(col); return i>-1 ? fv[i] : ''; }
+  function leer(col){ var v=crudo(col); return String(v==null?'':v).trim(); }
+  function set(colName, val, igual){ var i=head.indexOf(colName); if(i<0) return; var v=val==null?'':val; if(igual===undefined) igual=(String(fv[i]==null?'':fv[i]).trim()===String(v).trim()); if(igual) return; mae.getRange(fila,i+1).setValue(v); fv[i]=v; }
   Object.keys(cambios||{}).forEach(function(campo){
     if(campo==='papeles'){
       var pap=cambios.papeles||{};
       Object.keys(pap).forEach(function(doc){
         var antes=leer('Doc: '+doc), antesOk=!!antes && !/^(pendiente|falta|no|—|-)$/i.test(antes);
         if(!!pap[doc]!==antesOk) difs.push('«'+doc+'» '+(pap[doc]?'marcado como cargado':'marcado como pendiente'));
-        set('Doc: '+doc, pap[doc]?'Cargado':'Pendiente');
+        set('Doc: '+doc, pap[doc]?'Cargado':'Pendiente', !!pap[doc]===antesOk);
       });
     } else if(campo==='etapa'){
       var et=cambios.etapa==='Publicadas'?'Publicada':cambios.etapa;
@@ -1770,12 +1777,12 @@ function guardarPropiedad(codigo, cambios){
       set('Etapa', et);
     } else if(MAP_CAMPOS[campo]){
       var col=MAP_CAMPOS[campo], av=leer(col), nv=(cambios[campo]==null?'':String(cambios[campo])).trim();
-      if(/^(boleto|boletoOk|escritura|escrituraOk)$/.test(campo)){ av=_fechaISO_(mae.getRange(fila,head.indexOf(col)+1).getValue()); nv=_fechaISO_(nv); }
+      if(/^(boleto|boletoOk|escritura|escrituraOk)$/.test(campo)){ av=_fechaISO_(crudo(col)); nv=_fechaISO_(nv); }
       if(av.replace(/\s+/g,' ')!==nv.replace(/\s+/g,' ') && ETQ[campo] && !(av==='' && (nv==='' || (campo==='origen' && nv==='Propia')))) difs.push(ETQ[campo]+': '+(av||'—')+' → '+(nv||'—'));
-      set(col, cambios[campo]);
+      set(col, cambios[campo], /^(boleto|boletoOk|escritura|escrituraOk)$/.test(campo) ? (av===nv) : undefined);
     }
   });
-  set('Última actualización', new Date());
+  set('Última actualización', new Date(), false);
   try{ if(typeof azcuLimpiarCache_==='function') azcuLimpiarCache_(); }catch(e){}
   var dir=_dirDe_(mae,fila,head);
   if(difs.length) _audit_(etapaA?'etapa':'campos', (etapaA?'🔶 ':'✏️ ')+difs.join('; ').slice(0,200), dir, quien);
@@ -1784,8 +1791,8 @@ function guardarPropiedad(codigo, cambios){
   return {ok:true};
 }
 function _audit_(tipo, texto, dir, quien){ try{ if(typeof azcuAudit_==='function') azcuAudit_(tipo, texto, dir, quien); }catch(e){} }
-function _dirDe_(mae, fila, head){ try{ return (String(mae.getRange(fila, head.indexOf('Calle')+1).getValue())+' '+String(mae.getRange(fila, head.indexOf('Número')+1).getValue())).trim(); }catch(e){ return ''; } }
-function _invalidaNovedades_(){ try{ var c=CacheService.getScriptCache(); c.remove('azmov_90'); c.remove('azmov_30'); }catch(e){} }
+function _dirDe_(mae, fila, head){ try{ var iC=head.indexOf('Calle'), iN=head.indexOf('Número'), a=Math.min(iC,iN), b=Math.max(iC,iN), r=mae.getRange(fila,a+1,1,b-a+1).getValues()[0]; return (String(r[iC-a])+' '+String(r[iN-a])).trim(); }catch(e){ return ''; } }
+function _invalidaNovedades_(){ try{ var c=CacheService.getScriptCache(); c.remove('azmov_90'); c.remove('azmov_30'); }catch(e){} try{ if(typeof azcuLimpiarCache_==='function') azcuLimpiarCache_(); }catch(e){} }
 function registrarInteraccion(codigo, datos){
   var ss=SpreadsheetApp.openById(MAESTRO_ID);
   var seg=ss.getSheetByName('Seguimiento');
@@ -1837,7 +1844,7 @@ function eliminarPropiedad(codigo, quien){
   var fila=_filaPorCodigo_(mae, codigo);
   if(fila<0)throw new Error('No encontré la propiedad '+codigo);
   try{ var hE=mae.getRange(1,1,1,mae.getLastColumn()).getValues()[0]; var dE=_dirDe_(mae,fila,hE); _audit_('elimprop','🗑 Eliminó la propiedad '+(dE||codigo), dE, quien||''); }catch(e){}
-  mae.deleteRow(fila);
+  mae.deleteRow(fila); _invalidaNovedades_();
   return {ok:true};
 }
 function testGuardar(){
@@ -1900,7 +1907,7 @@ function subirDocumento(codigo, docNombre, base64, filename, mime, quien){
     }
   }
 
-  _audit_('doc','📄 Subió «'+docNombre+'»', _dirDe_(mae,fila,head), quien||'');
+  _audit_('doc','📄 Subió «'+docNombre+'»', _dirDe_(mae,fila,head), quien||''); _invalidaNovedades_();
   return {ok:true, url:archivo.getUrl()};
 }
 
@@ -1915,7 +1922,7 @@ function borrarDocumento(codigo, docNombre, quien){
   var m=val.match(/[-\w]{25,}/);
   if(m){ try{ DriveApp.getFileById(m[0]).setTrashed(true); }catch(e){} }
   mae.getRange(fila,i+1).setValue('Pendiente');
-  _audit_('borrardoc','📄 Borró el documento «'+docNombre+'»', _dirDe_(mae,fila,head), quien||'');
+  _audit_('borrardoc','📄 Borró el documento «'+docNombre+'»', _dirDe_(mae,fila,head), quien||''); _invalidaNovedades_();
   return {ok:true};
 }
 function testSubir(){
