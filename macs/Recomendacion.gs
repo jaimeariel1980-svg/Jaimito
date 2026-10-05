@@ -1,8 +1,11 @@
 function getRecomendacion(perfilId, fila) {
-  const sh = getSheet(getConfig(perfilId));
-  if (sh.getMaxColumns() < 48) return { tipo: '', por: '' };
+  const cfg = getConfig(perfilId);
+  const def = String(cfg.recomendacion || '').trim();
+  if (!def) return { def: '', tipo: '', por: '' };
+  const sh = getSheet(cfg);
+  if (sh.getMaxColumns() < 48) return { def: def, tipo: '', por: '' };
   const v = sh.getRange(fila, 47, 1, 2).getValues()[0];
-  return { tipo: String(v[0] || ''), por: String(v[1] || '') };
+  return { def: def, tipo: String(v[0] || ''), por: String(v[1] || '') };
 }
 
 function guardarRecomendacion(perfilId, fila, tipo, por) {

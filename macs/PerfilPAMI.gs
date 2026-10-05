@@ -63,6 +63,9 @@ NIVEL_AJUSTE:
   }
   celda('prompt_extra').setValue(promptExtra);
   celda('empresa').setValue(EMPRESA);
+  let cRec = col('recomendacion');
+  if (!cRec) { cRec = cfgHeaders.length + 1; config.getRange(1, cRec).setValue('recomendacion'); }
+  config.getRange(filaCfg, cRec).setValue('Sindicato:NORTE;UTI;UTERA;APPAMIA;ATE;UPCN;SUTEPA|Director|Empleado');
   Logger.log('✅ Config completa para ' + PERFIL);
 
   // ---------- 2) Pestaña de candidatos (encabezados clonados de coord-rrhh si está vacía) ----------
