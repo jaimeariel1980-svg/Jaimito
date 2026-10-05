@@ -830,7 +830,8 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
     if(largo){ window.__azId = id; ls('pend', JSON.stringify({id:id, fn:fn, t:Date.now()})); }
     function finish(){ done = true; if(largo){ if(window.__azId===id) window.__azId = null; ls('pend', null); document.removeEventListener('visibilitychange', bye); window.removeEventListener('pagehide', bye); } clearTimeout(pollT); if(scr) scr.remove(); setTimeout(function(){ ifr.remove(); form.remove(); }, 300); }
     var got = false, fbOn = false, pollN = 0;
-    var beaconed = false;
+    var beaconed = false, lastTry = false;
+    if(largo) window.__azDeliver = function(d){ if(done || !d || d.ok===undefined) return; got = true; st.status = ''; finish(); if(d.ok) ok(d.data); else onErr(new Error(d.error || 'error')); };
     function bye(){ if(done || got || beaconed) return; if(this===document && document.visibilityState!=='hidden') return; beaconed = true; try{ if(inp.value.length < 60000 && navigator.sendBeacon) navigator.sendBeacon(window.AZCU_API, new URLSearchParams({payload:inp.value})); }catch(x){} }
     if(largo){ document.addEventListener('visibilitychange', bye); window.addEventListener('pagehide', bye); }
     function fallback(){
@@ -854,11 +855,11 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
     function poll(){
       if(done) return;
       if(!got && !fbOn && Date.now()-t0 > 9000) fallback();
-      if(Date.now()-t0 > (/^azcu(Chat|Atajo|Voz|Mov|Warm|Agenda)$/.test(fn) ? 100000 : 330000)){ finish(); onErr(new Error('Azcu no recibió respuesta del servidor. Revisá que tengas internet y probá de nuevo. Si pasa siempre en este celular, abrí Azcu desde Chrome.')); return; }
+      if(Date.now()-t0 > (/^azcu(Chat|Atajo|Voz|Mov|Warm|Agenda)$/.test(fn) ? 100000 : 330000)){ if(largo && !lastTry){ lastTry = true; probe(id, function(d){ if(d && d.ok!==undefined) window.__azDeliver(d); else { finish(); onErr(new Error('Azcu no recibió respuesta del servidor. Revisá que tengas internet y probá de nuevo.')); } }); return; } finish(); onErr(new Error('Azcu no recibió respuesta del servidor. Revisá que tengas internet y probá de nuevo. Si pasa siempre en este celular, abrí Azcu desde Chrome.')); return; }
       var cb = 'azbcb'+Math.random().toString(36).slice(2,9), wd;
       window[cb] = function(d){ delete window[cb]; clearTimeout(wd); if(scr) scr.remove(); if(done) return; if(d) got = true; if(d && d.progress && d.ok===undefined){ if(st.status!==d.progress){ st.status = d.progress; render(); } pollT = setTimeout(poll, 400); } else if(d){ st.status = ''; ls('via', fbOn ? 'anon' : ''); finish(); if(d.ok) ok(d.data); else onErr(new Error(d.error || 'error')); } else pollT = setTimeout(poll, 450); };
       scr = document.createElement('script'); if(fbOn && (pollN++ % 2)) scr.crossOrigin = 'anonymous'; scr.src = window.AZCU_API+'?azr='+id+'&cb='+cb+'&_='+Date.now();
-      var sc0 = scr; wd = setTimeout(function(){ if(window[cb]){ delete window[cb]; if(sc0) sc0.remove(); if(!done) pollT = setTimeout(poll, 600); } }, 4000);
+      var sc0 = scr; wd = setTimeout(function(){ if(window[cb]){ delete window[cb]; if(sc0) sc0.remove(); if(!done) pollT = setTimeout(poll, 600); } }, 12000);
       scr.onerror = function(){ clearTimeout(wd); delete window[cb]; if(scr) scr.remove(); if(!done) pollT = setTimeout(poll, 2000); };
       document.head.appendChild(scr);
     }
@@ -874,6 +875,19 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
   }
   document.addEventListener('visibilitychange', function(){ if(document.hidden && st.busy) avisoPedir(); });
   window.addEventListener('pagehide', function(){ if(st.busy) avisoPedir(); });
+  function probe(id, cb){
+    var c = 'azbpr'+Math.random().toString(36).slice(2,9), sc, fin = false;
+    function end(d){ if(fin) return; fin = true; delete window[c]; if(sc) sc.remove(); cb(d); }
+    window[c] = end; sc = document.createElement('script'); sc.src = window.AZCU_API+'?azr='+id+'&cb='+c+'&_='+Date.now(); sc.onerror = function(){ end(null); }; document.head.appendChild(sc);
+    setTimeout(function(){ end(null); }, 15000);
+  }
+  function recuperar(){
+    if(document.hidden) return;
+    var p; try{ p = JSON.parse(ls('pend')||'null'); }catch(e){ p = null; }
+    if(st.busy && window.__azId && window.__azDeliver){ probe(window.__azId, function(d){ if(d && d.ok!==undefined && window.__azDeliver) window.__azDeliver(d); }); return; }
+    if(!st.busy && p) resumir();
+  }
+  document.addEventListener('visibilitychange', recuperar); window.addEventListener('pageshow', recuperar); window.addEventListener('focus', recuperar);
   function resumir(){
     var p; try{ p = JSON.parse(ls('pend')||'null'); }catch(e){ p = null; }
     if(!p || !window.AZCU_API || p.fn!=='azcuChat' || Date.now()-p.t>600000 || st.busy) return;
@@ -882,7 +896,7 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
     (function tick(){
       if(n++ > 40){ st.busy = false; st.status = ''; render(); return; }
       var cb = 'azbrs'+Math.random().toString(36).slice(2,9), sc;
-      window[cb] = function(d){ delete window[cb]; if(sc) sc.remove(); if(d && d.ok!==undefined){ st.busy = false; st.status = ''; if(d.ok && d.data) reply(d.data); else render(); } else setTimeout(tick, 3000); };
+      window[cb] = function(d){ delete window[cb]; if(sc) sc.remove(); if(d && d.ok!==undefined){ st.busy = false; st.status = ''; if(d.ok && d.data){ reply(d.data); save(); } else render(); } else setTimeout(tick, 3000); };
       sc = document.createElement('script'); sc.src = window.AZCU_API+'?azr='+p.id+'&cb='+cb+'&_='+Date.now(); sc.onerror = function(){ delete window[cb]; sc.remove(); setTimeout(tick, 3000); }; document.head.appendChild(sc);
     })();
   }
