@@ -1,4 +1,4 @@
-const OPENAI_API_KEY = PropertiesService.getScriptProperties().getProperty('OPENAI_API_KEY');
+const OPENAI_API_KEY = '__PONER_KEY__';
 const SHEET_MASTER_ID = '151V8cc-w00tP9C6mSxVaKNkRxgKXgUDI4L0KWXeNJGI';
 const CORREO_DESTINO = 'empleos@blumiaconsulting.com';
 const URL_DEPLOY = 'https://script.google.com/macros/s/AKfycbytekPKN31bZLxczDVknMr433K9KflzmrR-dCWsC1hLlx2MO7tbw6SrMjFXa1PnucQo/exec';
@@ -79,7 +79,6 @@ function doGet(e) {
     template.perfil = perfil;
     template.pos = hero.pos;
     template.loc = hero.loc;
-    template.conoc = hero.conoc;
     titulo = 'Postulación · ' + hero.pos + ' | Blumia';
   } else if (tipo === 'pdfcliente') {
     const urlPdf = generarPDFClientes(perfil);
@@ -1222,13 +1221,13 @@ function getHeroPostulacion(perfilId) {
       .getSheetByName('Perfiles_Hero').getDataRange().getValues();
     const headers = rows[0];
     const fila = rows.slice(1).find(r => r[0] === perfilId);
-    if (!fila) return { pos: 'Búsqueda', loc: '', conoc: 'SI' };
+    if (!fila) return { pos: 'Búsqueda', loc: '' };
     const o = {};
     headers.forEach((h, i) => o[h] = fila[i]);
     const loc = [o.empresa, o.ubicacion].filter(Boolean).join(' · ');
-    return { pos: String(o.posicion || 'Búsqueda'), loc: loc, conoc: String(o.form_conocimientos || 'SI').toUpperCase() };
+    return { pos: String(o.posicion || 'Búsqueda'), loc: loc };
   } catch (err) {
-    return { pos: 'Búsqueda', loc: '', conoc: 'SI' };
+    return { pos: 'Búsqueda', loc: '' };
   }
 }
 const URL_WEBAPP = 'https://script.google.com/macros/s/AKfycbytekPKN31bZLxczDVknMr433K9KflzmrR-dCWsC1hLlx2MO7tbw6SrMjFXa1PnucQo/exec';
@@ -1300,10 +1299,10 @@ function procesarPendientes() {
           'Teléfono: ' + (d.telefono || ''), 'DNI: ' + (d.dni || ''),
           'Formación: ' + formacion,
           'Posgrado: ' + (d.posgradoEstado ? d.posgradoEstado + (d.posgradoCual ? ' (' + d.posgradoCual + ')' : '') : 'Sin posgrado'),
-          d.excel ? 'Excel: ' + d.excel : '',
-          d.powerbi ? 'Power BI: ' + d.powerbi : '',
-          d.ingles ? 'Inglés: ' + d.ingles : '',
-          d.ia ? 'Herramientas de IA: ' + d.ia + (d.iaTools ? ' — usa: ' + d.iaTools : '') : '',
+          'Excel: ' + (d.excel || ''),
+          'Power BI: ' + (d.powerbi || ''),
+          'Inglés: ' + (d.ingles || ''),
+          'Herramientas de IA: ' + (d.ia || '') + (d.iaTools ? ' — usa: ' + d.iaTools : ''),
           'Remuneración pretendida: ' + (d.remuneracion || ''),
           'Localidad: ' + (d.localidad || ''),
           'Movilidad propia: ' + (d.movilidad || ''),
@@ -1316,7 +1315,7 @@ function procesarPendientes() {
         });
 
         const textoCV = textoDeCV(meta.cvId);
-        const gpt = analizarPostulacionGPT(textoCV, lineas.filter(Boolean).join('\n'), cfg);
+        const gpt = analizarPostulacionGPT(textoCV, lineas.join('\n'), cfg);
         if (!gpt.ok) throw new Error(gpt.error || 'GPT falló');
 
         const celdaNota = sheet.getRange(fila, 5);
@@ -3160,7 +3159,7 @@ function ponerBotonesInforme() {
   });
   Logger.log('Botones puestos: ' + total);
 }
-const ANTHROPIC_API_KEY = PropertiesService.getScriptProperties().getProperty('ANTHROPIC_API_KEY');
+const ANTHROPIC_API_KEY = '__PONER_KEY__';
 
 function procesarConClaude(promptSistema, contenidoUsuario) {
   const response = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', {
@@ -4281,10 +4280,6 @@ function filtrar(){
 function limpiarFiltros(){['fNombre','fZona','fForm','fExp','fPret'].forEach(function(id){document.getElementById(id).value='';});document.getElementById('fEstado').value='';document.querySelectorAll('.acc details').forEach(function(d){d.open=false;});filtrar();}
 (function(){var est=[];DATA.forEach(function(c){if(c.estado&&est.indexOf(c.estado)===-1)est.push(c.estado);});est.sort();var s=document.getElementById('fEstado');est.forEach(function(e){var o=document.createElement('option');o.value=e;o.text=e;s.appendChild(o);});})();
 function ficha(f){var c=DATA.find(function(x){return x.fila===f;});var row=function(l,v){return v?'<div class="frow"><span class="fl">'+l+'</span><span class="fv">'+v+'</span></div>':'';};var btn=function(u,t){return u?'<a href="'+u+'" target="_blank" class="mbtn">'+t+'</a>':'';};var waBtn='<button class="mbtn wa" onclick="menuWA('+c.fila+')">💬 WhatsApp ▾</button>';var mailBtn=(c.mail&&c.mail!=='Sin dato'&&c.mail.indexOf('@')>-1)?'<a href="https://mail.google.com/mail/?view=cm&to='+c.mail+'" target="_blank" class="mbtn" style="background:#EA4335;color:#fff">✉ Mail</a>':'';var cvBtn=c.cv?'<a href="https://drive.google.com/file/d/'+c.cv+'/view" target="_blank" class="mbtn alt">Ver CV</a>':'';var genBtn=c.informe?'':'<button class="mbtn gen" onclick="if(confirm(\\'Generar informe con IA. Puede tener costo. ¿Continuar?\\'))generar('+c.fila+',this)">Generar informe</button>';var bancoBtn='<button class="mbtn" style="background:#7C3AED" onclick="menuBanco('+c.fila+')">★ Banco de talento</button>';var notasEmp=/screening empresa|presencial empresa|avanza a empresa|entrevista empresa|reserva screening empresa|reserva presencial empresa/i.test(c.estado)?['screening-empresa','presencial-empresa'].map(function(ep){return '<div class="notarow"><span>'+(ep==='screening-empresa'?'Emp. screening':'Emp. presencial')+'</span>'+['A','B','C'].map(function(n){return '<button class="nb" onclick="setNotaEmp('+c.fila+',\\''+ep+'\\',\\''+n+'\\',this)">'+n+'</button>';}).join('')+'</div>';}).join(''):'';document.getElementById('mbody').innerHTML=row('Recibido',c.recibido)+row('Estado',c.estado)+row('Cita agendada',c.cita)+(c.historial?'<div class="frow"><span class="fl">Historial entrevistas</span><span class="fv" style="white-space:pre-line">'+c.historial+'</span></div>':'')+(c.contactado?'<div class="frow"><span class="fl">Último contacto</span><span class="fv">'+c.contactado+' <a href="#" onclick="borrarMarca('+c.fila+');return false" style="color:#aaa;font-size:11px;text-decoration:none;margin-left:6px">✕ borrar</a></span></div>':'')+row('Teléfono',c.tel)+row('Email',c.mail)+row('Zona',c.zona)+row('Formación',c.formacion)+row('Pretensión',c.pretension?'$'+c.pretension:'')+row('Nota screening',c.notaScr)+row('Nota competencias',c.notaComp)+row('Nota screening empresa',c.notaScrEmp)+row('Nota presencial empresa',c.notaPresEmp)+'<div class="fres">'+(c.resumen||'Sin resumen')+'</div><div class="notabox"><div class="notatit">Poner nota manual</div>'+['cv','screening','competencias'].map(function(et){return '<div class="notarow"><span>'+({cv:'CV',screening:'Screening',competencias:'Competencias'}[et])+'</span>'+['A','B+','B','C'].map(function(n){return '<button class="nb" onclick="setNota('+c.fila+',\\''+et+'\\',\\''+n+'\\',this)">'+n+'</button>';}).join('')+'</div>';}).join('')+notasEmp+'</div><div class="mbtns">'+waBtn+mailBtn+cvBtn+btn(c.scrPDF,'Ver screening')+btn(c.compPDF,'Ver competencias')+btn(c.postulacion,'Ver postulación')+btn(c.scrLink,'Screening')+btn(c.compLink,'Competencias')+btn(c.informe,'Ver informe')+genBtn+bancoBtn+'</div>';document.getElementById('mtit').textContent=c.nombre;document.getElementById('modal').classList.add('show');}
-var _fichaBase=ficha;var RC={};var RC_F=0;
-ficha=function(f){_fichaBase(f);RC_F=f;google.script.run.withSuccessHandler(function(r){var mb=document.querySelector("#mbody .mbtns");if(RC_F!==f||!r||!r.def||!mb||document.getElementById("rcTipo"))return;RC={};var tipos=[];r.def.split("|").forEach(function(s){var p=s.split(":");var n=p[0].trim();if(!n)return;tipos.push(n);RC[n]=p[1]?p[1].split(";").map(function(x){return x.trim();}).filter(Boolean):null;});var op=function(a){return a.map(function(v){return "<option>"+v+"</option>";}).join("");};var st="padding:6px;border:1px solid var(--line);border-radius:5px;font-family:inherit;";mb.insertAdjacentHTML("beforebegin","<div class='notabox'><div class='notatit'>Recomendado por</div><div class='notarow'><select id='rcTipo' onchange='rcVer()' style='"+st+"'><option value=''>— Nadie —</option>"+op(tipos)+"</select><select id='rcSub' style='display:none;"+st+"'></select><input id='rcNom' placeholder='Nombre y apellido' style='display:none;"+st+"'><button class='nb' style='width:auto;padding:0 12px' onclick='rcGuardar("+f+",this)'>Guardar</button></div></div>");document.getElementById("rcTipo").value=r.tipo;rcVer();if(RC[r.tipo])document.getElementById("rcSub").value=r.por;else document.getElementById("rcNom").value=r.por;}).getRecomendacion(PERFIL,f);};
-function rcVer(){var t=document.getElementById("rcTipo").value;var s=document.getElementById("rcSub");var n=document.getElementById("rcNom");var l=RC[t];if(l){s.innerHTML=l.map(function(v){return "<option>"+v+"</option>";}).join("");s.style.display="";n.style.display="none";}else{s.style.display="none";n.style.display=t?"":"none";}}
-function rcGuardar(f,btn){var t=document.getElementById("rcTipo").value;var p=RC[t]?document.getElementById("rcSub").value:(t?document.getElementById("rcNom").value.trim():"");btn.textContent="...";google.script.run.withSuccessHandler(function(){btn.textContent="Guardar";toast();}).withFailureHandler(function(e){btn.textContent="Guardar";alert("Error: "+e.message);}).guardarRecomendacion(PERFIL,f,t,p);}
 function menuWA(f){
   var c=DATA.find(function(x){return x.fila===f;});
   var ops=[['contacto-screening','📞 Contacto screening'],['contacto-competencias','💼 Contacto competencias'],['contacto-empresa-virtual','🏢 Empresa (virtual)'],['contacto-empresa-presencial','🏢 Empresa (presencial)'],['descarte-competencias','❌ Descarte competencias'],['descarte-empresa','❌ Descarte empresa']];
