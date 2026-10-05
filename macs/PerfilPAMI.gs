@@ -158,9 +158,7 @@ NIVEL_AJUSTE:
     [PERFIL, 'p3', '¿Cuántos años de experiencia tenés en prácticas de enfermería?', 'select', 'Menos de 1 año|1 a 3 años|3 a 5 años|Más de 5 años', 'SI'],
     [PERFIL, 'p4', '¿Tenés experiencia con adultos mayores (geriatría, internación, domiciliaria)?', 'select', 'Sí, mucha|Sí, alguna|No', 'SI'],
     [PERFIL, 'p5', '¿Tenés disponibilidad para turnos rotativos (L-V de 7 hs y sábados, domingos y feriados de 12 hs)?', 'select', 'Sí|No|A confirmar', 'SI'],
-    [PERFIL, 'p6', '¿Quién te recomendó para esta búsqueda?', 'select', 'Sindicato|Director|Empleado', 'NO'],
-    [PERFIL, 'p7', 'Si te recomendó un sindicato, ¿cuál?', 'select', 'NORTE|UTI|UTERA|APPAMIA|ATE|UPCN|SUTEPA', 'NO'],
-    [PERFIL, 'p8', 'Si te recomendó un director o un empleado, ¿quién? (nombre y apellido)', 'texto', '', 'NO']
+    [PERFIL, 'p6', '¿Conocés a alguien que trabaje en PAMI? Si es así, ¿quién?', 'texto', '', 'NO']
   ]);
 
   // ---------- 8) Mail_Routing ----------
