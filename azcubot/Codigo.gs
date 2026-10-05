@@ -2143,3 +2143,47 @@ function testTipos(){
   Logger.log('Total props: '+d.length+' | Con tipo: '+tipos.length);
   Logger.log('Tipos únicos: '+JSON.stringify([...new Set(tipos)]));
 }
+
+/* ── Consultas de WhatsApp (pestaña "Consultas" del Sheet) ── */
+function _nrm_(x){ return String(x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+function _hojaConsultas_(){
+  var sh=SpreadsheetApp.openById(MAESTRO_ID).getSheets(), i, n, hit=null;
+  for(i=0;i<sh.length;i++){ n=_nrm_(sh[i].getName()).trim(); if(n==='consultas') return sh[i]; if(!hit && /consulta/.test(n) && !/seguim|encuesta/.test(n)) hit=sh[i]; }
+  return hit;
+}
+function _tsCons_(v, h){
+  if(v instanceof Date){ var t=v.getTime(); if(h instanceof Date) t+=((h.getUTCHours()*60+h.getUTCMinutes())*60000); return t; }
+  var s=String(v||'').trim(), m=s.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:[ ,T]+(\d{1,2}):(\d{2}))?/);
+  if(m){ var y=m[3].length===2?2000+(+m[3]):+m[3]; return Date.UTC(y,+m[2]-1,+m[1],(+m[4]||0)+3,+m[5]||0); }
+  m=s.match(/(\d{4})-(\d{2})-(\d{2})(?:[ T]+(\d{1,2}):(\d{2}))?/);
+  if(m) return Date.UTC(+m[1],+m[2]-1,+m[3],(+m[4]||0)+3,+m[5]||0);
+  return null;
+}
+function obtenerConsultasWS(){
+  var sh=_hojaConsultas_();
+  if(!sh) return {ok:false, error:'No encontré la pestaña "Consultas" en el Sheet.'};
+  var lr=sh.getLastRow(), lc=sh.getLastColumn();
+  if(lr<2 || lc<1) return {ok:true, cols:[], idx:{}, rows:[], total:0};
+  var head=sh.getRange(1,1,1,lc).getValues()[0].map(function(x){ return String(x).trim(); });
+  function col(re){ for(var i=0;i<head.length;i++) if(re.test(_nrm_(head[i]))) return i; return -1; }
+  var idx={f:col(/fecha|date|cuando|dia/), h:col(/^hora|time/), t:col(/tel|cel|whats|numero|phone|contacto/), n:col(/nombre|cliente|persona|name/), m:col(/mensaje|consulta|texto|pregunta|message|detalle/), p:col(/propiedad|aviso|inmueble|direcci|link|codigo/), a:col(/atendid|gestion/)};
+  if(idx.m===idx.n) idx.n=-1;
+  var desde=Math.max(2, lr-499), vals=sh.getRange(desde,1,lr-desde+1,lc).getValues(), rows=[];
+  vals.forEach(function(r,k){
+    if(!r.some(function(c){ return String(c).trim()!==''; })) return;
+    rows.push({ r:desde+k, t:idx.f>-1 ? _tsCons_(r[idx.f], idx.h>-1 ? r[idx.h] : null) : null,
+      v:r.map(function(c){ return c instanceof Date ? Utilities.formatDate(c,'GMT-3',(c.getHours()||c.getMinutes()) ? 'dd/MM/yyyy HH:mm' : 'dd/MM/yyyy') : String(c==null?'':c).slice(0,1500); }) });
+  });
+  return {ok:true, cols:head, idx:idx, rows:rows, total:lr-1};
+}
+function marcarConsultaWS(fila, quien){
+  var sh=_hojaConsultas_(); fila=+fila;
+  if(!sh || !(fila>=2) || fila>sh.getLastRow()) throw new Error('Esa consulta ya no está en la hoja.');
+  var lc=sh.getLastColumn(), head=sh.getRange(1,1,1,lc).getValues()[0].map(function(x){ return _nrm_(x); }), i=-1, k;
+  for(k=0;k<head.length;k++) if(/atendid|gestion/.test(head[k])){ i=k; break; }
+  if(i<0){ i=lc; sh.getRange(1,i+1).setValue('Atendida'); }
+  var val='✓ '+(String(quien||'').trim()||'—')+' '+Utilities.formatDate(new Date(),'GMT-3','dd/MM HH:mm');
+  sh.getRange(fila,i+1).setValue(val);
+  try{ _audit_('campos','✅ Marcó atendida una consulta de WhatsApp', '', quien||''); }catch(e){}
+  return {ok:true, valor:val};
+}

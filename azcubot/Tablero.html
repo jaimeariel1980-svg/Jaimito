@@ -111,7 +111,8 @@ td{padding:7px 8px;border-bottom:1px solid #f1f0ec;vertical-align:top}
 <div class="top"><div class="chip"><img id="logoimg" alt="Azcuénaga"></div>
 <div class="sep"></div><h1>Tablero de propiedades</h1><div class="dir">Mendoza 4873 · Rosario</div><button class="dlbtn" onclick="descargar()">Descargar</button></div>
 <div class="wrap">
-  <div class="nav"><button class="tab on" id="tabR" onclick="ver('resumen')">Resumen</button><button class="tab" id="tabP" onclick="ver('props')">Propiedades</button><a class="tab" style="text-decoration:none;display:inline-block" href="#" onclick="irApp('');return false" rel="noopener">Ir a Precarga</a><a class="tab" style="text-decoration:none;display:inline-block" href="#" onclick="irApp('?app=procedimiento');return false" rel="noopener">Ir a Procedimiento de Ventas</a></div>
+  <div class="nav"><button class="tab on" id="tabR" onclick="ver('resumen')">Resumen</button><button class="tab" id="tabP" onclick="ver('props')">Propiedades</button><button class="tab" id="tabC" onclick="ver('cons')">💬 Consultas WhatsApp <span id="consBadge" style="display:none;background:#d1495b;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px"></span></button><a class="tab" style="text-decoration:none;display:inline-block" href="#" onclick="irApp('');return false" rel="noopener">Ir a Precarga</a><a class="tab" style="text-decoration:none;display:inline-block" href="#" onclick="irApp('?app=procedimiento');return false" rel="noopener">Ir a Procedimiento de Ventas</a></div>
+  <div id="cons" style="display:none"></div>
   <div id="resumen">
   <div class="dash" id="dash"></div>
   <div class="panel"><div class="bar2">
@@ -985,6 +986,54 @@ function guardarConsulta(id){
     .registrarInteraccion(id, datos);
 }
 function _fechaAr(iso){ if(!iso)return ''; const q=iso.split('-'); return q.length===3?(q[2]+'/'+q[1]+'/'+q[0]):iso; }
+
+var CONS=null, CONS_F='', CONS_Q='';
+function _ce(x){return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function consDesdeViernes(){var d=new Date(),dw=d.getDay(),back=(dw+2)%7,v=new Date(d.getFullYear(),d.getMonth(),d.getDate()-back,18,0,0);if(v.getTime()>d.getTime())v=new Date(v.getTime()-7*86400000);return v.getTime();}
+function consCargar(forzar){
+  var box=document.getElementById('cons');
+  if(!CONS||forzar) box.innerHTML='<div style="padding:22px;color:var(--gris)">Cargando consultas de WhatsApp…</div>';
+  google.script.run.withSuccessHandler(function(r){CONS=r||{ok:false,error:'Sin respuesta'};consBadge();if(document.getElementById('cons').style.display!=='none')consPintar();}).withFailureHandler(function(e){CONS={ok:false,error:(e&&e.message)||String(e)};if(document.getElementById('cons').style.display!=='none')consPintar();}).obtenerConsultasWS();
+}
+function consVer(){if(!CONS)consCargar();else{consPintar();consCargar(false);}}
+function consAt(r){var a=CONS.idx.a;return a>-1&&String(r.v[a]||'').trim()!=='';}
+function consBadge(){var b=document.getElementById('consBadge');if(!b||!CONS||!CONS.ok)return;var lim=Date.now()-7*86400000,n=CONS.rows.filter(function(r){return !consAt(r)&&(r.t===null||r.t>=lim);}).length;b.style.display=n?'inline-block':'none';b.textContent=n;}
+function consFiltro(f){CONS_F=f;consPintar();}
+function consFecha(t){if(t===null)return '';var d=new Date(t),dn=['dom','lun','mar','mié','jue','vie','sáb'],p=function(n){return ('0'+n).slice(-2);};return dn[d.getDay()]+' '+p(d.getDate())+'/'+p(d.getMonth()+1)+' '+p(d.getHours())+':'+p(d.getMinutes());}
+function consPintar(){
+  var box=document.getElementById('cons');
+  if(!CONS||!CONS.ok){box.innerHTML='<div style="padding:22px;color:#c0392b">'+_ce((CONS&&CONS.error)||'No se pudieron cargar las consultas')+'</div>';return;}
+  if(!CONS_F){var dw=new Date().getDay();CONS_F=(dw===1||dw===2)?'finde':'pend';}
+  var ix=CONS.idx,now=Date.now(),vf=consDesdeViernes(),hoy0=new Date();hoy0.setHours(0,0,0,0);
+  var tot={finde:0,hoy:0,sem:0,pend:0,todas:CONS.rows.length};
+  CONS.rows.forEach(function(r){var t=r.t;if(t!==null){if(t>=vf)tot.finde++;if(t>=hoy0.getTime())tot.hoy++;if(t>=now-7*86400000)tot.sem++;}if(!consAt(r)&&(t===null||t>=now-14*86400000))tot.pend++;});
+  var lista=CONS.rows.filter(function(r){var t=r.t;switch(CONS_F){case 'finde':return t!==null&&t>=vf;case 'hoy':return t!==null&&t>=hoy0.getTime();case 'sem':return t!==null&&t>=now-7*86400000;case 'pend':return !consAt(r)&&(t===null||t>=now-14*86400000);default:return true;}});
+  lista.sort(function(a,b){return (b.t||0)-(a.t||0)||b.r-a.r;});
+  var usados={};['f','h','t','n','m','p','a'].forEach(function(k){if(ix[k]>-1)usados[ix[k]]=1;});
+  var chips=[['finde','Fin de semana'],['hoy','Hoy'],['sem','7 días'],['pend','Pendientes'],['todas','Todas']].map(function(c){return '<button class="btn '+(CONS_F===c[0]?'p':'s')+'" style="padding:7px 13px;font-size:13px" onclick="consFiltro(\''+c[0]+'\')">'+c[1]+' ('+tot[c[0]]+')</button>';}).join('');
+  var cards=lista.length?lista.map(function(r){
+    var nom=ix.n>-1?r.v[ix.n]:'',tel=ix.t>-1?r.v[ix.t]:'',msg=ix.m>-1?r.v[ix.m]:'',prop=ix.p>-1?r.v[ix.p]:'',at=consAt(r)?String(r.v[ix.a]):'';
+    var fecha=r.t!==null?consFecha(r.t):(ix.f>-1?r.v[ix.f]:'');
+    var extra=CONS.cols.map(function(c,i){return (usados[i]||!r.v[i])?'':'<div><span style="color:var(--gris)">'+_ce(c)+':</span> '+_ce(r.v[i])+'</div>';}).join('');
+    var w=tel?wa(tel):'';
+    return '<div style="background:#fff;border:1px solid var(--linea);border-left:4px solid '+(at?'#9aa0a6':'var(--verde)')+';border-radius:12px;padding:12px 14px;margin-bottom:10px">'+
+      '<div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline"><b style="font-size:14.5px">'+_ce(nom||tel||'Sin nombre')+'</b><span style="font-size:12px;color:var(--gris);white-space:nowrap">'+_ce(fecha)+'</span></div>'+
+      (nom&&tel?'<div style="font-size:12.5px;color:var(--gris);margin-top:2px">'+_ce(tel)+'</div>':'')+
+      (prop?'<div style="font-size:12.5px;margin-top:4px">🏠 '+_ce(prop)+'</div>':'')+
+      (msg?'<div style="margin-top:8px;font-size:14px;white-space:pre-wrap">'+_ce(msg)+'</div>':'')+
+      (extra?'<div style="margin-top:8px;font-size:12px;line-height:1.5">'+extra+'</div>':'')+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center">'+
+      (w?'<a class="btn g" style="text-decoration:none;display:inline-block" target="_blank" rel="noopener" href="https://wa.me/'+w+'">💬 Responder por WhatsApp</a>':'')+
+      (at?'<span style="font-size:12.5px;color:var(--gris)">'+_ce(at)+'</span>':'<button class="btn s" onclick="consMarcar('+r.r+',this)">✓ Marcar atendida</button>')+
+      '</div></div>';}).join(''):'<div class="empty" style="padding:22px;color:var(--gris)">No hay consultas en este filtro.</div>';
+  box.innerHTML='<div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 14px">'+chips+'<button class="btn s" style="padding:7px 13px;font-size:13px" onclick="consCargar(true)">↻ Actualizar</button></div>'+
+    '<div style="font-size:12px;color:var(--gris);margin-bottom:10px">Mensajes recibidos por WhatsApp (respuestas automáticas incluidas) · "Fin de semana" = desde el viernes 18 h</div>'+cards;
+}
+function consMarcar(fila,btn){
+  if(btn){btn.disabled=true;btn.textContent='Guardando…';}
+  google.script.run.withSuccessHandler(function(r){var x=CONS.rows.find(function(q){return q.r===fila;});if(x){if(CONS.idx.a<0){CONS.cols.push('Atendida');CONS.idx.a=CONS.cols.length-1;CONS.rows.forEach(function(q){q.v.push('');});}x.v[CONS.idx.a]=r.valor;}consBadge();consPintar();}).withFailureHandler(function(e){alert('No pude marcarla: '+((e&&e.message)||e));if(btn){btn.disabled=false;btn.textContent='✓ Marcar atendida';}}).marcarConsultaWS(fila,_yo());
+}
+setTimeout(function(){try{consCargar(true);}catch(e){}},4000);
 function recargar(reabrir){
   google.script.run.withSuccessHandler(function(datos){ DATA=adaptar(datos); try{ _ck=JSON.stringify(datos); localStorage.setItem('azdatos_v1',_ck); }catch(e){} render(); if(reabrir)ficha(reabrir); }).getDatos();
 }
@@ -1023,7 +1072,7 @@ function subirDoc(id,doc){
   };
   inp.click();
 }
-function ver(v){document.getElementById('resumen').style.display=v==='resumen'?'':'none';document.getElementById('props').style.display=v==='props'?'':'none';document.getElementById('tabR').classList.toggle('on',v==='resumen');document.getElementById('tabP').classList.toggle('on',v==='props');var db=document.querySelector('.dlbtn');if(db)db.style.display=v==='resumen'?'':'none';window.scrollTo(0,0);}
+function ver(v){document.getElementById('resumen').style.display=v==='resumen'?'':'none';document.getElementById('props').style.display=v==='props'?'':'none';document.getElementById('cons').style.display=v==='cons'?'':'none';document.getElementById('tabR').classList.toggle('on',v==='resumen');document.getElementById('tabP').classList.toggle('on',v==='props');document.getElementById('tabC').classList.toggle('on',v==='cons');var db=document.querySelector('.dlbtn');if(db)db.style.display=v==='resumen'?'':'none';if(v==='cons')consVer();window.scrollTo(0,0);}
 function toggleEdit(){EDIT=!EDIT;const b=document.getElementById('editbtn');b.textContent='Modo edición: '+(EDIT?'ON':'OFF');b.classList.toggle('p',EDIT);b.classList.toggle('s',!EDIT);document.getElementById('edithint').style.display=EDIT?'':'none';render();}
 function setOrigen(id,v){const p=DATA.find(x=>x.id===id);if(p)p.origen=v;ficha(id);}
 function setP(id,field,val){const p=DATA.find(x=>x.id===id);if(p)p[field]=val;}
