@@ -1243,9 +1243,15 @@ function _repImg(id,cb){
 function enviarReporte(id){
   _repImg(id,function(b,p){
     var f=new File([b],'Reporte_'+p.id+'.png',{type:'image/png'});
-    if(navigator.canShare&&navigator.canShare({files:[f]})){navigator.share({files:[f],text:'Informe de gestión — '+p.dir}).then(function(){try{google.script.run.marcarReporteEnviado(id,_yo());}catch(e){}}).catch(function(){});return;}
-    var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=f.name;document.body.appendChild(a);a.click();a.remove();
-    alert('Se descargó la imagen del reporte. Adjuntala en WhatsApp.');enviarWA('Informe de gestión — '+p.dir);try{google.script.run.marcarReporteEnviado(id,_yo());}catch(e){}
+    var marca=function(){try{google.script.run.marcarReporteEnviado(id,_yo());}catch(e){}};
+    var manual=function(){
+      var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=f.name;document.body.appendChild(a);a.click();a.remove();
+      var fin=function(ok){alert(ok?'La imagen del reporte quedó copiada y también se descargó.\n\nSe abre WhatsApp: elegí el chat y pegala con Ctrl+V (o en el celular, mantené apretado y Pegar).':'Se descargó la imagen del reporte ('+f.name+').\n\nSe abre WhatsApp: elegí el chat y adjuntala.');enviarWA('Informe de gestión — '+p.dir);marca();};
+      try{navigator.clipboard.write([new ClipboardItem({'image/png':b})]).then(function(){fin(true);},function(){fin(false);});}catch(e){fin(false);}
+    };
+    var movil=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if(movil&&navigator.canShare&&navigator.canShare({files:[f]})){navigator.share({files:[f],text:'Informe de gestión — '+p.dir}).then(marca).catch(function(e){if(!e||e.name!=='AbortError')manual();});return;}
+    manual();
   });
 }
 function close_(){document.getElementById('ov').classList.remove('on');}
