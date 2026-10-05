@@ -171,3 +171,20 @@ NIVEL_AJUSTE:
 
   Logger.log('LISTO — ' + PERFIL + ' configurado. Link postulación: ' + URL_DEPLOY + '?tipo=postulacion&perfil=' + PERFIL);
 }
+
+function agregarColumnasRecomendacionPAMI() {
+  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+  const rows = ss.getSheetByName('Config').getDataRange().getValues();
+  const r = rows.slice(1).find(x => /pami|enfermer/i.test([x[0], x[1], x[3]].join(' ')));
+  if (!r) throw new Error('No encontré el perfil PAMI en Config');
+  const hoja = ss.getSheetByName(r[3]);
+  const C1 = 47, C2 = 48;
+  if (hoja.getMaxColumns() < C2) hoja.insertColumnsAfter(hoja.getMaxColumns(), C2 - hoja.getMaxColumns());
+  hoja.getRange(1, C1, 1, 2).setValues([['Recomendó', 'Recomendado por']]).setFontWeight('bold').setBackground('#1A6645').setFontColor('#FFFFFF');
+  const n = Math.max(hoja.getMaxRows() - 1, 1);
+  hoja.getRange(2, C1, n, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['Sindicato', 'Director', 'Empleado'], true).build());
+  hoja.getRange(2, C2, n, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['NORTE', 'UTI', 'UTERA', 'APPAMIA', 'ATE', 'UPCN', 'SUTEPA'], true).setAllowInvalid(true).build());
+  hoja.setColumnWidth(C1, 120);
+  hoja.setColumnWidth(C2, 200);
+  Logger.log('✅ Columnas Recomendó / Recomendado por en "' + hoja.getName() + '" (AU y AV)');
+}
