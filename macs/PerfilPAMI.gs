@@ -68,6 +68,8 @@ NIVEL_AJUSTE:
   // ---------- 2) Pestaña de candidatos (encabezados clonados de coord-rrhh si está vacía) ----------
   const modelo = ss.getSheetByName(getConfig('coord-rrhh').hoja_nombre);
   const lastCol = modelo.getLastColumn();
+  if (hoja.getMaxColumns() < lastCol) hoja.insertColumnsAfter(hoja.getMaxColumns(), lastCol - hoja.getMaxColumns());
+  if (hoja.getMaxRows() < 101) hoja.insertRowsAfter(hoja.getMaxRows(), 101 - hoja.getMaxRows());
   if (!String(hoja.getRange(1, 1).getValue()).trim()) {
     modelo.getRange(1, 1, 1, lastCol).copyTo(hoja.getRange(1, 1));
     for (let c = 1; c <= lastCol; c++) hoja.setColumnWidth(c, modelo.getColumnWidth(c));
