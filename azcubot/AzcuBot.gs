@@ -44,13 +44,14 @@ function azcuDatos_(forzar){
   return AZCU_D_;
 }
 function limpiarInteraccionesYComentarios(){
-  var ss = SpreadsheetApp.openById(MAESTRO_ID), sello = Utilities.formatDate(new Date(), AZCU_TZ, 'dd-MM HHmm'), r = [];
+  var ss = SpreadsheetApp.openById('1O8VKF9ZUC073kGNYIc3SgKPcIrVpnvynpQQ69RAk9W8'), sello = Utilities.formatDate(new Date(), 'America/Argentina/Buenos_Aires', 'dd-MM HHmm'), r = [];
   function copia(nombre, vals){ if(!vals.length) return; var b = ss.insertSheet(nombre+' (copia '+sello+')'); b.getRange(1,1,vals.length,vals[0].length).setValues(vals); }
   var seg = ss.getSheetByName('Seguimiento');
   if(seg && seg.getLastRow()>1){ var n = seg.getLastRow()-1; copia('Seguimiento', seg.getRange(1,1,n+1,seg.getLastColumn()).getValues()); seg.getRange(2,1,n,seg.getLastColumn()).clearContent(); r.push('Interacciones borradas: '+n); } else r.push('Interacciones: no había');
   var mov = ss.getSheetByName('Movimientos');
   if(mov && mov.getLastRow()>1){ var m = mov.getLastRow()-1; copia('Movimientos', mov.getRange(1,1,m+1,mov.getLastColumn()).getValues()); mov.getRange(2,1,m,mov.getLastColumn()).clearContent(); r.push('Novedades borradas: '+m); }
-  var mae = hojaMaestra_(), head = mae.getRange(1,1,1,mae.getLastColumn()).getValues()[0], ic = head.indexOf('Observaciones comerciales'), nf = mae.getLastRow()-1;
+  var mae = null; ss.getSheets().forEach(function(h){ if(!mae && h.getLastColumn()>0 && h.getRange(1,1,1,h.getLastColumn()).getValues()[0].indexOf('Código de Precarga')>-1) mae = h; });
+  var head = mae.getRange(1,1,1,mae.getLastColumn()).getValues()[0], ic = head.indexOf('Observaciones comerciales'), nf = mae.getLastRow()-1;
   if(ic>-1 && nf>0){ var rg = mae.getRange(2,ic+1,nf,1), ov = rg.getValues(), hay = ov.filter(function(x){ return String(x[0]).trim(); }).length; if(hay){ copia('Observaciones', [['Código','Observaciones comerciales']].concat(mae.getRange(2,1,nf,1).getValues().map(function(c,i){ return [c[0], ov[i][0]]; }))); rg.clearContent(); } r.push('Comentarios (observaciones) borrados: '+hay); }
   var pr = PropertiesService.getScriptProperties(); ['AZCU_PV2','AZCU_SEG2','AZCU_PROP'].forEach(function(k){ try{ pr.deleteProperty(k); }catch(e){} });
   try{ _invalidaNovedades_(); }catch(e){} try{ azcuLimpiarCache_(); }catch(e){}
