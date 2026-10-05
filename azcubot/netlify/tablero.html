@@ -1039,7 +1039,7 @@ function cargarForm(id, nombre, tel){
   '<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">Cargar consulta / visita</div><div class="sub">'+p.id+' · '+p.dir+'</div></div>'+
   '<div class="fb"><div class="form">'+
     '<label>Fecha<input id="cf_fecha" type="date" value="'+hoy+'"></label>'+
-    '<label>Vía<select id="cf_via"><option>WhatsApp</option><option value="Visita">Realizar visita</option><option>Llamada</option><option>Mail</option></select></label>'+
+    '<label>Vía<select id="cf_via"><option>WhatsApp</option><option value="Visita">Visita realizada</option><option>Llamada</option><option>Mail</option></select></label>'+
     '<label>Interesado<input id="cf_cli" value="'+nom.replace(/"/g,'&quot;')+'" placeholder="Nombre y apellido"></label>'+
     '<label>Teléfono<input id="cf_tel" value="'+t+'" placeholder="+54 341 ..."></label>'+
     '<label>Resultado<select id="cf_res">'+resOpts+'</select></label>'+
@@ -1183,7 +1183,7 @@ function descargar(){window.print();}
 function editarForm(id, row){
   const p=DATA.find(x=>x.id===id); const s=(p.seg||[]).find(x=>x._row===row); if(!s)return;
   const iso=(function(f){const q=(''+f).split('/');return q.length===3?(q[2]+'-'+('0'+q[1]).slice(-2)+'-'+('0'+q[0]).slice(-2)):'';})(s.fecha);
-  const opt=(sel,arr)=>arr.map(o=>'<option value="'+o+'" '+(o===sel?'selected':'')+'>'+(o==='Visita'?'Realizar visita':o)+'</option>').join('');
+  const opt=(sel,arr)=>arr.map(o=>'<option value="'+o+'" '+(o===sel?'selected':'')+'>'+(o==='Visita'?'Visita realizada':o)+'</option>').join('');
   document.getElementById('dlg').innerHTML=
   '<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">Editar interacción</div><div class="sub">'+p.id+' · '+p.dir+'</div></div>'+
   '<div class="fb"><div class="form">'+
@@ -2040,7 +2040,7 @@ google.script.run
     var P = {k:'prop', q:'¿De qué propiedad? Escribí parte de la dirección o el propietario.', kind:'prop', ph:'Ej: Mendoza 7201'};
     var T = function(k,q,ph,opt,parse){ return {k:k, q:q, kind:'text', ph:ph, opt:opt, parse:parse}; };
     var tel = function(t){ var d = t.replace(/[^0-9]/g,''); return d.length>=6 ? d : null; }, mail = function(t){ return /^\S+@\S+\.\S+$/.test(t) ? t : null; };
-    if(t==='cargar') return [P, T('interesado','¿Quién consultó o vino? (nombre)','Nombre del interesado'), {k:'via',q:'¿Por qué vía fue?',kind:'opt',opts:VIAS.map(function(x){return {l:x==='Visita'?'Realizar visita':x,v:x};})}, {k:'resultado',q:'¿Cómo resultó?',kind:'opt',opts:OP(RES)}, T('obs','Contame el detalle de lo que pasó (podés dictarlo 🎤)','Qué pasó, qué dijo, qué quiere…',1), T('prox','Próximo paso','Ej: llamarlo el viernes',1), T('tel','Teléfono del interesado','Teléfono',1,tel)];
+    if(t==='cargar') return [P, T('interesado','¿Quién consultó o vino? (nombre)','Nombre del interesado'), {k:'via',q:'¿Por qué vía fue?',kind:'opt',opts:VIAS.map(function(x){return {l:x==='Visita'?'Visita realizada':x,v:x};})}, {k:'resultado',q:'¿Cómo resultó?',kind:'opt',opts:OP(RES)}, T('obs','Contame el detalle de lo que pasó (podés dictarlo 🎤)','Qué pasó, qué dijo, qué quiere…',1), T('prox','Próximo paso','Ej: llamarlo el viernes',1), T('tel','Teléfono del interesado','Teléfono',1,tel)];
     if(t==='agendar') return [P, {k:'fecha',q:'¿Qué día? Elegí o escribí dd/mm.',kind:'opt',opts:fechas(),parse:parseFecha,ph:'dd/mm'}, {k:'hora',q:'¿A qué hora? Elegí o escribila (ej 16:30).',kind:'opt',opts:OP(HORAS),parse:parseHora,ph:'hh:mm'}, T('interesado','¿Quién es el interesado?','Nombre',1), T('tel','Teléfono','Teléfono',1,tel), T('mail','Mail (le llega la invitación al Calendar)','mail@ejemplo.com',1,mail)];
     if(t==='adjex') return [P];
     if(t==='adjnew') return [];
