@@ -16,3 +16,16 @@ function guardarRecomendacion(perfilId, fila, tipo, por) {
   sh.getRange(fila, 47, 1, 2).clearDataValidations().setValues([[tipo || '', por || '']]);
   return true;
 }
+
+function instalarRecomendacionPAMI() {
+  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+  const config = ss.getSheetByName('Config');
+  const data = config.getDataRange().getValues();
+  const headers = data[0];
+  let c = headers.indexOf('recomendacion') + 1;
+  if (!c) { c = headers.length + 1; config.getRange(1, c).setValue('recomendacion'); }
+  const i = data.findIndex((r, k) => k > 0 && /pami|enfermer/i.test([r[0], r[1], r[3]].join(' ')));
+  if (i < 1) throw new Error('No encontré el perfil PAMI en Config');
+  config.getRange(i + 1, c).setValue('Sindicato:NORTE;UTI;UTERA;APPAMIA;ATE;UPCN;SUTEPA|Director|Empleado');
+  Logger.log('✅ Config.recomendacion cargada para ' + data[i][0]);
+}
