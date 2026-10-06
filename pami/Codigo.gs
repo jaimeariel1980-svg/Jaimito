@@ -50,17 +50,23 @@ function setup() {
     ]);
     aj.sh.setColumnWidth(1, 160); aj.sh.setColumnWidth(2, 520);
   }
+  SpreadsheetApp.flush();
   const cfg = ajustes_();
-  const filaAj = k => hoja_('Ajustes').getDataRange().getValues().findIndex(r => r[0] === k) + 1;
+  const hojaAj = ss.getSheetByName('Ajustes');
+  const filaAj = k => hojaAj.getDataRange().getValues().findIndex(r => r[0] === k) + 1;
+  const carpeta = (nombre, padre) => {
+    const it = padre ? padre.getFoldersByName(nombre) : DriveApp.getFoldersByName(nombre);
+    return it.hasNext() ? it.next() : (padre ? padre.createFolder(nombre) : DriveApp.createFolder(nombre));
+  };
   if (!cfg.carpeta_cvs) {
-    const f = DriveApp.createFolder('Empleos PAMI - CVs');
-    hoja_('Ajustes').getRange(filaAj('carpeta_cvs'), 2).setValue(f.getId());
-    cfg.carpeta_cvs = f.getId();
+    cfg.carpeta_cvs = carpeta('Empleos PAMI - CVs').getId();
+    hojaAj.getRange(filaAj('carpeta_cvs'), 2).setValue(cfg.carpeta_cvs);
   }
   if (!cfg.carpeta_subir) {
-    const f = DriveApp.getFolderById(cfg.carpeta_cvs).createFolder('Para procesar');
-    hoja_('Ajustes').getRange(filaAj('carpeta_subir'), 2).setValue(f.getId());
+    const id = carpeta('Para procesar', DriveApp.getFolderById(cfg.carpeta_cvs)).getId();
+    hojaAj.getRange(filaAj('carpeta_subir'), 2).setValue(id);
   }
+  SpreadsheetApp.flush();
 
   const bq = tab('Busquedas', HEAD_BUSQ);
   if (bq.nuevo) {
