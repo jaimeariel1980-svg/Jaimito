@@ -14,10 +14,10 @@ function filaPorId_(sh, id) {
 
 function plantillasIniciales_() {
   return [
-    ['contacto-screening', 'WhatsApp', 'Hola [NOMBRE], ¿cómo estás? Soy [ENTREVISTADOR] del equipo de Selección.\nTe contacto por la búsqueda de [PUESTO] en [EMPRESA].\nMe gustaría coordinar una charla breve con vos para conocerte. ¿Qué día y horario te quedan cómodos? [LINK]\nSaludos!'],
-    ['contacto-competencias', 'WhatsApp', 'Hola [NOMBRE], ¿cómo estás? Soy [ENTREVISTADOR] del equipo de Selección.\nTe escribo por la búsqueda de [PUESTO] en [EMPRESA].\nNos gustaría avanzar con tu perfil a la siguiente etapa del proceso. Se trata de una entrevista de aproximadamente una hora, en la que vamos a profundizar sobre tu experiencia y tu recorrido profesional.\nSi te interesa continuar, contanos qué día y horario te quedan mejor para agendarla. [LINK]\n¡Nos vemos pronto!\nSaludos,\n[FIRMA]'],
-    ['contacto-pami-virtual', 'WhatsApp', 'Hola [NOMBRE], ¿cómo estás?\nQueríamos contarte que nos gustaría avanzar con tu perfil a la siguiente etapa del proceso para la posición de [PUESTO] en [EMPRESA].\nLa próxima instancia consiste en una entrevista virtual con referentes de [EMPRESA], de aproximadamente 30 minutos. Será un primer encuentro para que puedas presentar tu experiencia, conocer al equipo y despejar las dudas que tengas sobre la posición.\nSi te interesa continuar, contanos qué día y horario te quedan mejor para agendarla. [LINK]\nSaludos,\n[FIRMA]'],
-    ['contacto-pami-presencial', 'WhatsApp', 'Hola [NOMBRE], ¿cómo estás?\nQueríamos contarte que nos gustaría avanzar con tu perfil a la siguiente etapa del proceso para la posición de [PUESTO] en [EMPRESA].\nLa próxima instancia consiste en una entrevista presencial con referentes de [EMPRESA], de aproximadamente una hora. Será una conversación para profundizar sobre tu experiencia, conocer los desafíos de la posición y responder las consultas de ambas partes.\nSi te interesa continuar, contanos qué día y horario te quedan mejor para agendarla. [LINK]\nSaludos,\n[FIRMA]'],
+    ['contacto-screening', 'WhatsApp', 'Hola [NOMBRE], ¿cómo estás? Soy [ENTREVISTADOR] del equipo de Selección.\nTe contacto por la búsqueda de [PUESTO] en [EMPRESA].\nMe gustaría coordinar una charla breve con vos para conocerte.\nSi te interesa, elegí el día y horario que mejor te quede desde este link y queda agendado:\n[LINK]\nSaludos!'],
+    ['contacto-competencias', 'WhatsApp', 'Hola [NOMBRE], ¿cómo estás? Soy [ENTREVISTADOR] del equipo de Selección.\nTe escribo por la búsqueda de [PUESTO] en [EMPRESA].\nNos gustaría avanzar con tu perfil a la siguiente etapa del proceso. Se trata de una entrevista de aproximadamente una hora, en la que vamos a profundizar sobre tu experiencia y tu recorrido profesional.\nSi te interesa continuar, elegí el día y horario que mejor te quede desde este link y queda agendada:\n[LINK]\n¡Nos vemos pronto!\nSaludos,\n[FIRMA]'],
+    ['contacto-pami-virtual', 'WhatsApp', 'Hola [NOMBRE], ¿cómo estás?\nQueríamos contarte que nos gustaría avanzar con tu perfil a la siguiente etapa del proceso para la posición de [PUESTO] en [EMPRESA].\nLa próxima instancia consiste en una entrevista virtual con referentes de [EMPRESA], de aproximadamente 30 minutos. Será un primer encuentro para que puedas presentar tu experiencia, conocer al equipo y despejar las dudas que tengas sobre la posición.\nSi te interesa continuar, elegí el día y horario que mejor te quede desde este link y queda agendada:\n[LINK]\nSaludos,\n[FIRMA]'],
+    ['contacto-pami-presencial', 'WhatsApp', 'Hola [NOMBRE], ¿cómo estás?\nQueríamos contarte que nos gustaría avanzar con tu perfil a la siguiente etapa del proceso para la posición de [PUESTO] en [EMPRESA].\nLa próxima instancia consiste en una entrevista presencial con referentes de [EMPRESA], de aproximadamente una hora. Será una conversación para profundizar sobre tu experiencia, conocer los desafíos de la posición y responder las consultas de ambas partes.\nSi te interesa continuar, elegí el día y horario que mejor te quede desde este link y queda agendada:\n[LINK]\nSaludos,\n[FIRMA]'],
     ['confirmacion-cita', 'WhatsApp', 'Hola [NOMBRE], te confirmamos tu entrevista de [TIPO] para la búsqueda de [PUESTO]:\n📅 [FECHA] a las [HORA]\n📍 [LUGAR]\nSi no podés asistir, avisanos con anticipación para reprogramarla. ¡Gracias!\n[FIRMA]'],
     ['descarte-sin', 'Mail', 'Hola [NOMBRE],\nQueremos agradecerte sinceramente por tu interés en la posición de [PUESTO] y por el tiempo dedicado a postularte.\nLuego de revisar cuidadosamente los currículums recibidos, en esta oportunidad decidimos avanzar con candidatos cuyos perfiles se encuentran más alineados con los requerimientos específicos de la posición.\nValoramos mucho tu trayectoria profesional. Conservaremos tu perfil para futuras oportunidades que puedan resultar acordes a tu experiencia.\nTe deseamos muchos éxitos en tus próximos desafíos profesionales.\nSaludos cordiales,\n[FIRMA]'],
     ['descarte-post', 'Mail', 'Hola [NOMBRE],\nMuchas gracias por el tiempo compartido durante el proceso de selección para la posición de [PUESTO].\nQueremos agradecer especialmente tu apertura y predisposición durante la conversación. Luego de analizar toda la información recabada, hemos decidido avanzar con otros perfiles que presentan un ajuste más cercano a las necesidades actuales de la posición.\nValoramos mucho tu experiencia y el intercambio mantenido, y esperamos poder considerar tu perfil para futuras oportunidades.\nTe deseamos muchos éxitos en tus próximos proyectos.\nSaludos cordiales,\n[FIRMA]'],
@@ -120,13 +120,15 @@ function getTablero(k) {
       notaScr: r[COL.notaScr - 1], notaComp: r[COL.notaComp - 1], notaP1: r[COL.notaP1 - 1], notaP2: r[COL.notaP2 - 1],
       recTipo: r[COL.recTipo - 1], recPor: r[COL.recPor - 1], coment: r[COL.coment - 1], resp: resp, proc: r[COL.proc - 1], fuente: r[COL.fuente - 1],
       cita: citaObj_(r[COL.cita - 1]), entrevistas: String(r[COL.entrevistas - 1] || ''), contactado: String(r[COL.contactado - 1] || ''),
-      descarte: String(r[COL.descarte - 1] || ''), infScr: String(r[COL.infScr - 1] || ''), infComp: String(r[COL.infComp - 1] || '')
+      descarte: String(r[COL.descarte - 1] || ''), infScr: String(r[COL.infScr - 1] || ''), infComp: String(r[COL.infComp - 1] || ''),
+      zona: String(r[COL.zona - 1] || ''), formacion: String(r[COL.formacion - 1] || ''), postulacion: String(r[COL.postulacion - 1] || ''),
+      conoce: (resp.find(x => /conoc[eé]s a alguien/i.test(x.q) && x.a && !/^(no|ninguno|nadie|-)\.?$/i.test(String(x.a).trim())) || {}).a || ''
     });
   }
   return JSON.stringify({
     estadosCol: ESTADOS_COL, desc: ESTADOS_DESC, res: ESTADOS_RES, todos: todosEstados_(),
     entrevistadores: lista_(aj.entrevistadores, ','),
-    busquedas: busquedas_().map(b => ({ id: b.id, titulo: b.titulo, recomendacion: b.recomendacion, link_perfil: b.link_perfil, ubicacion: b.ubicacion })),
+    busquedas: busquedas_().map(b => ({ id: b.id, titulo: b.titulo, recomendacion: b.recomendacion, link_perfil: b.link_perfil, link_flyer: b.link_flyer, ubicacion: b.ubicacion })),
     cfg: { cliente: aj.nombre_cliente || 'PAMI', diasAlerta: Number(aj.dias_alerta) || 7, linkAgenda: aj.link_agenda || '', duraciones: { screening: Number(aj.duracion_screening) || 30, competencias: Number(aj.duracion_competencias) || 60, pami1: Number(aj.duracion_pami1) || 30, pami2: Number(aj.duracion_pami2) || 60 } },
     ahora: fmt_(new Date(), "yyyy-MM-dd'T'HH:mm"), cands: cands
   });
@@ -223,8 +225,11 @@ function armarComunicacion(k, fila, tipo) {
   fila = Number(fila);
   const r = sh.getRange(fila, 1, 1, HEAD_CAND.length).getValues()[0];
   const v = datosComunes_(r);
+  const claveLink = { 'contacto-screening': 'link_agenda_screening', 'contacto-competencias': 'link_agenda_competencias', 'contacto-pami-virtual': 'link_agenda_pami1', 'contacto-pami-presencial': 'link_agenda_pami2' }[tipo];
+  if (claveLink && v.aj[claveLink]) v.LINK = v.aj[claveLink];
   let texto = textoPlantilla_(tipo);
   if (!texto) return { ok: false, error: 'No encontré la plantilla ' + tipo + ' en la pestaña Plantillas' };
+  if (!v.LINK) texto = texto.replace(/[^\n]*(link|enlace)[^\n]*\n\[LINK\]/i, 'Si te interesa, contanos qué día y horario te quedan mejor para agendarla.').replace(/ ?\[LINK\]/g, '');
   texto = rellenar_(texto, v);
   if (!String(r[COL.tel - 1]).replace(/\D/g, '')) return { ok: false, error: 'El candidato no tiene teléfono' };
   const etq = { 'contacto-screening': 'screening', 'contacto-competencias': 'competencias', 'contacto-pami-virtual': 'PAMI virtual', 'contacto-pami-presencial': 'PAMI presencial', 'descarte-competencias': 'descarte comp.', 'descarte-pami': 'descarte PAMI', 'confirmacion-cita': 'confirmación' }[tipo] || '';
@@ -297,12 +302,34 @@ function getAgenda(k) {
   admin_(k);
   const d = hoja_('Candidatos').getDataRange().getValues();
   const desde = fmt_(new Date(Date.now() - 3600000), 'yyyy-MM-dd HH:mm');
-  const out = [];
+  const citas = [];
   for (let i = 1; i < d.length; i++) {
     const c = citaObj_(d[i][COL.cita - 1]);
     if (!c || c.ts < desde || !d[i][COL.nombre - 1]) continue;
-    out.push({ fila: i + 1, nombre: d[i][COL.nombre - 1], ts: c.ts, tipo: c.tipo, busq: d[i][COL.busq - 1], tel: String(d[i][COL.tel - 1] || '') });
+    citas.push({ fila: i + 1, nombre: d[i][COL.nombre - 1], ts: c.ts, tipo: c.tipo, busq: d[i][COL.busq - 1], tel: String(d[i][COL.tel - 1] || '') });
   }
-  out.sort((a, b) => a.ts < b.ts ? -1 : 1);
-  return out;
+  citas.sort((a, b) => a.ts < b.ts ? -1 : 1);
+  let sin = [];
+  try { sin = citasSinCandidato_(); } catch (e) { registrarError_('citas sin candidato', e); }
+  return { citas: citas, sinAsignar: sin };
+}
+
+function postulacionPdf(k, fila) {
+  admin_(k);
+  const sh = hoja_('Candidatos');
+  fila = Number(fila);
+  if (!(fila >= 2 && fila <= sh.getLastRow())) throw new Error('Fila inválida');
+  const existente = String(sh.getRange(fila, COL.postulacion).getValue() || '');
+  if (existente) return existente;
+  const r = sh.getRange(fila, 1, 1, HEAD_CAND.length).getValues()[0];
+  let resp = [];
+  try { resp = JSON.parse(r[COL.resp - 1] || '[]'); } catch (e) { }
+  const b = busquedas_().find(x => x.id === r[COL.busq - 1]) || { titulo: '' };
+  const fila2 = (a, v) => v ? '<tr><td style="padding:5px 8px;color:#5D6B82;width:38%;font-size:12px">' + h_(a) + '</td><td style="padding:5px 8px;font-size:13px;font-weight:bold">' + h_(v) + '</td></tr>' : '';
+  const cuerpo = seccion_('Datos de contacto') + '<table style="width:100%;border-collapse:collapse">' + fila2('Nombre', r[COL.nombre - 1]) + fila2('Email', r[COL.email - 1]) + fila2('Teléfono', r[COL.tel - 1]) + fila2('DNI', r[COL.dni - 1]) + fila2('Localidad', r[COL.loc - 1]) + fila2('Remuneración pretendida', r[COL.pret - 1]) + fila2('Llegó por', r[COL.fuente - 1]) + '</table>' +
+    (resp.length ? seccion_('Respuestas del formulario') + '<table style="width:100%;border-collapse:collapse">' + resp.map(x => fila2(x.q, x.a)).join('') + '</table>' : '');
+  const html = htmlInforme_('Postulación', { nombre: r[COL.nombre - 1], puesto: b.titulo }, [['Recibida', r[0] instanceof Date ? fmt_(r[0], 'dd/MM/yyyy HH:mm') : String(r[0])]], cuerpo, r[COL.ajuste - 1] || '—', null, 'Nivel de ajuste sugerido por la IA al CV');
+  const pdf = DriveApp.getFolderById(ajustes_().carpeta_informes).createFile(Utilities.newBlob(html, 'text/html', 'x.html').getAs('application/pdf').setName('Postulacion_' + String(r[COL.nombre - 1]).replace(/\s+/g, '_') + '.pdf'));
+  sh.getRange(fila, COL.postulacion).setValue(pdf.getUrl());
+  return pdf.getUrl();
 }

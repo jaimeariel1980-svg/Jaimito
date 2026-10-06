@@ -1,8 +1,8 @@
 const CUENTA = 'dotacionpp1@gmail.com';
-const HEAD_CAND = ['Fecha', 'Nombre', 'Teléfono', 'DNI', 'Email', 'Localidad', 'Búsqueda', 'Pretensión', 'Nivel de Ajuste', 'Justificación', 'Resumen', 'Requisitos', 'Link CV', 'Estado', 'Entrevistó', 'Nota screening', 'Nota competencias', 'Recomendó', 'Recomendado por', 'Comentarios', 'Respuestas', 'Procesado', 'Intentos', 'Fuente', 'ID', 'Nota PAMI virtual', 'Nota PAMI presencial', 'Cita', 'Entrevistas (calendario)', 'Contactado', 'Descarte enviado', 'Informe screening', 'Informe competencias', 'Último movimiento'];
-const COL = { fecha: 1, nombre: 2, tel: 3, dni: 4, email: 5, loc: 6, busq: 7, pret: 8, ajuste: 9, just: 10, resumen: 11, req: 12, cv: 13, estado: 14, entrev: 15, notaScr: 16, notaComp: 17, recTipo: 18, recPor: 19, coment: 20, resp: 21, proc: 22, intentos: 23, fuente: 24, id: 25, notaP1: 26, notaP2: 27, cita: 28, entrevistas: 29, contactado: 30, descarte: 31, infScr: 32, infComp: 33, mov: 34 };
+const HEAD_CAND = ['Fecha', 'Nombre', 'Teléfono', 'DNI', 'Email', 'Localidad', 'Búsqueda', 'Pretensión', 'Nivel de Ajuste', 'Justificación', 'Resumen', 'Requisitos', 'Link CV', 'Estado', 'Entrevistó', 'Nota screening', 'Nota competencias', 'Recomendó', 'Recomendado por', 'Comentarios', 'Respuestas', 'Procesado', 'Intentos', 'Fuente', 'ID', 'Nota PAMI virtual', 'Nota PAMI presencial', 'Cita', 'Entrevistas (calendario)', 'Contactado', 'Descarte enviado', 'Informe screening', 'Informe competencias', 'Último movimiento', 'Zona', 'Formación', 'Postulación'];
+const COL = { fecha: 1, nombre: 2, tel: 3, dni: 4, email: 5, loc: 6, busq: 7, pret: 8, ajuste: 9, just: 10, resumen: 11, req: 12, cv: 13, estado: 14, entrev: 15, notaScr: 16, notaComp: 17, recTipo: 18, recPor: 19, coment: 20, resp: 21, proc: 22, intentos: 23, fuente: 24, id: 25, notaP1: 26, notaP2: 27, cita: 28, entrevistas: 29, contactado: 30, descarte: 31, infScr: 32, infComp: 33, mov: 34, zona: 35, formacion: 36, postulacion: 37 };
 const NOTAS = ['', 'A', 'B+', 'B', 'C'];
-const HEAD_BUSQ = ['id', 'titulo', 'ubicacion', 'modalidad', 'descripcion', 'requisitos', 'estado', 'prompt_ia', 'recomendacion', 'palabras_clave', 'link_perfil'];
+const HEAD_BUSQ = ['id', 'titulo', 'ubicacion', 'modalidad', 'descripcion', 'requisitos', 'estado', 'prompt_ia', 'recomendacion', 'palabras_clave', 'link_perfil', 'link_flyer'];
 const HEAD_PREG = ['busqueda_id', 'id', 'etiqueta', 'tipo', 'opciones', 'requerido'];
 const HEAD_EVAL = ['busqueda_id', 'id_eval', 'etiqueta', 'peso'];
 const HEAD_VAL = ['busqueda_id', 'id_val', 'etiqueta', 'opciones'];
@@ -98,7 +98,7 @@ function setup() {
   asegurarAjustes_([
     ['nombre_cliente', 'PAMI'], ['firma', 'Equipo de Selección'], ['asunto_mail', 'Proceso de selección · PAMI'],
     ['umbral_a', '8.5'], ['umbral_bplus', '8'], ['umbral_b', '6.5'], ['dias_alerta', '7'],
-    ['calendario', ''], ['link_agenda', ''], ['carpeta_informes', ''],
+    ['calendario', ''], ['url_web', ''], ['link_agenda', ''], ['link_agenda_screening', ''], ['link_agenda_competencias', ''], ['link_agenda_pami1', ''], ['link_agenda_pami2', ''], ['carpeta_informes', ''],
     ['duracion_screening', '30'], ['duracion_competencias', '60'], ['duracion_pami1', '30'], ['duracion_pami2', '60']
   ]);
   SpreadsheetApp.flush();
@@ -206,6 +206,18 @@ NIVEL_AJUSTE:
   const pl = tab('Plantillas', HEAD_PLANT);
   if (pl.nuevo) { const v = plantillasIniciales_(); pl.sh.getRange(2, 1, v.length, 3).setValues(v); pl.sh.setColumnWidth(3, 620); pl.sh.getRange(2, 3, v.length, 1).setWrap(true); }
 
+  if (!pl.nuevo) {
+    const nuevas = plantillasIniciales_();
+    const filasPl = pl.sh.getDataRange().getValues();
+    filasPl.forEach((f, i) => {
+      if (i === 0 || !/^contacto-/.test(String(f[0]))) return;
+      if (/te quedan cómodos\? \[LINK\]|para agendarla\. \[LINK\]/.test(String(f[2]))) {
+        const n = nuevas.find(x => x[0] === f[0]);
+        if (n) pl.sh.getRange(i + 1, 3).setValue(n[2]);
+      }
+    });
+  }
+
   const cd = tab('Candidatos', HEAD_CAND);
   migrarCandidatos_();
   const n = 1000;
@@ -251,7 +263,7 @@ function todosEstados_() {
 }
 
 function mostrarLinks() {
-  const url = ScriptApp.getService().getUrl();
+  const url = urlBase_();
   if (!url) { Logger.log('Primero implementá la aplicación web (Implementar → Nueva implementación → Aplicación web).'); return; }
   const bs = hoja_('Busquedas').getDataRange().getValues().slice(1).filter(r => r[0]);
   Logger.log('WEB PÚBLICA (portada): ' + url);
@@ -263,13 +275,27 @@ function salida_(t, titulo) {
   return t.evaluate().setTitle(titulo).addMetaTag('viewport', 'width=device-width, initial-scale=1').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
+function urlBase_() {
+  const manual = (ajustes_().url_web || '').trim();
+  return manual || ScriptApp.getService().getUrl();
+}
+
 function incluir_(n) { return HtmlService.createHtmlOutputFromFile(n).getContent(); }
 
 function doGet(e) {
+  try {
+    return doGet_(e);
+  } catch (err) {
+    registrarError_('doGet', err);
+    return HtmlService.createHtmlOutput('<div style="font-family:Arial;padding:30px;max-width:640px"><h2 style="color:#034EA2">No se pudo abrir la página</h2><p>' + h_(err && err.message ? err.message : err) + '</p><p style="color:#5D6B82;font-size:13px">Si sos quien administra el sistema: ejecutá <b>verificarInstalacion()</b> en Apps Script para ver qué falta.</p></div>');
+  }
+}
+
+function doGet_(e) {
   const p = (e && e.parameter) || {};
   const aj = ajustes_();
   const seguro = s => (/^[A-Za-z0-9_-]{1,64}$/.test(String(s || '')) ? String(s) : '');
-  const url = ScriptApp.getService().getUrl();
+  const url = urlBase_();
   const privado = archivo => {
     if (seguro(p.k || p.tablero) !== prop_('ADMIN_KEY')) return null;
     const t = HtmlService.createTemplateFromFile(archivo);
@@ -286,6 +312,17 @@ function doGet(e) {
   const t = HtmlService.createTemplateFromFile('Web');
   t.url = url; t.bid = seguro(p.b); t.sitio = aj.nombre_sitio || 'Empleos';
   return salida_(t, t.sitio);
+}
+
+function verificarInstalacion() {
+  const faltan = [];
+  ['Web', 'Tablero', 'Screening', 'Competencias', 'Estilos'].forEach(n => { try { HtmlService.createHtmlOutputFromFile(n); } catch (e) { faltan.push('archivo HTML "' + n + '"'); } });
+  ['OPENAI_API_KEY', 'ADMIN_KEY', 'SHEET_ID'].forEach(k => { if (!prop_(k)) faltan.push('propiedad ' + k); });
+  ['Candidatos', 'Busquedas', 'Preguntas', 'Screening_Eval', 'Screening_Val', 'Competencias', 'Plantillas', 'Historial', 'Evaluaciones', 'Ajustes'].forEach(n => { try { if (!hoja_(n)) faltan.push('pestaña ' + n); } catch (e) { faltan.push('pestaña ' + n); } });
+  Logger.log(faltan.length ? '❌ Faltan: ' + faltan.join(', ') : '✅ Todo instalado');
+  const url = urlBase_();
+  Logger.log('URL base: ' + (url || '(sin implementar)'));
+  if (url && /\/dev$/.test(url)) Logger.log('⚠️ Esa URL termina en /dev (es la de prueba, solo funciona para el dueño). Copiá la que termina en /exec (Implementar → Administrar implementaciones) y pegala en Ajustes → url_web.');
 }
 
 function busquedas_() {
@@ -441,7 +478,7 @@ ${bloque}
 === FIN DECLARADOS ===
 
 Devolvé SOLO JSON válido con este formato:
-{"es_cv":true,"nombre":"Nombre y apellido real del candidato","telefono":"","dni":"solo números","localidad":"","nivel_ajuste":"A/B+/B/C","justificacion":"una sola oración corta con el porqué de la nota","requisitos":{"formacion":"","matricula":"","experiencia":"","zona":"","continuidad":""},"resumen_experiencia":"3-4 oraciones narrativas sobre trayectoria, atributos y actitud, sin repetir el checklist"}
+{"es_cv":true,"nombre":"Nombre y apellido real del candidato","telefono":"","dni":"solo números","localidad":"","nivel_ajuste":"A/B+/B/C","justificacion":"una sola oración corta con el porqué de la nota","formacion_titulo":"título o formación principal, textual (ej. Enfermero/a Profesional)","requisitos":{"formacion":"","matricula":"","experiencia":"","zona":"","continuidad":""},"resumen_experiencia":"3-4 oraciones narrativas sobre trayectoria, atributos y actitud, sin repetir el checklist"}
 Devolvé es_cv:false SOLO si el texto claramente NO es un currículum (por ejemplo una factura o publicidad). Ante la duda, es_cv:true.
 REGLAS DE LA NOTA:
 - A: cumple todo, perfil potente sin ruido.
@@ -472,6 +509,11 @@ REGLAS DE LA NOTA:
       fill(COL.loc, c.localidad);
     }
     const req = c.requisitos || {};
+    const zonaTxt = /fuera/i.test(String(req.zona)) ? 'Fuera' : /ok|dentro|cumple/i.test(String(req.zona)) ? 'Zona OK' : String(req.zona || '');
+    const declForm = (decl.find(x => /t[ií]tulo|formaci/i.test(x.q)) || {}).a;
+    if (zonaTxt) sh.getRange(fila, COL.zona).setValue(zonaTxt);
+    const forma = String(declForm || c.formacion_titulo || '').trim();
+    if (forma) sh.getRange(fila, COL.formacion).setValue(forma);
     const reqTxt = Object.keys(req).map(k => k.charAt(0).toUpperCase() + k.slice(1) + ': ' + (req[k] || 'N/D')).join(' | ');
     const nota = ['A', 'B+', 'B', 'C'].indexOf(String(c.nivel_ajuste)) > -1 ? String(c.nivel_ajuste) : 'C';
     sh.getRange(fila, COL.ajuste, 1, 4).setValues([[nota, 'IA sugiere ' + nota + ': ' + String(c.justificacion || ''), String(c.resumen_experiencia || ''), reqTxt]]);

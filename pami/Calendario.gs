@@ -12,38 +12,45 @@ function etapaDeTitulo_(titulo) {
   return '';
 }
 
+function tokens_(s) { return norm_(s).replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).filter(t => t.length > 1); }
+
+function mismoNombre_(a, b) {
+  const A = tokens_(a), B = tokens_(b);
+  if (A.length < 2 || B.length < 2) return false;
+  const sub = (X, Y) => X.every(t => Y.indexOf(t) > -1);
+  return sub(A, B) || sub(B, A);
+}
+
+function eventoEsDe_(ev, cand) {
+  if (cand.mail && ev.invitados.indexOf(cand.mail) > -1) return true;
+  const m = ev.titulo.match(/\(([^)]+)\)/);
+  return !!m && mismoNombre_(m[1], cand.nombre);
+}
+
+function eventosCal_(desde, hasta) {
+  return calendario_().getEvents(desde, hasta).map(e => ({
+    titulo: e.getTitle(), inicio: e.getStartTime(), invitados: e.getGuestList().map(g => g.getEmail().toLowerCase())
+  })).filter(e => etapaDeTitulo_(e.titulo));
+}
+
 function syncCalendario() {
-  const cal = calendario_();
-  if (!cal) return;
+  if (!calendario_()) return;
   const ahora = new Date();
-  const desde = new Date(ahora.getTime() - 180 * 86400000), hasta = new Date(ahora.getTime() + 90 * 86400000);
-  const eventos = cal.getEvents(desde, hasta).map(e => ({
-    titulo: e.getTitle(), inicio: e.getStartTime(),
-    invitados: e.getGuestList().map(g => g.getEmail().toLowerCase())
-  }));
+  const eventos = eventosCal_(new Date(ahora.getTime() - 180 * 86400000), new Date(ahora.getTime() + 90 * 86400000));
   const sh = hoja_('Candidatos');
   const d = sh.getDataRange().getValues();
-  const nn = s => norm_(s).replace(/[^a-z0-9]/g, '');
   for (let i = 1; i < d.length; i++) {
     const r = d[i];
     if (!r[COL.nombre - 1]) continue;
-    const nombreN = nn(r[COL.nombre - 1]);
-    const mail = String(r[COL.email - 1] || '').trim().toLowerCase();
-    const suyos = eventos.filter(e => {
-      if (mail && e.invitados.indexOf(mail) > -1) return true;
-      const m = e.titulo.match(/\(([^)]+)\)/);
-      if (!m) return false;
-      const evN = nn(m[1]);
-      return evN && (evN === nombreN || (evN.length >= 10 && (nombreN.indexOf(evN) > -1 || evN.indexOf(nombreN) > -1)));
-    }).filter(e => etapaDeTitulo_(e.titulo));
+    const cand = { nombre: r[COL.nombre - 1], mail: String(r[COL.email - 1] || '').trim().toLowerCase() };
+    const suyos = eventos.filter(e => eventoEsDe_(e, cand));
     const fila = i + 1;
 
     const hist = suyos.slice().sort((a, b) => b.inicio - a.inicio)
       .map(e => TIPO_ETAPA[etapaDeTitulo_(e.titulo)] + ' — ' + fmt_(e.inicio, 'dd/MM/yyyy HH:mm')).join('\n');
     if (hist !== String(r[COL.entrevistas - 1] || '')) sh.getRange(fila, COL.entrevistas).setValue(hist);
 
-    const futuros = suyos.filter(e => e.inicio >= ahora).sort((a, b) => a.inicio - b.inicio);
-    const prox = futuros[0];
+    const prox = suyos.filter(e => e.inicio >= ahora).sort((a, b) => a.inicio - b.inicio)[0];
     const citaNueva = prox ? fmt_(prox.inicio, 'yyyy-MM-dd HH:mm') + '|' + TIPO_ETAPA[etapaDeTitulo_(prox.titulo)] : '';
     if (citaNueva !== String(r[COL.cita - 1] || '')) sh.getRange(fila, COL.cita).setValue(citaNueva);
 
@@ -53,10 +60,19 @@ function syncCalendario() {
       const actual = etapaDeEstado_(estado);
       if (actual > -1 && actual <= ETAPAS.indexOf(etapa) && estado !== AGENDADO[etapa]) {
         setEstado_(sh, fila, AGENDADO[etapa], null);
-        registrarHistorial_(r[COL.id - 1], r[COL.nombre - 1], 'Agenda', TIPO_ETAPA[etapa] + ' agendado: ' + fmt_(prox.inicio, 'dd/MM/yyyy HH:mm'), 'calendario');
+        registrarHistorial_(r[COL.id - 1], r[COL.nombre - 1], 'Agenda', TIPO_ETAPA[etapa] + ' agendado: ' + fmt_(prox.inicio, 'dd/MM/yyyy HH:mm') + (prox.titulo ? ' (' + prox.titulo + ')' : ''), 'calendario');
       }
     }
   }
+}
+
+function citasSinCandidato_() {
+  const ahora = new Date();
+  const eventos = eventosCal_(ahora, new Date(ahora.getTime() + 60 * 86400000));
+  const d = hoja_('Candidatos').getDataRange().getValues().slice(1).filter(r => r[COL.nombre - 1]).map(r => ({ nombre: r[COL.nombre - 1], mail: String(r[COL.email - 1] || '').trim().toLowerCase() }));
+  return eventos.filter(e => !d.some(c => eventoEsDe_(e, c)))
+    .sort((a, b) => a.inicio - b.inicio)
+    .map(e => ({ titulo: e.titulo, ts: fmt_(e.inicio, 'yyyy-MM-dd HH:mm'), tipo: TIPO_ETAPA[etapaDeTitulo_(e.titulo)], invitados: e.invitados.join(', ') }));
 }
 
 function agendarCita(k, fila, o) {
