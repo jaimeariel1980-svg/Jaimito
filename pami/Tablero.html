@@ -142,7 +142,7 @@ function abrir(f){
   document.getElementById('mbox').innerHTML=
     '<button class="x" onclick="cerrar()">×</button><h2>'+esc(c.nombre)+' <span class="badge '+cls(c.ajuste)+'" style="vertical-align:middle">'+(esc(c.ajuste)||'—')+'</span></h2>'+
     '<div style="color:#5C6777;margin:2px 0 10px">'+esc(tit(c.busq))+'</div>'+
-    row('Recibido',c.fecha)+row('Localidad',c.loc)+row('Teléfono',c.tel)+row('DNI',c.dni)+row('Email',c.email)+row('Pretensión',c.pret)+
+    row('Recibido',c.fecha)+row('Llegó por',c.fuente)+row('Localidad',c.loc)+row('Teléfono',c.tel)+row('DNI',c.dni)+row('Email',c.email)+row('Pretensión',c.pret)+
     (c.just?'<div class="sec">Análisis del CV</div><div class="txt"><b>'+esc(c.just)+'</b></div>':'')+
     (c.resumen?'<div class="txt" style="margin-top:6px">'+esc(c.resumen)+'</div>':'')+
     (c.req?'<div class="txt" style="margin-top:6px;color:#5C6777">'+esc(c.req)+'</div>':'')+resp+
@@ -151,6 +151,7 @@ function abrir(f){
     (c.email?'<a class="b g" target="_blank" href="https://mail.google.com/mail/?view=cm&to='+encodeURIComponent(c.email)+'">✉ Mail</a>':'')+
     (c.proc!=='SI'?'<button class="b g" onclick="rean('+f+',this)">↻ Re-analizar CV</button>':'')+'</div>'+
     '<div class="sec">Gestión</div><div class="grid">'+
+    '<div class="f" style="grid-column:1/3"><label>Búsqueda</label><select id="gB">'+(c.busq?'':'<option value="">— Sin asignar —</option>')+D.busquedas.map(function(b){return '<option value="'+esc(b.id)+'"'+(b.id===c.busq?' selected':'')+'>'+esc(b.titulo)+'</option>';}).join('')+'</select></div>'+
     '<div class="f"><label>Estado</label><select id="gE">'+opts(D.estados,estadoDe(c))+'</select></div>'+
     '<div class="f"><label>Entrevistó</label><select id="gN">'+opts(D.entrevistadores,c.entrev,'—')+'</select></div>'+
     '<div class="f"><label>Nota screening</label><select id="gS">'+opts(['A','B+','B','C'],c.notaScr,'—')+'</select></div>'+
@@ -173,7 +174,7 @@ function rcVer(inicial){
 
 function guardar(f){
   var c=D.cands.find(function(x){return x.fila===f;});
-  var o={estado:document.getElementById('gE').value,entrev:document.getElementById('gN').value,notaScr:document.getElementById('gS').value,notaComp:document.getElementById('gC').value,coment:document.getElementById('gM').value};
+  var o={busq:document.getElementById('gB').value,estado:document.getElementById('gE').value,entrev:document.getElementById('gN').value,notaScr:document.getElementById('gS').value,notaComp:document.getElementById('gC').value,coment:document.getElementById('gM').value};
   var rec=defRec(c.busq);
   if(rec){
     var t=document.getElementById('rcT').value;

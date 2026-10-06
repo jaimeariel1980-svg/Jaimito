@@ -1,7 +1,8 @@
-const HEAD_CAND = ['Fecha', 'Nombre', 'Teléfono', 'DNI', 'Email', 'Localidad', 'Búsqueda', 'Pretensión', 'Nivel de Ajuste', 'Justificación', 'Resumen', 'Requisitos', 'Link CV', 'Estado', 'Entrevistó', 'Nota screening', 'Nota competencias', 'Recomendó', 'Recomendado por', 'Comentarios', 'Respuestas', 'Procesado', 'Intentos'];
-const COL = { fecha: 1, nombre: 2, tel: 3, dni: 4, email: 5, loc: 6, busq: 7, pret: 8, ajuste: 9, just: 10, resumen: 11, req: 12, cv: 13, estado: 14, entrev: 15, notaScr: 16, notaComp: 17, recTipo: 18, recPor: 19, coment: 20, resp: 21, proc: 22, intentos: 23 };
+const CUENTA = 'dotacionpp1@gmail.com';
+const HEAD_CAND = ['Fecha', 'Nombre', 'Teléfono', 'DNI', 'Email', 'Localidad', 'Búsqueda', 'Pretensión', 'Nivel de Ajuste', 'Justificación', 'Resumen', 'Requisitos', 'Link CV', 'Estado', 'Entrevistó', 'Nota screening', 'Nota competencias', 'Recomendó', 'Recomendado por', 'Comentarios', 'Respuestas', 'Procesado', 'Intentos', 'Fuente'];
+const COL = { fecha: 1, nombre: 2, tel: 3, dni: 4, email: 5, loc: 6, busq: 7, pret: 8, ajuste: 9, just: 10, resumen: 11, req: 12, cv: 13, estado: 14, entrev: 15, notaScr: 16, notaComp: 17, recTipo: 18, recPor: 19, coment: 20, resp: 21, proc: 22, intentos: 23, fuente: 24 };
 const NOTAS = ['', 'A', 'B+', 'B', 'C'];
-const HEAD_BUSQ = ['id', 'titulo', 'ubicacion', 'modalidad', 'descripcion', 'requisitos', 'estado', 'prompt_ia', 'recomendacion'];
+const HEAD_BUSQ = ['id', 'titulo', 'ubicacion', 'modalidad', 'descripcion', 'requisitos', 'estado', 'prompt_ia', 'recomendacion', 'palabras_clave'];
 const HEAD_PREG = ['busqueda_id', 'id', 'etiqueta', 'tipo', 'opciones', 'requerido'];
 
 function prop_(k) { return PropertiesService.getScriptProperties().getProperty(k); }
@@ -16,6 +17,8 @@ function ajustes_() {
 function lista_(txt, sep) { return String(txt || '').split(sep).map(s => s.trim()).filter(Boolean); }
 
 function setup() {
+  const yo = String(Session.getEffectiveUser().getEmail()).toLowerCase();
+  if (yo !== CUENTA) throw new Error('Tenés que estar logueado como ' + CUENTA + ' (ahora estás como ' + yo + '). Creá el Sheet y el script desde esa cuenta.');
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const props = PropertiesService.getScriptProperties();
   props.setProperty('SHEET_ID', ss.getId());
@@ -34,21 +37,29 @@ function setup() {
 
   const aj = tab('Ajustes', ['clave', 'valor']);
   if (aj.nuevo) {
-    aj.sh.getRange(2, 1, 6, 2).setValues([
+    aj.sh.getRange(2, 1, 9, 2).setValues([
       ['nombre_sitio', 'Empleos PAMI'],
       ['color', '#1F5FA8'],
-      ['correo_aviso', Session.getEffectiveUser().getEmail()],
+      ['correo_aviso', CUENTA],
       ['entrevistadores', 'Ariel, Marcos, Ever'],
       ['estados', 'Nuevo|Contactado|Screening agendado|Screening|Competencias|Entrevista PAMI|Contratado|Reserva|Descartado'],
-      ['carpeta_cvs', '']
+      ['carpeta_cvs', ''],
+      ['carpeta_subir', ''],
+      ['autorespuesta', 'NO'],
+      ['texto_autorespuesta', 'Hola [NOMBRE], recibimos tu CV para la búsqueda de [PUESTO]. Para avanzar, completá tu postulación acá: [LINK]\n¡Gracias!']
     ]);
     aj.sh.setColumnWidth(1, 160); aj.sh.setColumnWidth(2, 520);
   }
   const cfg = ajustes_();
+  const filaAj = k => hoja_('Ajustes').getDataRange().getValues().findIndex(r => r[0] === k) + 1;
   if (!cfg.carpeta_cvs) {
     const f = DriveApp.createFolder('Empleos PAMI - CVs');
-    const fila = hoja_('Ajustes').getDataRange().getValues().findIndex(r => r[0] === 'carpeta_cvs') + 1;
-    hoja_('Ajustes').getRange(fila, 2).setValue(f.getId());
+    hoja_('Ajustes').getRange(filaAj('carpeta_cvs'), 2).setValue(f.getId());
+    cfg.carpeta_cvs = f.getId();
+  }
+  if (!cfg.carpeta_subir) {
+    const f = DriveApp.getFolderById(cfg.carpeta_cvs).createFolder('Para procesar');
+    hoja_('Ajustes').getRange(filaAj('carpeta_subir'), 2).setValue(f.getId());
   }
 
   const bq = tab('Busquedas', HEAD_BUSQ);
@@ -84,7 +95,8 @@ NIVEL_AJUSTE:
 - Alto: título terciario/universitario completo + matrícula + 3+ años de enfermería (ideal geriatría) + buena continuidad laboral + zona Rosario OK.
 - Medio: cumple el título pero le falta algo no excluyente (menos de 3 años, sin geriatría, zona dudosa) O borderline con factores compensatorios → "REVISAR:" en el resumen.
 - Bajo: auxiliar o sin título habilitante completo, sin experiencia real en enfermería, alta rotación injustificada marcada, o banderas rojas.`,
-      'Sindicato:NORTE;UTI;UTERA;APPAMIA;ATE;UPCN;SUTEPA|Director|Empleado'
+      'Sindicato:NORTE;UTI;UTERA;APPAMIA;ATE;UPCN;SUTEPA|Director|Empleado',
+      'enfermero|enfermera|enfermería|enfermeria|policlínico|policlinico'
     ]]);
     bq.sh.setColumnWidth(5, 400); bq.sh.setColumnWidth(6, 400);
     bq.sh.getRange(2, 7, 200, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['ABIERTA', 'CERRADA'], true).build());
@@ -115,12 +127,12 @@ NIVEL_AJUSTE:
 
   tab('Errores', ['Fecha', 'Contexto', 'Detalle']);
 
-  if (!ScriptApp.getProjectTriggers().some(t => t.getHandlerFunction() === 'procesarPendientes')) {
-    ScriptApp.newTrigger('procesarPendientes').timeBased().everyMinutes(10).create();
+  if (!ScriptApp.getProjectTriggers().some(t => t.getHandlerFunction() === 'ciclo')) {
+    ScriptApp.newTrigger('ciclo').timeBased().everyMinutes(10).create();
   }
   const def = ss.getSheetByName('Hoja 1') || ss.getSheetByName('Sheet1');
   if (def && ss.getSheets().length > 1) ss.deleteSheet(def);
-  Logger.log('✅ Listo. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
+  Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
 function mostrarLinks() {
@@ -173,6 +185,51 @@ function getBusquedaPublica(id) {
   return { id: b.id, titulo: b.titulo, ubicacion: b.ubicacion, modalidad: b.modalidad, descripcion: b.descripcion, requisitos: b.requisitos, abierta: b.estado.toUpperCase() === 'ABIERTA', preguntas: preguntas };
 }
 
+function norm_(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+
+function remitente_(from) {
+  const m = String(from).match(/^\s*"?([^"<]*?)"?\s*<([^>]+)>\s*$/);
+  const email = (m ? m[2] : String(from)).trim().toLowerCase();
+  let nombre = m ? m[1].trim() : '';
+  if (!nombre || nombre.indexOf('@') > -1) nombre = email.split('@')[0].replace(/[._\d]+/g, ' ').trim().replace(/\b\w/g, c => c.toUpperCase());
+  return { nombre: nombre || 'Sin nombre', email: email };
+}
+
+function buscarBusqueda_(texto) {
+  const abiertas = busquedas_().filter(b => b.estado.toUpperCase() === 'ABIERTA');
+  const t = norm_(texto);
+  const hit = abiertas.find(b => lista_(b.palabras_clave, '|').some(k => t.indexOf(norm_(k)) > -1));
+  if (hit) return hit.id;
+  return abiertas.length === 1 ? abiertas[0].id : '';
+}
+
+function agregarCandidato_(o) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const sh = hoja_('Candidatos');
+    const datos = sh.getDataRange().getValues();
+    const dni = String(o.dni || '').replace(/\D/g, '');
+    const email = String(o.email || '').trim().toLowerCase();
+    for (let i = 1; i < datos.length; i++) {
+      if (datos[i][COL.busq - 1] !== (o.busq || '')) continue;
+      const dniE = String(datos[i][COL.dni - 1] || '').replace(/\D/g, '');
+      const mailE = String(datos[i][COL.email - 1] || '').trim().toLowerCase();
+      if ((dni && dniE === dni) || (email && mailE === email)) return 'DUPLICADO';
+    }
+    const file = o.archivo();
+    const row = new Array(HEAD_CAND.length).fill('');
+    row[COL.fecha - 1] = new Date(); row[COL.nombre - 1] = o.nombre; row[COL.tel - 1] = o.tel || '';
+    row[COL.dni - 1] = dni; row[COL.email - 1] = email; row[COL.loc - 1] = o.loc || '';
+    row[COL.busq - 1] = o.busq || ''; row[COL.pret - 1] = o.pret || '';
+    row[COL.resumen - 1] = 'Procesando…'; row[COL.cv - 1] = file.getUrl();
+    row[COL.estado - 1] = 'Nuevo'; row[COL.resp - 1] = JSON.stringify(o.resp || []);
+    row[COL.proc - 1] = 'Pendiente'; row[COL.intentos - 1] = 0; row[COL.fuente - 1] = o.fuente;
+    sh.appendRow(row);
+    return sh.getLastRow();
+  } finally { lock.releaseLock(); }
+}
+
 function recibirPostulacion(p) {
   try {
     const b = getBusquedaPublica(p && p.b);
@@ -186,45 +243,32 @@ function recibirPostulacion(p) {
     if (!p.cvBase64 || String(p.cvBase64).length > 14000000) throw new Error('CV ausente o muy pesado');
     const ext = (String(p.cvNombre || '').split('.').pop() || 'pdf').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 5);
     if (['pdf', 'doc', 'docx'].indexOf(ext) === -1) throw new Error('Formato de CV no válido');
+    const nombre = String(d.nombre).trim();
+    const resp = b.preguntas.filter(q => String(decl[q.id] || '').trim()).map(q => ({ q: q.etiqueta, a: String(decl[q.id]).trim() }));
+    const mime = ext === 'pdf' ? 'application/pdf' : (ext === 'doc' ? 'application/msword' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
 
-    const lock = LockService.getScriptLock();
-    lock.waitLock(20000);
-    let fila;
-    try {
-      const sh = hoja_('Candidatos');
-      const datos = sh.getDataRange().getValues();
-      for (let i = 1; i < datos.length; i++) {
-        if (datos[i][COL.busq - 1] !== b.id) continue;
-        const dniE = String(datos[i][COL.dni - 1] || '').replace(/\D/g, '');
-        const mailE = String(datos[i][COL.email - 1] || '').trim().toLowerCase();
-        if ((dniE && dniE === dni) || (mailE && mailE === email)) return 'DUPLICADO';
-      }
-      const nombre = String(d.nombre).trim();
-      const mime = ext === 'pdf' ? 'application/pdf' : (ext === 'doc' ? 'application/msword' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-      const blob = Utilities.newBlob(Utilities.base64Decode(p.cvBase64), mime, nombre.replace(/[^\wÁ-ú ]/g, '').trim().replace(/\s+/g, '_') + '_' + b.id + '.' + ext);
-      const file = DriveApp.getFolderById(ajustes_().carpeta_cvs).createFile(blob);
-      const resp = b.preguntas.filter(q => String(decl[q.id] || '').trim()).map(q => ({ q: q.etiqueta, a: String(decl[q.id]).trim() }));
-      const row = new Array(HEAD_CAND.length).fill('');
-      row[COL.fecha - 1] = new Date(); row[COL.nombre - 1] = nombre; row[COL.tel - 1] = String(d.telefono).trim();
-      row[COL.dni - 1] = dni; row[COL.email - 1] = email; row[COL.loc - 1] = String(d.localidad).trim();
-      row[COL.busq - 1] = b.id; row[COL.pret - 1] = String(d.pretension || '').trim();
-      row[COL.resumen - 1] = 'Procesando…'; row[COL.cv - 1] = file.getUrl();
-      row[COL.estado - 1] = 'Nuevo'; row[COL.resp - 1] = JSON.stringify(resp);
-      row[COL.proc - 1] = 'Pendiente'; row[COL.intentos - 1] = 0;
-      sh.appendRow(row);
-      fila = sh.getLastRow();
-    } finally { lock.releaseLock(); }
+    const fila = agregarCandidato_({
+      busq: b.id, nombre: nombre, email: email, tel: String(d.telefono).trim(), dni: dni, loc: String(d.localidad).trim(),
+      pret: String(d.pretension || '').trim(), fuente: 'Web', resp: resp,
+      archivo: () => DriveApp.getFolderById(ajustes_().carpeta_cvs).createFile(
+        Utilities.newBlob(Utilities.base64Decode(p.cvBase64), mime, nombre.replace(/[^\wÁ-ú ]/g, '').trim().replace(/\s+/g, '_') + '_' + b.id + '.' + ext))
+    });
+    if (fila === 'DUPLICADO') return 'DUPLICADO';
 
     try { analizarFila_(fila); } catch (e) { registrarError_('analizar fila ' + fila, e); }
-    try {
-      const to = ajustes_().correo_aviso;
-      if (to) MailApp.sendEmail(to, 'Nueva postulación · ' + b.titulo, String(d.nombre).trim() + ' se postuló a ' + b.titulo + '. Mirala en el tablero.');
-    } catch (e) { }
+    avisar_(b.titulo, nombre, 'la web');
     return 'OK';
   } catch (err) {
     registrarError_('recibirPostulacion', err);
     throw new Error('No se pudo procesar la postulación');
   }
+}
+
+function avisar_(titulo, nombre, via) {
+  try {
+    const to = ajustes_().correo_aviso;
+    if (to) MailApp.sendEmail(to, 'Nueva postulación · ' + (titulo || 'sin búsqueda'), nombre + ' llegó por ' + via + '. Mirala en el tablero.');
+  } catch (e) { }
 }
 
 function registrarError_(ctx, e) {
@@ -249,37 +293,35 @@ function analizarFila_(fila) {
   const r = sh.getRange(fila, 1, 1, HEAD_CAND.length).getValues()[0];
   const intentos = (Number(r[COL.intentos - 1]) || 0) + 1;
   sh.getRange(fila, COL.intentos).setValue(intentos);
+  const revisar = msg => { sh.getRange(fila, COL.just, 1, 3).setValues([[msg, 'Sin análisis automático', '']]); sh.getRange(fila, COL.proc).setValue('Revisar'); };
   try {
     const b = busquedas_().find(x => x.id === r[COL.busq - 1]);
-    if (!b) throw new Error('Búsqueda inexistente: ' + r[COL.busq - 1]);
+    if (!b) { revisar('Sin búsqueda asignada. Elegila en la ficha y re-analizá.'); return; }
     const texto = textoCV_(r[COL.cv - 1]);
-    if (!texto || texto.trim().length < 50) {
-      sh.getRange(fila, COL.just, 1, 3).setValues([['No se pudo leer el CV (¿escaneado o imagen?). Revisar a mano.', 'Sin análisis automático', '']]);
-      sh.getRange(fila, COL.proc).setValue('Revisar');
-      return;
-    }
+    if (!texto || texto.trim().length < 50) { revisar('No se pudo leer el CV (¿escaneado o imagen?). Revisar a mano.'); return; }
     let decl = [];
     try { decl = JSON.parse(r[COL.resp - 1] || '[]'); } catch (e) { }
-    const bloque = ['Nombre: ' + r[COL.nombre - 1], 'Localidad: ' + r[COL.loc - 1], 'Pretensión salarial: ' + (r[COL.pret - 1] || 'no indicó')]
-      .concat(decl.map(x => x.q + ': ' + x.a)).join('\n');
+    const bloque = ['Nombre: ' + r[COL.nombre - 1], 'Localidad: ' + (r[COL.loc - 1] || 'no indicada'), 'Pretensión salarial: ' + (r[COL.pret - 1] || 'no indicó')]
+      .concat(decl.length ? decl.map(x => x.q + ': ' + x.a) : ['(No completó el formulario: evaluá solo con el CV y marcá como "REVISAR" lo que no se pueda verificar, por ejemplo la matrícula.)']).join('\n');
     const prompt = `Sos un analista senior de selección de personal. Analizá esta postulación para la búsqueda "${b.titulo}".
 
 ${b.prompt_ia}
 
-Tenés DOS fuentes: (A) los datos DECLARADOS por el candidato en el formulario y (B) el texto del CV. Cruzalas. Si declara algo que el CV no respalda o contradice, reflejalo en la justificación.
+Tenés DOS fuentes: (A) los datos DECLARADOS por el candidato y (B) el texto del CV. Cruzalas. Si declara algo que el CV no respalda o contradice, reflejalo en la justificación.
 
 === DECLARADOS (no inventar) ===
 ${bloque}
 === FIN DECLARADOS ===
 
 Devolvé SOLO JSON válido con este formato:
-{"nivel_ajuste":"A/B+/B/C","justificacion":"una sola oración corta con el porqué de la nota","requisitos":{"formacion":"","matricula":"","experiencia":"","zona":"","continuidad":""},"resumen_experiencia":"3-4 oraciones narrativas sobre trayectoria, atributos y actitud, sin repetir el checklist"}
+{"es_cv":true,"nombre":"Nombre y apellido real del candidato","telefono":"","dni":"solo números","localidad":"","nivel_ajuste":"A/B+/B/C","justificacion":"una sola oración corta con el porqué de la nota","requisitos":{"formacion":"","matricula":"","experiencia":"","zona":"","continuidad":""},"resumen_experiencia":"3-4 oraciones narrativas sobre trayectoria, atributos y actitud, sin repetir el checklist"}
+Si el texto NO es un currículum (factura, publicidad, otro documento), devolvé es_cv:false y dejá el resto vacío.
 REGLAS DE LA NOTA:
 - A: cumple todo, perfil potente sin ruido.
 - B+: muy bueno, cumple lo excluyente con una cuestión menor.
 - B: cumple lo mínimo con dudas relevantes, o borderline con factores compensatorios (reserva).
 - C: no cumple un requisito excluyente o tiene una bandera roja clara.
-- zona: "Zona OK" o "Fuera" según la localidad declarada.`;
+- zona: "Zona OK" o "Fuera" según la localidad declarada o la del CV.`;
     const resp = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {
       method: 'post', contentType: 'application/json', muteHttpExceptions: true,
       headers: { Authorization: 'Bearer ' + prop_('OPENAI_API_KEY') },
@@ -288,6 +330,21 @@ REGLAS DE LA NOTA:
     const parsed = JSON.parse(resp.getContentText());
     if (parsed.error) throw new Error('OpenAI: ' + parsed.error.message);
     const c = JSON.parse(parsed.choices[0].message.content);
+    if (c.es_cv === false) {
+      sh.getRange(fila, COL.just, 1, 3).setValues([['El adjunto no parece un CV.', '', '']]);
+      sh.getRange(fila, COL.proc).setValue('NoCV');
+      sh.getRange(fila, COL.estado).setValue('Descartado');
+      return;
+    }
+    if (String(r[COL.fuente - 1]) !== 'Web') {
+      const fill = (col, v) => { v = String(v || '').trim(); if (v && !String(r[col - 1] || '').trim()) sh.getRange(fila, col).setValue(v); };
+      const nom = String(c.nombre || '').trim();
+      if (nom.split(/\s+/).length >= 2) sh.getRange(fila, COL.nombre).setValue(nom);
+      fill(COL.tel, c.telefono);
+      const dni = String(c.dni || '').replace(/\D/g, '');
+      if (dni.length >= 6) fill(COL.dni, dni);
+      fill(COL.loc, c.localidad);
+    }
     const req = c.requisitos || {};
     const reqTxt = Object.keys(req).map(k => k.charAt(0).toUpperCase() + k.slice(1) + ': ' + (req[k] || 'N/D')).join(' | ');
     const nota = ['A', 'B+', 'B', 'C'].indexOf(String(c.nivel_ajuste)) > -1 ? String(c.nivel_ajuste) : 'C';
@@ -309,6 +366,72 @@ function procesarPendientes() {
   }
 }
 
+function textoAuto_(aj, nombre, busq) {
+  const b = busquedas_().find(x => x.id === busq);
+  const link = ScriptApp.getService().getUrl() + (busq ? '?b=' + busq : '');
+  return String(aj.texto_autorespuesta || '')
+    .replace(/\[NOMBRE\]/g, String(nombre).split(' ')[0]).replace(/\[PUESTO\]/g, b ? b.titulo : 'nuestras búsquedas').replace(/\[LINK\]/g, link);
+}
+
+function procesarCorreos() {
+  const lbl = GmailApp.getUserLabelByName('PAMI_procesado') || GmailApp.createLabel('PAMI_procesado');
+  const aj = ajustes_();
+  const hilos = GmailApp.search('in:inbox has:attachment -label:PAMI_procesado -from:me newer_than:14d', 0, 15);
+  let n = 0;
+  for (const th of hilos) {
+    if (n >= 5) break;
+    for (const m of th.getMessages()) {
+      const rem = remitente_(m.getFrom());
+      if (rem.email === CUENTA) continue;
+      const adj = m.getAttachments({ includeInlineImages: false }).filter(a => /\.(pdf|docx?)$/i.test(a.getName()) && a.getSize() <= 8 * 1024 * 1024);
+      if (!adj.length) continue;
+      const cv = adj.find(a => /cv|curric/i.test(a.getName())) || adj[0];
+      const busq = buscarBusqueda_(m.getSubject() + ' ' + m.getPlainBody().slice(0, 1500));
+      const ext = cv.getName().split('.').pop().toLowerCase();
+      const fila = agregarCandidato_({
+        busq: busq, nombre: rem.nombre, email: rem.email, fuente: 'Correo', resp: [],
+        archivo: () => DriveApp.getFolderById(aj.carpeta_cvs).createFile(cv.copyBlob().setName(rem.nombre.replace(/\s+/g, '_') + '_' + Utilities.formatDate(new Date(), 'GMT-3', 'yyyyMMdd_HHmm') + '.' + ext))
+      });
+      if (fila !== 'DUPLICADO') {
+        try { analizarFila_(fila); } catch (e) { registrarError_('analizar fila ' + fila, e); }
+        if (hoja_('Candidatos').getRange(fila, COL.proc).getValue() !== 'NoCV') {
+          if (String(aj.autorespuesta).toUpperCase() === 'SI') { try { m.reply(textoAuto_(aj, rem.nombre, busq)); } catch (e) { registrarError_('autorespuesta', e); } }
+          avisar_((busquedas_().find(x => x.id === busq) || {}).titulo, rem.nombre, 'correo');
+        }
+        n++;
+      }
+      break;
+    }
+    th.addLabel(lbl);
+  }
+}
+
+function procesarCarpeta() {
+  const aj = ajustes_();
+  if (!aj.carpeta_subir || !aj.carpeta_cvs) return;
+  const destino = DriveApp.getFolderById(aj.carpeta_cvs);
+  const it = DriveApp.getFolderById(aj.carpeta_subir).getFiles();
+  let n = 0;
+  while (it.hasNext() && n < 5) {
+    const f = it.next();
+    if (!/\.(pdf|docx?)$/i.test(f.getName()) && f.getMimeType() !== 'application/vnd.google-apps.document') continue;
+    const nombre = f.getName().replace(/\.[^.]+$/, '').replace(/[_\-]+/g, ' ').replace(/\b(cv|curriculum|curr[ií]culum|vitae)\b/ig, '').replace(/\s+/g, ' ').trim() || 'Sin nombre';
+    const busq = buscarBusqueda_(f.getName());
+    const fila = agregarCandidato_({ busq: busq, nombre: nombre, fuente: 'Carpeta', resp: [], archivo: () => { f.moveTo(destino); return f; } });
+    if (fila === 'DUPLICADO') continue;
+    try { analizarFila_(fila); } catch (e) { registrarError_('analizar fila ' + fila, e); }
+    n++;
+  }
+}
+
+function ciclo() {
+  const lock = LockService.getUserLock();
+  if (!lock.tryLock(1000)) return;
+  try {
+    [procesarCorreos, procesarCarpeta, procesarPendientes].forEach(fn => { try { fn(); } catch (e) { registrarError_(fn.name, e); } });
+  } finally { lock.releaseLock(); }
+}
+
 function admin_(k) {
   if (String(k) !== prop_('ADMIN_KEY')) throw new Error('No autorizado');
 }
@@ -328,7 +451,7 @@ function getTablero(k) {
       nombre: r[COL.nombre - 1], tel: String(r[COL.tel - 1] || ''), dni: String(r[COL.dni - 1] || ''), email: r[COL.email - 1], loc: r[COL.loc - 1],
       busq: r[COL.busq - 1], pret: String(r[COL.pret - 1] || ''), ajuste: r[COL.ajuste - 1], just: r[COL.just - 1], resumen: r[COL.resumen - 1], req: r[COL.req - 1],
       cv: r[COL.cv - 1], estado: String(r[COL.estado - 1] || 'Nuevo'), entrev: r[COL.entrev - 1], notaScr: r[COL.notaScr - 1], notaComp: r[COL.notaComp - 1],
-      recTipo: r[COL.recTipo - 1], recPor: r[COL.recPor - 1], coment: r[COL.coment - 1], resp: resp, proc: r[COL.proc - 1]
+      recTipo: r[COL.recTipo - 1], recPor: r[COL.recPor - 1], coment: r[COL.coment - 1], resp: resp, proc: r[COL.proc - 1], fuente: r[COL.fuente - 1]
     });
   }
   return JSON.stringify({
@@ -348,6 +471,10 @@ function guardarCandidato(k, fila, c) {
   if (c.estado != null) {
     if (lista_(aj.estados, '|').indexOf(c.estado) === -1) throw new Error('Estado inválido');
     set(COL.estado, c.estado);
+  }
+  if (c.busq != null) {
+    if (c.busq !== '' && !busquedas_().some(b => b.id === c.busq)) throw new Error('Búsqueda inválida');
+    set(COL.busq, c.busq);
   }
   if (c.entrev != null) set(COL.entrev, corto(c.entrev, 60));
   if (c.notaScr != null) { if (NOTAS.indexOf(c.notaScr) === -1) throw new Error('Nota inválida'); set(COL.notaScr, c.notaScr); }
