@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<base target="_top">
+<title>Screening · <?= sitio ?></title>
+<?!= incluir_('Estilos') ?>
+<?!= incluir_('FormScreening') ?>
+</head>
+<body>
+<div class="brand"><div class="in"><span class="lg"></span><div class="tt">Screening inicial</div></div></div>
+<div class="nav"><div class="in"><a class="it" id="volver" href="#">← Volver al tablero</a><span class="sp">Confidencial</span></div></div>
+<div id="app"></div>
+<script>
+var K = <?!= JSON.stringify(clave) ?>, CID = <?!= JSON.stringify(cid) ?>, ENTRE = <?!= JSON.stringify(entre) ?>, BASE = <?!= JSON.stringify(url) ?>;
+document.getElementById('volver').href = BASE + '?tablero=' + K;
+FS.open({K:K,cid:CID,entre:ENTRE,container:document.getElementById('app'),onClose:function(){window.top.location.href=BASE+'?tablero='+K;}});
+</script>
+</body>
+</html>

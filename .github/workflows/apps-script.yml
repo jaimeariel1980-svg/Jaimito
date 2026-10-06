@@ -2,6 +2,11 @@ name: Apps Script
 on:
   workflow_dispatch:
     inputs:
+      proyecto:
+        description: Qué proyecto
+        type: choice
+        options: [pami, azcu]
+        default: pami
       accion:
         description: bajar = copia el proyecto real al repo; publicar = sube el repo al proyecto
         type: choice
@@ -9,33 +14,50 @@ on:
         default: bajar
   push:
     branches: [main]
-    paths: ['appscript/**']
+    paths: ['pami/**', 'appscript/**']
 permissions:
   contents: write
 concurrency: apps-script
 jobs:
   clasp:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: appscript
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {id: pami, dir: pami, secret: CLASPRC_PAMI, depvar: DEPLOYMENT_PAMI}
+          - {id: azcu, dir: appscript, secret: CLASPRC_AZCU, depvar: DEPLOYMENT_AZCU}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+        with: {fetch-depth: 2}
+      - name: Decidir si corresponde
+        id: dec
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            [ "${{ inputs.proyecto }}" = "${{ matrix.id }}" ] && echo "go=1" >> $GITHUB_OUTPUT || echo "go=0" >> $GITHUB_OUTPUT
+          else
+            git diff --name-only HEAD~1 HEAD | grep -q "^${{ matrix.dir }}/" && echo "go=1" >> $GITHUB_OUTPUT || echo "go=0" >> $GITHUB_OUTPUT
+          fi
+      - if: steps.dec.outputs.go == '1'
+        uses: actions/setup-node@v4
         with: {node-version: 20}
-      - run: npm i -g @google/clasp@2
-      - run: echo '${{ secrets.CLASPRC_JSON }}' > ~/.clasprc.json
+      - if: steps.dec.outputs.go == '1'
+        run: npm i -g @google/clasp@2
+      - if: steps.dec.outputs.go == '1'
+        run: echo '${{ secrets[matrix.secret] }}' > ~/.clasprc.json
       - name: Bajar proyecto real
-        if: github.event_name == 'workflow_dispatch' && inputs.accion == 'bajar'
+        if: steps.dec.outputs.go == '1' && github.event_name == 'workflow_dispatch' && inputs.accion == 'bajar'
+        working-directory: ${{ matrix.dir }}
         run: |
           clasp pull
           git config user.name "apps-script-sync"; git config user.email "sync@users.noreply.github.com"
-          git checkout -B sync-appscript
+          git checkout -B sync-${{ matrix.id }}
           git add -A .
-          git commit -m "Copia del proyecto Apps Script real" || echo "sin cambios"
-          git push -f origin sync-appscript
+          git commit -m "Copia del proyecto Apps Script real (${{ matrix.id }})" || echo "sin cambios"
+          git push -f origin sync-${{ matrix.id }}
       - name: Publicar
-        if: (github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && inputs.accion == 'publicar')
+        if: steps.dec.outputs.go == '1' && (github.event_name == 'push' || inputs.accion == 'publicar')
+        working-directory: ${{ matrix.dir }}
         run: |
           clasp push -f
-          clasp deploy -i "${{ vars.DEPLOYMENT_ID }}" -d "GitHub ${{ github.sha }}"
+          clasp deploy -i "${{ vars[matrix.depvar] }}" -d "GitHub ${{ github.sha }}"
