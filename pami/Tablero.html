@@ -14,7 +14,7 @@ header h1{font-size:17px;font-weight:800}
 header select,header input{padding:8px 10px;border:none;border-radius:6px;font-family:inherit;font-size:13px}
 header .n{margin-left:auto;font-size:12px;opacity:.85}
 #board{display:flex;gap:12px;padding:14px;overflow-x:auto;align-items:flex-start;min-height:80vh}
-.col{background:#E6EBF2;border-radius:10px;min-width:250px;width:250px;flex-shrink:0;padding:8px}
+.col{background:#E6EBF2;border-radius:10px;min-width:230px;width:230px;flex-shrink:0;padding:8px}
 .col h2{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);padding:4px 6px 8px;display:flex;justify-content:space-between}
 .col.over{outline:2px dashed var(--c)}
 .card{background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:8px;cursor:pointer}
@@ -52,6 +52,7 @@ header .n{margin-left:auto;font-size:12px;opacity:.85}
   <h1><?= sitio ?> · Tablero</h1>
   <select id="fb"></select>
   <input id="fq" placeholder="Buscar nombre, DNI, localidad…">
+  <button class="b g" id="rf" onclick="cargar()">↻ Actualizar</button>
   <span class="n" id="cnt"></span>
 </header>
 <div id="board"><div style="padding:40px;color:#5C6777">Cargando…</div></div>
@@ -65,9 +66,19 @@ function cls(n){return n==='A'?'nA':n==='B+'?'nBp':n==='B'?'nB':n==='C'?'nC':'';
 function tit(id){var b=D.busquedas.find(function(x){return x.id===id;});return b?b.titulo:id;}
 function toast(m){var t=document.getElementById('toast');t.textContent=m||'Guardado';t.classList.add('show');setTimeout(function(){t.classList.remove('show');},1600);}
 
-google.script.run.withSuccessHandler(function(j){D=JSON.parse(j);init();})
-  .withFailureHandler(function(e){document.getElementById('board').innerHTML='<div style="padding:40px;color:#C0392B">Error: '+esc(e.message)+'</div>';})
-  .getTablero(K);
+function cargar(){
+  var rf=document.getElementById('rf');rf.textContent='Actualizando…';
+  google.script.run.withSuccessHandler(function(j){
+    var primera=!D;D=JSON.parse(j);rf.textContent='↻ Actualizar';
+    if(primera)init();else render();
+  }).withFailureHandler(function(e){
+    rf.textContent='↻ Actualizar';
+    if(!D)document.getElementById('board').innerHTML='<div style="padding:40px;color:#C0392B">Error al cargar: '+esc(e.message)+'</div>';
+    else toast('No se pudo actualizar');
+  }).getTablero(K);
+}
+cargar();
+setInterval(function(){if(D&&!document.getElementById('modal').classList.contains('show'))cargar();},60000);
 
 function init(){
   var fb=document.getElementById('fb');
@@ -84,7 +95,8 @@ function render(){
     if(b&&c.busq!==b)return false;
     return !q||[c.nombre,c.dni,c.loc,c.email].join(' ').toLowerCase().indexOf(q)>-1;
   });
-  document.getElementById('cnt').textContent=lista.length+' candidatos';
+  document.getElementById('cnt').textContent=lista.length+' candidatos'+(lista.length!==D.cands.length?' de '+D.cands.length:'');
+  if(!D.cands.length){document.getElementById('board').innerHTML='<div style="padding:40px;color:#5C6777">Todavía no hay candidatos cargados. Cuando llegue una postulación, un mail con CV o un archivo en la carpeta, aparece acá.</div>';return;}
   document.getElementById('board').innerHTML=D.estados.map(function(e){
     var cs=lista.filter(function(c){return estadoDe(c)===e;});
     return '<div class="col" data-e="'+esc(e)+'" ondragover="event.preventDefault();this.classList.add(\'over\')" ondragleave="this.classList.remove(\'over\')" ondrop="soltar(event,this)"><h2><span>'+esc(e)+'</span><span>'+cs.length+'</span></h2>'+cs.map(card).join('')+'</div>';
