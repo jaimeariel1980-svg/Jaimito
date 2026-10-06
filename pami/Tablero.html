@@ -6,6 +6,8 @@
 <base target="_top">
 <title>Tablero · <?= sitio ?></title>
 <?!= incluir_('Estilos') ?>
+<?!= incluir_('FormScreening') ?>
+<?!= incluir_('FormCompetencias') ?>
 <style>
 .fil{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:8px 20px;background:#fff;border-bottom:1px solid var(--line)}
 .fil select,.fil input{width:auto;padding:7px 10px;font-size:12px}
@@ -20,16 +22,19 @@
 details{border-bottom:1px solid #D2DAE6}
 summary{cursor:pointer;padding:8px 12px;font-size:12px;font-weight:700;color:var(--navy);display:flex;justify-content:space-between;list-style:none}
 summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
-.card{padding:10px 10px 9px;margin-bottom:8px;cursor:pointer;border-left:4px solid #C9D3E0;border-radius:3px;background:#fff;color:var(--txt)}
-.card:hover{box-shadow:0 2px 8px rgba(3,78,162,.18)}
-.card.nA{border-left-color:#1E8E5A}.card.nBp{border-left-color:#8BD3A8}.card.nB{border-left-color:#F2B705}.card.nC{border-left-color:#D9534F}
-.card .top{display:flex;justify-content:space-between;gap:6px;align-items:flex-start}
-.card b{font-size:13px;line-height:1.25}
-.card .sub{font-size:11.5px;color:var(--mut);margin-top:2px}
+#board .card{padding:10px 10px 9px;margin-bottom:8px;cursor:pointer;border-left:4px solid #C9D3E0;border-radius:3px;background:#fff;color:var(--txt)}
+#board .card:hover{box-shadow:0 2px 8px rgba(3,78,162,.18)}
+#board .card.nA{border-left-color:#1E8E5A}#board .card.nBp{border-left-color:#8BD3A8}#board .card.nB{border-left-color:#F2B705}#board .card.nC{border-left-color:#D9534F}
+#board .card .top{display:flex;justify-content:space-between;gap:6px;align-items:flex-start}
+#board .card b{font-size:13px;line-height:1.25}
+#board .card .sub{font-size:11.5px;color:var(--mut);margin-top:2px}
 .tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
 .tag{font-size:10.5px;background:#EEF2F7;border-radius:3px;padding:1px 6px;color:var(--mut);font-weight:600}
-.tag.rec{background:#FFF4CC;color:#6B4E00;border:1px solid #F2B705;font-weight:800}.tag.zok{background:#D9F3E4;color:#14502F}.tag.zfu{background:#FDE3E1;color:#9B2C28}.card .fo{font-size:11.5px;color:var(--navy);font-weight:600;margin-top:2px}.alerta.rec{background:#FFF4CC;color:#6B4E00;border-left:4px solid #F2B705;font-size:14px;font-weight:800}
+.tag.rec{background:#FFF4CC;color:#6B4E00;border:1px solid #F2B705;font-weight:800}.tag.zok{background:#D9F3E4;color:#14502F}.tag.zfu{background:#FDE3E1;color:#9B2C28}#board .card .fo{font-size:11.5px;color:var(--navy);font-weight:600;margin-top:2px}.alerta.rec{background:#FFF4CC;color:#6B4E00;border-left:4px solid #F2B705;font-size:14px;font-weight:800}
 .tag.cita{background:var(--tint);color:var(--azul);font-weight:700}.tag.hoy{background:#D9534F;color:#fff}.tag.w{background:#FFF1D6;color:#8A5A00}.tag.g{background:#D9F3E4;color:#14502F}.tag.r{background:#FDE3E1;color:#9B2C28}
+#fmodal{display:none;position:fixed;inset:0;background:var(--bg);z-index:60;overflow:auto}
+#fmodal.show{display:block}
+.fbar{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid var(--line);padding:10px 20px;display:flex;gap:10px;align-items:center}
 #modal{display:none;position:fixed;inset:0;background:rgba(14,24,48,.6);z-index:50;overflow:auto;padding:20px 10px}
 #modal.show{display:block}
 .box{background:#fff;max-width:720px;margin:0 auto;border-radius:4px;overflow:hidden}
@@ -84,6 +89,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 </div>
 <div id="board"><div class="loading">Cargando…</div></div>
 <div id="modal"><div class="box" id="mbox"></div></div>
+<div id="fmodal"><div class="fbar"><button class="btn sec" onclick="volverFicha()">← Volver a la ficha</button><span class="ttl" id="ftit"></span></div><div id="fbody"></div></div>
 <div class="toast" id="toast">Guardado</div>
 <script>
 var K = <?!= JSON.stringify(clave) ?>;
@@ -210,7 +216,15 @@ function etapaActual(c){
 function notaRow(c,et,val){
   return '<div class="nrow"><span>'+ETQ[et]+'</span>'+['A','B+','B','C'].map(function(n){return '<button class="nb'+(val===n?' on '+n.replace('+','p'):'')+'" onclick="nota('+c.fila+',\''+et+'\',\''+n+'\',this)">'+n+'</button>';}).join('')+'</div>';
 }
-function urlForm(tipo,c){return BASE+'?tipo='+tipo+'&k='+K+'&c='+c.id+(c.entrev?'&e='+encodeURIComponent(c.entrev):'');}
+var FORM_F=0;
+function abrirForm(tipo,f){
+  var c=byFila(f);FORM_F=f;cerrar();
+  document.getElementById('ftit').textContent=(tipo==='screening'?'Screening · ':'Competencias · ')+c.nombre;
+  document.getElementById('fmodal').classList.add('show');document.getElementById('fmodal').scrollTop=0;
+  var o={K:K,cid:c.id,entre:c.entrev||'',container:document.getElementById('fbody'),onDone:function(){cargar();},onClose:volverFicha};
+  if(tipo==='screening')FS.open(o);else FC.open(o);
+}
+function volverFicha(){document.getElementById('fmodal').classList.remove('show');document.getElementById('fbody').innerHTML='';cargar();if(FORM_F)abrir(FORM_F);}
 
 function abrir(f){
   CUR=f;var c=byFila(f);if(!c)return;
@@ -232,7 +246,7 @@ function abrir(f){
     '<div class="sec">Datos</div>'+row('Recibido',c.fecha)+row('Llegó por',c.fuente)+row('Estado',c.estado)+row('Localidad',c.loc)+row('Zona',c.zona)+row('Formación',c.formacion)+row('Teléfono',c.tel)+row('DNI',c.dni)+row('Email',c.email)+row('Pretensión',money(c.pret))+row('Conoce a alguien en PAMI',c.conoce)+row('Último contacto',c.contactado)+row('Descarte',c.descarte)+
     (c.just?'<div class="sec">Análisis del CV</div><div class="txt"><b>'+esc(c.just)+'</b></div>':'')+(c.resumen?'<div class="txt" style="margin-top:6px">'+esc(c.resumen)+'</div>':'')+(c.req?'<div class="txt" style="margin-top:6px;color:#5D6B82">'+esc(c.req)+'</div>':'')+resp+
     '<div class="sec">Calificaciones</div><div id="notas">'+etapasNota.map(function(et){return notaRow(c,et,vals[et]);}).join('')+'</div>'+
-    '<div class="btns"><a class="btn" target="_blank" href="'+esc(urlForm('screening',c))+'">📝 Formulario screening</a><a class="btn" target="_blank" href="'+esc(urlForm('competencias',c))+'">💼 Formulario competencias</a>'+(c.infScr?'<a class="btn ghost" target="_blank" href="'+esc(c.infScr)+'">Ver screening</a>':'')+(c.infComp?'<a class="btn ghost" target="_blank" href="'+esc(c.infComp)+'">Ver competencias</a>':'')+(c.resp.length?'<button class="btn ghost" onclick="verPost('+f+',this)">📋 Ver postulación</button>':'')+'</div>'+
+    '<div class="btns"><button class="btn" onclick="abrirForm(\'screening\','+f+')">📝 Formulario screening</button><button class="btn" onclick="abrirForm(\'competencias\','+f+')">💼 Formulario competencias</button>'+(c.infScr?'<a class="btn ghost" target="_blank" href="'+esc(c.infScr)+'">Ver screening</a>':'')+(c.infComp?'<a class="btn ghost" target="_blank" href="'+esc(c.infComp)+'">Ver competencias</a>':'')+(c.resp.length?'<button class="btn ghost" onclick="verPost('+f+',this)">📋 Ver postulación</button>':'')+'</div>'+
     '<div class="btns">'+(c.cv?'<a class="btn ghost" target="_blank" href="'+esc(c.cv)+'">📄 Ver CV</a>':'')+(c.tel?'<button class="btn wa" onclick="menuWA('+f+')">💬 WhatsApp ▾</button>':'')+(/@/.test(c.email||'')?'<a class="btn ghost" target="_blank" href="https://mail.google.com/mail/?view=cm&to='+encodeURIComponent(c.email)+'">✉ Mail</a>':'')+'<button class="btn cel" onclick="agendar('+f+')">📅 Agendar</button>'+(puedeDesc?'<button class="btn red" onclick="descarteMail('+f+',this)">✉ Descarte por mail</button>':'')+(c.proc!=='SI'?'<button class="btn sec" onclick="rean('+f+',this)">↻ Re-analizar CV</button>':'')+(c.contactado?'<button class="btn sec" onclick="borrarMarca('+f+')">✕ Borrar marca de contacto</button>':'')+'</div>'+
     (c.entrevistas?'<div class="sec">Entrevistas (calendario)</div><div class="txt">'+esc(c.entrevistas)+'</div>':'')+
     '<div class="sec">Gestión</div><div class="grid"><div class="full"><label class="l">Búsqueda</label><select id="gB">'+(c.busq?'':'<option value="">— Sin asignar —</option>')+D.busquedas.map(function(b){return '<option value="'+esc(b.id)+'"'+(b.id===c.busq?' selected':'')+'>'+esc(b.titulo)+'</option>';}).join('')+'</select></div>'+

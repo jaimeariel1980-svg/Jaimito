@@ -4,7 +4,7 @@ Proyecto independiente (no comparte nada con MACS). Todo vive en la cuenta dotac
 
 ## Archivos
 - Apps Script: `Codigo.gs`, `Proceso.gs`, `Calendario.gs`, `Formularios.gs`, `Logo.gs`
-- HTML: `Web`, `Tablero`, `Screening`, `Competencias`, `Estilos`
+- HTML: `Web`, `Tablero`, `Screening`, `Competencias`, `Estilos`, `FormScreening`, `FormCompetencias`
 - `appsscript.json` (Configuración del proyecto → "Mostrar appsscript.json")
 
 ## Puesta en marcha

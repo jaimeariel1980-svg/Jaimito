@@ -316,7 +316,7 @@ function doGet_(e) {
 
 function verificarInstalacion() {
   const faltan = [];
-  ['Web', 'Tablero', 'Screening', 'Competencias', 'Estilos'].forEach(n => { try { HtmlService.createHtmlOutputFromFile(n); } catch (e) { faltan.push('archivo HTML "' + n + '"'); } });
+  ['Web', 'Tablero', 'Screening', 'Competencias', 'Estilos', 'FormScreening', 'FormCompetencias'].forEach(n => { try { HtmlService.createHtmlOutputFromFile(n); } catch (e) { faltan.push('archivo HTML "' + n + '"'); } });
   ['OPENAI_API_KEY', 'ADMIN_KEY', 'SHEET_ID'].forEach(k => { if (!prop_(k)) faltan.push('propiedad ' + k); });
   ['Candidatos', 'Busquedas', 'Preguntas', 'Screening_Eval', 'Screening_Val', 'Competencias', 'Plantillas', 'Historial', 'Evaluaciones', 'Ajustes'].forEach(n => { try { if (!hoja_(n)) faltan.push('pestaña ' + n); } catch (e) { faltan.push('pestaña ' + n); } });
   Logger.log(faltan.length ? '❌ Faltan: ' + faltan.join(', ') : '✅ Todo instalado');
