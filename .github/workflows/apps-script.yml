@@ -1,0 +1,41 @@
+name: Apps Script
+on:
+  workflow_dispatch:
+    inputs:
+      accion:
+        description: bajar = copia el proyecto real al repo; publicar = sube el repo al proyecto
+        type: choice
+        options: [bajar, publicar]
+        default: bajar
+  push:
+    branches: [main]
+    paths: ['appscript/**']
+permissions:
+  contents: write
+concurrency: apps-script
+jobs:
+  clasp:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: appscript
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 20}
+      - run: npm i -g @google/clasp@2
+      - run: echo '${{ secrets.CLASPRC_JSON }}' > ~/.clasprc.json
+      - name: Bajar proyecto real
+        if: github.event_name == 'workflow_dispatch' && inputs.accion == 'bajar'
+        run: |
+          clasp pull
+          git config user.name "apps-script-sync"; git config user.email "sync@users.noreply.github.com"
+          git checkout -B sync-appscript
+          git add -A .
+          git commit -m "Copia del proyecto Apps Script real" || echo "sin cambios"
+          git push -f origin sync-appscript
+      - name: Publicar
+        if: (github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && inputs.accion == 'publicar')
+        run: |
+          clasp push -f
+          clasp deploy -i "${{ vars.DEPLOYMENT_ID }}" -d "GitHub ${{ github.sha }}"
