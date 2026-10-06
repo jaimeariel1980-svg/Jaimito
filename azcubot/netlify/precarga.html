@@ -38,8 +38,9 @@ function transport(fn, args, ok, onErr){
     scr.onerror = function(){ clearTimeout(wd); delete window[cb]; s0.remove(); if(!done) pollT = setTimeout(poll, 2000); };
     document.head.appendChild(scr);
   }
-  (document.body || document.documentElement).appendChild(ifr); (document.body || document.documentElement).appendChild(form);
-  form.submit(); pollT = setTimeout(poll, 500); if(ls('azcu_via')==='anon') setTimeout(fallback, 300);
+  function viaForm(){ (document.body || document.documentElement).appendChild(ifr); (document.body || document.documentElement).appendChild(form); form.submit(); }
+  try{ fetch(API, {method:'POST', mode:'no-cors', credentials:'omit', headers:{'Content-Type':'text/plain'}, body:json, keepalive:json.length<60000}).catch(viaForm); }catch(x){ viaForm(); }
+  pollT = setTimeout(poll, 500); if(ls('azcu_via')==='anon') setTimeout(fallback, 300);
   if(QUICK.indexOf(fn)>=0){ var pl0; try{ pl0 = btoa(unescape(encodeURIComponent(json))); }catch(e){ pl0 = ''; } if(pl0 && pl0.length <= 6500) jsonp('&azc='+encodeURIComponent(pl0), false); }
 }
 var QUICK = ['getDatos','obtenerConsultasWS','obtenerEncuesta','obtenerPropiedades','obtenerPropiedadesDoc','azcuAtajo','azcuWarm','azcuMov','azcuAgenda'];
