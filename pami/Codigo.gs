@@ -321,7 +321,7 @@ ${bloque}
 
 Devolvé SOLO JSON válido con este formato:
 {"es_cv":true,"nombre":"Nombre y apellido real del candidato","telefono":"","dni":"solo números","localidad":"","nivel_ajuste":"A/B+/B/C","justificacion":"una sola oración corta con el porqué de la nota","requisitos":{"formacion":"","matricula":"","experiencia":"","zona":"","continuidad":""},"resumen_experiencia":"3-4 oraciones narrativas sobre trayectoria, atributos y actitud, sin repetir el checklist"}
-Si el texto NO es un currículum (factura, publicidad, otro documento), devolvé es_cv:false y dejá el resto vacío.
+Devolvé es_cv:false SOLO si el texto claramente NO es un currículum (por ejemplo una factura o publicidad). Ante la duda, es_cv:true.
 REGLAS DE LA NOTA:
 - A: cumple todo, perfil potente sin ruido.
 - B+: muy bueno, cumple lo excluyente con una cuestión menor.
@@ -337,9 +337,8 @@ REGLAS DE LA NOTA:
     if (parsed.error) throw new Error('OpenAI: ' + parsed.error.message);
     const c = JSON.parse(parsed.choices[0].message.content);
     if (c.es_cv === false) {
-      sh.getRange(fila, COL.just, 1, 3).setValues([['El adjunto no parece un CV.', '', '']]);
+      sh.getRange(fila, COL.just, 1, 3).setValues([['La IA no reconoció el adjunto como un CV. Revisalo a mano.', 'Sin análisis automático', '']]);
       sh.getRange(fila, COL.proc).setValue('NoCV');
-      sh.getRange(fila, COL.estado).setValue('Descartado');
       return;
     }
     if (String(r[COL.fuente - 1]) !== 'Web') {

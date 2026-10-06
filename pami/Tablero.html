@@ -108,7 +108,7 @@ function card(c){
   if(c.notaScr)tags+='<span class="tag">Scr '+esc(c.notaScr)+'</span>';
   if(c.notaComp)tags+='<span class="tag">Comp '+esc(c.notaComp)+'</span>';
   if(c.recTipo)tags+='<span class="tag">★ '+esc(c.recTipo)+(c.recPor?': '+esc(c.recPor):'')+'</span>';
-  if(c.proc&&c.proc!=='SI')tags+='<span class="tag w">'+(c.proc==='Pendiente'?'Analizando…':'Revisar CV')+'</span>';
+  if(c.proc&&c.proc!=='SI')tags+='<span class="tag w">'+(c.proc==='Pendiente'?'Analizando…':c.proc==='NoCV'?'¿No es un CV?':'Revisar CV')+'</span>';
   return '<div class="card" draggable="true" ondragstart="event.dataTransfer.setData(\'text\',\''+c.fila+'\')" onclick="abrir('+c.fila+')"><div class="top"><b>'+esc(c.nombre)+'</b><span class="badge '+cls(c.ajuste)+'">'+(esc(c.ajuste)||'—')+'</span></div><div class="sub">'+esc(c.loc)+' · '+esc(tit(c.busq))+'</div>'+(tags?'<div class="tags">'+tags+'</div>':'')+'</div>';
 }
 
