@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<base target="_top">
+<title>Competencias · <?= sitio ?></title>
+<?!= incluir_('Estilos') ?>
+<style>
+.hero{background:var(--navy2);color:#fff;padding:26px 20px 22px;border-bottom:4px solid var(--celeste)}
+.hero .in,.wrap{max-width:980px;margin:0 auto}
+.hero h1{font-size:28px;font-weight:800;letter-spacing:-.01em;line-height:1.15}
+.hero .meta{display:flex;gap:28px;flex-wrap:wrap;margin-top:14px}
+.hero .meta div{font-size:14px;font-weight:600}.hero .meta small{display:block;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#8FB6D8;font-weight:700}
+.hero a{color:#CDE7F6}
+.wrap{padding:22px 16px 60px}
+.sect{margin-bottom:26px}
+.sl{font-size:11px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--azul);display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.sl:before{content:'';width:4px;height:16px;background:var(--celeste)}
+.meta3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.star{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:10px}
+.star div{background:var(--bg);border:1px solid var(--line);padding:10px;text-align:center;font-size:12px;color:var(--mut);font-weight:600}.star b{display:block;color:var(--celeste);font-size:12px;margin-bottom:3px}
+.comp{border:1px solid var(--line);border-radius:4px;padding:20px;margin-bottom:16px;background:#fff}
+.ch{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.cn{font-size:17px;font-weight:800;color:var(--azul);flex:1}
+.peso{display:flex;align-items:center;gap:6px;background:var(--tint);color:var(--azul);padding:5px 12px;border-radius:99px;font-size:11px;font-weight:800;text-transform:uppercase}
+.peso input{width:52px;padding:2px 4px;border:none;border-bottom:1px dashed var(--azul);background:transparent;text-align:center;font-weight:800;color:var(--azul)}
+.cd{font-size:13px;color:var(--mut);font-style:italic;margin:6px 0 12px}
+.qb{background:var(--bg);border-left:4px solid var(--celeste);padding:12px 14px;margin-bottom:14px}.qb ul{list-style:none}.qb li{font-size:13px;margin:6px 0;padding-left:14px;position:relative}.qb li:before{content:'•';position:absolute;left:0;color:var(--celeste);font-weight:800}
+.fr{display:flex;gap:6px;margin-bottom:12px}
+.fr button{flex:1;padding:11px 4px;border:1.5px solid var(--line);background:#fff;font-size:10.5px;font-weight:700;text-transform:uppercase;color:var(--mut);cursor:pointer;border-radius:4px;font-family:var(--font)}
+.fr button:hover{border-color:var(--celeste)}
+.fr button.f1.sel{background:var(--err);color:#fff;border-color:var(--err)}.fr button.f2.sel{background:#F2B705;color:#4A3A00;border-color:#F2B705}.fr button.f3.sel{background:#6EE7B7;color:#0F3A24;border-color:#6EE7B7}.fr button.f4.sel{background:var(--ok);color:#fff;border-color:var(--ok)}
+table.m{width:100%;border-collapse:collapse}
+table.m th{background:#EEF2F7;color:var(--mut);font-size:10px;text-transform:uppercase;padding:9px;border:1px solid var(--line)}
+table.m td{border:1px solid var(--line);height:38px;padding:0 10px;font-size:13px;font-weight:600}
+table.m td.p{text-align:center;color:var(--azul);font-weight:800}
+table.m td.c{cursor:pointer;text-align:center;font-weight:800}
+table.m td.c.sel1{background:var(--err);color:#fff}table.m td.c.sel2{background:#F2B705;color:#4A3A00}table.m td.c.sel3{background:#6EE7B7;color:#0F3A24}table.m td.c.sel4{background:var(--ok);color:#fff}
+.score{display:flex;justify-content:space-between;align-items:center;border:1px solid var(--line);padding:18px 24px;margin:16px 0;background:#fff}
+.score b{font-size:42px;color:var(--azul);letter-spacing:-.03em}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.ver{background:#EEF2F7;border:1px solid var(--line);padding:22px;text-align:center}
+.ver .vb{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+.vb button{flex:1;min-width:150px;padding:15px 10px;border:2px solid var(--line);background:#fff;font-weight:800;font-size:12.5px;text-transform:uppercase;cursor:pointer;border-radius:4px;color:var(--mut);font-family:var(--font)}
+.vb button small{display:block;font-size:10px;font-weight:600;text-transform:none;margin-top:2px}
+.vb button.on.A{background:#1E8E5A;color:#fff;border-color:#1E8E5A}.vb button.on.Bp{background:#8BD3A8;color:#0F3A24;border-color:#8BD3A8}.vb button.on.B{background:#F2B705;color:#4A3A00;border-color:#F2B705}.vb button.on.C{background:#D9534F;color:#fff;border-color:#D9534F}
+.done{display:none;text-align:center;padding:30px 10px}
+@media(max-width:760px){.meta3,.g2{grid-template-columns:1fr}.star{grid-template-columns:1fr}.fr{flex-wrap:wrap}.fr button{min-width:45%}}
+</style>
+</head>
+<body>
+<div class="brand"><div class="in"><span class="lg"></span><div class="tt">Entrevista por competencias</div></div></div>
+<div class="nav"><div class="in"><a class="it" id="volver" href="#">← Volver al tablero</a><span class="sp">Confidencial</span></div></div>
+<div id="app"><div class="loading">Cargando…</div></div>
+<script>
+var K = <?!= JSON.stringify(clave) ?>, CID = <?!= JSON.stringify(cid) ?>, ENTRE = <?!= JSON.stringify(entre) ?>, BASE = <?!= JSON.stringify(url) ?>;
+document.getElementById('volver').href = BASE + '?tablero=' + K;
+var D = null, S = {niv:{}, manual:null, auto:null, score:null};
+var NIV=['','No demuestra','Señales de desarrollo','Demuestra efectividad','Demuestra solidez'];
+var VER=[['A','Alto ajuste','Avanza'],['B+','Muy buen ajuste','Avanza'],['B','Ajuste con observaciones','Reserva'],['C','No ajusta','Descarta']];
+function esc(t){return String(t==null?'':t).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+google.script.run.withSuccessHandler(function(d){D=d;render();}).withFailureHandler(function(e){document.getElementById('app').innerHTML='<div class="loading" style="color:#D9534F">Error: '+esc(e.message)+'</div>';}).getDatosForm(K,CID);
+
+function inp(id,l,ph,v){return '<div><label class="l">'+l+'</label><input type="text" id="'+id+'" placeholder="'+(ph||'')+'" value="'+esc(v||'')+'"></div>';}
+function render(){
+  var c=D.cand,h=D.hero,hoy=new Date(new Date().getTime()-3*3600000).toISOString().slice(0,10),ent=ENTRE||c.entrev||'';
+  var scr=c.notaScr?'<div><small>Screening</small>'+esc(c.notaScr)+(c.infScr?' · <a target="_blank" href="'+esc(c.infScr)+'">📄 Ver screening</a>':'')+'</div>':'';
+  document.getElementById('app').innerHTML=
+  '<div class="hero"><div class="in"><h1>Entrevista de '+esc(c.nombre)+'</h1><div class="meta"><div><small>Cliente</small>'+esc(h.cliente)+'</div><div><small>Posición</small>'+esc(h.puesto)+'</div><div><small>Metodología</small>STAR (A-B-C-D-E)</div>'+scr+'</div></div></div>'+
+  '<div class="wrap"><div id="form">'+
+  '<div class="sect card"><div class="sl">Datos del candidato</div><div class="meta3">'+
+  inp('m-nom','Nombre','',c.nombre).replace('<input','<input disabled')+'<div><label class="l">Fecha</label><input type="date" id="m-fecha" value="'+hoy+'"></div>'+
+  '<div><label class="l">Entrevistador/a</label><select id="m-ent"><option value="">— Elegí —</option>'+D.entrevistadores.map(function(e){return '<option'+(e===ent?' selected':'')+'>'+esc(e)+'</option>';}).join('')+'</select></div>'+
+  inp('m-edad','Edad','Ej: 38')+inp('m-loc','Localidad','Dónde vive',c.loc)+inp('m-fam','Situación familiar','Estado civil, hijos')+inp('m-form','Formación','Título, institución, estado')+inp('m-emp','Empresa actual','—')+inp('m-pue','Puesto actual','—')+inp('m-ant','Antigüedad','Ej: 3 años')+inp('m-ra','Remuneración actual','$')+inp('m-rp','Remuneración pretendida','$',c.pret)+inp('m-disp','Disponibilidad de ingreso','Ej: 15 días')+inp('m-mot','Motivo de cambio','Por qué busca')+inp('m-mov','Movilidad / traslado','Sí / No')+inp('m-ref','Referencias laborales','Nombre, lugar, tel')+'</div></div>'+
+  '<div class="sect card"><div class="sl">Guía para el entrevistador</div><div style="font-size:13px">Cada competencia tiene un peso (editable). El peso se aplica al score final y el cambio solo afecta a este candidato; el peso oficial se edita en la pestaña <b>Competencias</b> del Sheet.</div><div class="star"><div><b>A: ACCIÓN</b>¿Cómo lo abordaste?</div><div><b>B: PENSAMIENTO</b>¿Por qué elegiste ese enfoque?</div><div><b>C: RESULTADO</b>¿Cuál fue el resultado final?</div><div><b>D: APRENDIZAJE</b>¿Qué te llevaste?</div><div><b>E: APLICACIÓN</b>¿Volviste a usar lo aprendido?</div></div></div>'+
+  '<div class="sl" style="margin-top:6px">Evaluación por competencias</div><div id="comps"></div>'+
+  '<div class="sect card"><div class="sl">Síntesis y evaluación final</div><div class="g2"><div><label class="l">Fortalezas principales</label><textarea id="fort" rows="5" placeholder="•&#10;•&#10;•"></textarea></div><div><label class="l">Áreas a desarrollar</label><textarea id="area" rows="5" placeholder="•&#10;•&#10;•"></textarea></div></div>'+
+  '<label class="l">Matriz de evaluación (4 niveles · score ponderado)</label><table class="m"><thead><tr><th style="text-align:left">Competencia</th><th>Peso</th><th>No demuestra</th><th>Señales</th><th>Efectividad</th><th>Solidez</th></tr></thead><tbody id="mx"></tbody></table>'+
+  '<div class="score"><div><div class="l" style="margin:0">Score ponderado total</div><div id="sd" style="font-size:13px;color:#5D6B82">Completá la matriz para calcular</div></div><div><b id="sn">—</b> / 10</div></div>'+
+  '<label class="l">Recomendación y justificación de viabilidad</label><textarea id="rec" rows="4" placeholder="Redactá la justificación final…"></textarea>'+
+  '<div class="ver" style="margin-top:16px"><div class="ttl">Ajuste al rol</div><div style="font-size:12px;color:#5D6B82;font-style:italic">Tu juicio profesional tiene prioridad sobre el score automático <span id="sug"></span></div><div class="vb" id="vb">'+VER.map(function(v){return '<button data-l="'+v[0]+'" onclick="manual(\''+v[0]+'\')">'+v[0]+' · '+v[1]+'<small>'+v[2]+'</small></button>';}).join('')+'</div></div></div>'+
+  '<button class="btn ok" id="save" style="width:100%;padding:14px" onclick="guardar()">Guardar evaluación</button></div><div class="done card" id="done"></div></div>';
+  var cs=document.getElementById('comps'),mx=document.getElementById('mx');
+  D.comps.forEach(function(k){
+    var d=document.createElement('div');d.className='comp';d.dataset.id=k.id;
+    d.innerHTML='<div class="ch"><div class="cn">'+esc(k.nombre)+'</div><div class="peso">Peso <input type="number" min="0" step="0.5" value="'+k.peso+'" oninput="pesoCh(\''+esc(k.id)+'\',this.value)"></div></div><div class="cd">'+esc(k.descripcion)+'</div><div class="qb"><div class="l" style="margin-top:0">Preguntas sugeridas (STAR)</div><ul>'+k.preguntas.map(function(q){return '<li>'+esc(q)+'</li>';}).join('')+'</ul></div><div class="fr">'+[1,2,3,4].map(function(n){return '<button class="f'+n+'" onclick="nivel(\''+esc(k.id)+'\','+n+')">'+NIV[n]+'</button>';}).join('')+'</div><label class="l">Notas / evidencias (situación, acción, resultado)</label><textarea rows="3" id="n-'+esc(k.id)+'" placeholder="Redactá los hallazgos…"></textarea>';
+    cs.appendChild(d);k.pesoAct=k.peso;
+    var tr=document.createElement('tr');tr.dataset.id=k.id;tr.innerHTML='<td>'+esc(k.nombre)+'</td><td class="p" id="p-'+esc(k.id)+'">'+k.peso+'</td>'+[1,2,3,4].map(function(n){return '<td class="c" onclick="nivel(\''+esc(k.id)+'\','+n+')"></td>';}).join('');mx.appendChild(tr);
+  });
+}
+function comp(id){return D.comps.find(function(x){return x.id===id;});}
+function pesoCh(id,v){comp(id).pesoAct=parseFloat(v)||0;document.getElementById('p-'+id).textContent=comp(id).pesoAct;calc();}
+function nivel(id,n){
+  S.niv[id]=n;
+  document.querySelectorAll('.comp[data-id="'+id+'"] .fr button').forEach(function(b){b.classList.toggle('sel',b.className.indexOf('f'+n)>-1);});
+  var tr=document.querySelector('#mx tr[data-id="'+id+'"]');tr.querySelectorAll('td.c').forEach(function(td,i){td.className='c'+(i+1===n?' sel'+n:'');td.textContent=i+1===n?'X':'';});
+  calc();
+}
+function calc(){
+  var pts=0,max=0,ev=0;
+  D.comps.forEach(function(k){var n=S.niv[k.id],p=k.pesoAct;if(n&&p>0){pts+=n*p;max+=4*p;ev++;}});
+  var sn=document.getElementById('sn'),sd=document.getElementById('sd');
+  if(!max){S.score=null;S.auto=null;sn.textContent='—';sd.textContent='Completá la matriz para calcular';document.getElementById('sug').textContent='';return;}
+  var s=Math.round((pts/max)*100)/10,u=D.umbral;S.score=s;S.auto=s>=u.a?'A':s>=u.bplus?'B+':s>=u.b?'B':'C';
+  sn.textContent=s.toFixed(1);sd.textContent=ev+' competencia(s) evaluadas · '+pts.toFixed(1)+' / '+max.toFixed(1)+' puntos ponderados';
+  document.getElementById('sug').textContent='· sugerencia automática: '+S.auto;
+  marcar(S.manual||S.auto);
+}
+function marcar(l){document.querySelectorAll('#vb button').forEach(function(b){b.className=b.dataset.l===l?'on '+l.replace('+','p'):'';});}
+function manual(l){S.manual=l;marcar(l);}
+function v(id){return document.getElementById(id).value.trim();}
+function guardar(){
+  var letra=S.manual||S.auto;
+  if(!letra){alert('Evaluá al menos una competencia o elegí el ajuste al rol.');return;}
+  var b=document.getElementById('save');b.disabled=true;b.textContent='Guardando…';
+  var comps=D.comps.map(function(k){return {nombre:k.nombre,peso:k.pesoAct,nivel:S.niv[k.id]||0,notas:document.getElementById('n-'+k.id).value};});
+  google.script.run.withSuccessHandler(function(r){
+    document.getElementById('form').style.display='none';var d=document.getElementById('done');d.style.display='block';
+    d.innerHTML='<h2 style="color:#1E8E5A">¡Evaluación guardada!</h2><p style="margin:10px 0">Ajuste: <b>'+esc(r.nota)+'</b>'+(r.score!=null?' · Score '+r.score.toFixed(1):'')+'<br>Estado del candidato: <b>'+esc(r.estado||'')+'</b></p><p><a class="btn" href="'+BASE+'?tablero='+K+'">Volver al tablero</a> <a class="btn ghost" target="_blank" href="'+esc(r.url)+'">Ver informe</a></p>';
+    window.scrollTo(0,0);
+  }).withFailureHandler(function(e){b.disabled=false;b.textContent='Guardar evaluación';alert('No se pudo guardar: '+e.message);})
+  .guardarCompetencias(K,{id:CID,entrevistador:v('m-ent'),fecha:v('m-fecha'),comps:comps,fortalezas:document.getElementById('fort').value,areas:document.getElementById('area').value,recomendacion:document.getElementById('rec').value,resultado:letra,
+    meta:{edad:v('m-edad'),localidad:v('m-loc'),familia:v('m-fam'),formacion:v('m-form'),empresaAct:v('m-emp'),puestoAct:v('m-pue'),antig:v('m-ant'),remAct:v('m-ra'),remPret:v('m-rp'),disp:v('m-disp'),motivo:v('m-mot'),movilidad:v('m-mov'),referencias:v('m-ref')}});
+}
+</script>
+</body>
+</html>

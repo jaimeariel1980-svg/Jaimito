@@ -1,9 +1,29 @@
 const CUENTA = 'dotacionpp1@gmail.com';
-const HEAD_CAND = ['Fecha', 'Nombre', 'Teléfono', 'DNI', 'Email', 'Localidad', 'Búsqueda', 'Pretensión', 'Nivel de Ajuste', 'Justificación', 'Resumen', 'Requisitos', 'Link CV', 'Estado', 'Entrevistó', 'Nota screening', 'Nota competencias', 'Recomendó', 'Recomendado por', 'Comentarios', 'Respuestas', 'Procesado', 'Intentos', 'Fuente'];
-const COL = { fecha: 1, nombre: 2, tel: 3, dni: 4, email: 5, loc: 6, busq: 7, pret: 8, ajuste: 9, just: 10, resumen: 11, req: 12, cv: 13, estado: 14, entrev: 15, notaScr: 16, notaComp: 17, recTipo: 18, recPor: 19, coment: 20, resp: 21, proc: 22, intentos: 23, fuente: 24 };
+const HEAD_CAND = ['Fecha', 'Nombre', 'Teléfono', 'DNI', 'Email', 'Localidad', 'Búsqueda', 'Pretensión', 'Nivel de Ajuste', 'Justificación', 'Resumen', 'Requisitos', 'Link CV', 'Estado', 'Entrevistó', 'Nota screening', 'Nota competencias', 'Recomendó', 'Recomendado por', 'Comentarios', 'Respuestas', 'Procesado', 'Intentos', 'Fuente', 'ID', 'Nota PAMI virtual', 'Nota PAMI presencial', 'Cita', 'Entrevistas (calendario)', 'Contactado', 'Descarte enviado', 'Informe screening', 'Informe competencias', 'Último movimiento'];
+const COL = { fecha: 1, nombre: 2, tel: 3, dni: 4, email: 5, loc: 6, busq: 7, pret: 8, ajuste: 9, just: 10, resumen: 11, req: 12, cv: 13, estado: 14, entrev: 15, notaScr: 16, notaComp: 17, recTipo: 18, recPor: 19, coment: 20, resp: 21, proc: 22, intentos: 23, fuente: 24, id: 25, notaP1: 26, notaP2: 27, cita: 28, entrevistas: 29, contactado: 30, descarte: 31, infScr: 32, infComp: 33, mov: 34 };
 const NOTAS = ['', 'A', 'B+', 'B', 'C'];
-const HEAD_BUSQ = ['id', 'titulo', 'ubicacion', 'modalidad', 'descripcion', 'requisitos', 'estado', 'prompt_ia', 'recomendacion', 'palabras_clave'];
+const HEAD_BUSQ = ['id', 'titulo', 'ubicacion', 'modalidad', 'descripcion', 'requisitos', 'estado', 'prompt_ia', 'recomendacion', 'palabras_clave', 'link_perfil'];
 const HEAD_PREG = ['busqueda_id', 'id', 'etiqueta', 'tipo', 'opciones', 'requerido'];
+const HEAD_EVAL = ['busqueda_id', 'id_eval', 'etiqueta', 'peso'];
+const HEAD_VAL = ['busqueda_id', 'id_val', 'etiqueta', 'opciones'];
+const HEAD_COMP = ['busqueda_id', 'id_comp', 'nombre_comp', 'descripcion', 'peso', 'preguntas'];
+const HEAD_PLANT = ['clave', 'canal', 'texto'];
+const HEAD_HIST = ['Fecha', 'ID', 'Candidato', 'Tipo', 'Detalle', 'Quién'];
+const HEAD_EVALS = ['Fecha', 'ID', 'Candidato', 'Etapa', 'Entrevistó', 'Nota', 'Score', 'Informe', 'Datos'];
+const ESTADOS_COL = [
+  ['Análisis de CV', ['Nuevo', 'Contactado', 'Pendiente', 'Revisar'], 'Nuevo'],
+  ['Screening', ['Avanza a screening', 'Screening agendado'], 'Avanza a screening'],
+  ['Competencias', ['Avanza a competencias', 'Competencias agendada'], 'Avanza a competencias'],
+  ['Entrevista PAMI virtual', ['Avanza a PAMI virtual', 'PAMI virtual agendada'], 'Avanza a PAMI virtual'],
+  ['Entrevista PAMI presencial', ['Avanza a PAMI presencial', 'PAMI presencial agendada', 'En PAMI'], 'Avanza a PAMI presencial'],
+  ['Contratado', ['Contratado'], 'Contratado']
+];
+const ESTADOS_DESC = ['Descartado sin screening', 'Descartado post screening', 'Descartado en competencias', 'Descartado en PAMI virtual', 'Descartado en PAMI presencial', 'Descartado Fuera de zona', 'Descartado NO le interesa'];
+const ESTADOS_RES = ['En reserva', 'Reserva competencias', 'Reserva PAMI virtual', 'Reserva PAMI presencial'];
+const ETAPAS = ['cv', 'screening', 'competencias', 'pami1', 'pami2'];
+const NOTA_COL = { cv: COL.ajuste, screening: COL.notaScr, competencias: COL.notaComp, pami1: COL.notaP1, pami2: COL.notaP2 };
+const AGENDADO = { screening: 'Screening agendado', competencias: 'Competencias agendada', pami1: 'PAMI virtual agendada', pami2: 'PAMI presencial agendada' };
+const TIPO_ETAPA = { screening: 'Screening', competencias: 'Competencias', pami1: 'PAMI virtual', pami2: 'PAMI presencial' };
 
 function prop_(k) { return PropertiesService.getScriptProperties().getProperty(k); }
 function ss_() { return SpreadsheetApp.openById(prop_('SHEET_ID')); }
@@ -15,6 +35,33 @@ function ajustes_() {
   return o;
 }
 function lista_(txt, sep) { return String(txt || '').split(sep).map(s => s.trim()).filter(Boolean); }
+
+function nuevoId_() { return Utilities.getUuid().replace(/-/g, '').slice(0, 10); }
+
+function asegurarEncabezados_(sh, headers) {
+  const n = sh.getLastColumn();
+  const actual = n ? sh.getRange(1, 1, 1, n).getValues()[0].map(String) : [];
+  if (!actual.some(x => x.trim())) {
+    sh.getRange(1, 1, 1, headers.length).setValues([headers]);
+    sh.getRange(1, 1, 1, headers.length).setFontWeight('bold').setBackground('#034EA2').setFontColor('#FFFFFF');
+    sh.setFrozenRows(1);
+    return;
+  }
+  let c = actual.length;
+  headers.forEach(h => {
+    if (actual.indexOf(h) === -1) {
+      c++;
+      sh.getRange(1, c).setValue(h).setFontWeight('bold').setBackground('#034EA2').setFontColor('#FFFFFF');
+    }
+  });
+}
+
+function asegurarAjustes_(pares) {
+  const sh = hoja_('Ajustes');
+  const claves = sh.getDataRange().getValues().map(r => String(r[0]).trim());
+  const faltan = pares.filter(p => claves.indexOf(p[0]) === -1);
+  if (faltan.length) sh.getRange(sh.getLastRow() + 1, 1, faltan.length, 2).setValues(faltan);
+}
 
 function setup() {
   const yo = String(Session.getEffectiveUser().getEmail()).toLowerCase();
@@ -28,10 +75,7 @@ function setup() {
     let sh = ss.getSheetByName(nombre);
     const nuevo = !sh;
     if (!sh) sh = ss.insertSheet(nombre);
-    if (!String(sh.getRange(1, 1).getValue()).trim()) {
-      sh.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold').setBackground('#1F5FA8').setFontColor('#FFFFFF');
-      sh.setFrozenRows(1);
-    }
+    asegurarEncabezados_(sh, headers);
     return { sh: sh, nuevo: nuevo };
   };
 
@@ -39,10 +83,10 @@ function setup() {
   if (aj.nuevo) {
     aj.sh.getRange(2, 1, 9, 2).setValues([
       ['nombre_sitio', 'Empleos PAMI'],
-      ['color', '#1F5FA8'],
+      ['color', '#034EA2'],
       ['correo_aviso', CUENTA],
       ['entrevistadores', 'Ariel, Marcos, Ever'],
-      ['estados', 'Nuevo|Contactado|Screening agendado|Screening|Competencias|Entrevista PAMI|Contratado|Reserva|Descartado'],
+      ['estados', 'Nuevo|Contactado'],
       ['carpeta_cvs', ''],
       ['carpeta_subir', ''],
       ['autorespuesta', 'NO'],
@@ -50,6 +94,13 @@ function setup() {
     ]);
     aj.sh.setColumnWidth(1, 160); aj.sh.setColumnWidth(2, 520);
   }
+  SpreadsheetApp.flush();
+  asegurarAjustes_([
+    ['nombre_cliente', 'PAMI'], ['firma', 'Equipo de Selección'], ['asunto_mail', 'Proceso de selección · PAMI'],
+    ['umbral_a', '8.5'], ['umbral_bplus', '8'], ['umbral_b', '6.5'], ['dias_alerta', '7'],
+    ['calendario', ''], ['link_agenda', ''], ['carpeta_informes', ''],
+    ['duracion_screening', '30'], ['duracion_competencias', '60'], ['duracion_pami1', '30'], ['duracion_pami2', '60']
+  ]);
   SpreadsheetApp.flush();
   const cfg = ajustes_();
   const hojaAj = ss.getSheetByName('Ajustes');
@@ -66,11 +117,15 @@ function setup() {
     const id = carpeta('Para procesar', DriveApp.getFolderById(cfg.carpeta_cvs)).getId();
     hojaAj.getRange(filaAj('carpeta_subir'), 2).setValue(id);
   }
+  if (!cfg.carpeta_informes) {
+    const id = carpeta('Informes', DriveApp.getFolderById(cfg.carpeta_cvs)).getId();
+    hojaAj.getRange(filaAj('carpeta_informes'), 2).setValue(id);
+  }
   SpreadsheetApp.flush();
 
   const bq = tab('Busquedas', HEAD_BUSQ);
   if (bq.nuevo) {
-    bq.sh.getRange(2, 1, 1, HEAD_BUSQ.length).setValues([[
+    bq.sh.getRange(2, 1, 1, 10).setValues([[
       'enfermero', 'Enfermero/a de piso', 'Rosario y zona · Policlínicos PAMI I y II',
       'Turnos rotativos: lunes a viernes de 7 hs; sábados, domingos y feriados de 12 hs',
       'Realizar prácticas de enfermería a pacientes internados en salas generales, guardia y cuidados críticos, garantizando la cobertura de sus necesidades asistenciales. Reporta al Supervisor de Enfermería.\n\nFunciones:\n- Brindar cuidados a los pacientes internados, bajo indicación médica.\n- Realizar controles de rutina y del estado general del paciente.\n- Administrar fármacos y realizar procedimientos terapéuticos según indicación médica.\n- Garantizar la seguridad del paciente durante su permanencia.\n- Asistir en la higiene personal de quienes lo requieran.\n- Registrar la medicación suministrada y los insumos utilizados.\n- Trabajar junto a médicos, camilleros, mucamas y farmacia, y atender a los familiares.',
@@ -121,24 +176,78 @@ NIVEL_AJUSTE:
     pr.sh.setColumnWidth(3, 500); pr.sh.setColumnWidth(5, 360);
   }
 
-  const cd = tab('Candidatos', HEAD_CAND);
-  if (cd.nuevo) {
-    const n = 1000;
-    const val = lista => SpreadsheetApp.newDataValidation().requireValueInList(lista, true).build();
-    cd.sh.getRange(2, COL.estado, n, 1).setDataValidation(val(lista_(cfg.estados || 'Nuevo|Contactado|Descartado', '|')));
-    cd.sh.getRange(2, COL.entrev, n, 1).setDataValidation(val(lista_(cfg.entrevistadores || '', ',')));
-    [COL.notaScr, COL.notaComp].forEach(c => cd.sh.getRange(2, c, n, 1).setDataValidation(val(['A', 'B+', 'B', 'C'])));
-    cd.sh.setColumnWidth(COL.nombre, 200); cd.sh.setColumnWidth(COL.resumen, 360);
-  }
+  const ev = tab('Screening_Eval', HEAD_EVAL);
+  if (ev.nuevo) { const v = [['enfermero', 'e1', 'Experiencia en prácticas de enfermería (asistencia, medicación, registro)', 3],
+    ['enfermero', 'e2', 'Experiencia con adultos mayores / gerontología', 2],
+    ['enfermero', 'e3', 'Título terciario/universitario completo y matrícula habilitante', 3],
+    ['enfermero', 'e4', 'Conocimiento de bioseguridad y seguridad del paciente', 1],
+    ['enfermero', 'e5', 'Continuidad y estabilidad laboral', 2]]; ev.sh.getRange(2, 1, v.length, 4).setValues(v); ev.sh.setColumnWidth(3, 480); }
+  const vl = tab('Screening_Val', HEAD_VAL);
+  if (vl.nuevo) { const v = [['enfermero', 'v1', 'Remuneración pretendida compatible', 'Sí|No|A revisar'],
+    ['enfermero', 'v2', 'Disponibilidad para turnos rotativos (L-V 7 hs; sáb/dom/feriados 12 hs)', 'Sí|No'],
+    ['enfermero', 'v3', 'Vive en Rosario o zona / traslado resuelto', 'Sí|No'],
+    ['enfermero', 'v4', 'Preaviso razonable', 'Sí|No'],
+    ['enfermero', 'v5', 'Interés real en la posición', 'Alto|Medio|Bajo'],
+    ['enfermero', 'v6', 'Título de Enfermero/a Profesional o Lic. (no auxiliar)', 'Sí|No'],
+    ['enfermero', 'v7', 'Matrícula profesional vigente', 'Sí|No|A revisar'],
+    ['enfermero', 'v8', 'Sin rotación alta injustificada', 'Sí|No|A revisar']]; vl.sh.getRange(2, 1, v.length, 4).setValues(v); vl.sh.setColumnWidth(3, 480); }
+  const cp = tab('Competencias', HEAD_COMP);
+  if (cp.nuevo) { const v = [['enfermero', 'c1', 'Compromiso con el paciente y el afiliado', 'Poner al paciente y su familia en el centro de la atención, sosteniendo calidad y calidez aun con alta carga de trabajo. Evaluar evidencia de cuidado más allá de lo estrictamente indicado.', 2,
+      'Contame de un paciente internado al que le dedicaste atención especial más allá de la rutina. ¿Qué hiciste y qué pasó?|Dame un ejemplo de un familiar angustiado o reclamando. ¿Cómo lo acompañaste?|Describí una vez que tuviste que priorizar entre varios pacientes a la vez. ¿Cómo decidiste?'],
+    ['enfermero', 'c2', 'Escucha empática y buen trato', 'Comunicarse con respeto, paciencia y empatía con personas mayores y sus familias, incluso con pacientes desorientados o difíciles. Evaluar evidencia de buen trato y manejo de situaciones sensibles.', 2,
+      'Contame de un paciente mayor desorientado o poco colaborador. ¿Cómo lo abordaste?|Dame un ejemplo de una noticia difícil que tuviste que acompañar con un paciente o su familia. ¿Qué hiciste?|Describí una situación donde tu forma de comunicarte cambió la evolución o el ánimo de un paciente.'],
+    ['enfermero', 'c3', 'Flexibilidad y adaptabilidad', 'Adaptarse a turnos rotativos, guardias, cambios de sala y situaciones imprevistas manteniendo el rendimiento. Evaluar evidencia de disponibilidad y respuesta ante imprevistos.', 2,
+      'Contame de una guardia o turno donde todo se complicó (faltantes de personal, urgencias). ¿Cómo te organizaste?|Dame un ejemplo de un cambio de sala, de turno o de procedimiento que tuviste que absorber rápido. ¿Cómo lo manejaste?|Describí cómo sostenés tu rendimiento con turnos rotativos y fines de semana.'],
+    ['enfermero', 'c4', 'Calidad y seguridad del paciente', 'Aplicar protocolos, bioseguridad y registro riguroso de medicación e insumos; detectar riesgos y mejorar procesos. Evaluar evidencia de rigor y mejora continua.', 2,
+      'Contame de un error o casi-error en medicación o procedimiento que detectaste. ¿Qué hiciste y qué cambió después?|Dame un ejemplo de una mejora que propusiste o implementaste en tu sala o servicio.|Describí cómo llevás el registro de medicación e insumos y cómo evitás omisiones.'],
+    ['enfermero', 'c5', 'Trabajo en equipo y colaboración', 'Articular con médicos, camilleros, mucamos, farmacia y otros enfermeros para sostener la continuidad del cuidado. Evaluar evidencia de colaboración y comunicación en el cambio de turno.', 1,
+      'Contame de una situación donde dependías de otro sector (farmacia, médicos, camilleros) para atender a un paciente. ¿Cómo lo resolviste?|Dame un ejemplo de un desacuerdo con un compañero o un médico. ¿Cómo lo manejaste?|Describí cómo hacés el pase de turno para asegurar la continuidad del cuidado.']]; cp.sh.getRange(2, 1, v.length, 6).setValues(v); cp.sh.setColumnWidth(4, 420); cp.sh.setColumnWidth(6, 520); }
 
+  const pl = tab('Plantillas', HEAD_PLANT);
+  if (pl.nuevo) { const v = plantillasIniciales_(); pl.sh.getRange(2, 1, v.length, 3).setValues(v); pl.sh.setColumnWidth(3, 620); pl.sh.getRange(2, 3, v.length, 1).setWrap(true); }
+
+  const cd = tab('Candidatos', HEAD_CAND);
+  migrarCandidatos_();
+  const n = 1000;
+  const val = lista => SpreadsheetApp.newDataValidation().requireValueInList(lista, true).build();
+  cd.sh.getRange(2, COL.estado, n, 1).setDataValidation(val(todosEstados_()));
+  cd.sh.getRange(2, COL.entrev, n, 1).setDataValidation(val(lista_(ajustes_().entrevistadores || '', ',')));
+  [COL.ajuste, COL.notaScr, COL.notaComp, COL.notaP1, COL.notaP2].forEach(c => cd.sh.getRange(2, c, n, 1).setDataValidation(val(['A', 'B+', 'B', 'C'])));
+  if (cd.nuevo) { cd.sh.setColumnWidth(COL.nombre, 200); cd.sh.setColumnWidth(COL.resumen, 360); }
+
+  tab('Historial', HEAD_HIST);
+  tab('Evaluaciones', HEAD_EVALS);
   tab('Errores', ['Fecha', 'Contexto', 'Detalle']);
 
-  if (!ScriptApp.getProjectTriggers().some(t => t.getHandlerFunction() === 'ciclo')) {
-    ScriptApp.newTrigger('ciclo').timeBased().everyMinutes(10).create();
-  }
+  const trg = ScriptApp.getProjectTriggers().map(t => t.getHandlerFunction());
+  if (trg.indexOf('ciclo') === -1) ScriptApp.newTrigger('ciclo').timeBased().everyMinutes(10).create();
+  if (trg.indexOf('alEditar') === -1) ScriptApp.newTrigger('alEditar').forSpreadsheet(ss).onEdit().create();
   const def = ss.getSheetByName('Hoja 1') || ss.getSheetByName('Sheet1');
   if (def && ss.getSheets().length > 1) ss.deleteSheet(def);
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
+}
+
+function migrarCandidatos_() {
+  const sh = hoja_('Candidatos');
+  const n = sh.getLastRow() - 1;
+  if (n < 1) return;
+  const ids = sh.getRange(2, COL.id, n, 1).getValues();
+  const nom = sh.getRange(2, COL.nombre, n, 1).getValues();
+  const fec = sh.getRange(2, COL.fecha, n, 1).getValues();
+  const mov = sh.getRange(2, COL.mov, n, 1).getValues();
+  let cambio = false;
+  for (let i = 0; i < n; i++) {
+    if (!String(nom[i][0]).trim()) continue;
+    if (!String(ids[i][0]).trim()) { ids[i][0] = nuevoId_(); cambio = true; }
+    if (!mov[i][0]) { mov[i][0] = fec[i][0] || new Date(); cambio = true; }
+  }
+  if (cambio) { sh.getRange(2, COL.id, n, 1).setValues(ids); sh.getRange(2, COL.mov, n, 1).setValues(mov); }
+}
+
+function todosEstados_() {
+  let l = [];
+  ESTADOS_COL.forEach(c => { l = l.concat(c[1]); });
+  return l.concat(ESTADOS_RES, ESTADOS_DESC);
 }
 
 function mostrarLinks() {
@@ -154,18 +263,28 @@ function salida_(t, titulo) {
   return t.evaluate().setTitle(titulo).addMetaTag('viewport', 'width=device-width, initial-scale=1').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
+function incluir_(n) { return HtmlService.createHtmlOutputFromFile(n).getContent(); }
+
 function doGet(e) {
   const p = (e && e.parameter) || {};
   const aj = ajustes_();
   const seguro = s => (/^[A-Za-z0-9_-]{1,64}$/.test(String(s || '')) ? String(s) : '');
-  if (p.tablero) {
-    if (seguro(p.tablero) !== prop_('ADMIN_KEY')) return HtmlService.createHtmlOutput('Acceso no autorizado');
-    const t = HtmlService.createTemplateFromFile('Tablero');
-    t.clave = seguro(p.tablero); t.sitio = aj.nombre_sitio || 'Empleos'; t.color = aj.color || '#1F5FA8';
-    return salida_(t, 'Tablero · ' + t.sitio);
+  const url = ScriptApp.getService().getUrl();
+  const privado = archivo => {
+    if (seguro(p.k || p.tablero) !== prop_('ADMIN_KEY')) return null;
+    const t = HtmlService.createTemplateFromFile(archivo);
+    t.clave = seguro(p.k || p.tablero); t.sitio = aj.nombre_sitio || 'Empleos'; t.url = url;
+    t.cid = seguro(p.c); t.etapa = seguro(p.etapa); t.entre = String(p.e || '').slice(0, 60);
+    return t;
+  };
+  if (p.tablero || p.tipo === 'screening' || p.tipo === 'competencias') {
+    const archivo = p.tablero ? 'Tablero' : (p.tipo === 'screening' ? 'Screening' : 'Competencias');
+    const t = privado(archivo);
+    if (!t) return HtmlService.createHtmlOutput('Acceso no autorizado');
+    return salida_(t, (p.tablero ? 'Tablero' : archivo) + ' · ' + t.sitio);
   }
   const t = HtmlService.createTemplateFromFile('Web');
-  t.url = ScriptApp.getService().getUrl(); t.bid = seguro(p.b); t.sitio = aj.nombre_sitio || 'Empleos'; t.color = aj.color || '#1F5FA8';
+  t.url = url; t.bid = seguro(p.b); t.sitio = aj.nombre_sitio || 'Empleos';
   return salida_(t, t.sitio);
 }
 
@@ -231,7 +350,9 @@ function agregarCandidato_(o) {
     row[COL.resumen - 1] = 'Procesando…'; row[COL.cv - 1] = file.getUrl();
     row[COL.estado - 1] = 'Nuevo'; row[COL.resp - 1] = JSON.stringify(o.resp || []);
     row[COL.proc - 1] = 'Pendiente'; row[COL.intentos - 1] = 0; row[COL.fuente - 1] = o.fuente;
+    row[COL.id - 1] = nuevoId_(); row[COL.mov - 1] = new Date();
     sh.appendRow(row);
+    registrarHistorial_(row[COL.id - 1], o.nombre, 'Ingreso', 'Llegó por ' + o.fuente, 'sistema');
     return sh.getLastRow();
   } finally { lock.releaseLock(); }
 }
@@ -353,7 +474,8 @@ REGLAS DE LA NOTA:
     const req = c.requisitos || {};
     const reqTxt = Object.keys(req).map(k => k.charAt(0).toUpperCase() + k.slice(1) + ': ' + (req[k] || 'N/D')).join(' | ');
     const nota = ['A', 'B+', 'B', 'C'].indexOf(String(c.nivel_ajuste)) > -1 ? String(c.nivel_ajuste) : 'C';
-    sh.getRange(fila, COL.ajuste, 1, 4).setValues([[nota, String(c.justificacion || ''), String(c.resumen_experiencia || ''), reqTxt]]);
+    sh.getRange(fila, COL.ajuste, 1, 4).setValues([[nota, 'IA sugiere ' + nota + ': ' + String(c.justificacion || ''), String(c.resumen_experiencia || ''), reqTxt]]);
+    registrarHistorial_(r[COL.id - 1], r[COL.nombre - 1], 'Análisis CV', 'La IA sugiere ' + nota, 'sistema');
     sh.getRange(fila, COL.proc).setValue('SI');
   } catch (e) {
     registrarError_('analizar fila ' + fila, e);
@@ -433,67 +555,6 @@ function ciclo() {
   const lock = LockService.getUserLock();
   if (!lock.tryLock(1000)) return;
   try {
-    [procesarCorreos, procesarCarpeta, procesarPendientes].forEach(fn => { try { fn(); } catch (e) { registrarError_(fn.name, e); } });
+    [procesarCorreos, procesarCarpeta, procesarPendientes, syncCalendario].forEach(fn => { try { fn(); } catch (e) { registrarError_(fn.name, e); } });
   } finally { lock.releaseLock(); }
-}
-
-function admin_(k) {
-  if (String(k) !== prop_('ADMIN_KEY')) throw new Error('No autorizado');
-}
-
-function getTablero(k) {
-  admin_(k);
-  const aj = ajustes_();
-  const d = hoja_('Candidatos').getDataRange().getValues();
-  const cands = [];
-  for (let i = 1; i < d.length; i++) {
-    const r = d[i];
-    if (!r[COL.nombre - 1]) continue;
-    let resp = [];
-    try { resp = JSON.parse(r[COL.resp - 1] || '[]'); } catch (e) { }
-    cands.push({
-      fila: i + 1, fecha: r[0] instanceof Date ? Utilities.formatDate(r[0], 'GMT-3', 'dd/MM/yyyy') : String(r[0] || ''),
-      nombre: r[COL.nombre - 1], tel: String(r[COL.tel - 1] || ''), dni: String(r[COL.dni - 1] || ''), email: r[COL.email - 1], loc: r[COL.loc - 1],
-      busq: r[COL.busq - 1], pret: String(r[COL.pret - 1] || ''), ajuste: r[COL.ajuste - 1], just: r[COL.just - 1], resumen: r[COL.resumen - 1], req: r[COL.req - 1],
-      cv: r[COL.cv - 1], estado: String(r[COL.estado - 1] || 'Nuevo'), entrev: r[COL.entrev - 1], notaScr: r[COL.notaScr - 1], notaComp: r[COL.notaComp - 1],
-      recTipo: r[COL.recTipo - 1], recPor: r[COL.recPor - 1], coment: r[COL.coment - 1], resp: resp, proc: r[COL.proc - 1], fuente: r[COL.fuente - 1]
-    });
-  }
-  return JSON.stringify({
-    estados: lista_(aj.estados, '|'), entrevistadores: lista_(aj.entrevistadores, ','),
-    busquedas: busquedas_().map(b => ({ id: b.id, titulo: b.titulo, recomendacion: b.recomendacion })), cands: cands
-  });
-}
-
-function guardarCandidato(k, fila, c) {
-  admin_(k);
-  const sh = hoja_('Candidatos');
-  fila = Number(fila);
-  if (!(fila >= 2 && fila <= sh.getLastRow())) throw new Error('Fila inválida');
-  const aj = ajustes_();
-  const corto = (s, n) => String(s == null ? '' : s).slice(0, n);
-  const set = (col, v) => sh.getRange(fila, col).clearDataValidations().setValue(v);
-  if (c.estado != null) {
-    if (lista_(aj.estados, '|').indexOf(c.estado) === -1) throw new Error('Estado inválido');
-    set(COL.estado, c.estado);
-  }
-  if (c.busq != null) {
-    if (c.busq !== '' && !busquedas_().some(b => b.id === c.busq)) throw new Error('Búsqueda inválida');
-    set(COL.busq, c.busq);
-  }
-  if (c.entrev != null) set(COL.entrev, corto(c.entrev, 60));
-  if (c.notaScr != null) { if (NOTAS.indexOf(c.notaScr) === -1) throw new Error('Nota inválida'); set(COL.notaScr, c.notaScr); }
-  if (c.notaComp != null) { if (NOTAS.indexOf(c.notaComp) === -1) throw new Error('Nota inválida'); set(COL.notaComp, c.notaComp); }
-  if (c.recTipo != null) set(COL.recTipo, corto(c.recTipo, 40));
-  if (c.recPor != null) set(COL.recPor, corto(c.recPor, 120));
-  if (c.coment != null) set(COL.coment, corto(c.coment, 2000));
-  return true;
-}
-
-function reanalizar(k, fila) {
-  admin_(k);
-  const sh = hoja_('Candidatos');
-  sh.getRange(Number(fila), COL.intentos).setValue(0);
-  analizarFila_(Number(fila));
-  return sh.getRange(Number(fila), COL.proc).getValue();
 }
