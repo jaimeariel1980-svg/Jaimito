@@ -1169,9 +1169,10 @@ function azcuCrearUsuarios(){
     ['Silvina Novillo', 'Gerente', 'Sí', 'Todos', 'silvi, Silvina'],
     ['Sebastian Novillo', 'Gerente', 'Sí', 'Todos', 'seba, Sebastian'],
     ['Analia Callipari', 'Gerente y vendedora', 'Sí', 'Todos', 'analia, Analia']
+    /* cuando termine la prueba: cambiar los gerentes a «Solo gerencia» y los vendedores a «Solo los míos» */
   ]);
   sh.getRange(2, 3, 200, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['Sí', 'No'], true).build());
-  sh.getRange(2, 4, 200, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['Todos', 'Solo los míos', 'Ninguno'], true).build());
+  sh.getRange(2, 4, 200, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['Todos', 'Solo gerencia', 'Solo los míos', 'Ninguno'], true).build());
   sh.setColumnWidths(1, 1, 260); sh.setColumnWidths(2, 1, 190); sh.setColumnWidths(5, 1, 280); sh.setFrozenRows(1);
   Logger.log('✅ Pestaña Usuarios creada. Editala a gusto: se aplica en 1 minuto.');
 }
@@ -1201,15 +1202,16 @@ function azcuPush_(titulo, msg, url, dest, estricto, libre){
   if(PropertiesService.getScriptProperties().getProperty('AZCU_TODOS')==='1' && !/^(Azcu terminó|⏰)/.test(String(titulo||''))){ dest = null; estricto = false; }
   var us = azcuUsuarios_();
   if(us.length){
-    var personal = /^(Azcu terminó|⏰)/.test(String(titulo||'')), off = [], todos = [], vivos = [];
+    var personal = /^(Azcu terminó|⏰)/.test(String(titulo||'')), off = [], todos = [], gerencia = [], deGerencia = /RESERVA|VENDIDA|Reserva|Sin movimiento|Atrasos|equipo/i.test(String(titulo||''));
     us.forEach(function(u){
       if(!u.activo || u.avisos==='ninguno'){ off = off.concat(u.ids); return; }
-      vivos = vivos.concat(u.ids);
       if(u.avisos==='todos') todos = todos.concat(u.ids);
+      else if(/gerencia/.test(u.avisos)) gerencia = gerencia.concat(u.ids);
     });
     if(!personal){
-      if(dest && dest.length){ todos.forEach(function(x){ if(dest.indexOf(x)<0) dest.push(x); }); }
-      else { dest = vivos.slice(); estricto = true; }
+      var extra = todos.concat(deGerencia ? gerencia : []);
+      if(dest && dest.length){ extra.forEach(function(x){ if(dest.indexOf(x)<0) dest.push(x); }); }
+      else { dest = extra; estricto = true; }
     }
     if(dest) dest = dest.filter(function(x){ return off.indexOf(x)<0; });
   }
