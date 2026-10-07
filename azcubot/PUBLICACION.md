@@ -7,3 +7,5 @@
   - `azcubot/netlify/` → Cloudflare Pages publica la web `azcubot.pages.dev`.
 - Antes de publicar Apps Script, el sistema compara con lo último publicado; si alguien lo tocó a mano, frena y guarda la copia en la rama `sync-azcu` o `sync-pami`.
 - No editar el código directo en Apps Script.
+
+Cualquier duda, avisá a Ariel.
