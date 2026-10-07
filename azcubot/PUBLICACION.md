@@ -9,3 +9,5 @@
 - No editar el código directo en Apps Script.
 
 Cualquier duda, avisá a Ariel.
+
+Actualizado: 07/10/2026.
