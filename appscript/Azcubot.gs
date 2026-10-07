@@ -1148,6 +1148,7 @@ function azcuPush_(titulo, msg, url, dest, estricto, libre){
   var k = PropertiesService.getScriptProperties().getProperty('ONESIGNAL_KEY');
   if(!k) throw new Error('Falta ONESIGNAL_KEY en las propiedades del script');
   k = String(k).replace(/\s/g,'');
+  if(PropertiesService.getScriptProperties().getProperty('AZCU_TODOS')==='1' && !/^(Azcu terminó|⏰)/.test(String(titulo||''))){ dest = null; estricto = false; }
   var base = {app_id:AZCU_OS_APP, target_channel:'push', headings:{en:titulo, es:titulo}, contents:{en:msg, es:msg}, url:url||AZCU_WEB};
   var intentos = [];
   if(estricto && !(dest && dest.length)) return 'Sin destinatarios';
