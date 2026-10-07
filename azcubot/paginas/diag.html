@@ -1,0 +1,45 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Diagnóstico de velocidad</title>
+<style>body{font:16px system-ui,sans-serif;margin:0;padding:20px;background:#f4f2ee;color:#0f1b33}h1{color:#0a3d91;font-size:22px}button{background:#0a3d91;color:#fff;border:0;border-radius:999px;padding:14px 22px;font:700 16px system-ui;cursor:pointer}pre{background:#fff;border:1px solid #dcd8cf;border-radius:12px;padding:14px;white-space:pre-wrap;font-size:15px}</style></head><body>
+<h1>Diagnóstico de velocidad</h1><p>Tocá el botón y esperá a que termine (hasta 1 minuto). Después sacá una captura.</p>
+<button id="go">Empezar prueba</button><pre id="out">Todavía no se corrió.</pre>
+<script>
+var API='__API__', out=document.getElementById('out'), lines=[];
+function log(s){ lines.push(s); out.textContent=lines.join('\n'); }
+function pin(){ try{ return localStorage.getItem('azcu_pin')||''; }catch(e){ return ''; } }
+function rid(){ return 'd'+Date.now().toString(36)+Math.random().toString(36).slice(2,10); }
+function jsonp(url, anon, max){ return new Promise(function(res){
+  var t0=performance.now(), cb='dg'+Math.random().toString(36).slice(2,9), s=document.createElement('script'), done=false;
+  function fin(r){ if(done) return; done=true; clearTimeout(w); delete window[cb]; s.remove(); res({ms:Math.round(performance.now()-t0), r:r}); }
+  window[cb]=function(d){ fin(d||'null'); };
+  if(anon) s.crossOrigin='anonymous';
+  s.onerror=function(){ fin('ERROR de red'); };
+  s.src=url+(url.indexOf('?')>0?'&':'?')+'cb='+cb+'&_='+Date.now();
+  var w=setTimeout(function(){ fin('TIMEOUT'); }, max||40000);
+  document.head.appendChild(s);
+}); }
+function ver(r){ if(typeof r==='string') return r; if(r&&r.ok===true) return 'ok'; if(r&&r.ok===false) return 'ok (respondió: '+String(r.error).slice(0,40)+')'; return 'ok (sin dato aún)'; }
+async function completa(fn, args, modo){
+  var id=rid(), json=JSON.stringify({id:id,fn:fn,args:args}), t0=performance.now();
+  if(modo==='post'){ try{ fetch(API,{method:'POST',mode:'no-cors',credentials:'omit',headers:{'Content-Type':'text/plain'},body:json}); }catch(e){} }
+  var pl=btoa(unescape(encodeURIComponent(json))), fin=null, n=0;
+  if(modo==='get'){ var g=await jsonp(API+'?azr='+id+'&azc='+encodeURIComponent(pl), true, 45000); if(g.r && g.r.ok!==undefined) return {ms:g.ms, r:g.r}; }
+  while(performance.now()-t0<45000){
+    var p=await jsonp(API+'?azr='+id, (n++%2)===1, 8000);
+    if(p.r && p.r.ok!==undefined) return {ms:Math.round(performance.now()-t0), r:p.r};
+    await new Promise(function(r){ setTimeout(r,450); });
+  }
+  return {ms:45000, r:'TIMEOUT'};
+}
+document.getElementById('go').onclick=async function(){
+  this.disabled=true; lines=[]; log('Servidor: '+API.slice(0,60)+'…'); log('');
+  var a=await jsonp(API+'?azr=nada', false, 20000); log('1) Mensaje simple CON tu sesión de Google: '+a.ms+' ms → '+ver(a.r));
+  var b=await jsonp(API+'?azr=nada', true, 20000); log('2) Mensaje simple SIN sesión de Google: '+b.ms+' ms → '+ver(b.r));
+  var c=await completa('diagnostico_inexistente', [], 'post'); log('3) Pedido completo por POST + espera: '+c.ms+' ms → '+ver(c.r));
+  var d=await completa('diagnostico_inexistente', [], 'get'); log('4) Pedido completo por GET directo: '+d.ms+' ms → '+ver(d.r));
+  if(pin()){
+    var e=await completa('getDatos', [pin()], 'get'); log('5) Cargar propiedades (GET): '+e.ms+' ms → '+ver(e.r));
+    var f=await completa('getDatos', [pin()], 'post'); log('6) Cargar propiedades (POST): '+f.ms+' ms → '+ver(f.r));
+  } else log('5-6) Sin PIN guardado en este navegador: abrí antes el Tablero una vez.');
+  log(''); log('Listo. Sacá una captura de esta pantalla.'); this.disabled=false;
+};
+</script></body></html>

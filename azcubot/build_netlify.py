@@ -84,3 +84,5 @@ open('netlify/go.html', 'w', encoding='utf8').write(GO)
 tb = open('netlify/tablero.html', encoding='utf8').read()
 tb = tb.replace(EXEC + '?app=procedimiento', 'go.html?app=procedimiento').replace('href="' + EXEC + '"', 'href="go.html"')
 open('netlify/tablero.html', 'w', encoding='utf8').write(tb)
+
+open('netlify/diag.html','w',encoding='utf8').write(open('paginas/diag.html',encoding='utf8').read().replace('__API__',EXEC))
