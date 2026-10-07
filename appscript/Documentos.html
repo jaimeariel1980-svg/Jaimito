@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Generador de documentos — Azcuénaga</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --bg:#f2f4f7; --panel:#fff; --ink:#1a2332; --mid:#5a6472; --line:#dde3ea;
+  --accent:#1a3a6b; --accent2:#264e8a; --markbg:#eef3fa; --autobg:#eef3fa;
+  --sans:'Segoe UI',system-ui,-apple-system,sans-serif;
+  --serif:'Georgia','Times New Roman',serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--sans);background:var(--bg);color:var(--ink);line-height:1.55;}
+.top{background:var(--accent);color:#fff;padding:18px 28px;display:flex;align-items:center;gap:14px;box-shadow:0 2px 12px rgba(26,58,107,.15);}
+.top .brand{font-size:19px;font-weight:800;letter-spacing:.02em;}
+.top .brand small{display:block;font-size:10px;font-weight:500;letter-spacing:.22em;opacity:.85;margin-top:-2px;}
+.top h1{font-size:15px;font-weight:600;letter-spacing:-.01em;opacity:.95;border-left:1px solid rgba(255,255,255,.3);padding-left:16px;margin-left:2px;}
+.top .est{font-size:11px;color:rgba(255,255,255,.75);margin-left:auto;}
+.wrap{max-width:920px;margin:0 auto;padding:28px 24px 80px;}
+.steps{display:flex;gap:8px;margin-bottom:24px;}
+.step{flex:1;padding:10px 14px;background:var(--panel);border:1px solid var(--line);border-radius:8px;font-size:13px;color:var(--mid);display:flex;align-items:center;gap:8px;}
+.step b{width:22px;height:22px;border-radius:50%;background:var(--line);color:var(--mid);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;}
+.step.on{border-color:var(--accent);color:var(--ink);}
+.step.on b{background:var(--accent);color:#fff;}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:24px;margin-bottom:18px;}
+.card h2{font-size:15px;font-weight:600;margin-bottom:6px;}
+.card p.hint{font-size:13px;color:var(--mid);margin-bottom:16px;}
+.lbl{display:block;font-size:12px;font-weight:600;color:var(--mid);margin:16px 0 6px;}
+.docs{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.doc{border:1px solid var(--line);border-radius:10px;padding:18px 16px;cursor:pointer;transition:.15s;background:#fdfcfa;}
+.doc:hover{border-color:var(--accent);}
+.doc.sel{border-color:var(--accent);background:#f0f5f1;box-shadow:0 0 0 1px var(--accent);}
+.doc.soon{opacity:.5;cursor:default;}
+.doc.soon:hover{border-color:var(--line);}
+.doc h3{font-size:14px;font-weight:600;margin-bottom:4px;}
+.doc span{font-size:12px;color:var(--mid);}
+.doc .badge{display:inline-block;font-size:10px;font-weight:700;color:#8a6d0f;background:var(--markbg);border-radius:3px;padding:1px 6px;margin-top:8px;text-transform:uppercase;letter-spacing:.03em;}
+select{width:100%;border:1px solid var(--line);border-radius:8px;padding:11px 12px;font-family:var(--sans);font-size:14px;background:#fff;}
+select:focus{outline:none;border-color:var(--accent);}
+.btn{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:11px 22px;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;transition:.2s;}
+.btn:hover{background:var(--accent2);}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--line);}
+.btn.ghost:hover{background:var(--bg);}
+.btnrow{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;}
+.grpttl{font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.04em;margin:22px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--line);}
+.grpttl:first-of-type{margin-top:0;}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.field.full{grid-column:1/-1;}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--mid);margin-bottom:5px;}
+.field .tag{font-weight:500;font-size:10px;padding:1px 6px;border-radius:3px;margin-left:6px;text-transform:uppercase;letter-spacing:.03em;}
+.field .tag.auto{background:#e3edf9;color:var(--accent);}
+.field .tag.op{background:#fbeede;color:#b5551d;}
+.field input{width:100%;border:1px solid var(--line);border-radius:7px;padding:9px 12px;font-family:var(--sans);font-size:14px;}
+.field input:focus{outline:none;border-color:var(--accent);}
+.field input.auto{background:var(--autobg);border-color:#cfe0d4;}
+.preview{font-family:var(--serif);font-size:13.5px;line-height:1.75;white-space:pre-wrap;border:1px solid var(--line);border-radius:8px;padding:24px 28px;background:#fdfcfa;max-height:460px;overflow:auto;}
+.preview .fill{background:var(--markbg);color:#7a5f0d;border-radius:3px;padding:0 3px;font-weight:600;}
+.preview .miss{background:#fde8e8;color:#a33;border-radius:3px;padding:0 3px;}
+.editor{width:100%;min-height:440px;border:1px solid var(--line);border-radius:8px;padding:22px 26px;font-family:var(--serif);font-size:13.5px;line-height:1.75;color:var(--ink);background:#fdfcfa;resize:vertical;}
+.editor:focus{outline:none;border-color:var(--accent);}
+.editor{white-space:pre-wrap;overflow-wrap:anywhere}
+.edtb{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px}.edtb button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 14px;font-size:15px;cursor:pointer;color:var(--ink)}
+.gar-box{border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:12px;background:#fbfaf8;position:relative;}
+.gar-box .gar-tit{font-size:12px;font-weight:700;color:var(--accent);margin-bottom:10px;}
+.gar-del{position:absolute;top:12px;right:12px;background:none;border:none;color:#a33;cursor:pointer;font-size:12px;font-weight:600;}
+.gar-add{background:transparent;border:1px dashed var(--accent);color:var(--accent);border-radius:8px;padding:9px 16px;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;margin-top:4px;}
+.gar-add:hover{background:#f0f5f1;}
+.hide{display:none;}
+@media(max-width:640px){.fields,.docs{grid-template-columns:1fr;}.steps{flex-direction:column;}}
+</style>
+</head>
+<body>
+<div class="top">
+  <img id="topLogo" alt="Azcuénaga" style="height:44px;background:#fff;padding:5px 9px;border-radius:6px;display:none;">
+  <span class="brand" id="brandTxt">AZCUÉNAGA<small>INMOBILIARIA</small></span>
+  <h1>Generador de documentos</h1>
+  <span class="est">Mendoza 4873 · Rosario</span>
+</div>
+<div class="wrap">
+  <div class="steps">
+    <div class="step on" id="s1"><b>1</b> Elegir documento</div>
+    <div class="step" id="s2"><b>2</b> Completar datos</div>
+    <div class="step" id="s3"><b>3</b> Generar PDF</div>
+  </div>
+  <div class="card" id="card1">
+    <h2>¿Qué documento necesitás?</h2>
+    <p class="hint">Elegí uno. El formulario se arma solo con los datos que ese documento necesita.</p>
+    <div class="docs" id="docs"></div>
+    <label class="lbl">Propiedad (autocompleta los datos del inmueble)</label>
+    <select id="propSel"><option value="">— Sin propiedad / cargar a mano —</option></select>
+    <label class="chk" id="compartida-wrap" style="display:none;align-items:center;gap:9px;margin-top:16px;font-size:14px;cursor:pointer;">
+      <input type="checkbox" id="compartida" style="width:17px;height:17px;accent-color:var(--accent);cursor:pointer;">
+      Operación compartida con otra inmobiliaria
+    </label>
+    <div class="btnrow">
+      <button class="btn" id="btnNext1" onclick="completar()" disabled>Continuar &rarr;</button>
+    </div>
+  </div>
+  <div class="card hide" id="card2">
+    <h2 id="titulo2">Completá los datos</h2>
+    <p class="hint">Los campos <span style="background:#e3edf9;color:var(--accent);font-weight:600;padding:1px 6px;border-radius:3px;">del sistema</span> se completaron automáticamente desde la base de datos. Sólo debés cargar los campos <span style="background:#fbeede;color:#b5551d;font-weight:600;padding:1px 6px;border-radius:3px;">operación</span>.</p>
+    <div id="campos"></div>
+    <div class="btnrow">
+      <button class="btn" onclick="verDoc()">Ver documento &rarr;</button>
+      <button class="btn ghost" onclick="paso(1)">&larr; Cambiar</button>
+    </div>
+  </div>
+  <div class="card hide" id="card3">
+    <h2>Documento listo</h2>
+    <p class="hint">Podés <b>editar el texto acá mismo</b> antes de generar el PDF, por si necesitás ajustar algo puntual.</p>
+    <div class="edtb"><button type="button" onmousedown="event.preventDefault();edCmd('bold')"><b>B</b></button><button type="button" onmousedown="event.preventDefault();edCmd('underline')"><u>U</u></button><button type="button" onmousedown="event.preventDefault();edSize(-1)">A&minus;</button><button type="button" onmousedown="event.preventDefault();edSize(1)" style="font-size:17px">A+</button><button type="button" id="edIA" onclick="edRevisar()">&#10024; Revisar con IA</button></div>
+    <div id="edAI"></div>
+    <div id="editor" class="editor" contenteditable="true"></div>
+    <div class="btnrow">
+      <button class="btn" onclick="generarPDF()">Descargar PDF</button>
+      <button class="btn ghost" onclick="paso(2)">&larr; Corregir datos</button>
+    </div>
+  </div>
+</div>
+<script>
+/* ===== DOCUMENTOS (en produccion: pestana Sheet "Modelos") ===== */
+var DOCS = {
+  seña: {
+    nombre:"Seña / Reserva", desc:"Reserva de locación", activo:true,
+    titulo:"RESERVA LOCACIÓN AD-REFERENDUM",
+    texto:
+"RESERVA LOCACIÓN AD-REFERENDUM\n\n"+
+"Rosario, {fecha}.-\n\n"+
+"Recibi de {interesado}, DNI {dni_interesado}, la cantidad de {monto_letras} ($ {monto_reserva}), "+
+"en concepto de RESERVA para celebrar el contrato de locación del inmueble sito en calle {direccion} "+
+"de esta ciudad, sujeto a las siguientes condiciones que se establecen a continuacion y acepta de conformidad, a saber:\n\n"+
+"a. El termino de la presente es de DIEZ (10) días corridos. Dentro de los primeros TRES (3) días de dicho plazo debera "+
+"presentar a esta Administración la documentacion que acredite los requisitos abajo detallados. Dentro de los días "+
+"siguientes se debera formalizar el contrato de locación, juntamente con los garantes y demas condiciones exigidas por "+
+"la presente. En el supuesto que el interesado, dentro de los plazos indicados, no cumpliere con lo requerido, perdera "+
+"la seña entregada en forma automatica y sin necesidad de requerimiento, ni aviso alguno y sin derecho a reclamo por ningun concepto.\n\n"+
+"b. La presente reserva esta sujeta a la aprobacion del propietario, y en el caso de no aceptar la presente propuesta, "+
+"esta Administración reintegrara a {interesado} el mismo importe entregado, sin quita ni agregado alguno. Lo expuesto no "+
+"genera derecho a reclamacion alguna por parte del interesado.\n\n"+
+"c. Se deja constancia que el interesado ha revisado el inmueble ofrecido en alquiler, que es de su conformidad por las "+
+"condiciones en que el mismo se encuentra.\n\n"+
+"d. Se requieren indefectiblemente los siguientes requisitos: Garantias Propietarias de inmuebles en Rosario, acompanando "+
+"fotocopia de la escritura y D.N.I. del titular (No se aceptan las denominadas \"garantias compradas\"). Para los garantes "+
+"Laborales, se acompanara fotocopia de recibo de sueldo y D.N.I. correspondiente.\n\n"+
+"e. El contrato de locación regira a partir del dia de vencimiento de la presente reserva. Por un plazo de {plazo_meses} meses. "+
+"Destino de la locación: VIVIENDA FAMILIAR.\n\n"+
+"f. Condiciones de alquiler: Alquiler inicial: $ {alquiler_inicial} (este valor no incluye gastos de contrato e imp tgi, "+
+"aguas, expensas, gastos administrativos). Aumentos Cuatrimestrales (Indice ICL).\n\n"+
+"   Honorarios convenidos $ {honorarios}.-\n"+
+"   Informes $ {informes}.-\n"+
+"   Sellados: $ {sellados}.-\n"+
+"   Deposito en Garantía $ {deposito}.-\n"+
+"   Gastos administrativos (mensual): $ {gastos_admin}.-\n\n"+
+"Estos valores No incluyen alquiler, servicios de luz, tgi, aguas, expensas, seguro contra incendio. "+
+"El monto de la reserva se deducira de los gastos de ingreso.\n\n\n"+
+"________________________          ________________________\n"+
+"        ADMINISTRACIÓN AZCUÉNAGA                    FIRMA DEL INTERESADO"
+  },
+  contrato: {
+    nombre:"Contrato de locaci\u00f3n", desc:"Locaci\u00f3n completa", activo:true,
+    titulo:"CONTRATO DE LOCACIÓN",
+    texto: "CONTRATO DE LOCACIÓN: Entre {locador}, D.N.I. Nro. {dni_locador}, en adelante \"PARTE LOCADORA\" por una parte, y por la otra, {locatario} en adelante \"PARTE LOCATARIA\", han convenido lo que a continuacion expresaran:\n\nPRIMERA: La parte locadora ceden en locación a la parte locataria, con destino exclusivamente para vivienda, el inmueble ubicado en calle {direccion} de esta ciudad, compuesto de: {descripcion_inmueble} Todo es de conformidad de la parte locataria, por haberla revisado y conocer el inmueble, y aceptarlo sin observacion alguna.\n\nSEGUNDA: Este contrato se realiza por el período de {plazo_meses} meses, a contar del {fecha_inicio} al {fecha_fin}, en cuya fecha la parte locataria debera hacer entrega indefectiblemente de lo locado a la parte locadora o representante, con las mejoras estipuladas contractualmente, completamente desocupado y libre de toda clases de ocupantes y efectos, renunciando desde ya la parte locataria, a cualquier derecho que pudiere corresponderle para continuar en la locación, sin perjuicio del derecho de la parte locadora, de exigir privada o judicialmente, la inmediata desocupación del mismo.\n\nTERCERA: La parte locataria se obliga: a) a satisfacer por lo locado un alquiler mensual de $ {alquiler}, que se actualizara de forma CUATRIMESTRAL, comenzando a partir del QUINTO mes, a traves de un índice denominado \"ICL\" (Indice de Contratos de Locacion), pagaderos en dinero en efectivo, por mes \"ADELANTADO\", dentro de los cinco primeros días de cada mes, en el domicilio de la Administración Azcuenaga, sita en calle Mendoza Nro. 4873 de esta ciudad, dejando expresa constancia que el simple vencimiento del plazo y sin necesidad de requerimiento alguno, judicial o extrajudicial, le hara incurrir en mora a la parte locataria, debiendo abonar un interes punitorio del 1% DIARIO, por cada dia de demora en el pago, punitorio que se contara del dia cinco, fecha de pago estipulada en forma independiente y acumulativa por cada mensualidad. La parte locataria debera abonar un 2% adicional sobre el monto total (alquiler, impuestos, servicios, seguro contra incendio, punitorios, etc.) en concepto de gastos administrativos.- b).- a satisfacer integramente los impuestos municipales creados o por crearse, aguas, obras de salubridad, servicio de electricidad y gas.- La parte locataria debera solicitar o transferir a su nombre el servicio de luz dentro de los treinta días de la fecha ante las reparticiones pertinentes, realizando los tramites necesarios a dicho fin, vencido dicho plazo, la parte locadora podra solicitar la baja del servicio sin necesidad de aviso alguno, y todo gasto de reconexion sera por cuenta exclusiva de la parte locataria.- Finalizado el plazo contractual, la parte locataria se obliga a no dar de baja el servicio de luz hasta tanto se halla constatado el correcto funcionamiento de los artefactos y hasta tanto se haya realizado la efectiva entrega de llaves del inmueble a la parte locadora por documento escrito emitido por esta administración y le dara, a la parte locadora, un plazo de treinta días para realizar el traspaso de la titularidad del servicio de luz a su nombre.- Se deja expresa constancia que el servicio de litoral gas no debera ser transferido a nombre de la parte locataria.- Tambien debera satisfacer integramente cualquier impuesto, tasa, servicio, contribucion nacional, provincial o municipal que en la actualidad o en el futuro se graven.- Los impuestos seran abonados por la parte locataria conjuntamente con el alquiler mensual, en la fecha que los valores esten al cobro.- La parte locadora tiene a su cargo el impuesto inmobiliario API (art. 1209 Código Civil y Comercial de la Nacion).- c) a conservar a su exclusiva costa lo locado, que lo recibio en buen estado de conservacion, uso, funcionamiento y aseo, hallandose todo completo, pisos, techos, cielorrasos, paredes, revoques, puertas, ventanas, herrajes, llaves, instalacion de electricidad, aguas corrientes, pintura, etc.- d) La parte locataria debera mantener la higiene y limpieza de la terraza y de los desagues utilizando los medios necesarios para dicho fin. La terraza se entrega impermeabilizada con membrana asfaltica, sin filtraciones ni rajaduras, totalmente limpia, haciendose responsable la parte locataria de su mantenimiento periodico, y se compromete a restituirlo en las mismas condiciones, por lo que se obliga a subir, solo para realizar tareas de limpieza y mantenimiento.- e) a no dar a lo locado otro destino distinto del convenido, ni efectuar en el mismo modificacion o edificacion de ninguna naturaleza, salvo con autorización previa y por escrito de la parte locadora, en este caso, al terminar la relacion contractual, la parte locadora podra optar, o bien aceptar el inmueble con las reformas introducidas, o exigir se entregue el mismo en la forma que la parte locataria lo recibio, sin derecho por parte de esta, de exigir reembolso o indemnizacion alguna por las reformas introducidas.- f) a no subalquilar, transferir ni ceder total o parcialmente la presente locación, ya sea a titulo gratuito u oneroso, ni dar fiestas o agasajos que no sean los usuales por acontecimientos de familia, debiendo velar por la moral y tranquilidad del vecindario.- g) La falta de pago de alquileres, tasas, impuestos y/o servicios, dara derecho a la parte locadora a promover juicio de desalojo contra la parte locataria.\n\nCUARTA: El precio de la locación se pacta por periodos mensuales completos, estando obligada la parte locataria a abonar los alquileres por mes integro, aunque llegare a desocupar el inmueble y lo entregare antes de vencerse el mes completo, sea por efectos de una rescision, desalojo anticipado o a posterior de la fecha de vencimiento del período contractual, y sin perjuicio de la aplicacion de los punitorios por mora.\n\nQUINTA: La parte locataria autoriza desde ya a la parte locadora, para que esta, si asi lo cree conveniente, abone en su nombre y por su cuenta todos los impuestos, tasas, servicios, contribuciones, y demas que por el presente sean a su cargo, obligandose a su inmediato reembolso, sin que tenga derecho a excepcionarse o demorar su pago fundado en cualquier accion o reclamacion que tenga que deducir contra las autoridades o terceros.\n\nSEXTA: En razon de que la parte locataria y sus fiadores han revisado y por tanto conocen el estado del inmueble y de sus instalaciones, y asi lo aceptan de conformidad y sin formular observaciones, se conviene que las mejoras y reparaciones de mero mantenimiento que demanden el buen funcionamiento de la propiedad durante su ocupación seran exclusivamente a cargo de la parte locataria, asumiendo la obligacion de realizar las mismas cuando la necesidad de mantenimiento se origine en uso que realice de la cosa para la conservacion del inmueble en buen estado hasta su devolución, y sin derecho a reclamar reintegro alguno a la parte locadora.- La parte locadora no sera responsable de ninguna indemnizacion proveniente de dano material, fisico o moral causado a la parte locataria y/o a cualquier ocupante del inmueble (familiares o no, dependiente, clientes, etc.), por la unidad alquilada y/o por sus accesorios, servicios, sean propios o no, o por vecinos linderos o no, o por cualquier tercero, por fallas o deficiencias de cualquiera de sus instalaciones, de sus servicios, etc., o por incendio o explosion, derrumbe, etc., o causal de cualquier naturaleza, cualquiera fuera el dano o perjuicio que ellos causare, aceptandolo asi expresamente la parte locataria. Ninguna suma podra reclamarse a la parte locadora por ningun concepto.\n\nSEPTIMA: El sellado e impuestos del presente contrato seran abonados integramente por la parte locataria.-\n\nOCTAVA: Queda debidamente aclarado que en caso de desalojo anticipado del inmueble por causas imputables a la parte locataria, esta debera abonar todas las mensualidades que resten para completar la vigencia del presente contrato.\n\nNOVENA: La parte locataria declara expresamente que la locación se efectuo sobre unidad completamente desocupada y libre de toda clase de ocupantes y efectos, y que sera habitada exclusivamente y sin excepcion alguna, por la parte locataria.\n\nDECIMA: La parte locataria recibe la propiedad recibe la propiedad totalmente pintada en su interior: cielorrasos, paredes y aberturas, y en su exterior completa, por lo que declara que, al terminar la relacion contractual, la reintegrara en las mismas condiciones, con los mismos colores que presenta actualmente, con latex Loxon o Z10 y sintetico de primera calidad y mano de obra calificada comprobable de pintor, caso contrario, la parte locadora contratara el trabajo y se lo cobrara a la parte locataria o a sus fiadores.\n\nDECIMA PRIMERA: La parte locadora o quien esta autorice, podra revisar el inmueble objeto de este contrato, a fin de comprobar el estado de conservacion y mantenimiento del mismo, y de alguna otra anormalidad, condicion que la parte locataria acepta integramente, obligandose a franquear la entrada a las personas mencionadas, sin previo aviso, dentro de los días hábiles.\n\nDECIMA SEGUNDA: Esta Administración contratara un seguro contra incendios y daños a terceros con limite en la finca locada, cuya poliza emitida sera endosada a favor de la parte locadora, y la libera de toda contingencia, accidente, etc., que pueda afectar al inmueble alquilado, tomandolos a su cargo, siempre y cuando las causas fueran imputables a la parte locataria. Dicha poliza tendra vigencia durante todo el plazo contractual acordado, y hasta la restitucion del inmueble y debera ser abonada por la parte locataria en forma mensual y conjuntamente con el pago de canon locativo y pactado.\n\nDECIMA TERCERA: Las partes constituyen domicilio legal especial a los fines del presente: a) La parte locadora en calle Mendoza Nro. 4873 de esta ciudad ; b) La parte locataria en el inmueble locado, el inmueble locado.- c) Los Fiadores Solidarios en sus respectivos domicilios reales por ellos denunciados en cláusula \"DECIMA QUINTA\" del presente contrato. Seran validas todas las notificaciones que se cursaren a dichos domicilios, los que subsistiran mientras no se constituya otro distinto en su reemplazo, y se lo notifique en forma fehaciente.\n\nDECIMA CUARTA: Todos los firmantes del presente se someten a la jurisdicción de los Tribunales Provinciales con asiento en esta ciudad, renunciando a cualquier otro fuero o jurisdicción que pudiere corresponder.\n\nDECIMA QUINTA: {garantes} se constituyen en fiadores solidarios, lisos, llanos y principales pagadores de todas las sumas de dinero que pueda adeudar la parte locataria en concepto de alquileres, servicios, luz eléctrica, gas, impuestos, seguro contra incendio, gastos administrativos, deterioros, gastos y honorarios judiciales, intereses, daños, perjuicios y demas deudas y obligaciones derivados del presente contrato, declarando que esta fianza solidaria sera valida en la extension acordada y hasta tanto el locatario haga entrega de lo locado a la parte locadora, completamente desocupado y libre de toda clase de ocupantes y efectos y que regira aunque llegare a variar el precio y demas condiciones de locación por acuerdo privado o judicial entre la parte locadora y la parte locataria, a cuyos efectos los garantes renuncian a la extincion en caso de prórroga y/o novacion, declarando que la responsabilidad solidaria e ilimitada de los mismos, subsistira en todos los casos.- {solvencia_garantes}, dejando expresa constancia que no podra vender, gravar ni hipotecar voluntariamente el inmueble durante la vigencia de este contrato, sin previo aviso a la parte locadora por medio fehaciente, y ofrecer similares inmuebles en correspondencia.- Queda especialmente convenido que la mora de la parte locataria, implica tambien la mora de los fiadores solidarios, de pleno derecho, y sin necesidad de interpelacion alguna.\n\nDECIMA SEXTA: Si durante la vigencia de este contrato se produjera el fallecimiento o la insolvencia de los fiadores solidarios, la parte locadora podra exigir a la parte locataria el cambio de los mismos por otros garantes a satisfaccion, bajo apercibimiento de daños y perjuicios si la parte locataria resultare negligente en el ofrecimiento.\n\nDECIMA SEPTIMA: En garantía del fiel cumplimiento del presente contrato, por las obligaciones que toma a su cargo la parte locataria, esta constituye un DEPOSITO EN GARANTIA, por la suma de $ {deposito}.- Este depósito no devengara interes alguno y sera devuelto a la parte locataria una vez verificado el fiel cumplimiento de sus obligaciones.- La parte Locadora podra aplicarlo al pago de alquileres, indemnizacion por rescision contractual, impuestos, tasas y/o servicios devengados hasta la fecha de desocupación del inmueble locado, como asi tambien al pago de reparaciones o reemplazo de muebles accesorios que sea menester realizar, restituyendose el excedente de dicho depósito en su caso, dentro de los TREINTA (30) días del vencimiento de la ultima obligacion.- Si los gastos ocasionados fueren superiores a la suma mencionada, la parte Locataria se compromete formalmente a abonar la diferencia existente a la parte locadora.\n\nDECIMA OCTAVA: Queda convenido entre las partes que la parte locataria podra rescindir el presente contrato a partir de los SEIS (6) meses, debiendo notificar en forma fehaciente a la parte locadora con una antelacion de TREINTA (30) días corridos, y abonar en concepto de indemnizacion, el equivalente a un mes y medio de alquiler si rescindiera antes del año y a un mes si lo hiciere despues de los doce meses.\n\nDECIMA NOVENA: Toda cuestion que se suscitare entre las partes por cualquier motivo relacionado con este contrato, incluyendo, entre otras, su validez, interpretacion, alcance, cumplimiento, resolucion o, asimismo, los reclamos a los que diere lugar su incumplimiento, se resolveran definitivamente por el Tribunal de Arbitraje del Colegio de Abogados de Rosario, de acuerdo con el Reglamento y las Normas Complementarias aplicables al arbitraje de derecho aprobados por la Institucion, que las partes declaran conocer. Las Partes pactan, ademas, que para la protocolizacion del laudo o la resolucion que pusiere fin al arbitraje, la interposicion de nulidad y la ejecucion del laudo, seran competentes los Tribunales Ordinarios de la ciudad de Rosario, provincia de Santa Fe. Previo a la iniciacion del arbitraje, las partes deberan someter el conflicto a la mediacion del Colegio de Corredores Inmobiliarios de Rosario, conforme con lo dispuesto por el reglamento de esta entidad. Vencido el termino de treinta (30) días corridos sin que las partes hayan arribado a un acuerdo, contados a partir de la fecha del requerimiento de la mediacion, las partes quedaran automaticamente habilitadas para promover el arbitraje.\n\nVIGESIMA: Las partes fijan el domicilio de pago en la sede de la \"Administración Azcuenaga\" sita en calle Mendoza Nro. 4873 de esta ciudad, cuyos titulares son la Sra. Silvina Andrea Novillo, D.N.I. Nro. 34.820.520 y Sebastian Novillo, D.N.I. Nro. 30.381.551 en forma indistinta, los que quedan suficientemente facultados para realizar todas las gestiones y tramites inherentes a la administración de la presente locación (confección de contratos, de sus prórrogas, evaluacion de garantias, recibir pagos, otorgar recibos, cursar intimaciones por cualquier medio a la parte locataria y/o fiadores, sean de pago, de desocupación, etc.), como asi tambien responder requerimientos de la parte locataria, inspeccionar el inmueble locado, suscribir actas, y demas vinculadas a esta locación, y recibir el inmueble cuando la parte locataria haga devolución del mismo, etc. Quedando especialmente acordado que en caso de renovacion o de prórroga de la presente locación, si la misma hubiere sido celebrada por las mismas partes, y con la gestion de la \"Administración Azcuenaga\", se le reconoce a esta ultima el pago de los Honorarios de Ley por haber concertado la relacion locativa original.- Asimismo si la parte locadora decidiera retirar la administración antes del vencimiento del plazo contractual tambien debera abonar a esta Administración el total de los honorarios mensuales que resten hasta la finalizacion del contrato.\n\nVIGESIMA PRIMERA: Si un mes antes de la finalizacion del termino de este contrato, no se ha acordado entre la parte locadora y la parte locataria, la firma de un nuevo contrato de locación, la parte locataria debera fijar un horario no menor de DOS (2) horas, dentro del cual se obliga a permitir el ingreso al inmueble dentro de los días hábiles de comercio, a esta Administración o a quien la parte locadora designe, para que se muestre el inmueble a personas interesadas en la locación.\n\nVIGESIMA SEGUNDA: La falta de cumplimiento a cualquiera de las obligaciones emergentes del presente contrato dara derecho a la parte locadora, o bien exigir su cumplimiento, o bien darlo por rescindido, dejando expresa constancia que el uso del uno, no significa la renuncia del otro.\n\nFIRMA DEL CONTRATO: En prueba de conformidad, previa lectura y ratificación del contenido de las cláusulas expuestas, se firma el presente en tres ejemplares del mismo tenor y a un solo efecto, uno para cada una de las partes, en la ciudad de Rosario, provincia de Santa Fe, a los {dia} días del mes de {mes} de {anio}.\n\n\n______________________________          ______________________________\n        PARTE LOCADORA                             PARTE LOCATARIA\n\n\n______________________________          ______________________________\n            GARANTE                                    GARANTE"
+  },
+  senaventa: {
+    nombre:"Se\u00f1a por compra-venta", desc:"Se\u00f1a de operaci\u00f3n de venta", activo:true,
+    titulo:"SE\u00d1A POR COMPRA-VENTA INMOBILIARIA",
+    texto:
+"SE\u00d1A POR COMPRA-VENTA INMOBILIARIA\n\n"+
+"En la ciudad de Rosario, provincia de Santa Fe, a {fecha}, entre {vendedor}, D.N.I. Nro. {dni_vendedor}, con domicilio en {domicilio_vendedor}, en representaci\u00f3n de la parte VENDEDORA, y por la otra, {comprador}, D.N.I. Nro. {dni_comprador}, con domicilio en {domicilio_comprador}, como parte COMPRADORA, se consiente y ejecuta el presente contrato de SE\u00d1A por compra-venta inmobiliaria:\n\n"+
+"PRIMERO: La parte VENDEDORA toma de la parte COMPRADORA, en concepto de SE\u00d1A, la suma de D\u00d3LARES BILLETES ESTADOUNIDENSES {sena_letras} (U$S {sena}), por la compra de un inmueble con todo lo edificado, clavado y plantado, ubicado en la calle {direccion} de esta ciudad, inscripto el dominio al {dominio}, en el Registro General de Propiedades, Departamento Rosario.\n\n"+
+"SEGUNDO: El precio de venta se pacta en la suma total de D\u00d3LARES BILLETES ESTADOUNIDENSES {precio_letras} (U$S {precio_total}), que la parte COMPRADORA abonar\u00e1 a la parte VENDEDORA de la siguiente forma: en efectivo y en este acto la suma de U$S {sena}, sirviendo el presente como suficiente recibo; y al momento de la firma de la escritura traslativa de dominio y entrega de posesi\u00f3n la suma de U$S {saldo}.\n\n"+
+"TERCERO: Todos los impuestos, tasas, servicios que graven el inmueble ser\u00e1n a cargo exclusivo de la parte VENDEDORA hasta la fecha de entrega de la posesi\u00f3n.\n\n"+
+"CUARTO: La escritura ser\u00e1 otorgada por ante la Escribania {escribania}, siendo los gastos y honorarios totales que la misma devengue soportados en su totalidad por la parte Compradora.\n\n"+
+"QUINTO: La presente SE\u00d1A ser\u00e1 v\u00e1lida por el t\u00e9rmino de {plazo_dias} d\u00edas corridos a contar de la firma del presente, siendo el d\u00eda {fecha_escritura} el convenido para la firma de escritura, pago de saldo y entrega de posesi\u00f3n.\n\n"+
+"SEXTO: Por esta operaci\u00f3n de compra-venta inmobiliaria, la administraci\u00f3n percibir\u00e1 al momento de la firma del boleto de compraventa o la escritura traslativa de dominio (lo que sucediera primero), de cada una de las partes, Vendedora y Compradora, la suma de U$S {honorarios} m\u00e1s IVA (si correspondiere), en concepto de honorarios convenidos.\n\n"+
+"SEPTIMO: La parte COMPRADORA manifiesta en car\u00e1cter de declaraci\u00f3n jurada, poseer los D\u00f3lares Billetes Estadounidenses necesarios para satisfacer el precio de esta operaci\u00f3n (Compraventa y pago de Honorarios), oblig\u00e1ndose a conservarlos hasta la firma de la escritura traslativa de dominio y aceptando que el pago de la moneda especificada constituye una condici\u00f3n esencial para su celebraci\u00f3n, renunciando en forma expresa e irrevocable a invocar la teor\u00eda de la imprevisi\u00f3n y a lo estipulado por el art\u00edculo 765 del C\u00f3digo Civil y Comercial de la Naci\u00f3n. Para el pago de dichas obligaciones, los billetes d\u00f3lares estadounidenses deber\u00e1n ser serie 1996 en adelante y estar en excelente estado de conservaci\u00f3n.\n\n"+
+"OCTAVO: Si de los estudios de t\u00edtulos y/o pedido de informes surgiere alg\u00fan gravamen o impedimento de alg\u00fan tipo que imposibilite esta operaci\u00f3n, se reintegrar\u00e1 el importe recibido, sin devengar intereses ni indemnizaci\u00f3n alguna, en un plazo de 48 hs, previa notificaci\u00f3n fehaciente del COMPRADOR.\n\n"+
+"NOVENO: En caso de divergencia derivada del presente contrato de se\u00f1a, las partes contratantes se someten a la jurisdicci\u00f3n de los Tribunales Ordinarios de esta ciudad de Rosario, provincia de Santa Fe, renunciando desde ya al Fuero Federal si correspondiera.\n\n"+
+"FIRMA DEL CONTRATO: Previa lectura y ratificaci\u00f3n del contenido del presente, se firman tres ejemplares de un mismo tenor y a un solo efecto, en el lugar y fecha al principio indicados.\n\n\n"+
+"_____________________________          _____________________________\n"+
+"        PARTE VENDEDORA                          PARTE COMPRADORA"
+  },
+  autorizacion: {
+    nombre:"Autorización de venta", desc:"Derechos de venta", activo:true,
+    titulo:"AUTORIZACIÓN DE VENTA",
+    texto:
+"AUTORIZACIÓN DE VENTA\n\n"+
+"En la ciudad de Rosario, provincia de Santa Fe, a {fecha}, entre {propietario}, D.N.I. {dni_propietario}, "+
+"domiciliada en {domicilio_propietario}, en su caracter de PARTE PROPIETARIA por una parte, y por la otra, "+
+"SILVINA ANDREA NOVILLO, D.N.I. 34.820.520, C.I. Matrícula N 2352, domiciliada en calle Mendoza 4873, en "+
+"representacion de Administración Azcuenaga, convienen lo que a continuacion expresaran:\n\n"+
+"PRIMERO: La Parte Propietaria AUTORIZA plenamente a Administración Azcuenaga, para que en su orden y representacion "+
+"VENDA y redacte seña, reserva y/o boleto de compra-venta sobre el inmueble sito en {direccion} de esta ciudad.\n\n"+
+"SEGUNDO: El precio se fija en la suma total de DOLARES {precio_letras} (U$S {precio_venta}). Por dicha venta, y al "+
+"momento de la firma del boleto de compra-venta o escritura traslativa de dominio, lo que ocurriera primero, "+
+"Administración Azcuenaga percibira el {comision} % mas IVA sobre el precio de venta de cada parte, compradora y vendedora.\n\n"+
+"TERCERO: En caso de venta, la Parte Propietaria se obliga a entregar planos de edificacion, plano de mensura y todos los "+
+"impuestos, tasas, servicios, contribuciones que graven al inmueble, pagos al dia de la escrituracion, efectuandose la "+
+"venta libre de todo gravamen y en base a títulos perfectos.\n\n"+
+"CUARTO: La presente autorización sera valida por CIENTO OCHENTA (180) días corridos a contar de la fecha del "+
+"encabezamiento, y se renovara automaticamente por treinta (30) días mas corridos de la fecha de su vencimiento y asi "+
+"sucesivamente de no mediar notificación fehaciente por parte del autorizante con cinco (5) días hábiles de anticipacion "+
+"a la fecha de cada vencimiento.\n\n"+
+"QUINTO: Los gastos de publicacion seran a cargo de Administración Azcuenaga, por lo tanto, en caso de no venderse el "+
+"inmueble dentro del plazo de vigencia del presente, la Parte Propietaria no abonara suma alguna por ningun concepto. "+
+"En el caso de que la Parte Propietaria desista de la venta del inmueble o decidiera realizar la operacion de venta por "+
+"cuenta propia dentro del plazo de vigencia del presente, debera abonar a Administración Azcuenaga el 6% mas IVA sobre "+
+"el precio de venta pactado en concepto de honorarios.\n\n"+
+"SEXTO: Para el caso de que se hubiera concretado el contrato de seña y que alguna de las partes compradora o vendedora "+
+"desistiera de avanzar con la operacion, quien asi lo hiciere debera abonar a Administración Azcuenaga el 6% mas IVA "+
+"sobre el precio de venta pactado en concepto de honorarios.\n\n"+
+"SEPTIMO: La Parte Propietaria AUTORIZA expresamente a Silvina Andrea Novillo a percibir en concepto de SEÑA o RESERVA, "+
+"hasta el 10% del valor del inmueble.\n\n"+
+"FIRMA DEL ACUERDO: En conformidad y ratificación de todo lo expuesto, previa lectura del contenido del mismo, se firman "+
+"dos ejemplares de un mismo tenor y a un solo efecto, en el lugar y fecha al principio indicados.\n\n\n"+
+"________________________          ________________________\n"+
+"        PARTE PROPIETARIA                    ADMINISTRACIÓN AZCUÉNAGA"
+  },
+  oferta: {
+    nombre:"Oferta de compra", desc:"Oferta y reserva ad-referendum", activo:true,
+    titulo:"OFERTA DE COMPRA DE INMUEBLE Y RESERVA DE AD-REFERENDUM",
+    texto:
+"OFERTA DE COMPRA DE INMUEBLE Y RESERVA DE AD-REFERENDUM\n\n"+
+"En la ciudad de Rosario, Provincia de Santa Fe, a {fecha}, entre el Sr./Sra. {oferente}, DNI N {dni_oferente}, "+
+"de nacionalidad {nacionalidad_oferente}, con domicilio en {domicilio_oferente}, en adelante denominado EL OFERENTE, "+
+"por una parte; y por la otra la firma AZCUENAGA INMOBILIARIA, representada en este acto por la Corredora Inmobiliaria "+
+"Silvina Novillo (Mat. CI N 2352), con domicilio legal en calle Mendoza 4873 de la ciudad de Rosario, domicilio "+
+"electronico azcuenagaventas@gmail.com, en representacion de la parte Vendedora, de comun acuerdo, convienen en celebrar "+
+"el presente contrato sujeto a las siguientes clausulas:\n\n"+
+"PRIMERA: OBJETO: EL OFERENTE realiza una oferta firme e irrevocable de compra respecto del inmueble ubicado en calle "+
+"{direccion} de la ciudad de Rosario, Provincia de Santa Fe, inscripto el dominio al {dominio}, el cual declara conocer, "+
+"haber visitado y aceptar en el estado estructural, de conservacion y de superficies en que se encuentra.\n\n"+
+"SEGUNDA: PRECIO Y FORMA DE PAGO: El precio total, fijo y definitivo ofrecido por la compra de la propiedad descrita en "+
+"la clausula anterior asciende a la suma de DOLARES ESTADOUNIDENSES {precio_letras} (U$S {precio_total}), que al momento "+
+"del boleto de compraventa a firmarse antes del dia {fecha_boleto} inclusive se abonaran U$S {monto_boleto} y el saldo "+
+"restante es decir U$S {saldo} al momento de la escritura traslativa de dominio antes del dia {fecha_escritura} inclusive. "+
+"Este plazo se prorrogara cuando existan demoras no imputables a las partes, sino que se deban a demoras en los tribunales "+
+"provinciales y al Registro de la propiedad.\n\n"+
+"TERCERA: GARANTIA DE LA OFERTA: En este acto y como prueba de la seriedad de su propuesta, EL OFERENTE entrega a la firma "+
+"intermediaria la suma de DOLARES ESTADOUNIDENSES {sena_letras} (U$S {sena}) en concepto de deposito en garantia del "+
+"mantenimiento de la presente oferta. La inmobiliaria recibe dicho importe en calidad de deposito ad-referendum de la "+
+"aceptacion formal y expresa de la parte propietaria.\n\n"+
+"CUARTA: PLAZO DE VALIDEZ: La presente oferta se mantendra vigente, sera firme y de caracter irrevocable por un plazo "+
+"perentorio de {plazo_validez} dias corridos a partir de la fecha de la firma del presente documento.\n\n"+
+"QUINTA: EFECTOS DE LA ACEPTACION (SENA): Si dentro del plazo estipulado en la clausula cuarta el propietario aceptara "+
+"formalmente la oferta firmando al pie de este documento, la suma de U$S {sena} entregada en garantia pasara automaticamente "+
+"a tomar el caracter de SENA PENITENCIAL, rigiendo a partir de ese momento los efectos del Articulo 1059 y concordantes del "+
+"Codigo Civil y Comercial de la Nacion. Asimismo, quedara perfeccionado el derecho de la inmobiliaria a percibir sus "+
+"honorarios profesionales.\n\n"+
+"SEXTA: RECHAZO O CADUCIDAD: Si la oferta fuera rechazada por la parte propietaria, o si venciera el plazo sin que mediara "+
+"aceptacion expresa por escrito, la firma intermediaria devolvera a EL OFERENTE la totalidad de la suma recibida (U$S {sena}), "+
+"sin penalidades, intereses ni quita alguna, quedando este documento sin efecto ni valor juridico alguno.\n\n"+
+"SEPTIMA: POSESION ANTICIPADA Y SALDO DE PRECIO: Las partes acuerdan que, al momento de la firma del Boleto de Compraventa "+
+"a firmarse antes del {fecha_boleto}, y una vez abonada por el COMPRADOR la suma equivalente al SETENTA POR CIENTO (70%) del "+
+"precio total convenido, el VENDEDOR hara entrega inmediata de la posesion del inmueble objeto de la presente, libre de "+
+"ocupantes, cosas y de toda otra restriccion que impida su uso y goce. A partir de la fecha de entrega de la posesion, "+
+"seran a exclusivo cargo del COMPRADOR el pago de los impuestos, tasas, contribuciones, servicios, y demas gastos que graven "+
+"o afecten al inmueble. El saldo de precio, equivalente al TREINTA POR CIENTO (30%) restante, sera abonado por el COMPRADOR "+
+"en el acto de la escritura traslativa de dominio, que se celebrara antes del dia {fecha_escritura} inclusive.\n\n"+
+"OCTAVA: TITULOS: El VENDEDOR declara ser titular del pleno dominio del inmueble objeto de la presente operacion y se obliga "+
+"a transmitirlo con titulos perfectos, libres de inhibiciones, gravamenes, embargos, medidas cautelares, restricciones al "+
+"dominio, deudas o cualquier otro impedimento que pueda afectar la validez o eficacia de la transferencia. Caso contrario, "+
+"lo entregado en concepto de oferta por el oferente se debera restituir al mismo.\n\n"+
+"NOVENA: GASTOS DE ESCRITURACION: El oferente propone que todos los gastos, tasas, impuestos, sellados y honorarios que "+
+"demande la correspondiente escritura traslativa de dominio seran soportados y a cargo de la parte compradora. La designacion "+
+"del Escribano Autorizante que instrumentara la operacion estara a cargo de la parte compradora.\n\n"+
+"DECIMA: HONORARIOS DE INTERMEDIACION: Las partes reconocen expresamente, para el caso de aceptacion de la presente por el "+
+"propietario, la legitima intervencion de INMOBILIARIA AZCUENAGA en la intermediacion de esta operacion. EL OFERENTE "+
+"(comprador) se obliga a abonar {beneficiario_honorarios} en concepto de honorarios profesionales el TRES POR CIENTO (3%) "+
+"sobre el monto total de la transaccion (U$S {precio_total}). Asimismo, se deja constancia de que la parte vendedora abonara "+
+"de igual forma un TRES POR CIENTO (3%) a Azcuenaga Inmobiliaria, conforme a lo pactado y en un todo de acuerdo con las "+
+"normativas vigentes en la provincia de Santa Fe.{BLOQUE_COMPARTIDA}\n\n"+
+"DECIMA PRIMERA: IMPUESTOS, TASAS Y CONTRIBUCIONES: Todos los impuestos, tasas, contribuciones y gastos que legalmente "+
+"correspondan a cada una de las partes, seran soportados por quien resulte obligado al pago, conforme a la legislacion vigente.\n\n"+
+"En prueba de conformidad y aceptacion de las clausulas precedentes, se firman cuatro (4) ejemplares de un mismo tenor y a "+
+"un solo efecto en el lugar y fecha arriba indicados.\n\n\n"+
+"_____________________________          _____________________________\n"+
+"        EL OFERENTE                        INMOBILIARIA AZCUÉNAGA"
+  },
+};
+
+/* campos que se autocompletan desde la propiedad */
+var CAMPOS_PROP = ['direccion','propietario','dni_propietario','domicilio_propietario','matricula','descripcion_inmueble','dominio'];
+
+/* ===== CEREBRO: propiedades (en produccion: pestana Sheet) ===== */
+var LOGO_FALLBACK = 'data:image/webp;base64,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';
+var PROPIEDADES = {}; // se carga del Sheet via Apps Script
+
+var TEXTO_COMPARTIDA = " Se deja constancia de que la presente operacion se realiza en forma compartida con la firma "+
+"{otra_inmobiliaria}, representada por {otro_corredor} (Mat. {otra_matricula}), domicilio electronico {otro_mail}.";
+
+var docSel=null, campos=[], esCompartida=false, FUENTE='times';
+
+(function init(){
+  document.getElementById('docs').innerHTML = Object.keys(DOCS).map(function(k){
+    var d=DOCS[k];
+    var cls = 'doc'+(d.activo?'':' soon');
+    var badge = d.activo ? '' : '<div class="badge">Próximamente</div>';
+    var onclick = d.activo ? ' onclick="elegir(\''+k+'\')"' : '';
+    return '<div class="'+cls+'" data-k="'+k+'"'+onclick+'><h3>'+d.nombre+'</h3><span>'+d.desc+'</span>'+badge+'</div>';
+  }).join('');
+  cargarPropiedades();
+  cargarImagenes();
+})();
+
+function aCanvas(dataUri, cb){
+  var img = new Image();
+  img.onload = function(){
+    var c = document.createElement('canvas');
+    c.width = img.naturalWidth; c.height = img.naturalHeight;
+    var ctx = c.getContext('2d');
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,c.width,c.height); // fondo blanco
+    ctx.drawImage(img,0,0);
+    cb(c.toDataURL('image/jpeg',0.92), c.width, c.height);
+  };
+  img.onerror = function(){ cb('',0,0); };
+  img.src = dataUri;
+}
+function cargarImagenes(){
+  google.script.run
+    .withSuccessHandler(function(img){
+      if(!img) img = {};
+      if(!img.logo) img.logo = LOGO_FALLBACK;
+      if(img.logo){
+        aCanvas(img.logo, function(d,w,hh){ LOGO_AZC=d; LOGO_W=w; LOGO_H=hh; });
+        var tl=document.getElementById('topLogo');
+        tl.src=img.logo; tl.style.display='block';
+        document.getElementById('brandTxt').style.display='none';
+      }
+      if(img.sello) aCanvas(img.sello, function(d,w,hh){ SELLO_COCIR=d; });
+    })
+    .withFailureHandler(function(e){ aCanvas(LOGO_FALLBACK, function(d,w,hh){ LOGO_AZC=d; LOGO_W=w; LOGO_H=hh; }); })
+    .obtenerImagenes();
+}
+
+function _ponerProps(lista){
+  var sel=document.getElementById('propSel');
+  PROPIEDADES={};
+  sel.innerHTML='<option value="">— Sin propiedad / cargar a mano —</option>';
+  lista.forEach(function(p){
+    var m=p.matricula||p['matrícula']||p.dominio||'';
+    PROPIEDADES[p.id]={ etiqueta:p.etiqueta, datos:{
+      direccion:p.direccion, propietario:p.propietario, dni_propietario:p.dni_propietario,
+      domicilio_propietario:p.domicilio_propietario, matricula:m, dominio:m, descripcion_inmueble:p.descripcion_inmueble||'',
+      locador:p.propietario, dni_locador:p.dni_propietario, vendedor:p.propietario, dni_vendedor:p.dni_propietario,
+      domicilio_vendedor:p.domicilio_propietario, precio_venta:p.precio||'', precio_total:p.precio||''
+    }};
+    var o=document.createElement('option'); o.value=p.id; o.textContent=p.etiqueta; sel.appendChild(o);
+  });
+  var pre=_propUrl();
+  if(pre && PROPIEDADES[pre]){ sel.value=pre; var n=document.getElementById('propInfo'); if(!n){ n=document.createElement('div'); n.id='propInfo'; n.style.cssText='margin-top:8px;font-size:13px;color:#2a5'; sel.parentNode.appendChild(n); } n.textContent='✓ Datos cargados de: '+PROPIEDADES[pre].etiqueta; }
+}
+function _propUrl(){
+  try{ var q=new URLSearchParams(location.search).get('prop'); if(q) return q; }catch(e){}
+  return window.__PROP||'';
+}
+function cargarPropiedades(){
+  var sel=document.getElementById('propSel');
+  sel.innerHTML='<option value="">Cargando propiedades...</option>';
+  try{ if(!_propUrl() && window.google && google.script && google.script.url && google.script.url.getLocation) google.script.url.getLocation(function(l){ if(l && l.parameter && l.parameter.prop){ window.__PROP=l.parameter.prop; var sl=document.getElementById('propSel'); if(PROPIEDADES[__PROP]) sl.value=__PROP; } }); }catch(e){}
+  function viejo(){
+    google.script.run
+      .withSuccessHandler(_ponerProps)
+      .withFailureHandler(function(err){
+        sel.innerHTML='<option value="">Error al cargar. Recargá la página.</option>';
+        alert('No pude leer las propiedades del Sheet: '+err.message);
+      })
+      .obtenerPropiedades();
+  }
+  google.script.run.withSuccessHandler(function(l){ if(Array.isArray(l)) _ponerProps(l); else viejo(); }).withFailureHandler(viejo).obtenerPropiedadesDoc();
+}
+
+function elegir(k){
+  docSel=k;
+  document.querySelectorAll('.doc').forEach(function(t){ t.classList.toggle('sel', t.getAttribute('data-k')===k); });
+  document.getElementById('btnNext1').disabled=false;
+  // el checkbox de operación compartida solo aplica a la oferta de compra
+  var wrap=document.getElementById('compartida-wrap');
+  if(k==='oferta'){ wrap.style.display='flex'; }
+  else { wrap.style.display='none'; document.getElementById('compartida').checked=false; }
+}
+
+function completar(){
+  if(!docSel) return;
+  esCompartida = document.getElementById('compartida').checked;
+  var texto=DOCS[docSel].texto;
+  if(docSel==='oferta'){ texto = texto.replace('{BLOQUE_COMPARTIDA}', esCompartida ? TEXTO_COMPARTIDA : ''); }
+  var enc=(texto.match(/\{[^}]+\}/g)||[]).map(function(m){return m.slice(1,-1).trim();});
+  campos=enc.filter(function(v,i){return v && enc.indexOf(v)===i;});
+  var propKey=document.getElementById('propSel').value;
+  var auto = propKey ? PROPIEDADES[propKey].datos : {};
+  document.getElementById('titulo2').textContent=DOCS[docSel].nombre+" \u2014 datos";
+  var CAMPOS_COMP=['otra_inmobiliaria','otro_corredor','otra_matricula','otro_mail','otro_porcentaje'];
+  var gProp=[], gOp=[];
+  campos.forEach(function(c){
+    if(CAMPOS_COMP.indexOf(c)>=0) return; // los de compartida se manejan aparte
+    (CAMPOS_PROP.indexOf(c)>=0 ? gProp : gOp).push(c);
+  });
+  var html='';
+  if(gProp.length){
+    html+='<div class="grpttl">Datos de la propiedad</div><div class="fields">';
+    html+=gProp.map(function(c){ return campoHTML(c, auto[c]||'', true); }).join('')+'</div>';
+  }
+  var tieneLocatario = gOp.indexOf('locatario')>=0;
+  gOp = gOp.filter(function(c){ return c!=='locatario'; });
+  var tieneFechaDoc = (gOp.indexOf('dia')>=0 && gOp.indexOf('mes')>=0 && gOp.indexOf('año')>=0);
+  gOp = gOp.filter(function(c){ return c!=='dia' && c!=='mes' && c!=='año'; });
+  var tieneGarantes = gOp.indexOf('garantes')>=0;
+  gOp = gOp.filter(function(c){ return c!=='garantes' && c!=='solvencia_garantes' && c!=='beneficiario_honorarios'; });
+  if(tieneLocatario){
+    html+='<div class="grpttl">Locatario/s (inquilino/s)</div><div id="locatarios-cont"></div>';
+    html+='<button type="button" class="gar-add" onclick="addLocatario()">+ Agregar locatario</button>';
+  }
+  if(gOp.length){
+    html+='<div class="grpttl">Datos de esta operación</div><div class="fields">';
+    html+=gOp.map(function(c){ return campoHTML(c, auto[c]||'', false); }).join('');
+    if(tieneFechaDoc){
+      html+='<div class="field"><label>Fecha del documento<span class="tag op">operación</span></label><input type="date" data-campo="fecha_doc"></div>';
+    }
+    html+='</div>';
+  } else if(tieneFechaDoc){
+    html+='<div class="grpttl">Datos de esta operación</div><div class="fields">';
+    html+='<div class="field"><label>Fecha del documento<span class="tag op">operación</span></label><input type="date" data-campo="fecha_doc"></div></div>';
+  }
+  if(tieneGarantes){
+    html+='<div class="grpttl">Garantes</div><div id="garantes-cont"></div>';
+    html+='<button type="button" class="gar-add" onclick="addGarante()">+ Agregar garante</button>';
+  }
+  if(esCompartida && docSel==='oferta'){
+    html+='<div class="grpttl">Datos de la inmobiliaria con la que se comparte</div><div class="fields">';
+    html+=CAMPOS_COMP.map(function(c){ return campoHTML(c, '', false); }).join('')+'</div>';
+  }
+  document.getElementById('campos').innerHTML=html;
+  if(document.getElementById('locatarios-cont')){ locatariosN=0; addLocatario(); }
+  if(document.getElementById('garantes-cont')){ garantesN=0; addGarante(); }
+  paso(2);
+}
+
+// Convierte un numero entero a letras en español (mayusculas)
+function numeroALetras(num){
+  num = parseInt(String(num).replace(/[^\d]/g,''),10);
+  if(isNaN(num)) return '';
+  if(num===0) return 'CERO';
+  var UNI=['','UNO','DOS','TRES','CUATRO','CINCO','SEIS','SIETE','OCHO','NUEVE','DIEZ','ONCE','DOCE','TRECE','CATORCE','QUINCE','DIECISEIS','DIECISIETE','DIECIOCHO','DIECINUEVE','VEINTE'];
+  var DEC=['','','','TREINTA','CUARENTA','CINCUENTA','SESENTA','SETENTA','OCHENTA','NOVENTA'];
+  var CEN=['','CIENTO','DOSCIENTOS','TRESCIENTOS','CUATROCIENTOS','QUINIENTOS','SEISCIENTOS','SETECIENTOS','OCHOCIENTOS','NOVECIENTOS'];
+  function menor100(n){
+    if(n<=20) return UNI[n];
+    if(n<30) return 'VEINTI'+UNI[n-20].toLowerCase().toUpperCase();
+    var d=Math.floor(n/10), u=n%10;
+    return DEC[d]+(u?' Y '+UNI[u]:'');
+  }
+  function menor1000(n){
+    if(n===100) return 'CIEN';
+    var c=Math.floor(n/100), r=n%100;
+    return (c?CEN[c]:'')+(c&&r?' ':'')+(r?menor100(r):'');
+  }
+  function seccion(n, singular, plural){
+    if(n===0) return '';
+    if(n===1) return singular;
+    return menor1000(n)+' '+plural;
+  }
+  var millones=Math.floor(num/1000000);
+  var miles=Math.floor((num%1000000)/1000);
+  var resto=num%1000;
+  var partes=[];
+  if(millones){ partes.push(millones===1?'UN MILLON':menor1000(millones)+' MILLONES'); }
+  if(miles){ partes.push(miles===1?'MIL':menor1000(miles)+' MIL'); }
+  if(resto){ partes.push(menor1000(resto)); }
+  return partes.join(' ').replace(/\s+/g,' ').trim();
+}
+
+function campoHTML(c, val, esAuto){
+  // etiquetas claras para campos que pueden confundir
+  var ETIQUETAS = {
+    // montos alquiler
+    alquiler:'Alquiler mensual ($)',
+    alquiler_inicial:'Alquiler inicial mensual ($)',
+    monto_reserva:'Monto de la reserva ($, en números)',
+    monto_letras:'Monto de la reserva (en letras)',
+    deposito:'Depósito en garantía ($)',
+    honorarios:'Honorarios ($)',
+    informes:'Informes ($)',
+    sellados:'Sellados ($)',
+    gastos_admin:'Gastos administrativos mensuales ($)',
+    // montos venta
+    precio_venta:'Precio de venta (U$S)',
+    precio_total:'Precio total (U$S)',
+    precio_letras:'Precio (en letras)',
+    sena:'Seña (U$S, en números)',
+    sena_letras:'Seña (en letras)',
+    monto_boleto:'Monto al firmar boleto (U$S)',
+    saldo:'Saldo restante (U$S)',
+    comision:'Comisión (%)',
+    beneficiario_honorarios:'Beneficiario de honorarios',
+    // plazos y fechas
+    plazo_meses:'Plazo (en meses)',
+    plazo_dias:'Plazo (en días)',
+    plazo_validez:'Validez de la oferta (en días)',
+    fecha:'Fecha',
+    fecha_inicio:'Fecha de inicio',
+    fecha_fin:'Fecha de finalización',
+    fecha_escritura:'Fecha de escritura',
+    fecha_boleto:'Fecha del boleto',
+    dia:'Día', mes:'Mes', anio:'Año',
+    // personas
+    interesado:'Interesado',
+    dni_interesado:'DNI del interesado',
+    locador:'Locador',
+    dni_locador:'DNI del locador',
+    locatario:'Locatario',
+    propietario:'Propietario',
+    dni_propietario:'DNI del propietario',
+    domicilio_propietario:'Domicilio del propietario',
+    vendedor:'Vendedor',
+    dni_vendedor:'DNI del vendedor',
+    domicilio_vendedor:'Domicilio del vendedor',
+    comprador:'Comprador',
+    dni_comprador:'DNI del comprador',
+    domicilio_comprador:'Domicilio del comprador',
+    oferente:'Oferente',
+    dni_oferente:'DNI del oferente',
+    domicilio_oferente:'Domicilio del oferente',
+    nacionalidad_oferente:'Nacionalidad del oferente',
+    // inmueble
+    direccion:'Dirección del inmueble',
+    dominio:'Inscripción del dominio',
+    descripcion_inmueble:'Descripción del inmueble',
+    escribania:'Escribanía',
+    // operación compartida
+    otra_inmobiliaria:'Nombre de la inmobiliaria',
+    otro_corredor:'Corredor / martillero',
+    otra_matricula:'Matrícula (CI) del corredor',
+    otro_mail:'Correo electrónico',
+    otro_porcentaje:'Comisión que le corresponde (%)'
+  };
+  var etq = ETIQUETAS[c] || c.replace(/_/g,' ').replace(/\b\w/g,function(l){return l.toUpperCase();});
+  var full = (c==='direccion'||c==='monto_letras'||c==='precio_letras'||c==='sena_letras'||c==='descripcion_inmueble') ? ' full' : '';
+  var tag = esAuto && val ? '<span class="tag auto">del sistema</span>' : (!esAuto ? '<span class="tag op">operación</span>' : '');
+  var cls = esAuto && val ? ' auto' : '';
+  var tipo = (c==='fecha'||c==='fecha_inicio'||c==='fecha_fin'||c==='fecha_escritura'||c==='fecha_boleto') ? ' type="date"' : '';
+
+  // Campos de MONTO (solo numeros) que disparan la conversion a letras
+  var PARES = { monto_reserva:'monto_letras', precio_total:'precio_letras', precio_venta:'precio_letras', sena:'sena_letras' };
+  // Campos EN LETRAS (solo lectura, se llenan solos, en mayusculas)
+  var LETRAS = ['monto_letras','precio_letras','sena_letras'];
+
+  var extra='';
+  if(PARES[c]){
+    // input numerico: solo digitos, y al escribir actualiza el campo de letras
+    extra=' inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,\'\'); actualizarLetras(\''+c+'\',\''+PARES[c]+'\')"';
+  }
+  if(LETRAS.indexOf(c)>=0){
+    // campo de letras: solo lectura, se completa automaticamente
+    extra=' readonly style="background:#f5f6f8;font-variant:small-caps;" placeholder="(se completa solo)"';
+    return '<div class="field'+full+'"><label>'+etq+tag+'</label><input data-campo="'+c+'"'+extra+'></div>';
+  }
+
+  return '<div class="field'+full+'"><label>'+etq+tag+'</label><input'+tipo+' data-campo="'+c+'" value="'+escAttr(val)+'" placeholder="'+etq+'" class="'+cls.trim()+'"'+extra+'></div>';
+}
+
+// Actualiza el campo "en letras" a partir del campo numerico
+function actualizarLetras(campoNum, campoLetras){
+  var inNum=document.querySelector('[data-campo="'+campoNum+'"]');
+  var inLet=document.querySelector('[data-campo="'+campoLetras+'"]');
+  if(inNum && inLet){ inLet.value = numeroALetras(inNum.value); }
+}
+
+
+var locatariosN=0;
+function addLocatario(){
+  locatariosN++;
+  var cont=document.getElementById('locatarios-cont');
+  var div=document.createElement('div');
+  div.className='gar-box';
+  div.innerHTML =
+    '<div class="gar-tit">Locatario '+locatariosN+'</div>'+
+    (locatariosN>1?'<button type="button" class="gar-del" onclick="this.parentNode.remove()">Quitar</button>':'')+
+    '<div class="fields">'+
+      '<div class="field"><label>Nombre completo</label><input class="l-nombre"></div>'+
+      '<div class="field"><label>DNI</label><input class="l-dni"></div>'+
+    '</div>';
+  cont.appendChild(div);
+}
+function armarLocatarios(){
+  var boxes=document.querySelectorAll('#locatarios-cont .gar-box');
+  var partes=[];
+  boxes.forEach(function(b){
+    var n=b.querySelector('.l-nombre').value.trim();
+    var d=b.querySelector('.l-dni').value.trim();
+    if(n||d) partes.push(n+', D.N.I. Nro. '+d);
+  });
+  if(!partes.length) return '[locatario]';
+  if(partes.length===1) return partes[0];
+  return partes.slice(0,-1).join(', ')+' y '+partes[partes.length-1];
+}
+var garantesN=0;
+function addGarante(){
+  garantesN++;
+  var cont=document.getElementById('garantes-cont');
+  var div=document.createElement('div');
+  div.className='gar-box'; div.setAttribute('data-gar','1');
+  var id=garantesN;
+  div.innerHTML =
+    '<div class="gar-tit">Garante '+garantesN+'</div>'+
+    (garantesN>1?'<button type="button" class="gar-del" onclick="this.parentNode.remove()">Quitar</button>':'')+
+    '<div class="fields">'+
+      '<div class="field full"><label>Nombre completo</label><input class="g-nombre"></div>'+
+      '<div class="field"><label>DNI</label><input class="g-dni"></div>'+
+      '<div class="field"><label>Nacionalidad</label><input class="g-nac" value="argentino/a"></div>'+
+      '<div class="field"><label>Estado civil</label><input class="g-civil" placeholder="casado/a, soltero/a..."></div>'+
+      '<div class="field"><label>Fecha de nacimiento</label><input type="date" class="g-nac2"></div>'+
+      '<div class="field full"><label>Domicilio</label><input class="g-dom"></div>'+
+      '<div class="field"><label>Tipo de garantía</label>'+
+        '<select class="g-tipo" onchange="togglePropiedad(this)">'+
+          '<option value="propietaria">Propietaria</option>'+
+          '<option value="laboral">Laboral</option>'+
+        '</select></div>'+
+      '<div class="field"></div>'+
+      '<div class="field full g-prop"><label>Inmueble en garantía (dirección)</label><input class="g-inmueble"></div>'+
+      '<div class="field g-prop"><label>Tipo de inscripción</label>'+
+        '<select class="g-insctipo" onchange="toggleInscripcion(this)">'+
+          '<option value="matrícula">Matrícula</option>'+
+          '<option value="tomo">Tomo / Folio / Nro.</option>'+
+        '</select></div>'+
+      '<div class="field g-prop g-ins-mat"><label>Matrícula Nro.</label><input class="g-matrícula" placeholder="16-35384"></div>'+
+      '<div class="field g-prop g-ins-tomo" style="display:none"><label>Tomo</label><input class="g-tomo" placeholder="396B"></div>'+
+      '<div class="field g-prop g-ins-tomo" style="display:none"><label>Folio</label><input class="g-folio" placeholder="202"></div>'+
+      '<div class="field g-prop g-ins-tomo" style="display:none"><label>Nro.</label><input class="g-nro" placeholder="144.433"></div>'+
+    '</div>';
+  cont.appendChild(div);
+}
+function togglePropiedad(sel){
+  var box=sel.closest('.gar-box');
+  var props=box.querySelectorAll('.g-prop');
+  var mostrar = sel.value==='propietaria';
+  props.forEach(function(p){
+    if(mostrar){
+      // respetar el sub-toggle de matrícula/tomo
+      if(p.classList.contains('g-ins-tomo')){ p.style.display = box.querySelector('.g-insctipo').value==='tomo'?'':'none'; }
+      else if(p.classList.contains('g-ins-mat')){ p.style.display = box.querySelector('.g-insctipo').value==='matricula'?'':'none'; }
+      else p.style.display='';
+    } else p.style.display='none';
+  });
+}
+function toggleInscripcion(sel){
+  var box=sel.closest('.gar-box');
+  var esMat = sel.value==='matricula';
+  box.querySelectorAll('.g-ins-mat').forEach(function(p){ p.style.display=esMat?'':'none'; });
+  box.querySelectorAll('.g-ins-tomo').forEach(function(p){ p.style.display=esMat?'none':''; });
+}
+function fechaLarga(iso){
+  if(!iso) return '';
+  var p=iso.split('-'); if(p.length!==3) return iso;
+  return p[2]+'/'+p[1]+'/'+p[0];
+}
+function garantesData(){
+  var boxes=document.querySelectorAll('#garantes-cont .gar-box');
+  var arr=[];
+  boxes.forEach(function(b){
+    var insctipo=b.querySelector('.g-insctipo')?b.querySelector('.g-insctipo').value:'matricula';
+    var inscripción='';
+    if(insctipo==='matricula'){
+      var m=b.querySelector('.g-matrícula').value.trim();
+      if(m) inscripción='la Matrícula Nro. '+m;
+    } else {
+      var to=b.querySelector('.g-tomo').value.trim(), fo=b.querySelector('.g-folio').value.trim(), nr=b.querySelector('.g-nro').value.trim();
+      if(to||fo||nr) inscripción='al Tomo '+to+', Folio '+fo+', Nro. '+nr;
+    }
+    var g={
+      nombre:b.querySelector('.g-nombre').value.trim(),
+      dni:b.querySelector('.g-dni').value.trim(),
+      nac:b.querySelector('.g-nac').value.trim(),
+      civil:b.querySelector('.g-civil').value.trim(),
+      nacim:fechaLarga(b.querySelector('.g-nac2').value),
+      dom:b.querySelector('.g-dom').value.trim(),
+      tipo:b.querySelector('.g-tipo').value,
+      inmueble:b.querySelector('.g-inmueble').value.trim(),
+      inscripción:inscripción
+    };
+    if(g.nombre||g.dni) arr.push(g);
+  });
+  return arr;
+}
+// Parrafo de datos personales de los garantes (cláusula 15)
+function armarGarantes(){
+  var arr=garantesData();
+  if(!arr.length) return '[garantes]';
+  var partes=arr.map(function(g){
+    var s=g.nombre;
+    if(g.nac) s+=', '+g.nac;
+    if(g.civil) s+=', '+g.civil;
+    if(g.nacim) s+=', nacido/a el '+g.nacim;
+    s+=', titular del Documento Nacional de Identidad Nro. '+g.dni;
+    if(g.dom) s+=', con domicilio legal en '+g.dom;
+    return s;
+  });
+  return partes.join('; ')+';';
+}
+// Parrafo de solvencia (solo garantes propietarios)
+function armarSolvencia(){
+  var arr=garantesData().filter(function(g){ return g.tipo==='propietaria' && (g.inmueble||g.inscripción); });
+  if(!arr.length) return 'Los fiadores solidarios acreditan su solvencia conforme a la documentacion presentada.';
+  var partes=arr.map(function(g){
+    var s=g.nombre+' con la de calle '+g.inmueble;
+    if(g.inscripción) s+=', inscripto el dominio a '+g.inscripción;
+    return s;
+  });
+  return 'Los fiadores solidarios acreditan su solvencia con los siguientes títulos de propiedad: '+
+         partes.join('; ')+', en el Registro General de Propiedades, Departamento Rosario';
+}
+
+function leerDatos(){
+  var d={};
+  document.querySelectorAll('#campos input[data-campo]').forEach(function(i){ d[i.getAttribute('data-campo')]=i.value.trim(); });
+  if(document.getElementById('locatarios-cont')){ d['locatario']=armarLocatarios(); }
+  if(document.getElementById('garantes-cont')){
+    d['garantes']=armarGarantes();
+    d['solvencia_garantes']=armarSolvencia();
+  }
+  // Fecha del documento -> dia / mes (palabra) / año
+  if(d['fecha_doc']){
+    var meses=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    var p=d['fecha_doc'].split('-');
+    if(p.length===3){
+      d['dia']=String(parseInt(p[2],10));
+      d['mes']=meses[parseInt(p[1],10)-1]||p[1];
+      d['año']=p[0];
+    }
+    delete d['fecha_doc'];
+  }
+  // Fechas sueltas (date) -> formato dd/mm/aaaa legible
+  ['fecha','fecha_inicio','fecha_fin','fecha_escritura','fecha_boleto'].forEach(function(k){
+    if(d[k] && /^\d{4}-\d{2}-\d{2}$/.test(d[k])){
+      var q=d[k].split('-'); d[k]=q[2]+'/'+q[1]+'/'+q[0];
+    }
+  });
+  return d;
+}
+
+function verDoc(){
+  var texto=DOCS[docSel].texto, datos=leerDatos();
+  if(docSel==='oferta'){
+    texto=texto.replace('{BLOQUE_COMPARTIDA}', esCompartida?TEXTO_COMPARTIDA:'');
+    var _d=leerDatos();
+    var _benef = esCompartida && _d['otra_inmobiliaria'] ? ('a '+_d['otra_inmobiliaria']) : 'a Azcuenaga Inmobiliaria';
+    texto=texto.replace('{beneficiario_honorarios}', _benef);
+  }
+
+  // Detectar campos vacios
+  var faltantes=[];
+  (texto.match(/\{([^}]+)\}/g)||[]).forEach(function(m){
+    var k=m.slice(1,-1).trim();
+    if(k==='BLOQUE_COMPARTIDA') return;
+    var v=datos[k];
+    if(!(v&&v.length) && faltantes.indexOf(k)<0){ faltantes.push(k); }
+  });
+  if(faltantes.length){
+    var nombres=faltantes.map(function(k){ return '• '+k.replace(/_/g,' '); }).join('\n');
+    if(!confirm('Faltan completar estos campos:\n\n'+nombres+'\n\nEn el documento van a aparecer entre corchetes [ ].\n¿Generar igual?')) return;
+  }
+
+  var final=texto.replace(/\{([^}]+)\}/g,function(m,k){ var v=datos[k.trim()]; return (v&&v.length)?v:('['+k.trim().replace(/_/g,' ')+']'); });
+  document.getElementById('editor').textContent=final; document.getElementById('edAI').innerHTML=''; paso(3);
+}
+
+function membrete(doc){
+  var azul = [30,80,160];
+  var logoOk = false;
+  if(LOGO_AZC && LOGO_W){
+    try{
+      var lh = 52, lw = lh * LOGO_W / LOGO_H; if(lw>150){ lw=150; lh=lw*LOGO_H/LOGO_W; }
+      doc.addImage(LOGO_AZC,'JPEG',56,28,lw,lh);
+      logoOk = true;
+    }catch(e){ console.warn('logo:', e); }
+  }
+  if(!logoOk){
+    doc.setFont('helvetica','bolditalic'); doc.setFontSize(18); doc.setTextColor(azul[0],azul[1],azul[2]);
+    doc.text('Administración "Azcuenaga"', 56, 52);
+  }
+  doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(90,110,150);
+  doc.text('Mendoza 4873 - Rosario', 539, 44, {align:'right'});
+  doc.text('Santa Fe, Argentina', 539, 55, {align:'right'});
+  doc.setTextColor(0,0,0);
+  doc.setDrawColor(azul[0],azul[1],azul[2]); doc.setLineWidth(1.2);
+  doc.line(56, 84, 539, 84);
+  return 102;
+}
+function marcaAgua(doc){
+  if(!(docSel==='contrato' && SELLO_COCIR)) return;
+  try{
+    var ws=340, wh=340;
+    if(doc.GState) doc.setGState(doc.GState({opacity:0.06}));
+    doc.addImage(SELLO_COCIR,'JPEG', 297-ws/2, 421-wh/2, ws, wh);
+    if(doc.GState) doc.setGState(doc.GState({opacity:1}));
+  }catch(e){ console.warn('marca de agua no dibujada:', e); }
+}
+var ED_F=[0.65,0.8,1,1.25,1.5,1.75,2.1];
+function edCmd(c){ var e=document.getElementById('editor'); e.focus(); document.execCommand(c,false,null); }
+function edSize(d){ var e=document.getElementById('editor'); e.focus(); var v=parseInt(document.queryCommandValue('fontSize'))||3; document.execCommand('fontSize',false,Math.max(1,Math.min(7,v+d))); }
+function edLineas(){
+  var lines=[[]], ed=document.getElementById('editor');
+  function nl(){ lines.push([]); }
+  function cur(){ return lines[lines.length-1]; }
+  function walk(n,st){
+    if(n.nodeType===3){
+      var parts=n.nodeValue.replace(/ /g,' ').split('\n');
+      parts.forEach(function(t,i){ if(i>0) nl(); if(t) cur().push({t:t,b:st.b,u:st.u,f:st.f}); });
+      return;
+    }
+    if(n.nodeType!==1) return;
+    var tg=n.tagName.toLowerCase();
+    if(tg==='br'){ nl(); return; }
+    var ns={b:st.b,u:st.u,f:st.f};
+    if(tg==='b'||tg==='strong') ns.b=true;
+    if(tg==='u') ns.u=true;
+    if(tg==='font'&&n.getAttribute('size')) ns.f=ED_F[(parseInt(n.getAttribute('size'))||3)-1]||1;
+    var cs=n.style||{};
+    if(/bold|700|800|900/.test(cs.fontWeight||'')) ns.b=true;
+    if(/underline/.test(cs.textDecorationLine||cs.textDecoration||'')) ns.u=true;
+    var blk=(tg==='div'||tg==='p');
+    if(blk && (cur().length||lines.length>1) ) { if(cur().length) nl(); }
+    Array.prototype.forEach.call(n.childNodes,function(c){ walk(c,ns); });
+    if(blk && cur().length) nl();
+  }
+  Array.prototype.forEach.call(ed.childNodes,function(c){ walk(c,{b:false,u:false,f:1}); });
+  while(lines.length>1&&!lines[lines.length-1].length) lines.pop();
+  return lines;
+}
+function edTexto(){ return edLineas().map(function(l){ return l.map(function(r){return r.t;}).join(''); }).join('\n'); }
+function edRevisar(){
+  var b=document.getElementById('edIA'), box=document.getElementById('edAI'), t=edTexto();
+  if(!t.trim()) return;
+  b.disabled=true; b.innerHTML='Revisando&hellip;';
+  google.script.run.withSuccessHandler(function(r){
+    b.disabled=false; b.innerHTML='&#10024; Revisar con IA';
+    window.__edSug=(r&&r.texto)||'';
+    var av=(r&&r.avisos&&r.avisos.length)?'<ul style="margin:8px 0 8px 18px;padding:0">'+r.avisos.map(function(a){return '<li>'+escapar(String(a))+'</li>';}).join('')+'</ul>':'<div style="color:#2a7a3b;margin:6px 0">Sin problemas detectados en los datos.</div>';
+    box.innerHTML='<div style="background:#eef4ff;border:1px solid #c9d8f5;border-radius:8px;padding:12px;margin:0 0 10px;font-size:13px"><b>Revisión de la IA</b>'+av+'<div style="color:#555;font-size:12px">La sugerencia corrige ortografía y redacción. Si la aplicás se reemplaza el texto (se pierde el formato que hayas puesto).</div><div style="margin-top:8px"><button type="button" class="btn" onclick="edAplicar()">Aplicar sugerencia</button> <button type="button" class="btn ghost" onclick="document.getElementById(\'edAI\').innerHTML=\'\'">Descartar</button></div></div>';
+  }).withFailureHandler(function(e){ b.disabled=false; b.innerHTML='&#10024; Revisar con IA'; alert('No pude revisar: '+(e&&e.message?e.message:e)); }).revisarTextoIA(t,{documento:DOCS[docSel].nombre},'documento');
+}
+function edAplicar(){ document.getElementById('editor').textContent=window.__edSug||''; document.getElementById('edAI').innerHTML=''; }
+
+function generarPDF(){
+  var LIN = edLineas(), final = LIN.map(function(l){ return l.map(function(r){return r.t;}).join(''); }).join('\n');
+  var jsPDF=window.jspdf.jsPDF, doc=new jsPDF({unit:'pt',format:'a4'});
+  try{
+    doc.addFileToVFS('Roboto-Regular.ttf', FONT_REG);
+    doc.addFont('Roboto-Regular.ttf','Roboto','normal');
+    doc.addFileToVFS('Roboto-Bold.ttf', FONT_BOLD);
+    doc.addFont('Roboto-Bold.ttf','Roboto','bold');
+    FUENTE='Roboto';
+  }catch(e){ FUENTE='times'; console.warn('fuente UTF8 no cargada:', e); }
+  var margin=64, width=595-margin*2, interlinea=15, pageW=595;
+  // columnas fijas para firmas (centro de cada columna)
+  var COL_IZQ=pageW*0.30, COL_DER=pageW*0.70, RAYA=95;
+  marcaAgua(doc);
+  var y = membrete(doc);
+  doc.setFont(FUENTE,'bold'); doc.setFontSize(13);
+  doc.text(DOCS[docSel].titulo, pageW/2, y, {align:'center'}); y+=26;
+  doc.setFont(FUENTE,'normal'); doc.setFontSize(10.5);
+
+  function nuevaPagina(){ doc.addPage(); marcaAgua(doc); y=membrete(doc); doc.setFont(FUENTE,'normal'); doc.setFontSize(10.5); }
+  function chequear(alto){ if(y+alto>800) nuevaPagina(); }
+
+  // justificar una linea: repartir el espacio sobrante entre las palabras
+  function textoJustificado(linea, esUltima){
+    var palabras = linea.split(' ');
+    if(esUltima || palabras.length===1){ doc.text(linea, margin, y); return; }
+    var anchoTexto = doc.getStringUnitWidth(palabras.join(''),{kerning:true}) * doc.getFontSize();
+    var espacioTotal = width - anchoTexto;
+    var espacioCada = espacioTotal / (palabras.length-1);
+    var x = margin;
+    for(var i=0;i<palabras.length;i++){
+      doc.text(palabras[i], x, y);
+      x += doc.getStringUnitWidth(palabras[i],{kerning:true}) * doc.getFontSize() + espacioCada;
+    }
+  }
+
+  var tm=final.match(new RegExp('^'+DOCS[docSel].titulo,'i')), cut=tm?tm[0].length:0;
+  if(cut){ var rest=cut; LIN[0]=LIN[0].map(function(r){ if(rest<=0) return r; if(r.t.length<=rest){ rest-=r.t.length; return null; } var q={t:r.t.slice(rest),b:r.b,u:r.u,f:r.f}; rest=0; return q; }).filter(Boolean); }
+  var parrafos = LIN.map(function(l){ return l.map(function(r){return r.t;}).join(''); });
+  var BASE=10.5;
+  function parrafoRico(runs){
+    var toks=[];
+    runs.forEach(function(r){ r.t.split(/(\s+)/).forEach(function(w){ if(w==='') return; if(/^\s+$/.test(w)) toks.push({sp:true,b:r.b,u:r.u,f:r.f}); else toks.push({w:w,b:r.b,u:r.u,f:r.f}); }); });
+    function medir(k){ doc.setFont(FUENTE,k.b?'bold':'normal'); doc.setFontSize(BASE*k.f); return doc.getStringUnitWidth(k.sp?' ':k.w,{kerning:true})*BASE*k.f; }
+    var linea=[], ancho=0, lineas=[];
+    toks.forEach(function(k){ k.m=medir(k); if(k.sp&&!linea.length) return; if(!k.sp && linea.length && ancho+k.m>width){ while(linea.length&&linea[linea.length-1].sp){ ancho-=linea.pop().m; } lineas.push(linea); linea=[]; ancho=0; } linea.push(k); ancho+=k.m; });
+    while(linea.length&&linea[linea.length-1].sp){ ancho-=linea.pop().m; }
+    if(linea.length) lineas.push(linea);
+    lineas.forEach(function(L,li){
+      var fmax=1; L.forEach(function(k){ if(k.f>fmax) fmax=k.f; });
+      chequear(interlinea*fmax);
+      var ult=li===lineas.length-1, gaps=L.filter(function(k){return k.sp;}).length, pal=L.reduce(function(a,k){return a+(k.sp?0:k.m);},0), extra=(!ult&&gaps>0)?(width-pal)/gaps:0, x=margin;
+      L.forEach(function(k,i){
+        if(k.sp){ x+=(extra?extra:k.m); return; }
+        doc.setFont(FUENTE,k.b?'bold':'normal'); doc.setFontSize(BASE*k.f); doc.text(k.w,x,y);
+        if(k.u){ var xe=x+k.m, nx=L[i+1], nn=L[i+2]; if(nx&&nx.sp&&nn&&nn.u) xe+=(extra?extra:nx.m); doc.setDrawColor(0,0,0); doc.setLineWidth(0.5); doc.line(x,y+1.6,xe,y+1.6); }
+        x+=k.m;
+      });
+      y+=interlinea*fmax;
+    });
+    doc.setFont(FUENTE,'normal'); doc.setFontSize(BASE); y+=5;
+  }
+
+  var esperaRoles=false;  // true justo despues de una linea de rayas
+  for(var p=0;p<parrafos.length;p++){
+    var t = parrafos[p].trim();
+    if(t===''){ y+=8; esperaRoles=false; continue; }
+
+    // Linea de firmas (rayas)
+    if(/_{4,}/.test(t)){
+      chequear(60); y+=26;
+      var segs = t.split(/\s{2,}/).filter(function(s){return s.trim();});
+      doc.setDrawColor(60,60,60); doc.setLineWidth(0.7);
+      if(segs.length>=2){
+        doc.line(COL_IZQ-RAYA, y, COL_IZQ+RAYA, y);
+        doc.line(COL_DER-RAYA, y, COL_DER+RAYA, y);
+      } else {
+        doc.line(pageW/2-RAYA, y, pageW/2+RAYA, y);
+      }
+      y+=14; esperaRoles=true; continue;
+    }
+    // Roles bajo la firma: la linea inmediatamente posterior a las rayas
+    if(esperaRoles){
+      esperaRoles=false;
+      chequear(20);
+      var roles = t.split(/\s{2,}/).map(function(s){return s.trim();}).filter(function(s){return s;});
+      doc.setFont(FUENTE,'normal'); doc.setFontSize(9.5);
+      if(roles.length>=2){
+        doc.text(roles[0], COL_IZQ, y, {align:'center'});
+        doc.text(roles[1], COL_DER, y, {align:'center'});
+      } else {
+        doc.text(roles[0], pageW/2, y, {align:'center'});
+      }
+      doc.setFontSize(10.5); y+=16; continue;
+    }
+
+    // Parrafo con formato (negrita/subrayado/tamano)
+    if(LIN[p].some(function(r){ return r.b||r.u||r.f!==1; })){ parrafoRico(LIN[p]); continue; }
+    // Parrafo normal justificado
+    var wrapped = doc.splitTextToSize(t, width);
+    for(var k=0;k<wrapped.length;k++){
+      chequear(interlinea);
+      textoJustificado(wrapped[k], k===wrapped.length-1);
+      y+=interlinea;
+    }
+    y+=5;
+  }
+
+  var nombreArch = DOCS[docSel].nombre.replace(/[^A-Za-z]/g,'-')+'-Azcuenaga-'+Date.now()+'.pdf';
+  descargarPDF(doc, nombreArch);
+  var b64 = doc.output('datauristring').split(',')[1];
+  google.script.run
+    .withSuccessHandler(function(r){ if(r && r.ok){ mostrarAviso('✓ Guardado en Drive: '+r.nombre, r.url); } })
+    .withFailureHandler(function(err){ mostrarAviso('⚠ Se descargó, pero no se pudo guardar en Drive: '+err.message, null); })
+    .guardarDocumento(nombreArch, b64);
+}
+
+function descargarPDF(doc, nombre){
+  var blob=doc.output('blob'), url=URL.createObjectURL(blob);
+  window.__PDF={blob:blob,url:url,nombre:nombre};
+  var f; try{ f=new File([blob],nombre,{type:'application/pdf'}); }catch(e){}
+  var movil=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if(movil && f && navigator.canShare && navigator.canShare({files:[f]})){
+    navigator.share({files:[f]}).catch(function(){ linkPDF(); });
+  } else {
+    try{ var a=document.createElement('a'); a.href=url; a.download=nombre; document.body.appendChild(a); a.click(); a.remove(); }catch(e){}
+  }
+  linkPDF();
+}
+function linkPDF(){
+  var p=window.__PDF; if(!p) return;
+  var d=document.getElementById('pdf-link');
+  if(!d){ d=document.createElement('div'); d.id='pdf-link'; d.style.cssText='margin-top:10px;font-size:12.5px;color:#666'; document.querySelector('#card3').appendChild(d); }
+  d.innerHTML='¿No se descargó? <a href="'+p.url+'" download="'+p.nombre+'" target="_blank" style="color:#1b3866">Abrilo desde acá</a>';
+}
+function mostrarAviso(txt, url){
+  var d=document.getElementById('aviso-drive');
+  if(!d){ d=document.createElement('div'); d.id='aviso-drive'; d.style.cssText='margin-top:14px;padding:12px 16px;border-radius:8px;background:#eef4ef;border:1px solid #cfe0d4;font-size:13px;color:#2a5;'; document.querySelector('#card3').appendChild(d); }
+  d.innerHTML = txt + (url ? ' &nbsp;<a href="'+url+'" target="_blank" style="color:#3a5a40;font-weight:600;">Abrir</a>' : '');
+}
+
+function paso(n){
+  [1,2,3].forEach(function(i){ document.getElementById('card'+i).classList.toggle('hide', i!==n); document.getElementById('s'+i).classList.toggle('on', i<=n); });
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function escapar(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function escAttr(s){ return (s||'').replace(/"/g,'&quot;'); }
+</script>
+</body>
+</html>

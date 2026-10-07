@@ -17,9 +17,9 @@
 // ---------------------------------------------------------------------------
 
 const CONFIG = {
-  SHEET_ID: '1O8VKF9ZUC073kGNYIc3SgKPcIrVpnvynpQQ69RAk9W8',
+  SHEET_ID: '1EwTv5hpxMCDHi4K47eCrhoKxxnk-FStulSeiEf6myl0',
   SHEET_NAME: 'Ventas - Base de Datos Maestra',
-  DRIVE_ROOT_FOLDER_ID: '1AGXKG5UN_GNlrosBojgNHhqDBaL9Z12m',
+  DRIVE_ROOT_FOLDER_ID: '1LuYwU-I-hE1lEk6rcSblGmMVqzaPUdAh',
   REMITENTE_NOMBRE: 'Azcuénaga Inmobiliaria',
   MAX_DUEÑOS: 5,
 
@@ -41,7 +41,8 @@ const CONFIG = {
     { key: 'aguas_santafesinas',label: 'Aguas Santafesinas',   obligatorio: false },
     { key: 'litoral_gas',       label: 'Litoral Gas',          obligatorio: false },
     { key: 'autorizacion_venta',label: 'Autorización de venta',obligatorio: false },
-    { key: 'declaratoria_herederos', label: 'Declaratoria de herederos', obligatorio: false }
+    { key: 'declaratoria_herederos', label: 'Declaratoria de herederos', obligatorio: false },
+    { key: 'expensas',              label: 'Expensas',                 obligatorio: false }
   ],
 
   // Campos personales/de propiedad mínimos para el primer envío de precarga
@@ -421,6 +422,7 @@ function calcularEstadoDocumentacion(codigoPrecarga) {
  */
 function _calcularEstadoDesdeCarpeta(carpeta) {
   const estado = {};
+  // Recolectar todos los archivos una sola vez para no iterar N veces
   var allFiles = [];
   var it = carpeta.getFiles();
   while (it.hasNext()) { var f = it.next(); allFiles.push({ name: f.getName(), url: f.getUrl() }); }
@@ -514,6 +516,7 @@ function obtenerUrlDocumento(codigo, docNombre) {
     while (it.hasNext()) {
       var f = it.next();
       if (f.getName().indexOf('.' + doc.key + '.') !== -1) {
+        // Actualizar la celda Doc: con la URL para que no haga falta buscarlo de nuevo
         var colDoc = head.indexOf('Doc: ' + docNombre);
         if (colDoc > -1) sheet.getRange(fila, colDoc + 1).setValue(f.getUrl());
         return f.getUrl();
@@ -601,16 +604,6 @@ function _estadoVerificacion_(d) {
   return 'Verificado OK';
 }
 
-/**
- * Manda un archivo (imagen o PDF) a OpenAI para que diga si corresponde al
- * tipo de documento esperado, si es legible, y si el nombre que figura
- * coincide con el nombre esperado. Devuelve { estado, detalle }.
- *
- * estado es un texto corto pensado para mostrar directo en el Tablero:
- * "Verificado OK", "Ilegible / mal escaneo", "Documento incorrecto (...)",
- * "Nombre no coincide (...)", o "No verificado (...)" si hubo un problema
- * técnico (sin clave configurada, sin respuesta, etc.).
- */
 /**
  * Helper compartido: manda un archivo (imagen o PDF, como data URI) a
  * OpenAI junto con instrucciones, y devuelve { ok:true, datos:{...} } con
@@ -998,6 +991,7 @@ function _guardarFila(sheet, datos, urlCarpeta, estadoDocs, verificacionIA) {
     });
   }
 
+  // Auto-crear columnas que falten en el Sheet
   var lastCol = headers.length;
   Object.keys(mapaValores).forEach(function(k) {
     if (mapaValores[k] !== undefined && headers.indexOf(k) === -1) {
@@ -1405,7 +1399,7 @@ function generarInformeTokko(codigo) {
 }
 
 function unificarMaestro(){
-  var ID='1O8VKF9ZUC073kGNYIc3SgKPcIrVpnvynpQQ69RAk9W8';
+  var ID='1EwTv5hpxMCDHi4K47eCrhoKxxnk-FStulSeiEf6myl0';
   var ss=SpreadsheetApp.openById(ID);
   var hoja=null,sh=ss.getSheets();
   for(var i=0;i<sh.length;i++){
@@ -1431,7 +1425,7 @@ function unificarMaestro(){
 }
 function volcarVentas(){
   var ID_VENTAS='16-xykemcOS78QxNymU5Se7RGLwZqvxvXvZ1guhzUECQ';
-  var ID_MAESTRO='1O8VKF9ZUC073kGNYIc3SgKPcIrVpnvynpQQ69RAk9W8';
+  var ID_MAESTRO='1EwTv5hpxMCDHi4K47eCrhoKxxnk-FStulSeiEf6myl0';
 
   // 1. leer sheet viejo (busca la pestaña con Dirección/Estado/Tipo)
   var sv=SpreadsheetApp.openById(ID_VENTAS).getSheets(), base=null;
@@ -1497,7 +1491,7 @@ function volcarVentas(){
   Logger.log('Volcadas: '+nuevas.length+' · Saltadas (ya estaban): '+saltadas);
   SpreadsheetApp.getUi().alert('Volcado listo.\nNuevas: '+nuevas.length+'\nSaltadas: '+saltadas);
 }
-var MAESTRO_ID='1O8VKF9ZUC073kGNYIc3SgKPcIrVpnvynpQQ69RAk9W8';
+var MAESTRO_ID='1EwTv5hpxMCDHi4K47eCrhoKxxnk-FStulSeiEf6myl0';
 
 var _MAE_=null;
 function hojaMaestra_(){
@@ -1604,7 +1598,7 @@ function getDatosRaw_(){
     var segOut=seg.map(function(s){return {_row:s._row,fecha:s.fecha,tipo:s.tipo,cli:s.cli,tel:s.tel,res:s.res,prox:s.prox,obs:s.obs,fechaProx:s.fechaProx,vend:s.vend||'',cargo:s.cargo||''};});
     out.push({
       id:id, dir:(calle+' '+num).trim(), ciudad:row[c('Ciudad')]||'', tipo:row[c('Tipo de propiedad')]||'',
-      etapa:row[c('Etapa')]||'Publicada', estadoCarga:row[c('Estado de la propiedad')]||'',
+      etapa:row[c('Etapa')]||'Captación', estadoCarga:row[c('Estado de la propiedad')]||'',
       precio:fmtPrecio_(row[c('Precio')], row[c('Moneda')]), operacion:row[c('Tipo de operación')]||'',
       pct:pct, plan:row[c('Plan Tokko')]||'',
             papeles:papeles, docUrls:docUrls, encuesta:(encMap[id]||null),
@@ -1629,7 +1623,7 @@ function testGetDatos(){
 }
 function corregirMigracion(){
   var ID_VENTAS='16-xykemcOS78QxNymU5Se7RGLwZqvxvXvZ1guhzUECQ';
-  var ID_MAESTRO='1O8VKF9ZUC073kGNYIc3SgKPcIrVpnvynpQQ69RAk9W8';
+  var ID_MAESTRO='1EwTv5hpxMCDHi4K47eCrhoKxxnk-FStulSeiEf6myl0';
 
   var ms=SpreadsheetApp.openById(ID_MAESTRO).getSheets(), mae=null;
   for(var j=0;j<ms.length;j++){
@@ -2027,7 +2021,7 @@ function borrarDocumento(codigo, docNombre, quien){
 }
 function testSubir(){
   try{
-    var f=DriveApp.getFolderById('1wBjd8B8ZF-nbbTD67yq_os7Z3J386Wty');
+    var f=DriveApp.getFolderById('1LuYwU-I-hE1lEk6rcSblGmMVqzaPUdAh');
     Logger.log('CARPETA OK: '+f.getName());
   }catch(e){
     Logger.log('FALLA CARPETA: '+e.message);
@@ -2040,11 +2034,69 @@ function testSubir(){
     Logger.log('FALLA SUBIDA: '+e.message);
   }
 }
+
+/**
+ * MIGRACIÓN: reemplaza "Presentado" en columnas Doc: por la URL real del
+ * archivo en Drive. Ejecutar UNA VEZ desde el editor de Apps Script.
+ * Después de correr, las propiedades viejas también tendrán URLs clickeables.
+ */
+function migrarDocsPresentadoAUrl() {
+  var sheet = hojaMaestra_();
+  var data = sheet.getRange(1, 1, sheet.getLastRow(), sheet.getLastColumn()).getValues();
+  var head = data[0];
+  var colCodigo = head.indexOf('Código de Precarga');
+  var colCalle = head.indexOf('Calle');
+  var colNumero = head.indexOf('Número');
+  var docCols = [];
+  head.forEach(function(h, i) {
+    if ((''+h).indexOf('Doc:') === 0) {
+      var label = (''+h).replace('Doc:', '').trim();
+      var doc = null;
+      CONFIG.DOCUMENTOS.forEach(function(d) { if (d.label === label) doc = d; });
+      if (doc) docCols.push({ col: i, key: doc.key, label: label });
+    }
+  });
+  var actualizadas = 0;
+  for (var r = 1; r < data.length; r++) {
+    var codigo = data[r][colCodigo];
+    if (!codigo) continue;
+    var calle = data[r][colCalle] || '';
+    var numero = data[r][colNumero] || '';
+    // Verificar si alguna celda Doc: tiene "Presentado" (sin URL)
+    var necesita = docCols.some(function(dc) {
+      var v = (''+data[r][dc.col]).trim();
+      return v && !/^https?:/i.test(v) && v !== 'Pendiente';
+    });
+    if (!necesita) continue;
+    try {
+      var carpeta = _getOrCreatePropertyFolder(codigo, calle, numero);
+      var archivos = [];
+      var it = carpeta.getFiles();
+      while (it.hasNext()) { var f = it.next(); archivos.push({ name: f.getName(), url: f.getUrl() }); }
+      docCols.forEach(function(dc) {
+        var v = (''+data[r][dc.col]).trim();
+        if (!v || /^https?:/i.test(v) || v === 'Pendiente') return;
+        // Buscar el archivo en la carpeta
+        var match = null;
+        for (var i = 0; i < archivos.length; i++) {
+          if (archivos[i].name.indexOf('.' + dc.key + '.') !== -1) { match = archivos[i]; break; }
+        }
+        if (match) {
+          sheet.getRange(r + 1, dc.col + 1).setValue(match.url);
+          actualizadas++;
+        }
+      });
+    } catch(e) {
+      Logger.log('Error migrando ' + codigo + ': ' + e.message);
+    }
+  }
+  Logger.log('Migración completada: ' + actualizadas + ' celdas actualizadas con URLs.');
+}
 function testMotivo(){
   Logger.log(JSON.stringify(guardarPropiedad('MIG-P001', {motivo:'prueba motivo'})));
 }
 function testSubir2(){
-  try{ Logger.log('RAIZ: '+DriveApp.getFolderById('1wBjd8B8ZF-nbbTD67yq_os7Z3J386Wty').getName()); }
+  try{ Logger.log('RAIZ: '+DriveApp.getFolderById('1LuYwU-I-hE1lEk6rcSblGmMVqzaPUdAh').getName()); }
   catch(e){ Logger.log('FALLA RAIZ: '+e.message); }
   try{ Logger.log(JSON.stringify(subirDocumento('MIG-P001','Escritura',Utilities.base64Encode('x'),'t.txt','text/plain'))); }
   catch(e){ Logger.log('FALLA SUBIDA en: '+e.message); }
@@ -2080,7 +2132,7 @@ function obtenerImagenes(){
 
 function guardarDocumento(nombre, base64){
   try{
-    var carpeta=DriveApp.getFolderById('1AGXKG5UN_GNlrosBojgNHhqDBaL9Z12m');
+    var carpeta=DriveApp.getFolderById('1LuYwU-I-hE1lEk6rcSblGmMVqzaPUdAh');
     var it=carpeta.getFoldersByName('Documentos generados');
     var dest=it.hasNext()?it.next():carpeta.createFolder('Documentos generados');
     var bytes=Utilities.base64Decode(base64);
@@ -2287,49 +2339,19 @@ function marcarConsultaWS(fila, quien){
   try{ _audit_('campos','✅ Marcó atendida una consulta de WhatsApp', '', quien||''); }catch(e){}
   return {ok:true, valor:val};
 }
+function diagnosticoGuardado(){
+  var mae=hojaMaestra_(), head=mae.getRange(1,1,1,mae.getLastColumn()).getValues()[0], falt=[];
+  Object.keys(MAP_CAMPOS).forEach(function(k){ if(head.indexOf(MAP_CAMPOS[k])<0) falt.push(MAP_CAMPOS[k]); });
+  Logger.log('Hoja: '+mae.getName()+' · Planilla: '+mae.getParent().getName()+' · '+mae.getLastColumn()+' columnas');
+  Logger.log(falt.length ? '❌ Faltan columnas: '+falt.join(' | ') : '✅ Están todas las columnas');
+}
 
-function migrarDocsPresentadoAUrl() {
-  var sheet = hojaMaestra_();
-  var data = sheet.getRange(1, 1, sheet.getLastRow(), sheet.getLastColumn()).getValues();
-  var head = data[0];
-  var colCodigo = head.indexOf('Código de Precarga');
-  var colCalle = head.indexOf('Calle');
-  var colNumero = head.indexOf('Número');
-  var docCols = [];
-  head.forEach(function(h, i) {
-    if ((''+h).indexOf('Doc:') === 0) {
-      var label = (''+h).replace('Doc:', '').trim();
-      var doc = null;
-      CONFIG.DOCUMENTOS.forEach(function(d) { if (d.label === label) doc = d; });
-      if (doc) docCols.push({ col: i, key: doc.key, label: label });
-    }
+function crearColumnasFaltantes(){
+  var mae=hojaMaestra_(), head=mae.getRange(1,1,1,mae.getLastColumn()).getValues()[0], creadas=[];
+  Object.keys(MAP_CAMPOS).forEach(function(k){
+    var nm=MAP_CAMPOS[k];
+    if(head.indexOf(nm)<0){ mae.getRange(1,head.length+1).setValue(nm); head.push(nm); creadas.push(nm); }
   });
-  var actualizadas = 0;
-  for (var r = 1; r < data.length; r++) {
-    var codigo = data[r][colCodigo];
-    if (!codigo) continue;
-    var calle = data[r][colCalle] || '';
-    var numero = data[r][colNumero] || '';
-    var necesita = docCols.some(function(dc) {
-      var v = (''+data[r][dc.col]).trim();
-      return v && !/^https?:/i.test(v) && v !== 'Pendiente';
-    });
-    if (!necesita) continue;
-    try {
-      var carpeta = _getOrCreatePropertyFolder(codigo, calle, numero);
-      var archivos = [];
-      var it = carpeta.getFiles();
-      while (it.hasNext()) { var f = it.next(); archivos.push({ name: f.getName(), url: f.getUrl() }); }
-      docCols.forEach(function(dc) {
-        var v = (''+data[r][dc.col]).trim();
-        if (!v || /^https?:/i.test(v) || v === 'Pendiente') return;
-        var match = null;
-        for (var i = 0; i < archivos.length; i++) {
-          if (archivos[i].name.indexOf('.' + dc.key + '.') !== -1) { match = archivos[i]; break; }
-        }
-        if (match) { sheet.getRange(r + 1, dc.col + 1).setValue(match.url); actualizadas++; }
-      });
-    } catch(e) { Logger.log('Error migrando ' + codigo + ': ' + e.message); }
-  }
-  Logger.log('Migración completada: ' + actualizadas + ' celdas actualizadas con URLs.');
+  try{ if(typeof azcuLimpiarCache_==='function') azcuLimpiarCache_(); }catch(e){}
+  Logger.log(creadas.length ? '✅ Columnas creadas: '+creadas.join(' | ') : '✅ No faltaba ninguna');
 }

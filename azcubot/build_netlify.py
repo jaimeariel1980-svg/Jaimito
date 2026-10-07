@@ -12,7 +12,7 @@ head = '''<!DOCTYPE html>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>window.addEventListener('load',function(){setTimeout(function(){var s=document.createElement('script');s.src='https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';s.defer=true;document.head.appendChild(s);},300);});</script>
 <style>html,body{margin:0;height:100%;background:#0a3d91;overscroll-behavior:none}</style>
 </head><body>
 <script>
@@ -84,3 +84,5 @@ open('netlify/go.html', 'w', encoding='utf8').write(GO)
 tb = open('netlify/tablero.html', encoding='utf8').read()
 tb = tb.replace(EXEC + '?app=procedimiento', 'go.html?app=procedimiento').replace('href="' + EXEC + '"', 'href="go.html"')
 open('netlify/tablero.html', 'w', encoding='utf8').write(tb)
+
+open('netlify/diag.html','w',encoding='utf8').write(open('paginas/diag.html',encoding='utf8').read().replace('__API__',EXEC))

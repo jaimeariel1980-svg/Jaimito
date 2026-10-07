@@ -404,7 +404,7 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
       <div class="grid">
         <div class="field">
           <label>Tipo de propiedad <span class="opt">(opcional)</span></label>
-          <select name="tipoPropiedad">
+          <select name="tipoPropiedad" onchange="toggleTipoPropiedadOtro(this)">
             <option value="">— Seleccionar —</option>
             <option>Terreno</option>
             <option>Casa</option>
@@ -414,9 +414,13 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
             <option>Oficina Comercial</option>
             <option>Garage - Cochera</option>
             <option>Depósito</option>
+            <option value="Otro">Otros</option>
           </select>
         </div>
-        <div class="field"></div>
+        <div class="field" id="tipoPropiedadOtroField" style="display:none">
+          <label>Especificar tipo <span class="opt">(opcional)</span></label>
+          <input type="text" name="tipoPropiedadOtro" placeholder="Ingresá el tipo de propiedad">
+        </div>
 
         <div class="field"><label>Calle *</label><input type="text" name="calle" required></div>
         <div class="field"><label>Número *</label><input type="text" name="numero" required></div>
@@ -1047,8 +1051,14 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
     { key: 'aguas_santafesinas', label: 'Aguas Santafesinas',   obligatorio: false },
     { key: 'litoral_gas',        label: 'Litoral Gas',          obligatorio: false },
     { key: 'autorizacion_venta', label: 'Autorización de venta',obligatorio: false },
-    { key: 'declaratoria_herederos', label: 'Declaratoria de herederos', obligatorio: false }
+    { key: 'declaratoria_herederos', label: 'Declaratoria de herederos', obligatorio: false },
+    { key: 'expensas',              label: 'Expensas',                 obligatorio: false }
   ];
+
+  function toggleTipoPropiedadOtro(sel) {
+    var campo = document.getElementById('tipoPropiedadOtroField');
+    if (campo) campo.style.display = (sel.value === 'Otro') ? '' : 'none';
+  }
 
   let cantidadDueños = 0;
 
@@ -1258,6 +1268,14 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
       _asignarValorCampo(form, campo, valor);
     });
 
+    // Si el tipo de propiedad recuperado no está en las opciones del select, usar "Otro"
+    var selTipo = form.querySelector('[name="tipoPropiedad"]');
+    if (selTipo && selTipo.value === '' && registro['Tipo de propiedad']) {
+      selTipo.value = 'Otro';
+      toggleTipoPropiedadOtro(selTipo);
+      _asignarValorCampo(form, 'tipoPropiedadOtro', registro['Tipo de propiedad']);
+    }
+
     // Sección 1: dueños — se recrean tantos bloques como haya datos
     document.getElementById('dueños-contenedor').innerHTML = '';
     cantidadDueños = 0;
@@ -1299,7 +1317,8 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
     badge.style.display = 'inline-flex';
     badge.style.alignItems = 'center';
     badge.style.gap = '4px';
-    if (estado === 'Presentado') {
+    if (estado && estado !== 'Pendiente') {
+      // estado puede ser 'Presentado' o una URL de Drive (https://...)
       badge.style.background = '#eaf5ea';
       badge.style.color = '#2f6b2f';
       badge.innerHTML = '✓ Presentado';
@@ -1318,6 +1337,14 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
       elementos.forEach(el => { el.checked = (el.value === valor); });
     } else if (primero.type === 'checkbox') {
       primero.checked = (valor === 'Si' || valor === true);
+    } else if (primero.type === 'date' && typeof valor === 'string' && valor) {
+      // El backend devuelve fechas como "dd/MM/yyyy HH:mm" pero input[type=date] requiere "YYYY-MM-DD"
+      var partes = valor.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+      if (partes) {
+        primero.value = partes[3] + '-' + partes[2] + '-' + partes[1];
+      } else {
+        primero.value = valor; // ya viene en formato ISO u otro
+      }
     } else {
       primero.value = valor;
     }
@@ -1547,6 +1574,12 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
       if (el.type === 'checkbox') { datos[el.name] = el.checked ? 'Si' : 'No'; return; }
       datos[el.name] = el.value;
     });
+
+    // Si eligió "Otro" en tipo de propiedad, usar el texto libre
+    if (datos.tipoPropiedad === 'Otro' && datos.tipoPropiedadOtro) {
+      datos.tipoPropiedad = datos.tipoPropiedadOtro;
+    }
+    delete datos.tipoPropiedadOtro;
 
     const archivos = {};
     const inputsArchivo = Array.from(form.querySelectorAll('input[type=file]'));
