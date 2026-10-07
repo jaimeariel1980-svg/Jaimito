@@ -1,0 +1,122 @@
+<style>
+.fs .hero{background:var(--navy2);color:#fff;padding:26px 20px 22px;border-bottom:4px solid var(--celeste)}
+.fs .hero .in,.fs .wrap{max-width:900px;margin:0 auto}
+.fs .hero h1{font-size:28px;font-weight:800;letter-spacing:-.01em;line-height:1.15}
+.fs .hero .meta{display:flex;gap:28px;flex-wrap:wrap;margin-top:14px}
+.fs .hero .meta div{font-size:14px;font-weight:600}
+.fs .hero .meta small{display:block;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#8FB6D8;font-weight:700}
+.fs .wrap{padding:22px 16px 60px}
+.fs .sect{margin-bottom:26px}
+.fs .sl{font-size:11px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--azul);display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.fs .sl:before{content:'';width:4px;height:16px;background:var(--celeste)}
+.fs .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.fs .g1{margin-bottom:14px}
+.fs .erow{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 0;border-bottom:1px solid var(--line)}
+.fs .erow:last-child{border-bottom:none}
+.fs .erow .t{flex:1;font-size:14px;font-weight:500}
+.fs .erow select{width:165px;font-weight:700;font-size:12px}
+.fs .pills{display:flex;gap:6px;flex-wrap:wrap}
+.fs .pill{border:1.5px solid var(--line);border-radius:4px;background:#fff;padding:7px 14px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--mut);cursor:pointer;user-select:none}
+.fs .pill.si,.fs .pill.alto{background:var(--ok);color:#fff;border-color:var(--ok)}
+.fs .pill.revisar,.fs .pill.medio{background:#F2B705;color:#4A3A00;border-color:#F2B705}
+.fs .pill.no,.fs .pill.bajo{background:#FDE3E1;color:#9B2C28;border-color:var(--err)}
+.fs .res{display:flex;gap:22px;align-items:stretch;flex-wrap:wrap}
+.fs .sem{display:flex;flex-direction:column;gap:7px;justify-content:center}
+.fs .dot{width:22px;height:22px;border-radius:50%;background:#E4E9F0}
+.fs .dot.on.g{background:var(--ok)}
+.fs .dot.on.y{background:#F2B705}
+.fs .dot.on.r{background:var(--err)}
+.fs .rinfo{flex:1;min-width:200px}
+.fs .rt{font-size:30px;font-weight:800;letter-spacing:-.02em}
+.fs .bar{height:4px;background:var(--line);margin-top:12px}
+.fs .bar>i{display:block;height:100%;background:var(--celeste);width:0;transition:width .3s}
+.fs .sc{text-align:center;padding-left:22px;border-left:1px solid var(--line);min-width:100px}
+.fs .sc b{font-size:30px;display:block;line-height:1.1}
+.fs .man{margin-top:14px;background:#F7F9FC;border:1.5px dashed var(--line);border-radius:4px;padding:12px 14px}
+.fs .man .vb{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.fs .vb button{border:1.5px solid var(--line);background:#fff;border-radius:4px;padding:8px 14px;font-weight:700;font-size:12px;cursor:pointer;font-family:var(--font)}
+.fs .vb button.on.A{background:#1E8E5A;color:#fff;border-color:#1E8E5A}
+.fs .vb button.on.Bp{background:#8BD3A8;color:#0F3A24}
+.fs .vb button.on.B{background:#F2B705;color:#4A3A00}
+.fs .vb button.on.C{background:#D9534F;color:#fff;border-color:#D9534F}
+.fs .um{margin-top:12px;display:flex;gap:16px;flex-wrap:wrap;font-size:11px;font-weight:700;text-transform:uppercase;color:var(--mut)}
+.fs .decl .row{display:flex;gap:10px;padding:4px 0;border-bottom:1px solid #EEF1F5;font-size:13px}
+.fs .decl .row span:first-child{width:55%;color:var(--mut)}
+.fs .done{display:none;text-align:center;padding:30px 10px}
+@media(max-width:640px){.fs .g2{grid-template-columns:1fr}.fs .erow{flex-direction:column;align-items:stretch}.fs .erow select{width:100%}.fs .sc{border-left:none;padding-left:0}}
+</style>
+<script>
+var FS=(function(){
+  var K,CID,ENTRE,CONT,O,D,S;
+  var VAL={'Sí':'si','No':'no','A revisar':'revisar','Alto':'alto','Medio':'medio','Bajo':'bajo'};
+  var VER={A:['A · Avanza','Cumple lo crítico y lo deseable. Avanza a la siguiente instancia.','g'],'B+':['B+ · Avanza','Muy bueno, cumple lo excluyente con una cuestión menor. Avanza a la siguiente instancia.','g'],B:['B · Avanza','Cumple lo crítico con algún flanco menor. Avanza a la siguiente instancia.','y'],C:['C · No avanza','No cumple lo crítico o presenta red flags importantes.','r']};
+  function esc(t){return String(t==null?'':t).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function $(s){return CONT.querySelector(s);}
+  function open(o){
+    O=o;K=o.K;CID=o.cid;ENTRE=o.entre||'';CONT=o.container;S={eval:{},val:{},manual:null,auto:null,norm:null};
+    CONT.className='fs';CONT.innerHTML='<div class="loading">Cargando…</div>';
+    google.script.run.withSuccessHandler(function(d){D=d;render();}).withFailureHandler(function(e){CONT.innerHTML='<div class="loading" style="color:#D9534F">Error: '+esc(e.message)+'</div>';}).getDatosForm(K,CID);
+  }
+  function render(){
+    var c=D.cand,h=D.hero,hoy=new Date(new Date().getTime()-3*3600000).toISOString().slice(0,10),ent=ENTRE||c.entrev||'';
+    var decl=c.resp.length?'<div class="sect card decl"><div class="sl">Datos de la postulación</div>'+c.resp.map(function(r){return '<div class="row"><span>'+esc(r.q)+'</span><span><b>'+esc(r.a)+'</b></span></div>';}).join('')+'</div>':'';
+    CONT.innerHTML=
+    '<div class="hero"><div class="in"><h1>Screening de '+esc(c.nombre)+'</h1><div class="meta"><div><small>Cliente</small>'+esc(h.cliente)+'</div><div><small>Posición</small>'+esc(h.puesto)+'</div><div><small>Ubicación</small>'+esc(h.ubicacion)+'</div>'+(c.notaCV?'<div><small>Nota CV</small>'+esc(c.notaCV)+'</div>':'')+'</div></div></div>'+
+    '<div class="wrap"><div id="form">'+decl+
+    '<div class="sect card"><div class="sl">Datos del candidato</div><div class="g2"><div><label class="l">Nombre y apellido</label><input type="text" value="'+esc(c.nombre)+'" disabled></div><div><label class="l">Entrevistador/a</label><select id="d-ent"><option value="">— Elegí —</option>'+D.entrevistadores.map(function(e){return '<option'+(e===ent?' selected':'')+'>'+esc(e)+'</option>';}).join('')+'</select></div></div>'+
+    '<div class="g2"><div><label class="l">Empresa actual</label><input type="text" id="d-emp"></div><div><label class="l">Posición actual</label><input type="text" id="d-pos"></div></div><div class="g1"><label class="l">Formación</label><input type="text" id="d-form" placeholder="Título, institución, estado"></div>'+
+    '<div class="g2"><div><label class="l">Fecha de entrevista</label><input type="date" id="d-fecha" value="'+hoy+'"></div><div><label class="l">Disponibilidad de ingreso</label><select id="d-disp"><option value="">—</option><option>Inmediata</option><option>15 días</option><option>30 días</option><option>+30 días</option></select></div></div>'+
+    '<div class="g2"><div><label class="l">Remuneración actual</label><input type="text" id="d-ra" placeholder="$"></div><div><label class="l">Remuneración pretendida</label><input type="text" id="d-rp" placeholder="$" value="'+esc(c.pret)+'"></div></div></div>'+
+    '<div class="sect card"><div class="sl">Ajuste al perfil</div><div id="evs"></div></div>'+
+    '<div class="sect card"><div class="sl">Validación de condiciones</div><div id="vls"></div></div>'+
+    '<div class="sect card"><div class="sl">Comentario</div><textarea id="com" rows="4" placeholder="Observaciones relevantes de la entrevista…"></textarea></div>'+
+    '<div class="sect card"><div class="sl">Resultado final</div><div class="res"><div class="sem"><div class="dot" id="dg"></div><div class="dot" id="dy"></div><div class="dot" id="dr"></div></div><div class="rinfo"><div class="l" style="margin:0">Recomendación</div><div class="rt" id="rt">—</div><div id="rd" style="font-size:13px;color:#5D6B82">Completá la evaluación para obtener la recomendación</div><div class="bar"><i id="bar"></i></div></div><div class="sc"><div class="l" style="margin:0">Score</div><b id="sn">—</b><small>/ 10</small></div></div>'+
+    '<div class="man"><div class="l" style="margin:0">Letra para la planilla <span id="sug" style="text-transform:none;letter-spacing:0;font-weight:600">(sugerencia automática: —)</span></div><div class="vb" id="vb"><button data-l="A" onclick="FS.manual(\'A\')">A · Avanza</button><button data-l="B+" onclick="FS.manual(\'B+\')">B+ · Avanza</button><button data-l="B" onclick="FS.manual(\'B\')">B · Avanza</button><button data-l="C" onclick="FS.manual(\'C\')">C · No avanza</button><button onclick="FS.manual(null)" style="color:#5D6B82">↺ Auto</button></div></div>'+
+    '<div class="um"><span>Umbrales automáticos:</span><span>≥ '+D.umbral.a+' A</span><span>≥ '+D.umbral.bplus+' B+</span><span>≥ '+D.umbral.b+' B</span><span>&lt; '+D.umbral.b+' C</span></div></div>'+
+    '<button class="btn ok" id="save" style="width:100%;padding:14px" onclick="FS.guardar()">Guardar screening</button></div>'+
+    '<div class="done card" id="done"></div></div>';
+    var evs=$('#evs');
+    D.evalItems.forEach(function(it){var r=document.createElement('div');r.className='erow';r.innerHTML='<div class="t">'+esc(it.label)+'</div><select data-e="'+esc(it.id)+'" onchange="FS.onEval(\''+esc(it.id)+'\',this)"><option value="">— Sin evaluar</option><option value="bajo">Bajo</option><option value="medio">Medio</option><option value="alto">Alto</option></select>';evs.appendChild(r);});
+    var vls=$('#vls');
+    D.valItems.forEach(function(it){var r=document.createElement('div');r.className='erow';r.innerHTML='<div class="t">'+esc(it.label)+'</div><div class="pills">'+it.opts.map(function(o){var v=VAL[o]||o.toLowerCase();return '<div class="pill" data-id="'+esc(it.id)+'" data-v="'+esc(v)+'" onclick="FS.pick(this)">'+esc(o)+'</div>';}).join('')+'</div>';vls.appendChild(r);});
+  }
+  function onEval(id,el){var v=el.value;S.eval[id]=v;var s={alto:['#1E8E5A','#fff'],medio:['#F2B705','#4A3A00'],bajo:['#FDE3E1','#9B2C28']}[v];el.style.background=s?s[0]:'';el.style.color=s?s[1]:'';calc();}
+  function pick(el){var id=el.dataset.id;CONT.querySelectorAll('.pill[data-id="'+id+'"]').forEach(function(p){p.className='pill';});el.classList.add(el.dataset.v);S.val[id]=el.dataset.v;calc();}
+  function calc(){
+    var score=0,total=0,hay=false;
+    D.evalItems.forEach(function(it){var v=S.eval[it.id];if(!v)return;hay=true;total+=it.peso;if(v==='alto')score+=it.peso;else if(v==='medio')score+=it.peso*0.5;});
+    if(!hay){S.auto=null;S.norm=null;return;}
+    var sal=S.val.v1;if(sal){total+=1.5;if(sal==='si')score+=1.5;else if(sal==='revisar')score+=0.75;}
+    Object.keys(S.val).filter(function(k){return k!=='v1';}).map(function(k){return S.val[k];}).filter(Boolean).forEach(function(v){total+=0.3;if(v==='si'||v==='alto')score+=0.3;else if(v==='revisar'||v==='medio')score+=0.15;});
+    var n=Math.min(10,Math.round((score/total)*100)/10),rech=sal==='no';if(rech)n=Math.min(n,4.9);
+    var u=D.umbral;S.norm=n;S.auto=rech?'C':n>=u.a?'A':n>=u.bplus?'B+':n>=u.b?'B':'C';
+    $('#sn').textContent=n.toFixed(1);$('#bar').style.width=(n*10)+'%';
+    $('#sug').textContent='(sugerencia automática: '+S.auto+')';
+    veredicto(S.manual||S.auto);
+  }
+  function veredicto(l){
+    var v=VER[l];if(!v)return;
+    ['dg','dy','dr'].forEach(function(i){$('#'+i).className='dot';});
+    $('#'+{g:'dg',y:'dy',r:'dr'}[v[2]]).className='dot on '+v[2];
+    var t=$('#rt');t.textContent=v[0];t.style.color={g:'#1E8E5A',y:'#8A6D00',r:'#D9534F'}[v[2]];
+    $('#rd').textContent=v[1];
+    CONT.querySelectorAll('#vb button[data-l]').forEach(function(b){b.className=b.dataset.l===l?'on '+l.replace('+','p'):'';});
+  }
+  function manual(l){S.manual=l;if(l)veredicto(l);else if(S.auto)veredicto(S.auto);else CONT.querySelectorAll('#vb button').forEach(function(b){b.className='';});}
+  function val(id){return $('#'+id).value.trim();}
+  function guardar(){
+    var letra=S.manual||S.auto;
+    if(!letra){alert('Completá la evaluación o elegí una letra de resultado.');return;}
+    if(!val('d-ent')){if(!confirm('No elegiste entrevistador/a. ¿Guardar igual?'))return;}
+    var b=$('#save');b.disabled=true;b.textContent='Guardando…';
+    google.script.run.withSuccessHandler(function(r){
+      $('#form').style.display='none';var d=$('#done');d.style.display='block';
+      d.innerHTML='<h2 style="color:#1E8E5A">¡Screening guardado!</h2><p style="margin:10px 0">Resultado: <b>'+esc(r.nota)+'</b>'+(r.score!=null?' · Score '+r.score.toFixed(1):'')+'<br>Estado del candidato: <b>'+esc(r.estado||'')+'</b></p><p><button class="btn" onclick="FS.volver()">Volver</button> <a class="btn ghost" target="_blank" href="'+esc(r.url)+'">Ver informe</a></p>';
+      CONT.scrollIntoView();if(O.onDone)O.onDone(r);
+    }).withFailureHandler(function(e){b.disabled=false;b.textContent='Guardar screening';alert('No se pudo guardar: '+e.message);})
+    .guardarScreening(K,{id:CID,entrevistador:val('d-ent'),fecha:val('d-fecha'),datos:{empresaAct:val('d-emp'),posAct:val('d-pos'),formacion:val('d-form'),remAct:val('d-ra'),remPret:val('d-rp'),disp:val('d-disp')},eval:S.eval,val:S.val,comentario:$('#com').value,resultado:letra});
+  }
+  function volver(){if(O.onClose)O.onClose();}
+  return {open:open,onEval:onEval,pick:pick,manual:manual,guardar:guardar,volver:volver};
+})();
+</script>
