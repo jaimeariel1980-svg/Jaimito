@@ -834,6 +834,7 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
     });
   }
   function frameCall(fn, args, ok, onErr){
+    if(document.readyState !== 'complete'){ window.addEventListener('load', function(){ setTimeout(function(){ frameCall(fn, args, ok, onErr); }, 0); }, {once:true}); return; }
     var id = 'f'+Date.now().toString(36)+Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,8), done = false, t0 = Date.now(), pollT, scr;
     var ifr = document.createElement('iframe'); ifr.name = 'azbf_'+id; ifr.style.display = 'none';
     var form = document.createElement('form'); form.method = 'POST'; form.action = window.AZCU_API; form.target = ifr.name; form.style.display = 'none';
