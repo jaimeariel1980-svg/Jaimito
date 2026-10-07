@@ -1074,6 +1074,7 @@ function azcuApi(e){
     else if(req.fn==='azcuAdjPlan') out = {ok:true, data:azcuAdjPlan(a[0], a[1], a[2], a[3])};
     else if(req.fn==='azcuTranscribir') out = {ok:true, data:azcuTranscribir(a[0], a[1], a[2])};
     else if(req.fn==='azcuLogo') out = {ok:true, data:azcuLogo_()};
+    else if(req.fn==='azcuQuien') out = {ok:true, data:azcuQuien(a[0], a[1])};
     else if(AZCU_PUB_.indexOf(req.fn)>=0){
       var pf = globalThis[req.fn];
       if(typeof pf!=='function') throw new Error('Función no disponible: '+req.fn);
@@ -1136,12 +1137,12 @@ function azcuUsuarios_(){
     if(sh && sh.getLastRow()>1){
       var cap = function(x){ return x ? x.charAt(0).toUpperCase()+x.slice(1) : x; };
       sh.getRange(2, 1, sh.getLastRow()-1, 5).getValues().forEach(function(r){
-        var nombre = String(r[0]||'').trim(), alias = String(r[1]||'').trim();
-        if(!nombre && !alias) return;
+        var nombre = String(r[0]||'').trim(), viejos = String(r[4]||'').split(/[,;]/).map(function(x){ return x.trim(); }).filter(Boolean);
+        if(!nombre) return;
         var ids = [], add = function(x){ x = azcuSlug_(x); if(x){ [x, cap(x)].forEach(function(y){ if(ids.indexOf(y)<0) ids.push(y); }); } };
-        add(nombre); add(nombre.split(/\s+/)[0]); add(alias);
-        var sn = azcuSinAc_(String(r[3]||'sí'));
-        out.push({nombre:nombre, alias:alias, rol:String(r[2]||'').trim(), activo: sn!=='no' && sn!=='n', avisos: azcuSinAc_(String(r[4]||'todos')), ids:ids});
+        add(nombre); add(nombre.split(/\s+/)[0]); viejos.forEach(add);
+        var sn = azcuSinAc_(String(r[2]||'sí'));
+        out.push({nombre:nombre, viejos:viejos, rol:String(r[1]||'').trim(), activo: sn!=='no' && sn!=='n', avisos: azcuSinAc_(String(r[3]||'todos')), ids:ids});
       });
     }
   }catch(e){}
@@ -1150,23 +1151,28 @@ function azcuUsuarios_(){
 }
 function azcuUsuarioDe_(q){
   var a = azcuSlug_(q), b = azcuSlug_(String(q).split(/\s+/)[0]), us = azcuUsuarios_(), i;
-  for(i=0;i<us.length;i++){ var n = azcuSlug_(us[i].nombre), n1 = azcuSlug_(us[i].nombre.split(/\s+/)[0]), al = azcuSlug_(us[i].alias); if(a && (a===n || a===n1 || a===al)) return us[i]; }
-  for(i=0;i<us.length;i++){ var m1 = azcuSlug_(us[i].nombre.split(/\s+/)[0]); if(b && (b===m1 || b===azcuSlug_(us[i].alias))) return us[i]; }
+  for(i=0;i<us.length;i++){ var n = azcuSlug_(us[i].nombre), n1 = azcuSlug_(us[i].nombre.split(/\s+/)[0]), vj = us[i].viejos.map(azcuSlug_); if(a && (a===n || a===n1 || vj.indexOf(a)>-1)) return us[i]; }
+  for(i=0;i<us.length;i++){ var m1 = azcuSlug_(us[i].nombre.split(/\s+/)[0]); if(b && b===m1) return us[i]; }
   return null;
+}
+function azcuQuien(pin, nombre){
+  azcuPin_(pin);
+  var u = azcuUsuarioDe_(String(nombre||'').trim());
+  return {nombre: (u && u.activo) ? u.nombre : ''};
 }
 function azcuCrearUsuarios(){
   var ss = SpreadsheetApp.openById(MAESTRO_ID), sh = ss.getSheetByName('Usuarios');
   if(sh){ Logger.log('Ya existe la pestaña Usuarios: no la toqué.'); return; }
   sh = ss.insertSheet('Usuarios');
-  sh.getRange(1, 1, 1, 5).setValues([['Nombre completo', 'Nombre en la app (como se registró)', 'Rol', 'Activo', 'Avisos']]).setFontWeight('bold').setBackground('#0a3d91').setFontColor('#ffffff');
+  sh.getRange(1, 1, 1, 5).setValues([['Nombre y apellido (así figura en la app)', 'Rol', 'Activo', 'Avisos', 'Nombres anteriores (separados por coma)']]).setFontWeight('bold').setBackground('#0a3d91').setFontColor('#ffffff');
   sh.getRange(2, 1, 3, 5).setValues([
-    ['Silvina Novillo', 'silvi', 'Gerente', 'Sí', 'Todos'],
-    ['Sebastian Novillo', 'sebastian', 'Gerente', 'Sí', 'Todos'],
-    ['Analia Callipari', 'analia', 'Gerente y vendedora', 'Sí', 'Todos']
+    ['Silvina Novillo', 'Gerente', 'Sí', 'Todos', 'silvi, Silvina'],
+    ['Sebastian Novillo', 'Gerente', 'Sí', 'Todos', 'seba, Sebastian'],
+    ['Analia Callipari', 'Gerente y vendedora', 'Sí', 'Todos', 'analia, Analia']
   ]);
-  sh.getRange(2, 4, 200, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['Sí', 'No'], true).build());
-  sh.getRange(2, 5, 200, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['Todos', 'Solo los míos', 'Ninguno'], true).build());
-  sh.setColumnWidths(1, 1, 190); sh.setColumnWidths(2, 1, 260); sh.setColumnWidths(3, 1, 190); sh.setFrozenRows(1);
+  sh.getRange(2, 3, 200, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['Sí', 'No'], true).build());
+  sh.getRange(2, 4, 200, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['Todos', 'Solo los míos', 'Ninguno'], true).build());
+  sh.setColumnWidths(1, 1, 260); sh.setColumnWidths(2, 1, 190); sh.setColumnWidths(5, 1, 280); sh.setFrozenRows(1);
   Logger.log('✅ Pestaña Usuarios creada. Editala a gusto: se aplica en 1 minuto.');
 }
 var AZCU_SIN_SILENCIO_ = false;
