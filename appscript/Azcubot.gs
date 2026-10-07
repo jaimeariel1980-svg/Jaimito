@@ -1171,10 +1171,18 @@ function azcuPush_(titulo, msg, url, dest, estricto, libre){
   throw new Error('OneSignal 401: clave no aceptada ('+k.length+' caracteres, empieza con "'+k.slice(0,8)+'")');
 }
 function azcuProbarGerentes(){
-  azcuGerentes_().forEach(function(g){
-    var d = azcuDestinos_(g, true), r;
-    try{ r = azcuPush_('Prueba para '+g+' 🔔', 'Si ves este aviso, tus avisos funcionan.', AZCU_WEB, d, true, true); }catch(e){ r = 'ERROR: '+e.message; }
-    Logger.log(g+' → busca "'+d.join('" / "')+'" → '+String(r).slice(0, 200));
+  var k = String(PropertiesService.getScriptProperties().getProperty('ONESIGNAL_KEY')||'').replace(/\s/g,''), nombres = ['analia','silvi','sebastian'];
+  azcuGerentes_().forEach(function(g){ var d = azcuSlug_(g); if(nombres.indexOf(d)<0) nombres.push(d); });
+  Logger.log('App OneSignal: '+AZCU_OS_APP);
+  nombres.forEach(function(n){
+    var out = '';
+    ['Key ','Basic '].some(function(esq){
+      var r = UrlFetchApp.fetch('https://api.onesignal.com/notifications?c=push', {method:'post', contentType:'application/json', headers:{Authorization:esq+k}, muteHttpExceptions:true,
+        payload:JSON.stringify({app_id:AZCU_OS_APP, target_channel:'push', include_aliases:{external_id:[n]}, headings:{en:'Prueba para '+n+' 🔔', es:'Prueba para '+n+' 🔔'}, contents:{en:'Si ves este aviso, tus avisos funcionan.', es:'Si ves este aviso, tus avisos funcionan.'}, url:AZCU_WEB})});
+      out = r.getResponseCode()+' '+r.getContentText().slice(0,260);
+      return r.getResponseCode()!==401;
+    });
+    Logger.log('"'+n+'" → '+out);
   });
 }
 function azcuProbarPush(){ Logger.log(azcuPush_('Azcu 🏠', 'Prueba de aviso: si lo ves, las notificaciones funcionan.', null, null, false, true)); }
