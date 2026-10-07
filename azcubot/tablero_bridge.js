@@ -3,6 +3,7 @@ var API='__API__';
 function ls(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); }catch(e){ return null; } }
 function uid(){ return 'b'+Date.now().toString(36)+Math.random().toString(36).slice(2,10)+Math.random().toString(36).slice(2,6); }
 function transport(fn, args, ok, onErr){
+  if(document.readyState !== 'complete'){ window.addEventListener('load', function(){ setTimeout(function(){ transport(fn, args, ok, onErr); }, 0); }, {once:true}); return; }
   var id = uid(), done = false, got = false, fbOn = false, pollN = 0, t0 = Date.now(), pollT, scr, json = JSON.stringify({id:id, fn:fn, args:args});
   var ifr = document.createElement('iframe'); ifr.name = 'tbf_'+id; ifr.style.display = 'none';
   var form = document.createElement('form'); form.method = 'POST'; form.action = API; form.target = ifr.name; form.style.display = 'none';
