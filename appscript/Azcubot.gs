@@ -1170,6 +1170,13 @@ function azcuPush_(titulo, msg, url, dest, estricto, libre){
   }
   throw new Error('OneSignal 401: clave no aceptada ('+k.length+' caracteres, empieza con "'+k.slice(0,8)+'")');
 }
+function azcuProbarGerentes(){
+  azcuGerentes_().forEach(function(g){
+    var d = azcuDestinos_(g, true), r;
+    try{ r = azcuPush_('Prueba para '+g+' 🔔', 'Si ves este aviso, tus avisos funcionan.', AZCU_WEB, d, true, true); }catch(e){ r = 'ERROR: '+e.message; }
+    Logger.log(g+' → busca "'+d.join('" / "')+'" → '+String(r).slice(0, 200));
+  });
+}
 function azcuProbarPush(){ Logger.log(azcuPush_('Azcu 🏠', 'Prueba de aviso: si lo ves, las notificaciones funcionan.', null, null, false, true)); }
 var AZCU_TIPOS_ = ['Terreno','Casa','Departamento','PH','Local Comercial','Oficina Comercial','Garage - Cochera','Depósito'];
 var AZCU_ORIENT_ = ['Norte','Sur','Este','Oeste','Noroeste','Noreste','Sudeste','Sudoeste'];
