@@ -1,6 +1,6 @@
 # Proyecto Azcu / Empleos PAMI — guía para quien trabaje en el repo
 
-Dueño del proyecto: Ariel (no programador). Responder en español rioplatense, corto y directo. Él aprueba todo con el botón **Merge** de GitHub; nunca pegar código a mano en Apps Script.
+Dueño del proyecto: Ariel (no programador). Responder en español rioplatense, corto y directo. Él no aprueba ni mergea: Claude mergea sus propios cambios (ver "Cómo se publica"); nunca pegar código a mano en Apps Script.
 
 ## Qué hay en el repo
 | Carpeta | Qué es | Dónde se publica |
