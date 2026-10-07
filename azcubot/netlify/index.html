@@ -1185,6 +1185,8 @@ OneSignalDeferred.push(function(OneSignal){ return Promise.resolve(OneSignal.ini
   })();
   render(); pushCheck(); setTimeout(pushCheck, 2500);
   setTimeout(movLoad, 2000); setInterval(function(){ if(!document.hidden) movLoad(); }, 300000); document.addEventListener('visibilitychange', function(){ if(!document.hidden) movLoad(); });
+  function syncNombre(){ if(!st.nombre) return; call('azcuQuien', [st.nombre], function(r){ if(r && r.nombre && r.nombre!==st.nombre){ st.nombre = r.nombre; ls('nombre', r.nombre); try{ if(window.OneSignalDeferred) OneSignalDeferred.push(function(OS){ try{ OS.login(slug(r.nombre)); }catch(e){} }); }catch(e){} render(); } }, function(){}); }
+  if(st.nombre) setTimeout(syncNombre, 1500);
   if(st.nombre!==null && !st.warmed){ st.warmed = true; setTimeout(function(){ call('azcuWarm', [], function(r){ if(Array.isArray(r)) st.props = r; }, function(){}); }, 600); }
   if(APP && window.AZCU_API && !logoSrc()){
     var cl = ls('logo'); if(cl){ window.AZCU_LOGO = cl; render(); }
