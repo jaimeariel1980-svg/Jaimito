@@ -11,6 +11,7 @@ Dueño del proyecto: Ariel (no programador). Responder en español rioplatense, 
 | raíz (`*.py`, `bot-azcuenaga.gs`, `job_profiles/`) | Restos de proyectos viejos (Telegram, reclutamiento en Python). **No tocar** | — |
 
 ## Cómo se publica (todo con Merge)
+- **Autorización del dueño (Ariel):** confía en Claude y en Ever. Claude **mergea sus propios pull requests sin pedir aprobación** después de validar sintaxis y revisar el resultado de Actions/Cloudflare; Ever mergea los suyos. Excepciones: pedir confirmación antes de borrar datos, cambiar permisos o hacer cambios destructivos.
 - Trabajar en una rama, abrir pull request hacia la rama principal `claude/recruitment-automation-google-b1Ric` (no hay `main`).
 - Al hacer Merge: `.github/workflows/apps-script.yml` publica `appscript/` y/o `pami/` con clasp, y Cloudflare publica la web (rama de producción = la principal).
 - Antes de publicar, el workflow compara el Apps Script real contra lo último publicado (`.github/scripts/guardia.py`). Si alguien lo tocó a mano, **frena** y deja la copia real en la rama `sync-azcu` / `sync-pami`. Integrar esos cambios al repo antes de volver a publicar.
