@@ -604,6 +604,64 @@ function _estadoVerificacion_(d) {
   return 'Verificado OK';
 }
 
+/**
+ * Helper compartido: manda un archivo (imagen o PDF, como data URI) a
+ * OpenAI junto con instrucciones, y devuelve { ok:true, datos:{...} } con
+ * el JSON ya parseado, o { ok:false, motivo:'...' } si algo falló en el
+ * camino (sin clave, sin red, respuesta rara, etc.). No tira excepciones.
+ */
+function _consultarOpenAIConArchivo(dataUri, mimeType, filename, instrucciones) {
+  const apiKey = _openAiApiKey();
+  if (!apiKey) return { ok: false, motivo: 'falta configurar OPENAI_API_KEY' };
+
+  const content = [{ type: 'input_text', text: instrucciones }];
+  if (mimeType === 'application/pdf') {
+    content.push({ type: 'input_file', filename: filename || 'documento.pdf', file_data: dataUri });
+  } else {
+    content.push({ type: 'input_image', image_url: dataUri });
+  }
+
+  const payload = {
+    model: 'gpt-4o-mini',
+    input: [{ role: 'user', content: content }]
+  };
+
+  const opciones = {
+    method: 'post',
+    contentType: 'application/json',
+    headers: { Authorization: 'Bearer ' + apiKey },
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true
+  };
+
+  let resp;
+  try {
+    resp = UrlFetchApp.fetch('https://api.openai.com/v1/responses', opciones);
+  } catch (e) {
+    return { ok: false, motivo: 'error de red con OpenAI (' + e.message + ')' };
+  }
+
+  const codigo = resp.getResponseCode();
+  if (codigo < 200 || codigo >= 300) {
+    return { ok: false, motivo: 'error OpenAI ' + codigo, textoCrudo: resp.getContentText().slice(0, 300) };
+  }
+
+  let json;
+  try {
+    json = JSON.parse(resp.getContentText());
+  } catch (e) {
+    return { ok: false, motivo: 'respuesta inválida de OpenAI' };
+  }
+
+  const texto = _extraerTextoRespuestaOpenAI(json);
+  const datos = _parsearJsonIA(texto);
+  if (!datos) {
+    return { ok: false, motivo: 'no se pudo interpretar la respuesta de la IA', textoCrudo: texto };
+  }
+
+  return { ok: true, datos: datos };
+}
+
 function _tipoSoportadoPorIA(mimeType) {
   return ['application/pdf', 'image/jpeg', 'image/png'].indexOf(mimeType) !== -1;
 }
