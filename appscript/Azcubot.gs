@@ -1120,8 +1120,9 @@ function azcuSlug_(n){ return azcuSinAc_(n).replace(/[^a-z0-9]+/g,'_').replace(/
 function azcuDestinos_(quien, exacto){
   var q = String(quien||'').trim(), o = [];
   if(!q) return o;
-  var a = azcuSlug_(q), b = azcuSlug_(q.split(/\s+/)[0]);
-  if(a) o.push(a); if(!exacto && b && b!==a) o.push(b);
+  var a = azcuSlug_(q), b = azcuSlug_(q.split(/\s+/)[0]), cap = function(x){ return x ? x.charAt(0).toUpperCase()+x.slice(1) : x; };
+  if(a){ o.push(a); if(cap(a)!==a) o.push(cap(a)); }
+  if(!exacto && b && b!==a){ o.push(b); if(cap(b)!==b) o.push(cap(b)); }
   return o;
 }
 var AZCU_SIN_SILENCIO_ = false;
@@ -1168,6 +1169,13 @@ function azcuPush_(titulo, msg, url, dest, estricto, libre){
     }
   }
   throw new Error('OneSignal 401: clave no aceptada ('+k.length+' caracteres, empieza con "'+k.slice(0,8)+'")');
+}
+function azcuProbarGerentes(){
+  azcuGerentes_().forEach(function(g){
+    var d = azcuDestinos_(g, true), r;
+    try{ r = azcuPush_('Prueba para '+g+' 🔔', 'Si ves este aviso, tus avisos funcionan.', AZCU_WEB, d, true, true); }catch(e){ r = 'ERROR: '+e.message; }
+    Logger.log(g+' → busca "'+d.join('" / "')+'" → '+String(r).slice(0, 200));
+  });
 }
 function azcuProbarPush(){ Logger.log(azcuPush_('Azcu 🏠', 'Prueba de aviso: si lo ves, las notificaciones funcionan.', null, null, false, true)); }
 var AZCU_TIPOS_ = ['Terreno','Casa','Departamento','PH','Local Comercial','Oficina Comercial','Garage - Cochera','Depósito'];
