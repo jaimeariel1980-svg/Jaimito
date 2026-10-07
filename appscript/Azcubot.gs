@@ -1160,6 +1160,15 @@ function azcuQuien(pin, nombre){
   var u = azcuUsuarioDe_(String(nombre||'').trim());
   return {nombre: (u && u.activo) ? u.nombre : ''};
 }
+function azcuActualizarListaAvisos(){
+  var sh = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Usuarios');
+  if(!sh){ Logger.log('No existe la pestaña Usuarios: ejecutá azcuCrearUsuarios.'); return; }
+  sh.getRange(2, 4, 200, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['Todos', 'Solo gerencia', 'Solo mis propiedades', 'Ninguno'], true).build());
+  var r = sh.getRange(2, 4, Math.max(sh.getLastRow()-1, 1), 1), v = r.getValues().map(function(x){ return [/mi/i.test(String(x[0])) && /solo/i.test(String(x[0])) ? 'Solo mis propiedades' : x[0]]; });
+  r.setValues(v);
+  try{ CacheService.getScriptCache().remove('azusr'); }catch(e){}
+  Logger.log('✅ Lista de avisos actualizada: Todos / Solo gerencia / Solo mis propiedades / Ninguno');
+}
 function azcuCrearUsuarios(){
   var ss = SpreadsheetApp.openById(MAESTRO_ID), sh = ss.getSheetByName('Usuarios');
   if(sh){ Logger.log('Ya existe la pestaña Usuarios: no la toqué.'); return; }
@@ -1172,7 +1181,7 @@ function azcuCrearUsuarios(){
     /* cuando termine la prueba: cambiar los gerentes a «Solo gerencia» y los vendedores a «Solo los míos» */
   ]);
   sh.getRange(2, 3, 200, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['Sí', 'No'], true).build());
-  sh.getRange(2, 4, 200, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['Todos', 'Solo gerencia', 'Solo los míos', 'Ninguno'], true).build());
+  sh.getRange(2, 4, 200, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['Todos', 'Solo gerencia', 'Solo mis propiedades', 'Ninguno'], true).build());
   sh.setColumnWidths(1, 1, 260); sh.setColumnWidths(2, 1, 190); sh.setColumnWidths(5, 1, 280); sh.setFrozenRows(1);
   Logger.log('✅ Pestaña Usuarios creada. Editala a gusto: se aplica en 1 minuto.');
 }
