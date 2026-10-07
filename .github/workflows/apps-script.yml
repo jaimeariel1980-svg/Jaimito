@@ -29,7 +29,7 @@ jobs:
           - {id: azcu, dir: appscript, secret: CLASPRC_AZCU, depvar: DEPLOYMENT_AZCU}
     steps:
       - uses: actions/checkout@v4
-        with: {fetch-depth: 2}
+        with: {fetch-depth: 0}
       - name: Decidir si corresponde
         id: dec
         run: |
@@ -55,6 +55,27 @@ jobs:
           git add -A .
           git commit -m "Copia del proyecto Apps Script real (${{ matrix.id }})" || echo "sin cambios"
           git push -f origin sync-${{ matrix.id }}
+      - name: Chequear que nadie haya tocado Apps Script a mano
+        if: steps.dec.outputs.go == '1' && github.event_name == 'push'
+        run: |
+          rm -rf /tmp/real /tmp/prev; mkdir -p /tmp/real /tmp/prev
+          if ! git archive "${{ github.event.before }}" "${{ matrix.dir }}" 2>/dev/null | tar -x -C /tmp/prev; then echo "Sin versión anterior: no se compara."; exit 0; fi
+          [ -d "/tmp/prev/${{ matrix.dir }}" ] || exit 0
+          cp "${{ matrix.dir }}/.clasp.json" /tmp/real/
+          (cd /tmp/real && clasp pull > /dev/null)
+          DIF=$(python3 .github/scripts/guardia.py "/tmp/prev/${{ matrix.dir }}" /tmp/real) || true
+          if [ -n "$DIF" ]; then
+            git config user.name "apps-script-sync"; git config user.email "sync@users.noreply.github.com"
+            git checkout -B sync-${{ matrix.id }}
+            cp /tmp/real/*.gs /tmp/real/*.html /tmp/real/appsscript.json "${{ matrix.dir }}/" 2>/dev/null || true
+            git add -f "${{ matrix.dir }}"
+            git commit -m "Copia del Apps Script real con cambios hechos a mano (${{ matrix.id }})" || true
+            git push -f origin sync-${{ matrix.id }}
+            echo "::error::Alguien modificó el Apps Script a mano. NO se publicó para no pisar esos cambios. Diferencias:"
+            echo "$DIF"
+            exit 1
+          fi
+          echo "Sin cambios a mano: se puede publicar."
       - name: Publicar
         if: steps.dec.outputs.go == '1' && (github.event_name == 'push' || inputs.accion == 'publicar')
         working-directory: ${{ matrix.dir }}
