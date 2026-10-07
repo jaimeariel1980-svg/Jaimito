@@ -1861,7 +1861,7 @@ function guardarPropiedad(codigo, cambios){
   var fv=mae.getRange(fila,1,1,mae.getLastColumn()).getValues()[0];
   function crudo(col){ var i=head.indexOf(col); return i>-1 ? fv[i] : ''; }
   function leer(col){ var v=crudo(col); return String(v==null?'':v).trim(); }
-  function set(colName, val, igual){ var i=head.indexOf(colName); if(i<0) return; var v=val==null?'':val; if(igual===undefined) igual=(String(fv[i]==null?'':fv[i]).trim()===String(v).trim()); if(igual) return; mae.getRange(fila,i+1).setValue(v); fv[i]=v; }
+  function set(colName, val, igual){ var i=head.indexOf(colName), v=val==null?'':val; if(i<0){ if(String(v).trim()==='') return; mae.getRange(1,head.length+1).setValue(colName); head.push(colName); fv.push(''); i=head.length-1; } if(igual===undefined) igual=(String(fv[i]==null?'':fv[i]).trim()===String(v).trim()); if(igual) return; mae.getRange(fila,i+1).setValue(v); fv[i]=v; }
   Object.keys(cambios||{}).forEach(function(campo){
     if(campo==='papeles'){
       var pap=cambios.papeles||{};
