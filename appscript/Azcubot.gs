@@ -1121,9 +1121,53 @@ function azcuDestinos_(quien, exacto){
   var q = String(quien||'').trim(), o = [];
   if(!q) return o;
   var a = azcuSlug_(q), b = azcuSlug_(q.split(/\s+/)[0]), cap = function(x){ return x ? x.charAt(0).toUpperCase()+x.slice(1) : x; };
+  var u = azcuUsuarioDe_(q);
+  if(u){ return u.activo ? u.ids.slice() : []; }
   if(a){ o.push(a); if(cap(a)!==a) o.push(cap(a)); }
   if(!exacto && b && b!==a){ o.push(b); if(cap(b)!==b) o.push(cap(b)); }
   return o;
+}
+function azcuUsuarios_(){
+  var c = CacheService.getScriptCache(), t = c.get('azusr');
+  if(t){ try{ return JSON.parse(t); }catch(e){} }
+  var out = [];
+  try{
+    var sh = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Usuarios');
+    if(sh && sh.getLastRow()>1){
+      var cap = function(x){ return x ? x.charAt(0).toUpperCase()+x.slice(1) : x; };
+      sh.getRange(2, 1, sh.getLastRow()-1, 5).getValues().forEach(function(r){
+        var nombre = String(r[0]||'').trim(), alias = String(r[1]||'').trim();
+        if(!nombre && !alias) return;
+        var ids = [], add = function(x){ x = azcuSlug_(x); if(x){ [x, cap(x)].forEach(function(y){ if(ids.indexOf(y)<0) ids.push(y); }); } };
+        add(nombre); add(nombre.split(/\s+/)[0]); add(alias);
+        var sn = azcuSinAc_(String(r[3]||'sí'));
+        out.push({nombre:nombre, alias:alias, rol:String(r[2]||'').trim(), activo: sn!=='no' && sn!=='n', avisos: azcuSinAc_(String(r[4]||'todos')), ids:ids});
+      });
+    }
+  }catch(e){}
+  try{ c.put('azusr', JSON.stringify(out), 60); }catch(e){}
+  return out;
+}
+function azcuUsuarioDe_(q){
+  var a = azcuSlug_(q), b = azcuSlug_(String(q).split(/\s+/)[0]), us = azcuUsuarios_(), i;
+  for(i=0;i<us.length;i++){ var n = azcuSlug_(us[i].nombre), n1 = azcuSlug_(us[i].nombre.split(/\s+/)[0]), al = azcuSlug_(us[i].alias); if(a && (a===n || a===n1 || a===al)) return us[i]; }
+  for(i=0;i<us.length;i++){ var m1 = azcuSlug_(us[i].nombre.split(/\s+/)[0]); if(b && (b===m1 || b===azcuSlug_(us[i].alias))) return us[i]; }
+  return null;
+}
+function azcuCrearUsuarios(){
+  var ss = SpreadsheetApp.openById(MAESTRO_ID), sh = ss.getSheetByName('Usuarios');
+  if(sh){ Logger.log('Ya existe la pestaña Usuarios: no la toqué.'); return; }
+  sh = ss.insertSheet('Usuarios');
+  sh.getRange(1, 1, 1, 5).setValues([['Nombre completo', 'Nombre en la app (como se registró)', 'Rol', 'Activo', 'Avisos']]).setFontWeight('bold').setBackground('#0a3d91').setFontColor('#ffffff');
+  sh.getRange(2, 1, 3, 5).setValues([
+    ['Silvina Novillo', 'silvi', 'Gerente', 'Sí', 'Todos'],
+    ['Sebastian Novillo', 'sebastian', 'Gerente', 'Sí', 'Todos'],
+    ['Analia Callipari', 'analia', 'Gerente y vendedora', 'Sí', 'Todos']
+  ]);
+  sh.getRange(2, 4, 200, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['Sí', 'No'], true).build());
+  sh.getRange(2, 5, 200, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['Todos', 'Solo los míos', 'Ninguno'], true).build());
+  sh.setColumnWidths(1, 1, 190); sh.setColumnWidths(2, 1, 260); sh.setColumnWidths(3, 1, 190); sh.setFrozenRows(1);
+  Logger.log('✅ Pestaña Usuarios creada. Editala a gusto: se aplica en 1 minuto.');
 }
 var AZCU_SIN_SILENCIO_ = false;
 function azcuEnSilencio_(ts){ if(!ts && AZCU_SIN_SILENCIO_) return false; var d = new Date((ts||Date.now())-3*3600000), dw = d.getUTCDay(), h = d.getUTCHours(); return (dw===5 && h>=18) || dw===6 || dw===0 || (dw===1 && h<8); }
@@ -1149,6 +1193,20 @@ function azcuPush_(titulo, msg, url, dest, estricto, libre){
   if(!k) throw new Error('Falta ONESIGNAL_KEY en las propiedades del script');
   k = String(k).replace(/\s/g,'');
   if(PropertiesService.getScriptProperties().getProperty('AZCU_TODOS')==='1' && !/^(Azcu terminó|⏰)/.test(String(titulo||''))){ dest = null; estricto = false; }
+  var us = azcuUsuarios_();
+  if(us.length){
+    var personal = /^(Azcu terminó|⏰)/.test(String(titulo||'')), off = [], todos = [], vivos = [];
+    us.forEach(function(u){
+      if(!u.activo || u.avisos==='ninguno'){ off = off.concat(u.ids); return; }
+      vivos = vivos.concat(u.ids);
+      if(u.avisos==='todos') todos = todos.concat(u.ids);
+    });
+    if(!personal){
+      if(dest && dest.length){ todos.forEach(function(x){ if(dest.indexOf(x)<0) dest.push(x); }); }
+      else { dest = vivos.slice(); estricto = true; }
+    }
+    if(dest) dest = dest.filter(function(x){ return off.indexOf(x)<0; });
+  }
   var base = {app_id:AZCU_OS_APP, target_channel:'push', headings:{en:titulo, es:titulo}, contents:{en:msg, es:msg}, url:url||AZCU_WEB};
   var intentos = [];
   if(estricto && !(dest && dest.length)) return 'Sin destinatarios';
@@ -2074,7 +2132,10 @@ function azcuAvisoPapelesReserva(forzar, soloId){
 }
 
 /* ===== Gerente: atrasos del equipo ===== */
-function azcuGerentes_(){ return String(PropertiesService.getScriptProperties().getProperty('AZCU_GERENTE')||'').split(/[,;]/).map(function(x){ return x.trim(); }).filter(Boolean); }
+function azcuGerentes_(){
+  var us = azcuUsuarios_().filter(function(u){ return u.activo && /gerent/i.test(u.rol); });
+  if(us.length) return us.map(function(u){ return u.nombre; });
+  return String(PropertiesService.getScriptProperties().getProperty('AZCU_GERENTE')||'').split(/[,;]/).map(function(x){ return x.trim(); }).filter(Boolean); }
 function azcuEsGerente_(nombre){ var q = azcuSlug_(nombre); return !!q && azcuGerentes_().some(function(g){ var s2 = azcuSlug_(g); return s2===q || s2===azcuSlug_(String(nombre).split(/\s+/)[0]); }); }
 function azcuAtrasos_(){
   var datos = azcuDatos_(), hn = azcuHoy_(), out = [], resd = azcuMapaGet_('AZCU_RESD'), ahora = Date.now();
