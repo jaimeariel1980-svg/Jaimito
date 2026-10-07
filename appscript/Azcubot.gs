@@ -1120,8 +1120,9 @@ function azcuSlug_(n){ return azcuSinAc_(n).replace(/[^a-z0-9]+/g,'_').replace(/
 function azcuDestinos_(quien, exacto){
   var q = String(quien||'').trim(), o = [];
   if(!q) return o;
-  var a = azcuSlug_(q), b = azcuSlug_(q.split(/\s+/)[0]);
-  if(a) o.push(a); if(!exacto && b && b!==a) o.push(b);
+  var a = azcuSlug_(q), b = azcuSlug_(q.split(/\s+/)[0]), cap = function(x){ return x ? x.charAt(0).toUpperCase()+x.slice(1) : x; };
+  if(a){ o.push(a); if(cap(a)!==a) o.push(cap(a)); }
+  if(!exacto && b && b!==a){ o.push(b); if(cap(b)!==b) o.push(cap(b)); }
   return o;
 }
 var AZCU_SIN_SILENCIO_ = false;
