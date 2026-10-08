@@ -43,7 +43,7 @@ function transport(fn, args, ok, onErr){
   pollT = setTimeout(poll, 500); if(ls('azcu_via')==='anon') setTimeout(fallback, 300);
   if(QUICK.indexOf(fn)>=0){ var pl0; try{ pl0 = btoa(unescape(encodeURIComponent(json))); }catch(e){ pl0 = ''; } if(pl0 && pl0.length <= 6500){ jsonp('&azc='+encodeURIComponent(pl0), false); jsonp('&azc='+encodeURIComponent(pl0), true); } }
 }
-var QUICK = ['getDatos','obtenerConsultasWS','obtenerEncuesta','obtenerPropiedades','obtenerPropiedadesDoc','azcuAtajo','azcuWarm','azcuMov','azcuAgenda'];
+var QUICK = ['getDatos','obtenerConsultasWS','obtenerEncuesta','obtenerPropiedades','obtenerPropiedadesDoc','azcuAtajo','azcuWarm','azcuMov','novedadesTb','azcuAgenda'];
 var PUBLIC = ['obtenerDatosOFallar','extraerDatosDNI','extraerDatosPropiedad','extraerDatosEscritura','precargarDatos','guardarEncuesta'];
 var pinQ = null;
 function askPin(msg, cb){
@@ -199,7 +199,7 @@ td{padding:7px 8px;border-bottom:1px solid #f1f0ec;vertical-align:top}
 <div class="top"><div class="chip"><img id="logoimg" alt="Azcuénaga"></div>
 <div class="sep"></div><h1>Tablero de propiedades</h1><div class="dir">Mendoza 4873 · Rosario</div><button class="dlbtn" onclick="descargar()">Descargar</button></div>
 <div class="wrap">
-  <div class="nav"><button class="tab on" id="tabR" onclick="ver('resumen')">Resumen</button><button class="tab" id="tabP" onclick="ver('props')">Propiedades</button><button class="tab" id="tabC" onclick="ver('cons')">💬 Consultas WhatsApp <span id="consBadge" style="display:none;background:#d1495b;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px"></span></button><a class="tab" style="text-decoration:none;display:inline-block" href="#" onclick="irApp('');return false" rel="noopener">Ir a Precarga</a><a class="tab" style="text-decoration:none;display:inline-block" href="#" onclick="irApp('?app=procedimiento');return false" rel="noopener">Ir a Procedimiento de Ventas</a></div>
+  <div class="nav"><button class="tab on" id="tabR" onclick="ver('resumen')">Resumen</button><button class="tab" id="tabP" onclick="ver('props')">Propiedades</button><button class="tab" id="tabC" onclick="ver('cons')">💬 Consultas WhatsApp <span id="consBadge" style="display:none;background:#d1495b;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px"></span></button><button class="tab" id="tabN" onclick="novAbrir()">🔔 Novedades <span id="novBadge" style="display:none;background:#d1495b;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px"></span></button><a class="tab" style="text-decoration:none;display:inline-block" href="#" onclick="irApp('');return false" rel="noopener">Ir a Precarga</a><a class="tab" style="text-decoration:none;display:inline-block" href="#" onclick="irApp('?app=procedimiento');return false" rel="noopener">Ir a Procedimiento de Ventas</a></div>
   <div id="cons" style="display:none"></div>
   <div id="resumen">
   <div class="dash" id="dash"></div>
@@ -1426,6 +1426,32 @@ function enviarReporte(id){
 }
 function close_(){document.getElementById('ov').classList.remove('on');}
 function closeDL(){document.getElementById('ov2').classList.remove('on');}
+var NOV=[],NOV_KEY='tbseen';
+function _novSeen(){try{return +localStorage.getItem(NOV_KEY)||0;}catch(e){return 0;}}
+function novBadge(){
+  var seen=_novSeen();if(!seen){seen=Date.now()-864e5;try{localStorage.setItem(NOV_KEY,String(seen));}catch(e){}}
+  var n=NOV.filter(function(x){return x.ms>seen;}).length,b=document.getElementById('novBadge');
+  if(b){b.textContent=n>99?'99+':n;b.style.display=n?'':'none';}
+  document.title=(n?'('+n+') ':'')+document.title.replace(/^\(\d+\+?\)\s*/,'');
+}
+function novLoad(){google.script.run.withSuccessHandler(function(d){NOV=(d&&d.items)||[];novBadge();}).withFailureHandler(function(){}).novedadesTb(90);}
+function novAbrir(){
+  var seen=_novSeen(),last='',h='',hoy=new Date().toDateString(),ayer=new Date(Date.now()-864e5).toDateString();
+  function e(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  NOV.forEach(function(x){
+    var d=new Date(x.ms),k=d.toDateString(),lb=k===hoy?'Hoy':k===ayer?'Ayer':d.toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'});
+    if(lb!==last){h+='<div style="margin:14px 0 6px;font-size:12px;font-weight:700;color:var(--gris);text-transform:uppercase;letter-spacing:.04em">'+e(lb)+'</div>';last=lb;}
+    var nuevo=x.ms>seen,hora=x.h?d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})+' · ':'';
+    h+='<div '+(x.id?'onclick=\'closeDL();ficha("'+e(x.id)+'")\' ':'')+'style="display:flex;gap:10px;padding:9px 10px;border-radius:10px;margin-bottom:4px;'+(x.id?'cursor:pointer;':'')+(nuevo?'background:#fff4f4;':'background:#f6f8fc;')+'"><span style="font-size:18px">'+e(x.ic)+'</span><div style="min-width:0"><b style="font-size:13.5px">'+e(x.t)+(nuevo?' <span style="background:#d1495b;color:#fff;border-radius:8px;padding:1px 6px;font-size:10px">NUEVO</span>':'')+'</b>'+(x.dir?'<div style="font-size:12.5px;color:#2b4a8b">'+e(x.dir)+'</div>':'')+(x.d?'<div style="font-size:12px;color:var(--gris)">'+e(x.d)+'</div>':'')+'<div style="font-size:11.5px;color:var(--gris)">'+hora+e(x.q||'')+'</div></div></div>';
+  });
+  if(!NOV.length)h='<div style="color:var(--gris);padding:20px 0">Todo tranquilo. Cuando haya novedades, las vas a ver acá.</div>';
+  document.getElementById('dlg').innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">🔔 Novedades</div><div class="sub">Últimos 90 días · tocá una para abrir la ficha</div></div><div class="fb">'+h+'</div>';
+  document.getElementById('ov2').classList.add('on');
+  try{localStorage.setItem(NOV_KEY,String(Date.now()));}catch(e){}
+  novBadge();
+}
+setTimeout(novLoad,1500);setInterval(function(){if(!document.hidden)novLoad();},120000);document.addEventListener('visibilitychange',function(){if(!document.hidden)novLoad();});
+
 function adaptar(datos){
   if(!Array.isArray(datos)) return [];
   return datos.map(function(p){
