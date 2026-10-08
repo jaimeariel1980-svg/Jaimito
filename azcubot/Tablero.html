@@ -750,11 +750,11 @@ function render(){
   var _satTotal=_encs.length;
   var _satAvg=_sat===null?'—':_sat+'/10';
   document.getElementById('bars2').innerHTML=donutPanel(_satSegs,_satTotal===0?1:_satTotal,'encuestas',_encs.length===0?'—':_satAvg);
-  const pb={"Completa":0,"Parcial":0,"Pendiente":0};
-  f.forEach(p=>{const e=papEstado(p.papeles);if(e==='ok')pb["Completa"]++;else if(e==='med')pb["Parcial"]++;else if(e==='no')pb["Pendiente"]++;});
-  const cp3={"Completa":"var(--verde)","Parcial":"var(--amarillo)","Pendiente":"var(--rojo)"};
+  const pb={"Completa":0,"Avanzada":0,"Inicial":0};
+  f.forEach(p=>{const e=papEstado(p.papeles);if(e==='ok')pb["Completa"]++;else if(e==='med')pb["Avanzada"]++;else if(e==='no')pb["Inicial"]++;});
+  const cp3={"Completa":"var(--verde)","Avanzada":"var(--amarillo)","Inicial":"var(--rojo)"},rg3={"Completa":"6 de 6","Avanzada":"3 a 5 de 6","Inicial":"0 a 2 de 6"};
   const pcts=f.map(p=>papPct(p.papeles)).filter(x=>x!==null);const papProm=pcts.length?Math.round(pcts.reduce((a,b)=>a+b,0)/pcts.length):0;
-  const segP=Object.keys(pb).map(k=>({l:k,v:pb[k],c:cp3[k],k:'pap:'+k}));const rs=papResumen(f);
+  const segP=Object.keys(pb).map(k=>({l:k+' ('+rg3[k]+')',v:pb[k],c:cp3[k],k:'pap:'+k}));const rs=papResumen(f);
   const nota='<div style="text-align:center;font-size:12.5px;color:var(--gris);margin-top:12px;line-height:1.6"><b style="color:var(--texto)">'+rs.cargados+' de '+rs.total+'</b> papeles esenciales cargados'+(rs.top.length?'<br>Mayor faltante: '+rs.top.map(x=>x.d+' ('+x.m+' de '+x.t+')').join(' · '):'')+'</div>';
   document.getElementById('bars3').innerHTML=donutPanel(segP,f.length,'de papeles cargados',papProm+'%','n')+nota;
   let h='';
@@ -805,7 +805,7 @@ function movCard(p){
   const u=p.seg[p.seg.length-1],t=String(u.tipo||'')+' '+String(u.res||''),ic=/visita/i.test(t)?'🏠':/propuesta|oferta/i.test(t)?'💰':'💬';
   return '<div style="font-size:11.5px;color:var(--gris);margin-top:8px;border-top:1px dashed var(--linea);padding-top:7px">'+ic+' <b style="color:var(--texto)">Último:</b> '+u.fecha+' · '+(u.tipo?u.tipo+' · ':'')+(u.res||'')+'</div>';
 }
-function papBadge(p){const e=papEstado(p.papeles);if(!e)return'';const pc=papPct(p.papeles);const m={ok:['v','Documentación completa'],med:['a','Documentación parcial'],no:['r','Documentación pendiente']};const col={ok:'var(--verde)',med:'var(--amarillo)',no:'var(--rojo)'}[e];return '<div><span class="pap '+m[e][0]+'">'+m[e][1]+'</span></div><div class="health" style="margin:4px 0 8px" title="Papeles esenciales cargados"><div class="t"><div class="f" style="width:'+pc+'%;background:'+col+'"></div></div><div class="p">'+pc+'%</div></div>';}
+function papBadge(p){const e=papEstado(p.papeles);if(!e)return'';const pc=papPct(p.papeles);const ks=PAP_ESEN.filter(d=>d in p.papeles),nk=ks.filter(d=>!!p.papeles[d]).length;const m={ok:['v','Documentación completa'],med:['a','Documentación avanzada'],no:['r','Documentación inicial']};const col={ok:'var(--verde)',med:'var(--amarillo)',no:'var(--rojo)'}[e];return '<div><span class="pap '+m[e][0]+'">'+m[e][1]+' · '+nk+' de '+ks.length+'</span></div><div class="health" style="margin:4px 0 8px" title="Papeles esenciales cargados"><div class="t"><div class="f" style="width:'+pc+'%;background:'+col+'"></div></div><div class="p">'+pc+'%</div></div>';}
 /**
  * Insignia con el resultado de la verificación por IA de un documento
  * (columna "Verificación IA: ..." del Sheet). Verde si vino "Verificado OK",
@@ -885,7 +885,7 @@ function drill(tipo){
     document.getElementById('ov2').classList.add('on');return;
   }
   if(tipo.indexOf('pap:')===0){
-    const b=tipo.slice(4);const map={"Completa":"ok","Parcial":"med","Pendiente":"no"};
+    const b=tipo.slice(4);const map={"Completa":"ok","Avanzada":"med","Inicial":"no"};
     f2=filtered().filter(p=>papEstado(p.papeles)===map[b]);
     rows=f2.length?f2.map(p=>{const falta=Object.keys(p.papeles).filter(d=>!p.papeles[d]);return '<tr onclick=\'closeDL();ficha("'+p.id+'")\' style="cursor:pointer"><td><span class="idpill">'+p.id+'</span></td><td>'+p.dir+'</td><td style="color:var(--gris);font-size:11.5px">'+(falta.length?'Falta: '+falta.join(', '):'Completo')+'</td></tr>';}).join(''):'<tr><td colspan="3" style="color:var(--gris)">Sin propiedades</td></tr>';
     document.getElementById('dlg').innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">Documentación: '+b+'</div><div class="sub">Tocá una para abrir la ficha</div></div><div class="fb"><table><tr><th>ID</th><th>Dirección</th><th>Qué falta</th></tr>'+rows+'</table></div>';
