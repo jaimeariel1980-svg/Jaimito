@@ -686,7 +686,8 @@ const ET2EST={"Captación":"En venta","Publicadas":"En venta","Reserva":"Reserva
 let ALERT_INACT=[],ALERT_SINVIS=[];
 const PAP_ESEN=["Plano de edificación","Plano de mensura","Escritura","DNI propietario","Título de propiedad","Autorización de venta"];
 function papPct(pa){if(!pa)return null;const ks=PAP_ESEN.filter(d=>d in pa);if(!ks.length)return null;return Math.round(ks.filter(d=>!!pa[d]).length/ks.length*100);}
-function papEstado(pa){const p=papPct(pa);if(p===null)return null;return p>=100?"ok":p>=60?"med":"no";}
+function papEstado(pa){const p=papPct(pa);if(p===null)return null;return p>=100?"ok":p>=50?"med":"no";}
+function papResumen(f){let cargados=0,total=0;const falt={};PAP_ESEN.forEach(d=>falt[d]={m:0,t:0});f.forEach(p=>{if(!p.papeles)return;PAP_ESEN.forEach(d=>{if(d in p.papeles){falt[d].t++;total++;if(p.papeles[d])cargados++;else falt[d].m++;}});});const top=PAP_ESEN.map(d=>({d:d,m:falt[d].m,t:falt[d].t})).filter(x=>x.m>0).sort((a,b)=>b.m-a.m).slice(0,2);return {cargados:cargados,total:total,top:top};}
 function propuestaEstado(p){var pr=(p.seg||[]).filter(s=>/propuesta|oferta/i.test(s.res));if(!pr.length)return null;var u=pr[pr.length-1];var last=(''+u.res).toLowerCase();var q=u.cli?(' de '+u.cli):'';if(/rechaz/.test(last))return{cls:'r',txt:'propuesta rechazada'+q};if(/acept/.test(last))return{cls:'v',txt:'propuesta aceptada'+q};return{cls:'a',txt:'propuesta'+(u.cli?' de '+u.cli:' recibida')};}
 function semC(d){if(d===null)return"var(--neutro)";if(d<=15)return"var(--verde)";if(d<=30)return"var(--amarillo)";return"var(--rojo)";}
 function healthC(p){if(p===null)return"var(--neutro)";if(p>=90)return"var(--verde)";if(p>=70)return"var(--amarillo)";return"var(--rojo)";}
@@ -749,11 +750,13 @@ function render(){
   var _satTotal=_encs.length;
   var _satAvg=_sat===null?'—':_sat+'/10';
   document.getElementById('bars2').innerHTML=donutPanel(_satSegs,_satTotal===0?1:_satTotal,'encuestas',_encs.length===0?'—':_satAvg);
-  const pb={"Completos":0,"Casi":0,"Críticos":0};
-  f.forEach(p=>{const e=papEstado(p.papeles);if(e==='ok')pb["Completos"]++;else if(e==='med')pb["Casi"]++;else if(e==='no')pb["Críticos"]++;});
-  const cp3={"Completos":"var(--verde)","Casi":"var(--amarillo)","Críticos":"var(--rojo)"};
+  const pb={"Completa":0,"Parcial":0,"Pendiente":0};
+  f.forEach(p=>{const e=papEstado(p.papeles);if(e==='ok')pb["Completa"]++;else if(e==='med')pb["Parcial"]++;else if(e==='no')pb["Pendiente"]++;});
+  const cp3={"Completa":"var(--verde)","Parcial":"var(--amarillo)","Pendiente":"var(--rojo)"};
   const pcts=f.map(p=>papPct(p.papeles)).filter(x=>x!==null);const papProm=pcts.length?Math.round(pcts.reduce((a,b)=>a+b,0)/pcts.length):0;
-  const segP=Object.keys(pb).map(k=>({l:k,v:pb[k],c:cp3[k],k:'pap:'+k}));document.getElementById('bars3').innerHTML=donutPanel(segP,f.length,'papeles esenciales',papProm+'%');
+  const segP=Object.keys(pb).map(k=>({l:k,v:pb[k],c:cp3[k],k:'pap:'+k}));const rs=papResumen(f);
+  const nota='<div style="text-align:center;font-size:12.5px;color:var(--gris);margin-top:12px;line-height:1.6"><b style="color:var(--texto)">'+rs.cargados+' de '+rs.total+'</b> papeles esenciales cargados'+(rs.top.length?'<br>Mayor faltante: '+rs.top.map(x=>x.d+' ('+x.m+' de '+x.t+')').join(' · '):'')+'</div>';
+  document.getElementById('bars3').innerHTML=donutPanel(segP,f.length,'de papeles cargados',papProm+'%','n')+nota;
   let h='';
   for(const e of ET){const col=e[1];const items=sortIt(f.filter(p=>p.etapa===e[0]));
     h+='<div class="col" ondragover="event.preventDefault();this.classList.add(\'over\')" ondragleave="this.classList.remove(\'over\')" ondrop="drop(event,\''+e[0]+'\')"><h2><span class="dot" style="background:'+col+'"></span>'+e[0]+'<span class="n">'+items.length+'</span></h2><div class="col-body">';
@@ -764,7 +767,7 @@ function render(){
 }
 function kpiAl(n){return '<div class="kpi r clk" onclick="drill(\'al\')"><div class="n" style="color:'+(n?'var(--rojo)':'var(--verde)')+'">'+n+'</div><div class="l">Sin movimiento</div><div class="hint">ver detalle</div></div>';}
 function kpi(n,l,c,dr){return '<div class="kpi '+c+' '+(dr?'clk':'')+'" '+(dr?'onclick="drill(\''+dr+'\')"':'')+'><div class="n">'+n+'</div><div class="l">'+l+'</div>'+(dr?'<div class="hint">ver detalle</div>':'')+'</div>';}
-function donutPanel(segs,total,centerLabel,centerNum){
+function donutPanel(segs,total,centerLabel,centerNum,modo){
   const tot=segs.reduce((s,x)=>s+x.v,0)||1;const cx=70,cy=70,R=63,r=44;let a=-Math.PI/2;let paths='';
   const nz=segs.filter(z=>z.v>0).length;
   segs.forEach(s=>{if(s.v<=0)return;const frac=s.v/tot;let a2=a+frac*2*Math.PI;if(nz===1)a2=a+2*Math.PI-0.0001;
@@ -773,8 +776,9 @@ function donutPanel(segs,total,centerLabel,centerNum){
     const lg=frac>0.5?1:0;
     paths+='<path d="M'+x1.toFixed(2)+' '+y1.toFixed(2)+' A'+R+' '+R+' 0 '+lg+' 1 '+x2.toFixed(2)+' '+y2.toFixed(2)+' L'+xi2.toFixed(2)+' '+yi2.toFixed(2)+' A'+r+' '+r+' 0 '+lg+' 0 '+xi1.toFixed(2)+' '+yi1.toFixed(2)+' Z" fill="'+s.c+'" onclick="drill(\''+s.k+'\')"></path>';
     a=a2;});
-  const leg=segs.map(s=>{const pct=total?Math.round(s.v/total*100):0;return '<div class="lbox" onclick="drill(\''+s.k+'\')"><div class="t"><span class="dot" style="background:'+s.c+'"></span>'+s.l+'</div><div class="p">'+pct+'%</div><div class="c">'+s.v+'</div></div>';}).join('');
-  return '<div class="donutwrap"><svg viewBox="0 0 140 140"><g>'+paths+'</g><text x="70" y="74" text-anchor="middle" class="ctr" style="font-size:31px">'+centerNum+'</text><text x="70" y="91" text-anchor="middle" style="font-size:10px;fill:var(--gris);font-weight:600">'+centerLabel+'</text></svg><div class="legbox">'+leg+'</div></div>';
+  const leg=segs.map(s=>{const pct=total?Math.round(s.v/total*100):0;return '<div class="lbox" onclick="drill(\''+s.k+'\')"><div class="t"><span class="dot" style="background:'+s.c+'"></span>'+s.l+'</div><div class="p">'+(modo==='n'?s.v:pct+'%')+'</div><div class="c">'+(modo==='n'?(s.v===1?'propiedad':'propiedades'):s.v)+'</div></div>';}).join('');
+  const lab=String(centerLabel).split(' ');const l1=lab.length>1?lab.slice(0,Math.ceil(lab.length/2)).join(' '):lab[0],l2=lab.length>1?lab.slice(Math.ceil(lab.length/2)).join(' '):'';
+  return '<div class="donutwrap"><svg viewBox="0 0 140 140"><g>'+paths+'</g><circle cx="70" cy="70" r="'+(r-1)+'" fill="#fff"></circle><text x="70" y="72" text-anchor="middle" class="ctr" style="font-size:27px">'+centerNum+'</text><text x="70" y="86" text-anchor="middle" style="font-size:8.5px;fill:#5b6573;font-weight:600">'+l1+'</text><text x="70" y="96" text-anchor="middle" style="font-size:8.5px;fill:#5b6573;font-weight:600">'+l2+'</text></svg><div class="legbox">'+leg+'</div></div>';
 }
 function cardHTML(p,col){
   const sc=semC(p.dias),dtxt=p.dias===null?'—':p.dias;
@@ -790,7 +794,7 @@ function cardHTML(p,col){
     '<div class="sem"><div class="b"><div class="num" style="color:'+sc+'">'+dtxt+'</div><div class="lab">días s/mov</div></div>'+
     '<div class="b"><div class="num" style="color:var(--azul)">'+p.vis+'</div><div class="lab">visitas</div></div></div>'+hp+(ult?'<div style="font-size:11.5px;color:var(--gris);margin-top:8px;border-top:1px dashed var(--linea);padding-top:7px"><b style="color:var(--texto)">Última:</b> '+ult.fecha+' · '+ult.res+'</div>':'')+'</div></div>';
 }
-function papBadge(p){const e=papEstado(p.papeles);if(!e)return'';const pc=papPct(p.papeles);const m={ok:['v','papeles esenciales completos'],med:['a','papeles esenciales '+pc+'%'],no:['r','papeles esenciales '+pc+'%']};return '<div><span class="pap '+m[e][0]+'">'+m[e][1]+'</span></div>';}
+function papBadge(p){const e=papEstado(p.papeles);if(!e)return'';const pc=papPct(p.papeles);const m={ok:['v','Documentación completa'],med:['a','Documentación parcial'],no:['r','Documentación pendiente']};const col={ok:'var(--verde)',med:'var(--amarillo)',no:'var(--rojo)'}[e];return '<div><span class="pap '+m[e][0]+'">'+m[e][1]+'</span></div><div class="health" style="margin:4px 0 8px" title="Papeles esenciales cargados"><div class="t"><div class="f" style="width:'+pc+'%;background:'+col+'"></div></div><div class="p">'+pc+'%</div></div>';}
 /**
  * Insignia con el resultado de la verificación por IA de un documento
  * (columna "Verificación IA: ..." del Sheet). Verde si vino "Verificado OK",
@@ -870,7 +874,7 @@ function drill(tipo){
     document.getElementById('ov2').classList.add('on');return;
   }
   if(tipo.indexOf('pap:')===0){
-    const b=tipo.slice(4);const map={"Completos":"ok","Casi":"med","Críticos":"no"};
+    const b=tipo.slice(4);const map={"Completa":"ok","Parcial":"med","Pendiente":"no"};
     f2=filtered().filter(p=>papEstado(p.papeles)===map[b]);
     rows=f2.length?f2.map(p=>{const falta=Object.keys(p.papeles).filter(d=>!p.papeles[d]);return '<tr onclick=\'closeDL();ficha("'+p.id+'")\' style="cursor:pointer"><td><span class="idpill">'+p.id+'</span></td><td>'+p.dir+'</td><td style="color:var(--gris);font-size:11.5px">'+(falta.length?'Falta: '+falta.join(', '):'Completo')+'</td></tr>';}).join(''):'<tr><td colspan="3" style="color:var(--gris)">Sin propiedades</td></tr>';
     document.getElementById('dlg').innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">Documentación: '+b+'</div><div class="sub">Tocá una para abrir la ficha</div></div><div class="fb"><table><tr><th>ID</th><th>Dirección</th><th>Qué falta</th></tr>'+rows+'</table></div>';
