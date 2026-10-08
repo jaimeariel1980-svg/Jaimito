@@ -7,8 +7,9 @@ function usuarios_() {
   let lista = [];
   try {
     const sh = hoja_('Usuarios');
-    if (sh) lista = sh.getDataRange().getValues().slice(1).filter(r => String(r[0]).trim()).map(r => ({ nombre: String(r[0]).trim(), pin: String(r[1] || '').trim(), activo: !/^no$/i.test(String(r[2] || '').trim()) }));
+    if (sh) lista = sh.getDataRange().getValues().slice(1).filter(r => String(r[0]).trim()).map(r => ({ nombre: String(r[0]).trim(), pin: String(r[1] || '').trim(), activo: !/^no$/i.test(String(r[2] || '').trim()), admin: /^admin/i.test(String(r[4] || '').trim()) }));
   } catch (e) { }
+  if (lista.length && !lista.some(u => u.admin)) lista[0].admin = true;
   cache.put('USUARIOS', JSON.stringify(lista), 30);
   return lista;
 }
@@ -24,18 +25,45 @@ function verificarPin_(u, pin) {
   if (n) cache.remove(key);
 }
 
+let ROL_ADMIN_ = false;
+
 function admin_(k) {
   const p = String(k).split('|');
   if (p[0] !== prop_('ADMIN_KEY')) throw new Error('No autorizado');
   const nombre = String(p[1] || '').replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9 ]/g, '').trim().slice(0, 30);
   if (exigePin_()) {
     const u = usuarios_().find(x => x.activo && x.nombre.toLowerCase() === nombre.toLowerCase());
-    if (!u) throw new Error('LOGIN: Elegí tu usuario');
+    if (!u) throw new Error('LOGIN: Usuario no habilitado. Pedíselo al administrador.');
     verificarPin_(u, p[2]);
     QUIEN_ = u.nombre;
+    ROL_ADMIN_ = !!u.admin;
   } else {
     QUIEN_ = nombre;
+    ROL_ADMIN_ = false;
   }
+}
+
+function soloAdmin_(k) {
+  admin_(k);
+  if (!exigePin_() || !ROL_ADMIN_) throw new Error('Solo el administrador puede hacer esto');
+}
+
+function nombreUsuario_(n) { return String(n || '').replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9 ]/g, '').replace(/\s+/g, ' ').trim().slice(0, 30); }
+
+function pinAzar_() { return String(1000 + Math.floor(Math.random() * 9000)); }
+
+function hojaUsuarios_() {
+  const ss = ss_();
+  let sh = ss.getSheetByName('Usuarios');
+  if (!sh) sh = ss.insertSheet('Usuarios');
+  asegurarEncabezados_(sh, ['Nombre', 'PIN', 'Activo', 'Notas', 'Rol']);
+  return sh;
+}
+
+function filaUsuario_(sh, nombre) {
+  const d = sh.getDataRange().getValues();
+  const i = d.findIndex((r, j) => j > 0 && String(r[0]).trim().toLowerCase() === String(nombre).trim().toLowerCase());
+  return i === -1 ? 0 : i + 1;
 }
 
 function getLogin(clave) {
@@ -45,22 +73,65 @@ function getLogin(clave) {
 
 function registrarUsuario(clave, nombre, pin) {
   if (String(clave).split('|')[0] !== prop_('ADMIN_KEY')) throw new Error('No autorizado');
-  nombre = String(nombre || '').replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9 ]/g, '').replace(/\s+/g, ' ').trim().slice(0, 30);
+  nombre = nombreUsuario_(nombre);
   pin = String(pin || '').trim();
   if (nombre.length < 2) throw new Error('LOGIN: Escribí tu nombre');
   if (!/^\d{4,6}$/.test(pin)) throw new Error('LOGIN: El PIN tiene que ser de 4 a 6 números');
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
-    const ss = ss_();
-    let sh = ss.getSheetByName('Usuarios');
-    if (!sh) { sh = ss.insertSheet('Usuarios'); asegurarEncabezados_(sh, ['Nombre', 'PIN', 'Activo', 'Notas']); }
-    const d = sh.getDataRange().getValues();
-    if (d.some((r, i) => i > 0 && String(r[0]).trim().toLowerCase() === nombre.toLowerCase())) throw new Error('LOGIN: Ese usuario ya existe. Ingresá con su PIN.');
-    sh.appendRow([nombre, pin, 'SI']);
+    CacheService.getScriptCache().remove('USUARIOS');
+    if (usuarios_().length) throw new Error('LOGIN: Solo el administrador puede crear usuarios. Pedile el tuyo.');
+    hojaUsuarios_().appendRow([nombre, pin, 'SI', '', 'Admin']);
     CacheService.getScriptCache().remove('USUARIOS');
   } finally { lock.releaseLock(); }
-  registrarHistorial_('', nombre, 'Usuario', 'Creó su usuario', nombre);
+  registrarHistorial_('', nombre, 'Usuario', 'Creó el usuario administrador', nombre);
+  return true;
+}
+
+function listarUsuarios(k) {
+  soloAdmin_(k);
+  return usuarios_().map(u => ({ nombre: u.nombre, activo: u.activo, admin: u.admin }));
+}
+
+function crearUsuario(k, nombre) {
+  soloAdmin_(k);
+  nombre = nombreUsuario_(nombre);
+  if (nombre.length < 2) throw new Error('Escribí el nombre');
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const sh = hojaUsuarios_();
+    if (filaUsuario_(sh, nombre)) throw new Error('Ese usuario ya existe');
+    const pin = pinAzar_();
+    sh.appendRow([nombre, pin, 'SI', '', '']);
+    CacheService.getScriptCache().remove('USUARIOS');
+    registrarHistorial_('', nombre, 'Usuario', 'Usuario creado por ' + QUIEN_, QUIEN_);
+    return { nombre: nombre, pin: pin };
+  } finally { lock.releaseLock(); }
+}
+
+function reiniciarPin(k, nombre) {
+  soloAdmin_(k);
+  const sh = hojaUsuarios_();
+  const f = filaUsuario_(sh, nombre);
+  if (!f) throw new Error('Usuario no encontrado');
+  const pin = pinAzar_();
+  sh.getRange(f, 2).setValue(pin);
+  CacheService.getScriptCache().remove('USUARIOS');
+  registrarHistorial_('', nombre, 'Usuario', 'PIN reiniciado por ' + QUIEN_, QUIEN_);
+  return { nombre: nombre, pin: pin };
+}
+
+function activarUsuario(k, nombre, activo) {
+  soloAdmin_(k);
+  if (!activo && String(nombre).toLowerCase() === QUIEN_.toLowerCase()) throw new Error('No podés bloquearte a vos mismo');
+  const sh = hojaUsuarios_();
+  const f = filaUsuario_(sh, nombre);
+  if (!f) throw new Error('Usuario no encontrado');
+  sh.getRange(f, 3).setValue(activo ? 'SI' : 'NO');
+  CacheService.getScriptCache().remove('USUARIOS');
+  registrarHistorial_('', nombre, 'Usuario', (activo ? 'Habilitado' : 'Bloqueado') + ' por ' + QUIEN_, QUIEN_);
   return true;
 }
 
@@ -209,7 +280,7 @@ function getTablero(k) {
     entrevistadores: lista_(aj.entrevistadores, ','),
     busquedas: busquedas_().map(b => ({ id: b.id, titulo: b.titulo, recomendacion: b.recomendacion, link_perfil: b.link_perfil, link_flyer: b.link_flyer, ubicacion: b.ubicacion })),
     cfg: { cliente: aj.nombre_cliente || 'PAMI', diasAlerta: Number(aj.dias_alerta) || 7, linkAgenda: aj.link_agenda || '', duraciones: { screening: Number(aj.duracion_screening) || 30, competencias: Number(aj.duracion_competencias) || 60, pami1: Number(aj.duracion_pami1) || 30, pami2: Number(aj.duracion_pami2) || 60 } },
-    pinActivo: exigePin_(), ahora: fmt_(new Date(), "yyyy-MM-dd'T'HH:mm"), cands: cands
+    pinActivo: exigePin_(), admin: ROL_ADMIN_, ahora: fmt_(new Date(), "yyyy-MM-dd'T'HH:mm"), cands: cands
   });
 }
 

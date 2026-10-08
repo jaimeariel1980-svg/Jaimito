@@ -242,7 +242,7 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '8';
+const ESQUEMA = '9';
 
 function actualizarEsquema_() {
   const props = PropertiesService.getScriptProperties();
@@ -258,8 +258,8 @@ function actualizarEsquema_() {
       const ss = ss_();
       let u = ss.getSheetByName('Usuarios');
       if (!u) u = ss.insertSheet('Usuarios');
-      asegurarEncabezados_(u, ['Nombre', 'PIN', 'Activo', 'Notas']);
-      if (!String(u.getRange(2, 4).getValue() || '').trim()) u.getRange(2, 4).setValue('Cada persona crea su usuario al entrar al tablero (nombre y PIN). Activo = NO bloquea el acceso; borrar la fila lo elimina.');
+      asegurarEncabezados_(u, ['Nombre', 'PIN', 'Activo', 'Notas', 'Rol']);
+      u.getRange(2, 4).setValue('Los usuarios los da de alta el administrador desde el tablero (avatar → Usuarios). Activo = NO bloquea el acceso.');
       u.getRange(2, 3, 50, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['SI', 'NO'], true).build());
       CacheService.getScriptCache().remove('USUARIOS');
     },
