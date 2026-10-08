@@ -2212,6 +2212,12 @@ function _mapaEncuestas_(){
   }
   return m;
 }
+function _vendedorDe_(codigo){
+  var mae=hojaMaestra_(), fila=_filaPorCodigo_(mae, codigo);
+  if(fila<0) return '';
+  var head=mae.getRange(1,1,1,mae.getLastColumn()).getValues()[0], i=head.indexOf('Vendedor asignado');
+  return i<0 ? '' : String(mae.getRange(fila,i+1).getValue()||'').trim();
+}
 function agendarVisita(codigo, datos){
   var cal=CalendarApp.getDefaultCalendar();
   var ini=new Date(datos.cuando);
@@ -2221,7 +2227,14 @@ function agendarVisita(codigo, datos){
     description:'Propiedad: '+codigo+'\nInteresado: '+(datos.interesado||'')+'\nTel: '+(datos.tel||''),
     location:datos.dir||''
   };
-  if(datos.mail) opts.guests=datos.mail;
+  var invitados=[];
+  if(datos.mail) invitados.push(String(datos.mail).trim());
+  try{
+    var vend=String(datos.vendedor||_vendedorDe_(codigo)||'').trim();
+    var uv=vend && typeof azcuUsuarioDe_==='function' ? azcuUsuarioDe_(vend) : null;
+    if(uv && uv.activo && uv.mail && invitados.indexOf(uv.mail)<0) invitados.push(uv.mail);
+  }catch(e){ Logger.log('Invitado vendedor: '+e.message); }
+  if(invitados.length){ opts.guests=invitados.join(','); opts.sendInvitations=true; }
   var ev=cal.createEvent(titulo, ini, fin, opts);
   ev.addPopupReminder(60);
   registrarInteraccion(codigo, {

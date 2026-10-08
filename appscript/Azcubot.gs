@@ -1136,13 +1136,13 @@ function azcuUsuarios_(){
     var sh = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Usuarios');
     if(sh && sh.getLastRow()>1){
       var cap = function(x){ return x ? x.charAt(0).toUpperCase()+x.slice(1) : x; };
-      sh.getRange(2, 1, sh.getLastRow()-1, 5).getValues().forEach(function(r){
+      sh.getRange(2, 1, sh.getLastRow()-1, 6).getValues().forEach(function(r){
         var nombre = String(r[0]||'').trim(), viejos = String(r[4]||'').split(/[,;]/).map(function(x){ return x.trim(); }).filter(Boolean);
         if(!nombre) return;
         var ids = [], add = function(x){ x = azcuSlug_(x); if(x){ [x, cap(x)].forEach(function(y){ if(ids.indexOf(y)<0) ids.push(y); }); } };
         add(nombre); add(nombre.split(/\s+/)[0]); viejos.forEach(add);
         var sn = azcuSinAc_(String(r[2]||'sí'));
-        out.push({nombre:nombre, viejos:viejos, rol:String(r[1]||'').trim(), activo: sn!=='no' && sn!=='n', avisos: azcuSinAc_(String(r[3]||'todos')), ids:ids});
+        out.push({nombre:nombre, mail:String(r[5]||'').trim(), viejos:viejos, rol:String(r[1]||'').trim(), activo: sn!=='no' && sn!=='n', avisos: azcuSinAc_(String(r[3]||'todos')), ids:ids});
       });
     }
   }catch(e){}
@@ -1164,6 +1164,9 @@ function azcuActualizarListaAvisos(){
   var sh = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Usuarios');
   if(!sh){ Logger.log('No existe la pestaña Usuarios: ejecutá azcuCrearUsuarios.'); return; }
   sh.getRange(2, 4, 200, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['Todos', 'Solo gerencia', 'Solo mis propiedades', 'Ninguno'], true).build());
+  if(!String(sh.getRange(1, 6).getValue()).trim()){ sh.getRange(1, 6).setValue('Mail').setFontWeight('bold').setBackground('#0a3d91').setFontColor('#ffffff'); }
+  var fil = sh.getRange(2, 1, Math.max(sh.getLastRow()-1, 1), 6).getValues();
+  fil.forEach(function(x, i){ if(/analia/i.test(String(x[0])) && !String(x[5]).trim()) sh.getRange(i+2, 6).setValue('callipari314@gmail.com'); });
   var r = sh.getRange(2, 4, Math.max(sh.getLastRow()-1, 1), 1), v = r.getValues().map(function(x){ return [/mi/i.test(String(x[0])) && /solo/i.test(String(x[0])) ? 'Solo mis propiedades' : x[0]]; });
   r.setValues(v);
   try{ CacheService.getScriptCache().remove('azusr'); }catch(e){}
@@ -1173,11 +1176,11 @@ function azcuCrearUsuarios(){
   var ss = SpreadsheetApp.openById(MAESTRO_ID), sh = ss.getSheetByName('Usuarios');
   if(sh){ Logger.log('Ya existe la pestaña Usuarios: no la toqué.'); return; }
   sh = ss.insertSheet('Usuarios');
-  sh.getRange(1, 1, 1, 5).setValues([['Nombre y apellido (así figura en la app)', 'Rol', 'Activo', 'Avisos', 'Nombres anteriores (separados por coma)']]).setFontWeight('bold').setBackground('#0a3d91').setFontColor('#ffffff');
-  sh.getRange(2, 1, 3, 5).setValues([
-    ['Silvina Novillo', 'Gerente', 'Sí', 'Todos', 'silvi, Silvina'],
-    ['Sebastian Novillo', 'Gerente', 'Sí', 'Todos', 'seba, Sebastian'],
-    ['Analia Callipari', 'Gerente y vendedora', 'Sí', 'Todos', 'analia, Analia']
+  sh.getRange(1, 1, 1, 6).setValues([['Nombre y apellido (así figura en la app)', 'Rol', 'Activo', 'Avisos', 'Nombres anteriores (separados por coma)', 'Mail']]).setFontWeight('bold').setBackground('#0a3d91').setFontColor('#ffffff');
+  sh.getRange(2, 1, 3, 6).setValues([
+    ['Silvina Novillo', 'Gerente', 'Sí', 'Todos', 'silvi, Silvina', ''],
+    ['Sebastian Novillo', 'Gerente', 'Sí', 'Todos', 'seba, Sebastian', ''],
+    ['Analia Callipari', 'Gerente y vendedora', 'Sí', 'Todos', 'analia, Analia', 'callipari314@gmail.com']
     /* cuando termine la prueba: cambiar los gerentes a «Solo gerencia» y los vendedores a «Solo los míos» */
   ]);
   sh.getRange(2, 3, 200, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['Sí', 'No'], true).build());
