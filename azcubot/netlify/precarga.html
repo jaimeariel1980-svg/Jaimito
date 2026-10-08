@@ -484,6 +484,13 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
     <div class="step">
       <h2>3. Documentación a adjuntar</h2>
       <div class="step-sub">Formatos aceptados: PDF, JPG o PNG. Si un documento tiene varias hojas o fotos, elegí todas juntas y se arma un solo PDF. Toda la documentación es opcional: podés enviar el formulario aunque todavía no tengas ningún archivo listo.</div>
+      <div style="background:var(--terracotta-soft);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px;">
+        <b>📚 ¿Tenés todo en un solo PDF?</b>
+        <div class="step-sub" style="margin:4px 0 10px;">Subilo acá: la IA separa los documentos y completa los casilleros de abajo. Antes de aplicarlo vas a poder revisar y corregir.</div>
+        <input type="file" id="legajo-file" accept=".pdf,.jpg,.jpeg,.png" multiple>
+        <div id="legajo-estado" style="margin-top:8px;font-size:13px;color:var(--muted);"></div>
+      </div>
+      <div id="legajo-modal"></div>
       <div id="docs-contenedor"></div>
       <div id="docs-dueños-contenedor"></div>
       <button type="button" class="btn btn-outline" id="btn-agregar-doc-dueño" style="margin-top:8px;">+ Añadir documentación dueño 2</button>
@@ -1620,6 +1627,74 @@ document.addEventListener('change',function(ev){
     el.dispatchEvent(new Event('change',{bubbles:true}));el._unido=0;
   }).catch(function(e){el.value='';alert('No pude unir los '+n+' archivos: '+(e&&e.message?e.message:e));});
 },true);
+
+(function(){
+  var fileEl=document.getElementById('legajo-file'); if(!fileEl) return;
+  var est=document.getElementById('legajo-estado'),modal=document.getElementById('legajo-modal'),ST=null;
+  function u8b64(by){var s='';for(var i=0;i<by.length;i+=32768)s+=String.fromCharCode.apply(null,by.subarray(i,i+32768));return btoa(s);}
+  function run(b64,n){return new Promise(function(ok,ko){google.script.run.withSuccessHandler(ok).withFailureHandler(function(e){ko(new Error(e&&e.message?e.message:e));}).clasificarPaginasLegajo({base64:b64,mimeType:'application/pdf',paginas:n});});}
+  function grupos(tipos){
+    var g=[];tipos.forEach(function(t,i){var l=g[g.length-1];if(l&&l.tipo===t)l.hasta=i+1;else g.push({desde:i+1,hasta:i+1,tipo:t});});
+    for(var k=1;k<g.length-1;k++){if(g[k].tipo==='otro'&&g[k].desde===g[k].hasta&&g[k-1].tipo===g[k+1].tipo&&g[k-1].tipo!=='otro'){g[k-1].hasta=g[k+1].hasta;g.splice(k,2);k--;}}
+    return g;
+  }
+  fileEl.addEventListener('change',async function(){
+    var fs=Array.from(fileEl.files||[]);fileEl.value='';if(!fs.length)return;
+    fileEl.disabled=true;
+    try{
+      est.textContent='Preparando el PDF…';
+      var pdf=(fs.length===1&&fs[0].type==='application/pdf')?fs[0]:await _unirEnPdf(fs);
+      await _cargarPdfLib();
+      var D=PDFLib.PDFDocument,src=await D.load(await pdf.arrayBuffer(),{ignoreEncryption:true}),n=src.getPageCount();
+      if(n>150)throw new Error('El PDF tiene '+n+' páginas (máximo 150). Dividilo en dos.');
+      var tipos=[],T=8;
+      for(var i=0;i<n;i+=T){
+        est.textContent='La IA está leyendo las páginas '+(i+1)+' a '+Math.min(i+T,n)+' de '+n+'… no cierres esta página.';
+        var ch=await D.create(),idx=[];for(var j=i;j<Math.min(i+T,n);j++)idx.push(j);
+        (await ch.copyPages(src,idx)).forEach(function(p){ch.addPage(p);});
+        var r=await run(u8b64(await ch.save()),idx.length);
+        if(!r||!r.ok)throw new Error('La IA no pudo leer las páginas '+(i+1)+' a '+Math.min(i+T,n)+(r&&r.motivo?' ('+r.motivo+')':'')+'.');
+        tipos=tipos.concat(r.tipos);
+      }
+      ST={src:src,n:n,g:grupos(tipos)};est.textContent='Listo: revisá la propuesta.';mostrar();
+    }catch(e){est.textContent='';alert('No pude separar el PDF: '+(e&&e.message?e.message:e));}
+    fileEl.disabled=false;
+  });
+  function opciones(sel){return '<option value="">No usar</option>'+DOCUMENTOS.map(function(d){return '<option value="'+d.key+'"'+(d.key===sel?' selected':'')+'>'+d.label+'</option>';}).join('');}
+  function mostrar(){
+    var rows=ST.g.map(function(g,i){
+      return '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px;padding:8px;border:1px solid var(--line);border-radius:10px;background:'+(g.tipo==='otro'?'#fff8e6':'#fff')+'">'+
+        '<span style="font-size:13px">Págs</span><input type="number" min="1" max="'+ST.n+'" value="'+g.desde+'" data-i="'+i+'" data-f="desde" style="width:62px"><span>a</span><input type="number" min="1" max="'+ST.n+'" value="'+g.hasta+'" data-i="'+i+'" data-f="hasta" style="width:62px">'+
+        '<select data-i="'+i+'" data-f="tipo" style="flex:1;min-width:150px">'+opciones(g.tipo==='otro'?'':g.tipo)+'</select>'+
+        '<button type="button" class="btn btn-outline" data-ver="'+i+'" style="padding:6px 10px">Ver</button><button type="button" class="btn btn-outline" data-del="'+i+'" style="padding:6px 10px">✕</button></div>';
+    }).join('');
+    modal.innerHTML='<div style="position:fixed;inset:0;z-index:9999;background:rgba(15,30,60,.55);display:flex;align-items:center;justify-content:center;padding:12px"><div style="background:#fff;border-radius:16px;padding:20px;max-width:620px;width:100%;max-height:90vh;overflow:auto"><div style="font-weight:700;font-size:17px">Revisá cómo se separó (' + ST.n + ' páginas)</div><div style="font-size:13px;color:var(--muted);margin:4px 0 12px">Las filas amarillas son páginas que la IA no pudo clasificar: elegí el documento o dejalas en «No usar». Usá «Ver» para controlar cada parte.</div>'+rows+
+      '<button type="button" class="btn btn-outline" id="leg-add" style="margin:4px 0 12px">+ Agregar rango</button><div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn btn-outline" id="leg-cancel">Cancelar</button><button type="button" class="btn btn-primary" id="leg-ok">Aplicar a los casilleros</button></div></div></div>';
+  }
+  function paginas(g){var a=[];for(var p=Math.max(1,+g.desde||1);p<=Math.min(ST.n,+g.hasta||0);p++)a.push(p-1);return a;}
+  async function armar(idx){var D=PDFLib.PDFDocument,o=await D.create();(await o.copyPages(ST.src,idx)).forEach(function(p){o.addPage(p);});return o.save();}
+  modal.addEventListener('change',function(e){var t=e.target,i=t.dataset&&t.dataset.i;if(i==null)return;var g=ST.g[+i];if(t.dataset.f==='tipo')g.tipo=t.value||'otro';else g[t.dataset.f]=+t.value;mostrar();});
+  modal.addEventListener('click',async function(e){
+    var t=e.target;
+    if(t.id==='leg-cancel'){modal.innerHTML='';est.textContent='';ST=null;return;}
+    if(t.id==='leg-add'){var u=ST.g.length?ST.g[ST.g.length-1].hasta+1:1;ST.g.push({desde:Math.min(u,ST.n),hasta:ST.n,tipo:'otro'});mostrar();return;}
+    if(t.dataset&&t.dataset.del!=null){ST.g.splice(+t.dataset.del,1);mostrar();return;}
+    if(t.dataset&&t.dataset.ver!=null){var ix=paginas(ST.g[+t.dataset.ver]);if(!ix.length){alert('Rango de páginas inválido.');return;}var w=window.open('','_blank');var by=await armar(ix);var u2=URL.createObjectURL(new Blob([by],{type:'application/pdf'}));if(w)w.location=u2;else window.open(u2,'_blank');return;}
+    if(t.id==='leg-ok'){
+      var por={};ST.g.forEach(function(g){if(g.tipo==='otro')return;var ix=paginas(g);if(ix.length)por[g.tipo]=(por[g.tipo]||[]).concat(ix);});
+      var claves=Object.keys(por);if(!claves.length){alert('No hay ninguna parte asignada a un documento.');return;}
+      var ocupados=claves.filter(function(k){var inp=document.querySelector('input[data-doc="'+k+'"]');return inp&&inp.files&&inp.files.length;});
+      if(ocupados.length&&!confirm('Ya elegiste archivo en: '+ocupados.join(', ')+'. ¿Reemplazarlos por lo separado?'))return;
+      t.disabled=true;t.textContent='Aplicando…';
+      for(var c of claves){
+        var inp=document.querySelector('input[data-doc="'+c+'"]');if(!inp)continue;
+        var by2=await armar(por[c]),dt=new DataTransfer();dt.items.add(new File([by2],c+'.pdf',{type:'application/pdf'}));
+        inp.files=dt.files;inp.dispatchEvent(new Event('change',{bubbles:true}));
+      }
+      modal.innerHTML='';est.textContent='✓ Listo: se completaron '+claves.length+' casillero(s). Revisalos abajo.';ST=null;
+    }
+  });
+})();
 </script>
 
 <script>
