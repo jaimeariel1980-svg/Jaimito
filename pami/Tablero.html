@@ -14,6 +14,7 @@
 #board{display:flex;gap:12px;padding:14px 20px 12px;overflow:auto;align-items:flex-start;min-height:200px}
 #board::-webkit-scrollbar,#hs::-webkit-scrollbar{height:16px;width:14px}#board::-webkit-scrollbar-track,#hs::-webkit-scrollbar-track{background:#DCE3EC}#board::-webkit-scrollbar-thumb,#hs::-webkit-scrollbar-thumb{background:#034EA2;border-radius:8px;border:3px solid #DCE3EC}
 @supports not selector(::-webkit-scrollbar){#board,#hs{scrollbar-color:#034EA2 #DCE3EC;scrollbar-width:auto}}
+#jump{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:6px 20px;background:#fff;border-bottom:1px solid var(--line)}#jump button{border:1.5px solid var(--azul);background:#fff;color:var(--azul);border-radius:99px;font-size:11.5px;font-weight:800;padding:4px 12px;cursor:pointer;font-family:var(--font)}#jump button:hover{background:var(--azul);color:#fff}#jump button.fl{font-size:15px;padding:2px 14px;background:var(--azul);color:#fff}#jump small{margin-left:auto;color:var(--mut);font-size:10px}
 #hs{overflow-x:scroll;overflow-y:hidden;height:16px;margin:6px 20px 0;background:#DCE3EC;border-radius:8px}#hsi{height:1px}
 .col{background:#E9EEF5;border-radius:4px;min-width:236px;width:236px;flex-shrink:0}
 .col-h{background:var(--azul);color:#fff;padding:9px 12px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;display:flex;justify-content:space-between;border-radius:4px 4px 0 0;border-bottom:3px solid var(--celeste)}
@@ -92,6 +93,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
   <button class="btn ghost" style="padding:6px 12px;font-size:11px" onclick="limpiar()">Limpiar</button>
   <span id="cf" style="font-size:12px;font-weight:700;color:var(--azul)"></span>
 </div>
+<div id="jump"></div>
 <div id="hs"><div id="hsi"></div></div>
 <div id="board"><div class="loading">Cargando…</div></div>
 <div id="modal"><div class="box" id="mbox"></div></div>
@@ -205,11 +207,15 @@ function render(){
     if(i===0)h+=acordeon('Descartados','desc',D.desc,lista,/^Descartad/i);
   });
   h+=acordeon('Reservas','res',D.res,lista,/reserva/i);
-  document.getElementById('board').innerHTML=h;ajustarBoard();
+  document.getElementById('board').innerHTML=h;
+  document.getElementById('jump').innerHTML='<button class="fl" onclick="mover(-1)" title="Mover a la izquierda">◀</button><button class="fl" onclick="mover(1)" title="Mover a la derecha">▶</button>'+[].slice.call(document.querySelectorAll('#board > .col')).map(function(c,i){var n=c.querySelector('.col-h span'),k=c.querySelector('.col-h b');return '<button onclick="irCol('+i+')">'+esc(n?n.textContent:'')+' '+(k?k.textContent:'')+'</button>';}).join('')+'<small>Tablero v3</small>';
+  ajustarBoard();
 }
-function ajustarBoard(){var b=document.getElementById('board');b.style.height=Math.max(200,window.innerHeight-b.getBoundingClientRect().top-4)+'px';document.getElementById('hsi').style.width=b.scrollWidth+'px';}
-(function(){var h=document.getElementById('hs'),b=document.getElementById('board');h.onscroll=function(){b.scrollLeft=h.scrollLeft;};b.onscroll=function(){h.scrollLeft=b.scrollLeft;};})();
-window.addEventListener('resize',ajustarBoard);
+function irCol(i){var b=document.getElementById('board'),c=b.querySelectorAll(':scope > .col')[i];if(c)b.scrollTo({left:c.offsetLeft-b.offsetLeft-12,behavior:'smooth'});}
+function mover(d){var b=document.getElementById('board');b.scrollBy({left:d*500,behavior:'smooth'});}
+function ajustarBoard(){var b=document.getElementById('board');b.style.height=Math.max(200,window.innerHeight-b.getBoundingClientRect().top-4)+'px';var h=document.getElementById('hs');document.getElementById('hsi').style.width=(b.scrollWidth-b.clientWidth+h.clientWidth)+'px';}
+(function(){var h=document.getElementById('hs'),b=document.getElementById('board');h.onscroll=function(){if(Math.abs(b.scrollLeft-h.scrollLeft)>1)b.scrollLeft=h.scrollLeft;};b.onscroll=function(){if(Math.abs(h.scrollLeft-b.scrollLeft)>1)h.scrollLeft=b.scrollLeft;};})();
+window.addEventListener('resize',ajustarBoard);window.addEventListener('load',function(){setTimeout(ajustarBoard,300);setTimeout(ajustarBoard,1500);});
 function soltar(ev,el){
   ev.preventDefault();el.classList.remove('over');
   var f=Number(ev.dataTransfer.getData('text')),estado=el.dataset.estado,c=byFila(f);
