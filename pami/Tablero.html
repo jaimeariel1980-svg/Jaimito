@@ -12,8 +12,9 @@
 .fil{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:8px 20px;background:#fff;border-bottom:1px solid var(--line)}
 .fil select,.fil input{width:auto;padding:7px 10px;font-size:12px}
 #board{display:flex;gap:12px;padding:14px 20px 12px;overflow:auto;align-items:flex-start;min-height:200px}
-#board::-webkit-scrollbar{height:16px;width:14px}#board::-webkit-scrollbar-track{background:#DCE3EC}#board::-webkit-scrollbar-thumb{background:#034EA2;border-radius:8px;border:3px solid #DCE3EC}
-@supports not selector(::-webkit-scrollbar){#board{scrollbar-color:#034EA2 #DCE3EC;scrollbar-width:auto}}
+#board::-webkit-scrollbar,#hs::-webkit-scrollbar{height:16px;width:14px}#board::-webkit-scrollbar-track,#hs::-webkit-scrollbar-track{background:#DCE3EC}#board::-webkit-scrollbar-thumb,#hs::-webkit-scrollbar-thumb{background:#034EA2;border-radius:8px;border:3px solid #DCE3EC}
+@supports not selector(::-webkit-scrollbar){#board,#hs{scrollbar-color:#034EA2 #DCE3EC;scrollbar-width:auto}}
+#hs{overflow-x:scroll;overflow-y:hidden;height:16px;margin:6px 20px 0;background:#DCE3EC;border-radius:8px}#hsi{height:1px}
 .col{background:#E9EEF5;border-radius:4px;min-width:236px;width:236px;flex-shrink:0}
 .col-h{background:var(--azul);color:#fff;padding:9px 12px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;display:flex;justify-content:space-between;border-radius:4px 4px 0 0;border-bottom:3px solid var(--celeste)}
 .col.desc .col-h{background:#8B2E2B;border-bottom-color:#D9534F}
@@ -32,6 +33,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 #board .card .sub{font-size:11.5px;color:var(--mut);margin-top:2px}
 .tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
 .tag{font-size:10.5px;background:#EEF2F7;border-radius:3px;padding:1px 6px;color:var(--mut);font-weight:600}
+.pol{display:flex;gap:4px;margin-top:6px}.pol button{flex:1;border:1.5px solid var(--line);background:#fff;border-radius:3px;font-size:10.5px;font-weight:800;padding:2px 0;cursor:pointer;color:var(--mut);font-family:var(--font)}.pol button.on{background:var(--azul);border-color:var(--azul);color:#fff}.pol button.on.p2{background:#00A3E0;border-color:#00A3E0}
 .tag.rec{background:#FFF4CC;color:#6B4E00;border:1px solid #F2B705;font-weight:800}.tag.zok{background:#D9F3E4;color:#14502F}.tag.zfu{background:#FDE3E1;color:#9B2C28}#board .card .fo{font-size:11.5px;color:var(--navy);font-weight:600;margin-top:2px}.alerta.rec{background:#FFF4CC;color:#6B4E00;border-left:4px solid #F2B705;font-size:14px;font-weight:800}
 .tag.cita{background:var(--tint);color:var(--azul);font-weight:700}.tag.hoy{background:#D9534F;color:#fff}.tag.w{background:#FFF1D6;color:#8A5A00}.tag.g{background:#D9F3E4;color:#14502F}.tag.r{background:#FDE3E1;color:#9B2C28}
 #fmodal{display:none;position:fixed;inset:0;background:var(--bg);z-index:60;overflow:auto}
@@ -84,11 +86,13 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
   <input id="ff" placeholder="Formación / profesión">
   <input id="fx" placeholder="Experiencia / palabra clave">
   <select id="fe"><option value="">Todos los estados</option></select>
+  <select id="fpo"><option value="">Todos los policlínicos</option><option value="-">Sin policlínico</option></select>
   <input id="fp" type="number" placeholder="Pretensión hasta $" style="width:150px">
   <select id="fr"><option value="">Todos</option><option value="1">★ Solo recomendados</option></select>
   <button class="btn ghost" style="padding:6px 12px;font-size:11px" onclick="limpiar()">Limpiar</button>
   <span id="cf" style="font-size:12px;font-weight:700;color:var(--azul)"></span>
 </div>
+<div id="hs"><div id="hsi"></div></div>
 <div id="board"><div class="loading">Cargando…</div></div>
 <div id="modal"><div class="box" id="mbox"></div></div>
 <div id="fmodal"><div class="fbar"><button class="btn sec" onclick="volverFicha()">← Volver a la ficha</button><span class="ttl" id="ftit"></span></div><div id="fbody"></div></div>
@@ -123,11 +127,12 @@ function init(){
   var fb=document.getElementById('fb');
   fb.innerHTML='<option value="">Todas las búsquedas</option>'+D.busquedas.map(function(b){return '<option value="'+esc(b.id)+'">'+esc(b.titulo)+'</option>';}).join('');
   document.getElementById('fe').innerHTML+=D.todos.map(function(e){return '<option>'+esc(e)+'</option>';}).join('');
-  ['fb','fe'].forEach(function(i){document.getElementById(i).onchange=function(){render();perfilBtn();};});
+  document.getElementById('fpo').innerHTML+=D.policlinicos.map(function(e){return '<option>'+esc(e)+'</option>';}).join('');
+  ['fb','fe','fpo'].forEach(function(i){document.getElementById(i).onchange=function(){render();perfilBtn();};});
   ['fq','fz','ff','fx','fp'].forEach(function(i){document.getElementById(i).oninput=render;});document.getElementById('fr').onchange=render;
   render();perfilBtn();
 }
-function limpiar(){['fq','fz','ff','fx','fp','fe','fb','fr'].forEach(function(i){document.getElementById(i).value='';});render();perfilBtn();}
+function limpiar(){['fq','fz','ff','fx','fp','fe','fb','fr','fpo'].forEach(function(i){document.getElementById(i).value='';});render();perfilBtn();}
 function busqSel(){return D.busquedas.find(function(x){return x.id===document.getElementById('fb').value;});}
 function perfilBtn(){var b=busqSel();document.getElementById('bPerfil').style.display=b&&b.link_perfil?'':'none';document.getElementById('bFlyer').style.display=b&&b.link_flyer?'':'none';}
 function verFlyer(){var b=busqSel();if(b&&b.link_flyer)window.open(b.link_flyer,'_blank');}
@@ -143,6 +148,7 @@ function filtra(c){
   var g=function(i){return document.getElementById(i).value;};
   if(g('fb')&&c.busq!==g('fb'))return false;
   if(g('fe')&&c.estado!==g('fe'))return false;
+  if(g('fpo')&&(g('fpo')==='-'?c.policlinico:c.policlinico!==g('fpo')))return false;
   var p=Number(g('fp'))||0;if(p){var n=Number(String(c.pret).replace(/\D/g,''));if(!n||n>p)return false;}
   if(g('fr')&&!recom(c))return false;
   if(!coincide(c.nombre+' '+c.dni+' '+c.email,g('fq')))return false;
@@ -164,7 +170,6 @@ function card(c){
   if(rc)t+='<span class="tag rec">★ '+(c.recTipo?'Recomendado: ':'')+esc(rc)+'</span>';
   if(ct)t+='<span class="tag cita'+(ct.hoy?' hoy':'')+'">📅 '+esc(ct.tipo)+' '+esc(ct.txt)+'</span>';
   if(c.contactado)t+='<span class="tag g">✓ '+esc(c.contactado)+'</span>';
-  if(c.policlinico)t+='<span class="tag">'+esc(c.policlinico.replace('Policlínico ',''))+'</span>';
   if(c.zona)t+='<span class="tag '+(/fuera/i.test(c.zona)?'zfu':'zok')+'">'+esc(c.zona)+'</span>';
   if(c.proc&&c.proc!=='SI')t+='<span class="tag w">'+(c.proc==='Pendiente'?'Analizando…':c.proc==='NoCV'?'¿No es un CV?':'Revisar CV')+'</span>';
   if(/agendad/i.test(c.estado)&&!c.cita)t+='<span class="tag w">Agendado · sin fecha</span>';
@@ -172,7 +177,11 @@ function card(c){
   if(c.descarte)t+='<span class="tag">✉ Descarte enviado</span>';
   if(c.fuente&&c.fuente!=='Web')t+='<span class="tag">'+esc(c.fuente)+'</span>';
   var n=ind(c);
-  return '<div class="card '+cls(n)+'" draggable="true" data-fila="'+c.fila+'" ondragstart="event.dataTransfer.setData(\'text\',\''+c.fila+'\')" onclick="abrir('+c.fila+')"><div class="top"><b>'+esc(c.nombre)+'</b><span class="badge '+cls(n)+'">'+(esc(n)||'—')+'</span></div><div class="sub">'+esc(c.loc||'—')+(c.pret?' · '+esc(money(c.pret)):'')+'</div>'+(c.formacion?'<div class="fo">'+esc(c.formacion)+'</div>':'')+(t?'<div class="tags">'+t+'</div>':'')+'</div>';
+  return '<div class="card '+cls(n)+'" draggable="true" data-fila="'+c.fila+'" ondragstart="event.dataTransfer.setData(\'text\',\''+c.fila+'\')" onclick="abrir('+c.fila+')"><div class="top"><b>'+esc(c.nombre)+'</b><span class="badge '+cls(n)+'">'+(esc(n)||'—')+'</span></div><div class="sub">'+esc(c.loc||'—')+(c.pret?' · '+esc(money(c.pret)):'')+'</div>'+(c.formacion?'<div class="fo">'+esc(c.formacion)+'</div>':'')+(t?'<div class="tags">'+t+'</div>':'')+'<div class="pol">'+D.policlinicos.map(function(p,i){return '<button type="button" class="p'+(i+1)+(c.policlinico===p?' on':'')+'" onclick="event.stopPropagation();asignarPol('+c.fila+','+i+')">'+esc(p.replace('Policlínico ',''))+'</button>';}).join('')+'</div></div>';
+}
+function asignarPol(f,i){
+  var c=byFila(f),p=D.policlinicos[i],nuevo=c.policlinico===p?'':p,prev=c.policlinico;c.policlinico=nuevo;render();
+  gs().withSuccessHandler(function(){toast(nuevo||'Sin policlínico');}).withFailureHandler(function(e){c.policlinico=prev;render();fer(e);}).guardarCandidato(K,f,{policlinico:nuevo});
 }
 function dropAttrs(e){return 'data-estado="'+esc(e)+'" ondragover="event.preventDefault();this.classList.add(\'over\')" ondragleave="this.classList.remove(\'over\')" ondrop="soltar(event,this)"';}
 function acordeon(titulo,clase,tipos,lista,re){
@@ -186,7 +195,7 @@ function acordeon(titulo,clase,tipos,lista,re){
 function render(){
   var lista=D.cands.filter(filtra);
   document.getElementById('cnt').textContent=lista.length+(lista.length!==D.cands.length?' de '+D.cands.length:'')+' candidatos';
-  var hay=['fb','fq','fz','ff','fx','fe','fp','fr'].some(function(i){return document.getElementById(i).value;});document.getElementById('cf').textContent=hay?lista.length+' resultado'+(lista.length===1?'':'s'):'';
+  var hay=['fb','fq','fz','ff','fx','fe','fp','fr','fpo'].some(function(i){return document.getElementById(i).value;});document.getElementById('cf').textContent=hay?lista.length+' resultado'+(lista.length===1?'':'s'):'';
   if(!D.cands.length){document.getElementById('board').innerHTML='<div class="loading">Todavía no hay candidatos. Cuando llegue una postulación, un mail con CV o un archivo en la carpeta, aparece acá.</div>';return;}
   var conocidos=[];D.estadosCol.forEach(function(x){conocidos=conocidos.concat(x[1]);});
   var h='';
@@ -198,7 +207,8 @@ function render(){
   h+=acordeon('Reservas','res',D.res,lista,/reserva/i);
   document.getElementById('board').innerHTML=h;ajustarBoard();
 }
-function ajustarBoard(){var b=document.getElementById('board');b.style.height=Math.max(200,window.innerHeight-b.getBoundingClientRect().top-4)+'px';}
+function ajustarBoard(){var b=document.getElementById('board');b.style.height=Math.max(200,window.innerHeight-b.getBoundingClientRect().top-4)+'px';document.getElementById('hsi').style.width=b.scrollWidth+'px';}
+(function(){var h=document.getElementById('hs'),b=document.getElementById('board');h.onscroll=function(){b.scrollLeft=h.scrollLeft;};b.onscroll=function(){h.scrollLeft=b.scrollLeft;};})();
 window.addEventListener('resize',ajustarBoard);
 function soltar(ev,el){
   ev.preventDefault();el.classList.remove('over');
