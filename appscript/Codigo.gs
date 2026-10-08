@@ -209,7 +209,7 @@ function precargarDatos(datos, archivosBase64) {
 
   const verificacionIA = _verificarArchivosConIA(archivos, _nombresDueños(datos));
   if (Object.keys(verificacionIA).length) {
-    _guardarFila(sheet, datos, carpeta.getUrl(), estadoDocs, verificacionIA);
+    _guardarVerificacionIA_(sheet, datos.codigoPrecarga, verificacionIA);
     try { if (typeof azcuLimpiarCache_ === 'function') azcuLimpiarCache_(); } catch (e) {}
   }
 
@@ -942,6 +942,22 @@ function _encabezadosCompletos() {
 
 function _columnasVerificacionIA() {
   return CONFIG.DOCUMENTOS.map(d => 'Verificación IA: ' + d.label);
+}
+
+/**
+ * Escribe SOLO las columnas «Verificación IA: ...» de la fila, sin tocar nada
+ * más: así, si alguien editó la propiedad mientras la IA trabajaba, no se pisa.
+ */
+function _guardarVerificacionIA_(sheet, codigo, verificacionIA) {
+  const fila = _buscarFilaPorCodigo(sheet, codigo);
+  if (!fila) return;
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  CONFIG.DOCUMENTOS.forEach(d => {
+    if (verificacionIA[d.key] === undefined) return;
+    let col = headers.indexOf('Verificación IA: ' + d.label) + 1;
+    if (col < 1) { col = headers.length + 1; sheet.getRange(1, col).setValue('Verificación IA: ' + d.label); headers.push('Verificación IA: ' + d.label); }
+    sheet.getRange(fila, col).setValue(verificacionIA[d.key]);
+  });
 }
 
 function _guardarFila(sheet, datos, urlCarpeta, estadoDocs, verificacionIA) {
