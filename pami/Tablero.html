@@ -97,7 +97,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 var K = <?!= JSON.stringify(clave) ?>;
 var BASE = <?!= JSON.stringify(url) ?>;
 var D = null, CUR = 0;
-var ETQ = {cv:'CV',screening:'Screening',competencias:'Competencias',pami1:'Entrevista PAMI virtual',pami2:'Entrevista PAMI presencial'};
+var ETQ = {cv:'CV',screening:'Screening',competencias:'Competencias',pami2:'Entrevista técnica'};
 function esc(t){return String(t==null?'':t).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function cls(n){return n==='A'?'nA':n==='B+'?'nBp':n==='B'?'nB':n==='C'?'nC':'';}
 function tit(id){var b=D.busquedas.find(function(x){return x.id===id;});return b?b.titulo:(id||'Sin asignar');}
@@ -216,7 +216,7 @@ function defRec(busq){
 }
 function etapaActual(c){
   var e=c.estado;
-  if(/PAMI presencial|En PAMI/.test(e))return 'pami2';if(/PAMI virtual/.test(e))return 'pami1';if(/competencias/i.test(e))return 'competencias';if(/screening/i.test(e))return 'screening';return 'cv';
+  if(/técnica|En PAMI/i.test(e))return 'pami2';if(/competencias/i.test(e))return 'competencias';if(/screening/i.test(e))return 'screening';return 'cv';
 }
 function notaRow(c,et,val){
   return '<div class="nrow"><span>'+ETQ[et]+'</span>'+['A','B+','B','C'].map(function(n){return '<button class="nb'+(val===n?' on '+n.replace('+','p'):'')+'" onclick="nota('+c.fila+',\''+et+'\',\''+n+'\',this)">'+n+'</button>';}).join('')+'</div>';
@@ -241,7 +241,7 @@ function abrir(f){
   else if(c.proc==='Pendiente')al+='<div class="alerta a2">El CV todavía se está analizando.</div>';
   if(!terminal(c.estado)&&dd>=D.cfg.diasAlerta)al+='<div class="alerta a3">🕒 '+dd+' días sin movimiento en "'+esc(c.estado)+'".</div>';
   var etapasNota=['cv','screening','competencias'];
-  if(c.notaP1||c.notaP2||/PAMI|Contratado/.test(c.estado))etapasNota=etapasNota.concat(['pami1','pami2']);
+  if(c.notaP2||/técnica|Contratado/i.test(c.estado))etapasNota=etapasNota.concat(['pami2']);
   var vals={cv:c.ajuste,screening:c.notaScr,competencias:c.notaComp,pami1:c.notaP1,pami2:c.notaP2};
   var recHtml=rec?'<div><label class="l">Recomendado por</label><select id="rcT" onchange="rcVer()">'+opts(Object.keys(rec),c.recTipo,'— Nadie —')+'</select></div><div><label class="l">&nbsp;</label><div id="rcS" style="display:none;max-height:130px;overflow:auto;border:1px solid var(--line);border-radius:4px;padding:4px 8px"></div><input id="rcN" type="text" placeholder="Nombre y apellido" style="display:none" value="'+esc(c.recPor)+'"></div>':'';
   var resp=c.resp.length?'<div class="sec">Respuestas del formulario</div>'+c.resp.map(function(r){return '<div class="row"><span class="l" style="width:55%">'+esc(r.q)+'</span><span class="v">'+esc(r.a)+'</span></div>';}).join(''):'';
@@ -298,7 +298,7 @@ function descarteMail(f,btn){
 
 function menuWA(f){
   var c=byFila(f);
-  var ops=[['contacto-screening','📞 Contacto screening'],['contacto-competencias','💼 Contacto competencias'],['contacto-pami-virtual','🏢 Entrevista PAMI (virtual)'],['contacto-pami-presencial','🏢 Entrevista PAMI (presencial)'],['descarte-competencias','❌ Descarte competencias'],['descarte-pami','❌ Descarte PAMI']];
+  var ops=[['contacto-screening','📞 Contacto screening'],['contacto-competencias','💼 Contacto competencias'],['contacto-tecnica','🏥 Contacto entrevista técnica'],['descarte-competencias','❌ Descarte competencias'],['descarte-pami','❌ Descarte entrevista técnica']];
   document.getElementById('mbox').innerHTML='<div class="hd"><div><h2>WhatsApp · '+esc(c.nombre)+'</h2><small>Elegí el mensaje</small></div><button class="x" onclick="cerrar()">×</button></div><div class="bd" style="padding-top:14px">'+ops.map(function(o){return '<button class="btn wa opt" onclick="enviarWA('+f+',\''+o[0]+'\',this)">'+o[1]+'</button>';}).join('')+'<button class="btn sec opt" onclick="abrir('+f+')">← Volver</button></div>';
 }
 function enviarWA(f,tipo,btn){
@@ -313,7 +313,7 @@ function agendar(f){
   var c=byFila(f),et=etapaActual(c),def=et==='cv'?'screening':et;
   var man=new Date(new Date(D.ahora).getTime()+86400000).toISOString().slice(0,10);
   document.getElementById('mbox').innerHTML='<div class="hd"><div><h2>Agendar · '+esc(c.nombre)+'</h2><small>Crea el evento en el calendario'+(/@/.test(c.email||'')?' y le manda la invitación por mail':'')+'</small></div><button class="x" onclick="cerrar()">×</button></div><div class="bd"><div class="grid" style="margin-top:14px">'+
-    '<div class="full"><label class="l">Tipo de entrevista</label><select id="aE" onchange="durDef()">'+[['screening','Screening'],['competencias','Competencias'],['pami1','Entrevista PAMI virtual'],['pami2','Entrevista PAMI presencial']].map(function(o){return '<option value="'+o[0]+'"'+(o[0]===def?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select></div>'+
+    '<div class="full"><label class="l">Tipo de entrevista</label><select id="aE" onchange="durDef()">'+[['screening','Screening'],['competencias','Competencias'],['pami2','Entrevista técnica']].map(function(o){return '<option value="'+o[0]+'"'+(o[0]===def?' selected':'')+'>'+o[1]+'</option>';}).join('')+'</select></div>'+
     '<div><label class="l">Fecha</label><input type="date" id="aF" value="'+man+'"></div><div><label class="l">Hora</label><input type="time" id="aH" value="10:00"></div>'+
     '<div><label class="l">Duración (min)</label><input type="number" id="aD" min="10" max="240" step="5"></div><div><label class="l">Lugar / link</label><input type="text" id="aL" placeholder="Meet, Policlínico…"></div>'+
     '<div class="full"><label class="l">Nota para el evento (opcional)</label><input type="text" id="aN"></div></div>'+

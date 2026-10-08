@@ -18,15 +18,15 @@ Proyecto independiente (no comparte nada con MACS). Todo vive en la cuenta dotac
 Si ya estaba instalado: reemplazar archivos, volver a ejecutar `setup()` (agrega columnas/pestañas nuevas sin borrar nada) y publicar una versión nueva.
 
 ## Flujo de estados
-CV → Screening → Competencias → Entrevista PAMI virtual → Entrevista PAMI presencial → Contratado.
+CV → Screening → Competencias → Entrevista técnica (División de Enfermería) → Contratado.
 Nota A / B+ avanzan, B avanza en CV y screening (en competencias y PAMI queda en reserva), C descarta en esa etapa.
 
 Todo se edita desde el Sheet: Busquedas, Preguntas, Screening_Eval, Screening_Val, Competencias, Plantillas, Ajustes.
 
 ## Agenda de citas (Google Calendar)
 1. En Google Calendar de dotacionpp1 → Crear → "Agenda de citas" (una por tipo de entrevista).
-2. El título de la agenda tiene que incluir la palabra: `Screening`, `Competencias`, `PAMI virtual` o `PAMI presencial`.
-3. Copiar el link público de cada agenda en la pestaña Ajustes: `link_agenda_screening`, `link_agenda_competencias`, `link_agenda_pami1`, `link_agenda_pami2`.
+2. El título de la agenda tiene que incluir la palabra: `Screening`, `Competencias` o `Técnica`.
+3. Copiar el link público de cada agenda en la pestaña Ajustes: `link_agenda_screening`, `link_agenda_competencias`, `link_agenda_pami2` (esta última es la de la entrevista técnica).
 4. Los mensajes de WhatsApp (pestaña Plantillas) mandan ese link. Cuando el candidato reserva, el sistema lo detecta solo (cada 10 min) por su mail o por el nombre que figura entre paréntesis en el evento, marca "agendado" y muestra la cita en la tarjeta y en Agenda.
 5. Los turnos reservados que no coinciden con ningún candidato aparecen en Agenda como "sin candidato asociado".
 
