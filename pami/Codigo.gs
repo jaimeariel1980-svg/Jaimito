@@ -1,5 +1,5 @@
 const CUENTA = 'dotacionpp1@gmail.com';
-const HEAD_CAND = ['Fecha', 'Nombre', 'Teléfono', 'DNI', 'Email', 'Localidad', 'Búsqueda', 'Pretensión', 'Nivel de Ajuste', 'Justificación', 'Resumen', 'Requisitos', 'Link CV', 'Estado', 'Entrevistó', 'Nota screening', 'Nota competencias', 'Recomendó', 'Recomendado por', 'Comentarios', 'Respuestas', 'Procesado', 'Intentos', 'Fuente', 'ID', 'Nota PAMI virtual', 'Nota PAMI presencial', 'Cita', 'Entrevistas (calendario)', 'Contactado', 'Descarte enviado', 'Informe screening', 'Informe competencias', 'Último movimiento', 'Zona', 'Formación', 'Postulación', 'Policlínico'];
+const HEAD_CAND = ['Fecha', 'Nombre', 'Teléfono', 'DNI', 'Email', 'Localidad', 'Búsqueda', 'Pretensión', 'Nivel de Ajuste', 'Justificación', 'Resumen', 'Requisitos', 'Link CV', 'Estado', 'Entrevistó', 'Nota screening', 'Nota competencias', 'Recomendó', 'Recomendado por', 'Comentarios', 'Respuestas', 'Procesado', 'Intentos', 'Fuente', 'ID', 'Nota PAMI virtual', 'Nota entrevista técnica', 'Cita', 'Entrevistas (calendario)', 'Contactado', 'Descarte enviado', 'Informe screening', 'Informe competencias', 'Último movimiento', 'Zona', 'Formación', 'Postulación', 'Policlínico'];
 const COL = { fecha: 1, nombre: 2, tel: 3, dni: 4, email: 5, loc: 6, busq: 7, pret: 8, ajuste: 9, just: 10, resumen: 11, req: 12, cv: 13, estado: 14, entrev: 15, notaScr: 16, notaComp: 17, recTipo: 18, recPor: 19, coment: 20, resp: 21, proc: 22, intentos: 23, fuente: 24, id: 25, notaP1: 26, notaP2: 27, cita: 28, entrevistas: 29, contactado: 30, descarte: 31, infScr: 32, infComp: 33, mov: 34, zona: 35, formacion: 36, postulacion: 37, policlinico: 38 };
 const POLICLINICOS = ['Policlínico PAMI 1', 'Policlínico PAMI 2'];
 const NOTAS = ['', 'A', 'B+', 'B', 'C'];
@@ -15,16 +15,15 @@ const ESTADOS_COL = [
   ['Análisis de CV', ['Nuevo', 'Contactado', 'Pendiente', 'Revisar'], 'Nuevo'],
   ['Screening', ['Avanza a screening', 'Screening agendado'], 'Avanza a screening'],
   ['Competencias', ['Avanza a competencias', 'Competencias agendada'], 'Avanza a competencias'],
-  ['Entrevista PAMI virtual', ['Avanza a PAMI virtual', 'PAMI virtual agendada'], 'Avanza a PAMI virtual'],
-  ['Entrevista PAMI presencial', ['Avanza a PAMI presencial', 'PAMI presencial agendada', 'En PAMI'], 'Avanza a PAMI presencial'],
+  ['Entrevista técnica', ['Avanza a entrevista técnica', 'Entrevista técnica agendada'], 'Avanza a entrevista técnica'],
   ['Contratado', ['Contratado'], 'Contratado']
 ];
-const ESTADOS_DESC = ['Descartado sin screening', 'Descartado post screening', 'Descartado en competencias', 'Descartado en PAMI virtual', 'Descartado en PAMI presencial', 'Descartado Fuera de zona', 'Descartado NO le interesa'];
-const ESTADOS_RES = ['En reserva', 'Reserva competencias', 'Reserva PAMI virtual', 'Reserva PAMI presencial'];
-const ETAPAS = ['cv', 'screening', 'competencias', 'pami1', 'pami2'];
-const NOTA_COL = { cv: COL.ajuste, screening: COL.notaScr, competencias: COL.notaComp, pami1: COL.notaP1, pami2: COL.notaP2 };
-const AGENDADO = { screening: 'Screening agendado', competencias: 'Competencias agendada', pami1: 'PAMI virtual agendada', pami2: 'PAMI presencial agendada' };
-const TIPO_ETAPA = { screening: 'Screening', competencias: 'Competencias', pami1: 'PAMI virtual', pami2: 'PAMI presencial' };
+const ESTADOS_DESC = ['Descartado sin screening', 'Descartado post screening', 'Descartado en competencias', 'Descartado en entrevista técnica', 'Descartado Fuera de zona', 'Descartado NO le interesa'];
+const ESTADOS_RES = ['En reserva', 'Reserva competencias', 'Reserva entrevista técnica'];
+const ETAPAS = ['cv', 'screening', 'competencias', 'pami2'];
+const NOTA_COL = { cv: COL.ajuste, screening: COL.notaScr, competencias: COL.notaComp, pami2: COL.notaP2 };
+const AGENDADO = { screening: 'Screening agendado', competencias: 'Competencias agendada', pami2: 'Entrevista técnica agendada' };
+const TIPO_ETAPA = { screening: 'Screening', competencias: 'Competencias', pami2: 'Entrevista técnica' };
 
 function prop_(k) { return PropertiesService.getScriptProperties().getProperty(k); }
 function ss_() { return SpreadsheetApp.openById(prop_('SHEET_ID')); }
@@ -99,8 +98,8 @@ function setup() {
   asegurarAjustes_([
     ['nombre_cliente', 'PAMI'], ['firma', 'Equipo de Selección'], ['asunto_mail', 'Proceso de selección · PAMI'],
     ['umbral_a', '8.5'], ['umbral_bplus', '8'], ['umbral_b', '6.5'], ['dias_alerta', '7'],
-    ['calendario', ''], ['url_web', ''], ['link_agenda', ''], ['link_agenda_screening', ''], ['link_agenda_competencias', ''], ['link_agenda_pami1', ''], ['link_agenda_pami2', ''], ['carpeta_informes', ''],
-    ['duracion_screening', '30'], ['duracion_competencias', '60'], ['duracion_pami1', '30'], ['duracion_pami2', '60']
+    ['calendario', ''], ['url_web', ''], ['link_agenda', ''], ['link_agenda_screening', ''], ['link_agenda_competencias', ''], ['link_agenda_pami2', ''], ['carpeta_informes', ''],
+    ['duracion_screening', '30'], ['duracion_competencias', '60'], ['duracion_pami2', '60']
   ]);
   SpreadsheetApp.flush();
   const cfg = ajustes_();
@@ -239,6 +238,29 @@ NIVEL_AJUSTE:
   const def = ss.getSheetByName('Hoja 1') || ss.getSheetByName('Sheet1');
   if (def && ss.getSheets().length > 1) ss.deleteSheet(def);
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
+}
+
+const ESQUEMA = '2';
+
+function actualizarEsquema_() {
+  const props = PropertiesService.getScriptProperties();
+  if (props.getProperty('ESQUEMA') === ESQUEMA) return;
+  const sh = hoja_('Candidatos');
+  [[COL.policlinico, 'Policlínico'], [COL.notaP2, 'Nota entrevista técnica']].forEach(x => {
+    const c = sh.getRange(1, x[0]);
+    const v = String(c.getValue()).trim();
+    if (!v || (x[0] === COL.notaP2 && v === 'Nota PAMI presencial')) c.setValue(x[1]).setFontWeight('bold').setBackground('#034EA2').setFontColor('#FFFFFF');
+  });
+  const val = lista => SpreadsheetApp.newDataValidation().requireValueInList(lista, true).build();
+  sh.getRange(2, COL.estado, 1000, 1).setDataValidation(val(todosEstados_()));
+  sh.getRange(2, COL.policlinico, 1000, 1).setDataValidation(val(POLICLINICOS));
+  const pl = hoja_('Plantillas'), filas = pl.getDataRange().getValues();
+  plantillasIniciales_().forEach(t => {
+    const i = filas.findIndex(f => f[0] === t[0]);
+    if (i === -1) { pl.appendRow(t); pl.getRange(pl.getLastRow(), 3).setWrap(true); }
+    else if (t[0] === 'contacto-screening' && String(filas[i][2]).trim() === PLANT_SCREENING_ANTERIOR.trim()) pl.getRange(i + 1, 3).setValue(t[2]);
+  });
+  props.setProperty('ESQUEMA', ESQUEMA);
 }
 
 function migrarCandidatos_() {
@@ -599,6 +621,6 @@ function ciclo() {
   const lock = LockService.getUserLock();
   if (!lock.tryLock(1000)) return;
   try {
-    [procesarCorreos, procesarCarpeta, procesarPendientes, syncCalendario].forEach(fn => { try { fn(); } catch (e) { registrarError_(fn.name, e); } });
+    [actualizarEsquema_, procesarCorreos, procesarCarpeta, procesarPendientes, syncCalendario].forEach(fn => { try { fn(); } catch (e) { registrarError_(fn.name, e); } });
   } finally { lock.releaseLock(); }
 }

@@ -7,8 +7,7 @@ function etapaDeTitulo_(titulo) {
   const t = norm_(titulo);
   if (t.indexOf('competencia') > -1) return 'competencias';
   if (t.indexOf('screening') > -1) return 'screening';
-  if (t.indexOf('virtual') > -1) return 'pami1';
-  if (t.indexOf('presencial') > -1 || t.indexOf('pami') > -1) return 'pami2';
+  if (t.indexOf('tecnica') > -1 || t.indexOf('enfermeria') > -1 || t.indexOf('virtual') > -1 || t.indexOf('presencial') > -1 || t.indexOf('pami') > -1) return 'pami2';
   return '';
 }
 

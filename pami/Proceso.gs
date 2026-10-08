@@ -14,10 +14,9 @@ function filaPorId_(sh, id) {
 
 function plantillasIniciales_() {
   return [
-    ['contacto-screening', 'WhatsApp', 'Hola [NOMBRE], ¿cómo estás? Soy [ENTREVISTADOR] del equipo de Selección.\nTe contacto por la búsqueda de [PUESTO] en [EMPRESA].\nMe gustaría coordinar una charla breve con vos para conocerte.\nSi te interesa, elegí el día y horario que mejor te quede desde este link y queda agendado:\n[LINK]\nSaludos!'],
+    ['contacto-screening', 'WhatsApp', 'Hola [NOMBRE], ¿cómo estás? Soy [ENTREVISTADOR] del equipo de Selección.\nTe contacto por la búsqueda de [PUESTO] para trabajar en [POLICLINICO].\nMe gustaría coordinar una breve charla telefónica con vos para conocerte.\nSi te interesa, elegí el día y horario que mejor te quede desde este link y queda agendado:\n[LINK]\nSaludos!'],
     ['contacto-competencias', 'WhatsApp', 'Hola [NOMBRE], ¿cómo estás? Soy [ENTREVISTADOR] del equipo de Selección.\nTe escribo por la búsqueda de [PUESTO] en [EMPRESA].\nNos gustaría avanzar con tu perfil a la siguiente etapa del proceso. Se trata de una entrevista de aproximadamente una hora, en la que vamos a profundizar sobre tu experiencia y tu recorrido profesional.\nSi te interesa continuar, elegí el día y horario que mejor te quede desde este link y queda agendada:\n[LINK]\n¡Nos vemos pronto!\nSaludos,\n[FIRMA]'],
-    ['contacto-pami-virtual', 'WhatsApp', 'Hola [NOMBRE], ¿cómo estás?\nQueríamos contarte que nos gustaría avanzar con tu perfil a la siguiente etapa del proceso para la posición de [PUESTO] en [EMPRESA].\nLa próxima instancia consiste en una entrevista virtual con referentes de [EMPRESA], de aproximadamente 30 minutos. Será un primer encuentro para que puedas presentar tu experiencia, conocer al equipo y despejar las dudas que tengas sobre la posición.\nSi te interesa continuar, elegí el día y horario que mejor te quede desde este link y queda agendada:\n[LINK]\nSaludos,\n[FIRMA]'],
-    ['contacto-pami-presencial', 'WhatsApp', 'Hola [NOMBRE], ¿cómo estás?\nQueríamos contarte que nos gustaría avanzar con tu perfil a la siguiente etapa del proceso para la posición de [PUESTO] en [EMPRESA].\nLa próxima instancia consiste en una entrevista presencial con referentes de [EMPRESA], de aproximadamente una hora. Será una conversación para profundizar sobre tu experiencia, conocer los desafíos de la posición y responder las consultas de ambas partes.\nSi te interesa continuar, elegí el día y horario que mejor te quede desde este link y queda agendada:\n[LINK]\nSaludos,\n[FIRMA]'],
+    ['contacto-tecnica', 'WhatsApp', 'Hola [NOMBRE], ¿cómo estás?\nQueríamos contarte que nos gustaría avanzar con tu perfil a la siguiente etapa del proceso para la posición de [PUESTO] en [POLICLINICO].\nLa próxima instancia consiste en una entrevista técnica con la División de Enfermería, de aproximadamente una hora. Será una conversación para profundizar sobre tu experiencia y conocer los desafíos de la posición.\nSi te interesa continuar, elegí el día y horario que mejor te quede desde este link y queda agendada:\n[LINK]\nSaludos,\n[FIRMA]'],
     ['confirmacion-cita', 'WhatsApp', 'Hola [NOMBRE], te confirmamos tu entrevista de [TIPO] para la búsqueda de [PUESTO]:\n📅 [FECHA] a las [HORA]\n📍 [LUGAR]\nSi no podés asistir, avisanos con anticipación para reprogramarla. ¡Gracias!\n[FIRMA]'],
     ['descarte-sin', 'Mail', 'Hola [NOMBRE],\nQueremos agradecerte sinceramente por tu interés en la posición de [PUESTO] y por el tiempo dedicado a postularte.\nLuego de revisar cuidadosamente los currículums recibidos, en esta oportunidad decidimos avanzar con candidatos cuyos perfiles se encuentran más alineados con los requerimientos específicos de la posición.\nValoramos mucho tu trayectoria profesional. Conservaremos tu perfil para futuras oportunidades que puedan resultar acordes a tu experiencia.\nTe deseamos muchos éxitos en tus próximos desafíos profesionales.\nSaludos cordiales,\n[FIRMA]'],
     ['descarte-post', 'Mail', 'Hola [NOMBRE],\nMuchas gracias por el tiempo compartido durante el proceso de selección para la posición de [PUESTO].\nQueremos agradecer especialmente tu apertura y predisposición durante la conversación. Luego de analizar toda la información recabada, hemos decidido avanzar con otros perfiles que presentan un ajuste más cercano a las necesidades actuales de la posición.\nValoramos mucho tu experiencia y el intercambio mantenido, y esperamos poder considerar tu perfil para futuras oportunidades.\nTe deseamos muchos éxitos en tus próximos proyectos.\nSaludos cordiales,\n[FIRMA]'],
@@ -26,20 +25,22 @@ function plantillasIniciales_() {
   ];
 }
 
+const PLANT_SCREENING_ANTERIOR = 'Hola [NOMBRE], ¿cómo estás? Soy [ENTREVISTADOR] del equipo de Selección.\nTe contacto por la búsqueda de [PUESTO] en [EMPRESA].\nMe gustaría coordinar una charla breve con vos para conocerte.\nSi te interesa, elegí el día y horario que mejor te quede desde este link y queda agendado:\n[LINK]\nSaludos!';
+
 function colorNota_(n) {
   return { A: ['#1E8E5A', '#FFFFFF'], 'B+': ['#8BD3A8', '#0F3A24'], B: ['#F2B705', '#4A3A00'], C: ['#D9534F', '#FFFFFF'] }[n] || null;
 }
 
 function estadoPorNota_(etapa, nota) {
-  const C = { cv: 'Descartado sin screening', screening: 'Descartado post screening', competencias: 'Descartado en competencias', pami1: 'Descartado en PAMI virtual', pami2: 'Descartado en PAMI presencial' };
-  const B = { cv: 'Avanza a screening', screening: 'Avanza a competencias', competencias: 'Reserva competencias', pami1: 'Reserva PAMI virtual', pami2: 'Reserva PAMI presencial' };
-  const A = { cv: 'Avanza a screening', screening: 'Avanza a competencias', competencias: 'Avanza a PAMI virtual', pami1: 'Avanza a PAMI presencial', pami2: 'Contratado' };
+  const C = { cv: 'Descartado sin screening', screening: 'Descartado post screening', competencias: 'Descartado en competencias', pami2: 'Descartado en entrevista técnica' };
+  const B = { cv: 'Avanza a screening', screening: 'Avanza a competencias', competencias: 'Reserva competencias', pami2: 'Reserva entrevista técnica' };
+  const A = { cv: 'Avanza a screening', screening: 'Avanza a competencias', competencias: 'Avanza a entrevista técnica', pami2: 'Contratado' };
   return (nota === 'C' ? C : nota === 'B' ? B : A)[etapa];
 }
 
 function etapaDeEstado_(estado) {
   const e = String(estado || '').trim();
-  for (let i = 0; i < ESTADOS_COL.length; i++) if (ESTADOS_COL[i][1].indexOf(e) > -1) return i === 5 ? -1 : i;
+  for (let i = 0; i < ESTADOS_COL.length; i++) if (ESTADOS_COL[i][1].indexOf(e) > -1) return i === ESTADOS_COL.length - 1 ? -1 : i;
   return -1;
 }
 
@@ -68,7 +69,7 @@ function aplicarNota_(sh, fila, etapa, nota, quien) {
   const col = colorNota_(v);
   celda.setBackground(col[0]).setFontColor(col[1]).setFontWeight('bold').setHorizontalAlignment('center');
   const actual = String(r[COL.estado - 1]).trim();
-  const etq = { cv: 'CV', screening: 'Screening', competencias: 'Competencias', pami1: 'PAMI virtual', pami2: 'PAMI presencial' }[etapa];
+  const etq = { cv: 'CV', screening: 'Screening', competencias: 'Competencias', pami2: 'Entrevista técnica' }[etapa];
   if (actual === 'Contratado') {
     registrarHistorial_(r[COL.id - 1], r[COL.nombre - 1], 'Nota ' + etq, v + ' (ya estaba Contratado, no cambia el estado)', quien);
     return actual;
@@ -203,7 +204,9 @@ function rellenar_(txt, v) {
 
 function textoPlantilla_(clave) {
   const f = hoja_('Plantillas').getDataRange().getValues().find(r => r[0] === clave);
-  return f ? String(f[2]) : '';
+  if (f) return String(f[2]);
+  const d = plantillasIniciales_().find(x => x[0] === clave);
+  return d ? d[2] : '';
 }
 
 function datosComunes_(r) {
@@ -211,7 +214,7 @@ function datosComunes_(r) {
   const b = busquedas_().find(x => x.id === r[COL.busq - 1]);
   return {
     NOMBRE: String(r[COL.nombre - 1]).trim().split(/\s+/)[0], PUESTO: b ? b.titulo : '', EMPRESA: aj.nombre_cliente || 'PAMI',
-    ENTREVISTADOR: String(r[COL.entrev - 1] || lista_(aj.entrevistadores, ',')[0] || ''), LINK: aj.link_agenda || '', FIRMA: aj.firma || '', aj: aj
+    ENTREVISTADOR: String(r[COL.entrev - 1] || lista_(aj.entrevistadores, ',')[0] || ''), LINK: aj.link_agenda || '', FIRMA: aj.firma || '', POLICLINICO: r[COL.policlinico - 1] ? 'el ' + r[COL.policlinico - 1] : 'los Policlínicos PAMI 1 y 2', aj: aj
   };
 }
 
@@ -229,14 +232,14 @@ function armarComunicacion(k, fila, tipo) {
   fila = Number(fila);
   const r = sh.getRange(fila, 1, 1, HEAD_CAND.length).getValues()[0];
   const v = datosComunes_(r);
-  const claveLink = { 'contacto-screening': 'link_agenda_screening', 'contacto-competencias': 'link_agenda_competencias', 'contacto-pami-virtual': 'link_agenda_pami1', 'contacto-pami-presencial': 'link_agenda_pami2' }[tipo];
+  const claveLink = { 'contacto-screening': 'link_agenda_screening', 'contacto-competencias': 'link_agenda_competencias', 'contacto-tecnica': 'link_agenda_pami2' }[tipo];
   if (claveLink && v.aj[claveLink]) v.LINK = v.aj[claveLink];
   let texto = textoPlantilla_(tipo);
   if (!texto) return { ok: false, error: 'No encontré la plantilla ' + tipo + ' en la pestaña Plantillas' };
   if (!v.LINK) texto = texto.replace(/[^\n]*(link|enlace)[^\n]*\n\[LINK\]/i, 'Si te interesa, contanos qué día y horario te quedan mejor para agendarla.').replace(/ ?\[LINK\]/g, '');
   texto = rellenar_(texto, v);
   if (!String(r[COL.tel - 1]).replace(/\D/g, '')) return { ok: false, error: 'El candidato no tiene teléfono' };
-  const etq = { 'contacto-screening': 'screening', 'contacto-competencias': 'competencias', 'contacto-pami-virtual': 'PAMI virtual', 'contacto-pami-presencial': 'PAMI presencial', 'descarte-competencias': 'descarte comp.', 'descarte-pami': 'descarte PAMI', 'confirmacion-cita': 'confirmación' }[tipo] || '';
+  const etq = { 'contacto-screening': 'screening', 'contacto-competencias': 'competencias', 'contacto-tecnica': 'entrevista técnica', 'descarte-competencias': 'descarte comp.', 'descarte-pami': 'descarte PAMI', 'confirmacion-cita': 'confirmación' }[tipo] || '';
   if (etq) {
     sh.getRange(fila, COL.contactado).setValue(etq + ' · ' + fmt_(new Date(), 'dd/MM/yyyy'));
     sh.getRange(fila, COL.mov).setValue(new Date());
