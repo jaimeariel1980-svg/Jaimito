@@ -347,7 +347,7 @@ function doGet_(e) {
     const archivo = p.tablero ? 'Tablero' : (p.tipo === 'screening' ? 'Screening' : 'Competencias');
     const t = privado(archivo);
     if (!t) return HtmlService.createHtmlOutput('Acceso no autorizado');
-    return salida_(t, (p.tablero ? 'Tablero' : archivo) + ' · ' + t.sitio);
+    return salida_(t, (p.tablero ? 'Atracción y Elección' : archivo) + ' · ' + t.sitio);
   }
   const t = HtmlService.createTemplateFromFile('Web');
   t.url = url; t.bid = seguro(p.b); t.sitio = aj.nombre_sitio || 'Empleos';

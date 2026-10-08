@@ -1,5 +1,9 @@
+let QUIEN_ = '';
+
 function admin_(k) {
-  if (String(k) !== prop_('ADMIN_KEY')) throw new Error('No autorizado');
+  const p = String(k).split('|');
+  if (p[0] !== prop_('ADMIN_KEY')) throw new Error('No autorizado');
+  QUIEN_ = String(p[1] || '').replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9 ]/g, '').trim().slice(0, 30);
 }
 
 function fmt_(d, f) { return Utilities.formatDate(d, 'GMT-3', f); }
@@ -54,7 +58,8 @@ function setEstado_(sh, fila, estado, nota) {
 }
 
 function registrarHistorial_(id, nombre, tipo, detalle, quien) {
-  try { hoja_('Historial').appendRow([new Date(), id, nombre, tipo, detalle, quien || '']); } catch (e) { }
+  const q = QUIEN_ && (!quien || quien === 'tablero' || quien === 'formulario') ? QUIEN_ : (quien || '');
+  try { hoja_('Historial').appendRow([new Date(), id, nombre, tipo, detalle, q]); } catch (e) { }
 }
 
 function aplicarNota_(sh, fila, etapa, nota, quien) {
@@ -171,13 +176,19 @@ function guardarCandidato(k, fila, c) {
   const corto = (s, n) => String(s == null ? '' : s).slice(0, n);
   const set = (col, v) => sh.getRange(fila, col).clearDataValidations().setValue(v);
   const id = sh.getRange(fila, COL.id).getValue(), nombre = sh.getRange(fila, COL.nombre).getValue();
+  const cambio = (col, nuevo, etiqueta) => {
+    const antes = String(sh.getRange(fila, col).getValue() || '');
+    if (antes !== String(nuevo)) registrarHistorial_(id, nombre, etiqueta, (antes || '—') + ' → ' + (nuevo || '—'), 'tablero');
+  };
   if (c.busq != null) {
     if (c.busq !== '' && !busquedas_().some(b => b.id === c.busq)) throw new Error('Búsqueda inválida');
+    cambio(COL.busq, c.busq, 'Búsqueda');
     set(COL.busq, c.busq);
   }
   if (c.estado != null) moverEstado(k, fila, c.estado);
   if (c.policlinico != null) {
     if (c.policlinico !== '' && POLICLINICOS.indexOf(c.policlinico) === -1) throw new Error('Policlínico inválido');
+    cambio(COL.policlinico, c.policlinico, 'Policlínico');
     set(COL.policlinico, c.policlinico);
   }
   if (c.motivo != null) {
@@ -186,13 +197,16 @@ function guardarCandidato(k, fila, c) {
     set(COL.motivo, c.motivo);
     if (antes !== c.motivo) registrarHistorial_(id, nombre, 'Motivo de descarte', c.motivo || '(sin motivo)', 'tablero');
   }
-  if (c.entrev != null) set(COL.entrev, corto(c.entrev, 60));
+  if (c.entrev != null) { cambio(COL.entrev, corto(c.entrev, 60), 'Entrevistó'); set(COL.entrev, corto(c.entrev, 60)); }
   if (c.recTipo != null) set(COL.recTipo, corto(c.recTipo, 40));
   if (c.recPor != null) {
     set(COL.recPor, corto(c.recPor, 120));
     if (c.recTipo) registrarHistorial_(id, nombre, 'Recomendación', c.recTipo + (c.recPor ? ': ' + c.recPor : ''), 'tablero');
   }
-  if (c.coment != null) set(COL.coment, corto(c.coment, 2000));
+  if (c.coment != null) {
+    if (String(sh.getRange(fila, COL.coment).getValue() || '') !== corto(c.coment, 2000)) registrarHistorial_(id, nombre, 'Observaciones', 'Se editaron las observaciones', 'tablero');
+    set(COL.coment, corto(c.coment, 2000));
+  }
   return true;
 }
 
