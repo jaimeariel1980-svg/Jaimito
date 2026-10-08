@@ -242,7 +242,7 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '7';
+const ESQUEMA = '8';
 
 function actualizarEsquema_() {
   const props = PropertiesService.getScriptProperties();
@@ -254,6 +254,15 @@ function actualizarEsquema_() {
       const v = String(c.getValue()).trim();
       if (!v || (x[0] === COL.notaP2 && v === 'Nota PAMI presencial')) c.setValue(x[1]).setFontWeight('bold').setBackground('#034EA2').setFontColor('#FFFFFF');
     }),
+    () => {
+      const ss = ss_();
+      let u = ss.getSheetByName('Usuarios');
+      if (!u) u = ss.insertSheet('Usuarios');
+      asegurarEncabezados_(u, ['Nombre', 'PIN', 'Activo', 'Notas']);
+      if (!String(u.getRange(2, 4).getValue() || '').trim()) u.getRange(2, 4).setValue('Cada persona crea su usuario al entrar al tablero (nombre y PIN). Activo = NO bloquea el acceso; borrar la fila lo elimina.');
+      u.getRange(2, 3, 50, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['SI', 'NO'], true).build());
+      CacheService.getScriptCache().remove('USUARIOS');
+    },
     () => asegurarAjustes_([['direccion_policlinico_1', 'Sarmiento 373, Rosario, Santa Fe, Argentina'], ['direccion_policlinico_2', 'Olive 1159, Rosario, Santa Fe, Argentina']]),
     () => {
       const pl = hoja_('Plantillas'), filas = pl.getDataRange().getValues();

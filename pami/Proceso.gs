@@ -1,9 +1,82 @@
 let QUIEN_ = '';
 
+function usuarios_() {
+  const cache = CacheService.getScriptCache();
+  const c = cache.get('USUARIOS');
+  if (c) return JSON.parse(c);
+  let lista = [];
+  try {
+    const sh = hoja_('Usuarios');
+    if (sh) lista = sh.getDataRange().getValues().slice(1).filter(r => String(r[0]).trim()).map(r => ({ nombre: String(r[0]).trim(), pin: String(r[1] || '').trim(), activo: !/^no$/i.test(String(r[2] || '').trim()) }));
+  } catch (e) { }
+  cache.put('USUARIOS', JSON.stringify(lista), 30);
+  return lista;
+}
+
+function exigePin_() { return usuarios_().some(u => u.pin); }
+
+function verificarPin_(u, pin) {
+  const cache = CacheService.getScriptCache();
+  const key = 'FALLOS_' + u.nombre.toLowerCase().replace(/\s+/g, '_');
+  const n = Number(cache.get(key) || 0);
+  if (n >= 5) throw new Error('LOGIN: Demasiados intentos. Esperá 15 minutos.');
+  if (u.pin !== String(pin || '').trim()) { cache.put(key, String(n + 1), 900); throw new Error('LOGIN: PIN incorrecto'); }
+  if (n) cache.remove(key);
+}
+
 function admin_(k) {
   const p = String(k).split('|');
   if (p[0] !== prop_('ADMIN_KEY')) throw new Error('No autorizado');
-  QUIEN_ = String(p[1] || '').replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9 ]/g, '').trim().slice(0, 30);
+  const nombre = String(p[1] || '').replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9 ]/g, '').trim().slice(0, 30);
+  if (exigePin_()) {
+    const u = usuarios_().find(x => x.activo && x.nombre.toLowerCase() === nombre.toLowerCase());
+    if (!u) throw new Error('LOGIN: Elegí tu usuario');
+    verificarPin_(u, p[2]);
+    QUIEN_ = u.nombre;
+  } else {
+    QUIEN_ = nombre;
+  }
+}
+
+function getLogin(clave) {
+  if (String(clave).split('|')[0] !== prop_('ADMIN_KEY')) throw new Error('No autorizado');
+  return { pin: exigePin_() };
+}
+
+function registrarUsuario(clave, nombre, pin) {
+  if (String(clave).split('|')[0] !== prop_('ADMIN_KEY')) throw new Error('No autorizado');
+  nombre = String(nombre || '').replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9 ]/g, '').replace(/\s+/g, ' ').trim().slice(0, 30);
+  pin = String(pin || '').trim();
+  if (nombre.length < 2) throw new Error('LOGIN: Escribí tu nombre');
+  if (!/^\d{4,6}$/.test(pin)) throw new Error('LOGIN: El PIN tiene que ser de 4 a 6 números');
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const ss = ss_();
+    let sh = ss.getSheetByName('Usuarios');
+    if (!sh) { sh = ss.insertSheet('Usuarios'); asegurarEncabezados_(sh, ['Nombre', 'PIN', 'Activo', 'Notas']); }
+    const d = sh.getDataRange().getValues();
+    if (d.some((r, i) => i > 0 && String(r[0]).trim().toLowerCase() === nombre.toLowerCase())) throw new Error('LOGIN: Ese usuario ya existe. Ingresá con su PIN.');
+    sh.appendRow([nombre, pin, 'SI']);
+    CacheService.getScriptCache().remove('USUARIOS');
+  } finally { lock.releaseLock(); }
+  registrarHistorial_('', nombre, 'Usuario', 'Creó su usuario', nombre);
+  return true;
+}
+
+function cambiarPin(k, nuevo) {
+  admin_(k);
+  nuevo = String(nuevo || '').trim();
+  if (!/^\d{4,6}$/.test(nuevo)) throw new Error('El PIN tiene que ser de 4 a 6 números');
+  if (!QUIEN_) throw new Error('No hay usuario');
+  const sh = hoja_('Usuarios');
+  const d = sh.getDataRange().getValues();
+  const i = d.findIndex((r, j) => j > 0 && String(r[0]).trim().toLowerCase() === QUIEN_.toLowerCase());
+  if (i === -1) throw new Error('Usuario no encontrado');
+  sh.getRange(i + 1, 2).setValue(nuevo);
+  CacheService.getScriptCache().remove('USUARIOS');
+  registrarHistorial_('', QUIEN_, 'Usuario', 'Cambió su PIN', QUIEN_);
+  return true;
 }
 
 function fmt_(d, f) { return Utilities.formatDate(d, 'GMT-3', f); }
@@ -136,7 +209,7 @@ function getTablero(k) {
     entrevistadores: lista_(aj.entrevistadores, ','),
     busquedas: busquedas_().map(b => ({ id: b.id, titulo: b.titulo, recomendacion: b.recomendacion, link_perfil: b.link_perfil, link_flyer: b.link_flyer, ubicacion: b.ubicacion })),
     cfg: { cliente: aj.nombre_cliente || 'PAMI', diasAlerta: Number(aj.dias_alerta) || 7, linkAgenda: aj.link_agenda || '', duraciones: { screening: Number(aj.duracion_screening) || 30, competencias: Number(aj.duracion_competencias) || 60, pami1: Number(aj.duracion_pami1) || 30, pami2: Number(aj.duracion_pami2) || 60 } },
-    ahora: fmt_(new Date(), "yyyy-MM-dd'T'HH:mm"), cands: cands
+    pinActivo: exigePin_(), ahora: fmt_(new Date(), "yyyy-MM-dd'T'HH:mm"), cands: cands
   });
 }
 
