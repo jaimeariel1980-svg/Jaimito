@@ -670,6 +670,50 @@ function _consultarOpenAIConArchivo(dataUri, mimeType, filename, instrucciones) 
   return { ok: true, datos: datos };
 }
 
+/**
+ * Clasifica página por página un PDF que junta varios documentos (legajo).
+ * Devuelve { ok:true, tipos:[clave|'otro', ...] } con una entrada por página.
+ */
+function clasificarPaginasLegajo(archivoBase64) {
+  if (!archivoBase64 || !archivoBase64.base64) return { ok: false, motivo: 'no se recibió ningún archivo' };
+  const n = Math.max(1, Math.min(Number(archivoBase64.paginas) || 1, 40));
+  const claves = CONFIG.DOCUMENTOS.map(d => d.key);
+  const ayuda = {
+    plano_edificacion: 'plano de obra / edificación aprobado por la municipalidad',
+    plano_mensura: 'plano de mensura (lotes, medidas, catastro)',
+    escritura: 'escritura pública / testimonio de escritura (texto notarial, varias páginas seguidas)',
+    dni_propietario: 'DNI (frente o dorso)',
+    cuil_propietario: 'constancia de CUIL / CUIT',
+    titulo_propiedad: 'título de propiedad o informe de dominio / inscripción en el Registro de la Propiedad',
+    tgi_municipal: 'Tasa General de Inmuebles (boleta municipal)',
+    api_provincial: 'API: Impuesto Inmobiliario provincial (boleta)',
+    epe_luz: 'factura de luz (EPE)',
+    aguas_santafesinas: 'factura de agua (Aguas Santafesinas)',
+    litoral_gas: 'factura de gas (Litoral Gas)',
+    autorizacion_venta: 'autorización de venta firmada por el propietario',
+    declaratoria_herederos: 'declaratoria de herederos / sucesión',
+    expensas: 'liquidación de expensas'
+  };
+  const lista = CONFIG.DOCUMENTOS.map(d => '"' + d.key + '" = ' + (ayuda[d.key] || d.label)).join('; ');
+  const instrucciones =
+    'Sos un asistente de una inmobiliaria argentina. Te paso un PDF de ' + n + ' página(s) que junta varios documentos de una propiedad. ' +
+    'Para CADA página (numeradas de 1 a ' + n + ') indicá a qué documento pertenece usando SOLO una de estas claves: ' + lista + '; ' +
+    'o "otro" si no corresponde a ninguna o no se puede leer. Las páginas de continuación de un mismo documento (por ejemplo las hojas siguientes de una escritura) llevan la misma clave que su primera hoja. ' +
+    'Respondé ÚNICAMENTE con un JSON válido, sin texto adicional ni bloques de código, con esta forma exacta: ' +
+    '{"paginas":[{"n":1,"tipo":"<clave>"}, ...]} con exactamente ' + n + ' elementos.';
+  const mimeType = archivoBase64.mimeType || 'application/pdf';
+  const r = _consultarOpenAIConArchivo('data:' + mimeType + ';base64,' + archivoBase64.base64, mimeType, 'legajo.pdf', instrucciones);
+  if (!r.ok) return { ok: false, motivo: r.motivo };
+  const lista2 = (r.datos && r.datos.paginas) || [];
+  const tipos = [];
+  for (let i = 0; i < n; i++) {
+    const it = lista2.filter(x => Number(x.n) === i + 1)[0] || lista2[i];
+    const t = it && it.tipo;
+    tipos.push(claves.indexOf(t) > -1 ? t : 'otro');
+  }
+  return { ok: true, tipos: tipos };
+}
+
 function _tipoSoportadoPorIA(mimeType) {
   return ['application/pdf', 'image/jpeg', 'image/png'].indexOf(mimeType) !== -1;
 }
