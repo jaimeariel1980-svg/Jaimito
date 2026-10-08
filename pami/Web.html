@@ -69,7 +69,7 @@ function detalle(){
     if(!b.abierta){app.innerHTML=h+'<div class="card">Esta búsqueda está cerrada.</div>';return;}
     h+='<form id="form" class="card" novalidate><h2 style="font-size:19px;margin-bottom:14px">Postulate</h2><div id="err"></div>'+
       campo('nombre','Nombre y apellido','text',true)+campo('email','Email','email',true)+campo('telefono','Teléfono / WhatsApp','tel',true)+
-      campo('dni','DNI','text',true,'Sin puntos')+campo('localidad','¿En qué localidad vivís?','text',true)+
+      campo('dni','DNI','text',true,'Sin puntos')+campo('localidad','¿En qué localidad vivís?','text',true)+campo('domicilio','Domicilio (calle, número y barrio)','text',true,'Ej: Mendoza 1234, Barrio Echesortu')+
       campo('pretension','Remuneración pretendida','text',false,'Bruto mensual en pesos')+
       b.preguntas.map(function(q){
         var f=q.tipo==='select'?'<select data-q="'+esc(q.id)+'"><option value="">Elegí una opción</option>'+String(q.opciones).split('|').filter(Boolean).map(function(o){return '<option>'+esc(o)+'</option>';}).join('')+'</select>'
@@ -122,7 +122,7 @@ function enviar(b){
     }).withFailureHandler(function(){
       btn.disabled=false;btn.textContent='Enviar postulación';
       mostrarErr('No pudimos procesar tu postulación en este momento. Probá de nuevo en unos minutos.');
-    }).recibirPostulacion({b:b.id,datos:{nombre:v('nombre'),email:v('email'),telefono:v('telefono'),dni:v('dni'),localidad:v('localidad'),pretension:v('pretension')},declaradas:decl,cvNombre:file.name,cvBase64:r.result.split(',')[1]});
+    }).recibirPostulacion({b:b.id,datos:{nombre:v('nombre'),email:v('email'),telefono:v('telefono'),dni:v('dni'),localidad:v('localidad'),domicilio:v('domicilio'),pretension:v('pretension')},declaradas:decl,cvNombre:file.name,cvBase64:r.result.split(',')[1]});
   };
   r.readAsDataURL(file);
 }
