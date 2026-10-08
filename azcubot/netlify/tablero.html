@@ -880,7 +880,18 @@ function cardHTML(p,col){
     '<div class="r1"><span class="idpill">'+p.id+'</span><span style="font-size:11.5px;color:var(--gris)">'+(p.tipo||'')+'</span><span onclick="event.stopPropagation();verUbicacion(\''+p.id+'\')" title="Ver ubicación" style="margin-left:auto;cursor:pointer;font-size:15px;padding:0 6px">📍</span><span onclick="event.stopPropagation();eliminarProp(\''+p.id+'\')" title="Eliminar propiedad" style="cursor:pointer;color:var(--gris);font-size:16px;padding:0 4px;font-weight:700">✕</span></div>'+
     '<div class="dir">'+p.dir+'</div>'+((p.etapa==='Reserva'||p.etapa==='Vendida')?[['boleto','Boleto'],['escritura','Escritura']].map(function(x){var f=p[x[0]],ok=p[x[0]+'Ok'];if(!f||ok)return '';var vencido=f<new Date(Date.now()-3*3600000).toISOString().slice(0,10);return '<div style="font-size:11.5px;margin:-2px 0 4px;color:'+(vencido?'#c0392b':'var(--gris)')+';font-weight:'+(vencido?'700':'400')+'">📅 '+x[1]+' '+f.split('-').reverse().join('/')+(vencido?' · vencido':'')+'</div>';}).join(''):'')+(p.vendedor?'<div style="font-size:11.5px;color:var(--gris);margin:-2px 0 6px">👤 '+p.vendedor+'</div>':'')+(p.etapa==='Suspendida'&&p.motivo?'<div style="font-size:11.5px;color:var(--gris);margin:-2px 0 7px"><b>Motivo:</b> '+p.motivo+'</div>':'')+warn+warnSeg+papBadge(p)+ofB+(p.origen==='Compartida'?'<div><span class="pap" style="background:#ede7fb;color:#5b3ea8">compartida</span></div>':'')+(p.precio?'<div class="precio">'+p.precio+'</div>':'<div class="precio" style="color:var(--gris);font-weight:500;font-size:12px">sin precio</div>')+
     '<div class="sem"><div class="b"><div class="num" style="color:'+sc+'">'+dtxt+'</div><div class="lab">días s/mov</div></div>'+
-    '<div class="b"><div class="num" style="color:var(--azul)">'+p.vis+'</div><div class="lab">visitas</div></div></div>'+hp+(ult?'<div style="font-size:11.5px;color:var(--gris);margin-top:8px;border-top:1px dashed var(--linea);padding-top:7px"><b style="color:var(--texto)">Última:</b> '+ult.fecha+' · '+ult.res+'</div>':'')+'</div></div>';
+    '<div class="b"><div class="num" style="color:var(--azul)">'+p.vis+'</div><div class="lab">visitas</div></div></div>'+hp+movCard(p)+'</div></div>';
+}
+function movCard(p){
+  if(!p.seg||!p.seg.length)return'';
+  const ahora=new Date();
+  const pf=s=>{const m=/(\d{2})\/(\d{2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/.exec(String(s||''));return m?new Date(+m[3],+m[2]-1,+m[1],+(m[4]||0),+(m[5]||0)):null;};
+  let prox=null;
+  p.seg.forEach(s=>{if(/visita agendada/i.test(s.res||'')){const d=pf(s.prox);if(d&&d>=ahora&&(!prox||d<prox.d))prox={d:d,s:s};}});
+  if(prox){const d=prox.d,dia=['dom','lun','mar','mié','jue','vie','sáb'][d.getDay()],p2=n=>String(n).padStart(2,'0');
+    return '<div style="font-size:12px;margin-top:8px;background:#eaf1ff;color:var(--azul);border-radius:8px;padding:6px 8px">📅 <b>Visita '+dia+' '+p2(d.getDate())+'/'+p2(d.getMonth()+1)+' · '+p2(d.getHours())+':'+p2(d.getMinutes())+'</b>'+(prox.s.cli?' · '+prox.s.cli:'')+'</div>';}
+  const u=p.seg[p.seg.length-1],t=String(u.tipo||'')+' '+String(u.res||''),ic=/visita/i.test(t)?'🏠':/propuesta|oferta/i.test(t)?'💰':'💬';
+  return '<div style="font-size:11.5px;color:var(--gris);margin-top:8px;border-top:1px dashed var(--linea);padding-top:7px">'+ic+' <b style="color:var(--texto)">Último:</b> '+u.fecha+' · '+(u.tipo?u.tipo+' · ':'')+(u.res||'')+'</div>';
 }
 function papBadge(p){const e=papEstado(p.papeles);if(!e)return'';const pc=papPct(p.papeles);const m={ok:['v','Documentación completa'],med:['a','Documentación parcial'],no:['r','Documentación pendiente']};const col={ok:'var(--verde)',med:'var(--amarillo)',no:'var(--rojo)'}[e];return '<div><span class="pap '+m[e][0]+'">'+m[e][1]+'</span></div><div class="health" style="margin:4px 0 8px" title="Papeles esenciales cargados"><div class="t"><div class="f" style="width:'+pc+'%;background:'+col+'"></div></div><div class="p">'+pc+'%</div></div>';}
 /**
