@@ -199,12 +199,18 @@ function precargarDatos(datos, archivosBase64) {
   const carpeta = _getOrCreatePropertyFolder(datos.codigoPrecarga, datos.calle, datos.numero);
   const urlsGuardadas = _guardarArchivos(carpeta, datos.codigoPrecarga, datos.calle, datos.numero, archivos);
   const estadoDocs = _calcularEstadoDesdeCarpeta(carpeta);
-  const verificacionIA = _verificarArchivosConIA(archivos, _nombresDueños(datos));
 
-  _guardarFila(sheet, datos, carpeta.getUrl(), estadoDocs, verificacionIA);
+  _guardarFila(sheet, datos, carpeta.getUrl(), estadoDocs, {});
+  try { if (typeof azcuLimpiarCache_ === 'function') azcuLimpiarCache_(); } catch (e) {}
 
   if (esNuevo) {
     _enviarMailConfirmacionPrecarga(datos);
+  }
+
+  const verificacionIA = _verificarArchivosConIA(archivos, _nombresDueños(datos));
+  if (Object.keys(verificacionIA).length) {
+    _guardarFila(sheet, datos, carpeta.getUrl(), estadoDocs, verificacionIA);
+    try { if (typeof azcuLimpiarCache_ === 'function') azcuLimpiarCache_(); } catch (e) {}
   }
 
   return {
