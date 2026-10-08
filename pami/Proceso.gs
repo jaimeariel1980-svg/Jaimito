@@ -122,12 +122,12 @@ function getTablero(k) {
       recTipo: r[COL.recTipo - 1], recPor: r[COL.recPor - 1], coment: r[COL.coment - 1], resp: resp, proc: r[COL.proc - 1], fuente: r[COL.fuente - 1],
       cita: citaObj_(r[COL.cita - 1]), entrevistas: String(r[COL.entrevistas - 1] || ''), contactado: String(r[COL.contactado - 1] || ''),
       descarte: String(r[COL.descarte - 1] || ''), infScr: String(r[COL.infScr - 1] || ''), infComp: String(r[COL.infComp - 1] || ''),
-      zona: String(r[COL.zona - 1] || ''), formacion: String(r[COL.formacion - 1] || ''), postulacion: String(r[COL.postulacion - 1] || ''), policlinico: String(r[COL.policlinico - 1] || ''), domicilio: String(r[COL.domicilio - 1] || ''), polSug: String(r[COL.polSug - 1] || ''), domRev: String(r[COL.domRev - 1] || ''),
+      zona: String(r[COL.zona - 1] || ''), formacion: String(r[COL.formacion - 1] || ''), postulacion: String(r[COL.postulacion - 1] || ''), policlinico: String(r[COL.policlinico - 1] || ''), domicilio: String(r[COL.domicilio - 1] || ''), polSug: String(r[COL.polSug - 1] || ''), domRev: String(r[COL.domRev - 1] || ''), motivo: String(r[COL.motivo - 1] || ''),
       conoce: (resp.find(x => /conoc[eé]s a alguien/i.test(x.q) && x.a && !/^(no|ninguno|nadie|-)\.?$/i.test(String(x.a).trim())) || {}).a || ''
     });
   }
   return JSON.stringify({
-    policlinicos: POLICLINICOS, estadosCol: ESTADOS_COL, desc: ESTADOS_DESC, res: ESTADOS_RES, todos: todosEstados_(),
+    policlinicos: POLICLINICOS, motivos: MOTIVOS_DESCARTE, estadosCol: ESTADOS_COL, desc: ESTADOS_DESC, res: ESTADOS_RES, todos: todosEstados_(),
     entrevistadores: lista_(aj.entrevistadores, ','),
     busquedas: busquedas_().map(b => ({ id: b.id, titulo: b.titulo, recomendacion: b.recomendacion, link_perfil: b.link_perfil, link_flyer: b.link_flyer, ubicacion: b.ubicacion })),
     cfg: { cliente: aj.nombre_cliente || 'PAMI', diasAlerta: Number(aj.dias_alerta) || 7, linkAgenda: aj.link_agenda || '', duraciones: { screening: Number(aj.duracion_screening) || 30, competencias: Number(aj.duracion_competencias) || 60, pami1: Number(aj.duracion_pami1) || 30, pami2: Number(aj.duracion_pami2) || 60 } },
@@ -179,6 +179,12 @@ function guardarCandidato(k, fila, c) {
   if (c.policlinico != null) {
     if (c.policlinico !== '' && POLICLINICOS.indexOf(c.policlinico) === -1) throw new Error('Policlínico inválido');
     set(COL.policlinico, c.policlinico);
+  }
+  if (c.motivo != null) {
+    if (c.motivo !== '' && MOTIVOS_DESCARTE.indexOf(c.motivo) === -1) throw new Error('Motivo inválido');
+    const antes = String(sh.getRange(fila, COL.motivo).getValue() || '');
+    set(COL.motivo, c.motivo);
+    if (antes !== c.motivo) registrarHistorial_(id, nombre, 'Motivo de descarte', c.motivo || '(sin motivo)', 'tablero');
   }
   if (c.entrev != null) set(COL.entrev, corto(c.entrev, 60));
   if (c.recTipo != null) set(COL.recTipo, corto(c.recTipo, 40));
