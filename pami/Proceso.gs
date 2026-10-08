@@ -7,25 +7,44 @@ function usuarios_() {
   let lista = [];
   try {
     const sh = hoja_('Usuarios');
-    if (sh) lista = sh.getDataRange().getValues().slice(1).filter(r => String(r[0]).trim()).map(r => ({ nombre: String(r[0]).trim(), pin: String(r[1] || '').trim(), activo: !/^no$/i.test(String(r[2] || '').trim()), admin: /^admin/i.test(String(r[4] || '').trim()) }));
+    if (sh) lista = sh.getDataRange().getValues().slice(1).filter(r => String(r[0]).trim()).map(r => ({ nombre: String(r[0]).trim(), pin: String(r[1] || '').trim(), activo: !/^no$/i.test(String(r[2] || '').trim()), rol: /^admin/i.test(String(r[4] || '').trim()) ? 'Admin' : (/^(lectura|solo)/i.test(String(r[4] || '').trim()) ? 'Lectura' : 'Entrevistador') }));
   } catch (e) { }
-  if (lista.length && !lista.some(u => u.admin)) lista[0].admin = true;
+  if (lista.length && !lista.some(u => u.rol === 'Admin')) lista[0].rol = 'Admin';
+  lista.forEach(u => { u.admin = u.rol === 'Admin'; });
   cache.put('USUARIOS', JSON.stringify(lista), 30);
   return lista;
 }
 
 function exigePin_() { return usuarios_().some(u => u.pin); }
 
+function accesoLog_(usuario, accion, detalle) {
+  try {
+    const ss = ss_();
+    let sh = ss.getSheetByName('Accesos');
+    if (!sh) { sh = ss.insertSheet('Accesos'); asegurarEncabezados_(sh, ['Fecha', 'Usuario', 'Acción', 'Detalle']); }
+    sh.appendRow([new Date(), usuario || '', accion, detalle || '']);
+  } catch (e) { }
+}
+
 function verificarPin_(u, pin) {
   const cache = CacheService.getScriptCache();
   const key = 'FALLOS_' + u.nombre.toLowerCase().replace(/\s+/g, '_');
   const n = Number(cache.get(key) || 0);
   if (n >= 5) throw new Error('LOGIN: Demasiados intentos. Esperá 15 minutos.');
-  if (u.pin !== String(pin || '').trim()) { cache.put(key, String(n + 1), 900); throw new Error('LOGIN: PIN incorrecto'); }
+  if (u.pin !== String(pin || '').trim()) {
+    cache.put(key, String(n + 1), 900);
+    accesoLog_(u.nombre, 'Intento fallido', 'PIN incorrecto (' + (n + 1) + ')');
+    if (n + 1 === 5) {
+      accesoLog_(u.nombre, 'Bloqueo', 'Usuario bloqueado 15 minutos por intentos fallidos');
+      try { const to = ajustes_().correo_aviso; if (to) MailApp.sendEmail(to, 'Alerta de seguridad · Atracción y Elección', 'Hubo 5 intentos fallidos de PIN para el usuario "' + u.nombre + '". Quedó bloqueado 15 minutos. Si no fue esa persona, reiniciá su PIN desde el tablero.'); } catch (e) { }
+    }
+    throw new Error('LOGIN: PIN incorrecto');
+  }
   if (n) cache.remove(key);
 }
 
 let ROL_ADMIN_ = false;
+let ROL_ = 'Entrevistador';
 
 function admin_(k) {
   const p = String(k).split('|');
@@ -33,14 +52,21 @@ function admin_(k) {
   const nombre = String(p[1] || '').replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9 ]/g, '').trim().slice(0, 30);
   if (exigePin_()) {
     const u = usuarios_().find(x => x.activo && x.nombre.toLowerCase() === nombre.toLowerCase());
-    if (!u) throw new Error('LOGIN: Usuario no habilitado. Pedíselo al administrador.');
+    if (!u) { if (nombre) accesoLog_(nombre, 'Intento fallido', 'Usuario inexistente o bloqueado'); throw new Error('LOGIN: Usuario no habilitado. Pedíselo al administrador.'); }
     verificarPin_(u, p[2]);
     QUIEN_ = u.nombre;
+    ROL_ = u.rol;
     ROL_ADMIN_ = !!u.admin;
   } else {
     QUIEN_ = nombre;
+    ROL_ = 'Entrevistador';
     ROL_ADMIN_ = false;
   }
+}
+
+function escritor_(k) {
+  admin_(k);
+  if (ROL_ === 'Lectura') throw new Error('Tu usuario es de solo lectura');
 }
 
 function soloAdmin_(k) {
@@ -91,10 +117,12 @@ function registrarUsuario(clave, nombre, pin) {
 
 function listarUsuarios(k) {
   soloAdmin_(k);
-  return usuarios_().map(u => ({ nombre: u.nombre, activo: u.activo, admin: u.admin }));
+  return usuarios_().map(u => ({ nombre: u.nombre, activo: u.activo, admin: u.admin, rol: u.rol }));
 }
 
-function crearUsuario(k, nombre) {
+function rolValido_(r) { r = String(r || 'Entrevistador'); return ['Admin', 'Entrevistador', 'Lectura'].indexOf(r) > -1 ? r : 'Entrevistador'; }
+
+function crearUsuario(k, nombre, rol) {
   soloAdmin_(k);
   nombre = nombreUsuario_(nombre);
   if (nombre.length < 2) throw new Error('Escribí el nombre');
@@ -104,11 +132,23 @@ function crearUsuario(k, nombre) {
     const sh = hojaUsuarios_();
     if (filaUsuario_(sh, nombre)) throw new Error('Ese usuario ya existe');
     const pin = pinAzar_();
-    sh.appendRow([nombre, pin, 'SI', '', '']);
+    sh.appendRow([nombre, pin, 'SI', '', rolValido_(rol)]);
     CacheService.getScriptCache().remove('USUARIOS');
-    registrarHistorial_('', nombre, 'Usuario', 'Usuario creado por ' + QUIEN_, QUIEN_);
+    registrarHistorial_('', nombre, 'Usuario', 'Usuario creado por ' + QUIEN_ + ' (' + rolValido_(rol) + ')', QUIEN_);
     return { nombre: nombre, pin: pin };
   } finally { lock.releaseLock(); }
+}
+
+function cambiarRol(k, nombre, rol) {
+  soloAdmin_(k);
+  if (String(nombre).toLowerCase() === QUIEN_.toLowerCase()) throw new Error('No podés cambiarte el rol a vos mismo');
+  const sh = hojaUsuarios_();
+  const f = filaUsuario_(sh, nombre);
+  if (!f) throw new Error('Usuario no encontrado');
+  sh.getRange(f, 5).setValue(rolValido_(rol));
+  CacheService.getScriptCache().remove('USUARIOS');
+  registrarHistorial_('', nombre, 'Usuario', 'Rol cambiado a ' + rolValido_(rol) + ' por ' + QUIEN_, QUIEN_);
+  return true;
 }
 
 function reiniciarPin(k, nombre) {
@@ -235,12 +275,14 @@ function alEditar(e) {
     if (sh.getName() !== 'Candidatos') return;
     const fila = e.range.getRow(), col = e.range.getColumn();
     if (fila < 2 || e.range.getNumRows() > 1) return;
+    let quien = 'planilla';
+    try { const em = e.user && e.user.getEmail && e.user.getEmail(); if (em) quien = 'planilla · ' + em; } catch (x) { }
     const etapa = Object.keys(NOTA_COL).find(k => NOTA_COL[k] === col);
-    if (etapa) { aplicarNota_(sh, fila, etapa, e.range.getValue(), 'planilla'); return; }
+    if (etapa) { aplicarNota_(sh, fila, etapa, e.range.getValue(), quien); return; }
     if (col === COL.domicilio || col === COL.loc) sh.getRange(fila, COL.polSug).clearContent();
     if (col === COL.estado) {
       sh.getRange(fila, COL.mov).setValue(new Date());
-      registrarHistorial_(sh.getRange(fila, COL.id).getValue(), sh.getRange(fila, COL.nombre).getValue(), 'Estado', 'Cambiado a mano a "' + e.range.getValue() + '"', 'planilla');
+      registrarHistorial_(sh.getRange(fila, COL.id).getValue(), sh.getRange(fila, COL.nombre).getValue(), 'Estado', 'Cambiado a mano a "' + e.range.getValue() + '"', quien);
     }
   } catch (err) { registrarError_('alEditar', err); }
 }
@@ -280,18 +322,26 @@ function getTablero(k) {
     entrevistadores: lista_(aj.entrevistadores, ','),
     busquedas: busquedas_().map(b => ({ id: b.id, titulo: b.titulo, recomendacion: b.recomendacion, link_perfil: b.link_perfil, link_flyer: b.link_flyer, ubicacion: b.ubicacion })),
     cfg: { cliente: aj.nombre_cliente || 'PAMI', diasAlerta: Number(aj.dias_alerta) || 7, linkAgenda: aj.link_agenda || '', duraciones: { screening: Number(aj.duracion_screening) || 30, competencias: Number(aj.duracion_competencias) || 60, pami1: Number(aj.duracion_pami1) || 30, pami2: Number(aj.duracion_pami2) || 60 } },
-    pinActivo: exigePin_(), admin: ROL_ADMIN_, ahora: fmt_(new Date(), "yyyy-MM-dd'T'HH:mm"), cands: cands
+    pinActivo: exigePin_(), admin: ROL_ADMIN_, rol: ROL_, ahora: fmt_(new Date(), "yyyy-MM-dd'T'HH:mm"), cands: cands
   });
 }
 
 function getHistorial(k, id) {
   admin_(k);
+  try {
+    const cache = CacheService.getScriptCache(), ck = 'VISTA_' + QUIEN_ + '_' + id;
+    if (!cache.get(ck)) {
+      cache.put(ck, '1', 600);
+      const sh = hoja_('Candidatos'), fl = filaPorId_(sh, id);
+      accesoLog_(QUIEN_, 'Ficha vista', fl ? String(sh.getRange(fl, COL.nombre).getValue()) : String(id));
+    }
+  } catch (e) { }
   const d = hoja_('Historial').getDataRange().getValues().slice(1).filter(r => String(r[1]) === String(id));
   return d.reverse().slice(0, 80).map(r => ({ fecha: r[0] instanceof Date ? fmt_(r[0], 'dd/MM/yyyy HH:mm') : String(r[0]), tipo: r[3], detalle: r[4], quien: r[5] }));
 }
 
 function moverEstado(k, fila, estado) {
-  admin_(k);
+  escritor_(k);
   if (todosEstados_().indexOf(estado) === -1) throw new Error('Estado inválido');
   const sh = hoja_('Candidatos');
   fila = Number(fila);
@@ -304,7 +354,7 @@ function moverEstado(k, fila, estado) {
 }
 
 function ponerNota(k, fila, etapa, nota) {
-  admin_(k);
+  escritor_(k);
   const sh = hoja_('Candidatos');
   fila = Number(fila);
   if (!(fila >= 2 && fila <= sh.getLastRow())) throw new Error('Fila inválida');
@@ -313,7 +363,7 @@ function ponerNota(k, fila, etapa, nota) {
 }
 
 function guardarCandidato(k, fila, c) {
-  admin_(k);
+  escritor_(k);
   const sh = hoja_('Candidatos');
   fila = Number(fila);
   if (!(fila >= 2 && fila <= sh.getLastRow())) throw new Error('Fila inválida');
@@ -355,7 +405,7 @@ function guardarCandidato(k, fila, c) {
 }
 
 function reanalizar(k, fila) {
-  admin_(k);
+  escritor_(k);
   const sh = hoja_('Candidatos');
   sh.getRange(Number(fila), COL.intentos).setValue(0);
   analizarFila_(Number(fila));
@@ -391,7 +441,7 @@ function telWa_(t) {
 }
 
 function armarComunicacion(k, fila, tipo) {
-  admin_(k);
+  escritor_(k);
   const sh = hoja_('Candidatos');
   fila = Number(fila);
   const r = sh.getRange(fila, 1, 1, HEAD_CAND.length).getValues()[0];
@@ -413,7 +463,7 @@ function armarComunicacion(k, fila, tipo) {
 }
 
 function borrarMarcaContacto(k, fila) {
-  admin_(k);
+  escritor_(k);
   hoja_('Candidatos').getRange(Number(fila), COL.contactado).clearContent();
   return true;
 }
@@ -435,7 +485,7 @@ function mailDescarte_(sh, fila, textoSin, textoPost) {
 }
 
 function enviarMailDescarte(k, fila) {
-  admin_(k);
+  escritor_(k);
   const sh = hoja_('Candidatos');
   try { return mailDescarte_(sh, Number(fila)); } catch (e) { return { ok: false, error: String(e) }; }
 }
@@ -455,7 +505,7 @@ function previaDescartes(k, busq) {
 }
 
 function enviarDescartesMasivo(k, busq, textoSin, textoPost) {
-  admin_(k);
+  escritor_(k);
   const sh = hoja_('Candidatos');
   const d = sh.getDataRange().getValues();
   let enviados = 0, sinMail = 0, pendientes = 0;
@@ -503,4 +553,57 @@ function postulacionPdf(k, fila) {
   const pdf = DriveApp.getFolderById(ajustes_().carpeta_informes).createFile(Utilities.newBlob(html, 'text/html', 'x.html').getAs('application/pdf').setName('Postulacion_' + String(r[COL.nombre - 1]).replace(/\s+/g, '_') + '.pdf'));
   sh.getRange(fila, COL.postulacion).setValue(pdf.getUrl());
   return pdf.getUrl();
+}
+
+
+function registrarAcceso(k, accion) {
+  admin_(k);
+  if (['Ingreso', 'Cierre de sesión'].indexOf(accion) === -1) return false;
+  accesoLog_(QUIEN_, accion, '');
+  return true;
+}
+
+function leerUltimas_(sh, cols, max) {
+  const n = sh.getLastRow();
+  if (n < 2) return [];
+  const ini = Math.max(2, n - max + 1);
+  return sh.getRange(ini, 1, n - ini + 1, cols).getValues().reverse();
+}
+
+function getAuditoria(k, tipo) {
+  soloAdmin_(k);
+  const f = v => v instanceof Date ? fmt_(v, 'dd/MM/yyyy HH:mm') : String(v || '');
+  if (tipo === 'accesos') {
+    const sh = ss_().getSheetByName('Accesos');
+    return { filas: sh ? leerUltimas_(sh, 4, 400).map(r => ({ fecha: f(r[0]), usuario: String(r[1] || ''), accion: String(r[2] || ''), detalle: String(r[3] || '') })) : [] };
+  }
+  if (tipo === 'copias') {
+    return { ultima: PropertiesService.getScriptProperties().getProperty('ULTIMA_COPIA') || '' };
+  }
+  return { filas: leerUltimas_(hoja_('Historial'), 6, 400).map(r => ({ fecha: f(r[0]), candidato: String(r[2] || ''), tipo: String(r[3] || ''), detalle: String(r[4] || ''), usuario: String(r[5] || '') })) };
+}
+
+function hacerCopia_() {
+  const cfg = ajustes_();
+  const padre = DriveApp.getFolderById(cfg.carpeta_cvs);
+  const it = padre.getFoldersByName('Copias de seguridad');
+  const carpeta = it.hasNext() ? it.next() : padre.createFolder('Copias de seguridad');
+  const nombre = 'Copia Empleos PAMI ' + fmt_(new Date(), 'yyyy-MM-dd HH-mm');
+  DriveApp.getFileById(prop_('SHEET_ID')).makeCopy(nombre, carpeta);
+  const limite = Date.now() - 30 * 86400000;
+  const fs = carpeta.getFiles();
+  while (fs.hasNext()) { const x = fs.next(); if (x.getDateCreated().getTime() < limite) x.setTrashed(true); }
+  PropertiesService.getScriptProperties().setProperty('ULTIMA_COPIA', fmt_(new Date(), 'dd/MM/yyyy HH:mm') + ' · ' + nombre);
+  return nombre;
+}
+
+function copiaDiaria() {
+  try { hacerCopia_(); accesoLog_('sistema', 'Copia de seguridad', 'Automática'); } catch (e) { registrarError_('copiaDiaria', e); }
+}
+
+function copiaAhora(k) {
+  soloAdmin_(k);
+  const n = hacerCopia_();
+  accesoLog_(QUIEN_, 'Copia de seguridad', 'Manual: ' + n);
+  return n;
 }

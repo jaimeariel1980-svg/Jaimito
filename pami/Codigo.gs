@@ -242,7 +242,7 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '9';
+const ESQUEMA = '10';
 
 function actualizarEsquema_() {
   const props = PropertiesService.getScriptProperties();
@@ -262,6 +262,13 @@ function actualizarEsquema_() {
       u.getRange(2, 4).setValue('Los usuarios los da de alta el administrador desde el tablero (avatar → Usuarios). Activo = NO bloquea el acceso.');
       u.getRange(2, 3, 50, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['SI', 'NO'], true).build());
       CacheService.getScriptCache().remove('USUARIOS');
+    },
+    () => {
+      const ss = ss_();
+      let a = ss.getSheetByName('Accesos');
+      if (!a) a = ss.insertSheet('Accesos');
+      asegurarEncabezados_(a, ['Fecha', 'Usuario', 'Acción', 'Detalle']);
+      if (!ScriptApp.getProjectTriggers().some(t => t.getHandlerFunction() === 'copiaDiaria')) ScriptApp.newTrigger('copiaDiaria').timeBased().everyDays(1).atHour(3).create();
     },
     () => asegurarAjustes_([['direccion_policlinico_1', 'Sarmiento 373, Rosario, Santa Fe, Argentina'], ['direccion_policlinico_2', 'Olive 1159, Rosario, Santa Fe, Argentina']]),
     () => {
