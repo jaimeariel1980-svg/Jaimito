@@ -1158,12 +1158,25 @@ function _comprimir(f,cb){
   img.onerror=function(){ var r1=new FileReader(); r1.onload=function(){ cb(r1.result.split(',')[1],f.name,f.type); }; r1.readAsDataURL(f); };
   img.src=u;
 }
+
+function _cargarPdfLib(){return window.PDFLib?Promise.resolve():new Promise(function(ok,ko){var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js';s.onload=ok;s.onerror=function(){ko(new Error('No pude cargar el armado de PDF. Revisá la conexión.'));};document.head.appendChild(s);});}
+function _jpegDe(f){return new Promise(function(ok,ko){var u=URL.createObjectURL(f),im=new Image();im.onload=function(){var k=Math.min(1,1600/Math.max(im.naturalWidth,im.naturalHeight)),c=document.createElement('canvas');c.width=Math.round(im.naturalWidth*k);c.height=Math.round(im.naturalHeight*k);var x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(function(b){b.arrayBuffer().then(function(a){ok({b:new Uint8Array(a),w:c.width,h:c.height});});},'image/jpeg',0.78);};im.onerror=function(){URL.revokeObjectURL(u);ko(new Error('No pude leer «'+f.name+'».'));};im.src=u;});}
+async function _unirEnPdf(files){await _cargarPdfLib();var D=PDFLib.PDFDocument,out=await D.create();for(var f of files){if(f.type==='application/pdf'){var s=await D.load(await f.arrayBuffer(),{ignoreEncryption:true});(await out.copyPages(s,s.getPageIndices())).forEach(function(p){out.addPage(p);});}else{var j=await _jpegDe(f),im=await out.embedJpg(j.b),k=Math.min(1,842/Math.max(j.w,j.h)),pg=out.addPage([j.w*k,j.h*k]);pg.drawImage(im,{x:0,y:0,width:j.w*k,height:j.h*k});}}var by=await out.save();return new File([by],'documento.pdf',{type:'application/pdf'});}
+function _bajarDoc(id,doc){return new Promise(function(ok,ko){google.script.run.withSuccessHandler(function(r){var bin=atob(r.base64),u=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);ok(new File([u],r.nombre||'actual',{type:r.mime||'application/pdf'}));}).withFailureHandler(function(e){ko(e);}).bajarDocumento(id,doc);});}
+function _preguntaDoc(doc){return new Promise(function(ok){var o=document.createElement('div');o.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(15,30,60,.55);display:flex;align-items:center;justify-content:center;padding:16px';var b='border:0;border-radius:10px;padding:12px;font-size:15px;font-weight:600;cursor:pointer;width:100%;margin-top:8px;';o.innerHTML='<div style="background:#fff;border-radius:16px;padding:22px;max-width:340px;width:100%"><div style="font-weight:700;margin-bottom:4px">«'+doc+'» ya tiene un archivo</div><div style="font-size:13.5px;color:#555">¿Qué hacemos con lo que elegiste?</div><button data-r="agregar" style="'+b+'background:#1b3866;color:#fff">Agregar al archivo actual</button><button data-r="reemplazar" style="'+b+'background:#eef2f9;color:#1b3866">Reemplazar</button><button data-r="" style="'+b+'background:none;color:#777">Cancelar</button></div>';o.onclick=function(e){var r=e.target.getAttribute&&e.target.getAttribute('data-r');if(r===null)return;o.remove();ok(r);};document.body.appendChild(o);});}
 function subirDoc(id,doc){
-  const inp=document.createElement('input');inp.type='file';
-  inp.onchange=function(){
-    const f=inp.files[0];if(!f)return;
+  const inp=document.createElement('input');inp.type='file';inp.multiple=true;inp.accept='image/*,application/pdf';
+  inp.onchange=async function(){
+    let fs=Array.from(inp.files||[]);if(!fs.length)return;
+    const p=DATA.find(x=>x.id===id);
+    let modo='reemplazar';
+    if(p&&p.docUrls&&p.docUrls[doc]){modo=await _preguntaDoc(doc);if(!modo)return;}
+    try{
+      if(modo==='agregar'){_subOv('Trayendo el archivo actual…');fs=[await _bajarDoc(id,doc)].concat(fs);}
+      if(fs.length>1){_subOv('Armando el PDF con '+fs.length+' archivos…');fs=[await _unirEnPdf(fs)];}
+    }catch(e){_subOv('');alert('No pude preparar los archivos: '+(e&&e.message?e.message:e));return;}
     _subOv('Preparando el archivo…');
-    _comprimir(f,function(b64,nombre,tipo){
+    _comprimir(fs[0],function(b64,nombre,tipo){
       _subOv('Subiendo y verificando '+doc+'…');
       google.script.run
         .withSuccessHandler(function(res){
