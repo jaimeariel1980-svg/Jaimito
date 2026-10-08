@@ -94,6 +94,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
   <input id="fx" placeholder="Experiencia / palabra clave">
   <select id="fe"><option value="">Todos los estados</option></select>
   <select id="fpo"><option value="">Todos los policlínicos</option><option value="-">Sin policlínico</option></select>
+  <select id="fsi"><option value="">Todos los sindicatos</option><option value="*">Con sindicato (cualquiera)</option><option value="-">Sin sindicato</option></select>
   <input id="fp" type="number" placeholder="Pretensión hasta $" style="width:150px">
   <select id="fr"><option value="">Todos</option><option value="1">★ Solo recomendados</option></select>
   <button class="btn ghost" style="padding:6px 12px;font-size:11px" onclick="limpiar()">Limpiar</button>
@@ -134,12 +135,14 @@ function init(){
   var fb=document.getElementById('fb');
   fb.innerHTML='<option value="">Todas las búsquedas</option>'+D.busquedas.map(function(b){return '<option value="'+esc(b.id)+'">'+esc(b.titulo)+'</option>';}).join('');
   document.getElementById('fe').innerHTML+=D.todos.map(function(e){return '<option>'+esc(e)+'</option>';}).join('');
+  var sl=[];D.busquedas.forEach(function(b){var r=defRec(b.id);Object.keys(r||{}).forEach(function(k){if(/^sindicato/i.test(k))(r[k]||[]).forEach(function(x){if(sl.indexOf(x)===-1)sl.push(x);});});});
+  document.getElementById('fsi').innerHTML+=sl.map(function(e){return '<option>'+esc(e)+'</option>';}).join('');
   document.getElementById('fpo').innerHTML+=D.policlinicos.map(function(e){return '<option>'+esc(e)+'</option>';}).join('');
-  ['fb','fe','fpo'].forEach(function(i){document.getElementById(i).onchange=function(){render();perfilBtn();};});
+  ['fb','fe','fpo','fsi'].forEach(function(i){document.getElementById(i).onchange=function(){render();perfilBtn();};});
   ['fq','fz','ff','fx','fp'].forEach(function(i){document.getElementById(i).oninput=render;});document.getElementById('fr').onchange=render;
   render();perfilBtn();
 }
-function limpiar(){['fq','fz','ff','fx','fp','fe','fb','fr','fpo'].forEach(function(i){document.getElementById(i).value='';});render();perfilBtn();}
+function limpiar(){['fq','fz','ff','fx','fp','fe','fb','fr','fpo','fsi'].forEach(function(i){document.getElementById(i).value='';});render();perfilBtn();}
 function busqSel(){return D.busquedas.find(function(x){return x.id===document.getElementById('fb').value;});}
 function perfilBtn(){var b=busqSel();document.getElementById('bPerfil').style.display=b&&b.link_perfil?'':'none';document.getElementById('bFlyer').style.display=b&&b.link_flyer?'':'none';}
 function verFlyer(){var b=busqSel();if(b&&b.link_flyer)window.open(b.link_flyer,'_blank');}
@@ -155,6 +158,7 @@ function filtra(c){
   var g=function(i){return document.getElementById(i).value;};
   if(g('fb')&&c.busq!==g('fb'))return false;
   if(g('fe')&&c.estado!==g('fe'))return false;
+  var gsi=g('fsi');if(gsi){var lst=/^sindicato/i.test(c.recTipo||'')?String(c.recPor||'').split(';').map(function(x){return x.trim().toLowerCase();}).filter(Boolean):[];if(gsi==='-'){if(lst.length)return false;}else if(gsi==='*'){if(!lst.length)return false;}else if(lst.indexOf(gsi.toLowerCase())===-1)return false;}
   var pe=c.policlinico||sugN(c);if(g('fpo')&&(g('fpo')==='-'?pe:pe!==g('fpo')))return false;
   var p=Number(g('fp'))||0;if(p){var n=Number(String(c.pret).replace(/\D/g,''));if(!n||n>p)return false;}
   if(g('fr')&&!recom(c))return false;
@@ -207,7 +211,7 @@ function acordeon(titulo,clase,tipos,lista,re){
 function render(){
   var lista=D.cands.filter(filtra);
   document.getElementById('cnt').textContent=lista.length+(lista.length!==D.cands.length?' de '+D.cands.length:'')+' candidatos';
-  var hay=['fb','fq','fz','ff','fx','fe','fp','fr','fpo'].some(function(i){return document.getElementById(i).value;});document.getElementById('cf').textContent=hay?lista.length+' resultado'+(lista.length===1?'':'s'):'';
+  var hay=['fb','fq','fz','ff','fx','fe','fp','fr','fpo','fsi'].some(function(i){return document.getElementById(i).value;});document.getElementById('cf').textContent=hay?lista.length+' resultado'+(lista.length===1?'':'s'):'';
   if(!D.cands.length){document.getElementById('board').innerHTML='<div class="loading">Todavía no hay candidatos. Cuando llegue una postulación, un mail con CV o un archivo en la carpeta, aparece acá.</div>';return;}
   var conocidos=[];D.estadosCol.forEach(function(x){conocidos=conocidos.concat(x[1]);});
   var h='';
@@ -218,7 +222,7 @@ function render(){
   });
   h+=acordeon('Reservas','res',D.res,lista,/reserva/i);
   document.getElementById('board').innerHTML=h;
-  document.getElementById('jump').innerHTML=[].slice.call(document.querySelectorAll('#board > .col')).map(function(c,i){var n=c.querySelector('.col-h span'),k=c.querySelector('.col-h b');return '<button onclick="irCol('+i+')">'+esc(n?n.textContent:'')+' '+(k?k.textContent:'')+'</button>';}).join('')+'<small>Tablero v10</small>';
+  document.getElementById('jump').innerHTML=[].slice.call(document.querySelectorAll('#board > .col')).map(function(c,i){var n=c.querySelector('.col-h span'),k=c.querySelector('.col-h b');return '<button onclick="irCol('+i+')">'+esc(n?n.textContent:'')+' '+(k?k.textContent:'')+'</button>';}).join('')+'<small>Tablero v11</small>';
   ajustarBoard();
 }
 function irCol(i){var b=document.getElementById('board'),c=b.querySelectorAll(':scope > .col')[i];if(c)b.scrollTo({left:c.offsetLeft-b.offsetLeft-12,behavior:'smooth'});}
