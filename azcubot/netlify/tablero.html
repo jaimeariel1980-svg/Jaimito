@@ -772,7 +772,9 @@ const RES_OPC=['Solo consulta','Visita','Le interesó','No le interesó','Hizo u
 let DOCLIST=[];
 const ET2EST={"Captación":"En venta","Publicadas":"En venta","Reserva":"Reservada","Vendida":"Vendida","Suspendida":"Suspendida"};
 let ALERT_INACT=[],ALERT_SINVIS=[];
-function papEstado(pa){if(!pa)return null;var ks=Object.keys(pa);if(!ks.length)return null;const falta=ks.filter(d=>!pa[d]);const crit=["Escritura","Título de propiedad","DNI propietario"];const critFalta=crit.some(d=>ks.indexOf(d)>-1&&!pa[d]);if(falta.length===0)return"ok";if(critFalta&&falta.length>=3)return"no";return"med";}
+const PAP_ESEN=["Plano de edificación","Plano de mensura","Escritura","DNI propietario","Título de propiedad","Autorización de venta"];
+function papPct(pa){if(!pa)return null;const ks=PAP_ESEN.filter(d=>d in pa);if(!ks.length)return null;return Math.round(ks.filter(d=>!!pa[d]).length/ks.length*100);}
+function papEstado(pa){const p=papPct(pa);if(p===null)return null;return p>=100?"ok":p>=60?"med":"no";}
 function propuestaEstado(p){var pr=(p.seg||[]).filter(s=>/propuesta|oferta/i.test(s.res));if(!pr.length)return null;var u=pr[pr.length-1];var last=(''+u.res).toLowerCase();var q=u.cli?(' de '+u.cli):'';if(/rechaz/.test(last))return{cls:'r',txt:'propuesta rechazada'+q};if(/acept/.test(last))return{cls:'v',txt:'propuesta aceptada'+q};return{cls:'a',txt:'propuesta'+(u.cli?' de '+u.cli:' recibida')};}
 function semC(d){if(d===null)return"var(--neutro)";if(d<=15)return"var(--verde)";if(d<=30)return"var(--amarillo)";return"var(--rojo)";}
 function healthC(p){if(p===null)return"var(--neutro)";if(p>=90)return"var(--verde)";if(p>=70)return"var(--amarillo)";return"var(--rojo)";}
@@ -835,10 +837,11 @@ function render(){
   var _satTotal=_encs.length;
   var _satAvg=_sat===null?'—':_sat+'/10';
   document.getElementById('bars2').innerHTML=donutPanel(_satSegs,_satTotal===0?1:_satTotal,'encuestas',_encs.length===0?'—':_satAvg);
-  const pb={"Al día":0,"Incompletos":0,"Faltan papeles":0};
-  f.forEach(p=>{const e=papEstado(p.papeles);if(e==='ok')pb["Al día"]++;else if(e==='med')pb["Incompletos"]++;else if(e==='no')pb["Faltan papeles"]++;});
-  const cp3={"Al día":"var(--verde)","Incompletos":"var(--amarillo)","Faltan papeles":"var(--rojo)"};
-  const segP=Object.keys(pb).map(k=>({l:k,v:pb[k],c:cp3[k],k:'pap:'+k}));const papOk=f.length?Math.round((pb['Al día']/f.length)*100):0;document.getElementById('bars3').innerHTML=donutPanel(segP,f.length,'al día',papOk+'%');
+  const pb={"Completos":0,"Casi":0,"Críticos":0};
+  f.forEach(p=>{const e=papEstado(p.papeles);if(e==='ok')pb["Completos"]++;else if(e==='med')pb["Casi"]++;else if(e==='no')pb["Críticos"]++;});
+  const cp3={"Completos":"var(--verde)","Casi":"var(--amarillo)","Críticos":"var(--rojo)"};
+  const pcts=f.map(p=>papPct(p.papeles)).filter(x=>x!==null);const papProm=pcts.length?Math.round(pcts.reduce((a,b)=>a+b,0)/pcts.length):0;
+  const segP=Object.keys(pb).map(k=>({l:k,v:pb[k],c:cp3[k],k:'pap:'+k}));document.getElementById('bars3').innerHTML=donutPanel(segP,f.length,'papeles esenciales',papProm+'%');
   let h='';
   for(const e of ET){const col=e[1];const items=sortIt(f.filter(p=>p.etapa===e[0]));
     h+='<div class="col" ondragover="event.preventDefault();this.classList.add(\'over\')" ondragleave="this.classList.remove(\'over\')" ondrop="drop(event,\''+e[0]+'\')"><h2><span class="dot" style="background:'+col+'"></span>'+e[0]+'<span class="n">'+items.length+'</span></h2><div class="col-body">';
@@ -875,7 +878,7 @@ function cardHTML(p,col){
     '<div class="sem"><div class="b"><div class="num" style="color:'+sc+'">'+dtxt+'</div><div class="lab">días s/mov</div></div>'+
     '<div class="b"><div class="num" style="color:var(--azul)">'+p.vis+'</div><div class="lab">visitas</div></div></div>'+hp+(ult?'<div style="font-size:11.5px;color:var(--gris);margin-top:8px;border-top:1px dashed var(--linea);padding-top:7px"><b style="color:var(--texto)">Última:</b> '+ult.fecha+' · '+ult.res+'</div>':'')+'</div></div>';
 }
-function papBadge(p){const e=papEstado(p.papeles);if(!e)return'';const m={ok:['v','papeles al día'],med:['a','papeles incompletos'],no:['r','faltan papeles']};return '<div><span class="pap '+m[e][0]+'">'+m[e][1]+'</span></div>';}
+function papBadge(p){const e=papEstado(p.papeles);if(!e)return'';const pc=papPct(p.papeles);const m={ok:['v','papeles esenciales completos'],med:['a','papeles esenciales '+pc+'%'],no:['r','papeles esenciales '+pc+'%']};return '<div><span class="pap '+m[e][0]+'">'+m[e][1]+'</span></div>';}
 /**
  * Insignia con el resultado de la verificación por IA de un documento
  * (columna "Verificación IA: ..." del Sheet). Verde si vino "Verificado OK",
@@ -955,7 +958,7 @@ function drill(tipo){
     document.getElementById('ov2').classList.add('on');return;
   }
   if(tipo.indexOf('pap:')===0){
-    const b=tipo.slice(4);const map={"Al día":"ok","Incompletos":"med","Faltan papeles":"no"};
+    const b=tipo.slice(4);const map={"Completos":"ok","Casi":"med","Críticos":"no"};
     f2=filtered().filter(p=>papEstado(p.papeles)===map[b]);
     rows=f2.length?f2.map(p=>{const falta=Object.keys(p.papeles).filter(d=>!p.papeles[d]);return '<tr onclick=\'closeDL();ficha("'+p.id+'")\' style="cursor:pointer"><td><span class="idpill">'+p.id+'</span></td><td>'+p.dir+'</td><td style="color:var(--gris);font-size:11.5px">'+(falta.length?'Falta: '+falta.join(', '):'Completo')+'</td></tr>';}).join(''):'<tr><td colspan="3" style="color:var(--gris)">Sin propiedades</td></tr>';
     document.getElementById('dlg').innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">Documentación: '+b+'</div><div class="sub">Tocá una para abrir la ficha</div></div><div class="fb"><table><tr><th>ID</th><th>Dirección</th><th>Qué falta</th></tr>'+rows+'</table></div>';
