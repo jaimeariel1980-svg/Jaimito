@@ -10,20 +10,20 @@
 <?!= incluir_('FormCompetencias') ?>
 <style>
 .hdr{background:linear-gradient(90deg,#0A1745 0%,#12276B 60%,#0E2A78 100%);border-bottom:3px solid var(--celeste);color:#fff}
-.hdr .in{display:flex;align-items:center;gap:10px;padding:8px 20px;min-height:68px}
-.hdr .lg{height:40px;flex-shrink:0}
-.hdr .prod{border-left:1px solid rgba(255,255,255,.3);padding-left:14px;margin-left:4px;font-size:16px;font-weight:800;letter-spacing:.02em;white-space:nowrap;line-height:1.15}
-.hdr .ver{display:block;font-size:9.5px;font-weight:600;color:#9FB6E6;letter-spacing:.05em}
-.hdr nav{display:flex;gap:2px;margin-left:10px;flex-wrap:wrap}
-.ni{display:flex;align-items:center;gap:8px;background:none;border:none;color:#fff;font-family:var(--font);font-size:13.5px;padding:8px 12px;border-radius:6px;cursor:pointer}
+.hdr .in{display:flex;align-items:center;gap:14px;padding:14px 28px;min-height:104px}
+.hdr .lg{height:68px;flex-shrink:0}
+.hdr .prod{border-left:1px solid rgba(255,255,255,.3);padding-left:20px;margin-left:8px;font-size:clamp(20px,1.75vw,29px);font-weight:800;letter-spacing:.01em;white-space:nowrap;line-height:1.1}
+.hdr .ver{display:block;font-size:11px;margin-top:2px;font-weight:600;color:#9FB6E6;letter-spacing:.05em}
+.hdr nav{display:flex;gap:4px;margin-left:16px;flex-wrap:nowrap}
+.ni{display:flex;align-items:center;gap:8px;background:none;border:none;color:#fff;font-family:var(--font);font-size:15px;padding:10px 12px;border-radius:8px;cursor:pointer;white-space:nowrap}
 .ni b{font-weight:700}.ni:hover{background:rgba(255,255,255,.13)}
-.ic{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;font-size:14px;font-style:normal;background:#2563EB}
+.ic{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:9px;font-size:19px;font-style:normal;background:#2563EB}
 .ic.g{background:#16A34A}.ic.o{background:#F59E0B}
-.hdr .sp{margin-left:auto;font-size:12.5px;font-weight:700;background:rgba(255,255,255,.15);padding:5px 12px;border-radius:99px;white-space:nowrap}
-.cta{background:#F0605D;color:#fff;border:none;border-radius:6px;font-family:var(--font);font-weight:800;font-size:12px;text-transform:uppercase;padding:10px 14px;cursor:pointer;white-space:nowrap}
+.hdr .sp{margin-left:auto;font-size:15px;font-weight:700;background:rgba(255,255,255,.16);padding:8px 18px;border-radius:99px;white-space:nowrap}
+.cta{background:#F0605D;color:#fff;border:none;border-radius:6px;font-family:var(--font);font-weight:800;font-size:14.5px;text-transform:uppercase;padding:14px 22px;cursor:pointer;white-space:nowrap}
 .cta:hover{background:#DD4B48}
-.av{width:38px;height:38px;border-radius:50%;border:none;background:#D9A89B;color:#fff;font-weight:800;font-family:var(--font);cursor:pointer;font-size:13px;flex-shrink:0}
-@media(max-width:900px){.hdr .prod{display:none}}
+.av{width:54px;height:54px;border-radius:50%;border:none;background:#D9A89B;color:#fff;font-weight:800;font-family:var(--font);cursor:pointer;font-size:17px;flex-shrink:0}
+@media(max-width:1480px){.hdr .sp{display:none}.hdr .lg{height:58px}.hdr .in{gap:10px;padding:12px 20px}.cta{font-size:13px;padding:12px 16px}}@media(max-width:1100px){.hdr .lg{height:48px}.hdr .in{gap:8px;padding:10px 14px}.ni b{display:none}}@media(max-width:900px){.hdr .prod{display:none}}
 #kpi{display:flex;gap:10px;padding:10px 20px 0;flex-wrap:wrap}
 .kp{flex:1 1 140px;background:#fff;border-radius:6px;border-left:5px solid var(--azul);padding:8px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 3px rgba(3,78,162,.1)}
 .kp b{font-size:26px;font-weight:800;color:var(--azul);line-height:1}
@@ -102,7 +102,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v12</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v13</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
