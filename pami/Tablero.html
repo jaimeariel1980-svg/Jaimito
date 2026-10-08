@@ -34,6 +34,17 @@
 #board .ln .tags{margin-top:0}
 #board .ln.sg{color:var(--azul);font-weight:700}
 #board .ln .mt{color:var(--mut);font-style:italic}
+.hdr .av{transition:.15s}
+#login{display:none;position:fixed;inset:0;z-index:300;background:linear-gradient(135deg,#0A1745,#12276B 70%,#0E2A78);align-items:center;justify-content:center;padding:16px}
+#login.show{display:flex}
+.lbox{background:#fff;border-radius:10px;padding:30px 34px;width:min(430px,100%);text-align:center;border-top:6px solid var(--celeste);box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.lbox .lg{height:56px;margin-bottom:6px}
+.lbox h2{font-size:24px;font-weight:800;color:var(--navy);margin-bottom:2px}
+.lbox p{color:var(--mut);font-size:14px;margin-bottom:14px}
+.lbox input{width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:4px;font-family:var(--font);background:#fff;color:var(--txt);margin-bottom:10px;font-size:16px;text-align:center}.lbox input:focus{outline:none;border-color:var(--celeste)}
+.lt{display:flex;gap:6px;margin-bottom:12px}.lt button{flex:1;border:1.5px solid var(--azul);background:#fff;color:var(--azul);border-radius:6px;font-family:var(--font);font-weight:800;font-size:13px;padding:8px;cursor:pointer}.lt button.on{background:var(--azul);color:#fff}
+#lE{color:#B73A36;font-size:13px;font-weight:700;min-height:18px;margin-bottom:8px}
+.lbox .cta{width:100%;font-size:15px}.lbox .cta:disabled{opacity:.6}
 .fil{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:8px 20px;background:#fff;border-bottom:1px solid var(--line)}
 .fil select,.fil input{width:auto;padding:7px 10px;font-size:12px}
 #board{display:flex;gap:12px;padding:14px 20px 12px;overflow-x:auto;overflow-y:hidden;align-items:stretch;height:calc(100vh - 260px);min-height:200px}
@@ -102,7 +113,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v13</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v14</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -112,7 +123,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
   </nav>
   <span class="sp" id="cnt"></span>
   <button class="cta" onclick="linkPost()">🔗 Link postulación</button>
-  <button class="av" id="usr" onclick="elegirUsuario()" title="Elegí tu usuario">?</button>
+  <button class="av" id="usr" onclick="menuUsuario()" title="Ingresá">?</button>
 </div></div>
 <div class="fil">
   <select id="fb"></select>
@@ -130,6 +141,12 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 </div>
 <div id="kpi"></div>
 <div id="board"><div class="loading">Cargando…</div></div>
+<div id="login"><div class="lbox"><span class="lg"></span><h2>Atracción y Elección</h2><p>Ingresá con tu nombre y tu PIN</p>
+  <div class="lt"><button id="lTi" onclick="modoLogin('in')">Ingresar</button><button id="lTn" onclick="modoLogin('new')">Crear usuario</button></div>
+  <input id="lU" type="text" maxlength="30" placeholder="Tu nombre y apellido" autocomplete="off">
+  <input id="lP" type="password" inputmode="numeric" maxlength="6" placeholder="PIN (4 a 6 números)" autocomplete="off">
+  <div id="lP2w" style="display:none"><input id="lP2" type="password" inputmode="numeric" maxlength="6" placeholder="Repetí el PIN" autocomplete="off"></div>
+  <div id="lE"></div><button class="cta" id="lB" onclick="entrar()">Entrar</button></div></div>
 <div id="modal"><div class="box" id="mbox"></div></div>
 <div id="fmodal"><div class="fbar"><button class="btn sec" onclick="volverFicha()">← Volver a la ficha</button><span class="ttl" id="ftit"></span></div><div id="fbody"></div></div>
 <div class="toast" id="toast">Guardado</div>
@@ -137,24 +154,50 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 var K = <?!= JSON.stringify(clave) ?>;
 var BASE = <?!= JSON.stringify(url) ?>;
 var D = null, CUR = 0;
-var K0 = K, U = '';
-try { U = localStorage.getItem('pami_user') || ''; } catch (e) { }
-function setK() { K = K0 + (U ? '|' + U.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9 ]/g, '').slice(0, 30) : ''); }
+var K0 = K, U = '', P = '', LM = null;
+try { U = localStorage.getItem('pami_user') || ''; P = localStorage.getItem('pami_pin') || ''; } catch (e) { }
+function setK() { K = K0 + (U ? '|' + U.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9 ]/g, '').slice(0, 30) + '|' + P : ''); }
 setK();
 function iniciales(n) { var p = String(n).trim().split(/\s+/); return ((p[0] || '').charAt(0) + (p[1] ? p[1].charAt(0) : (p[0] || '').charAt(1) || '')).toUpperCase(); }
-function pintarUsuario() { var b = document.getElementById('usr'); b.textContent = U ? iniciales(U) : '?'; b.title = U ? 'Usuario: ' + U + ' (tocá para cambiar)' : 'Elegí tu usuario'; }
-function elegirUsuario() {
-  var l = (D && D.entrevistadores) || [];
-  document.getElementById('mbox').innerHTML = '<div class="hd"><div><h2>¿Quién sos?</h2><small>Así queda registrado en el historial quién hizo cada cambio</small></div><button class="x" onclick="cerrar()">×</button></div><div class="bd" style="padding-top:14px">' +
-    l.map(function (n) { return '<button class="btn opt" data-n="' + esc(n) + '" onclick="fijarUsuario(this.dataset.n)">' + esc(n) + '</button>'; }).join('') +
-    '<label class="l" style="margin-top:10px">Otro nombre</label><div style="display:flex;gap:8px"><input id="uOtro" type="text" maxlength="30" placeholder="Nombre"><button class="btn sec" onclick="fijarUsuario(document.getElementById(\'uOtro\').value)">Usar</button></div></div>';
+function pintarUsuario() { var b = document.getElementById('usr'); b.textContent = U ? iniciales(U) : '?'; b.title = U ? 'Usuario: ' + U : 'Ingresá'; }
+function msgLogin(e) { return String((e && e.message) || e).replace(/^[\s\S]*LOGIN:\s*/, ''); }
+function lerr(m) { document.getElementById('lE').textContent = m || ''; }
+function modoLogin(m) {
+  LM = m;
+  document.getElementById('lTi').className = m === 'in' ? 'on' : '';
+  document.getElementById('lTn').className = m === 'new' ? 'on' : '';
+  document.getElementById('lP2w').style.display = m === 'new' ? '' : 'none';
+  document.getElementById('lB').textContent = m === 'new' ? 'Crear usuario y entrar' : 'Entrar';
+  lerr('');
+}
+function mostrarLogin(msg) {
+  document.getElementById('login').classList.add('show');
+  lerr(msg || '');
+  document.getElementById('lB').disabled = false;
+  if (LM === null) gs().withSuccessHandler(function (r) { modoLogin(r.pin ? 'in' : 'new'); }).withFailureHandler(function () { modoLogin('in'); }).getLogin(K0);
+}
+function entrar() {
+  var nm = document.getElementById('lU').value.trim(), pn = document.getElementById('lP').value.trim();
+  if (nm.length < 2) { lerr('Escribí tu nombre'); return; }
+  if (!/^\d{4,6}$/.test(pn)) { lerr('El PIN tiene que ser de 4 a 6 números'); return; }
+  var b = document.getElementById('lB');
+  if (LM === 'new') {
+    if (pn !== document.getElementById('lP2').value.trim()) { lerr('Los PIN no coinciden'); return; }
+    b.disabled = true;
+    gs().withSuccessHandler(function () { conectar(nm, pn); }).withFailureHandler(function (e) { b.disabled = false; lerr(msgLogin(e)); }).registrarUsuario(K0, nm, pn);
+  } else { b.disabled = true; conectar(nm, pn); }
+}
+function conectar(nm, pn) { U = nm; P = pn; setK(); cargar(); }
+function menuUsuario() {
+  document.getElementById('mbox').innerHTML = '<div class="hd"><div><h2>' + esc(U || 'Usuario') + '</h2><small>Tu usuario queda registrado en el historial</small></div><button class="x" onclick="cerrar()">×</button></div><div class="bd" style="padding-top:14px"><button class="btn opt" onclick="cambiarMiPin()">🔑 Cambiar mi PIN</button><button class="btn sec opt" onclick="cerrarSesion()">Cerrar sesión</button></div>';
   document.getElementById('modal').classList.add('show');
 }
-function fijarUsuario(n) {
-  n = String(n || '').trim(); if (!n) return;
-  U = n; try { localStorage.setItem('pami_user', U); } catch (e) { }
-  setK(); pintarUsuario(); cerrar(); toast('Usuario: ' + U);
+function cambiarMiPin() {
+  var n = prompt('Nuevo PIN (4 a 6 números):'); if (n === null) return; n = n.trim();
+  if (!/^\d{4,6}$/.test(n)) { alert('El PIN tiene que ser de 4 a 6 números'); return; }
+  gs().withSuccessHandler(function () { P = n; setK(); try { localStorage.setItem('pami_pin', P); } catch (e) { } cerrar(); toast('PIN actualizado'); }).withFailureHandler(function (e) { alert(msgLogin(e)); }).cambiarPin(K, n);
 }
+function cerrarSesion() { try { localStorage.removeItem('pami_user'); localStorage.removeItem('pami_pin'); } catch (e) { } location.reload(); }
 var ETQ = {cv:'CV',screening:'Screening',competencias:'Competencias',pami2:'Entrevista técnica'};
 function esc(t){return String(t==null?'':t).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function cls(n){return n==='A'?'nA':n==='B+'?'nBp':n==='B'?'nB':n==='C'?'nC':'';}
@@ -167,14 +210,15 @@ function byFila(f){return D.cands.find(function(x){return x.fila===f;});}
 function cargar(){
   var rf=document.querySelector('#rf b');rf.textContent='Actualizando…';
   gs().withSuccessHandler(function(j){
-    var primera=!D;D=JSON.parse(j);rf.textContent='Actualizar';
+    document.getElementById('login').classList.remove('show');try{localStorage.setItem('pami_user',U);localStorage.setItem('pami_pin',P);}catch(e){}var primera=!D;D=JSON.parse(j);rf.textContent='Actualizar';pintarUsuario();
     if(primera)init();else render();
   }).withFailureHandler(function(e){
     rf.textContent='Actualizar';
+    if(/LOGIN:/.test((e&&e.message)||'')){mostrarLogin(msgLogin(e));return;}
     if(!D)document.getElementById('board').innerHTML='<div class="loading" style="color:#D9534F">Error al cargar: '+esc(e.message)+'</div>';else toast('No se pudo actualizar');
   }).getTablero(K);
 }
-cargar();
+if(U&&P)cargar();else mostrarLogin();
 setInterval(function(){if(D&&!document.getElementById('modal').classList.contains('show'))cargar();},60000);
 
 function init(){
@@ -186,7 +230,7 @@ function init(){
   document.getElementById('fpo').innerHTML+=D.policlinicos.map(function(e){return '<option>'+esc(e)+'</option>';}).join('');
   ['fb','fe','fpo','fsi'].forEach(function(i){document.getElementById(i).onchange=function(){render();perfilBtn();};});
   ['fq','fz','ff','fx','fp'].forEach(function(i){document.getElementById(i).oninput=render;});document.getElementById('fr').onchange=render;
-  render();perfilBtn();pintarUsuario();if(!U)elegirUsuario();
+  render();perfilBtn();pintarUsuario();
 }
 function limpiar(){['fq','fz','ff','fx','fp','fe','fb','fr','fpo','fsi'].forEach(function(i){document.getElementById(i).value='';});render();perfilBtn();}
 function busqSel(){return D.busquedas.find(function(x){return x.id===document.getElementById('fb').value;});}
