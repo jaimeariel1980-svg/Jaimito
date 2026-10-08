@@ -4,17 +4,41 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <base target="_top">
-<title>Tablero · <?= sitio ?></title>
+<title>Atracción y Elección · <?= sitio ?></title>
 <?!= incluir_('Estilos') ?>
 <?!= incluir_('FormScreening') ?>
 <?!= incluir_('FormCompetencias') ?>
 <style>
+.hdr{background:linear-gradient(90deg,#0A1745 0%,#12276B 60%,#0E2A78 100%);border-bottom:3px solid var(--celeste);color:#fff}
+.hdr .in{display:flex;align-items:center;gap:10px;padding:8px 20px;min-height:68px}
+.hdr .lg{height:40px;flex-shrink:0}
+.hdr .prod{border-left:1px solid rgba(255,255,255,.3);padding-left:14px;margin-left:4px;font-size:16px;font-weight:800;letter-spacing:.02em;white-space:nowrap;line-height:1.15}
+.hdr .ver{display:block;font-size:9.5px;font-weight:600;color:#9FB6E6;letter-spacing:.05em}
+.hdr nav{display:flex;gap:2px;margin-left:10px;flex-wrap:wrap}
+.ni{display:flex;align-items:center;gap:8px;background:none;border:none;color:#fff;font-family:var(--font);font-size:13.5px;padding:8px 12px;border-radius:6px;cursor:pointer}
+.ni b{font-weight:700}.ni:hover{background:rgba(255,255,255,.13)}
+.ic{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:6px;font-size:14px;font-style:normal;background:#2563EB}
+.ic.g{background:#16A34A}.ic.o{background:#F59E0B}
+.hdr .sp{margin-left:auto;font-size:12.5px;font-weight:700;background:rgba(255,255,255,.15);padding:5px 12px;border-radius:99px;white-space:nowrap}
+.cta{background:#F0605D;color:#fff;border:none;border-radius:6px;font-family:var(--font);font-weight:800;font-size:12px;text-transform:uppercase;padding:10px 14px;cursor:pointer;white-space:nowrap}
+.cta:hover{background:#DD4B48}
+.av{width:38px;height:38px;border-radius:50%;border:none;background:#D9A89B;color:#fff;font-weight:800;font-family:var(--font);cursor:pointer;font-size:13px;flex-shrink:0}
+@media(max-width:900px){.hdr .prod{display:none}}
+#kpi{display:flex;gap:10px;padding:10px 20px 0;flex-wrap:wrap}
+.kp{flex:1 1 140px;background:#fff;border-radius:6px;border-left:5px solid var(--azul);padding:8px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 3px rgba(3,78,162,.1)}
+.kp b{font-size:26px;font-weight:800;color:var(--azul);line-height:1}
+.kp span{font-size:11px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.03em;line-height:1.2}
+.kp.c1{border-left-color:#00A3E0}.kp.c1 b{color:#0077A8}.kp.w{border-left-color:#F2B705}.kp.w b{color:#9A7500}.kp.r{border-left-color:#D9534F}.kp.r b{color:#B73A36}.kp.g{border-left-color:#1E8E5A}.kp.g b{color:#1E8E5A}
+#board .ln{display:flex;gap:8px;margin-top:7px;padding-top:6px;border-top:1px solid #EDF1F6;font-size:12.5px;line-height:1.35;color:var(--navy);align-items:flex-start}
+#board .ln>i{font-style:normal;width:16px;flex-shrink:0;text-align:center}
+#board .ln .tags{margin-top:0}
+#board .ln.sg{color:var(--azul);font-weight:700}
+#board .ln .mt{color:var(--mut);font-style:italic}
 .fil{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:8px 20px;background:#fff;border-bottom:1px solid var(--line)}
 .fil select,.fil input{width:auto;padding:7px 10px;font-size:12px}
 #board{display:flex;gap:12px;padding:14px 20px 12px;overflow-x:auto;overflow-y:hidden;align-items:stretch;height:calc(100vh - 260px);min-height:200px}
 #board::-webkit-scrollbar{height:16px;width:14px}#board::-webkit-scrollbar-track{background:#DCE3EC}#board::-webkit-scrollbar-thumb{background:#034EA2;border-radius:8px;border:3px solid #DCE3EC}
 @supports not selector(::-webkit-scrollbar){#board{scrollbar-color:#034EA2 #DCE3EC;scrollbar-width:auto}}
-#jump{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding:6px 20px;background:#fff;border-bottom:1px solid var(--line)}#jump button{border:1.5px solid var(--azul);background:#fff;color:var(--azul);border-radius:99px;font-size:11.5px;font-weight:800;padding:4px 12px;cursor:pointer;font-family:var(--font)}#jump button:hover{background:var(--azul);color:#fff}#jump small{margin-left:auto;color:var(--mut);font-size:10px}
 
 .col{background:#E9EEF5;border-radius:4px;min-width:250px;width:250px;flex-shrink:0;display:flex;flex-direction:column;min-height:0}
 .col-h{background:var(--azul);color:#fff;padding:11px 12px;font-size:12.5px;flex-shrink:0;font-weight:800;text-transform:uppercase;letter-spacing:.05em;display:flex;justify-content:space-between;border-radius:4px 4px 0 0;border-bottom:3px solid var(--celeste)}
@@ -76,15 +100,19 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 </style>
 </head>
 <body>
-<div class="brand"><div class="in"><span class="lg"></span><div class="tt">Tablero de selección</div></div></div>
-<div class="nav"><div class="in">
-  <button class="it" onclick="cargar()" id="rf">↻ Actualizar</button>
-  <button class="it" onclick="verAgenda()">📅 Agenda</button>
-  <button class="it" onclick="descartes()">✉ Descartes</button>
-  <button class="it" onclick="linkPost()">🔗 Link postulación</button>
-  <button class="it" id="bPerfil" style="display:none" onclick="verPerfil()">📋 Perfil del puesto</button>
-  <button class="it" id="bFlyer" style="display:none" onclick="verFlyer()">📢 Flyer</button>
+<div class="hdr"><div class="in">
+  <span class="lg w"></span>
+  <div class="prod">Atracción y Elección<small class="ver">v12</small></div>
+  <nav>
+    <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
+    <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
+    <button class="ni" onclick="descartes()"><span class="ic o">✉</span><b>Descartes</b></button>
+    <button class="ni" id="bPerfil" style="display:none" onclick="verPerfil()"><span class="ic b">📋</span><b>Perfil del puesto</b></button>
+    <button class="ni" id="bFlyer" style="display:none" onclick="verFlyer()"><span class="ic o">📢</span><b>Flyer</b></button>
+  </nav>
   <span class="sp" id="cnt"></span>
+  <button class="cta" onclick="linkPost()">🔗 Link postulación</button>
+  <button class="av" id="usr" onclick="elegirUsuario()" title="Elegí tu usuario">?</button>
 </div></div>
 <div class="fil">
   <select id="fb"></select>
@@ -100,7 +128,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
   <button class="btn ghost" style="padding:6px 12px;font-size:11px" onclick="limpiar()">Limpiar</button>
   <span id="cf" style="font-size:12px;font-weight:700;color:var(--azul)"></span>
 </div>
-<div id="jump"></div>
+<div id="kpi"></div>
 <div id="board"><div class="loading">Cargando…</div></div>
 <div id="modal"><div class="box" id="mbox"></div></div>
 <div id="fmodal"><div class="fbar"><button class="btn sec" onclick="volverFicha()">← Volver a la ficha</button><span class="ttl" id="ftit"></span></div><div id="fbody"></div></div>
@@ -109,6 +137,24 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 var K = <?!= JSON.stringify(clave) ?>;
 var BASE = <?!= JSON.stringify(url) ?>;
 var D = null, CUR = 0;
+var K0 = K, U = '';
+try { U = localStorage.getItem('pami_user') || ''; } catch (e) { }
+function setK() { K = K0 + (U ? '|' + U.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9 ]/g, '').slice(0, 30) : ''); }
+setK();
+function iniciales(n) { var p = String(n).trim().split(/\s+/); return ((p[0] || '').charAt(0) + (p[1] ? p[1].charAt(0) : (p[0] || '').charAt(1) || '')).toUpperCase(); }
+function pintarUsuario() { var b = document.getElementById('usr'); b.textContent = U ? iniciales(U) : '?'; b.title = U ? 'Usuario: ' + U + ' (tocá para cambiar)' : 'Elegí tu usuario'; }
+function elegirUsuario() {
+  var l = (D && D.entrevistadores) || [];
+  document.getElementById('mbox').innerHTML = '<div class="hd"><div><h2>¿Quién sos?</h2><small>Así queda registrado en el historial quién hizo cada cambio</small></div><button class="x" onclick="cerrar()">×</button></div><div class="bd" style="padding-top:14px">' +
+    l.map(function (n) { return '<button class="btn opt" data-n="' + esc(n) + '" onclick="fijarUsuario(this.dataset.n)">' + esc(n) + '</button>'; }).join('') +
+    '<label class="l" style="margin-top:10px">Otro nombre</label><div style="display:flex;gap:8px"><input id="uOtro" type="text" maxlength="30" placeholder="Nombre"><button class="btn sec" onclick="fijarUsuario(document.getElementById(\'uOtro\').value)">Usar</button></div></div>';
+  document.getElementById('modal').classList.add('show');
+}
+function fijarUsuario(n) {
+  n = String(n || '').trim(); if (!n) return;
+  U = n; try { localStorage.setItem('pami_user', U); } catch (e) { }
+  setK(); pintarUsuario(); cerrar(); toast('Usuario: ' + U);
+}
 var ETQ = {cv:'CV',screening:'Screening',competencias:'Competencias',pami2:'Entrevista técnica'};
 function esc(t){return String(t==null?'':t).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function cls(n){return n==='A'?'nA':n==='B+'?'nBp':n==='B'?'nB':n==='C'?'nC':'';}
@@ -119,12 +165,12 @@ function gs(){return google.script.run;}
 function byFila(f){return D.cands.find(function(x){return x.fila===f;});}
 
 function cargar(){
-  var rf=document.getElementById('rf');rf.textContent='Actualizando…';
+  var rf=document.querySelector('#rf b');rf.textContent='Actualizando…';
   gs().withSuccessHandler(function(j){
-    var primera=!D;D=JSON.parse(j);rf.textContent='↻ Actualizar';
+    var primera=!D;D=JSON.parse(j);rf.textContent='Actualizar';
     if(primera)init();else render();
   }).withFailureHandler(function(e){
-    rf.textContent='↻ Actualizar';
+    rf.textContent='Actualizar';
     if(!D)document.getElementById('board').innerHTML='<div class="loading" style="color:#D9534F">Error al cargar: '+esc(e.message)+'</div>';else toast('No se pudo actualizar');
   }).getTablero(K);
 }
@@ -140,7 +186,7 @@ function init(){
   document.getElementById('fpo').innerHTML+=D.policlinicos.map(function(e){return '<option>'+esc(e)+'</option>';}).join('');
   ['fb','fe','fpo','fsi'].forEach(function(i){document.getElementById(i).onchange=function(){render();perfilBtn();};});
   ['fq','fz','ff','fx','fp'].forEach(function(i){document.getElementById(i).oninput=render;});document.getElementById('fr').onchange=render;
-  render();perfilBtn();
+  render();perfilBtn();pintarUsuario();if(!U)elegirUsuario();
 }
 function limpiar(){['fq','fz','ff','fx','fp','fe','fb','fr','fpo','fsi'].forEach(function(i){document.getElementById(i).value='';});render();perfilBtn();}
 function busqSel(){return D.busquedas.find(function(x){return x.id===document.getElementById('fb').value;});}
@@ -179,25 +225,30 @@ function citaTxt(c){
 function sugN(c){var x=String(c.polSug||'').split(' · ')[0];return D.policlinicos.indexOf(x)>-1?x:'';}
 function sugD(c){var m=String(c.polSug||'').split(' · ')[1];return m?m.replace(/\s*\(.*$/,''):'';}
 function card(c){
-  var t='',ct=citaTxt(c),rc=recom(c);
-  if(rc)t+='<span class="tag rec">★ '+(c.recTipo?'Recomendado: ':'')+esc(rc)+'</span>';
-  if(ct)t+='<span class="tag cita'+(ct.hoy?' hoy':'')+'">📅 '+esc(ct.tipo)+' '+esc(ct.txt)+'</span>';
-  if(c.contactado)t+='<span class="tag g">✓ '+esc(c.contactado)+'</span>';
-  if(!c.policlinico&&sugN(c))t+='<span class="tag sg">★ Sugerido: '+esc(sugN(c).replace('Policlínico ',''))+' · '+esc(sugD(c))+'</span>';
-  if(!c.domicilio)t+='<span class="tag w">'+(c.domRev==='Sin dato'?'📍 Sin domicilio':'📍 Buscando domicilio…')+'</span>';
-  if(c.motivo)t+='<span class="tag r">✖ '+esc(c.motivo)+'</span>';
-  if(c.zona)t+='<span class="tag '+(/fuera/i.test(c.zona)?'zfu':'zok')+'">'+esc(c.zona)+'</span>';
-  if(c.proc&&c.proc!=='SI')t+='<span class="tag w">'+(c.proc==='Pendiente'?'Analizando…':c.proc==='NoCV'?'¿No es un CV?':'Revisar CV')+'</span>';
-  if(/agendad/i.test(c.estado)&&!c.cita)t+='<span class="tag w">Agendado · sin fecha</span>';
-  var dd=dias(c);if(!terminal(c.estado)&&dd>=D.cfg.diasAlerta)t+='<span class="tag r">🕒 '+dd+' d sin movimiento</span>';
-  if(c.descarte)t+='<span class="tag">✉ Descarte enviado</span>';
-  if(c.fuente&&c.fuente!=='Web')t+='<span class="tag">'+esc(c.fuente)+'</span>';
-  var n=ind(c);
-  return '<div class="card '+cls(n)+'" draggable="true" data-fila="'+c.fila+'" ondragstart="event.dataTransfer.setData(\'text\',\''+c.fila+'\')" onclick="abrir('+c.fila+')"><div class="top"><b>'+esc(c.nombre)+'</b><span class="badge '+cls(n)+'">'+(esc(n)||'—')+'</span></div><div class="sub">'+(c.domicilio?'📍 '+esc(c.domicilio)+(c.loc?' · '+esc(c.loc):''):esc(c.loc||'—'))+(c.pret?' · '+esc(money(c.pret)):'')+'</div>'+(c.formacion?'<div class="fo">'+esc(c.formacion)+'</div>':'')+(t?'<div class="tags">'+t+'</div>':'')+'<div class="pol">'+D.policlinicos.map(function(p,i){return '<button type="button" class="p'+(i+1)+(c.policlinico===p?' on':(!c.policlinico&&sugN(c)===p?' sug':''))+'" onclick="event.stopPropagation();asignarPol('+c.fila+','+i+')">'+esc(p.replace('Policlínico ',''))+(!c.policlinico&&sugN(c)===p?' ★':'')+'</button>';}).join('')+'</div></div>';
-}
-function asignarPol(f,i){
-  var c=byFila(f),p=D.policlinicos[i],nuevo=c.policlinico===p?'':p,prev=c.policlinico;c.policlinico=nuevo;render();
-  gs().withSuccessHandler(function(){toast(nuevo||'Sin policlínico');}).withFailureHandler(function(e){c.policlinico=prev;render();fer(e);}).guardarCandidato(K,f,{policlinico:nuevo});
+  var n=ind(c),ct=citaTxt(c),rc=recom(c),dd=dias(c);
+  var ub=c.domicilio?esc(c.domicilio)+(c.loc?' · '+esc(c.loc):''):(c.loc?esc(c.loc):'')+(' <span class="mt">'+(c.domRev==='Sin dato'?'· sin domicilio':'· buscando domicilio…')+'</span>');
+  var zona=c.zona?'<span class="tag '+(/fuera/i.test(c.zona)?'zfu':'zok')+'">'+esc(c.zona)+'</span>':'';
+  var der=(!c.policlinico&&sugN(c))?'<div class="ln sg"><i>🏥</i><span>Sugerido: '+esc(sugN(c).replace('Policlínico ',''))+' · '+esc(sugD(c))+'</span></div>':'';
+  var pr='';
+  if(ct)pr+='<span class="tag cita'+(ct.hoy?' hoy':'')+'">'+esc(ct.tipo)+' '+esc(ct.txt)+'</span>';
+  if(/agendad/i.test(c.estado)&&!c.cita)pr+='<span class="tag w">Agendado · sin fecha</span>';
+  if(c.contactado)pr+='<span class="tag g">✓ '+esc(c.contactado)+'</span>';
+  if(c.descarte)pr+='<span class="tag">✉ Descarte enviado</span>';
+  if(!terminal(c.estado)&&dd>=D.cfg.diasAlerta)pr+='<span class="tag r">🕒 '+dd+' d sin movimiento</span>';
+  var mk='';
+  if(c.motivo)mk+='<span class="tag r">✖ '+esc(c.motivo)+'</span>';
+  if(rc)mk+='<span class="tag rec">★ '+(c.recTipo?'Recomendado: ':'')+esc(rc)+'</span>';
+  if(c.proc&&c.proc!=='SI')mk+='<span class="tag w">'+(c.proc==='Pendiente'?'Analizando CV…':c.proc==='NoCV'?'¿No es un CV?':'Revisar CV')+'</span>';
+  if(c.fuente&&c.fuente!=='Web')mk+='<span class="tag">'+esc(c.fuente)+'</span>';
+  var bt=D.policlinicos.map(function(p,i){return '<button type="button" class="p'+(i+1)+(c.policlinico===p?' on':(!c.policlinico&&sugN(c)===p?' sug':''))+'" onclick="event.stopPropagation();asignarPol('+c.fila+','+i+')">'+esc(p.replace('Policlínico ',''))+(!c.policlinico&&sugN(c)===p?' ★':'')+'</button>';}).join('');
+  return '<div class="card '+cls(n)+'" draggable="true" data-fila="'+c.fila+'" ondragstart="event.dataTransfer.setData(\'text\',\''+c.fila+'\')" onclick="abrir('+c.fila+')">'+
+    '<div class="top"><b>'+esc(c.nombre)+'</b><span class="badge '+cls(n)+'">'+(esc(n)||'—')+'</span></div>'+
+    (c.formacion?'<div class="fo">'+esc(c.formacion)+'</div>':'')+
+    '<div class="ln"><i>📍</i><span>'+ub+(c.pret?' · '+esc(money(c.pret)):'')+' '+zona+'</span></div>'+
+    der+'<div class="pol">'+bt+'</div>'+
+    (pr?'<div class="ln"><i>📅</i><div class="tags">'+pr+'</div></div>':'')+
+    (mk?'<div class="ln"><i>⚑</i><div class="tags">'+mk+'</div></div>':'')+
+    '</div>';
 }
 function dropAttrs(e){return 'data-estado="'+esc(e)+'" ondragover="event.preventDefault();this.classList.add(\'over\')" ondragleave="this.classList.remove(\'over\')" ondrop="soltar(event,this)"';}
 function acordeon(titulo,clase,tipos,lista,re){
@@ -218,14 +269,23 @@ function render(){
   D.estadosCol.forEach(function(col,i){
     var items=lista.filter(function(c){return col[1].indexOf(c.estado)>-1||(i===0&&conocidos.indexOf(c.estado)===-1&&!/^Descartad|reserva/i.test(c.estado));});
     h+='<div class="col'+(col[0]==='Contratado'?' ok':'')+'"><div class="col-h"><span>'+esc(col[0])+'</span><b>'+items.length+'</b></div><div class="col-body" '+dropAttrs(col[2])+'>'+items.map(card).join('')+'</div></div>';
-    if(i===0)h+=acordeon('Descartados','desc',D.desc,lista,/^Descartad/i);
   });
   h+=acordeon('Reservas','res',D.res,lista,/reserva/i);
+  h+=acordeon('Descartados','desc',D.desc,lista,/^Descartad/i);
   document.getElementById('board').innerHTML=h;
-  document.getElementById('jump').innerHTML=[].slice.call(document.querySelectorAll('#board > .col')).map(function(c,i){var n=c.querySelector('.col-h span'),k=c.querySelector('.col-h b');return '<button onclick="irCol('+i+')">'+esc(n?n.textContent:'')+' '+(k?k.textContent:'')+'</button>';}).join('')+'<small>Tablero v11</small>';
+  kpis();
   ajustarBoard();
 }
-function irCol(i){var b=document.getElementById('board'),c=b.querySelectorAll(':scope > .col')[i];if(c)b.scrollTo({left:c.offsetLeft-b.offsetLeft-12,behavior:'smooth'});}
+function kpis(){
+  var hoy=D.ahora.slice(0,10),sem=new Date(D.ahora).getTime()-7*86400000,A=D.cands.filter(function(c){return !/^Descartad|^Contratado/i.test(c.estado);});
+  var nuevos=D.cands.filter(function(c){var m=String(c.fecha).match(/(\d+)\/(\d+)\/(\d+)/);return m&&new Date(m[3],m[2]-1,m[1]).getTime()>=sem;}).length;
+  var citas=D.cands.filter(function(c){return c.cita&&c.cita.ts.slice(0,10)===hoy;}).length;
+  var sinMov=A.filter(function(c){return !terminal(c.estado)&&dias(c)>=D.cfg.diasAlerta;}).length;
+  var sinPol=A.filter(function(c){return !c.policlinico;}).length;
+  var ct=D.cands.filter(function(c){return c.estado==='Contratado';}).length;
+  var k=[['','En proceso',A.length],['c1','Nuevos (7 días)',nuevos],['g','Citas hoy',citas],['w','Sin movimiento',sinMov],['r','Sin policlínico',sinPol],['g','Contratados',ct]];
+  document.getElementById('kpi').innerHTML=k.map(function(x){return '<div class="kp '+x[0]+'"><b>'+x[2]+'</b><span>'+x[1]+'</span></div>';}).join('');
+}
 function ajustarBoard(){var b=document.getElementById('board');b.style.height=Math.max(200,window.innerHeight-b.getBoundingClientRect().top-4)+'px';}
 window.addEventListener('resize',ajustarBoard);window.addEventListener('load',function(){setTimeout(ajustarBoard,300);setTimeout(ajustarBoard,1500);});
 function soltar(ev,el){
