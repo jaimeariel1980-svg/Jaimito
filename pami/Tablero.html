@@ -180,6 +180,7 @@ function card(c){
   if(ct)t+='<span class="tag cita'+(ct.hoy?' hoy':'')+'">📅 '+esc(ct.tipo)+' '+esc(ct.txt)+'</span>';
   if(c.contactado)t+='<span class="tag g">✓ '+esc(c.contactado)+'</span>';
   if(!c.policlinico&&sugN(c))t+='<span class="tag sg">★ Sugerido: '+esc(sugN(c).replace('Policlínico ',''))+' · '+esc(sugD(c))+'</span>';
+  if(!c.domicilio)t+='<span class="tag w">'+(c.domRev==='Sin dato'?'📍 Sin domicilio':'📍 Buscando domicilio…')+'</span>';
   if(c.zona)t+='<span class="tag '+(/fuera/i.test(c.zona)?'zfu':'zok')+'">'+esc(c.zona)+'</span>';
   if(c.proc&&c.proc!=='SI')t+='<span class="tag w">'+(c.proc==='Pendiente'?'Analizando…':c.proc==='NoCV'?'¿No es un CV?':'Revisar CV')+'</span>';
   if(/agendad/i.test(c.estado)&&!c.cita)t+='<span class="tag w">Agendado · sin fecha</span>';
@@ -216,7 +217,7 @@ function render(){
   });
   h+=acordeon('Reservas','res',D.res,lista,/reserva/i);
   document.getElementById('board').innerHTML=h;
-  document.getElementById('jump').innerHTML='<button class="fl" onclick="mover(-1)" title="Mover a la izquierda">◀</button><button class="fl" onclick="mover(1)" title="Mover a la derecha">▶</button>'+[].slice.call(document.querySelectorAll('#board > .col')).map(function(c,i){var n=c.querySelector('.col-h span'),k=c.querySelector('.col-h b');return '<button onclick="irCol('+i+')">'+esc(n?n.textContent:'')+' '+(k?k.textContent:'')+'</button>';}).join('')+'<small>Tablero v7</small>';
+  document.getElementById('jump').innerHTML='<button class="fl" onclick="mover(-1)" title="Mover a la izquierda">◀</button><button class="fl" onclick="mover(1)" title="Mover a la derecha">▶</button>'+[].slice.call(document.querySelectorAll('#board > .col')).map(function(c,i){var n=c.querySelector('.col-h span'),k=c.querySelector('.col-h b');return '<button onclick="irCol('+i+')">'+esc(n?n.textContent:'')+' '+(k?k.textContent:'')+'</button>';}).join('')+'<small>Tablero v8</small>';
   ajustarBoard();
 }
 function irCol(i){var b=document.getElementById('board'),c=b.querySelectorAll(':scope > .col')[i];if(c)b.scrollTo({left:c.offsetLeft-b.offsetLeft-12,behavior:'smooth'});}
