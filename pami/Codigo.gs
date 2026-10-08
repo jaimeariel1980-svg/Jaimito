@@ -1,6 +1,6 @@
 const CUENTA = 'dotacionpp1@gmail.com';
-const HEAD_CAND = ['Fecha', 'Nombre', 'Teléfono', 'DNI', 'Email', 'Localidad', 'Búsqueda', 'Pretensión', 'Nivel de Ajuste', 'Justificación', 'Resumen', 'Requisitos', 'Link CV', 'Estado', 'Entrevistó', 'Nota screening', 'Nota competencias', 'Recomendó', 'Recomendado por', 'Comentarios', 'Respuestas', 'Procesado', 'Intentos', 'Fuente', 'ID', 'Nota PAMI virtual', 'Nota entrevista técnica', 'Cita', 'Entrevistas (calendario)', 'Contactado', 'Descarte enviado', 'Informe screening', 'Informe competencias', 'Último movimiento', 'Zona', 'Formación', 'Postulación', 'Policlínico', 'Domicilio', 'Policlínico sugerido'];
-const COL = { fecha: 1, nombre: 2, tel: 3, dni: 4, email: 5, loc: 6, busq: 7, pret: 8, ajuste: 9, just: 10, resumen: 11, req: 12, cv: 13, estado: 14, entrev: 15, notaScr: 16, notaComp: 17, recTipo: 18, recPor: 19, coment: 20, resp: 21, proc: 22, intentos: 23, fuente: 24, id: 25, notaP1: 26, notaP2: 27, cita: 28, entrevistas: 29, contactado: 30, descarte: 31, infScr: 32, infComp: 33, mov: 34, zona: 35, formacion: 36, postulacion: 37, policlinico: 38, domicilio: 39, polSug: 40 };
+const HEAD_CAND = ['Fecha', 'Nombre', 'Teléfono', 'DNI', 'Email', 'Localidad', 'Búsqueda', 'Pretensión', 'Nivel de Ajuste', 'Justificación', 'Resumen', 'Requisitos', 'Link CV', 'Estado', 'Entrevistó', 'Nota screening', 'Nota competencias', 'Recomendó', 'Recomendado por', 'Comentarios', 'Respuestas', 'Procesado', 'Intentos', 'Fuente', 'ID', 'Nota PAMI virtual', 'Nota entrevista técnica', 'Cita', 'Entrevistas (calendario)', 'Contactado', 'Descarte enviado', 'Informe screening', 'Informe competencias', 'Último movimiento', 'Zona', 'Formación', 'Postulación', 'Policlínico', 'Domicilio', 'Policlínico sugerido', 'Domicilio revisado'];
+const COL = { fecha: 1, nombre: 2, tel: 3, dni: 4, email: 5, loc: 6, busq: 7, pret: 8, ajuste: 9, just: 10, resumen: 11, req: 12, cv: 13, estado: 14, entrev: 15, notaScr: 16, notaComp: 17, recTipo: 18, recPor: 19, coment: 20, resp: 21, proc: 22, intentos: 23, fuente: 24, id: 25, notaP1: 26, notaP2: 27, cita: 28, entrevistas: 29, contactado: 30, descarte: 31, infScr: 32, infComp: 33, mov: 34, zona: 35, formacion: 36, postulacion: 37, policlinico: 38, domicilio: 39, polSug: 40, domRev: 41 };
 const POLICLINICOS = ['Policlínico PAMI 1', 'Policlínico PAMI 2'];
 const NOTAS = ['', 'A', 'B+', 'B', 'C'];
 const HEAD_BUSQ = ['id', 'titulo', 'ubicacion', 'modalidad', 'descripcion', 'requisitos', 'estado', 'prompt_ia', 'recomendacion', 'palabras_clave', 'link_perfil', 'link_flyer'];
@@ -241,14 +241,14 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '5';
+const ESQUEMA = '6';
 
 function actualizarEsquema_() {
   const props = PropertiesService.getScriptProperties();
   if (props.getProperty('ESQUEMA') === ESQUEMA) return;
   const sh = hoja_('Candidatos');
   const pasos = [
-    () => [[COL.policlinico, 'Policlínico'], [COL.domicilio, 'Domicilio'], [COL.polSug, 'Policlínico sugerido'], [COL.notaP2, 'Nota entrevista técnica']].forEach(x => {
+    () => [[COL.policlinico, 'Policlínico'], [COL.domicilio, 'Domicilio'], [COL.polSug, 'Policlínico sugerido'], [COL.domRev, 'Domicilio revisado'], [COL.notaP2, 'Nota entrevista técnica']].forEach(x => {
       const c = sh.getRange(1, x[0]);
       const v = String(c.getValue()).trim();
       if (!v || (x[0] === COL.notaP2 && v === 'Nota PAMI presencial')) c.setValue(x[1]).setFontWeight('bold').setBackground('#034EA2').setFontColor('#FFFFFF');
@@ -637,7 +637,7 @@ function ciclo() {
   const lock = LockService.getUserLock();
   if (!lock.tryLock(1000)) return;
   try {
-    [actualizarEsquema_, procesarCorreos, procesarCarpeta, procesarPendientes, sugerirPendientes_, syncCalendario].forEach(fn => { try { fn(); } catch (e) { registrarError_(fn.name, e); } });
+    [actualizarEsquema_, procesarCorreos, procesarCarpeta, procesarPendientes, completarDomicilios_, sugerirPendientes_, syncCalendario].forEach(fn => { try { fn(); } catch (e) { registrarError_(fn.name, e); } });
   } finally { lock.releaseLock(); }
 }
 
@@ -695,5 +695,44 @@ function sugerirPendientes_() {
     if (!d[i][COL.nombre - 1] || !String(d[i][COL.domicilio - 1] || '').trim() || String(d[i][COL.polSug - 1] || '').trim()) continue;
     try { sugerirPoliclinico_(i + 1); } catch (e) { registrarError_('sugerir policlínico fila ' + (i + 1), e); break; }
     n++;
+  }
+}
+
+
+function domicilioDeCV_(texto) {
+  const resp = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+    headers: { Authorization: 'Bearer ' + prop_('OPENAI_API_KEY') },
+    payload: JSON.stringify({ model: 'gpt-4o-mini', response_format: { type: 'json_object' }, messages: [
+      { role: 'system', content: 'Del texto de un currículum extraé únicamente el domicilio de residencia del candidato (calle, número y barrio o localidad). Devolvé SOLO JSON {"domicilio":"..."} con cadena vacía si el CV no lo indica. No inventes nada.' },
+      { role: 'user', content: String(texto).slice(0, 6000) }] })
+  });
+  const parsed = JSON.parse(resp.getContentText());
+  if (parsed.error) throw new Error('OpenAI: ' + parsed.error.message);
+  return String(JSON.parse(parsed.choices[0].message.content).domicilio || '').trim().slice(0, 200);
+}
+
+function completarDomicilios_() {
+  const sh = hoja_('Candidatos');
+  const d = sh.getDataRange().getValues();
+  let n = 0;
+  for (let i = 1; i < d.length && n < 4; i++) {
+    const r = d[i];
+    if (!r[COL.nombre - 1] || !r[COL.cv - 1] || String(r[COL.domicilio - 1] || '').trim()) continue;
+    const rev = String(r[COL.domRev - 1] || '');
+    if (rev === 'OK' || rev === 'Sin dato') continue;
+    const fila = i + 1;
+    n++;
+    const texto = textoCV_(r[COL.cv - 1]);
+    if (!texto || texto.trim().length < 50) {
+      const k = (Number(rev) || 0) + 1;
+      sh.getRange(fila, COL.domRev).setValue(k >= 3 ? 'Sin dato' : String(k));
+      continue;
+    }
+    const dom = domicilioDeCV_(texto);
+    if (!dom) { sh.getRange(fila, COL.domRev).setValue('Sin dato'); continue; }
+    sh.getRange(fila, COL.domicilio).setValue(dom);
+    sh.getRange(fila, COL.domRev).setValue('OK');
+    try { sugerirPoliclinico_(fila); } catch (e) { registrarError_('sugerir policlínico fila ' + fila, e); }
   }
 }
