@@ -113,7 +113,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v14</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v15</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -141,8 +141,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 </div>
 <div id="kpi"></div>
 <div id="board"><div class="loading">Cargando…</div></div>
-<div id="login"><div class="lbox"><span class="lg"></span><h2>Atracción y Elección</h2><p>Ingresá con tu nombre y tu PIN</p>
-  <div class="lt"><button id="lTi" onclick="modoLogin('in')">Ingresar</button><button id="lTn" onclick="modoLogin('new')">Crear usuario</button></div>
+<div id="login"><div class="lbox"><span class="lg"></span><h2>Atracción y Elección</h2><p id="lSub">Ingresá con tu nombre y tu PIN</p>
   <input id="lU" type="text" maxlength="30" placeholder="Tu nombre y apellido" autocomplete="off">
   <input id="lP" type="password" inputmode="numeric" maxlength="6" placeholder="PIN (4 a 6 números)" autocomplete="off">
   <div id="lP2w" style="display:none"><input id="lP2" type="password" inputmode="numeric" maxlength="6" placeholder="Repetí el PIN" autocomplete="off"></div>
@@ -164,17 +163,15 @@ function msgLogin(e) { return String((e && e.message) || e).replace(/^[\s\S]*LOG
 function lerr(m) { document.getElementById('lE').textContent = m || ''; }
 function modoLogin(m) {
   LM = m;
-  document.getElementById('lTi').className = m === 'in' ? 'on' : '';
-  document.getElementById('lTn').className = m === 'new' ? 'on' : '';
   document.getElementById('lP2w').style.display = m === 'new' ? '' : 'none';
-  document.getElementById('lB').textContent = m === 'new' ? 'Crear usuario y entrar' : 'Entrar';
+  document.getElementById('lSub').textContent = m === 'new' ? 'Primer ingreso: creá el usuario administrador' : 'Ingresá con tu nombre y tu PIN. Si todavía no tenés usuario, pedíselo al administrador.';
+  document.getElementById('lB').textContent = m === 'new' ? 'Crear administrador y entrar' : 'Entrar';
   lerr('');
 }
 function mostrarLogin(msg) {
   document.getElementById('login').classList.add('show');
-  lerr(msg || '');
   document.getElementById('lB').disabled = false;
-  if (LM === null) gs().withSuccessHandler(function (r) { modoLogin(r.pin ? 'in' : 'new'); }).withFailureHandler(function () { modoLogin('in'); }).getLogin(K0);
+  gs().withSuccessHandler(function (r) { modoLogin(r.pin ? 'in' : 'new'); lerr(msg || ''); }).withFailureHandler(function () { modoLogin('in'); lerr(msg || ''); }).getLogin(K0);
 }
 function entrar() {
   var nm = document.getElementById('lU').value.trim(), pn = document.getElementById('lP').value.trim();
@@ -189,7 +186,7 @@ function entrar() {
 }
 function conectar(nm, pn) { U = nm; P = pn; setK(); cargar(); }
 function menuUsuario() {
-  document.getElementById('mbox').innerHTML = '<div class="hd"><div><h2>' + esc(U || 'Usuario') + '</h2><small>Tu usuario queda registrado en el historial</small></div><button class="x" onclick="cerrar()">×</button></div><div class="bd" style="padding-top:14px"><button class="btn opt" onclick="cambiarMiPin()">🔑 Cambiar mi PIN</button><button class="btn sec opt" onclick="cerrarSesion()">Cerrar sesión</button></div>';
+  document.getElementById('mbox').innerHTML = '<div class="hd"><div><h2>' + esc(U || 'Usuario') + '</h2><small>Tu usuario queda registrado en el historial</small></div><button class="x" onclick="cerrar()">×</button></div><div class="bd" style="padding-top:14px"><button class="btn opt" onclick="cambiarMiPin()">🔑 Cambiar mi PIN</button>' + (D && D.admin ? '<button class="btn opt" onclick="panelUsuarios()">👥 Usuarios</button>' : '') + '<button class="btn sec opt" onclick="cerrarSesion()">Cerrar sesión</button></div>';
   document.getElementById('modal').classList.add('show');
 }
 function cambiarMiPin() {
@@ -197,6 +194,27 @@ function cambiarMiPin() {
   if (!/^\d{4,6}$/.test(n)) { alert('El PIN tiene que ser de 4 a 6 números'); return; }
   gs().withSuccessHandler(function () { P = n; setK(); try { localStorage.setItem('pami_pin', P); } catch (e) { } cerrar(); toast('PIN actualizado'); }).withFailureHandler(function (e) { alert(msgLogin(e)); }).cambiarPin(K, n);
 }
+function panelUsuarios() {
+  document.getElementById('mbox').innerHTML = '<div class="hd"><div><h2>Usuarios</h2><small>Solo vos podés dar de alta, bloquear o reiniciar el PIN</small></div><button class="x" onclick="cerrar()">×</button></div><div class="bd" id="usl"><div class="loading">Cargando…</div></div>';
+  document.getElementById('modal').classList.add('show');
+  gs().withSuccessHandler(function (l) {
+    var e = document.getElementById('usl'); if (!e) return;
+    e.innerHTML = '<button class="btn" style="margin:14px 0" onclick="nuevoUsuario()">＋ Nuevo usuario</button>' + l.map(function (u) {
+      return '<div class="row" style="align-items:center"><span class="v"><b>' + esc(u.nombre) + '</b>' + (u.admin ? ' <span class="tag">Admin</span>' : '') + (u.activo ? '' : ' <span class="tag r">Bloqueado</span>') + '</span>' +
+        '<button class="btn ghost" style="padding:6px 10px;font-size:11px" data-n="' + esc(u.nombre) + '" onclick="reiniciarPinU(this.dataset.n)">Reiniciar PIN</button>' +
+        (u.admin ? '' : '<button class="btn sec" style="padding:6px 10px;font-size:11px;margin-left:6px" data-n="' + esc(u.nombre) + '" data-a="' + (u.activo ? '0' : '1') + '" onclick="activarU(this.dataset.n,this.dataset.a===\'1\')">' + (u.activo ? 'Bloquear' : 'Habilitar') + '</button>') + '</div>';
+    }).join('');
+  }).withFailureHandler(fer).listarUsuarios(K);
+}
+function nuevoUsuario() {
+  var n = prompt('Nombre y apellido de la persona:'); if (!n || !n.trim()) return;
+  gs().withSuccessHandler(function (r) { alert('Usuario creado: ' + r.nombre + '\nPIN: ' + r.pin + '\n\nPasale este PIN. Después puede cambiarlo desde su avatar.'); panelUsuarios(); }).withFailureHandler(fer).crearUsuario(K, n.trim());
+}
+function reiniciarPinU(n) {
+  if (!confirm('¿Reiniciar el PIN de ' + n + '?')) return;
+  gs().withSuccessHandler(function (r) { alert('Nuevo PIN de ' + r.nombre + ': ' + r.pin); }).withFailureHandler(fer).reiniciarPin(K, n);
+}
+function activarU(n, a) { gs().withSuccessHandler(panelUsuarios).withFailureHandler(fer).activarUsuario(K, n, a); }
 function cerrarSesion() { try { localStorage.removeItem('pami_user'); localStorage.removeItem('pami_pin'); } catch (e) { } location.reload(); }
 var ETQ = {cv:'CV',screening:'Screening',competencias:'Competencias',pami2:'Entrevista técnica'};
 function esc(t){return String(t==null?'':t).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
