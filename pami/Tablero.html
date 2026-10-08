@@ -181,6 +181,7 @@ function card(c){
   if(c.contactado)t+='<span class="tag g">✓ '+esc(c.contactado)+'</span>';
   if(!c.policlinico&&sugN(c))t+='<span class="tag sg">★ Sugerido: '+esc(sugN(c).replace('Policlínico ',''))+' · '+esc(sugD(c))+'</span>';
   if(!c.domicilio)t+='<span class="tag w">'+(c.domRev==='Sin dato'?'📍 Sin domicilio':'📍 Buscando domicilio…')+'</span>';
+  if(c.motivo)t+='<span class="tag r">✖ '+esc(c.motivo)+'</span>';
   if(c.zona)t+='<span class="tag '+(/fuera/i.test(c.zona)?'zfu':'zok')+'">'+esc(c.zona)+'</span>';
   if(c.proc&&c.proc!=='SI')t+='<span class="tag w">'+(c.proc==='Pendiente'?'Analizando…':c.proc==='NoCV'?'¿No es un CV?':'Revisar CV')+'</span>';
   if(/agendad/i.test(c.estado)&&!c.cita)t+='<span class="tag w">Agendado · sin fecha</span>';
@@ -217,7 +218,7 @@ function render(){
   });
   h+=acordeon('Reservas','res',D.res,lista,/reserva/i);
   document.getElementById('board').innerHTML=h;
-  document.getElementById('jump').innerHTML=[].slice.call(document.querySelectorAll('#board > .col')).map(function(c,i){var n=c.querySelector('.col-h span'),k=c.querySelector('.col-h b');return '<button onclick="irCol('+i+')">'+esc(n?n.textContent:'')+' '+(k?k.textContent:'')+'</button>';}).join('')+'<small>Tablero v9</small>';
+  document.getElementById('jump').innerHTML=[].slice.call(document.querySelectorAll('#board > .col')).map(function(c,i){var n=c.querySelector('.col-h span'),k=c.querySelector('.col-h b');return '<button onclick="irCol('+i+')">'+esc(n?n.textContent:'')+' '+(k?k.textContent:'')+'</button>';}).join('')+'<small>Tablero v10</small>';
   ajustarBoard();
 }
 function irCol(i){var b=document.getElementById('board'),c=b.querySelectorAll(':scope > .col')[i];if(c)b.scrollTo({left:c.offsetLeft-b.offsetLeft-12,behavior:'smooth'});}
@@ -257,6 +258,7 @@ function volverFicha(){document.getElementById('fmodal').classList.remove('show'
 function abrir(f){
   CUR=f;var c=byFila(f);if(!c)return;
   var rec=defRec(c.busq),n=ind(c),ct=citaTxt(c),dd=dias(c),al='';
+  if(c.motivo)al+='<div class="alerta a3">✖ Motivo de descarte: '+esc(c.motivo)+'</div>';
   if(recom(c))al+='<div class="alerta rec">★ '+(c.recTipo?'Recomendado por: ':'')+esc(recom(c))+'</div>';
   if(ct)al+='<div class="alerta '+(ct.hoy?'a3':'a1')+'">📅 '+esc(ct.tipo)+': '+esc(ct.txt)+'</div>';
   if(c.proc==='NoCV')al+='<div class="alerta a2">La IA no reconoció el adjunto como un CV. Revisalo a mano.</div>';
@@ -278,8 +280,8 @@ function abrir(f){
     '<div class="btns">'+(c.cv?'<a class="btn ghost" target="_blank" href="'+esc(c.cv)+'">📄 Ver CV</a>':'')+(c.tel?'<button class="btn wa" onclick="menuWA('+f+')">💬 WhatsApp ▾</button>':'')+(/@/.test(c.email||'')?'<a class="btn ghost" target="_blank" href="https://mail.google.com/mail/?view=cm&to='+encodeURIComponent(c.email)+'">✉ Mail</a>':'')+'<button class="btn cel" onclick="agendar('+f+')">📅 Agendar</button>'+(puedeDesc?'<button class="btn red" onclick="descarteMail('+f+',this)">✉ Descarte por mail</button>':'')+(c.proc!=='SI'?'<button class="btn sec" onclick="rean('+f+',this)">↻ Re-analizar CV</button>':'')+(c.contactado?'<button class="btn sec" onclick="borrarMarca('+f+')">✕ Borrar marca de contacto</button>':'')+'</div>'+
     (c.entrevistas?'<div class="sec">Entrevistas (calendario)</div><div class="txt">'+esc(c.entrevistas)+'</div>':'')+
     '<div class="sec">Gestión</div><div class="grid"><div class="full"><label class="l">Búsqueda</label><select id="gB">'+(c.busq?'':'<option value="">— Sin asignar —</option>')+D.busquedas.map(function(b){return '<option value="'+esc(b.id)+'"'+(b.id===c.busq?' selected':'')+'>'+esc(b.titulo)+'</option>';}).join('')+'</select></div>'+
-    '<div><label class="l">Policlínico</label><select id="gP">'+opts(D.policlinicos,c.policlinico,'— Sin asignar —')+'</select></div><div><label class="l">Estado</label><select id="gE">'+opts(D.todos,c.estado)+'</select></div><div><label class="l">Entrevistó</label><select id="gN">'+opts(D.entrevistadores,c.entrev,'—')+'</select></div>'+recHtml+'</div>'+
-    '<div style="margin-top:10px"><label class="l">Comentarios</label><textarea id="gM" rows="3">'+esc(c.coment)+'</textarea></div><div class="btns"><button class="btn ok" id="gb" onclick="guardar('+f+')">Guardar</button></div>'+
+    '<div><label class="l">Policlínico</label><select id="gP">'+opts(D.policlinicos,c.policlinico,'— Sin asignar —')+'</select></div><div><label class="l">Estado</label><select id="gE">'+opts(D.todos,c.estado)+'</select></div><div><label class="l">Entrevistó</label><select id="gN">'+opts(D.entrevistadores,c.entrev,'—')+'</select></div><div><label class="l">Motivo de descarte</label><select id="gMo"'+(/^Descartado/.test(c.estado)&&!c.motivo?' style="border-color:#D9534F"':'')+'>'+opts(D.motivos,c.motivo,'— Sin motivo —')+'</select></div>'+recHtml+'</div>'+
+    '<div style="margin-top:10px"><label class="l">Observaciones (ampliá el motivo o cualquier dato)</label><textarea id="gM" rows="3">'+esc(c.coment)+'</textarea></div><div class="btns"><button class="btn ok" id="gb" onclick="guardar('+f+')">Guardar</button></div>'+
     '<div class="sec">Historial</div><div class="hist" id="hist">Cargando…</div></div>';
   document.getElementById('modal').classList.add('show');
   if(rec)rcVer(true);
@@ -305,7 +307,7 @@ function nota(f,et,n,btn){
 }
 function guardar(f){
   var c=byFila(f);
-  var o={busq:document.getElementById('gB').value,estado:document.getElementById('gE').value,entrev:document.getElementById('gN').value,policlinico:document.getElementById('gP').value,coment:document.getElementById('gM').value};
+  var o={busq:document.getElementById('gB').value,estado:document.getElementById('gE').value,entrev:document.getElementById('gN').value,motivo:document.getElementById('gMo').value,policlinico:document.getElementById('gP').value,coment:document.getElementById('gM').value};
   var rec=defRec(c.busq);
   if(rec){var t=document.getElementById('rcT').value;o.recTipo=t;o.recPor=t?(rec[t]?[].slice.call(document.querySelectorAll('#rcS input:checked')).map(function(x){return x.value;}).join('; '):document.getElementById('rcN').value.trim()):'';}
   var b=document.getElementById('gb');b.textContent='Guardando…';b.disabled=true;
