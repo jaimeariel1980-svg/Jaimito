@@ -11,7 +11,7 @@
 <style>
 .fil{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:8px 20px;background:#fff;border-bottom:1px solid var(--line)}
 .fil select,.fil input{width:auto;padding:7px 10px;font-size:12px}
-#board{display:flex;gap:12px;padding:14px 20px 40px;overflow-x:auto;align-items:flex-start;min-height:70vh}
+#board{display:flex;gap:12px;padding:14px 20px 12px;overflow:auto;align-items:flex-start;min-height:200px}
 .col{background:#E9EEF5;border-radius:4px;min-width:236px;width:236px;flex-shrink:0}
 .col-h{background:var(--azul);color:#fff;padding:9px 12px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;display:flex;justify-content:space-between;border-radius:4px 4px 0 0;border-bottom:3px solid var(--celeste)}
 .col.desc .col-h{background:#8B2E2B;border-bottom-color:#D9534F}
@@ -162,6 +162,7 @@ function card(c){
   if(rc)t+='<span class="tag rec">★ '+(c.recTipo?'Recomendado: ':'')+esc(rc)+'</span>';
   if(ct)t+='<span class="tag cita'+(ct.hoy?' hoy':'')+'">📅 '+esc(ct.tipo)+' '+esc(ct.txt)+'</span>';
   if(c.contactado)t+='<span class="tag g">✓ '+esc(c.contactado)+'</span>';
+  if(c.policlinico)t+='<span class="tag">'+esc(c.policlinico.replace('Policlínico ',''))+'</span>';
   if(c.zona)t+='<span class="tag '+(/fuera/i.test(c.zona)?'zfu':'zok')+'">'+esc(c.zona)+'</span>';
   if(c.proc&&c.proc!=='SI')t+='<span class="tag w">'+(c.proc==='Pendiente'?'Analizando…':c.proc==='NoCV'?'¿No es un CV?':'Revisar CV')+'</span>';
   if(/agendad/i.test(c.estado)&&!c.cita)t+='<span class="tag w">Agendado · sin fecha</span>';
@@ -193,8 +194,10 @@ function render(){
     if(i===0)h+=acordeon('Descartados','desc',D.desc,lista,/^Descartad/i);
   });
   h+=acordeon('Reservas','res',D.res,lista,/reserva/i);
-  document.getElementById('board').innerHTML=h;
+  document.getElementById('board').innerHTML=h;ajustarBoard();
 }
+function ajustarBoard(){var b=document.getElementById('board');b.style.height=Math.max(200,window.innerHeight-b.getBoundingClientRect().top-4)+'px';}
+window.addEventListener('resize',ajustarBoard);
 function soltar(ev,el){
   ev.preventDefault();el.classList.remove('over');
   var f=Number(ev.dataTransfer.getData('text')),estado=el.dataset.estado,c=byFila(f);
@@ -238,19 +241,19 @@ function abrir(f){
   var etapasNota=['cv','screening','competencias'];
   if(c.notaP1||c.notaP2||/PAMI|Contratado/.test(c.estado))etapasNota=etapasNota.concat(['pami1','pami2']);
   var vals={cv:c.ajuste,screening:c.notaScr,competencias:c.notaComp,pami1:c.notaP1,pami2:c.notaP2};
-  var recHtml=rec?'<div><label class="l">Recomendado por</label><select id="rcT" onchange="rcVer()">'+opts(Object.keys(rec),c.recTipo,'— Nadie —')+'</select></div><div><label class="l">&nbsp;</label><select id="rcS" style="display:none"></select><input id="rcN" type="text" placeholder="Nombre y apellido" style="display:none" value="'+esc(c.recPor)+'"></div>':'';
+  var recHtml=rec?'<div><label class="l">Recomendado por</label><select id="rcT" onchange="rcVer()">'+opts(Object.keys(rec),c.recTipo,'— Nadie —')+'</select></div><div><label class="l">&nbsp;</label><div id="rcS" style="display:none;max-height:130px;overflow:auto;border:1px solid var(--line);border-radius:4px;padding:4px 8px"></div><input id="rcN" type="text" placeholder="Nombre y apellido" style="display:none" value="'+esc(c.recPor)+'"></div>':'';
   var resp=c.resp.length?'<div class="sec">Respuestas del formulario</div>'+c.resp.map(function(r){return '<div class="row"><span class="l" style="width:55%">'+esc(r.q)+'</span><span class="v">'+esc(r.a)+'</span></div>';}).join(''):'';
   var puedeDesc=/^Descartado (sin|post) screening$/.test(c.estado)&&!c.descarte&&/@/.test(c.email||'');
   document.getElementById('mbox').innerHTML=
     '<div class="hd"><div><h2>'+esc(c.nombre)+' <span class="badge '+cls(n)+'" style="vertical-align:middle">'+(esc(n)||'—')+'</span></h2><small>'+esc(tit(c.busq))+' · '+esc(c.estado)+'</small></div><button class="x" onclick="cerrar()">×</button></div><div class="bd">'+al+
-    '<div class="sec">Datos</div>'+row('Recibido',c.fecha)+row('Llegó por',c.fuente)+row('Estado',c.estado)+row('Localidad',c.loc)+row('Zona',c.zona)+row('Formación',c.formacion)+row('Teléfono',c.tel)+row('DNI',c.dni)+row('Email',c.email)+row('Pretensión',money(c.pret))+row('Conoce a alguien en PAMI',c.conoce)+row('Último contacto',c.contactado)+row('Descarte',c.descarte)+
+    '<div class="sec">Datos</div>'+row('Recibido',c.fecha)+row('Llegó por',c.fuente)+row('Estado',c.estado)+row('Localidad',c.loc)+row('Zona',c.zona)+row('Policlínico',c.policlinico)+row('Formación',c.formacion)+row('Teléfono',c.tel)+row('DNI',c.dni)+row('Email',c.email)+row('Pretensión',money(c.pret))+row('Conoce a alguien en PAMI',c.conoce)+row('Último contacto',c.contactado)+row('Descarte',c.descarte)+
     (c.just?'<div class="sec">Análisis del CV</div><div class="txt"><b>'+esc(c.just)+'</b></div>':'')+(c.resumen?'<div class="txt" style="margin-top:6px">'+esc(c.resumen)+'</div>':'')+(c.req?'<div class="txt" style="margin-top:6px;color:#5D6B82">'+esc(c.req)+'</div>':'')+resp+
     '<div class="sec">Calificaciones</div><div id="notas">'+etapasNota.map(function(et){return notaRow(c,et,vals[et]);}).join('')+'</div>'+
     '<div class="btns"><button class="btn" onclick="abrirForm(\'screening\','+f+')">📝 Formulario screening</button><button class="btn" onclick="abrirForm(\'competencias\','+f+')">💼 Formulario competencias</button>'+(c.infScr?'<a class="btn ghost" target="_blank" href="'+esc(c.infScr)+'">Ver screening</a>':'')+(c.infComp?'<a class="btn ghost" target="_blank" href="'+esc(c.infComp)+'">Ver competencias</a>':'')+(c.resp.length?'<button class="btn ghost" onclick="verPost('+f+',this)">📋 Ver postulación</button>':'')+'</div>'+
     '<div class="btns">'+(c.cv?'<a class="btn ghost" target="_blank" href="'+esc(c.cv)+'">📄 Ver CV</a>':'')+(c.tel?'<button class="btn wa" onclick="menuWA('+f+')">💬 WhatsApp ▾</button>':'')+(/@/.test(c.email||'')?'<a class="btn ghost" target="_blank" href="https://mail.google.com/mail/?view=cm&to='+encodeURIComponent(c.email)+'">✉ Mail</a>':'')+'<button class="btn cel" onclick="agendar('+f+')">📅 Agendar</button>'+(puedeDesc?'<button class="btn red" onclick="descarteMail('+f+',this)">✉ Descarte por mail</button>':'')+(c.proc!=='SI'?'<button class="btn sec" onclick="rean('+f+',this)">↻ Re-analizar CV</button>':'')+(c.contactado?'<button class="btn sec" onclick="borrarMarca('+f+')">✕ Borrar marca de contacto</button>':'')+'</div>'+
     (c.entrevistas?'<div class="sec">Entrevistas (calendario)</div><div class="txt">'+esc(c.entrevistas)+'</div>':'')+
     '<div class="sec">Gestión</div><div class="grid"><div class="full"><label class="l">Búsqueda</label><select id="gB">'+(c.busq?'':'<option value="">— Sin asignar —</option>')+D.busquedas.map(function(b){return '<option value="'+esc(b.id)+'"'+(b.id===c.busq?' selected':'')+'>'+esc(b.titulo)+'</option>';}).join('')+'</select></div>'+
-    '<div><label class="l">Estado</label><select id="gE">'+opts(D.todos,c.estado)+'</select></div><div><label class="l">Entrevistó</label><select id="gN">'+opts(D.entrevistadores,c.entrev,'—')+'</select></div>'+recHtml+'</div>'+
+    '<div><label class="l">Policlínico</label><select id="gP">'+opts(D.policlinicos,c.policlinico,'— Sin asignar —')+'</select></div><div><label class="l">Estado</label><select id="gE">'+opts(D.todos,c.estado)+'</select></div><div><label class="l">Entrevistó</label><select id="gN">'+opts(D.entrevistadores,c.entrev,'—')+'</select></div>'+recHtml+'</div>'+
     '<div style="margin-top:10px"><label class="l">Comentarios</label><textarea id="gM" rows="3">'+esc(c.coment)+'</textarea></div><div class="btns"><button class="btn ok" id="gb" onclick="guardar('+f+')">Guardar</button></div>'+
     '<div class="sec">Historial</div><div class="hist" id="hist">Cargando…</div></div>';
   document.getElementById('modal').classList.add('show');
@@ -263,7 +266,7 @@ function abrir(f){
 function verPost(f,btn){btn.textContent='Generando…';btn.disabled=true;gs().withSuccessHandler(function(u){btn.textContent='📋 Ver postulación';btn.disabled=false;window.open(u,'_blank');}).withFailureHandler(function(e){btn.textContent='📋 Ver postulación';btn.disabled=false;fer(e);}).postulacionPdf(K,f);}
 function rcVer(inicial){
   var c=byFila(CUR),rec=defRec(c.busq),t=document.getElementById('rcT').value,s=document.getElementById('rcS'),n=document.getElementById('rcN'),l=rec[t];
-  if(l){s.innerHTML=opts(l,inicial===true?c.recPor:'');s.style.display='';n.style.display='none';}else{s.style.display='none';n.style.display=t?'':'none';}
+  if(l){var sel=inicial===true?String(c.recPor||'').split(';').map(function(x){return x.trim();}):[];s.innerHTML=l.map(function(o){return '<label style="display:block;font-size:13px;padding:2px 0;font-weight:600"><input type="checkbox" value="'+esc(o)+'"'+(sel.indexOf(o)>-1?' checked':'')+' style="width:auto;margin-right:6px">'+esc(o)+'</label>';}).join('');s.style.display='';n.style.display='none';}else{s.style.display='none';n.style.display=t?'':'none';}
 }
 function cerrar(){document.getElementById('modal').classList.remove('show');}
 document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)cerrar();});
@@ -277,9 +280,9 @@ function nota(f,et,n,btn){
 }
 function guardar(f){
   var c=byFila(f);
-  var o={busq:document.getElementById('gB').value,estado:document.getElementById('gE').value,entrev:document.getElementById('gN').value,coment:document.getElementById('gM').value};
+  var o={busq:document.getElementById('gB').value,estado:document.getElementById('gE').value,entrev:document.getElementById('gN').value,policlinico:document.getElementById('gP').value,coment:document.getElementById('gM').value};
   var rec=defRec(c.busq);
-  if(rec){var t=document.getElementById('rcT').value;o.recTipo=t;o.recPor=t?(rec[t]?document.getElementById('rcS').value:document.getElementById('rcN').value.trim()):'';}
+  if(rec){var t=document.getElementById('rcT').value;o.recTipo=t;o.recPor=t?(rec[t]?[].slice.call(document.querySelectorAll('#rcS input:checked')).map(function(x){return x.value;}).join('; '):document.getElementById('rcN').value.trim()):'';}
   var b=document.getElementById('gb');b.textContent='Guardando…';b.disabled=true;
   gs().withSuccessHandler(function(){for(var k in o)c[k]=o[k];cerrar();render();toast();cargar();}).withFailureHandler(function(e){b.textContent='Guardar';b.disabled=false;fer(e);}).guardarCandidato(K,f,o);
 }
