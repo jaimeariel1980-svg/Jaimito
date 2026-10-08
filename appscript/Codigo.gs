@@ -200,7 +200,9 @@ function precargarDatos(datos, archivosBase64) {
   const urlsGuardadas = _guardarArchivos(carpeta, datos.codigoPrecarga, datos.calle, datos.numero, archivos);
   const estadoDocs = _calcularEstadoDesdeCarpeta(carpeta);
 
-  _guardarFila(sheet, datos, carpeta.getUrl(), estadoDocs, {});
+  const verificando = {};
+  Object.keys(archivos).forEach(k => { verificando[k] = 'Verificando…'; });
+  _guardarFila(sheet, datos, carpeta.getUrl(), estadoDocs, verificando);
   try { if (typeof azcuLimpiarCache_ === 'function') azcuLimpiarCache_(); } catch (e) {}
 
   if (esNuevo) {
@@ -956,7 +958,9 @@ function _guardarVerificacionIA_(sheet, codigo, verificacionIA) {
     if (verificacionIA[d.key] === undefined) return;
     let col = headers.indexOf('Verificación IA: ' + d.label) + 1;
     if (col < 1) { col = headers.length + 1; sheet.getRange(1, col).setValue('Verificación IA: ' + d.label); headers.push('Verificación IA: ' + d.label); }
-    sheet.getRange(fila, col).setValue(verificacionIA[d.key]);
+    const celda = sheet.getRange(fila, col);
+    if (String(celda.getValue()).trim() !== 'Verificando…') return; // alguien ya lo volvió a subir/verificar: no pisar
+    celda.setValue(verificacionIA[d.key]);
   });
 }
 

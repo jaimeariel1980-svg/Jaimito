@@ -902,6 +902,7 @@ function papBadge(p){const e=papEstado(p.papeles);if(!e)return'';const pc=papPct
  */
 function verifBadge(estado){
   if(!estado) return '';
+  if(estado==='Verificando…') return '<span style="font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:10px;background:#eef2f9;color:#1b3866;white-space:nowrap;margin:0 6px" title="La IA todavía está revisando este documento">IA: verificando…</span>';
   const ok=estado.indexOf('Verificado OK')===0;
   const sinVerificar=estado.indexOf('No verificado')===0;
   const bg=ok?'#eaf5ea':(sinVerificar?'#f1f2f4':'#fdeceb');
