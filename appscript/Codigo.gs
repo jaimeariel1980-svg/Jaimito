@@ -1872,8 +1872,10 @@ function guardarPropiedad(codigo, cambios){
     } else if(MAP_CAMPOS[campo]){
       var col=MAP_CAMPOS[campo], av=leer(col), nv=(cambios[campo]==null?'':String(cambios[campo])).trim();
       if(/^(boleto|boletoOk|escritura|escrituraOk)$/.test(campo)){ av=_fechaISO_(crudo(col)); nv=_fechaISO_(nv); }
+      var valor=cambios[campo];
+      if(campo==='precio'){ av=av.replace(/[^\d]/g,''); nv=nv.replace(/[^\d]/g,''); valor=nv?Number(nv):''; }
       if(av.replace(/\s+/g,' ')!==nv.replace(/\s+/g,' ') && ETQ[campo] && !(av==='' && (nv==='' || (campo==='origen' && nv==='Propia')))) difs.push(ETQ[campo]+': '+(av||'—')+' → '+(nv||'—'));
-      set(col, cambios[campo], /^(boleto|boletoOk|escritura|escrituraOk)$/.test(campo) ? (av===nv) : undefined);
+      set(col, valor, /^(boleto|boletoOk|escritura|escrituraOk|precio)$/.test(campo) ? (av===nv) : undefined);
     }
   });
   set('Última actualización', new Date(), false);
