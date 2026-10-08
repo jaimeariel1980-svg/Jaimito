@@ -23,6 +23,7 @@ Dueño del proyecto: Ariel (no programador). Responder en español rioplatense, 
 1. **Nunca editar Apps Script directo.** Todo por el repo.
 2. Después de tocar `azcubot-widget.html`, `Tablero.html`, `tablero_bridge.js` o `paginas/`: `cd azcubot && python3 build_netlify.py` y commitear `azcubot/netlify/`. La línea 1 de `build_netlify.py` (`EXEC`) apunta al `/exec` de Azcu oficial.
 3. Validar sintaxis antes de subir: `node -e "new Function(require('fs').readFileSync('appscript/Azcubot.gs','utf8'))"` (idem `Codigo.gs`) y `node --check` sobre los scripts de los HTML.
+3b. El editor de PDF (miniaturas, separar con IA, unir, ordenar) vive en `azcubot/editor_pdf.js` y se copia dentro de `Precarga.html` y `Tablero.html` (ambas copias). Tras editarlo: `cd azcubot && python3 inyectar_editor.py && python3 build_netlify.py`.
 4. Las pantallas de `appscript/*.html` (Apps Script) y `azcubot/paginas/*.html` (web hospedada) son **dos copias**; mantenerlas coherentes (la hospedada usa `tablero_bridge.js` para emular `google.script.run`).
 5. Mantener cambios mínimos, sin rediseños no pedidos. No sacar funciones existentes.
 6. Nada de claves en el repo (OpenAI, OneSignal, PIN).
