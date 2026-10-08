@@ -2263,12 +2263,44 @@ google.script.run
       if(fl.length < (a.datos.archivos||[]).length){ alert('Los archivos ya no están en la app (se cerró o se recargó). Volvé a adjuntarlos.'); return; }
     }
     a.estado = 'hecho'; a.resultado = 'Ejecutando…'; render();
-    call('azcuEjecutar', [Object.assign({quien:st.nombre||'', files:fl}, a)], function(r){
+    var a2 = a, grp = {};
+    if(fl.length > 1){ (a.datos.archivos||[]).forEach(function(x){ var k = x.doc || x.key; if(k){ (grp[k] = grp[k] || []).push(x.i); } }); }
+    var multi = Object.keys(grp).filter(function(k){ return grp[k].length > 1; });
+    if(multi.length){
+      a.resultado = 'Armando el PDF…'; render();
+      azUnirGrupos(fl, grp, multi).then(function(r2){
+        a2 = Object.assign({}, a, {datos:Object.assign({}, a.datos, {archivos:(a.datos.archivos||[]).filter(function(x){ return r2.quitar.indexOf(+x.i) < 0; })})});
+        enviar(r2.fl);
+      }, function(e){ a.estado = 'pendiente'; a.resultado = ''; st.msgs.push({role:'assistant', content:'No pude unir los archivos: '+(e && e.message ? e.message : e)}); save(); render(); });
+      return;
+    }
+    enviar(fl);
+    function enviar(fl){
+    call('azcuEjecutar', [Object.assign({quien:st.nombre||'', files:fl}, a2)], function(r){
       a.resultado = r.mensaje; delete st.fz[a.id];
       if(r.enlaces && r.enlaces.length) st.msgs.push({role:'assistant', content:'', adj:r.enlaces});
       save(); render();
       if(typeof window.recargar==='function'){ try{ window.recargar(AZ.ctx||undefined); }catch(e){} }
     }, function(err){ a.estado = 'pendiente'; a.resultado = ''; st.msgs.push({role:'assistant', content:'No pude hacerlo: '+err}); save(); render(); });
+    }
+  }
+  function azUnirGrupos(fl, grp, multi){
+    function aFile(f){ var bin = atob(f.b), u = new Uint8Array(bin.length); for(var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new File([u], f.n, {type:f.m}); }
+    function aB64(by){ var s = '', i; for(i = 0; i < by.length; i += 32768) s += String.fromCharCode.apply(null, by.subarray(i, i+32768)); return btoa(s); }
+    var lib = window.PDFLib ? Promise.resolve() : new Promise(function(ok, ko){ var s = document.createElement('script'); s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js'; s.onload = ok; s.onerror = function(){ ko(new Error('No pude cargar el armado de PDF. Revisá la conexión.')); }; document.head.appendChild(s); });
+    function jpg(f){ return new Promise(function(ok, ko){ var u = URL.createObjectURL(f), im = new Image(); im.onload = function(){ var k = Math.min(1, 1600/Math.max(im.naturalWidth, im.naturalHeight)), c = document.createElement('canvas'); c.width = Math.round(im.naturalWidth*k); c.height = Math.round(im.naturalHeight*k); var x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(u); c.toBlob(function(b){ b.arrayBuffer().then(function(a){ ok({b:new Uint8Array(a), w:c.width, h:c.height}); }); }, 'image/jpeg', 0.78); }; im.onerror = function(){ URL.revokeObjectURL(u); ko(new Error('No pude leer «'+f.name+'».')); }; im.src = u; }); }
+    async function unir(files){ var D = PDFLib.PDFDocument, out = await D.create(); for(var f of files){ if(f.type === 'application/pdf'){ var s = await D.load(await f.arrayBuffer(), {ignoreEncryption:true}); (await out.copyPages(s, s.getPageIndices())).forEach(function(p){ out.addPage(p); }); } else { var j = await jpg(f), im = await out.embedJpg(j.b), k = Math.min(1, 842/Math.max(j.w, j.h)), pg = out.addPage([j.w*k, j.h*k]); pg.drawImage(im, {x:0, y:0, width:j.w*k, height:j.h*k}); } } return out.save(); }
+    return lib.then(async function(){
+      var quitar = [], res = fl.slice();
+      for(var g of multi){
+        var idx = grp[g], fs = idx.map(function(i){ return fl.filter(function(y){ return +y.i === +i; })[0]; }).filter(Boolean).map(aFile);
+        if(fs.length < 2) continue;
+        var by = await unir(fs), first = +idx[0];
+        res = res.filter(function(y){ return idx.indexOf(+y.i) < 0 || +y.i === first; }).map(function(y){ return +y.i === first ? {i:y.i, n:g+'.pdf', m:'application/pdf', b:aB64(by)} : y; });
+        idx.slice(1).forEach(function(i){ quitar.push(+i); });
+      }
+      return {fl:res, quitar:quitar};
+    });
   }
   var micDown = false, startX = 0;
   function recTick(){ var el = document.getElementById('azbT'); if(el && st.rec){ var t = Math.floor((Date.now()-st.rec.t0)/1000); el.textContent = Math.floor(t/60)+':'+('0'+(t%60)).slice(-2); if(t>=120) stopRec(true); } }
