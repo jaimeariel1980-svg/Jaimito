@@ -1226,6 +1226,7 @@ function azcuPush_(titulo, msg, url, dest, estricto, libre){
       else { dest = extra; estricto = true; }
     }
     if(dest) dest = dest.filter(function(x){ return off.indexOf(x)<0; });
+    if(!/^Azcu terminó/.test(String(titulo||''))){ try{ azcuMailAvisos_(us, dest, titulo, msg, url); }catch(eM){ Logger.log('Mail aviso: '+eM.message); } }
   }
   var base = {app_id:AZCU_OS_APP, target_channel:'push', headings:{en:titulo, es:titulo}, contents:{en:msg, es:msg}, url:url||AZCU_WEB};
   var intentos = [];
@@ -1248,6 +1249,20 @@ function azcuPush_(titulo, msg, url, dest, estricto, libre){
     }
   }
   throw new Error('OneSignal 401: clave no aceptada ('+k.length+' caracteres, empieza con "'+k.slice(0,8)+'")');
+}
+function azcuMailAvisos_(us, dest, titulo, msg, url){
+  var enviados = {}, esc = function(x){ return String(x||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); };
+  us.forEach(function(u){
+    if(!u.mail || !u.activo || u.avisos==='ninguno' || enviados[u.mail]) return;
+    if(!(dest||[]).some(function(x){ return u.ids.indexOf(x)>-1; })) return;
+    enviados[u.mail] = 1;
+    MailApp.sendEmail({to:u.mail, subject:'Azcu · '+String(titulo||'').slice(0,120), htmlBody:'<div style="font-family:Arial,sans-serif;font-size:15px;color:#0f1b33"><b>'+esc(titulo)+'</b><br><br>'+esc(msg)+(url ? '<br><br><a href="'+esc(url)+'">Abrir Azcu</a>' : '')+'</div>'});
+  });
+}
+function azcuProbarMail(){
+  var us = azcuUsuarios_().filter(function(u){ return u.mail && u.activo; });
+  us.forEach(function(u){ MailApp.sendEmail(u.mail, 'Azcu · prueba de aviso por mail', 'Si ves este mail, el respaldo de avisos funciona. Revisá Spam la primera vez.'); });
+  Logger.log(us.length ? '✅ Mail de prueba enviado a: '+us.map(function(u){ return u.nombre+' ('+u.mail+')'; }).join(', ') : 'Nadie tiene mail cargado en la pestaña Usuarios (columna Mail).');
 }
 function azcuProbarGerentes(){
   var k = String(PropertiesService.getScriptProperties().getProperty('ONESIGNAL_KEY')||'').replace(/\s/g,''), nombres = ['analia','silvi','sebastian'];
