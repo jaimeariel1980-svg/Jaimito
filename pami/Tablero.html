@@ -12,6 +12,8 @@
 .fil{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:8px 20px;background:#fff;border-bottom:1px solid var(--line)}
 .fil select,.fil input{width:auto;padding:7px 10px;font-size:12px}
 #board{display:flex;gap:12px;padding:14px 20px 12px;overflow:auto;align-items:flex-start;min-height:200px}
+#board::-webkit-scrollbar{height:16px;width:14px}#board::-webkit-scrollbar-track{background:#DCE3EC}#board::-webkit-scrollbar-thumb{background:#034EA2;border-radius:8px;border:3px solid #DCE3EC}
+@supports not selector(::-webkit-scrollbar){#board{scrollbar-color:#034EA2 #DCE3EC;scrollbar-width:auto}}
 .col{background:#E9EEF5;border-radius:4px;min-width:236px;width:236px;flex-shrink:0}
 .col-h{background:var(--azul);color:#fff;padding:9px 12px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;display:flex;justify-content:space-between;border-radius:4px 4px 0 0;border-bottom:3px solid var(--celeste)}
 .col.desc .col-h{background:#8B2E2B;border-bottom-color:#D9534F}
