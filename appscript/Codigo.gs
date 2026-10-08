@@ -1966,7 +1966,11 @@ function subirDocumento(codigo, docNombre, base64, filename, mime, quien){
   var blob=Utilities.newBlob(bytes, mime||'application/octet-stream', (docNombre+' - '+(filename||'')).trim());
   var archivo=carpeta.createFile(blob);
   var i=head.indexOf('Doc: '+docNombre);
-  if(i>-1) mae.getRange(fila,i+1).setValue(archivo.getUrl());
+  if(i>-1){
+    var previo=String(mae.getRange(fila,i+1).getValue()).match(/[-\w]{25,}/);
+    mae.getRange(fila,i+1).setValue(archivo.getUrl());
+    if(previo && previo[0]!==archivo.getId()){ try{ DriveApp.getFileById(previo[0]).setTrashed(true); }catch(e){} }
+  }
 
   // Verificación con IA (misma lógica que del lado de Precarga)
   var doc = _docPorLabel(docNombre);
@@ -2005,6 +2009,20 @@ function subirDocumento(codigo, docNombre, base64, filename, mime, quien){
 
   _audit_('doc','📄 Subió «'+docNombre+'»', _dirDe_(mae,fila,head), quien||''); _invalidaNovedades_();
   return {ok:true, url:archivo.getUrl()};
+}
+
+function bajarDocumento(codigo, docNombre){
+  var mae=hojaMaestra_();
+  var fila=_filaPorCodigo_(mae, codigo);
+  if(fila<0)throw new Error('No encontré la propiedad '+codigo);
+  var head=mae.getRange(1,1,1,mae.getLastColumn()).getValues()[0];
+  var i=head.indexOf('Doc: '+docNombre);
+  if(i<0)throw new Error('No existe ese documento');
+  var m=String(mae.getRange(fila,i+1).getValue()).match(/[-\w]{25,}/);
+  if(!m)throw new Error('Ese documento no tiene archivo cargado');
+  var blob=DriveApp.getFileById(m[0]).getBlob(), bytes=blob.getBytes();
+  if(bytes.length>8*1024*1024)throw new Error('El archivo actual pesa más de 8 MB: no se puede agregar. Elegí Reemplazar.');
+  return {base64:Utilities.base64Encode(bytes), mime:blob.getContentType(), nombre:blob.getName()};
 }
 
 function borrarDocumento(codigo, docNombre, quien){

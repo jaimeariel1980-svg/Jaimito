@@ -483,7 +483,7 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
     <!-- SECCIÓN 3: DOCUMENTACIÓN -->
     <div class="step">
       <h2>3. Documentación a adjuntar</h2>
-      <div class="step-sub">Formatos aceptados: PDF, JPG o PNG. Toda la documentación es opcional: podés enviar el formulario aunque todavía no tengas ningún archivo listo.</div>
+      <div class="step-sub">Formatos aceptados: PDF, JPG o PNG. Si un documento tiene varias hojas o fotos, elegí todas juntas y se arma un solo PDF. Toda la documentación es opcional: podés enviar el formulario aunque todavía no tengas ningún archivo listo.</div>
       <div id="docs-contenedor"></div>
       <div id="docs-dueños-contenedor"></div>
       <button type="button" class="btn btn-outline" id="btn-agregar-doc-dueño" style="margin-top:8px;">+ Añadir documentación dueño 2</button>
@@ -1119,7 +1119,7 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
         <div style="display:flex;align-items:center;gap:10px;">
           <span class="doc-check" id="doc-check-${d.key}"><svg viewBox="0 0 24 24" fill="none" stroke="#2f6b2f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" fill="#e6f4e6"/><path d="M8 12.5l2.5 2.5 5-5"/></svg>Listo</span>
           <span class="doc-status" id="doc-status-${d.key}" style="display:none;"></span>
-          <input type="file" name="doc_${d.key}" accept=".pdf,.jpg,.jpeg,.png" data-doc="${d.key}">
+          <input type="file" name="doc_${d.key}" accept=".pdf,.jpg,.jpeg,.png" multiple data-doc="${d.key}">
         </div>
       </div>
     `).join('');
@@ -1138,7 +1138,7 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
         <div style="display:flex;align-items:center;gap:10px;">
           <span class="doc-check" id="doc-check-dni_dueño${n}"><svg viewBox="0 0 24 24" fill="none" stroke="#2f6b2f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" fill="#e6f4e6"/><path d="M8 12.5l2.5 2.5 5-5"/></svg>Listo</span>
           <span class="doc-status" id="doc-status-dni_dueño${n}" style="display:none;"></span>
-          <input type="file" name="doc_dni_dueño${n}" accept=".pdf,.jpg,.jpeg,.png" data-doc="dni_dueño${n}">
+          <input type="file" name="doc_dni_dueño${n}" accept=".pdf,.jpg,.jpeg,.png" multiple data-doc="dni_dueño${n}">
         </div>
       </div>
       <div class="doc-row" id="doc-row-cuil_dueño${n}">
@@ -1146,7 +1146,7 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
         <div style="display:flex;align-items:center;gap:10px;">
           <span class="doc-check" id="doc-check-cuil_dueño${n}"><svg viewBox="0 0 24 24" fill="none" stroke="#2f6b2f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" fill="#e6f4e6"/><path d="M8 12.5l2.5 2.5 5-5"/></svg>Listo</span>
           <span class="doc-status" id="doc-status-cuil_dueño${n}" style="display:none;"></span>
-          <input type="file" name="doc_cuil_dueño${n}" accept=".pdf,.jpg,.jpeg,.png" data-doc="cuil_dueño${n}">
+          <input type="file" name="doc_cuil_dueño${n}" accept=".pdf,.jpg,.jpeg,.png" multiple data-doc="cuil_dueño${n}">
         </div>
       </div>
     `);
@@ -1605,6 +1605,21 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
       })
       .precargarDatos(datos, archivos);
   });
+
+function _cargarPdfLib(){return window.PDFLib?Promise.resolve():new Promise(function(ok,ko){var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js';s.onload=ok;s.onerror=function(){ko(new Error('No pude cargar el armado de PDF. Revisá la conexión.'));};document.head.appendChild(s);});}
+function _jpegDe(f){return new Promise(function(ok,ko){var u=URL.createObjectURL(f),im=new Image();im.onload=function(){var k=Math.min(1,1600/Math.max(im.naturalWidth,im.naturalHeight)),c=document.createElement('canvas');c.width=Math.round(im.naturalWidth*k);c.height=Math.round(im.naturalHeight*k);var x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);c.toBlob(function(b){b.arrayBuffer().then(function(a){ok({b:new Uint8Array(a),w:c.width,h:c.height});});},'image/jpeg',0.78);};im.onerror=function(){URL.revokeObjectURL(u);ko(new Error('No pude leer «'+f.name+'».'));};im.src=u;});}
+async function _unirEnPdf(files){await _cargarPdfLib();var D=PDFLib.PDFDocument,out=await D.create();for(var f of files){if(f.type==='application/pdf'){var s=await D.load(await f.arrayBuffer(),{ignoreEncryption:true});(await out.copyPages(s,s.getPageIndices())).forEach(function(p){out.addPage(p);});}else{var j=await _jpegDe(f),im=await out.embedJpg(j.b),k=Math.min(1,842/Math.max(j.w,j.h)),pg=out.addPage([j.w*k,j.h*k]);pg.drawImage(im,{x:0,y:0,width:j.w*k,height:j.h*k});}}var by=await out.save();return new File([by],'documento.pdf',{type:'application/pdf'});}
+
+document.addEventListener('change',function(ev){
+  var el=ev.target;
+  if(!el||el.type!=='file'||!el.dataset||!el.dataset.doc||el._unido||!el.files||el.files.length<2)return;
+  ev.stopPropagation();
+  var n=el.files.length;
+  _cargarPdfLib().then(function(){return _unirEnPdf(Array.from(el.files));}).then(function(pdf){
+    var dt=new DataTransfer();dt.items.add(pdf);el.files=dt.files;el._unido=1;
+    el.dispatchEvent(new Event('change',{bubbles:true}));el._unido=0;
+  }).catch(function(e){el.value='';alert('No pude unir los '+n+' archivos: '+(e&&e.message?e.message:e));});
+},true);
 </script>
 
 <script>
