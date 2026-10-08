@@ -25,7 +25,6 @@ function plantillasIniciales_() {
   ];
 }
 
-const PLANT_SCREENING_ANTERIOR = 'Hola [NOMBRE], ¿cómo estás? Soy [ENTREVISTADOR] del equipo de Selección.\nTe contacto por la búsqueda de [PUESTO] en [EMPRESA].\nMe gustaría coordinar una charla breve con vos para conocerte.\nSi te interesa, elegí el día y horario que mejor te quede desde este link y queda agendado:\n[LINK]\nSaludos!';
 
 function colorNota_(n) {
   return { A: ['#1E8E5A', '#FFFFFF'], 'B+': ['#8BD3A8', '#0F3A24'], B: ['#F2B705', '#4A3A00'], C: ['#D9534F', '#FFFFFF'] }[n] || null;

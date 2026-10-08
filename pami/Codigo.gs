@@ -240,27 +240,39 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '2';
+const ESQUEMA = '3';
 
 function actualizarEsquema_() {
   const props = PropertiesService.getScriptProperties();
   if (props.getProperty('ESQUEMA') === ESQUEMA) return;
   const sh = hoja_('Candidatos');
-  [[COL.policlinico, 'Policlínico'], [COL.notaP2, 'Nota entrevista técnica']].forEach(x => {
-    const c = sh.getRange(1, x[0]);
-    const v = String(c.getValue()).trim();
-    if (!v || (x[0] === COL.notaP2 && v === 'Nota PAMI presencial')) c.setValue(x[1]).setFontWeight('bold').setBackground('#034EA2').setFontColor('#FFFFFF');
-  });
-  const val = lista => SpreadsheetApp.newDataValidation().requireValueInList(lista, true).build();
-  sh.getRange(2, COL.estado, 1000, 1).setDataValidation(val(todosEstados_()));
-  sh.getRange(2, COL.policlinico, 1000, 1).setDataValidation(val(POLICLINICOS));
-  const pl = hoja_('Plantillas'), filas = pl.getDataRange().getValues();
-  plantillasIniciales_().forEach(t => {
-    const i = filas.findIndex(f => f[0] === t[0]);
-    if (i === -1) { pl.appendRow(t); pl.getRange(pl.getLastRow(), 3).setWrap(true); }
-    else if (t[0] === 'contacto-screening' && String(filas[i][2]).trim() === PLANT_SCREENING_ANTERIOR.trim()) pl.getRange(i + 1, 3).setValue(t[2]);
-  });
-  props.setProperty('ESQUEMA', ESQUEMA);
+  const pasos = [
+    () => [[COL.policlinico, 'Policlínico'], [COL.notaP2, 'Nota entrevista técnica']].forEach(x => {
+      const c = sh.getRange(1, x[0]);
+      const v = String(c.getValue()).trim();
+      if (!v || (x[0] === COL.notaP2 && v === 'Nota PAMI presencial')) c.setValue(x[1]).setFontWeight('bold').setBackground('#034EA2').setFontColor('#FFFFFF');
+    }),
+    () => {
+      const pl = hoja_('Plantillas'), filas = pl.getDataRange().getValues();
+      plantillasIniciales_().forEach(t => {
+        const i = filas.findIndex(f => f[0] === t[0]);
+        if (i === -1) { pl.appendRow(t); pl.getRange(pl.getLastRow(), 3).setWrap(true); }
+        else if (t[0] === 'contacto-screening' && String(filas[i][2]).indexOf('[POLICLINICO]') === -1) {
+          pl.appendRow(['contacto-screening-anterior', 'WhatsApp', filas[i][2]]);
+          pl.getRange(i + 1, 3).setValue(t[2]);
+        }
+      });
+    },
+    () => {
+      const n = Math.max(1, Math.min(1000, sh.getMaxRows() - 1));
+      const val = lista => SpreadsheetApp.newDataValidation().requireValueInList(lista, true).build();
+      sh.getRange(2, COL.estado, n, 1).setDataValidation(val(todosEstados_()));
+      sh.getRange(2, COL.policlinico, n, 1).setDataValidation(val(POLICLINICOS));
+    }
+  ];
+  let ok = true;
+  pasos.forEach(f => { try { f(); } catch (e) { ok = false; registrarError_('actualizarEsquema', e); } });
+  if (ok) props.setProperty('ESQUEMA', ESQUEMA);
 }
 
 function migrarCandidatos_() {
