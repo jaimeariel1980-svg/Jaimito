@@ -57,7 +57,7 @@ function seccion_(t) { return '<div style="margin-top:16px;font-size:11px;font-w
 const DESC_NOTA = { A: 'A · Avanza. Cumple lo crítico y lo deseable.', 'B+': 'B+ · Avanza. Muy bueno; cumple lo excluyente con una cuestión menor.', B: 'B · Cumple lo crítico con algún flanco; queda a criterio de la etapa.', C: 'C · No avanza. No cumple lo crítico o presenta red flags importantes.' };
 
 function guardarScreening(k, p) {
-  admin_(k);
+  escritor_(k);
   const sh = hoja_('Candidatos');
   const fila = filaPorId_(sh, p.id);
   if (!fila) throw new Error('No encontré al candidato');
@@ -109,7 +109,7 @@ const NIVELES_COMP = ['', 'No demuestra', 'Señales de desarrollo', 'Demuestra e
 const DESC_AJUSTE = { A: 'A · Alto ajuste al rol. Avanza.', 'B+': 'B+ · Muy buen ajuste al rol. Avanza.', B: 'B · Ajuste con observaciones. Queda en reserva.', C: 'C · No ajusta al rol.' };
 
 function guardarCompetencias(k, p) {
-  admin_(k);
+  escritor_(k);
   const sh = hoja_('Candidatos');
   const fila = filaPorId_(sh, p.id);
   if (!fila) throw new Error('No encontré al candidato');

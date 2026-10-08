@@ -75,7 +75,7 @@ function citasSinCandidato_() {
 }
 
 function agendarCita(k, fila, o) {
-  admin_(k);
+  escritor_(k);
   const sh = hoja_('Candidatos');
   fila = Number(fila);
   if (!(fila >= 2 && fila <= sh.getLastRow())) throw new Error('Fila inválida');
