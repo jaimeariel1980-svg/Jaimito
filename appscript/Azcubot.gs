@@ -1383,7 +1383,7 @@ function azcuMovimientos_(dias){
     }
   }catch(e){}
   out.sort(function(a,b){ return b.ms-a.ms; });
-  var res = {items:out.slice(0,5), ahora:Date.now()};
+  var res = {items:out.slice(0,150), ahora:Date.now()};
   try{ cc.put(ck, JSON.stringify(res), 20); }catch(e){}
   return res;
 }
