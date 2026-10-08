@@ -88,7 +88,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <div class="fil">
   <select id="fb"></select>
   <input id="fq" placeholder="Nombre / DNI">
-  <input id="fz" placeholder="Zona / ubicación">
+  <input id="fz" placeholder="Zona / barrio / dirección">
   <input id="ff" placeholder="Formación / profesión">
   <input id="fx" placeholder="Experiencia / palabra clave">
   <select id="fe"><option value="">Todos los estados</option></select>
@@ -158,7 +158,7 @@ function filtra(c){
   var p=Number(g('fp'))||0;if(p){var n=Number(String(c.pret).replace(/\D/g,''));if(!n||n>p)return false;}
   if(g('fr')&&!recom(c))return false;
   if(!coincide(c.nombre+' '+c.dni+' '+c.email,g('fq')))return false;
-  if(!coincide(c.zona+' '+c.loc+' '+c.req,g('fz')))return false;
+  if(!coincide(c.zona+' '+c.loc+' '+c.domicilio+' '+c.req,g('fz')))return false;
   if(!coincide(c.formacion+' '+c.req+' '+c.resumen,g('ff')))return false;
   if(!coincide(c.resumen+' '+c.req+' '+c.formacion,g('fx')))return false;
   return true;
@@ -183,7 +183,7 @@ function card(c){
   if(c.descarte)t+='<span class="tag">✉ Descarte enviado</span>';
   if(c.fuente&&c.fuente!=='Web')t+='<span class="tag">'+esc(c.fuente)+'</span>';
   var n=ind(c);
-  return '<div class="card '+cls(n)+'" draggable="true" data-fila="'+c.fila+'" ondragstart="event.dataTransfer.setData(\'text\',\''+c.fila+'\')" onclick="abrir('+c.fila+')"><div class="top"><b>'+esc(c.nombre)+'</b><span class="badge '+cls(n)+'">'+(esc(n)||'—')+'</span></div><div class="sub">'+esc(c.loc||'—')+(c.pret?' · '+esc(money(c.pret)):'')+'</div>'+(c.formacion?'<div class="fo">'+esc(c.formacion)+'</div>':'')+(t?'<div class="tags">'+t+'</div>':'')+'<div class="pol">'+D.policlinicos.map(function(p,i){return '<button type="button" class="p'+(i+1)+(c.policlinico===p?' on':'')+'" onclick="event.stopPropagation();asignarPol('+c.fila+','+i+')">'+esc(p.replace('Policlínico ',''))+'</button>';}).join('')+'</div></div>';
+  return '<div class="card '+cls(n)+'" draggable="true" data-fila="'+c.fila+'" ondragstart="event.dataTransfer.setData(\'text\',\''+c.fila+'\')" onclick="abrir('+c.fila+')"><div class="top"><b>'+esc(c.nombre)+'</b><span class="badge '+cls(n)+'">'+(esc(n)||'—')+'</span></div><div class="sub">'+(c.domicilio?'📍 '+esc(c.domicilio)+(c.loc?' · '+esc(c.loc):''):esc(c.loc||'—'))+(c.pret?' · '+esc(money(c.pret)):'')+'</div>'+(c.formacion?'<div class="fo">'+esc(c.formacion)+'</div>':'')+(t?'<div class="tags">'+t+'</div>':'')+'<div class="pol">'+D.policlinicos.map(function(p,i){return '<button type="button" class="p'+(i+1)+(c.policlinico===p?' on':'')+'" onclick="event.stopPropagation();asignarPol('+c.fila+','+i+')">'+esc(p.replace('Policlínico ',''))+'</button>';}).join('')+'</div></div>';
 }
 function asignarPol(f,i){
   var c=byFila(f),p=D.policlinicos[i],nuevo=c.policlinico===p?'':p,prev=c.policlinico;c.policlinico=nuevo;render();
@@ -212,7 +212,7 @@ function render(){
   });
   h+=acordeon('Reservas','res',D.res,lista,/reserva/i);
   document.getElementById('board').innerHTML=h;
-  document.getElementById('jump').innerHTML='<button class="fl" onclick="mover(-1)" title="Mover a la izquierda">◀</button><button class="fl" onclick="mover(1)" title="Mover a la derecha">▶</button>'+[].slice.call(document.querySelectorAll('#board > .col')).map(function(c,i){var n=c.querySelector('.col-h span'),k=c.querySelector('.col-h b');return '<button onclick="irCol('+i+')">'+esc(n?n.textContent:'')+' '+(k?k.textContent:'')+'</button>';}).join('')+'<small>Tablero v5</small>';
+  document.getElementById('jump').innerHTML='<button class="fl" onclick="mover(-1)" title="Mover a la izquierda">◀</button><button class="fl" onclick="mover(1)" title="Mover a la derecha">▶</button>'+[].slice.call(document.querySelectorAll('#board > .col')).map(function(c,i){var n=c.querySelector('.col-h span'),k=c.querySelector('.col-h b');return '<button onclick="irCol('+i+')">'+esc(n?n.textContent:'')+' '+(k?k.textContent:'')+'</button>';}).join('')+'<small>Tablero v6</small>';
   ajustarBoard();
 }
 function irCol(i){var b=document.getElementById('board'),c=b.querySelectorAll(':scope > .col')[i];if(c)b.scrollTo({left:c.offsetLeft-b.offsetLeft-12,behavior:'smooth'});}
@@ -267,7 +267,7 @@ function abrir(f){
   var puedeDesc=/^Descartado (sin|post) screening$/.test(c.estado)&&!c.descarte&&/@/.test(c.email||'');
   document.getElementById('mbox').innerHTML=
     '<div class="hd"><div><h2>'+esc(c.nombre)+' <span class="badge '+cls(n)+'" style="vertical-align:middle">'+(esc(n)||'—')+'</span></h2><small>'+esc(tit(c.busq))+' · '+esc(c.estado)+'</small></div><button class="x" onclick="cerrar()">×</button></div><div class="bd">'+al+
-    '<div class="sec">Datos</div>'+row('Recibido',c.fecha)+row('Llegó por',c.fuente)+row('Estado',c.estado)+row('Localidad',c.loc)+row('Zona',c.zona)+row('Policlínico',c.policlinico)+row('Formación',c.formacion)+row('Teléfono',c.tel)+row('DNI',c.dni)+row('Email',c.email)+row('Pretensión',money(c.pret))+row('Conoce a alguien en PAMI',c.conoce)+row('Último contacto',c.contactado)+row('Descarte',c.descarte)+
+    '<div class="sec">Datos</div>'+row('Recibido',c.fecha)+row('Llegó por',c.fuente)+row('Estado',c.estado)+row('Localidad',c.loc)+row('Domicilio',c.domicilio)+row('Zona',c.zona)+row('Policlínico',c.policlinico)+row('Formación',c.formacion)+row('Teléfono',c.tel)+row('DNI',c.dni)+row('Email',c.email)+row('Pretensión',money(c.pret))+row('Conoce a alguien en PAMI',c.conoce)+row('Último contacto',c.contactado)+row('Descarte',c.descarte)+
     (c.just?'<div class="sec">Análisis del CV</div><div class="txt"><b>'+esc(c.just)+'</b></div>':'')+(c.resumen?'<div class="txt" style="margin-top:6px">'+esc(c.resumen)+'</div>':'')+(c.req?'<div class="txt" style="margin-top:6px;color:#5D6B82">'+esc(c.req)+'</div>':'')+resp+
     '<div class="sec">Calificaciones</div><div id="notas">'+etapasNota.map(function(et){return notaRow(c,et,vals[et]);}).join('')+'</div>'+
     '<div class="btns"><button class="btn" onclick="abrirForm(\'screening\','+f+')">📝 Formulario screening</button><button class="btn" onclick="abrirForm(\'competencias\','+f+')">💼 Formulario competencias</button>'+(c.infScr?'<a class="btn ghost" target="_blank" href="'+esc(c.infScr)+'">Ver screening</a>':'')+(c.infComp?'<a class="btn ghost" target="_blank" href="'+esc(c.infComp)+'">Ver competencias</a>':'')+(c.resp.length?'<button class="btn ghost" onclick="verPost('+f+',this)">📋 Ver postulación</button>':'')+'</div>'+

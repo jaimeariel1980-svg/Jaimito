@@ -1,6 +1,6 @@
 const CUENTA = 'dotacionpp1@gmail.com';
-const HEAD_CAND = ['Fecha', 'Nombre', 'Teléfono', 'DNI', 'Email', 'Localidad', 'Búsqueda', 'Pretensión', 'Nivel de Ajuste', 'Justificación', 'Resumen', 'Requisitos', 'Link CV', 'Estado', 'Entrevistó', 'Nota screening', 'Nota competencias', 'Recomendó', 'Recomendado por', 'Comentarios', 'Respuestas', 'Procesado', 'Intentos', 'Fuente', 'ID', 'Nota PAMI virtual', 'Nota entrevista técnica', 'Cita', 'Entrevistas (calendario)', 'Contactado', 'Descarte enviado', 'Informe screening', 'Informe competencias', 'Último movimiento', 'Zona', 'Formación', 'Postulación', 'Policlínico'];
-const COL = { fecha: 1, nombre: 2, tel: 3, dni: 4, email: 5, loc: 6, busq: 7, pret: 8, ajuste: 9, just: 10, resumen: 11, req: 12, cv: 13, estado: 14, entrev: 15, notaScr: 16, notaComp: 17, recTipo: 18, recPor: 19, coment: 20, resp: 21, proc: 22, intentos: 23, fuente: 24, id: 25, notaP1: 26, notaP2: 27, cita: 28, entrevistas: 29, contactado: 30, descarte: 31, infScr: 32, infComp: 33, mov: 34, zona: 35, formacion: 36, postulacion: 37, policlinico: 38 };
+const HEAD_CAND = ['Fecha', 'Nombre', 'Teléfono', 'DNI', 'Email', 'Localidad', 'Búsqueda', 'Pretensión', 'Nivel de Ajuste', 'Justificación', 'Resumen', 'Requisitos', 'Link CV', 'Estado', 'Entrevistó', 'Nota screening', 'Nota competencias', 'Recomendó', 'Recomendado por', 'Comentarios', 'Respuestas', 'Procesado', 'Intentos', 'Fuente', 'ID', 'Nota PAMI virtual', 'Nota entrevista técnica', 'Cita', 'Entrevistas (calendario)', 'Contactado', 'Descarte enviado', 'Informe screening', 'Informe competencias', 'Último movimiento', 'Zona', 'Formación', 'Postulación', 'Policlínico', 'Domicilio'];
+const COL = { fecha: 1, nombre: 2, tel: 3, dni: 4, email: 5, loc: 6, busq: 7, pret: 8, ajuste: 9, just: 10, resumen: 11, req: 12, cv: 13, estado: 14, entrev: 15, notaScr: 16, notaComp: 17, recTipo: 18, recPor: 19, coment: 20, resp: 21, proc: 22, intentos: 23, fuente: 24, id: 25, notaP1: 26, notaP2: 27, cita: 28, entrevistas: 29, contactado: 30, descarte: 31, infScr: 32, infComp: 33, mov: 34, zona: 35, formacion: 36, postulacion: 37, policlinico: 38, domicilio: 39 };
 const POLICLINICOS = ['Policlínico PAMI 1', 'Policlínico PAMI 2'];
 const NOTAS = ['', 'A', 'B+', 'B', 'C'];
 const HEAD_BUSQ = ['id', 'titulo', 'ubicacion', 'modalidad', 'descripcion', 'requisitos', 'estado', 'prompt_ia', 'recomendacion', 'palabras_clave', 'link_perfil', 'link_flyer'];
@@ -240,14 +240,14 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '3';
+const ESQUEMA = '4';
 
 function actualizarEsquema_() {
   const props = PropertiesService.getScriptProperties();
   if (props.getProperty('ESQUEMA') === ESQUEMA) return;
   const sh = hoja_('Candidatos');
   const pasos = [
-    () => [[COL.policlinico, 'Policlínico'], [COL.notaP2, 'Nota entrevista técnica']].forEach(x => {
+    () => [[COL.policlinico, 'Policlínico'], [COL.domicilio, 'Domicilio'], [COL.notaP2, 'Nota entrevista técnica']].forEach(x => {
       const c = sh.getRange(1, x[0]);
       const v = String(c.getValue()).trim();
       if (!v || (x[0] === COL.notaP2 && v === 'Nota PAMI presencial')) c.setValue(x[1]).setFontWeight('bold').setBackground('#034EA2').setFontColor('#FFFFFF');
@@ -418,7 +418,7 @@ function agregarCandidato_(o) {
     const file = o.archivo();
     const row = new Array(HEAD_CAND.length).fill('');
     row[COL.fecha - 1] = new Date(); row[COL.nombre - 1] = o.nombre; row[COL.tel - 1] = o.tel || '';
-    row[COL.dni - 1] = dni; row[COL.email - 1] = email; row[COL.loc - 1] = o.loc || '';
+    row[COL.dni - 1] = dni; row[COL.email - 1] = email; row[COL.loc - 1] = o.loc || ''; row[COL.domicilio - 1] = o.dom || '';
     row[COL.busq - 1] = o.busq || ''; row[COL.pret - 1] = o.pret || '';
     row[COL.resumen - 1] = 'Procesando…'; row[COL.cv - 1] = file.getUrl();
     row[COL.estado - 1] = 'Nuevo'; row[COL.resp - 1] = JSON.stringify(o.resp || []);
@@ -437,7 +437,7 @@ function recibirPostulacion(p) {
     const d = p.datos || {};
     const dni = String(d.dni || '').replace(/\D/g, '');
     const email = String(d.email || '').trim().toLowerCase();
-    if (!String(d.nombre || '').trim() || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || !String(d.telefono || '').trim() || dni.length < 6 || !String(d.localidad || '').trim()) throw new Error('Datos incompletos');
+    if (!String(d.nombre || '').trim() || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || !String(d.telefono || '').trim() || dni.length < 6 || !String(d.localidad || '').trim() || !String(d.domicilio || '').trim()) throw new Error('Datos incompletos');
     const decl = p.declaradas || {};
     b.preguntas.forEach(q => { if (q.requerido && !String(decl[q.id] || '').trim()) throw new Error('Falta responder: ' + q.etiqueta); });
     if (!p.cvBase64 || String(p.cvBase64).length > 14000000) throw new Error('CV ausente o muy pesado');
@@ -448,7 +448,7 @@ function recibirPostulacion(p) {
     const mime = ext === 'pdf' ? 'application/pdf' : (ext === 'doc' ? 'application/msword' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
 
     const fila = agregarCandidato_({
-      busq: b.id, nombre: nombre, email: email, tel: String(d.telefono).trim(), dni: dni, loc: String(d.localidad).trim(),
+      busq: b.id, nombre: nombre, email: email, tel: String(d.telefono).trim(), dni: dni, loc: String(d.localidad).trim(), dom: String(d.domicilio).trim().slice(0, 200),
       pret: String(d.pretension || '').trim(), fuente: 'Web', resp: resp,
       archivo: () => DriveApp.getFolderById(ajustes_().carpeta_cvs).createFile(
         Utilities.newBlob(Utilities.base64Decode(p.cvBase64), mime, nombre.replace(/[^\wÁ-ú ]/g, '').trim().replace(/\s+/g, '_') + '_' + b.id + '.' + ext))
@@ -501,7 +501,7 @@ function analizarFila_(fila) {
     if (!texto || texto.trim().length < 50) { revisar('No se pudo leer el CV (¿escaneado o imagen?). Revisar a mano.'); return; }
     let decl = [];
     try { decl = JSON.parse(r[COL.resp - 1] || '[]'); } catch (e) { }
-    const bloque = ['Nombre: ' + r[COL.nombre - 1], 'Localidad: ' + (r[COL.loc - 1] || 'no indicada'), 'Pretensión salarial: ' + (r[COL.pret - 1] || 'no indicó')]
+    const bloque = ['Nombre: ' + r[COL.nombre - 1], 'Localidad: ' + (r[COL.loc - 1] || 'no indicada'), 'Domicilio: ' + (r[COL.domicilio - 1] || 'no indicado'), 'Pretensión salarial: ' + (r[COL.pret - 1] || 'no indicó')]
       .concat(decl.length ? decl.map(x => x.q + ': ' + x.a) : ['(No completó el formulario: evaluá solo con el CV y marcá como "REVISAR" lo que no se pueda verificar, por ejemplo la matrícula.)']).join('\n');
     const prompt = `Sos un analista senior de selección de personal. Analizá esta postulación para la búsqueda "${b.titulo}".
 
@@ -514,7 +514,7 @@ ${bloque}
 === FIN DECLARADOS ===
 
 Devolvé SOLO JSON válido con este formato:
-{"es_cv":true,"nombre":"Nombre y apellido real del candidato","telefono":"","dni":"solo números","localidad":"","nivel_ajuste":"A/B+/B/C","justificacion":"una sola oración corta con el porqué de la nota","formacion_titulo":"título o formación principal, textual (ej. Enfermero/a Profesional)","requisitos":{"formacion":"","matricula":"","experiencia":"","zona":"","continuidad":""},"resumen_experiencia":"3-4 oraciones narrativas sobre trayectoria, atributos y actitud, sin repetir el checklist"}
+{"es_cv":true,"nombre":"Nombre y apellido real del candidato","telefono":"","dni":"solo números","localidad":"","domicilio":"calle, número y barrio que figuran en el CV (vacío si no figura)","nivel_ajuste":"A/B+/B/C","justificacion":"una sola oración corta con el porqué de la nota","formacion_titulo":"título o formación principal, textual (ej. Enfermero/a Profesional)","requisitos":{"formacion":"","matricula":"","experiencia":"","zona":"","continuidad":""},"resumen_experiencia":"3-4 oraciones narrativas sobre trayectoria, atributos y actitud, sin repetir el checklist"}
 Devolvé es_cv:false SOLO si el texto claramente NO es un currículum (por ejemplo una factura o publicidad). Ante la duda, es_cv:true.
 REGLAS DE LA NOTA:
 - A: cumple todo, perfil potente sin ruido.
@@ -535,8 +535,9 @@ REGLAS DE LA NOTA:
       sh.getRange(fila, COL.proc).setValue('NoCV');
       return;
     }
+    const fill = (col, v) => { v = String(v || '').trim(); if (v && !String(r[col - 1] || '').trim()) sh.getRange(fila, col).setValue(v); };
+    fill(COL.domicilio, c.domicilio);
     if (String(r[COL.fuente - 1]) !== 'Web') {
-      const fill = (col, v) => { v = String(v || '').trim(); if (v && !String(r[col - 1] || '').trim()) sh.getRange(fila, col).setValue(v); };
       const nom = String(c.nombre || '').trim();
       if (nom.split(/\s+/).length >= 2) sh.getRange(fila, COL.nombre).setValue(nom);
       fill(COL.tel, c.telefono);

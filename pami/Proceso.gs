@@ -121,7 +121,7 @@ function getTablero(k) {
       recTipo: r[COL.recTipo - 1], recPor: r[COL.recPor - 1], coment: r[COL.coment - 1], resp: resp, proc: r[COL.proc - 1], fuente: r[COL.fuente - 1],
       cita: citaObj_(r[COL.cita - 1]), entrevistas: String(r[COL.entrevistas - 1] || ''), contactado: String(r[COL.contactado - 1] || ''),
       descarte: String(r[COL.descarte - 1] || ''), infScr: String(r[COL.infScr - 1] || ''), infComp: String(r[COL.infComp - 1] || ''),
-      zona: String(r[COL.zona - 1] || ''), formacion: String(r[COL.formacion - 1] || ''), postulacion: String(r[COL.postulacion - 1] || ''), policlinico: String(r[COL.policlinico - 1] || ''),
+      zona: String(r[COL.zona - 1] || ''), formacion: String(r[COL.formacion - 1] || ''), postulacion: String(r[COL.postulacion - 1] || ''), policlinico: String(r[COL.policlinico - 1] || ''), domicilio: String(r[COL.domicilio - 1] || ''),
       conoce: (resp.find(x => /conoc[eé]s a alguien/i.test(x.q) && x.a && !/^(no|ninguno|nadie|-)\.?$/i.test(String(x.a).trim())) || {}).a || ''
     });
   }
@@ -332,7 +332,7 @@ function postulacionPdf(k, fila) {
   try { resp = JSON.parse(r[COL.resp - 1] || '[]'); } catch (e) { }
   const b = busquedas_().find(x => x.id === r[COL.busq - 1]) || { titulo: '' };
   const fila2 = (a, v) => v ? '<tr><td style="padding:5px 8px;color:#5D6B82;width:38%;font-size:12px">' + h_(a) + '</td><td style="padding:5px 8px;font-size:13px;font-weight:bold">' + h_(v) + '</td></tr>' : '';
-  const cuerpo = seccion_('Datos de contacto') + '<table style="width:100%;border-collapse:collapse">' + fila2('Nombre', r[COL.nombre - 1]) + fila2('Email', r[COL.email - 1]) + fila2('Teléfono', r[COL.tel - 1]) + fila2('DNI', r[COL.dni - 1]) + fila2('Localidad', r[COL.loc - 1]) + fila2('Remuneración pretendida', r[COL.pret - 1]) + fila2('Llegó por', r[COL.fuente - 1]) + '</table>' +
+  const cuerpo = seccion_('Datos de contacto') + '<table style="width:100%;border-collapse:collapse">' + fila2('Nombre', r[COL.nombre - 1]) + fila2('Email', r[COL.email - 1]) + fila2('Teléfono', r[COL.tel - 1]) + fila2('DNI', r[COL.dni - 1]) + fila2('Localidad', r[COL.loc - 1]) + fila2('Domicilio', r[COL.domicilio - 1]) + fila2('Remuneración pretendida', r[COL.pret - 1]) + fila2('Llegó por', r[COL.fuente - 1]) + '</table>' +
     (resp.length ? seccion_('Respuestas del formulario') + '<table style="width:100%;border-collapse:collapse">' + resp.map(x => fila2(x.q, x.a)).join('') + '</table>' : '');
   const html = htmlInforme_('Postulación', { nombre: r[COL.nombre - 1], puesto: b.titulo }, [['Recibida', r[0] instanceof Date ? fmt_(r[0], 'dd/MM/yyyy HH:mm') : String(r[0])]], cuerpo, r[COL.ajuste - 1] || '—', null, 'Nivel de ajuste sugerido por la IA al CV');
   const pdf = DriveApp.getFolderById(ajustes_().carpeta_informes).createFile(Utilities.newBlob(html, 'text/html', 'x.html').getAs('application/pdf').setName('Postulacion_' + String(r[COL.nombre - 1]).replace(/\s+/g, '_') + '.pdf'));
