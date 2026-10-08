@@ -11,6 +11,8 @@ function usuarios_() {
   } catch (e) { }
   if (lista.length && !lista.some(u => u.rol === 'Admin')) lista[0].rol = 'Admin';
   lista.forEach(u => { u.admin = u.rol === 'Admin'; });
+  const prop = lista.find(u => u.rol === 'Admin');
+  if (prop) prop.propietario = true;
   cache.put('USUARIOS', JSON.stringify(lista), 30);
   return lista;
 }
@@ -76,6 +78,11 @@ function soloAdmin_(k) {
 
 function nombreUsuario_(n) { return String(n || '').replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9 ]/g, '').replace(/\s+/g, ' ').trim().slice(0, 30); }
 
+function protegePropietario_(nombre) {
+  const t = usuarios_().find(u => u.nombre.toLowerCase() === String(nombre).toLowerCase());
+  if (t && t.propietario && t.nombre.toLowerCase() !== QUIEN_.toLowerCase()) throw new Error('Solo el propietario puede modificar su propio usuario');
+}
+
 function pinAzar_() { return String(1000 + Math.floor(Math.random() * 9000)); }
 
 function hojaUsuarios_() {
@@ -117,7 +124,7 @@ function registrarUsuario(clave, nombre, pin) {
 
 function listarUsuarios(k) {
   soloAdmin_(k);
-  return usuarios_().map(u => ({ nombre: u.nombre, activo: u.activo, admin: u.admin, rol: u.rol }));
+  return usuarios_().map(u => ({ nombre: u.nombre, activo: u.activo, admin: u.admin, rol: u.rol, propietario: !!u.propietario }));
 }
 
 function rolValido_(r) { r = String(r || 'Entrevistador'); return ['Admin', 'Entrevistador', 'Lectura'].indexOf(r) > -1 ? r : 'Entrevistador'; }
@@ -142,6 +149,7 @@ function crearUsuario(k, nombre, rol) {
 function cambiarRol(k, nombre, rol) {
   soloAdmin_(k);
   if (String(nombre).toLowerCase() === QUIEN_.toLowerCase()) throw new Error('No podés cambiarte el rol a vos mismo');
+  protegePropietario_(nombre);
   const sh = hojaUsuarios_();
   const f = filaUsuario_(sh, nombre);
   if (!f) throw new Error('Usuario no encontrado');
@@ -153,6 +161,7 @@ function cambiarRol(k, nombre, rol) {
 
 function reiniciarPin(k, nombre) {
   soloAdmin_(k);
+  protegePropietario_(nombre);
   const sh = hojaUsuarios_();
   const f = filaUsuario_(sh, nombre);
   if (!f) throw new Error('Usuario no encontrado');
@@ -166,6 +175,7 @@ function reiniciarPin(k, nombre) {
 function activarUsuario(k, nombre, activo) {
   soloAdmin_(k);
   if (!activo && String(nombre).toLowerCase() === QUIEN_.toLowerCase()) throw new Error('No podés bloquearte a vos mismo');
+  protegePropietario_(nombre);
   const sh = hojaUsuarios_();
   const f = filaUsuario_(sh, nombre);
   if (!f) throw new Error('Usuario no encontrado');

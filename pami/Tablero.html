@@ -115,7 +115,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v16</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v17</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -231,11 +231,11 @@ function panelUsuarios() {
     e.innerHTML = '<div style="display:flex;gap:8px;margin:14px 0 6px;flex-wrap:wrap"><input id="nuN" type="text" placeholder="Nombre y apellido" style="flex:1;min-width:160px"><select id="nuR" style="width:auto">' + ro.map(function (r) { return '<option>' + r + '</option>'; }).join('') + '</select><button class="btn" onclick="nuevoUsuario()">＋ Crear</button></div>' +
       '<div class="txt" style="font-size:12px;color:#3F4B66;margin-bottom:8px"><b>Entrevistador</b>: carga y modifica. <b>Lectura</b>: solo mira. <b>Admin</b>: además administra usuarios y ve el control de cambios.</div>' +
       l.map(function (u) {
-        var yo = u.nombre.toLowerCase() === String(U).toLowerCase();
-        return '<div class="row" style="align-items:center;flex-wrap:wrap"><span class="v"><b>' + esc(u.nombre) + '</b> <span class="tag">' + esc(u.rol) + '</span>' + (u.activo ? '' : ' <span class="tag r">Bloqueado</span>') + '</span>' +
-          (yo ? '' : '<select style="width:auto;padding:5px 8px;font-size:12px" data-n="' + esc(u.nombre) + '" onchange="cambiarRolU(this.dataset.n,this.value)">' + ro.map(function (r) { return '<option' + (r === u.rol ? ' selected' : '') + '>' + r + '</option>'; }).join('') + '</select>') +
-          '<button class="btn ghost" style="padding:6px 10px;font-size:11px;margin-left:6px" data-n="' + esc(u.nombre) + '" onclick="reiniciarPinU(this.dataset.n)">Reiniciar PIN</button>' +
-          (yo ? '' : '<button class="btn sec" style="padding:6px 10px;font-size:11px;margin-left:6px" data-n="' + esc(u.nombre) + '" data-a="' + (u.activo ? '0' : '1') + '" onclick="activarU(this.dataset.n,this.dataset.a===\'1\')">' + (u.activo ? 'Bloquear' : 'Habilitar') + '</button>') + '</div>';
+        var yo = u.nombre.toLowerCase() === String(U).toLowerCase(), prot = u.propietario && !yo;
+        return '<div class="row" style="align-items:center;flex-wrap:wrap"><span class="v"><b>' + esc(u.nombre) + '</b> <span class="tag">' + esc(u.rol) + '</span>' + (u.propietario ? ' <span class="tag">Propietario</span>' : '') + (u.activo ? '' : ' <span class="tag r">Bloqueado</span>') + '</span>' +
+          (yo || prot ? '' : '<select style="width:auto;padding:5px 8px;font-size:12px" data-n="' + esc(u.nombre) + '" onchange="cambiarRolU(this.dataset.n,this.value)">' + ro.map(function (r) { return '<option' + (r === u.rol ? ' selected' : '') + '>' + r + '</option>'; }).join('') + '</select>') +
+          (prot ? '' : '<button class="btn ghost" style="padding:6px 10px;font-size:11px;margin-left:6px" data-n="' + esc(u.nombre) + '" onclick="reiniciarPinU(this.dataset.n)">Reiniciar PIN</button>') +
+          (yo || prot ? '' : '<button class="btn sec" style="padding:6px 10px;font-size:11px;margin-left:6px" data-n="' + esc(u.nombre) + '" data-a="' + (u.activo ? '0' : '1') + '" onclick="activarU(this.dataset.n,this.dataset.a===\'1\')">' + (u.activo ? 'Bloquear' : 'Habilitar') + '</button>') + '</div>';
       }).join('');
   }).withFailureHandler(fer).listarUsuarios(K);
 }
