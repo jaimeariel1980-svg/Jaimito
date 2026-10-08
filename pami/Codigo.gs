@@ -1,6 +1,6 @@
 const CUENTA = 'dotacionpp1@gmail.com';
-const HEAD_CAND = ['Fecha', 'Nombre', 'Teléfono', 'DNI', 'Email', 'Localidad', 'Búsqueda', 'Pretensión', 'Nivel de Ajuste', 'Justificación', 'Resumen', 'Requisitos', 'Link CV', 'Estado', 'Entrevistó', 'Nota screening', 'Nota competencias', 'Recomendó', 'Recomendado por', 'Comentarios', 'Respuestas', 'Procesado', 'Intentos', 'Fuente', 'ID', 'Nota PAMI virtual', 'Nota entrevista técnica', 'Cita', 'Entrevistas (calendario)', 'Contactado', 'Descarte enviado', 'Informe screening', 'Informe competencias', 'Último movimiento', 'Zona', 'Formación', 'Postulación', 'Policlínico', 'Domicilio'];
-const COL = { fecha: 1, nombre: 2, tel: 3, dni: 4, email: 5, loc: 6, busq: 7, pret: 8, ajuste: 9, just: 10, resumen: 11, req: 12, cv: 13, estado: 14, entrev: 15, notaScr: 16, notaComp: 17, recTipo: 18, recPor: 19, coment: 20, resp: 21, proc: 22, intentos: 23, fuente: 24, id: 25, notaP1: 26, notaP2: 27, cita: 28, entrevistas: 29, contactado: 30, descarte: 31, infScr: 32, infComp: 33, mov: 34, zona: 35, formacion: 36, postulacion: 37, policlinico: 38, domicilio: 39 };
+const HEAD_CAND = ['Fecha', 'Nombre', 'Teléfono', 'DNI', 'Email', 'Localidad', 'Búsqueda', 'Pretensión', 'Nivel de Ajuste', 'Justificación', 'Resumen', 'Requisitos', 'Link CV', 'Estado', 'Entrevistó', 'Nota screening', 'Nota competencias', 'Recomendó', 'Recomendado por', 'Comentarios', 'Respuestas', 'Procesado', 'Intentos', 'Fuente', 'ID', 'Nota PAMI virtual', 'Nota entrevista técnica', 'Cita', 'Entrevistas (calendario)', 'Contactado', 'Descarte enviado', 'Informe screening', 'Informe competencias', 'Último movimiento', 'Zona', 'Formación', 'Postulación', 'Policlínico', 'Domicilio', 'Policlínico sugerido'];
+const COL = { fecha: 1, nombre: 2, tel: 3, dni: 4, email: 5, loc: 6, busq: 7, pret: 8, ajuste: 9, just: 10, resumen: 11, req: 12, cv: 13, estado: 14, entrev: 15, notaScr: 16, notaComp: 17, recTipo: 18, recPor: 19, coment: 20, resp: 21, proc: 22, intentos: 23, fuente: 24, id: 25, notaP1: 26, notaP2: 27, cita: 28, entrevistas: 29, contactado: 30, descarte: 31, infScr: 32, infComp: 33, mov: 34, zona: 35, formacion: 36, postulacion: 37, policlinico: 38, domicilio: 39, polSug: 40 };
 const POLICLINICOS = ['Policlínico PAMI 1', 'Policlínico PAMI 2'];
 const NOTAS = ['', 'A', 'B+', 'B', 'C'];
 const HEAD_BUSQ = ['id', 'titulo', 'ubicacion', 'modalidad', 'descripcion', 'requisitos', 'estado', 'prompt_ia', 'recomendacion', 'palabras_clave', 'link_perfil', 'link_flyer'];
@@ -99,7 +99,8 @@ function setup() {
     ['nombre_cliente', 'PAMI'], ['firma', 'Equipo de Selección'], ['asunto_mail', 'Proceso de selección · PAMI'],
     ['umbral_a', '8.5'], ['umbral_bplus', '8'], ['umbral_b', '6.5'], ['dias_alerta', '7'],
     ['calendario', ''], ['url_web', ''], ['link_agenda', ''], ['link_agenda_screening', ''], ['link_agenda_competencias', ''], ['link_agenda_pami2', ''], ['carpeta_informes', ''],
-    ['duracion_screening', '30'], ['duracion_competencias', '60'], ['duracion_pami2', '60']
+    ['duracion_screening', '30'], ['duracion_competencias', '60'], ['duracion_pami2', '60'],
+    ['direccion_policlinico_1', 'Sarmiento 373, Rosario, Santa Fe, Argentina'], ['direccion_policlinico_2', 'Olive 1159, Rosario, Santa Fe, Argentina']
   ]);
   SpreadsheetApp.flush();
   const cfg = ajustes_();
@@ -240,18 +241,19 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '4';
+const ESQUEMA = '5';
 
 function actualizarEsquema_() {
   const props = PropertiesService.getScriptProperties();
   if (props.getProperty('ESQUEMA') === ESQUEMA) return;
   const sh = hoja_('Candidatos');
   const pasos = [
-    () => [[COL.policlinico, 'Policlínico'], [COL.domicilio, 'Domicilio'], [COL.notaP2, 'Nota entrevista técnica']].forEach(x => {
+    () => [[COL.policlinico, 'Policlínico'], [COL.domicilio, 'Domicilio'], [COL.polSug, 'Policlínico sugerido'], [COL.notaP2, 'Nota entrevista técnica']].forEach(x => {
       const c = sh.getRange(1, x[0]);
       const v = String(c.getValue()).trim();
       if (!v || (x[0] === COL.notaP2 && v === 'Nota PAMI presencial')) c.setValue(x[1]).setFontWeight('bold').setBackground('#034EA2').setFontColor('#FFFFFF');
     }),
+    () => asegurarAjustes_([['direccion_policlinico_1', 'Sarmiento 373, Rosario, Santa Fe, Argentina'], ['direccion_policlinico_2', 'Olive 1159, Rosario, Santa Fe, Argentina']]),
     () => {
       const pl = hoja_('Plantillas'), filas = pl.getDataRange().getValues();
       plantillasIniciales_().forEach(t => {
@@ -556,6 +558,7 @@ REGLAS DE LA NOTA:
     sh.getRange(fila, COL.ajuste, 1, 4).setValues([[nota, 'IA sugiere ' + nota + ': ' + String(c.justificacion || ''), String(c.resumen_experiencia || ''), reqTxt]]);
     registrarHistorial_(r[COL.id - 1], r[COL.nombre - 1], 'Análisis CV', 'La IA sugiere ' + nota, 'sistema');
     sh.getRange(fila, COL.proc).setValue('SI');
+    try { sugerirPoliclinico_(fila); } catch (e2) { registrarError_('sugerir policlínico fila ' + fila, e2); }
   } catch (e) {
     registrarError_('analizar fila ' + fila, e);
     sh.getRange(fila, COL.proc).setValue(intentos >= 3 ? 'Error' : 'Pendiente');
@@ -634,6 +637,63 @@ function ciclo() {
   const lock = LockService.getUserLock();
   if (!lock.tryLock(1000)) return;
   try {
-    [actualizarEsquema_, procesarCorreos, procesarCarpeta, procesarPendientes, syncCalendario].forEach(fn => { try { fn(); } catch (e) { registrarError_(fn.name, e); } });
+    [actualizarEsquema_, procesarCorreos, procesarCarpeta, procesarPendientes, sugerirPendientes_, syncCalendario].forEach(fn => { try { fn(); } catch (e) { registrarError_(fn.name, e); } });
   } finally { lock.releaseLock(); }
+}
+
+
+function geo_(q) {
+  const res = Maps.newGeocoder().setRegion('ar').setLanguage('es').geocode(q);
+  if (res.status === 'OK' && res.results.length) {
+    const g = res.results[0].geometry;
+    return { lat: g.location.lat, lng: g.location.lng, aprox: g.location_type === 'APPROXIMATE' };
+  }
+  if (res.status === 'ZERO_RESULTS') return null;
+  throw new Error('Geocoder: ' + res.status);
+}
+
+function kmEntre_(a, b) {
+  const rad = x => x * Math.PI / 180, dLat = rad(b.lat - a.lat), dLng = rad(b.lng - a.lng);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 6371 * 2 * Math.asin(Math.sqrt(h));
+}
+
+function puntosPoli_() {
+  const aj = ajustes_();
+  const dirs = [aj.direccion_policlinico_1, aj.direccion_policlinico_2];
+  const props = PropertiesService.getScriptProperties();
+  let c = null;
+  try { c = JSON.parse(props.getProperty('GEO_POLI') || 'null'); } catch (e) { }
+  if (c && c.dirs && c.dirs[0] === dirs[0] && c.dirs[1] === dirs[1]) return c.pts;
+  const pts = dirs.map(d => { const g = geo_(d); if (!g) throw new Error('No se encontró la dirección del policlínico: ' + d); return g; });
+  props.setProperty('GEO_POLI', JSON.stringify({ dirs: dirs, pts: pts }));
+  return pts;
+}
+
+function sugerirPoliclinico_(fila) {
+  const sh = hoja_('Candidatos');
+  const dom = String(sh.getRange(fila, COL.domicilio).getValue() || '').trim();
+  if (!dom) return;
+  const loc = String(sh.getRange(fila, COL.loc).getValue() || '').trim();
+  const q = dom + (loc && dom.toLowerCase().indexOf(loc.toLowerCase()) === -1 ? ', ' + loc : '') + ', Santa Fe, Argentina';
+  const g = geo_(q);
+  const celda = sh.getRange(fila, COL.polSug);
+  if (!g) { celda.setValue('No se pudo ubicar la dirección'); return; }
+  const pts = puntosPoli_();
+  const d = pts.map(p => kmEntre_(g, p));
+  const i = d[0] <= d[1] ? 0 : 1;
+  const f = x => (g.aprox ? '≈' : '') + (Math.round(x * 10) / 10).toString().replace('.', ',') + ' km';
+  celda.setValue(POLICLINICOS[i] + ' · ' + f(d[i]) + ' (' + POLICLINICOS[1 - i].replace('Policlínico ', '') + ': ' + f(d[1 - i]) + ')');
+  registrarHistorial_(sh.getRange(fila, COL.id).getValue(), sh.getRange(fila, COL.nombre).getValue(), 'Policlínico sugerido', POLICLINICOS[i] + ' (' + f(d[i]) + ')', 'sistema');
+}
+
+function sugerirPendientes_() {
+  const sh = hoja_('Candidatos');
+  const d = sh.getDataRange().getValues();
+  let n = 0;
+  for (let i = 1; i < d.length && n < 8; i++) {
+    if (!d[i][COL.nombre - 1] || !String(d[i][COL.domicilio - 1] || '').trim() || String(d[i][COL.polSug - 1] || '').trim()) continue;
+    try { sugerirPoliclinico_(i + 1); } catch (e) { registrarError_('sugerir policlínico fila ' + (i + 1), e); break; }
+    n++;
+  }
 }

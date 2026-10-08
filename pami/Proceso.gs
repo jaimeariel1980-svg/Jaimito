@@ -88,6 +88,7 @@ function alEditar(e) {
     if (fila < 2 || e.range.getNumRows() > 1) return;
     const etapa = Object.keys(NOTA_COL).find(k => NOTA_COL[k] === col);
     if (etapa) { aplicarNota_(sh, fila, etapa, e.range.getValue(), 'planilla'); return; }
+    if (col === COL.domicilio || col === COL.loc) sh.getRange(fila, COL.polSug).clearContent();
     if (col === COL.estado) {
       sh.getRange(fila, COL.mov).setValue(new Date());
       registrarHistorial_(sh.getRange(fila, COL.id).getValue(), sh.getRange(fila, COL.nombre).getValue(), 'Estado', 'Cambiado a mano a "' + e.range.getValue() + '"', 'planilla');
@@ -121,7 +122,7 @@ function getTablero(k) {
       recTipo: r[COL.recTipo - 1], recPor: r[COL.recPor - 1], coment: r[COL.coment - 1], resp: resp, proc: r[COL.proc - 1], fuente: r[COL.fuente - 1],
       cita: citaObj_(r[COL.cita - 1]), entrevistas: String(r[COL.entrevistas - 1] || ''), contactado: String(r[COL.contactado - 1] || ''),
       descarte: String(r[COL.descarte - 1] || ''), infScr: String(r[COL.infScr - 1] || ''), infComp: String(r[COL.infComp - 1] || ''),
-      zona: String(r[COL.zona - 1] || ''), formacion: String(r[COL.formacion - 1] || ''), postulacion: String(r[COL.postulacion - 1] || ''), policlinico: String(r[COL.policlinico - 1] || ''), domicilio: String(r[COL.domicilio - 1] || ''),
+      zona: String(r[COL.zona - 1] || ''), formacion: String(r[COL.formacion - 1] || ''), postulacion: String(r[COL.postulacion - 1] || ''), policlinico: String(r[COL.policlinico - 1] || ''), domicilio: String(r[COL.domicilio - 1] || ''), polSug: String(r[COL.polSug - 1] || ''),
       conoce: (resp.find(x => /conoc[eé]s a alguien/i.test(x.q) && x.a && !/^(no|ninguno|nadie|-)\.?$/i.test(String(x.a).trim())) || {}).a || ''
     });
   }
@@ -213,7 +214,7 @@ function datosComunes_(r) {
   const b = busquedas_().find(x => x.id === r[COL.busq - 1]);
   return {
     NOMBRE: String(r[COL.nombre - 1]).trim().split(/\s+/)[0], PUESTO: b ? b.titulo : '', EMPRESA: aj.nombre_cliente || 'PAMI',
-    ENTREVISTADOR: String(r[COL.entrev - 1] || lista_(aj.entrevistadores, ',')[0] || ''), LINK: aj.link_agenda || '', FIRMA: aj.firma || '', POLICLINICO: r[COL.policlinico - 1] ? 'el ' + r[COL.policlinico - 1] : 'los Policlínicos PAMI 1 y 2', aj: aj
+    ENTREVISTADOR: String(r[COL.entrev - 1] || lista_(aj.entrevistadores, ',')[0] || ''), LINK: aj.link_agenda || '', FIRMA: aj.firma || '', POLICLINICO: (r[COL.policlinico - 1] || String(r[COL.polSug - 1] || '').split(' · ')[0]).indexOf('Policlínico') === 0 ? 'el ' + (r[COL.policlinico - 1] || String(r[COL.polSug - 1]).split(' · ')[0]) : 'los Policlínicos PAMI 1 y 2', aj: aj
   };
 }
 
