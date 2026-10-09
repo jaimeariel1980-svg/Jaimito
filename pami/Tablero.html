@@ -117,7 +117,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v26</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v27</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -373,7 +373,7 @@ function card(c){
   if(c.descarte)pr+='<span class="tag">✉ Descarte enviado</span>';
   if(!terminal(c.estado)&&dd>=D.cfg.diasAlerta)pr+='<span class="tag r">🕒 '+dd+' d sin movimiento</span>';
   var mk='';
-  if(c.motivo)mk+='<span class="tag r">✖ '+esc(c.motivo)+'</span>';
+  if(c.motivo&&/^Descartad/i.test(c.estado))mk+='<span class="tag r">✖ '+esc(c.motivo)+'</span>';
   if(rc)mk+='<span class="tag rec">★ '+(c.recTipo?'Recomendado: ':'')+esc(rc)+'</span>';
   if(c.proc&&c.proc!=='SI')mk+='<span class="tag w">'+(c.proc==='Pendiente'?'Analizando CV…':c.proc==='NoCV'?'¿No es un CV?':'Revisar CV')+'</span>';
   if(c.fuente&&c.fuente!=='Web')mk+='<span class="tag">'+esc(c.fuente)+'</span>';
@@ -470,7 +470,7 @@ function volverFicha(){document.getElementById('fmodal').classList.remove('show'
 function abrir(f){
   CUR=f;var c=byFila(f);if(!c)return;
   var rec=defRec(c.busq),n=ind(c),ct=citaTxt(c),dd=dias(c),al='';
-  if(c.motivo)al+='<div class="alerta a3">✖ Motivo de descarte: '+esc(c.motivo)+'</div>';
+  if(c.motivo&&/^Descartad/i.test(c.estado))al+='<div class="alerta a3">✖ Motivo de descarte: '+esc(c.motivo)+'</div>';
   if(recom(c))al+='<div class="alerta rec">★ '+(c.recTipo?'Recomendado por: ':'')+esc(recom(c))+'</div>';
   if(ct)al+='<div class="alerta '+(ct.hoy?'a3':'a1')+'">📅 '+esc(ct.tipo)+': '+esc(ct.txt)+'</div>';
   if(c.proc==='NoCV')al+='<div class="alerta a2">La IA no reconoció el adjunto como un CV. Revisalo a mano.</div>';
