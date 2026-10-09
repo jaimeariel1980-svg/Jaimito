@@ -97,7 +97,7 @@ function setup() {
   }
   SpreadsheetApp.flush();
   asegurarAjustes_([
-    ['nombre_cliente', 'PAMI'], ['firma', 'Equipo de Selección'], ['asunto_mail', 'Proceso de selección · PAMI'],
+    ['nombre_cliente', 'PAMI'], ['firma', 'Equipo de Atracción y Elección'], ['asunto_mail', 'Proceso de selección · PAMI'],
     ['umbral_a', '8.5'], ['umbral_bplus', '8'], ['umbral_b', '6.5'], ['dias_alerta', '7'],
     ['calendario', ''], ['url_web', ''], ['link_agenda', ''], ['link_agenda_screening', ''], ['link_agenda_competencias', ''], ['link_agenda_pami2', ''], ['carpeta_informes', ''], ['calendario_poli2', 'dotacionpp2@gmail.com'], ['link_agenda_screening_poli2', ''], ['link_agenda_competencias_poli2', ''], ['link_agenda_pami2_poli2', ''],
     ['duracion_screening', '30'], ['duracion_competencias', '60'], ['duracion_pami2', '60'],
@@ -242,7 +242,7 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '16';
+const ESQUEMA = '17';
 
 function actualizarEsquema_() {
   const props = PropertiesService.getScriptProperties();
@@ -280,11 +280,15 @@ function actualizarEsquema_() {
       plantillasIniciales_().forEach(t => {
         const i = filas.findIndex(f => f[0] === t[0]);
         if (i === -1) { pl.appendRow(t); pl.getRange(pl.getLastRow(), 3).setWrap(true); }
-        else if (t[0] === 'contacto-screening' && String(filas[i][2]).indexOf('[POLICLINICO]') === -1) {
+        else if (t[0] === 'contacto-screening' && (String(filas[i][2]).indexOf('[POLICLINICO]') === -1 || /recursos humanos/i.test(String(filas[i][2])))) {
           pl.appendRow(['contacto-screening-anterior', 'WhatsApp', filas[i][2]]);
           pl.getRange(i + 1, 3).setValue(t[2]);
         }
       });
+      const todas = pl.getDataRange().getValues();
+      todas.forEach((f, i) => { if (i > 0 && /equipo de Selección/.test(String(f[2]))) pl.getRange(i + 1, 3).setValue(String(f[2]).replace(/equipo de Selección/g, 'equipo de Atracción y Elección')); });
+      const aj = hoja_('Ajustes'), da = aj.getDataRange().getValues();
+      da.forEach((f, i) => { if (String(f[0]).trim() === 'firma' && String(f[1]).trim() === 'Equipo de Selección') aj.getRange(i + 1, 2).setValue('Equipo de Atracción y Elección'); });
     },
     () => {
       const n = Math.max(1, Math.min(1000, sh.getMaxRows() - 1));
