@@ -242,7 +242,7 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '12';
+const ESQUEMA = '13';
 
 function actualizarEsquema_() {
   const props = PropertiesService.getScriptProperties();
@@ -294,6 +294,8 @@ function actualizarEsquema_() {
       const sh = hoja_('Ajustes'), d = sh.getDataRange().getValues();
       const i = d.findIndex(r => String(r[0]).trim() === 'link_agenda_screening');
       if (i > 0 && !String(d[i][1] || '').trim()) sh.getRange(i + 1, 2).setValue('https://calendar.app.google/5681GAipvQ1VFkWf6');
+      const j = d.findIndex(r => String(r[0]).trim() === 'link_agenda_screening_poli2');
+      if (j > 0 && !String(d[j][1] || '').trim()) sh.getRange(j + 1, 2).setValue('https://calendar.app.google/fgkSfx6QzC7JnzuA6');
     }
   ];
   let ok = true;
