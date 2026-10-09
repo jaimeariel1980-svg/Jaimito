@@ -242,7 +242,7 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '19';
+const ESQUEMA = '20';
 
 function actualizarEsquema_() {
   const props = PropertiesService.getScriptProperties();
@@ -310,6 +310,9 @@ function actualizarEsquema_() {
         sh.getRange(i + 1, COL.proc).setValue('Pendiente');
         sh.getRange(i + 1, COL.intentos).setValue(0);
       }
+    }),
+    () => sh.getDataRange().getValues().forEach((r, i) => {
+      if (i > 0 && String(r[COL.motivo - 1] || '').trim() && !/^Descartad|reserva/i.test(String(r[COL.estado - 1]))) sh.getRange(i + 1, COL.motivo).clearContent();
     })
   ];
   let ok = true;

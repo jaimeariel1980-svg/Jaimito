@@ -241,14 +241,25 @@ function etapaDeEstado_(estado) {
   return -1;
 }
 
+function reactivar_(sh, fila, antes, estado) {
+  if (!/^Descartad/i.test(String(antes || '')) || /^Descartad/i.test(String(estado || ''))) return;
+  const mot = String(sh.getRange(fila, COL.motivo).getValue() || '');
+  if (!mot && !String(sh.getRange(fila, COL.descarte).getValue() || '').trim()) return;
+  sh.getRange(fila, COL.motivo).clearContent();
+  sh.getRange(fila, COL.descarte).clearContent();
+  registrarHistorial_(sh.getRange(fila, COL.id).getValue(), sh.getRange(fila, COL.nombre).getValue(), 'Reactivado', 'Sale de Descartados' + (mot ? ' (se quitó el motivo: ' + mot + ')' : ''), QUIEN_ ? 'tablero' : 'sistema');
+}
+
 function setEstado_(sh, fila, estado, nota) {
   const c = sh.getRange(fila, COL.estado);
+  const antes = String(c.getValue() || '');
   const regla = c.getDataValidation();
   c.setDataValidation(null).setValue(estado);
   if (regla) c.setDataValidation(regla);
   const col = nota ? colorNota_(nota) : null;
   if (col) c.setBackground(col[0]).setFontColor(col[1]).setFontWeight('bold').setHorizontalAlignment('center');
   sh.getRange(fila, COL.mov).setValue(new Date());
+  reactivar_(sh, fila, antes, estado);
 }
 
 function registrarHistorial_(id, nombre, tipo, detalle, quien) {
@@ -293,6 +304,7 @@ function alEditar(e) {
     if (col === COL.domicilio) sh.getRange(fila, COL.domRev).setValue('Manual');
     if (col === COL.estado) {
       sh.getRange(fila, COL.mov).setValue(new Date());
+      reactivar_(sh, fila, e.oldValue, e.range.getValue());
       registrarHistorial_(sh.getRange(fila, COL.id).getValue(), sh.getRange(fila, COL.nombre).getValue(), 'Estado', 'Cambiado a mano a "' + e.range.getValue() + '"', quien);
     }
   } catch (err) { registrarError_('alEditar', err); }
@@ -396,7 +408,7 @@ function guardarCandidato(k, fila, c) {
     cambio(COL.policlinico, c.policlinico, 'Policlínico');
     set(COL.policlinico, c.policlinico);
   }
-  if (c.motivo != null) {
+  if (c.motivo != null && /^Descartad/i.test(String(sh.getRange(fila, COL.estado).getValue()))) {
     if (c.motivo !== '' && MOTIVOS_DESCARTE.indexOf(c.motivo) === -1) throw new Error('Motivo inválido');
     const antes = String(sh.getRange(fila, COL.motivo).getValue() || '');
     set(COL.motivo, c.motivo);
