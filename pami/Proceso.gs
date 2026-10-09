@@ -290,6 +290,7 @@ function alEditar(e) {
     const etapa = Object.keys(NOTA_COL).find(k => NOTA_COL[k] === col);
     if (etapa) { aplicarNota_(sh, fila, etapa, e.range.getValue(), quien); return; }
     if (col === COL.domicilio || col === COL.loc) sh.getRange(fila, COL.polSug).clearContent();
+    if (col === COL.domicilio) sh.getRange(fila, COL.domRev).setValue('Manual');
     if (col === COL.estado) {
       sh.getRange(fila, COL.mov).setValue(new Date());
       registrarHistorial_(sh.getRange(fila, COL.id).getValue(), sh.getRange(fila, COL.nombre).getValue(), 'Estado', 'Cambiado a mano a "' + e.range.getValue() + '"', quien);

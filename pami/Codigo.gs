@@ -242,7 +242,7 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '15';
+const ESQUEMA = '16';
 
 function actualizarEsquema_() {
   const props = PropertiesService.getScriptProperties();
@@ -545,7 +545,7 @@ ${bloque}
 === FIN DECLARADOS ===
 
 Devolvé SOLO JSON válido con este formato:
-{"es_cv":true,"nombre":"Nombre y apellido real del candidato","telefono":"","dni":"solo números","localidad":"SOLO la ciudad o localidad (ej. Rosario, Funes); nunca la calle ni el número. Vacío si el CV no la menciona","domicilio":"calle, número y barrio que figuran en el CV (vacío si no figura)","nivel_ajuste":"A/B+/B/C","justificacion":"una sola oración corta con el porqué de la nota","formacion_titulo":"título o formación principal, textual (ej. Enfermero/a Profesional)","requisitos":{"formacion":"","matricula":"","experiencia":"","zona":"","continuidad":""},"resumen_experiencia":"3-4 oraciones narrativas sobre trayectoria, atributos y actitud, sin repetir el checklist"}
+{"es_cv":true,"nombre":"Nombre y apellido real del candidato","telefono":"","dni":"solo números","localidad":"SOLO la ciudad o localidad (ej. Rosario, Funes); nunca la calle ni el número. Vacío si el CV no la menciona","domicilio":"domicilio de residencia del candidato: el que figura como Domicilio o Dirección en sus datos personales (calle y número). NO uses direcciones de instituciones, empleadores ni lugares de estudio. Vacío si no figura","nivel_ajuste":"A/B+/B/C","justificacion":"una sola oración corta con el porqué de la nota","formacion_titulo":"título o formación principal, textual (ej. Enfermero/a Profesional)","requisitos":{"formacion":"","matricula":"","experiencia":"","zona":"","continuidad":""},"resumen_experiencia":"3-4 oraciones narrativas sobre trayectoria, atributos y actitud, sin repetir el checklist"}
 Devolvé es_cv:false SOLO si el texto claramente NO es un currículum (por ejemplo una factura o publicidad). Ante la duda, es_cv:true.
 REGLAS DE LA NOTA:
 - A: cumple todo, perfil potente sin ruido.
@@ -567,7 +567,7 @@ REGLAS DE LA NOTA:
       return;
     }
     const fill = (col, v) => { v = String(v || '').trim(); if (v && !String(r[col - 1] || '').trim()) sh.getRange(fila, col).setValue(v); };
-    fill(COL.domicilio, c.domicilio);
+    fill(COL.domicilio, domicilioPorEtiqueta_(texto) || c.domicilio);
     if (String(r[COL.fuente - 1]) !== 'Web') {
       const nom = String(c.nombre || '').trim();
       if (nom.split(/\s+/).length >= 2) sh.getRange(fila, COL.nombre).setValue(nom);
@@ -580,7 +580,7 @@ REGLAS DE LA NOTA:
     let asumida = false;
     if (!limpiaLoc_(sh.getRange(fila, COL.loc).getValue())) { sh.getRange(fila, COL.loc).setValue('Rosario'); asumida = true; }
     const req = c.requisitos || {};
-    const zonaTxt = asumida ? 'Zona OK' : /fuera/i.test(String(req.zona)) ? 'Fuera' : /ok|dentro|cumple/i.test(String(req.zona)) ? 'Zona OK' : String(req.zona || '');
+    const zonaTxt = asumida ? 'Zona OK' : (/fuera/i.test(String(req.zona)) ? 'Fuera' : 'Zona OK');
     const declForm = (decl.find(x => /t[ií]tulo|formaci/i.test(x.q)) || {}).a;
     if (zonaTxt) sh.getRange(fila, COL.zona).setValue(zonaTxt);
     const forma = String(declForm || c.formacion_titulo || '').trim();
@@ -669,7 +669,7 @@ function ciclo() {
   const lock = LockService.getUserLock();
   if (!lock.tryLock(1000)) return;
   try {
-    [actualizarEsquema_, procesarCorreos, procesarCarpeta, procesarPendientes, completarDomicilios_, sugerirPendientes_, syncCalendario].forEach(fn => { try { fn(); } catch (e) { registrarError_(fn.name, e); } });
+    [actualizarEsquema_, procesarCorreos, procesarCarpeta, procesarPendientes, completarDomicilios_, verificarDomicilios_, sugerirPendientes_, syncCalendario].forEach(fn => { try { fn(); } catch (e) { registrarError_(fn.name, e); } });
   } finally { lock.releaseLock(); }
 }
 
@@ -702,6 +702,41 @@ function puntosPoli_() {
   return pts;
 }
 
+function domicilioPorEtiqueta_(texto) {
+  const m = String(texto || '').replace(/\r/g, '\n').match(/(?:domicilio|direcci[oó]n|dir\.|residencia|vive en)\s*(?:real|actual|particular)?\s*[:\-–]\s*([^\n|]{4,90})/i);
+  if (!m) return '';
+  const v = m[1].replace(/\s+(fecha|tel|cel|tel[eé]fono|e-?mail|correo|d\.?n\.?i|mat|estado civil|nacionalidad)\b.*$/i, '').replace(/[\s.,;]+$/, '').trim();
+  return v.length >= 4 ? v.slice(0, 120) : '';
+}
+
+function verificarDomicilios_() {
+  const sh = hoja_('Candidatos');
+  const d = sh.getDataRange().getValues();
+  let n = 0;
+  for (let i = 1; i < d.length && n < 4; i++) {
+    const r = d[i];
+    const dom = String(r[COL.domicilio - 1] || '').trim(), rev = String(r[COL.domRev - 1] || '');
+    if (!r[COL.nombre - 1] || !r[COL.cv - 1] || !dom || rev === 'Verificado' || rev === 'Manual') continue;
+    const fila = i + 1;
+    if (String(r[COL.fuente - 1]) === 'Web') { sh.getRange(fila, COL.domRev).setValue('Verificado'); continue; }
+    n++;
+    const texto = textoCV_(r[COL.cv - 1]);
+    if (!texto || texto.trim().length < 50) {
+      const k = (Number(rev) || 0) + 1;
+      sh.getRange(fila, COL.domRev).setValue(k >= 3 ? 'Verificado' : String(k));
+      continue;
+    }
+    const et = domicilioPorEtiqueta_(texto);
+    const lim = x => norm_(x).replace(/[^a-z0-9]/g, '');
+    if (et && lim(et) !== lim(dom)) {
+      sh.getRange(fila, COL.domicilio).setValue(et);
+      sh.getRange(fila, COL.polSug).clearContent();
+      registrarHistorial_(r[COL.id - 1], r[COL.nombre - 1], 'Domicilio', 'Corregido leyendo el CV: ' + dom + ' → ' + et, 'sistema');
+    }
+    sh.getRange(fila, COL.domRev).setValue('Verificado');
+  }
+}
+
 function limpiaLoc_(t) {
   t = String(t || '').trim();
   return (!t || /\d/.test(t) || t.length > 40) ? '' : t;
@@ -714,6 +749,8 @@ function repararLocalidades_() {
     const r = d[i];
     if (!r[COL.nombre - 1]) continue;
     const loc = String(r[COL.loc - 1] || '').trim();
+    const z0 = String(r[COL.zona - 1] || '').trim();
+    if (z0 && z0 !== 'Zona OK' && z0 !== 'Fuera') sh.getRange(i + 1, COL.zona).setValue('Zona OK');
     if (limpiaLoc_(loc)) continue;
     const fila = i + 1;
     if (loc && !String(r[COL.domicilio - 1] || '').trim()) sh.getRange(fila, COL.domicilio).setValue(loc);
@@ -758,7 +795,7 @@ function domicilioDeCV_(texto) {
     method: 'post', contentType: 'application/json', muteHttpExceptions: true,
     headers: { Authorization: 'Bearer ' + prop_('OPENAI_API_KEY') },
     payload: JSON.stringify({ model: 'gpt-4o-mini', response_format: { type: 'json_object' }, messages: [
-      { role: 'system', content: 'Del texto de un currículum extraé únicamente el domicilio de residencia del candidato (calle, número y barrio o localidad). Devolvé SOLO JSON {"domicilio":"..."} con cadena vacía si el CV no lo indica. No inventes nada.' },
+      { role: 'system', content: 'Del texto de un currículum extraé únicamente el domicilio de residencia del candidato (calle y número), el que figura como Domicilio o Dirección en sus datos personales. NO uses direcciones de instituciones, empleadores ni lugares de estudio. Devolvé SOLO JSON {"domicilio":"..."} con cadena vacía si el CV no lo indica. No inventes nada.' },
       { role: 'user', content: String(texto).slice(0, 6000) }] })
   });
   const parsed = JSON.parse(resp.getContentText());
@@ -783,7 +820,7 @@ function completarDomicilios_() {
       sh.getRange(fila, COL.domRev).setValue(k >= 3 ? 'Sin dato' : String(k));
       continue;
     }
-    const dom = domicilioDeCV_(texto);
+    const dom = domicilioPorEtiqueta_(texto) || domicilioDeCV_(texto);
     if (!dom) { sh.getRange(fila, COL.domRev).setValue('Sin dato'); continue; }
     sh.getRange(fila, COL.domicilio).setValue(dom);
     sh.getRange(fila, COL.domRev).setValue('OK');
