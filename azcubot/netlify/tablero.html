@@ -1193,6 +1193,7 @@ var EdPDF=(function(){
     '#edp .t{font-size:10.5px;font-weight:700;color:#fff;border-radius:6px;padding:1px 5px;margin-top:4px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'+
     '#edp .em{grid-column:1/-1;text-align:center;color:#6b7280;padding:50px 10px;border:2px dashed #b9c1d1;border-radius:14px;background:#fff}'+
     '#edp .rs{padding:6px 14px;font-size:12.5px;color:#4a5568;background:#fff;border-top:1px solid #dfe3ea}'+
+    '#edp .big{display:flex;flex-direction:column;gap:4px;align-items:center;width:210px;padding:16px 12px;font-size:28px;border-radius:14px}#edp .big b{font-size:15px}#edp .big small{font-size:12px;color:#6b7280;font-weight:400;font-style:normal}#edp .rg input{width:58px;padding:6px;border:1px solid #c9d0dc;border-radius:8px}'+
     '#edpv{position:fixed;inset:0;z-index:99995;background:rgba(10,20,40,.8);display:flex;align-items:center;justify-content:center;padding:14px;overflow:auto}#edpv canvas,#edpv img{max-width:100%;max-height:92vh;background:#fff;border-radius:6px}';
     document.head.appendChild(c);
   }
@@ -1207,9 +1208,9 @@ var EdPDF=(function(){
       try{
         if(f.type==='application/pdf'||/\.pdf$/i.test(f.name)){
           var ab=await f.arrayBuffer(),js=await pdfjsLib.getDocument({data:ab.slice(0)}).promise,fu={t:'pdf',ab:ab,js:js,name:f.name};S.fu.push(fu);
-          for(var i=0;i<js.numPages;i++){var pg={id:nuevaId(),f:fu,i:i,rot:0,box:'',th:''};S.pg.push(pg);nuevos.push(pg);}
+          for(var i=0;i<js.numPages;i++){var pg={id:nuevaId(),f:fu,i:i,rot:0,box:S.modo==='unir'&&S.dest?S.dest:'',th:''};S.pg.push(pg);nuevos.push(pg);}
         }else if(/^image\//.test(f.type)){
-          var j=await jpegDe(f),fi={t:'img',j:j,name:f.name};S.fu.push(fi);var p2={id:nuevaId(),f:fi,i:0,rot:0,box:'',th:j.th};S.pg.push(p2);
+          var j=await jpegDe(f),fi={t:'img',j:j,name:f.name};S.fu.push(fi);var p2={id:nuevaId(),f:fi,i:0,rot:0,box:S.modo==='unir'&&S.dest?S.dest:'',th:j.th};S.pg.push(p2);
         }else{alert('«'+f.name+'»: formato no soportado (usá PDF, JPG o PNG).');}
       }catch(e){alert('No pude leer «'+f.name+'»: '+(e&&e.message?e.message:e));}
     }
@@ -1249,8 +1250,13 @@ var EdPDF=(function(){
     tb.innerHTML='<button data-x="all">'+(nSel===S.pg.length&&nSel?'Quitar selección':'Seleccionar todo')+'</button>'+
       '<button data-x="rot" '+(nSel?'':'disabled')+'>↻ Rotar</button><button data-x="del" '+(nSel?'':'disabled')+'>🗑 Quitar</button>'+
       (con?'<select data-x="asig" '+(nSel?'':'disabled')+'><option value="">Asignar selección a…</option>'+S.slots.map(function(s){return '<option value="'+esc(s.key)+'">'+esc(s.label)+'</option>';}).join('')+'<option value="__none">Sin asignar</option></select>':'')+
-      '<span style="font-size:12px;color:#6b7280">'+(nSel?nSel+' seleccionada(s)':'Tocá las páginas para seleccionarlas · arrastrá para ordenar')+'</span>';
-    if(!S.pg.length){g.innerHTML='<div class="em">Todavía no hay páginas.<br>Tocá <b>+ Archivos</b> o arrastrá acá PDFs y fotos.<br><small>Podés mezclar fotos y PDFs: se pasan a páginas y las ordenás como quieras.</small></div>';rs.textContent='';return;}
+      '<span style="font-size:12px;color:#6b7280">'+(nSel?nSel+' seleccionada(s)':'Tocá las páginas para seleccionarlas · arrastrá para ordenar')+'</span>'+
+      (con&&S.modo==='unir'?'<div style="width:100%;margin-top:4px"><b style="font-size:13px">🔗 Unir todo en:</b> <select data-x="dest"><option value="">Elegí el documento…</option>'+S.slots.map(function(x){return '<option value="'+esc(x.key)+'"'+(S.dest===x.key?' selected':'')+'>'+esc(x.label)+'</option>';}).join('')+'</select> <small style="color:#6b7280">Agregá todas las fotos y PDFs que quieras con + Archivos; se guardan como un solo PDF.</small></div>':'')+
+      (con&&S.modo!=='unir'?'<div class="rg" style="width:100%;margin-top:4px;display:flex;gap:6px;align-items:center;flex-wrap:wrap"><b style="font-size:13px">✂️ Separar por páginas:</b> del <input type="number" min="1" max="'+S.pg.length+'" data-x="r1" value="1"> al <input type="number" min="1" max="'+S.pg.length+'" data-x="r2" value="'+S.pg.length+'"> es <select data-x="rasig"><option value="">Elegí el documento…</option>'+S.slots.map(function(x){return '<option value="'+esc(x.key)+'">'+esc(x.label)+'</option>';}).join('')+'</select></div>':'');
+    if(!S.pg.length&&(S.modo==='unir'||S.modo==='separar')){g.innerHTML='<div class="em">'+(S.modo==='unir'?'Elegí arriba en qué documento se guarda y tocá <b>+ Archivos</b>. Agregá todas las fotos y PDFs que quieras.':'Tocá <b>+ Archivos</b> y elegí el PDF que querés separar.')+'<br><br><button data-x="add">+ Archivos</button> <button data-x="m-ini">Volver</button></div>';rs.textContent='';return;}
+    if(!S.pg.length){
+      var bt='<button class="big" data-x="m-unir">🔗<b>Unir</b><small>Juntá fotos y PDFs en un solo '+(con?'documento':'PDF')+'</small></button>'+(con?'<button class="big" data-x="m-sep">✂️<b>Separar</b><small>Dividí un PDF en varios documentos (a mano o con IA)</small></button>':'')+'<button class="big" data-x="m-ord">📑<b>Ordenar / editar</b><small>Reordená, rotá o quitá páginas</small></button>';
+      g.innerHTML='<div class="em"><div style="font-weight:700;font-size:16px;margin-bottom:14px;color:#22386a">¿Qué querés hacer?</div><div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:14px">'+bt+'</div><small>También podés arrastrar PDFs y fotos acá. Se pueden mezclar.</small></div>';rs.textContent='';return;}
     g.innerHTML=S.pg.map(function(q,n){
       return '<div class="c'+(S.sel.has(q.id)?' s':'')+'" draggable="true" data-id="'+q.id+'" style="border-color:'+(con&&q.box?color(q.box):'#cbd2de')+'">'+
         '<span class="n">'+(n+1)+'</span><input type="checkbox" class="k" data-k="'+q.id+'" '+(S.sel.has(q.id)?'checked':'')+'>'+
@@ -1262,6 +1268,7 @@ var EdPDF=(function(){
       var cnt={},sin=0;S.pg.forEach(function(q){if(q.box)cnt[q.box]=(cnt[q.box]||0)+1;else sin++;});
       rs.innerHTML=S.slots.filter(function(s){return cnt[s.key];}).map(function(s){return '<b style="color:'+color(s.key)+'">'+esc(s.label)+'</b>: '+cnt[s.key]+' pág.';}).join(' · ')+(sin?(cnt&&Object.keys(cnt).length?' · ':'')+'<b>Sin asignar</b>: '+sin+' (no se guardan)':'');
     }else rs.textContent=S.pg.length+' página(s) → se guardan como un solo PDF';
+    if(con&&S.modo==='unir'&&!S.dest)rs.innerHTML='Elegí arriba en qué documento se guarda la unión.';
   }
   function mover(ids,antesDe){
     var set=new Set(ids),mov=S.pg.filter(function(q){return set.has(q.id);}),rest=S.pg.filter(function(q){return !set.has(q.id);});
@@ -1311,13 +1318,23 @@ var EdPDF=(function(){
       await S.o.alAplicar(out);cerrar();
     }catch(e){setMsg('');if(bt)bt.disabled=false;if(!(e&&e.silencio))alert('No se pudo aplicar: '+(e&&e.message?e.message:e));}
   }
+  async function descargar(){
+    var con=S.slots.length>0,res={};
+    if(!S.pg.length){alert('No hay páginas.');return;}
+    if(con){S.slots.forEach(function(s){var l=S.pg.filter(function(q){return q.box===s.key;});if(l.length)res[s.key]=l;});if(!Object.keys(res).length){alert('Asigná las páginas a un documento para descargarlas.');return;}}else res._=S.pg.slice();
+    try{
+      setMsg('Armando los PDF…');
+      for(var k of Object.keys(res)){var by=await construir(res[k]),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([by],{type:'application/pdf'}));a.download=(k==='_'?'documento':(labelDe(k)||k))+'.pdf';document.body.appendChild(a);a.click();a.remove();}
+      setMsg('');
+    }catch(e){setMsg('');alert('No pude armar el PDF: '+(e&&e.message?e.message:e));}
+  }
   function cerrar(){var e=document.getElementById('edp');if(e)e.remove();var v=document.getElementById('edpv');if(v)v.remove();S=null;}
   function abrir(o){
     estilos();cerrar();
     S={o:o,fu:[],pg:[],sel:new Set(),slots:o.slots||[],drag:null};
     var el=document.createElement('div');el.id='edp';
     el.innerHTML='<div class="h"><b>'+esc(o.titulo||'Editor de PDF')+'</b><span id="edp-msg" style="font-size:12px;opacity:.9"></span>'+
-      '<button data-x="add">+ Archivos</button>'+(S.slots.length?'<button data-x="ia">✨ Separar con IA</button>':'')+'<button data-x="cancel">Cancelar</button><button class="p" data-x="ok">'+esc(o.textoOk||'Aplicar')+'</button></div>'+
+      '<button data-x="add">+ Archivos</button>'+(S.slots.length?'<button data-x="ia">✨ Separar con IA</button>':'')+'<button data-x="dl" title="Descargar el resultado en tu equipo">⬇ Descargar</button><button data-x="cancel">Cancelar</button><button class="p" data-x="ok">'+esc(o.textoOk||'Aplicar')+'</button></div>'+
       '<div class="tb" id="edp-tb"></div><div class="g" id="edp-g"></div><div class="rs" id="edp-rs"></div>'+
       '<input type="file" id="edp-f" accept=".pdf,application/pdf,image/*" multiple style="display:none">';
     document.body.appendChild(el);
@@ -1327,6 +1344,11 @@ var EdPDF=(function(){
       var t=e.target,b=t.closest('button,select'),x=b&&b.dataset.x;
       if(t.dataset&&t.dataset.k){var id=t.dataset.k;if(S.sel.has(id))S.sel.delete(id);else S.sel.add(id);render();return;}
       if(x==='add'){fi.click();return;}
+      if(x==='m-unir'){S.modo='unir';render();fi.click();return;}
+      if(x==='m-sep'){S.modo='separar';render();fi.click();return;}
+      if(x==='m-ord'){S.modo=null;fi.click();return;}
+      if(x==='dl'){descargar();return;}
+      if(x==='m-ini'){S.modo=null;render();return;}
       if(x==='cancel'){if(!S.pg.length||confirm('¿Cerrar sin guardar?'))cerrar();return;}
       if(x==='ok'){aplicar();return;}
       if(x==='ia'){ia();return;}
@@ -1341,7 +1363,10 @@ var EdPDF=(function(){
       if(S.sel.has(id2))S.sel.delete(id2);else S.sel.add(id2);render();
     });
     el.addEventListener('change',function(e){
-      var t=e.target;if(t.dataset&&t.dataset.x==='asig'){var v=t.value;if(!v)return;S.pg.forEach(function(q){if(S.sel.has(q.id))q.box=v==='__none'?'':v;});S.sel.clear();render();}
+      var t=e.target;
+      if(t.dataset&&t.dataset.x==='dest'){S.dest=t.value;if(S.dest)S.pg.forEach(function(q){q.box=S.dest;});render();return;}
+      if(t.dataset&&t.dataset.x==='rasig'){var v2=t.value;if(!v2)return;var r1=+document.querySelector('#edp [data-x="r1"]').value||1,r2=+document.querySelector('#edp [data-x="r2"]').value||S.pg.length;if(r1>r2){var tt=r1;r1=r2;r2=tt;}S.pg.forEach(function(q,i){if(i+1>=r1&&i+1<=r2)q.box=v2;});render();return;}
+      if(t.dataset&&t.dataset.x==='asig'){var v=t.value;if(!v)return;S.pg.forEach(function(q){if(S.sel.has(q.id))q.box=v==='__none'?'':v;});S.sel.clear();render();}
     });
     el.addEventListener('dragstart',function(e){var c=e.target.closest&&e.target.closest('.c');if(!c)return;S.drag=c.dataset.id;try{e.dataTransfer.setData('text/plain',S.drag);e.dataTransfer.effectAllowed='move';}catch(x){}});
     el.addEventListener('dragover',function(e){e.preventDefault();var c=e.target.closest&&e.target.closest('.c');el.querySelectorAll('.c.o').forEach(function(z){z.classList.remove('o');});if(c&&S.drag)c.classList.add('o');});
