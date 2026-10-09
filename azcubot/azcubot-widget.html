@@ -920,8 +920,8 @@
     }
     a.estado = 'hecho'; a.resultado = 'Ejecutando…'; render();
     var a2 = a, grp = {};
-    if(fl.length > 1){ (a.datos.archivos||[]).forEach(function(x){ var k = x.doc || x.key; if(k){ (grp[k] = grp[k] || []).push(x.i); } }); }
-    var multi = Object.keys(grp).filter(function(k){ return grp[k].length > 1; });
+    if(fl.length){ (a.datos.archivos||[]).forEach(function(x){ var k = x.doc || x.key; if(k){ (grp[k] = grp[k] || []).push(x.i); } }); }
+    var multi = Object.keys(grp).filter(function(k){ return grp[k].length > 1 || (fl.filter(function(y){ return +y.i === +grp[k][0]; })[0] || {}).m !== 'application/pdf'; });
     if(multi.length){
       a.resultado = 'Armando el PDF…'; render();
       azUnirGrupos(fl, grp, multi).then(function(r2){
@@ -950,7 +950,7 @@
       var quitar = [], res = fl.slice();
       for(var g of multi){
         var idx = grp[g], fs = idx.map(function(i){ return fl.filter(function(y){ return +y.i === +i; })[0]; }).filter(Boolean).map(aFile);
-        if(fs.length < 2) continue;
+        if(fs.length < 1) continue;
         var by = await unir(fs), first = +idx[0];
         res = res.filter(function(y){ return idx.indexOf(+y.i) < 0 || +y.i === first; }).map(function(y){ return +y.i === first ? {i:y.i, n:g+'.pdf', m:'application/pdf', b:aB64(by)} : y; });
         idx.slice(1).forEach(function(i){ quitar.push(+i); });

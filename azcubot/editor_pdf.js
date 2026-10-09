@@ -131,7 +131,9 @@ var EdPDF=(function(){
       }
       for(var k=1;k<n-1;k++){if(tipos[k]==='otro'&&tipos[k-1]===tipos[k+1]&&tipos[k-1]!=='otro')tipos[k]=tipos[k-1];}
       S.pg.forEach(function(q,idx){var s=S.slots.filter(function(x){return x.cls===tipos[idx];})[0];q.box=s?s.key:'';});
-      setMsg('Listo: revisá lo que propuso la IA y corregí lo que haga falta.');render();
+      var orden=S.slots.map(function(x){return x.key;});
+      S.pg=S.pg.map(function(q,i){return {q:q,i:i,k:q.box?orden.indexOf(q.box):999};}).sort(function(a,b){return a.k-b.k||a.i-b.i;}).map(function(z){return z.q;});
+      setMsg('Listo: la IA separó y juntó las páginas de cada documento. Revisá y corregí lo que haga falta.');render();
     }catch(e){setMsg('');alert('No pude separar con IA: '+(e&&e.message?e.message:e));}
     if(btn)btn.disabled=false;
   }
@@ -167,7 +169,7 @@ var EdPDF=(function(){
     S={o:o,fu:[],pg:[],sel:new Set(),slots:o.slots||[],drag:null};
     var el=document.createElement('div');el.id='edp';
     el.innerHTML='<div class="h"><b>'+esc(o.titulo||'Editor de PDF')+'</b><span id="edp-msg" style="font-size:12px;opacity:.9"></span>'+
-      '<button data-x="add">+ Archivos</button>'+(S.slots.length?'<button data-x="ia">✨ Separar con IA</button>':'')+'<button data-x="dl" title="Descargar el resultado en tu equipo">⬇ Descargar</button><button data-x="cancel">Cancelar</button><button class="p" data-x="ok">'+esc(o.textoOk||'Aplicar')+'</button></div>'+
+      '<button data-x="add">+ Archivos</button>'+(S.slots.length?'<button data-x="ia" title="La IA separa las páginas por documento y junta las de cada uno">✨ Separar y unir con IA</button>':'')+'<button data-x="dl" title="Descargar el resultado en tu equipo">⬇ Descargar</button><button data-x="cancel">Cancelar</button><button class="p" data-x="ok">'+esc(o.textoOk||'Aplicar')+'</button></div>'+
       '<div class="tb" id="edp-tb"></div><div class="g" id="edp-g"></div><div class="rs" id="edp-rs"></div>'+
       '<input type="file" id="edp-f" accept=".pdf,application/pdf,image/*" multiple style="display:none">';
     document.body.appendChild(el);
