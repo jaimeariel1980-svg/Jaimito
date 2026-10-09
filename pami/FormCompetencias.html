@@ -1,5 +1,6 @@
 <style>
 .fc .hero{background:var(--navy2);color:#fff;padding:26px 20px 22px;border-bottom:4px solid var(--celeste)}
+.fc .brandrow{display:flex;align-items:center;gap:16px;margin-bottom:18px}.fc .brandrow .lg{height:54px}.fc .brandrow .prod{border-left:1px solid rgba(255,255,255,.35);padding-left:16px;font-weight:800;font-size:16px;letter-spacing:.02em}.brand ~ #app .fc .brandrow{display:none}
 .fc .hero .in,.fc .wrap{max-width:980px;margin:0 auto}
 .fc .hero h1{font-size:28px;font-weight:800;letter-spacing:-.01em;line-height:1.15}
 .fc .hero .meta{display:flex;gap:28px;flex-wrap:wrap;margin-top:14px}
@@ -71,7 +72,7 @@ var FC=(function(){
     var c=D.cand,h=D.hero,hoy=new Date(new Date().getTime()-3*3600000).toISOString().slice(0,10),ent=ENTRE||c.entrev||'';
     var scr=c.notaScr?'<div><small>Screening</small>'+esc(c.notaScr)+(c.infScr?' · <a target="_blank" href="'+esc(c.infScr)+'">📄 Ver screening</a>':'')+'</div>':'';
     CONT.innerHTML=
-    '<div class="hero"><div class="in"><h1>Entrevista de '+esc(c.nombre)+'</h1><div class="meta"><div><small>Cliente</small>'+esc(h.cliente)+'</div><div><small>Posición</small>'+esc(h.puesto)+'</div><div><small>Metodología</small>STAR (A-B-C-D-E)</div>'+scr+'</div></div></div>'+
+    '<div class="hero"><div class="in"><div class="brandrow"><span class="lg w"></span><span class="prod">Atracción y Elección</span></div><h1>Entrevista de '+esc(c.nombre)+'</h1><div class="meta"><div><small>Cliente</small>'+esc(h.cliente)+'</div><div><small>Posición</small>'+esc(h.puesto)+'</div><div><small>Metodología</small>STAR (A-B-C-D-E)</div>'+scr+'</div></div></div>'+
     '<div class="wrap"><div id="form">'+
     '<div class="sect card"><div class="sl">Datos del candidato</div><div class="meta3">'+
     inp('m-nom','Nombre','',c.nombre).replace('<input','<input disabled')+'<div><label class="l">Fecha</label><input type="date" id="m-fecha" value="'+hoy+'"></div>'+

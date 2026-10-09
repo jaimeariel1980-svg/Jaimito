@@ -1,5 +1,6 @@
 <style>
 .fs .hero{background:var(--navy2);color:#fff;padding:26px 20px 22px;border-bottom:4px solid var(--celeste)}
+.fs .brandrow{display:flex;align-items:center;gap:16px;margin-bottom:18px}.fs .brandrow .lg{height:54px}.fs .brandrow .prod{border-left:1px solid rgba(255,255,255,.35);padding-left:16px;font-weight:800;font-size:16px;letter-spacing:.02em}.brand ~ #app .fs .brandrow{display:none}
 .fs .hero .in,.fs .wrap{max-width:900px;margin:0 auto}
 .fs .hero h1{font-size:28px;font-weight:800;letter-spacing:-.01em;line-height:1.15}
 .fs .hero .meta{display:flex;gap:28px;flex-wrap:wrap;margin-top:14px}
@@ -61,7 +62,7 @@ var FS=(function(){
     var c=D.cand,h=D.hero,hoy=new Date(new Date().getTime()-3*3600000).toISOString().slice(0,10),ent=ENTRE||c.entrev||'';
     var decl=c.resp.length?'<div class="sect card decl"><div class="sl">Datos de la postulación</div>'+c.resp.map(function(r){return '<div class="row"><span>'+esc(r.q)+'</span><span><b>'+esc(r.a)+'</b></span></div>';}).join('')+'</div>':'';
     CONT.innerHTML=
-    '<div class="hero"><div class="in"><h1>Screening de '+esc(c.nombre)+'</h1><div class="meta"><div><small>Cliente</small>'+esc(h.cliente)+'</div><div><small>Posición</small>'+esc(h.puesto)+'</div><div><small>Ubicación</small>'+esc(h.ubicacion)+'</div>'+(c.notaCV?'<div><small>Nota CV</small>'+esc(c.notaCV)+'</div>':'')+'</div></div></div>'+
+    '<div class="hero"><div class="in"><div class="brandrow"><span class="lg w"></span><span class="prod">Atracción y Elección</span></div><h1>Screening de '+esc(c.nombre)+'</h1><div class="meta"><div><small>Cliente</small>'+esc(h.cliente)+'</div><div><small>Posición</small>'+esc(h.puesto)+'</div><div><small>Ubicación</small>'+esc(h.ubicacion)+'</div>'+(c.notaCV?'<div><small>Nota CV</small>'+esc(c.notaCV)+'</div>':'')+'</div></div></div>'+
     '<div class="wrap"><div id="form">'+decl+
     '<div class="sect card"><div class="sl">Datos del candidato</div><div class="g2"><div><label class="l">Nombre y apellido</label><input type="text" value="'+esc(c.nombre)+'" disabled></div><div><label class="l">Entrevistador/a</label><select id="d-ent"><option value="">— Elegí —</option>'+D.entrevistadores.map(function(e){return '<option'+(e===ent?' selected':'')+'>'+esc(e)+'</option>';}).join('')+'</select></div></div>'+
     '<div class="g2"><div><label class="l">Empresa actual</label><input type="text" id="d-emp"></div><div><label class="l">Posición actual</label><input type="text" id="d-pos"></div></div><div class="g1"><label class="l">Formación</label><input type="text" id="d-form" placeholder="Título, institución, estado"></div>'+
