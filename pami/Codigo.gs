@@ -242,7 +242,7 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '14';
+const ESQUEMA = '15';
 
 function actualizarEsquema_() {
   const props = PropertiesService.getScriptProperties();
@@ -270,6 +270,8 @@ function actualizarEsquema_() {
       asegurarEncabezados_(a, ['Fecha', 'Usuario', 'Acción', 'Detalle']);
       if (!ScriptApp.getProjectTriggers().some(t => t.getHandlerFunction() === 'copiaDiaria')) ScriptApp.newTrigger('copiaDiaria').timeBased().everyDays(1).atHour(3).create();
     },
+    () => asegurarAjustes_([['zona_max_km', '40']]),
+    () => repararLocalidades_(),
     () => asegurarAjustes_([['sesion_inactividad_horas', '8'], ['sesion_recordar_dias', '30']]),
     () => asegurarAjustes_([['calendario_poli2', 'dotacionpp2@gmail.com'], ['link_agenda_screening_poli2', ''], ['link_agenda_competencias_poli2', ''], ['link_agenda_pami2_poli2', '']]),
     () => asegurarAjustes_([['direccion_policlinico_1', 'Sarmiento 373, Rosario, Santa Fe, Argentina'], ['direccion_policlinico_2', 'Olive 1159, Rosario, Santa Fe, Argentina']]),
@@ -543,14 +545,14 @@ ${bloque}
 === FIN DECLARADOS ===
 
 Devolvé SOLO JSON válido con este formato:
-{"es_cv":true,"nombre":"Nombre y apellido real del candidato","telefono":"","dni":"solo números","localidad":"","domicilio":"calle, número y barrio que figuran en el CV (vacío si no figura)","nivel_ajuste":"A/B+/B/C","justificacion":"una sola oración corta con el porqué de la nota","formacion_titulo":"título o formación principal, textual (ej. Enfermero/a Profesional)","requisitos":{"formacion":"","matricula":"","experiencia":"","zona":"","continuidad":""},"resumen_experiencia":"3-4 oraciones narrativas sobre trayectoria, atributos y actitud, sin repetir el checklist"}
+{"es_cv":true,"nombre":"Nombre y apellido real del candidato","telefono":"","dni":"solo números","localidad":"SOLO la ciudad o localidad (ej. Rosario, Funes); nunca la calle ni el número. Vacío si el CV no la menciona","domicilio":"calle, número y barrio que figuran en el CV (vacío si no figura)","nivel_ajuste":"A/B+/B/C","justificacion":"una sola oración corta con el porqué de la nota","formacion_titulo":"título o formación principal, textual (ej. Enfermero/a Profesional)","requisitos":{"formacion":"","matricula":"","experiencia":"","zona":"","continuidad":""},"resumen_experiencia":"3-4 oraciones narrativas sobre trayectoria, atributos y actitud, sin repetir el checklist"}
 Devolvé es_cv:false SOLO si el texto claramente NO es un currículum (por ejemplo una factura o publicidad). Ante la duda, es_cv:true.
 REGLAS DE LA NOTA:
 - A: cumple todo, perfil potente sin ruido.
 - B+: muy bueno, cumple lo excluyente con una cuestión menor.
 - B: cumple lo mínimo con dudas relevantes, o borderline con factores compensatorios (reserva).
 - C: no cumple un requisito excluyente o tiene una bandera roja clara.
-- zona: "Zona OK" o "Fuera" según la localidad declarada o la del CV.`;
+- zona: si no se indica ninguna localidad (solo calle y número), asumí que vive en Rosario: "Zona OK". Usá "Fuera" solo si la localidad indicada queda lejos de Rosario y su zona.`;
     const resp = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {
       method: 'post', contentType: 'application/json', muteHttpExceptions: true,
       headers: { Authorization: 'Bearer ' + prop_('OPENAI_API_KEY') },
@@ -572,10 +574,13 @@ REGLAS DE LA NOTA:
       fill(COL.tel, c.telefono);
       const dni = String(c.dni || '').replace(/\D/g, '');
       if (dni.length >= 6) fill(COL.dni, dni);
-      fill(COL.loc, c.localidad);
+      const locIA = limpiaLoc_(c.localidad);
+      if (locIA) fill(COL.loc, locIA);
     }
+    let asumida = false;
+    if (!limpiaLoc_(sh.getRange(fila, COL.loc).getValue())) { sh.getRange(fila, COL.loc).setValue('Rosario'); asumida = true; }
     const req = c.requisitos || {};
-    const zonaTxt = /fuera/i.test(String(req.zona)) ? 'Fuera' : /ok|dentro|cumple/i.test(String(req.zona)) ? 'Zona OK' : String(req.zona || '');
+    const zonaTxt = asumida ? 'Zona OK' : /fuera/i.test(String(req.zona)) ? 'Fuera' : /ok|dentro|cumple/i.test(String(req.zona)) ? 'Zona OK' : String(req.zona || '');
     const declForm = (decl.find(x => /t[ií]tulo|formaci/i.test(x.q)) || {}).a;
     if (zonaTxt) sh.getRange(fila, COL.zona).setValue(zonaTxt);
     const forma = String(declForm || c.formacion_titulo || '').trim();
@@ -697,11 +702,32 @@ function puntosPoli_() {
   return pts;
 }
 
+function limpiaLoc_(t) {
+  t = String(t || '').trim();
+  return (!t || /\d/.test(t) || t.length > 40) ? '' : t;
+}
+
+function repararLocalidades_() {
+  const sh = hoja_('Candidatos');
+  const d = sh.getDataRange().getValues();
+  for (let i = 1; i < d.length; i++) {
+    const r = d[i];
+    if (!r[COL.nombre - 1]) continue;
+    const loc = String(r[COL.loc - 1] || '').trim();
+    if (limpiaLoc_(loc)) continue;
+    const fila = i + 1;
+    if (loc && !String(r[COL.domicilio - 1] || '').trim()) sh.getRange(fila, COL.domicilio).setValue(loc);
+    sh.getRange(fila, COL.loc).setValue('Rosario');
+    sh.getRange(fila, COL.polSug).clearContent();
+    if (String(r[COL.zona - 1] || '').trim() === 'Fuera') sh.getRange(fila, COL.zona).setValue('Zona OK');
+  }
+}
+
 function sugerirPoliclinico_(fila) {
   const sh = hoja_('Candidatos');
   const dom = String(sh.getRange(fila, COL.domicilio).getValue() || '').trim();
   if (!dom) return;
-  const loc = String(sh.getRange(fila, COL.loc).getValue() || '').trim();
+  const loc = limpiaLoc_(sh.getRange(fila, COL.loc).getValue()) || 'Rosario';
   const q = dom + (loc && dom.toLowerCase().indexOf(loc.toLowerCase()) === -1 ? ', ' + loc : '') + ', Santa Fe, Argentina';
   const g = geo_(q);
   const celda = sh.getRange(fila, COL.polSug);
@@ -709,6 +735,7 @@ function sugerirPoliclinico_(fila) {
   const pts = puntosPoli_();
   const d = pts.map(p => kmEntre_(g, p));
   const i = d[0] <= d[1] ? 0 : 1;
+  if (!g.aprox) sh.getRange(fila, COL.zona).setValue(d[i] <= (Number(ajustes_().zona_max_km) || 40) ? 'Zona OK' : 'Fuera');
   const f = x => (g.aprox ? '≈' : '') + (Math.round(x * 10) / 10).toString().replace('.', ',') + ' km';
   celda.setValue(POLICLINICOS[i] + ' · ' + f(d[i]) + ' (' + POLICLINICOS[1 - i].replace('Policlínico ', '') + ': ' + f(d[1 - i]) + ')');
   registrarHistorial_(sh.getRange(fila, COL.id).getValue(), sh.getRange(fila, COL.nombre).getValue(), 'Policlínico sugerido', POLICLINICOS[i] + ' (' + f(d[i]) + ')', 'sistema');
