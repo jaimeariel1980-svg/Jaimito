@@ -32,3 +32,10 @@ Todo se edita desde el Sheet: Busquedas, Preguntas, Screening_Eval, Screening_Va
 
 ## Si una página no abre
 Ejecutar `verificarInstalacion()`. Las páginas muestran el error real. Si la URL termina en /dev, usar la /exec y pegarla en Ajustes → url_web.
+
+## Dos policlínicos (PAMI 1 y PAMI 2)
+- PAMI 1 usa el calendario de dotacionpp1; PAMI 2, el de dotacionpp2 (Ajustes → `calendario_poli2`).
+- dotacionpp2 le comparte su calendario a dotacionpp1 con permiso "Ver todos los detalles de los eventos" (o "Hacer cambios en eventos" para que el tablero cree citas ahí). El sistema lee los dos calendarios y asocia cada turno al candidato.
+- Links de agenda por policlínico: PAMI 1 usa `link_agenda_screening`, `link_agenda_competencias`, `link_agenda_pami2`; PAMI 2 usa las mismas claves con sufijo `_poli2`. Si falta el de PAMI 2, se usa el de PAMI 1.
+- El mensaje de WhatsApp elige el link según el policlínico del candidato (el confirmado, o el sugerido).
+- Los títulos de las agendas siguen llevando `Screening`, `Competencias` o `Técnica`.

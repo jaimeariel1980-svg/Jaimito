@@ -458,6 +458,8 @@ function armarComunicacion(k, fila, tipo) {
   const v = datosComunes_(r);
   const claveLink = { 'contacto-screening': 'link_agenda_screening', 'contacto-competencias': 'link_agenda_competencias', 'contacto-tecnica': 'link_agenda_pami2' }[tipo];
   if (claveLink && v.aj[claveLink]) v.LINK = v.aj[claveLink];
+  const polEf = String(r[COL.policlinico - 1] || String(r[COL.polSug - 1] || '').split(' · ')[0]);
+  if (claveLink && /2$/.test(polEf) && v.aj[claveLink + '_poli2']) v.LINK = v.aj[claveLink + '_poli2'];
   let texto = textoPlantilla_(tipo);
   if (!texto) return { ok: false, error: 'No encontré la plantilla ' + tipo + ' en la pestaña Plantillas' };
   if (!v.LINK) texto = texto.replace(/[^\n]*(link|enlace)[^\n]*\n\[LINK\]/i, 'Si te interesa, contanos qué día y horario te quedan mejor para agendarla.').replace(/ ?\[LINK\]/g, '');
