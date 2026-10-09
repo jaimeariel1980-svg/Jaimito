@@ -209,10 +209,10 @@ function precargarDatos(datos, archivosBase64) {
     _enviarMailConfirmacionPrecarga(datos);
   }
 
-  const verificacionIA = _verificarArchivosConIA(archivos, _nombresDueños(datos));
-  if (Object.keys(verificacionIA).length) {
-    _guardarVerificacionIA_(sheet, datos.codigoPrecarga, verificacionIA);
-    try { if (typeof azcuLimpiarCache_ === 'function') azcuLimpiarCache_(); } catch (e) {}
+  // La verificación con IA puede tardar minutos: se hace aparte (disparador) para que el formulario responda enseguida.
+  if (Object.keys(archivos).length) {
+    try { _encolarVerificacionIA_(datos.codigoPrecarga, datos.calle, datos.numero, _nombresDueños(datos)); }
+    catch (e) { Logger.log('No se pudo encolar la verificación IA: ' + e.message); }
   }
 
   return {
@@ -988,6 +988,71 @@ function _encabezadosCompletos() {
 
 function _columnasVerificacionIA() {
   return CONFIG.DOCUMENTOS.map(d => 'Verificación IA: ' + d.label);
+}
+
+/**
+ * Cola de verificaciones con IA pendientes (Script Property IA_PEND) + disparador de una sola vez.
+ */
+function _encolarVerificacionIA_(codigo, calle, numero, nombres) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const q = JSON.parse(props.getProperty('IA_PEND') || '[]');
+    q.push({ c: codigo, calle: calle, n: numero, nom: nombres });
+    props.setProperty('IA_PEND', JSON.stringify(q));
+  } finally { lock.releaseLock(); }
+  ScriptApp.newTrigger('azcuVerificarIAPendientes').timeBased().after(2000).create();
+}
+
+function _tomarColaIA_() {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const q = JSON.parse(props.getProperty('IA_PEND') || '[]');
+    if (q.length) props.setProperty('IA_PEND', '[]');
+    return q;
+  } finally { lock.releaseLock(); }
+}
+
+function azcuVerificarIAPendientes() {
+  ScriptApp.getProjectTriggers().forEach(t => {
+    if (t.getHandlerFunction() === 'azcuVerificarIAPendientes' && t.getTriggerSource() === ScriptApp.TriggerSource.CLOCK) {
+      try { ScriptApp.deleteTrigger(t); } catch (e) {}
+    }
+  });
+  for (let vuelta = 0; vuelta < 20; vuelta++) {
+    const q = _tomarColaIA_();
+    if (!q.length) break;
+    q.forEach(it => { try { _verificarPendientesDe_(it); } catch (e) { Logger.log('Verificación IA ' + it.c + ': ' + e.message); } });
+  }
+}
+
+function _verificarPendientesDe_(it) {
+  const sheet = _getSheet();
+  const fila = _buscarFilaPorCodigo(sheet, it.c);
+  if (!fila) return;
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const vals = sheet.getRange(fila, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const pend = CONFIG.DOCUMENTOS.filter(d => {
+    const i = headers.indexOf('Verificación IA: ' + d.label);
+    return i > -1 && String(vals[i]).trim() === 'Verificando…';
+  }).map(d => d.key);
+  if (!pend.length) return;
+  const carpeta = _getOrCreatePropertyFolder(it.c, it.calle, it.n);
+  const base = _sanear(it.calle + '_' + it.n) + '.';
+  const archivos = {};
+  const files = carpeta.getFiles();
+  while (files.hasNext()) {
+    const f = files.next();
+    const nm = f.getName();
+    pend.forEach(k => { if (nm.indexOf(base + k + '.') === 0) archivos[k] = f.getBlob(); });
+  }
+  const res = _verificarArchivosConIA(archivos, it.nom || {});
+  pend.forEach(k => { if (res[k] === undefined) res[k] = 'No verificado (no se encontró el archivo)'; });
+  _guardarVerificacionIA_(sheet, it.c, res);
+  try { if (typeof azcuLimpiarCache_ === 'function') azcuLimpiarCache_(); } catch (e) {}
 }
 
 /**
