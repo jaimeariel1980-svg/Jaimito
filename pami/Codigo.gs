@@ -242,7 +242,7 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '13';
+const ESQUEMA = '14';
 
 function actualizarEsquema_() {
   const props = PropertiesService.getScriptProperties();
@@ -270,6 +270,7 @@ function actualizarEsquema_() {
       asegurarEncabezados_(a, ['Fecha', 'Usuario', 'Acción', 'Detalle']);
       if (!ScriptApp.getProjectTriggers().some(t => t.getHandlerFunction() === 'copiaDiaria')) ScriptApp.newTrigger('copiaDiaria').timeBased().everyDays(1).atHour(3).create();
     },
+    () => asegurarAjustes_([['sesion_inactividad_horas', '8'], ['sesion_recordar_dias', '30']]),
     () => asegurarAjustes_([['calendario_poli2', 'dotacionpp2@gmail.com'], ['link_agenda_screening_poli2', ''], ['link_agenda_competencias_poli2', ''], ['link_agenda_pami2_poli2', '']]),
     () => asegurarAjustes_([['direccion_policlinico_1', 'Sarmiento 373, Rosario, Santa Fe, Argentina'], ['direccion_policlinico_2', 'Olive 1159, Rosario, Santa Fe, Argentina']]),
     () => {

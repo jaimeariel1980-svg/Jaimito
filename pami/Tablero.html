@@ -115,7 +115,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v17</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v18</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -148,7 +148,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
   <input id="lU" type="text" maxlength="30" placeholder="Tu nombre y apellido" autocomplete="off">
   <input id="lP" type="password" inputmode="numeric" maxlength="6" placeholder="PIN (4 a 6 números)" autocomplete="off">
   <div id="lP2w" style="display:none"><input id="lP2" type="password" inputmode="numeric" maxlength="6" placeholder="Repetí el PIN" autocomplete="off"></div>
-  <label class="rec"><input type="checkbox" id="lRec"> Recordarme en este equipo (hasta 8 horas)</label>
+  <label class="rec"><input type="checkbox" id="lRec" checked> Recordarme en este equipo</label>
   <div id="lE"></div><button class="cta" id="lB" onclick="entrar()">Entrar</button></div></div>
 <div id="modal"><div class="box" id="mbox"></div></div>
 <div id="fmodal"><div class="fbar"><button class="btn sec" onclick="volverFicha()">← Volver a la ficha</button><span class="ttl" id="ftit"></span></div><div id="fbody"></div></div>
@@ -157,7 +157,8 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 var K = <?!= JSON.stringify(clave) ?>;
 var BASE = <?!= JSON.stringify(url) ?>;
 var D = null, CUR = 0;
-var K0 = K, U = '', P = '', LM = null, REC = false, RO = false, LAST = Date.now();
+var K0 = K, U = '', P = '', LM = null, REC = false, RO = false, LAST = Date.now(), IDLE_MS = 8 * 3600000, REM_MS = 30 * 86400000;
+try { var rd = Number(localStorage.getItem('pami_rd')), ih = Number(localStorage.getItem('pami_ih')); if (rd) REM_MS = rd * 86400000; if (ih) IDLE_MS = ih * 3600000; } catch (e) { }
 function borrarCred() { try { ['pami_user', 'pami_pin', 'pami_rec'].forEach(function (k) { localStorage.removeItem(k); sessionStorage.removeItem(k); }); } catch (e) { } }
 function guardarCred() {
   try {
@@ -171,7 +172,7 @@ function cargarCred() {
     var su = sessionStorage.getItem('pami_user'), sp = sessionStorage.getItem('pami_pin');
     if (su && sp) { U = su; P = sp; REC = localStorage.getItem('pami_rec') === '1'; return; }
     var last = Number(localStorage.getItem('pami_last')) || 0;
-    if (localStorage.getItem('pami_rec') === '1' && Date.now() - last < 8 * 3600000) { U = localStorage.getItem('pami_user') || ''; P = localStorage.getItem('pami_pin') || ''; REC = true; }
+    if (localStorage.getItem('pami_rec') === '1' && Date.now() - last < REM_MS) { U = localStorage.getItem('pami_user') || ''; P = localStorage.getItem('pami_pin') || ''; REC = true; }
     else borrarCred();
   } catch (e) { }
 }
@@ -181,7 +182,7 @@ function mensajeGuardado() { try { var m = sessionStorage.getItem('pami_msg') ||
 window.addEventListener('beforeunload', function () { try { localStorage.setItem('pami_last', String(LAST)); } catch (e) { } });
 setInterval(function () {
   try { localStorage.setItem('pami_last', String(LAST)); } catch (e) { }
-  if (U && Date.now() - LAST > 30 * 60000) { try { sessionStorage.setItem('pami_msg', 'Cerramos tu sesión por inactividad (30 minutos).'); } catch (e) { } borrarCred(); U = ''; P = ''; setK(); location.reload(); }
+  if (U && Date.now() - LAST > IDLE_MS) { try { sessionStorage.setItem('pami_msg', 'Cerramos tu sesión por inactividad.'); } catch (e) { } borrarCred(); U = ''; P = ''; setK(); location.reload(); }
 }, 30000);
 function setK() { K = K0 + (U ? '|' + U.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9 ]/g, '').slice(0, 30) + '|' + P : ''); }
 setK();
@@ -285,7 +286,7 @@ function byFila(f){return D.cands.find(function(x){return x.fila===f;});}
 function cargar(){
   var rf=document.querySelector('#rf b');rf.textContent='Actualizando…';
   gs().withSuccessHandler(function(j){
-    document.getElementById('login').classList.remove('show');guardarCred();var primera=!D;D=JSON.parse(j);RO=(D.rol==='Lectura');ajustarRol();try{if(!sessionStorage.getItem('pami_ing')){sessionStorage.setItem('pami_ing','1');gs().withSuccessHandler(function(){}).withFailureHandler(function(){}).registrarAcceso(K,'Ingreso');}}catch(e){}rf.textContent='Actualizar';pintarUsuario();
+    document.getElementById('login').classList.remove('show');guardarCred();var primera=!D;D=JSON.parse(j);RO=(D.rol==='Lectura');ajustarRol();try{if(D.cfg.recordarDias){REM_MS=D.cfg.recordarDias*86400000;localStorage.setItem('pami_rd',String(D.cfg.recordarDias));}if(D.cfg.sesionHoras){IDLE_MS=D.cfg.sesionHoras*3600000;localStorage.setItem('pami_ih',String(D.cfg.sesionHoras));}}catch(e){}try{if(!sessionStorage.getItem('pami_ing')){sessionStorage.setItem('pami_ing','1');gs().withSuccessHandler(function(){}).withFailureHandler(function(){}).registrarAcceso(K,'Ingreso');}}catch(e){}rf.textContent='Actualizar';pintarUsuario();
     if(primera)init();else render();
   }).withFailureHandler(function(e){
     rf.textContent='Actualizar';
