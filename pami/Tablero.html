@@ -62,12 +62,12 @@
 .col.ok .col-h{background:#1E6B47;border-bottom-color:#8BD3A8}
 .col-body,.dbody{padding:8px;min-height:60px}
 .col-body{flex:1 1 0;overflow-y:auto;min-height:0}.col-body.acc{padding:0}
-#sindBar{padding-bottom:16px}#sindBar:empty{display:none}
-.sl{grid-column:1/-1;font-size:11.5px;font-weight:600;color:var(--mut);display:flex;gap:14px;align-items:center;flex-wrap:wrap}.sl i,.sc .lgd i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:baseline}.sl .sep{display:none}
-.sc{display:flex;flex-direction:column;justify-content:space-between;gap:8px;min-width:0;background:#fff;border-radius:6px;border-left:5px solid var(--azul);padding:11px 14px;cursor:pointer;box-shadow:0 1px 3px rgba(3,78,162,.1)}.sc.gr{border-left-color:#8A97AB}.sc.z{opacity:.5}.sc.on{outline:2px solid var(--azul);background:#EAF3FF}
-.sc .t{display:flex;justify-content:space-between;align-items:center;gap:8px;min-width:0}.sc .n{font-weight:800;font-size:13.5px;text-transform:uppercase;color:var(--azul);letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}.sc .tot{font-size:26px;font-weight:800;color:var(--azul);line-height:1;flex-shrink:0}
+#sindBar{margin-top:14px;padding:12px 20px 16px;background:#DDE6F2;border-top:1px solid #C9D6E8;border-bottom:1px solid #C9D6E8}#sindBar:empty{display:none}
+.sl{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;font-size:11.5px;font-weight:600;color:#4A5B75}.sl .st{font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--azul)}.sl .lgx{display:flex;gap:16px;flex-wrap:wrap}.sl i,.sc .lgd i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:baseline}
+.sc{display:flex;flex-direction:column;justify-content:space-between;gap:8px;min-width:0;background:#fff;border-radius:6px;border-left:5px solid var(--azul);padding:11px 14px;cursor:pointer;box-shadow:0 1px 3px rgba(3,78,162,.12)}.sc.gr{border-left-color:#8A97AB}.sc.z{opacity:.5}.sc.on{outline:2px solid var(--azul);background:#EAF3FF}
+.sc .t{display:flex;justify-content:space-between;align-items:center;gap:8px;min-width:0}.sc .n{font-weight:800;font-size:13.5px;text-transform:uppercase;color:var(--azul);letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}.sc .tot{font-size:22px;font-weight:800;color:#1B2B45;line-height:1;flex-shrink:0}
 .sc .bar{display:flex;height:10px;border-radius:5px;overflow:hidden;background:#E4E9F1}.sc .bar i{display:block;height:100%}
-.sc .lgd{display:grid;grid-template-columns:repeat(4,1fr);font-size:13px;font-weight:800;color:#1B2B45;text-align:left}.sc .lgd .z0{color:#B8C2D2}
+.sc .lgd{display:grid;grid-template-columns:repeat(4,1fr);font-size:13px;font-weight:800;text-align:left}.sc .lgd .z0{color:#B8C2D2}
 .col-h b{background:#fff;color:var(--azul);border-radius:99px;padding:0 10px;font-size:12px}
 .col-body::-webkit-scrollbar{width:11px}.col-body::-webkit-scrollbar-track{background:#D3DBE8;border-radius:8px}.col-body::-webkit-scrollbar-thumb{background:#034EA2;border-radius:8px;border:2px solid #D3DBE8}
 @supports not selector(::-webkit-scrollbar){.col-body{scrollbar-color:#034EA2 #D3DBE8;scrollbar-width:auto}}
@@ -123,7 +123,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v36</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v37</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -618,13 +618,13 @@ function sindBar(){
   var act=document.getElementById('fsi').value.toLowerCase();
   var card=function(o,gris){
     var w=function(n){return o.t?(n*100/o.t):0;},on=act&&act===o.v.toLowerCase();
-    var num=function(n,col,txt){return '<span class="'+(n?'':'z0')+'" title="'+n+' '+txt+'"><i style="background:'+col+'"></i>'+n+'</span>';};
+    var num=function(n,col,txt,tx){return '<span class="'+(n?'':'z0')+'" style="'+(n?'color:'+tx:'')+'" title="'+n+' '+txt+'"><i style="background:'+col+'"></i>'+n+'</span>';};
     return '<div class="sc'+(gris?' gr':'')+(on?' on':'')+(o.t?'':' z')+'" onclick="sindClick(\''+esc(o.v).replace(/'/g,"\\'")+'\')" title="'+(on?'Quitar filtro':'Ver estos candidatos')+'">'+
       '<div class="t"><span class="n">'+esc(o.n)+'</span><span class="tot">'+o.t+'</span></div>'+
       '<div class="bar"><i style="width:'+w(o.a)+'%;background:#034EA2"></i><i style="width:'+w(o.c)+'%;background:#1E8E5A"></i><i style="width:'+w(o.n_)+'%;background:#AEBBD0"></i><i style="width:'+w(o.d)+'%;background:#D9534F"></i></div>'+
-      '<div class="lgd">'+num(o.a,'#034EA2','avanzaron')+num(o.c,'#1E8E5A','contratados')+num(o.n_,'#AEBBD0','en análisis')+num(o.d,'#D9534F','descartados')+'</div></div>';
+      '<div class="lgd">'+num(o.a,'#034EA2','avanzaron','#034EA2')+num(o.c,'#1E8E5A','contratados','#14764A')+num(o.n_,'#AEBBD0','en análisis','#5D6B82')+num(o.d,'#D9534F','descartados','#C0392B')+'</div></div>';
   };
-  el.innerHTML='<div class="sl"><span><i style="background:#034EA2"></i>avanzaron</span><span><i style="background:#1E8E5A"></i>contratados</span><span><i style="background:#AEBBD0"></i>en análisis</span><span><i style="background:#D9534F"></i>descartados</span></div>'+orden.map(function(k){return card(filas[k]);}).join('')+card(sin,true);
+  el.innerHTML='<div class="sl"><b class="st">Por sindicato</b><span class="lgx"><span><i style="background:#034EA2"></i>avanzaron</span><span><i style="background:#1E8E5A"></i>contratados</span><span><i style="background:#AEBBD0"></i>en análisis</span><span><i style="background:#D9534F"></i>descartados</span></span></div>'+orden.map(function(k){return card(filas[k]);}).join('')+card(sin,true);
 }
 var AG=null,AGF='';
 function polAg(f){var c=byFila(f);return c?c.policlinico:'';}
