@@ -485,9 +485,9 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
       <h2>3. Documentación a adjuntar</h2>
       <div class="step-sub">Formatos aceptados: PDF, JPG o PNG. Si un documento tiene varias hojas o fotos, elegí todas juntas y se arma un solo PDF. Toda la documentación es opcional: podés enviar el formulario aunque todavía no tengas ningún archivo listo.</div>
       <div style="background:var(--terracotta-soft);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px;">
-        <b>📚 Editor de PDF</b>
+        <b>📚 Unir, separar y ordenar PDF</b>
         <div class="step-sub" style="margin:4px 0 10px;">¿Te mandaron todo junto, desordenado o en fotos? Abrí el editor: separá un PDF por documento (con ayuda de IA), pasá fotos a PDF, uní, ordená, rotá y quitá páginas. Después se completan solos los casilleros de abajo.</div>
-        <button type="button" class="btn btn-primary" id="btn-editor-pdf">Abrir el editor</button>
+        <button type="button" class="btn btn-primary" id="btn-editor-pdf">Abrir: unir / separar / ordenar</button>
         <div id="legajo-estado" style="margin-top:8px;font-size:13px;color:var(--muted);"></div>
       </div>
       <div id="docs-contenedor"></div>
@@ -1125,7 +1125,7 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
         <div style="display:flex;align-items:center;gap:10px;">
           <span class="doc-check" id="doc-check-${d.key}"><svg viewBox="0 0 24 24" fill="none" stroke="#2f6b2f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" fill="#e6f4e6"/><path d="M8 12.5l2.5 2.5 5-5"/></svg>Listo</span>
           <span class="doc-status" id="doc-status-${d.key}" style="display:none;"></span>
-          <input type="file" name="doc_${d.key}" accept=".pdf,.jpg,.jpeg,.png" multiple data-doc="${d.key}"><button type="button" class="btn btn-outline" data-edit="${d.key}" style="padding:4px 10px;font-size:12px">✏️ Editar</button>
+          <input type="file" name="doc_${d.key}" accept=".pdf,.jpg,.jpeg,.png" multiple data-doc="${d.key}"><button type="button" class="btn btn-outline" data-edit="${d.key}" style="padding:4px 10px;font-size:12px">✏️ Unir / editar</button>
         </div>
       </div>
     `).join('');
@@ -1144,7 +1144,7 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
         <div style="display:flex;align-items:center;gap:10px;">
           <span class="doc-check" id="doc-check-dni_dueño${n}"><svg viewBox="0 0 24 24" fill="none" stroke="#2f6b2f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" fill="#e6f4e6"/><path d="M8 12.5l2.5 2.5 5-5"/></svg>Listo</span>
           <span class="doc-status" id="doc-status-dni_dueño${n}" style="display:none;"></span>
-          <input type="file" name="doc_dni_dueño${n}" accept=".pdf,.jpg,.jpeg,.png" multiple data-doc="dni_dueño${n}"><button type="button" class="btn btn-outline" data-edit="dni_dueño${n}" style="padding:4px 10px;font-size:12px">✏️ Editar</button>
+          <input type="file" name="doc_dni_dueño${n}" accept=".pdf,.jpg,.jpeg,.png" multiple data-doc="dni_dueño${n}"><button type="button" class="btn btn-outline" data-edit="dni_dueño${n}" style="padding:4px 10px;font-size:12px">✏️ Unir / editar</button>
         </div>
       </div>
       <div class="doc-row" id="doc-row-cuil_dueño${n}">
@@ -1152,7 +1152,7 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
         <div style="display:flex;align-items:center;gap:10px;">
           <span class="doc-check" id="doc-check-cuil_dueño${n}"><svg viewBox="0 0 24 24" fill="none" stroke="#2f6b2f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" fill="#e6f4e6"/><path d="M8 12.5l2.5 2.5 5-5"/></svg>Listo</span>
           <span class="doc-status" id="doc-status-cuil_dueño${n}" style="display:none;"></span>
-          <input type="file" name="doc_cuil_dueño${n}" accept=".pdf,.jpg,.jpeg,.png" multiple data-doc="cuil_dueño${n}"><button type="button" class="btn btn-outline" data-edit="cuil_dueño${n}" style="padding:4px 10px;font-size:12px">✏️ Editar</button>
+          <input type="file" name="doc_cuil_dueño${n}" accept=".pdf,.jpg,.jpeg,.png" multiple data-doc="cuil_dueño${n}"><button type="button" class="btn btn-outline" data-edit="cuil_dueño${n}" style="padding:4px 10px;font-size:12px">✏️ Unir / editar</button>
         </div>
       </div>
     `);
