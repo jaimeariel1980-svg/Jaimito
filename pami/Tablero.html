@@ -117,7 +117,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v28</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v29</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -327,7 +327,7 @@ function filtra(c){
   if(KF&&!kpiOk(KF,c))return false;
   var g=function(i){return document.getElementById(i).value;};
   if(g('fb')&&c.busq!==g('fb'))return false;
-  if(g('fe')&&c.estado!==g('fe'))return false;
+  if(g('fe')&&c.estado!==g('fe')&&!(g('fe')==='Contactado'&&kpiOk('ctc',c)))return false;
   var gsi=g('fsi');if(gsi){var lst=/^sindicato/i.test(c.recTipo||'')?String(c.recPor||'').split(';').map(function(x){return x.trim().toLowerCase();}).filter(Boolean):[];if(gsi==='-'){if(lst.length)return false;}else if(gsi==='*'){if(!lst.length)return false;}else if(lst.indexOf(gsi.toLowerCase())===-1)return false;}
   var pe=c.policlinico||sugN(c);if(g('fpo')&&(g('fpo')==='-'?(c.policlinico||/^Descartad|^Contratado/i.test(c.estado)):pe!==g('fpo')))return false;
   var p=Number(g('fp'))||0;if(p){var n=Number(String(c.pret).replace(/\D/g,''));if(!n||n>p)return false;}
@@ -421,6 +421,7 @@ function kpiOk(k,c){
   var term=/^Descartad|^Contratado/i.test(c.estado);
   if(k==='proc')return !term;
   if(k==='nue'){var m=String(c.fecha).match(/(\d+)\/(\d+)\/(\d+)/);return !!m&&new Date(m[3],m[2]-1,m[1]).getTime()>=new Date(D.ahora).getTime()-7*86400000;}
+  if(k==='ctc')return !term&&!c.cita&&!/agendad/i.test(c.estado)&&/^(screening|competencias|entrevista técnica)\s*·/i.test(c.contactado||'');
   if(k==='cit')return !!c.cita&&c.cita.ts.slice(0,10)===D.ahora.slice(0,10);
   if(k==='mov')return !term&&!terminal(c.estado)&&dias(c)>=D.cfg.diasAlerta;
   if(k==='pol')return !term&&!c.policlinico;
@@ -430,7 +431,7 @@ function kpiOk(k,c){
 }
 function kpiClick(k){KF=KF===k?'':k;render();}
 function kpis(){
-  var k=[['proc','','En proceso']].concat(D.policlinicos.map(function(p,i){return ['pol'+(i+1),i?'c1':'',p.replace('Policlínico ','')];}),[['pol','r','Sin policlínico'],['cit','g','Citas hoy'],['nue','c1','Nuevos (7 días)'],['mov','w','Sin movimiento'],['ct','g','Contratados']]);
+  var k=[['proc','','En proceso']].concat(D.policlinicos.map(function(p,i){return ['pol'+(i+1),i?'c1':'',p.replace('Policlínico ','')];}),[['pol','r','Sin policlínico'],['ctc','w','Contactados'],['cit','g','Citas hoy'],['nue','c1','Nuevos (7 días)'],['mov','w','Sin movimiento'],['ct','g','Contratados']]);
   document.getElementById('kpi').innerHTML=k.map(function(x){var n=D.cands.filter(function(c){return kpiOk(x[0],c);}).length;return '<div class="kp '+x[1]+(/^pol\d$/.test(x[0])?' pp':'')+(KF===x[0]?' on':'')+'" title="'+(KF===x[0]?'Quitar filtro':'Ver estos candidatos')+'" onclick="kpiClick(\''+x[0]+'\')"><b>'+n+'</b><span>'+x[2]+'</span></div>';}).join('');
 }
 function ajustarBoard(){var b=document.getElementById('board');b.style.height=Math.max(200,window.innerHeight-b.getBoundingClientRect().top-4)+'px';}
@@ -595,7 +596,7 @@ function pintarAgenda(){
     if(d!==dia){dia=d;x='<div class="sec">'+d+(a.ts.slice(0,10)===hoy?' · HOY':'')+'</div>';}
     return x+'<div class="row" style="cursor:pointer" onclick="abrir('+a.fila+')"><span class="l" style="width:60px">'+a.ts.slice(11,16)+'</span><span class="v">'+badgePol(polAg(a.fila))+' <b>'+esc(a.nombre)+'</b> · '+esc(a.tipo)+' <small style="color:#5D6B82">'+esc(tit(a.busq))+'</small></span></div>';
   }).join('');
-  var pend=D.cands.filter(function(c){return !c.cita&&/^(screening|competencias|entrevista técnica)\s*·/i.test(c.contactado||'')&&!/^Descartad|^Contratado|agendad/i.test(c.estado)&&agOk(c.policlinico,f);}).map(function(c){var m=String(c.contactado).match(/^(.*?)\s*·\s*(\d{2})\/(\d{2})\/(\d{4})/);return {c:c,etq:m?m[1]:'',d:m?new Date(m[4],m[3]-1,m[2]):null};}).sort(function(a,b){return (a.d||0)-(b.d||0);});
+  var pend=D.cands.filter(function(c){return kpiOk('ctc',c)&&agOk(c.policlinico,f);}).map(function(c){var m=String(c.contactado).match(/^(.*?)\s*·\s*(\d{2})\/(\d{2})\/(\d{4})/);return {c:c,etq:m?m[1]:'',d:m?new Date(m[4],m[3]-1,m[2]):null};}).sort(function(a,b){return (a.d||0)-(b.d||0);});
   if(pend.length)h+='<div class="sec" style="color:#B58900">Contactados · todavía sin agendar ('+pend.length+')</div>'+pend.map(function(x){var dias=x.d?Math.max(0,Math.floor((new Date(D.ahora)-x.d)/86400000)):null;return '<div class="row" style="cursor:pointer" onclick="abrir('+x.c.fila+')"><span class="l" style="width:70px">'+(dias==null?'':(dias===0?'hoy':'hace '+dias+' d'))+'</span><span class="v">'+badgePol(x.c.policlinico)+' <b>'+esc(x.c.nombre)+'</b> · para '+esc(x.etq)+' <small style="color:#5D6B82">'+esc(tit(x.c.busq))+'</small></span></div>';}).join('');
   var sa=AG.sinAsignar.filter(function(a){return agOk(a.poli||'',f);});
   if(sa.length)h+='<div class="sec" style="color:#D9534F">Turnos del calendario sin candidato asociado</div><div class="txt" style="color:#5D6B82;margin-bottom:6px">Alguien reservó pero su nombre o mail no coincide con ningún candidato cargado. Revisalos a mano.</div>'+sa.map(function(a){return '<div class="row"><span class="l" style="width:110px">'+esc(a.ts.slice(8,10)+'/'+a.ts.slice(5,7)+' '+a.ts.slice(11,16))+'</span><span class="v">'+badgePol(a.poli||'')+' '+esc(a.titulo)+(a.invitados?' <small style="color:#5D6B82">'+esc(a.invitados)+'</small>':'')+'</span></div>';}).join('');
