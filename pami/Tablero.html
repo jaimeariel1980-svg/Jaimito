@@ -25,7 +25,7 @@
 .av{width:54px;height:54px;border-radius:50%;border:none;background:#D9A89B;color:#fff;font-weight:800;font-family:var(--font);cursor:pointer;font-size:17px;flex-shrink:0}
 @media(max-width:1480px){.hdr .sp{display:none}.hdr .lg{height:58px}.hdr .in{gap:10px;padding:12px 20px}.cta{font-size:13px;padding:12px 16px}}@media(max-width:1100px){.hdr .lg{height:48px}.hdr .in{gap:8px;padding:10px 14px}.ni b{display:none}}@media(max-width:900px){.hdr .prod{display:none}}
 #kpi{display:flex;gap:10px;padding:10px 20px 0;flex-wrap:wrap}
-.kp{flex:1 1 140px;background:#fff;border-radius:6px;border-left:5px solid var(--azul);padding:8px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 3px rgba(3,78,162,.1)}
+.kp{flex:1 1 112px;background:#fff;border-radius:6px;border-left:5px solid var(--azul);padding:8px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 3px rgba(3,78,162,.1)}
 .kp{cursor:pointer}.kp.on{outline:2px solid var(--azul);background:#EAF3FF}
 .kp.pp span{font-size:17px;letter-spacing:.02em;color:var(--azul)}.kp.pp b{font-size:30px}
 .kp b{font-size:26px;font-weight:800;color:var(--azul);line-height:1}
@@ -117,7 +117,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v30</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v31</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -137,7 +137,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
   <input id="ff" placeholder="Formación / profesión">
   <input id="fx" placeholder="Experiencia / palabra clave">
   <select id="fe"><option value="">Todos los estados</option></select>
-  <select id="fpo"><option value="">Todos los policlínicos</option><option value="-">Sin policlínico (sin confirmar)</option></select>
+  <select id="fpo" style="display:none"><option value="">Todos los policlínicos</option><option value="-">Sin policlínico (sin confirmar)</option></select>
   <select id="fsi"><option value="">Todos los sindicatos</option><option value="*">Con sindicato (cualquiera)</option><option value="-">Sin sindicato</option></select>
   <input id="fp" type="number" placeholder="Pretensión hasta $" style="width:150px">
   <select id="fr"><option value="">Todos</option><option value="1">★ Solo recomendados</option></select>
@@ -329,7 +329,7 @@ function filtra(c){
   if(g('fb')&&c.busq!==g('fb'))return false;
   if(g('fe')&&c.estado!==g('fe')&&!(g('fe')==='Contactado'&&kpiOk('ctc',c)))return false;
   var gsi=g('fsi');if(gsi){var lst=/^sindicato/i.test(c.recTipo||'')?String(c.recPor||'').split(';').map(function(x){return x.trim().toLowerCase();}).filter(Boolean):[];if(gsi==='-'){if(lst.length)return false;}else if(gsi==='*'){if(!lst.length)return false;}else if(lst.indexOf(gsi.toLowerCase())===-1)return false;}
-  var pe=c.policlinico||sugN(c);if(g('fpo')&&(g('fpo')==='-'?(c.policlinico||/^Descartad|^Contratado/i.test(c.estado)):pe!==g('fpo')))return false;
+  var sc=g('fpo');if(sc&&(sc==='-'?c.policlinico:c.policlinico!==sc))return false;
   var p=Number(g('fp'))||0;if(p){var n=Number(String(c.pret).replace(/\D/g,''));if(!n||n>p)return false;}
   if(g('fr')&&!recom(c))return false;
   if(!coincide(c.nombre+' '+c.dni+' '+c.email,g('fq')))return false;
@@ -424,15 +424,19 @@ function kpiOk(k,c){
   if(k==='ctc')return !term&&!c.cita&&!/agendad/i.test(c.estado)&&/^(screening|competencias|entrevista técnica)\s*·/i.test(c.contactado||'');
   if(k==='cit')return !!c.cita&&c.cita.ts.slice(0,10)===D.ahora.slice(0,10);
   if(k==='mov')return !term&&!terminal(c.estado)&&dias(c)>=D.cfg.diasAlerta;
-  if(k==='pol')return !term&&!c.policlinico;
-  if(k==='pol1'||k==='pol2')return !term&&c.policlinico===D.policlinicos[k==='pol1'?0:1];
   if(k==='ct')return c.estado==='Contratado';
   return true;
 }
 function kpiClick(k){KF=KF===k?'':k;render();}
+function scopePol(v){document.getElementById('fpo').value=v;render();perfilBtn();}
 function kpis(){
-  var k=[['proc','','En proceso']].concat(D.policlinicos.map(function(p,i){return ['pol'+(i+1),i?'c1':'',p.replace('Policlínico ','')];}),[['pol','r','Sin policlínico'],['cit','g','Citas hoy'],['nue','c1','Nuevos (7 días)'],['mov','w','Sin movimiento'],['ct','g','Contratados']]);
-  document.getElementById('kpi').innerHTML=k.map(function(x){var n=D.cands.filter(function(c){return kpiOk(x[0],c);}).length;return '<div class="kp '+x[1]+(/^pol\d$/.test(x[0])?' pp':'')+(KF===x[0]?' on':'')+'" title="'+(KF===x[0]?'Quitar filtro':'Ver estos candidatos')+'" onclick="kpiClick(\''+x[0]+'\')"><b>'+n+'</b><span>'+x[2]+'</span></div>';}).join('');
+  var sc=document.getElementById('fpo').value;
+  var base=D.cands.filter(function(c){return !sc||(sc==='-'?!c.policlinico:c.policlinico===sc);});
+  var ps=[['','Todos',D.cands.length,'']].concat(D.policlinicos.map(function(p,i){return [p,p.replace('Policlínico ',''),D.cands.filter(function(c){return c.policlinico===p;}).length,i?'c1':''];}),[['-','Sin asignar',D.cands.filter(function(c){return !c.policlinico;}).length,'r']]);
+  var h=ps.map(function(x){return '<div class="kp pp '+x[3]+(sc===x[0]?' on':'')+'" onclick="scopePol(\''+x[0]+'\')"><b>'+x[2]+'</b><span>'+esc(x[1])+'</span></div>';}).join('');
+  var k=[['proc','','En proceso'],['cit','g','Citas hoy'],['nue','c1','Nuevos (7 días)'],['mov','w','Sin movimiento'],['ct','g','Contratados']];
+  h+=k.map(function(x){var n=base.filter(function(c){return kpiOk(x[0],c);}).length;return '<div class="kp '+x[1]+(KF===x[0]?' on':'')+'" title="'+(KF===x[0]?'Quitar filtro':'Ver estos candidatos')+'" onclick="kpiClick(\''+x[0]+'\')"><b>'+n+'</b><span>'+x[2]+'</span></div>';}).join('');
+  document.getElementById('kpi').innerHTML=h;
 }
 function ajustarBoard(){var b=document.getElementById('board');b.style.height=Math.max(200,window.innerHeight-b.getBoundingClientRect().top-4)+'px';}
 window.addEventListener('resize',ajustarBoard);window.addEventListener('load',function(){setTimeout(ajustarBoard,300);setTimeout(ajustarBoard,1500);});
