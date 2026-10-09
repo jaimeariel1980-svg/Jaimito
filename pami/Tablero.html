@@ -116,7 +116,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v21</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v22</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -385,6 +385,10 @@ function card(c){
     (pr?'<div class="ln"><i>📅</i><div class="tags">'+pr+'</div></div>':'')+
     (mk?'<div class="ln"><i>⚑</i><div class="tags">'+mk+'</div></div>':'')+
     '</div>';
+}
+function asignarPol(f,i){
+  var c=byFila(f),p=D.policlinicos[i],nuevo=c.policlinico===p?'':p,prev=c.policlinico;c.policlinico=nuevo;render();
+  gs().withSuccessHandler(function(){toast(nuevo||'Sin policlínico');}).withFailureHandler(function(e){c.policlinico=prev;render();fer(e);}).guardarCandidato(K,f,{policlinico:nuevo});
 }
 function dropAttrs(e){return 'data-estado="'+esc(e)+'" ondragover="event.preventDefault();this.classList.add(\'over\')" ondragleave="this.classList.remove(\'over\')" ondrop="soltar(event,this)"';}
 function acordeon(titulo,clase,tipos,lista,re){
