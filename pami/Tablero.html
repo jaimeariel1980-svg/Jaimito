@@ -56,7 +56,6 @@
 
 .col{background:#E9EEF5;border-radius:4px;min-width:250px;width:250px;flex-shrink:0;display:flex;flex-direction:column;min-height:0}
 .col-h{background:var(--azul);color:#fff;padding:11px 12px;font-size:12.5px;flex-shrink:0;font-weight:800;text-transform:uppercase;letter-spacing:.05em;display:flex;justify-content:space-between;border-radius:4px 4px 0 0;border-bottom:3px solid var(--celeste)}
-.col-sub{display:flex;gap:6px;padding:5px 8px;background:#D3DBE8;flex-shrink:0}.pc{flex:1;text-align:center;font-size:11px;font-weight:800;border:1.5px solid #AEBBD0;background:#fff;color:var(--mut);border-radius:4px;padding:2px 0;cursor:pointer}.pc.on.p1{background:var(--azul);border-color:var(--azul);color:#fff}.pc.on.p2{background:#00A3E0;border-color:#00A3E0;color:#fff}
 .col.desc .col-h{background:#8B2E2B;border-bottom-color:#D9534F}
 .col.res .col-h{background:#8A6D00;border-bottom-color:#F2B705}
 .col.ok .col-h{background:#1E6B47;border-bottom-color:#8BD3A8}
@@ -117,7 +116,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v24</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v23</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -322,14 +321,14 @@ function raiz(p){p=nrm(p);if(p.length>5)return p.slice(0,-2);if(p.length>3)retur
 function coincide(texto,q){if(!q||!q.trim())return true;var t=nrm(texto),ps=q.trim().split(/\s+/);for(var i=0;i<ps.length;i++){if(t.indexOf(raiz(ps[i]))===-1)return false;}return true;}
 function recom(c){return c.recTipo?(c.recTipo+(c.recPor?' · '+c.recPor:'')):(c.conoce?'Conoce a: '+c.conoce:'');}
 function money(v){var n=Number(String(v||'').replace(/\D/g,''));return n?'$'+n.toLocaleString('es-AR'):(v?'$'+v:'');}
-var KF='',SKIPPOL=false;
+var KF='';
 function filtra(c){
   if(KF&&!kpiOk(KF,c))return false;
   var g=function(i){return document.getElementById(i).value;};
   if(g('fb')&&c.busq!==g('fb'))return false;
   if(g('fe')&&c.estado!==g('fe'))return false;
   var gsi=g('fsi');if(gsi){var lst=/^sindicato/i.test(c.recTipo||'')?String(c.recPor||'').split(';').map(function(x){return x.trim().toLowerCase();}).filter(Boolean):[];if(gsi==='-'){if(lst.length)return false;}else if(gsi==='*'){if(!lst.length)return false;}else if(lst.indexOf(gsi.toLowerCase())===-1)return false;}
-  var pe=c.policlinico||sugN(c);if(!SKIPPOL&&g('fpo')&&(g('fpo')==='-'?(c.policlinico||/^Descartad|^Contratado/i.test(c.estado)):pe!==g('fpo')))return false;
+  var pe=c.policlinico||sugN(c);if(g('fpo')&&(g('fpo')==='-'?(c.policlinico||/^Descartad|^Contratado/i.test(c.estado)):pe!==g('fpo')))return false;
   var p=Number(g('fp'))||0;if(p){var n=Number(String(c.pret).replace(/\D/g,''));if(!n||n>p)return false;}
   if(g('fr')&&!recom(c))return false;
   if(!coincide(c.nombre+' '+c.dni+' '+c.email,g('fq')))return false;
@@ -400,22 +399,16 @@ function acordeon(titulo,clase,tipos,lista,re){
     return '<details'+(items.length?' open':'')+'><summary><span>▸ '+esc(t.replace(/^Descartado /,''))+'</span><span class="cnt">'+items.length+'</span></summary><div class="dbody" '+dropAttrs(t)+'>'+items.map(card).join('')+'</div></details>';
   }).join('')+'</div></div>';
 }
-function polSub(items){
-  var f=document.getElementById('fpo').value;
-  return '<div class="col-sub">'+D.policlinicos.map(function(p,i){var n=items.filter(function(c){return (c.policlinico||sugN(c))===p;}).length;return '<span class="pc p'+(i+1)+(f===p?' on':'')+'" onclick="polFiltro('+i+')" title="'+(f===p?'Quitar filtro':'Ver solo '+esc(p))+'">'+esc(p.replace('Policlínico ',''))+' · '+n+'</span>';}).join('')+'</div>';
-}
-function polFiltro(i){var s=document.getElementById('fpo'),p=D.policlinicos[i];s.value=s.value===p?'':p;render();perfilBtn();}
 function render(){
   var lista=D.cands.filter(filtra);
   document.getElementById('cnt').textContent=lista.length+(lista.length!==D.cands.length?' de '+D.cands.length:'')+' candidatos';
   var hay=KF||['fb','fq','fz','ff','fx','fe','fp','fr','fpo','fsi'].some(function(i){return document.getElementById(i).value;});document.getElementById('cf').textContent=hay?lista.length+' resultado'+(lista.length===1?'':'s'):'';
   if(!D.cands.length){document.getElementById('board').innerHTML='<div class="loading">Todavía no hay candidatos. Cuando llegue una postulación, un mail con CV o un archivo en la carpeta, aparece acá.</div>';return;}
-  SKIPPOL=true;var base=D.cands.filter(filtra);SKIPPOL=false;
   var conocidos=[];D.estadosCol.forEach(function(x){conocidos=conocidos.concat(x[1]);});
   var h='';
   D.estadosCol.forEach(function(col,i){
-    var enCol=function(c){return col[1].indexOf(c.estado)>-1||(i===0&&conocidos.indexOf(c.estado)===-1&&!/^Descartad|reserva/i.test(c.estado));},items=lista.filter(enCol);
-    h+='<div class="col'+(col[0]==='Contratado'?' ok':'')+'"><div class="col-h"><span>'+esc(col[0])+'</span><b>'+items.length+'</b></div>'+polSub(base.filter(enCol))+'<div class="col-body" '+dropAttrs(col[2])+'>'+items.map(card).join('')+'</div></div>';
+    var items=lista.filter(function(c){return col[1].indexOf(c.estado)>-1||(i===0&&conocidos.indexOf(c.estado)===-1&&!/^Descartad|reserva/i.test(c.estado));});
+    h+='<div class="col'+(col[0]==='Contratado'?' ok':'')+'"><div class="col-h"><span>'+esc(col[0])+'</span><b>'+items.length+'</b></div><div class="col-body" '+dropAttrs(col[2])+'>'+items.map(card).join('')+'</div></div>';
   });
   h+=acordeon('Reservas','res',D.res,lista,/reserva/i);
   h+=acordeon('Descartados','desc',D.desc,lista,/^Descartad/i);
@@ -430,12 +423,13 @@ function kpiOk(k,c){
   if(k==='cit')return !!c.cita&&c.cita.ts.slice(0,10)===D.ahora.slice(0,10);
   if(k==='mov')return !term&&!terminal(c.estado)&&dias(c)>=D.cfg.diasAlerta;
   if(k==='pol')return !term&&!c.policlinico;
+  if(k==='pol1'||k==='pol2')return !term&&c.policlinico===D.policlinicos[k==='pol1'?0:1];
   if(k==='ct')return c.estado==='Contratado';
   return true;
 }
 function kpiClick(k){KF=KF===k?'':k;render();}
 function kpis(){
-  var k=[['proc','','En proceso'],['nue','c1','Nuevos (7 días)'],['cit','g','Citas hoy'],['mov','w','Sin movimiento'],['pol','r','Sin policlínico'],['ct','g','Contratados']];
+  var k=[['proc','','En proceso']].concat(D.policlinicos.map(function(p,i){return ['pol'+(i+1),i?'c1':'',p.replace('Policlínico ','')];}),[['pol','r','Sin policlínico'],['cit','g','Citas hoy'],['nue','c1','Nuevos (7 días)'],['mov','w','Sin movimiento'],['ct','g','Contratados']]);
   document.getElementById('kpi').innerHTML=k.map(function(x){var n=D.cands.filter(function(c){return kpiOk(x[0],c);}).length;return '<div class="kp '+x[1]+(KF===x[0]?' on':'')+'" title="'+(KF===x[0]?'Quitar filtro':'Ver estos candidatos')+'" onclick="kpiClick(\''+x[0]+'\')"><b>'+n+'</b><span>'+x[2]+'</span></div>';}).join('');
 }
 function ajustarBoard(){var b=document.getElementById('board');b.style.height=Math.max(200,window.innerHeight-b.getBoundingClientRect().top-4)+'px';}
