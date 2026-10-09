@@ -242,7 +242,7 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '18';
+const ESQUEMA = '19';
 
 function actualizarEsquema_() {
   const props = PropertiesService.getScriptProperties();
@@ -304,7 +304,13 @@ function actualizarEsquema_() {
       if (i > 0 && !String(d[i][1] || '').trim()) sh.getRange(i + 1, 2).setValue('https://calendar.app.google/5681GAipvQ1VFkWf6');
       const j = d.findIndex(r => String(r[0]).trim() === 'link_agenda_screening_poli2');
       if (j > 0 && !String(d[j][1] || '').trim()) sh.getRange(j + 1, 2).setValue('https://calendar.app.google/fgkSfx6QzC7JnzuA6');
-    }
+    },
+    () => sh.getDataRange().getValues().forEach((r, i) => {
+      if (i > 0 && r[COL.proc - 1] === 'Revisar' && /^No se pudo leer el CV/.test(String(r[COL.just - 1]))) {
+        sh.getRange(i + 1, COL.proc).setValue('Pendiente');
+        sh.getRange(i + 1, COL.intentos).setValue(0);
+      }
+    })
   ];
   let ok = true;
   pasos.forEach(f => { try { f(); } catch (e) { ok = false; registrarError_('actualizarEsquema', e); } });
@@ -515,13 +521,34 @@ function textoCV_(url) {
   const m = String(url).match(/[-\w]{25,}/);
   if (!m) return '';
   const file = DriveApp.getFileById(m[0]);
+  let texto = '';
   try {
     if (file.getMimeType() === 'application/vnd.google-apps.document') return DocumentApp.openById(file.getId()).getBody().getText();
     const tmp = Drive.Files.create({ name: 'Temp_CV', mimeType: MimeType.GOOGLE_DOCS }, file.getBlob());
-    const texto = DocumentApp.openById(tmp.id).getBody().getText();
+    texto = DocumentApp.openById(tmp.id).getBody().getText();
     Drive.Files.remove(tmp.id);
-    return texto;
-  } catch (e) { registrarError_('extraer texto CV', e); return ''; }
+  } catch (e) { registrarError_('extraer texto CV', e); }
+  if (texto.trim().length < 50) {
+    try { texto = textoCvVision_(file) || texto; } catch (e) { registrarError_('leer CV con visión', e); }
+  }
+  return texto;
+}
+
+function textoCvVision_(file) {
+  const blob = file.getBlob();
+  const bytes = blob.getBytes();
+  if (blob.getContentType() !== 'application/pdf' || bytes.length > 15 * 1024 * 1024) return '';
+  const resp = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+    headers: { Authorization: 'Bearer ' + prop_('OPENAI_API_KEY') },
+    payload: JSON.stringify({ model: 'gpt-4o-mini', messages: [{ role: 'user', content: [
+      { type: 'text', text: 'Transcribí textualmente todo el texto de este currículum, en orden de lectura, sin resumir ni agregar nada.' },
+      { type: 'file', file: { filename: 'cv.pdf', file_data: 'data:application/pdf;base64,' + Utilities.base64Encode(bytes) } }
+    ] }] })
+  });
+  const p = JSON.parse(resp.getContentText());
+  if (p.error) throw new Error('OpenAI: ' + p.error.message);
+  return String(p.choices[0].message.content || '');
 }
 
 function analizarFila_(fila) {
