@@ -1240,6 +1240,25 @@ var EdPDF=(function(){
     }
     return out.save();
   }
+  var LIM=5e6;
+  async function compactarBytes(bytes,progreso){
+    await cargar();
+    var js=await pdfjsLib.getDocument({data:bytes.slice()}).promise,n=js.numPages,lado=n>20?1600:2000,D=PDFLib.PDFDocument,out=await D.create();
+    for(var i=1;i<=n;i++){
+      if(progreso)progreso('Optimizando el PDF… página '+i+' de '+n);
+      var page=await js.getPage(i),v1=page.getViewport({scale:1}),k=lado/Math.max(v1.width,v1.height),v=page.getViewport({scale:Math.min(k,3)}),c=document.createElement('canvas');
+      c.width=Math.round(v.width);c.height=Math.round(v.height);var x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);
+      await page.render({canvasContext:x,viewport:v}).promise;
+      var blob=await new Promise(function(r){c.toBlob(r,'image/jpeg',0.72);}),im=await out.embedJpg(new Uint8Array(await blob.arrayBuffer())),pg=out.addPage([v1.width,v1.height]);
+      pg.drawImage(im,{x:0,y:0,width:v1.width,height:v1.height});c.width=c.height=1;
+    }
+    var res=await out.save();return res.length<bytes.length?res:bytes;
+  }
+  async function compactarArchivo(f,progreso){
+    if(!f||f.size<=LIM)return f;
+    var by=await compactarBytes(new Uint8Array(await f.arrayBuffer()),progreso);
+    return by.length<f.size?new File([by],f.name,{type:'application/pdf'}):f;
+  }
   function u8b64(by){var s='';for(var i=0;i<by.length;i+=32768)s+=String.fromCharCode.apply(null,by.subarray(i,i+32768));return btoa(s);}
   function color(key){var i=S.slots.findIndex(function(s){return s.key===key;});return i<0?'#8a93a5':COL[i%COL.length];}
   function labelDe(key){var s=S.slots.filter(function(x){return x.key===key;})[0];return s?s.label:'';}
@@ -1316,7 +1335,7 @@ var EdPDF=(function(){
     var bt=document.querySelector('#edp [data-x="ok"]');if(bt)bt.disabled=true;
     try{
       setMsg('Armando los PDF…');var out={};
-      for(var k of Object.keys(res)){var by=await construir(res[k]);out[k]=new File([by],(k==='_'?'documento':k.replace(/[^\w\-]+/g,'_'))+'.pdf',{type:'application/pdf'});}
+      for(var k of Object.keys(res)){var by=await construir(res[k]);if(by.length>LIM)by=await compactarBytes(by,setMsg);out[k]=new File([by],(k==='_'?'documento':k.replace(/[^\w\-]+/g,'_'))+'.pdf',{type:'application/pdf'});}
       await S.o.alAplicar(out);cerrar();
     }catch(e){setMsg('');if(bt)bt.disabled=false;if(!(e&&e.silencio))alert('No se pudo aplicar: '+(e&&e.message?e.message:e));}
   }
@@ -1326,7 +1345,7 @@ var EdPDF=(function(){
     if(con){S.slots.forEach(function(s){var l=S.pg.filter(function(q){return q.box===s.key;});if(l.length)res[s.key]=l;});if(!Object.keys(res).length){alert('Asigná las páginas a un documento para descargarlas.');return;}}else res._=S.pg.slice();
     try{
       setMsg('Armando los PDF…');
-      for(var k of Object.keys(res)){var by=await construir(res[k]),a=document.createElement('a');a.href=URL.createObjectURL(new Blob([by],{type:'application/pdf'}));a.download=(k==='_'?'documento':(labelDe(k)||k))+'.pdf';document.body.appendChild(a);a.click();a.remove();}
+      for(var k of Object.keys(res)){var by=await construir(res[k]);if(by.length>LIM)by=await compactarBytes(by,setMsg);var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([by],{type:'application/pdf'}));a.download=(k==='_'?'documento':(labelDe(k)||k))+'.pdf';document.body.appendChild(a);a.click();a.remove();}
       setMsg('');
     }catch(e){setMsg('');alert('No pude armar el PDF: '+(e&&e.message?e.message:e));}
   }
@@ -1384,7 +1403,7 @@ var EdPDF=(function(){
     S.listo=cargar();
     return S.listo.then(function(){setMsg('');return agregar(o.files||[]);}).catch(function(e){alert(e.message);cerrar();});
   }
-  return {abrir:abrir};
+  return {abrir:abrir,compactarArchivo:compactarArchivo};
 })();
 /*ED_PDF_FIN*/
 
@@ -1419,6 +1438,7 @@ function subirDoc(id,doc){
     try{
       if(modo==='agregar'){_subOv('Trayendo el archivo actual…');fs=[await _bajarDoc(id,doc)].concat(fs);}
       if(fs.length>1||fs[0].type!=='application/pdf'){_subOv(fs.length>1?'Armando el PDF con '+fs.length+' archivos…':'Pasando a PDF…');fs=[await _unirEnPdf(fs)];}
+      if(fs.length===1&&fs[0].type==='application/pdf'&&fs[0].size>5e6){fs=[await EdPDF.compactarArchivo(fs[0],_subOv)];}
     }catch(e){_subOv('');alert('No pude preparar los archivos: '+(e&&e.message?e.message:e));return;}
     _subOv('Preparando el archivo…');
     _comprimir(fs[0],function(b64,nombre,tipo){
