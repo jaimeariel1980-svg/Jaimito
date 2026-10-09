@@ -108,7 +108,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .grid .full{grid-column:1/3}
 .hist{max-height:190px;overflow:auto;border:1px solid var(--line);border-radius:4px;padding:4px 10px;font-size:12px}
-.hist div{padding:4px 0;border-bottom:1px solid #EEF1F5}.hist b{color:var(--azul)}.hist small{color:var(--mut)}
+.hist div{padding:4px 0;border-bottom:1px solid #EEF1F5}.hist b{color:var(--azul)}.hist small{color:var(--mut);font-size:11px}.hist small strong{color:var(--azul)}
 .opt{display:block;width:100%;text-align:left;margin-bottom:8px}
 @media(max-width:700px){.grid{grid-template-columns:1fr}.grid .full{grid-column:1}}
 </style>
@@ -116,7 +116,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v22</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v23</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -498,7 +498,8 @@ function abrir(f){
   if(RO)bloquearRO();
   gs().withSuccessHandler(function(h){
     var e=document.getElementById('hist');if(!e||CUR!==f)return;
-    e.innerHTML=h.length?h.map(function(x){return '<div><b>'+esc(x.tipo)+'</b> · '+esc(x.detalle)+' <small>'+esc(x.fecha)+(x.quien?' · '+esc(x.quien):'')+'</small></div>';}).join(''):'<div>Sin movimientos todavía.</div>';
+    var qt=function(q){return q==='sistema'?'🤖 Automático':q==='calendario'?'📅 Calendario':q?'👤 '+esc(q):'👤 sin usuario registrado';};
+    e.innerHTML=h.length?h.map(function(x){return '<div><b>'+esc(x.tipo)+'</b> · '+esc(x.detalle)+'<br><small>'+esc(x.fecha)+' · <strong>'+qt(x.quien)+'</strong></small></div>';}).join(''):'<div>Sin movimientos todavía.</div>';
   }).getHistorial(K,c.id);
 }
 function verPost(f,btn){btn.textContent='Generando…';btn.disabled=true;gs().withSuccessHandler(function(u){btn.textContent='📋 Ver postulación';btn.disabled=false;window.open(u,'_blank');}).withFailureHandler(function(e){btn.textContent='📋 Ver postulación';btn.disabled=false;fer(e);}).postulacionPdf(K,f);}
