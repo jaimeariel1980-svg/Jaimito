@@ -79,7 +79,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 .pol{display:flex;gap:4px;margin-top:6px}.pol button{flex:1;border:1.5px solid #AEBBD0;background:#fff;border-radius:4px;font-size:11.5px;font-weight:800;padding:4px 0;cursor:pointer;color:var(--mut);font-family:var(--font)}.tag.sg{background:#D6EDFB;color:var(--azul);border:1px solid var(--celeste);font-weight:800}.pol button.sug{border-color:var(--celeste);border-style:dashed;color:var(--azul);background:#EAF6FD}
 .pol button.on{background:var(--azul);border-color:var(--azul);color:#fff}.pol button.on.p2{background:#00A3E0;border-color:#00A3E0}
 .tag.rec{background:#FFF4CC;color:#6B4E00;border:1px solid #F2B705;font-weight:800}.tag.zok{background:#D9F3E4;color:#14502F}.tag.zfu{background:#FDE3E1;color:#9B2C28}#board .card .fo{font-size:13px;color:var(--azul);font-weight:800;margin-top:3px}.alerta.rec{background:#FFF4CC;color:#6B4E00;border-left:4px solid #F2B705;font-size:14px;font-weight:800}
-.tag.cita{background:var(--tint);color:var(--azul);font-weight:700}.tag.hoy{background:#D9534F;color:#fff}.tag.w{background:#FFF1D6;color:#8A5A00}.tag.g{background:#D9F3E4;color:#14502F}.tag.r{background:#FDE3E1;color:#9B2C28}
+.tag.cita{background:#D9F3E4;color:#14502F;border:1px solid #1E8E5A;font-weight:800}.tag.ctc{background:#FFF1D6;color:#7A5200;border:1px solid #F2B705;font-weight:700}.tag.hoy{background:#D9534F;color:#fff}.tag.w{background:#FFF1D6;color:#8A5A00}.tag.g{background:#D9F3E4;color:#14502F}.tag.r{background:#FDE3E1;color:#9B2C28}
 #fmodal{display:none;position:fixed;inset:0;background:var(--bg);z-index:60;overflow:auto}
 #fmodal.show{display:block}
 .fbar{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid var(--line);padding:10px 20px;display:flex;gap:10px;align-items:center}
@@ -115,7 +115,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v18</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v19</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -350,6 +350,11 @@ function bloquearRO(){
   [].forEach.call(document.querySelectorAll('#mbox button.btn,#mbox .nb,#mbox select,#mbox textarea'),function(e){if(/verPost/.test(e.getAttribute('onclick')||''))return;e.disabled=true;e.style.opacity=.5;});
   var b=document.querySelector('#mbox .bd');if(b)b.insertAdjacentHTML('afterbegin','<div class="alerta a2">Tu usuario es de solo lectura: podés mirar, pero no modificar.</div>');
 }
+function contactoTxt(t){
+  var m=String(t).match(/^(.*?)\s*·\s*(\d{2})\/(\d{2})\/\d{4}$/);if(!m)return t;
+  var f=m[2]+'/'+m[3];
+  return /^(screening|competencias|entrevista técnica)$/i.test(m[1])?'Contactado para '+m[1]+' · '+f+' · sin agendar':m[1]+' · '+f;
+}
 function sugN(c){var x=String(c.polSug||'').split(' · ')[0];return D.policlinicos.indexOf(x)>-1?x:'';}
 function sugD(c){var m=String(c.polSug||'').split(' · ')[1];return m?m.replace(/\s*\(.*$/,''):'';}
 function card(c){
@@ -358,9 +363,9 @@ function card(c){
   var zona=c.zona?'<span class="tag '+(/fuera/i.test(c.zona)?'zfu':'zok')+'">'+esc(c.zona)+'</span>':'';
   var der=(!c.policlinico&&sugN(c))?'<div class="ln sg"><i>🏥</i><span>Sugerido: '+esc(sugN(c).replace('Policlínico ',''))+' · '+esc(sugD(c))+'</span></div>':'';
   var pr='';
-  if(ct)pr+='<span class="tag cita'+(ct.hoy?' hoy':'')+'">'+esc(ct.tipo)+' '+esc(ct.txt)+'</span>';
+  if(ct)pr+='<span class="tag cita'+(ct.hoy?' hoy':'')+'">'+esc(ct.tipo)+' agendado · '+esc(ct.txt)+'</span>';
   if(/agendad/i.test(c.estado)&&!c.cita)pr+='<span class="tag w">Agendado · sin fecha</span>';
-  if(c.contactado)pr+='<span class="tag g">✓ '+esc(c.contactado)+'</span>';
+  if(c.contactado&&!ct)pr+='<span class="tag ctc">💬 '+esc(contactoTxt(c.contactado))+'</span>';
   if(c.descarte)pr+='<span class="tag">✉ Descarte enviado</span>';
   if(!terminal(c.estado)&&dd>=D.cfg.diasAlerta)pr+='<span class="tag r">🕒 '+dd+' d sin movimiento</span>';
   var mk='';
@@ -565,6 +570,8 @@ function verAgenda(){
       if(d!==dia){dia=d;x='<div class="sec">'+d+(a.ts.slice(0,10)===D.ahora.slice(0,10)?' · HOY':'')+'</div>';}
       return x+'<div class="row" style="cursor:pointer" onclick="abrir('+a.fila+')"><span class="l" style="width:60px">'+a.ts.slice(11,16)+'</span><span class="v"><b>'+esc(a.nombre)+'</b> · '+esc(a.tipo)+' <small style="color:#5D6B82">'+esc(tit(a.busq))+'</small></span></div>';
     }).join('');
+    var pend=D.cands.filter(function(c){return !c.cita&&/^(screening|competencias|entrevista técnica)\s*·/i.test(c.contactado||'')&&!/^Descartad|^Contratado|agendad/i.test(c.estado);}).map(function(c){var m=String(c.contactado).match(/^(.*?)\s*·\s*(\d{2})\/(\d{2})\/(\d{4})/);return {c:c,etq:m?m[1]:'',d:m?new Date(m[4],m[3]-1,m[2]):null};}).sort(function(a,b){return (a.d||0)-(b.d||0);});
+    if(pend.length)h+='<div class="sec" style="color:#B58900">Contactados · todavía sin agendar ('+pend.length+')</div>'+pend.map(function(x){var dias=x.d?Math.max(0,Math.floor((new Date(D.ahora)-x.d)/86400000)):null;return '<div class="row" style="cursor:pointer" onclick="abrir('+x.c.fila+')"><span class="l" style="width:70px">'+(dias==null?'':(dias===0?'hoy':'hace '+dias+' d'))+'</span><span class="v"><b>'+esc(x.c.nombre)+'</b> · para '+esc(x.etq)+' <small style="color:#5D6B82">'+esc(tit(x.c.busq))+'</small></span></div>';}).join('');
     if(r.sinAsignar.length)h+='<div class="sec" style="color:#D9534F">Turnos del calendario sin candidato asociado</div><div class="txt" style="color:#5D6B82;margin-bottom:6px">Alguien reservó pero su nombre o mail no coincide con ningún candidato cargado. Revisalos a mano.</div>'+r.sinAsignar.map(function(a){return '<div class="row"><span class="l" style="width:110px">'+esc(a.ts.slice(8,10)+'/'+a.ts.slice(5,7)+' '+a.ts.slice(11,16))+'</span><span class="v">'+esc(a.titulo)+(a.invitados?' <small style="color:#5D6B82">'+esc(a.invitados)+'</small>':'')+'</span></div>';}).join('');
     e.innerHTML=h;
   }).withFailureHandler(fer).getAgenda(K);
