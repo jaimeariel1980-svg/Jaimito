@@ -3,6 +3,23 @@ function calendario_() {
   return id ? CalendarApp.getCalendarById(id) : CalendarApp.getDefaultCalendar();
 }
 
+function calendarioPor_(id) {
+  try { return id ? CalendarApp.getCalendarById(id) : null; } catch (e) { return null; }
+}
+
+function calendarios_() {
+  const l = [calendario_()];
+  const c2 = calendarioPor_(ajustes_().calendario_poli2);
+  if (c2) l.push(c2);
+  return l;
+}
+
+function calendarioDe_(r) {
+  const pol = String(r[COL.policlinico - 1] || String(r[COL.polSug - 1] || '').split(' · ')[0]);
+  if (/2$/.test(pol)) { const c = calendarioPor_(ajustes_().calendario_poli2); if (c) return c; }
+  return calendario_();
+}
+
 function etapaDeTitulo_(titulo) {
   const t = norm_(titulo);
   if (t.indexOf('competencia') > -1) return 'competencias';
@@ -27,7 +44,9 @@ function eventoEsDe_(ev, cand) {
 }
 
 function eventosCal_(desde, hasta) {
-  return calendario_().getEvents(desde, hasta).map(e => ({
+  let evs = [];
+  calendarios_().forEach(cal => { try { evs = evs.concat(cal.getEvents(desde, hasta)); } catch (e) { registrarError_('leer calendario', e); } });
+  return evs.map(e => ({
     titulo: e.getTitle(), inicio: e.getStartTime(), invitados: e.getGuestList().map(g => g.getEmail().toLowerCase())
   })).filter(e => etapaDeTitulo_(e.titulo));
 }
@@ -86,7 +105,7 @@ function agendarCita(k, fila, o) {
   if (isNaN(inicio.getTime())) throw new Error('Fecha u hora inválida');
   const fin = new Date(inicio.getTime() + dur * 60000);
   const r = sh.getRange(fila, 1, 1, HEAD_CAND.length).getValues()[0];
-  const cal = calendario_();
+  const cal = calendarioDe_(r);
   if (!o.forzar) {
     const choque = cal.getEvents(inicio, fin);
     if (choque.length) return { ok: false, conflicto: choque.map(e => e.getTitle()).join(', ') };
@@ -96,7 +115,7 @@ function agendarCita(k, fila, o) {
   const mail = String(r[COL.email - 1]).trim();
   const opts = { description: 'Búsqueda: ' + v.PUESTO + '\nCandidato/a: ' + r[COL.nombre - 1] + (r[COL.tel - 1] ? ' · ' + r[COL.tel - 1] : '') + (o.nota ? '\n' + String(o.nota).slice(0, 500) : ''), location: String(o.lugar || '').slice(0, 200) };
   if (mailValido_(mail) && o.invitar !== false) { opts.guests = mail; opts.sendInvites = true; }
-  cal.createEvent(titulo, inicio, fin, opts);
+  try { cal.createEvent(titulo, inicio, fin, opts); } catch (e) { calendario_().createEvent(titulo, inicio, fin, opts); }
 
   const estado = String(r[COL.estado - 1]).trim();
   const actual = etapaDeEstado_(estado);
