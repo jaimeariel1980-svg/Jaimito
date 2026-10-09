@@ -27,6 +27,7 @@
 #kpi{display:flex;gap:10px;padding:10px 20px 0;flex-wrap:wrap}
 .kp{flex:1 1 140px;background:#fff;border-radius:6px;border-left:5px solid var(--azul);padding:8px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 3px rgba(3,78,162,.1)}
 .kp{cursor:pointer}.kp.on{outline:2px solid var(--azul);background:#EAF3FF}
+.kp.pp span{font-size:17px;letter-spacing:.02em;color:var(--azul)}.kp.pp b{font-size:30px}
 .kp b{font-size:26px;font-weight:800;color:var(--azul);line-height:1}
 .kp span{font-size:11px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.03em;line-height:1.2}
 .kp.c1{border-left-color:#00A3E0}.kp.c1 b{color:#0077A8}.kp.w{border-left-color:#F2B705}.kp.w b{color:#9A7500}.kp.r{border-left-color:#D9534F}.kp.r b{color:#B73A36}.kp.g{border-left-color:#1E8E5A}.kp.g b{color:#1E8E5A}
@@ -116,7 +117,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v23</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v26</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -430,7 +431,7 @@ function kpiOk(k,c){
 function kpiClick(k){KF=KF===k?'':k;render();}
 function kpis(){
   var k=[['proc','','En proceso']].concat(D.policlinicos.map(function(p,i){return ['pol'+(i+1),i?'c1':'',p.replace('Policlínico ','')];}),[['pol','r','Sin policlínico'],['cit','g','Citas hoy'],['nue','c1','Nuevos (7 días)'],['mov','w','Sin movimiento'],['ct','g','Contratados']]);
-  document.getElementById('kpi').innerHTML=k.map(function(x){var n=D.cands.filter(function(c){return kpiOk(x[0],c);}).length;return '<div class="kp '+x[1]+(KF===x[0]?' on':'')+'" title="'+(KF===x[0]?'Quitar filtro':'Ver estos candidatos')+'" onclick="kpiClick(\''+x[0]+'\')"><b>'+n+'</b><span>'+x[2]+'</span></div>';}).join('');
+  document.getElementById('kpi').innerHTML=k.map(function(x){var n=D.cands.filter(function(c){return kpiOk(x[0],c);}).length;return '<div class="kp '+x[1]+(/^pol\d$/.test(x[0])?' pp':'')+(KF===x[0]?' on':'')+'" title="'+(KF===x[0]?'Quitar filtro':'Ver estos candidatos')+'" onclick="kpiClick(\''+x[0]+'\')"><b>'+n+'</b><span>'+x[2]+'</span></div>';}).join('');
 }
 function ajustarBoard(){var b=document.getElementById('board');b.style.height=Math.max(200,window.innerHeight-b.getBoundingClientRect().top-4)+'px';}
 window.addEventListener('resize',ajustarBoard);window.addEventListener('load',function(){setTimeout(ajustarBoard,300);setTimeout(ajustarBoard,1500);});
