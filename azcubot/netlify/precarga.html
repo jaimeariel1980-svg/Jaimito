@@ -1193,22 +1193,8 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
       if (chk) chk.classList.toggle('visible', tieneArchivo);
       if (fila) fila.classList.toggle('has-file', tieneArchivo);
 
-      const mDni = doc.match(/^dni_(propietario|dueño(\d))$/);
-      if (mDni) {
-        const n = mDni[2] ? parseInt(mDni[2], 10) : 1;
-        autocompletarDesdeDNI(input, doc, n);
-        return;
-      }
-
-      if (doc === 'plano_edificacion' || doc === 'plano_mensura') {
-        autocompletarDesdePlano(input, doc);
-        return;
-      }
-
-      if (doc === 'escritura') {
-        autocompletarDesdeEscritura(input);
-        return;
-      }
+      // El autocompletado con IA (DNI / plano / escritura) está desactivado a propósito: demoraba y aportaba poco.
+      // La IA solo verifica el tipo de documento después de enviar (columna «Verificación IA»).
     });
   };
 
