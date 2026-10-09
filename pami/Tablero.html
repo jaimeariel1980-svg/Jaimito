@@ -117,7 +117,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v27</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v28</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -572,23 +572,60 @@ function crearCita(f,forzar){
   }).withFailureHandler(function(e){b.textContent='Agendar';b.disabled=false;fer(e);}).agendarCita(K,f,o);
 }
 
+var AG=null,AGF='';
+function polAg(f){var c=byFila(f);return c?c.policlinico:'';}
+function badgePol(p){
+  if(!p)return '<span style="background:#E4E9F1;color:#5D6B82;border-radius:3px;padding:2px 8px;font-size:12px;font-weight:800">Sin asignar</span>';
+  return '<span style="background:'+(D.policlinicos.indexOf(p)?'#00A3E0':'#034EA2')+';color:#fff;border-radius:3px;padding:2px 8px;font-size:12px;font-weight:800">'+esc(p.replace('Policlínico ',''))+'</span>';
+}
+function agOk(p,f){return !f||p===f;}
+function agFiltro(f){AGF=f;pintarAgenda();}
+function pintarAgenda(){
+  var e=document.getElementById('agl');if(!e||!AG)return;
+  var f=AGF,h='',dia='',hoy=D.ahora.slice(0,10);
+  var bt=document.getElementById('agB');
+  if(bt)bt.innerHTML=[['','Todos']].concat(D.policlinicos.map(function(p){return [p,p.replace('Policlínico ','')];})).map(function(x,i){
+    var n=AG.citas.filter(function(a){return agOk(polAg(a.fila),x[0]);}).length,on=f===x[0],col=i===2?'#00A3E0':'#034EA2';
+    return '<button type="button" onclick="agFiltro(\''+x[0]+'\')" style="flex:1;min-width:90px;border:2px solid '+col+';border-radius:6px;padding:8px 6px;font-size:15px;font-weight:800;cursor:pointer;font-family:var(--font);background:'+(on?col:'#fff')+';color:'+(on?'#fff':col)+'">'+esc(x[1])+' · '+n+'</button>';
+  }).join('');
+  var l=AG.citas.filter(function(a){return agOk(polAg(a.fila),f);});
+  if(!l.length)h+='<div class="loading" style="padding:20px">No hay citas próximas'+(f?' en '+esc(f.replace('Policlínico ','')):' de candidatos cargados')+'.</div>';
+  h+=l.map(function(a){
+    var d=a.ts.slice(8,10)+'/'+a.ts.slice(5,7)+'/'+a.ts.slice(0,4),x='';
+    if(d!==dia){dia=d;x='<div class="sec">'+d+(a.ts.slice(0,10)===hoy?' · HOY':'')+'</div>';}
+    return x+'<div class="row" style="cursor:pointer" onclick="abrir('+a.fila+')"><span class="l" style="width:60px">'+a.ts.slice(11,16)+'</span><span class="v">'+badgePol(polAg(a.fila))+' <b>'+esc(a.nombre)+'</b> · '+esc(a.tipo)+' <small style="color:#5D6B82">'+esc(tit(a.busq))+'</small></span></div>';
+  }).join('');
+  var pend=D.cands.filter(function(c){return !c.cita&&/^(screening|competencias|entrevista técnica)\s*·/i.test(c.contactado||'')&&!/^Descartad|^Contratado|agendad/i.test(c.estado)&&agOk(c.policlinico,f);}).map(function(c){var m=String(c.contactado).match(/^(.*?)\s*·\s*(\d{2})\/(\d{2})\/(\d{4})/);return {c:c,etq:m?m[1]:'',d:m?new Date(m[4],m[3]-1,m[2]):null};}).sort(function(a,b){return (a.d||0)-(b.d||0);});
+  if(pend.length)h+='<div class="sec" style="color:#B58900">Contactados · todavía sin agendar ('+pend.length+')</div>'+pend.map(function(x){var dias=x.d?Math.max(0,Math.floor((new Date(D.ahora)-x.d)/86400000)):null;return '<div class="row" style="cursor:pointer" onclick="abrir('+x.c.fila+')"><span class="l" style="width:70px">'+(dias==null?'':(dias===0?'hoy':'hace '+dias+' d'))+'</span><span class="v">'+badgePol(x.c.policlinico)+' <b>'+esc(x.c.nombre)+'</b> · para '+esc(x.etq)+' <small style="color:#5D6B82">'+esc(tit(x.c.busq))+'</small></span></div>';}).join('');
+  var sa=AG.sinAsignar.filter(function(a){return agOk(a.poli||'',f);});
+  if(sa.length)h+='<div class="sec" style="color:#D9534F">Turnos del calendario sin candidato asociado</div><div class="txt" style="color:#5D6B82;margin-bottom:6px">Alguien reservó pero su nombre o mail no coincide con ningún candidato cargado. Revisalos a mano.</div>'+sa.map(function(a){return '<div class="row"><span class="l" style="width:110px">'+esc(a.ts.slice(8,10)+'/'+a.ts.slice(5,7)+' '+a.ts.slice(11,16))+'</span><span class="v">'+badgePol(a.poli||'')+' '+esc(a.titulo)+(a.invitados?' <small style="color:#5D6B82">'+esc(a.invitados)+'</small>':'')+'</span></div>';}).join('');
+  e.innerHTML=h;
+}
+function exportarAgenda(){
+  if(!AG)return;
+  var q=function(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"';};
+  var filas=[['Fecha','Hora','Tipo','Candidato','Teléfono','Policlínico','Búsqueda','Entrevistó'].map(q).join(';')];
+  AG.citas.forEach(function(a){
+    var p=polAg(a.fila);if(!agOk(p,AGF))return;
+    var c=byFila(a.fila)||{};
+    filas.push([a.ts.slice(8,10)+'/'+a.ts.slice(5,7)+'/'+a.ts.slice(0,4),a.ts.slice(11,16),a.tipo,a.nombre,a.tel,p||'Sin asignar',tit(a.busq),c.entrev||''].map(q).join(';'));
+  });
+  var csv='﻿'+filas.join('\r\n');
+  try{
+    var u=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');
+    a.href=u;a.download='Agenda_PAMI_'+(AGF?AGF.replace('Policlínico ','').replace(' ','')+'_':'')+D.ahora.slice(0,10)+'.csv';document.body.appendChild(a);a.click();document.body.removeChild(a);
+    toast('Agenda exportada ('+(filas.length-1)+' citas)');
+  }catch(x){window.open('data:text/csv;charset=utf-8,'+encodeURIComponent(csv),'_blank');}
+}
 function verAgenda(){
+  AGF='';
   document.getElementById('mbox').innerHTML='<div class="hd"><div><h2>Agenda de citas</h2><small>Próximas entrevistas (incluye las que reservan los candidatos en la agenda de Calendar)</small></div><button class="x" onclick="cerrar()">×</button></div><div class="bd" id="ag"><div class="loading">Cargando…</div></div>';
   document.getElementById('modal').classList.add('show');
   gs().withSuccessHandler(function(r){
     var e=document.getElementById('ag');if(!e)return;
-    var l=r.citas,h='';
-    if(!l.length)h+='<div class="loading" style="padding:20px">No hay citas próximas de candidatos cargados.</div>';
-    var dia='';
-    h+=l.map(function(a){
-      var d=a.ts.slice(8,10)+'/'+a.ts.slice(5,7)+'/'+a.ts.slice(0,4),x='';
-      if(d!==dia){dia=d;x='<div class="sec">'+d+(a.ts.slice(0,10)===D.ahora.slice(0,10)?' · HOY':'')+'</div>';}
-      return x+'<div class="row" style="cursor:pointer" onclick="abrir('+a.fila+')"><span class="l" style="width:60px">'+a.ts.slice(11,16)+'</span><span class="v"><b>'+esc(a.nombre)+'</b> · '+esc(a.tipo)+' <small style="color:#5D6B82">'+esc(tit(a.busq))+'</small></span></div>';
-    }).join('');
-    var pend=D.cands.filter(function(c){return !c.cita&&/^(screening|competencias|entrevista técnica)\s*·/i.test(c.contactado||'')&&!/^Descartad|^Contratado|agendad/i.test(c.estado);}).map(function(c){var m=String(c.contactado).match(/^(.*?)\s*·\s*(\d{2})\/(\d{2})\/(\d{4})/);return {c:c,etq:m?m[1]:'',d:m?new Date(m[4],m[3]-1,m[2]):null};}).sort(function(a,b){return (a.d||0)-(b.d||0);});
-    if(pend.length)h+='<div class="sec" style="color:#B58900">Contactados · todavía sin agendar ('+pend.length+')</div>'+pend.map(function(x){var dias=x.d?Math.max(0,Math.floor((new Date(D.ahora)-x.d)/86400000)):null;return '<div class="row" style="cursor:pointer" onclick="abrir('+x.c.fila+')"><span class="l" style="width:70px">'+(dias==null?'':(dias===0?'hoy':'hace '+dias+' d'))+'</span><span class="v"><b>'+esc(x.c.nombre)+'</b> · para '+esc(x.etq)+' <small style="color:#5D6B82">'+esc(tit(x.c.busq))+'</small></span></div>';}).join('');
-    if(r.sinAsignar.length)h+='<div class="sec" style="color:#D9534F">Turnos del calendario sin candidato asociado</div><div class="txt" style="color:#5D6B82;margin-bottom:6px">Alguien reservó pero su nombre o mail no coincide con ningún candidato cargado. Revisalos a mano.</div>'+r.sinAsignar.map(function(a){return '<div class="row"><span class="l" style="width:110px">'+esc(a.ts.slice(8,10)+'/'+a.ts.slice(5,7)+' '+a.ts.slice(11,16))+'</span><span class="v">'+esc(a.titulo)+(a.invitados?' <small style="color:#5D6B82">'+esc(a.invitados)+'</small>':'')+'</span></div>';}).join('');
-    e.innerHTML=h;
+    AG=r;
+    e.innerHTML='<div id="agB" style="display:flex;gap:8px;margin-bottom:6px"></div><div style="margin-bottom:8px"><button class="btn" onclick="exportarAgenda()">⬇ Exportar a Excel</button></div><div id="agl"></div>';
+    pintarAgenda();
   }).withFailureHandler(fer).getAgenda(K);
 }
 

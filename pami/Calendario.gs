@@ -45,9 +45,9 @@ function eventoEsDe_(ev, cand) {
 
 function eventosCal_(desde, hasta) {
   let evs = [];
-  calendarios_().forEach(cal => { try { evs = evs.concat(cal.getEvents(desde, hasta)); } catch (e) { registrarError_('leer calendario', e); } });
-  return evs.map(e => ({
-    titulo: e.getTitle(), inicio: e.getStartTime(), invitados: e.getGuestList().map(g => g.getEmail().toLowerCase())
+  calendarios_().forEach((cal, i) => { try { evs = evs.concat(cal.getEvents(desde, hasta).map(e => ({ e: e, poli: POLICLINICOS[i] || '' }))); } catch (e) { registrarError_('leer calendario', e); } });
+  return evs.map(x => ({
+    titulo: x.e.getTitle(), inicio: x.e.getStartTime(), invitados: x.e.getGuestList().map(g => g.getEmail().toLowerCase()), poli: x.poli
   })).filter(e => etapaDeTitulo_(e.titulo));
 }
 
@@ -90,7 +90,7 @@ function citasSinCandidato_() {
   const d = hoja_('Candidatos').getDataRange().getValues().slice(1).filter(r => r[COL.nombre - 1]).map(r => ({ nombre: r[COL.nombre - 1], mail: String(r[COL.email - 1] || '').trim().toLowerCase() }));
   return eventos.filter(e => !d.some(c => eventoEsDe_(e, c)))
     .sort((a, b) => a.inicio - b.inicio)
-    .map(e => ({ titulo: e.titulo, ts: fmt_(e.inicio, 'yyyy-MM-dd HH:mm'), tipo: TIPO_ETAPA[etapaDeTitulo_(e.titulo)], invitados: e.invitados.join(', ') }));
+    .map(e => ({ titulo: e.titulo, ts: fmt_(e.inicio, 'yyyy-MM-dd HH:mm'), tipo: TIPO_ETAPA[etapaDeTitulo_(e.titulo)], invitados: e.invitados.join(', '), poli: e.poli }));
 }
 
 function agendarCita(k, fila, o) {
