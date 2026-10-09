@@ -212,7 +212,7 @@ function filaPorId_(sh, id) {
 
 function plantillasIniciales_() {
   return [
-    ['contacto-screening', 'WhatsApp', 'Hola [NOMBRE], ¿cómo estás? Soy [ENTREVISTADOR] del equipo de Atracción y Elección.\nTe contacto por la búsqueda de [PUESTO] para trabajar en [POLICLINICO].\nMe gustaría coordinar una breve charla telefónica con vos para conocerte.\nSi te interesa, elegí el día y horario que mejor te quede desde este link y queda agendado:\n[LINK]\nSaludos!'],
+    ['contacto-screening', 'WhatsApp', 'Hola [NOMBRE], ¿cómo estás? Soy [ENTREVISTADOR] de Recursos humanos del [POLI].\nTe contacto por la búsqueda de [PUESTO].\nMe gustaría coordinar una breve charla telefónica con vos para conocerte.\nSi te interesa, elegí el día y horario que mejor te quede desde este link y queda agendado:\n[LINK]\nSaludos!'],
     ['contacto-competencias', 'WhatsApp', 'Hola [NOMBRE], ¿cómo estás? Soy [ENTREVISTADOR] del equipo de Atracción y Elección.\nTe escribo por la búsqueda de [PUESTO] en [EMPRESA].\nNos gustaría avanzar con tu perfil a la siguiente etapa del proceso. Se trata de una entrevista de aproximadamente una hora, en la que vamos a profundizar sobre tu experiencia y tu recorrido profesional.\nSi te interesa continuar, elegí el día y horario que mejor te quede desde este link y queda agendada:\n[LINK]\n¡Nos vemos pronto!\nSaludos,\n[FIRMA]'],
     ['contacto-tecnica', 'WhatsApp', 'Hola [NOMBRE], ¿cómo estás?\nQueríamos contarte que nos gustaría avanzar con tu perfil a la siguiente etapa del proceso para la posición de [PUESTO] en [POLICLINICO].\nLa próxima instancia consiste en una entrevista técnica con la División de Enfermería, de aproximadamente una hora. Será una conversación para profundizar sobre tu experiencia y conocer los desafíos de la posición.\nSi te interesa continuar, elegí el día y horario que mejor te quede desde este link y queda agendada:\n[LINK]\nSaludos,\n[FIRMA]'],
     ['confirmacion-cita', 'WhatsApp', 'Hola [NOMBRE], te confirmamos tu entrevista de [TIPO] para la búsqueda de [PUESTO]:\n📅 [FECHA] a las [HORA]\n📍 [LUGAR]\nSi no podés asistir, avisanos con anticipación para reprogramarla. ¡Gracias!\n[FIRMA]'],
@@ -434,12 +434,20 @@ function textoPlantilla_(clave) {
   return d ? d[2] : '';
 }
 
+function poliRomano_(t) {
+  return String(t || '').replace(/PAMI\s*1\b/, 'PAMI I').replace(/PAMI\s*2\b/, 'PAMI II');
+}
+
 function datosComunes_(r) {
   const aj = ajustes_();
   const b = busquedas_().find(x => x.id === r[COL.busq - 1]);
+  const pol = poliRomano_(r[COL.policlinico - 1] || String(r[COL.polSug - 1] || '').split(' · ')[0]);
+  const hayPol = pol.indexOf('Policlínico') === 0;
+  const quien = String(QUIEN_ || '').trim().split(/\s+/)[0];
   return {
     NOMBRE: String(r[COL.nombre - 1]).trim().split(/\s+/)[0], PUESTO: b ? b.titulo : '', EMPRESA: aj.nombre_cliente || 'PAMI',
-    ENTREVISTADOR: String(r[COL.entrev - 1] || lista_(aj.entrevistadores, ',')[0] || ''), LINK: aj.link_agenda || '', FIRMA: aj.firma || '', POLICLINICO: (r[COL.policlinico - 1] || String(r[COL.polSug - 1] || '').split(' · ')[0]).indexOf('Policlínico') === 0 ? 'el ' + (r[COL.policlinico - 1] || String(r[COL.polSug - 1]).split(' · ')[0]) : 'los Policlínicos PAMI 1 y 2', aj: aj
+    ENTREVISTADOR: quien || String(r[COL.entrev - 1] || lista_(aj.entrevistadores, ',')[0] || ''), LINK: aj.link_agenda || '', FIRMA: aj.firma || '',
+    POLICLINICO: hayPol ? 'el ' + pol : 'los Policlínicos PAMI I y II', POLI: hayPol ? pol : 'Policlínico PAMI', aj: aj
   };
 }
 
