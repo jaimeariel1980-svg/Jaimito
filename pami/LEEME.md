@@ -27,7 +27,7 @@ Todo se edita desde el Sheet: Busquedas, Preguntas, Screening_Eval, Screening_Va
 1. En Google Calendar de dotacionpp1 → Crear → "Agenda de citas" (una por tipo de entrevista).
 2. El título de la agenda tiene que incluir la palabra: `Screening`, `Competencias` o `Técnica`.
 3. Copiar el link público de cada agenda en la pestaña Ajustes: `link_agenda_screening`, `link_agenda_competencias`, `link_agenda_pami2` (esta última es la de la entrevista técnica).
-4. Los mensajes de WhatsApp (pestaña Plantillas) mandan ese link. Cuando el candidato reserva, el sistema lo detecta solo (cada 10 min) por su mail o por el nombre que figura entre paréntesis en el evento, marca "agendado" y muestra la cita en la tarjeta y en Agenda.
+4. Los mensajes de WhatsApp (pestaña Plantillas) mandan ese link. Cuando el candidato reserva, el sistema lo detecta solo (cada 10 min) por su mail o por el nombre que figura entre paréntesis en el evento, pasa a "Screening agendado" (o Competencias/Técnica) y muestra día y hora en la tarjeta, la ficha y Agenda. Mientras tanto la tarjeta dice "Contactado para screening · sin agendar" (en amarillo) y Agenda los lista en "Contactados · todavía sin agendar".
 5. Los turnos reservados que no coinciden con ningún candidato aparecen en Agenda como "sin candidato asociado".
 
 ## Si una página no abre
