@@ -62,6 +62,7 @@
 .col.ok .col-h{background:#1E6B47;border-bottom-color:#8BD3A8}
 .col-body,.dbody{padding:8px;min-height:60px}
 .col-body{flex:1 1 0;overflow-y:auto;min-height:0}.col-body.acc{padding:0}
+.sind{width:100%;border-collapse:collapse;font-size:13px}.sind th{font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--mut);padding:6px 8px;border-bottom:2px solid var(--azul);text-align:center}.sind td{padding:7px 8px;border-bottom:1px solid #EEF1F5}.sind tbody tr:hover{background:#F2F6FB}.sind tr.sx td{background:#F6F8FB;border-top:1px solid #D3DBE8}
 .col-h b{background:#fff;color:var(--azul);border-radius:99px;padding:0 10px;font-size:12px}
 .col-body::-webkit-scrollbar{width:11px}.col-body::-webkit-scrollbar-track{background:#D3DBE8;border-radius:8px}.col-body::-webkit-scrollbar-thumb{background:#034EA2;border-radius:8px;border:2px solid #D3DBE8}
 @supports not selector(::-webkit-scrollbar){.col-body{scrollbar-color:#034EA2 #D3DBE8;scrollbar-width:auto}}
@@ -117,10 +118,11 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v31</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v32</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
+    <button class="ni" onclick="verSind()"><span class="ic o">👥</span><b>Sindicatos</b></button>
     <button class="ni" onclick="descartes()"><span class="ic o">✉</span><b>Descartes</b></button>
     <button class="ni" id="bPerfil" style="display:none" onclick="verPerfil()"><span class="ic b">📋</span><b>Perfil del puesto</b></button>
     <button class="ni" id="bCtl" style="display:none" onclick="panelControl()"><span class="ic b">📜</span><b>Control</b></button>
@@ -303,7 +305,7 @@ function init(){
   var fb=document.getElementById('fb');
   fb.innerHTML='<option value="">Todas las búsquedas</option>'+D.busquedas.map(function(b){return '<option value="'+esc(b.id)+'">'+esc(b.titulo)+'</option>';}).join('');
   document.getElementById('fe').innerHTML+=D.todos.map(function(e){return '<option>'+esc(e)+'</option>';}).join('');
-  var sl=[];D.busquedas.forEach(function(b){var r=defRec(b.id);Object.keys(r||{}).forEach(function(k){if(/^sindicato/i.test(k))(r[k]||[]).forEach(function(x){if(sl.indexOf(x)===-1)sl.push(x);});});});
+  var sl=sindCfg();
   document.getElementById('fsi').innerHTML+=sl.map(function(e){return '<option>'+esc(e)+'</option>';}).join('');
   document.getElementById('fpo').innerHTML+=D.policlinicos.map(function(e){return '<option>'+esc(e)+'</option>';}).join('');
   ['fb','fe','fpo','fsi'].forEach(function(i){document.getElementById(i).onchange=function(){render();perfilBtn();};});
@@ -577,6 +579,43 @@ function crearCita(f,forzar){
   }).withFailureHandler(function(e){b.textContent='Agendar';b.disabled=false;fer(e);}).agendarCita(K,f,o);
 }
 
+function sindCfg(){var sl=[];D.busquedas.forEach(function(b){var r=defRec(b.id);Object.keys(r||{}).forEach(function(k){if(/^sindicato/i.test(k))(r[k]||[]).forEach(function(x){if(sl.indexOf(x)===-1)sl.push(x);});});});return sl;}
+function sindDe(c){return /^sindicato/i.test(c.recTipo||'')?String(c.recPor||'').split(';').map(function(x){return x.trim();}).filter(Boolean):[];}
+function instOf(c){
+  if(/^Descartad/i.test(c.estado))return 'Descartados';
+  if(/reserva/i.test(c.estado))return 'Reservas';
+  for(var i=0;i<D.estadosCol.length;i++)if(D.estadosCol[i][1].indexOf(c.estado)>-1)return D.estadosCol[i][0];
+  return D.estadosCol[0][0];
+}
+function filtrarSind(n){
+  var s=document.getElementById('fsi'),o=Array.prototype.find.call(s.options,function(x){return x.value.toLowerCase()===n.toLowerCase();});
+  if(!o){o=document.createElement('option');o.textContent=n;s.appendChild(o);}
+  s.value=o.value;cerrar();render();perfilBtn();
+}
+function verSind(){
+  var sc=document.getElementById('fpo').value;
+  var base=D.cands.filter(function(c){return !sc||(sc==='-'?!c.policlinico:c.policlinico===sc);});
+  var cols=D.estadosCol.map(function(c){return c[0];}).concat(['Reservas','Descartados']);
+  var filas={},orden=[];
+  var fila=function(n){var k=n.toLowerCase();if(!filas[k]){filas[k]={n:n,c:{},t:0};orden.push(k);}return filas[k];};
+  sindCfg().forEach(fila);
+  var con={c:{},t:0},sin={c:{},t:0},tot={c:{},t:0};
+  var suma=function(o,i){o.c[i]=(o.c[i]||0)+1;o.t++;};
+  base.forEach(function(c){
+    var i=instOf(c),l=sindDe(c);
+    suma(tot,i);
+    if(l.length){suma(con,i);l.forEach(function(n){suma(fila(n),i);});}else suma(sin,i);
+  });
+  orden.sort(function(a,b){return filas[b].t-filas[a].t||filas[a].n.localeCompare(filas[b].n);});
+  var th='<th style="text-align:left">Sindicato</th>'+cols.map(function(c){return '<th'+(c==='Descartados'?' style="color:#8B2E2B"':'')+'>'+esc(c)+'</th>';}).join('')+'<th>Total</th>';
+  var cel=function(n,rot){return '<td style="text-align:center'+(rot&&n?';color:#8B2E2B;font-weight:800':(n?';font-weight:800':';color:#B8C2D2'))+'">'+(n||'·')+'</td>';};
+  var tr=function(o,nombre,clic,estilo){return '<tr'+(clic?' style="cursor:pointer" onclick="filtrarSind(\''+esc(o.n).replace(/'/g,"\\'")+'\')" title="Ver estos candidatos en el tablero"':'')+(estilo?' class="'+estilo+'"':'')+'><td style="font-weight:800;color:var(--azul)">'+esc(nombre)+'</td>'+cols.map(function(c){return cel(o.c[c]||0,c==='Descartados');}).join('')+'<td style="text-align:center;font-weight:800">'+o.t+'</td></tr>';};
+  var body=orden.map(function(k){return tr(filas[k],filas[k].n,true);}).join('')+tr(con,'Con algún sindicato',false,'sx')+tr(sin,'Sin sindicato',false,'sx')+tr(tot,'TOTAL',false,'sx');
+  var alc=sc?(sc==='-'?'Sin asignar':sc.replace('Policlínico ','')):'Todos los policlínicos';
+  document.getElementById('mbox').style.maxWidth='1050px';
+  document.getElementById('mbox').innerHTML='<div class="hd"><div><h2>Sindicatos</h2><small>'+esc(alc)+' · '+orden.length+' sindicato'+(orden.length===1?'':'s')+' · '+con.t+' persona'+(con.t===1?'':'s')+' con sindicato (una persona puede tener más de uno)</small></div><button class="x" onclick="cerrar()">×</button></div><div class="bd"><div style="overflow:auto"><table class="sind"><thead><tr>'+th+'</tr></thead><tbody>'+body+'</tbody></table></div><div class="txt" style="color:#5D6B82;margin-top:8px">Tocá un sindicato para ver sus candidatos en el tablero. Los números respetan el policlínico elegido arriba.</div></div>';
+  document.getElementById('modal').classList.add('show');
+}
 var AG=null,AGF='';
 function polAg(f){var c=byFila(f);return c?c.policlinico:'';}
 function badgePol(p){
