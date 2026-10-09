@@ -26,6 +26,7 @@
 @media(max-width:1480px){.hdr .sp{display:none}.hdr .lg{height:58px}.hdr .in{gap:10px;padding:12px 20px}.cta{font-size:13px;padding:12px 16px}}@media(max-width:1100px){.hdr .lg{height:48px}.hdr .in{gap:8px;padding:10px 14px}.ni b{display:none}}@media(max-width:900px){.hdr .prod{display:none}}
 #kpi{display:flex;gap:10px;padding:10px 20px 0;flex-wrap:wrap}
 .kp{flex:1 1 140px;background:#fff;border-radius:6px;border-left:5px solid var(--azul);padding:8px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 3px rgba(3,78,162,.1)}
+.kp{cursor:pointer}.kp.on{outline:2px solid var(--azul);background:#EAF3FF}
 .kp b{font-size:26px;font-weight:800;color:var(--azul);line-height:1}
 .kp span{font-size:11px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.03em;line-height:1.2}
 .kp.c1{border-left-color:#00A3E0}.kp.c1 b{color:#0077A8}.kp.w{border-left-color:#F2B705}.kp.w b{color:#9A7500}.kp.r{border-left-color:#D9534F}.kp.r b{color:#B73A36}.kp.g{border-left-color:#1E8E5A}.kp.g b{color:#1E8E5A}
@@ -115,7 +116,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v20</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v21</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -308,7 +309,7 @@ function init(){
   ['fq','fz','ff','fx','fp'].forEach(function(i){document.getElementById(i).oninput=render;});document.getElementById('fr').onchange=render;
   render();perfilBtn();pintarUsuario();
 }
-function limpiar(){['fq','fz','ff','fx','fp','fe','fb','fr','fpo','fsi'].forEach(function(i){document.getElementById(i).value='';});render();perfilBtn();}
+function limpiar(){KF='';['fq','fz','ff','fx','fp','fe','fb','fr','fpo','fsi'].forEach(function(i){document.getElementById(i).value='';});render();perfilBtn();}
 function busqSel(){return D.busquedas.find(function(x){return x.id===document.getElementById('fb').value;});}
 function perfilBtn(){var b=busqSel();document.getElementById('bPerfil').style.display=b&&b.link_perfil?'':'none';document.getElementById('bFlyer').style.display=b&&b.link_flyer?'':'none';}
 function verFlyer(){var b=busqSel();if(b&&b.link_flyer)window.open(b.link_flyer,'_blank');}
@@ -320,7 +321,9 @@ function raiz(p){p=nrm(p);if(p.length>5)return p.slice(0,-2);if(p.length>3)retur
 function coincide(texto,q){if(!q||!q.trim())return true;var t=nrm(texto),ps=q.trim().split(/\s+/);for(var i=0;i<ps.length;i++){if(t.indexOf(raiz(ps[i]))===-1)return false;}return true;}
 function recom(c){return c.recTipo?(c.recTipo+(c.recPor?' · '+c.recPor:'')):(c.conoce?'Conoce a: '+c.conoce:'');}
 function money(v){var n=Number(String(v||'').replace(/\D/g,''));return n?'$'+n.toLocaleString('es-AR'):(v?'$'+v:'');}
+var KF='';
 function filtra(c){
+  if(KF&&!kpiOk(KF,c))return false;
   var g=function(i){return document.getElementById(i).value;};
   if(g('fb')&&c.busq!==g('fb'))return false;
   if(g('fe')&&c.estado!==g('fe'))return false;
@@ -395,7 +398,7 @@ function acordeon(titulo,clase,tipos,lista,re){
 function render(){
   var lista=D.cands.filter(filtra);
   document.getElementById('cnt').textContent=lista.length+(lista.length!==D.cands.length?' de '+D.cands.length:'')+' candidatos';
-  var hay=['fb','fq','fz','ff','fx','fe','fp','fr','fpo','fsi'].some(function(i){return document.getElementById(i).value;});document.getElementById('cf').textContent=hay?lista.length+' resultado'+(lista.length===1?'':'s'):'';
+  var hay=KF||['fb','fq','fz','ff','fx','fe','fp','fr','fpo','fsi'].some(function(i){return document.getElementById(i).value;});document.getElementById('cf').textContent=hay?lista.length+' resultado'+(lista.length===1?'':'s'):'';
   if(!D.cands.length){document.getElementById('board').innerHTML='<div class="loading">Todavía no hay candidatos. Cuando llegue una postulación, un mail con CV o un archivo en la carpeta, aparece acá.</div>';return;}
   var conocidos=[];D.estadosCol.forEach(function(x){conocidos=conocidos.concat(x[1]);});
   var h='';
@@ -409,16 +412,20 @@ function render(){
   kpis();
   ajustarBoard();
 }
-function kpiPol(){document.getElementById('fpo').value='-';render();}
+function kpiOk(k,c){
+  var term=/^Descartad|^Contratado/i.test(c.estado);
+  if(k==='proc')return !term;
+  if(k==='nue'){var m=String(c.fecha).match(/(\d+)\/(\d+)\/(\d+)/);return !!m&&new Date(m[3],m[2]-1,m[1]).getTime()>=new Date(D.ahora).getTime()-7*86400000;}
+  if(k==='cit')return !!c.cita&&c.cita.ts.slice(0,10)===D.ahora.slice(0,10);
+  if(k==='mov')return !term&&!terminal(c.estado)&&dias(c)>=D.cfg.diasAlerta;
+  if(k==='pol')return !term&&!c.policlinico;
+  if(k==='ct')return c.estado==='Contratado';
+  return true;
+}
+function kpiClick(k){KF=KF===k?'':k;render();}
 function kpis(){
-  var hoy=D.ahora.slice(0,10),sem=new Date(D.ahora).getTime()-7*86400000,A=D.cands.filter(function(c){return !/^Descartad|^Contratado/i.test(c.estado);});
-  var nuevos=D.cands.filter(function(c){var m=String(c.fecha).match(/(\d+)\/(\d+)\/(\d+)/);return m&&new Date(m[3],m[2]-1,m[1]).getTime()>=sem;}).length;
-  var citas=D.cands.filter(function(c){return c.cita&&c.cita.ts.slice(0,10)===hoy;}).length;
-  var sinMov=A.filter(function(c){return !terminal(c.estado)&&dias(c)>=D.cfg.diasAlerta;}).length;
-  var sinPol=A.filter(function(c){return !c.policlinico;}).length;
-  var ct=D.cands.filter(function(c){return c.estado==='Contratado';}).length;
-  var k=[['','En proceso',A.length],['c1','Nuevos (7 días)',nuevos],['g','Citas hoy',citas],['w','Sin movimiento',sinMov],['r','Sin policlínico',sinPol],['g','Contratados',ct]];
-  document.getElementById('kpi').innerHTML=k.map(function(x){return '<div class="kp '+x[0]+'"'+(x[1]==='Sin policlínico'?' style="cursor:pointer" title="Ver estos candidatos" onclick="kpiPol()"':'')+'><b>'+x[2]+'</b><span>'+x[1]+'</span></div>';}).join('');
+  var k=[['proc','','En proceso'],['nue','c1','Nuevos (7 días)'],['cit','g','Citas hoy'],['mov','w','Sin movimiento'],['pol','r','Sin policlínico'],['ct','g','Contratados']];
+  document.getElementById('kpi').innerHTML=k.map(function(x){var n=D.cands.filter(function(c){return kpiOk(x[0],c);}).length;return '<div class="kp '+x[1]+(KF===x[0]?' on':'')+'" title="'+(KF===x[0]?'Quitar filtro':'Ver estos candidatos')+'" onclick="kpiClick(\''+x[0]+'\')"><b>'+n+'</b><span>'+x[2]+'</span></div>';}).join('');
 }
 function ajustarBoard(){var b=document.getElementById('board');b.style.height=Math.max(200,window.innerHeight-b.getBoundingClientRect().top-4)+'px';}
 window.addEventListener('resize',ajustarBoard);window.addEventListener('load',function(){setTimeout(ajustarBoard,300);setTimeout(ajustarBoard,1500);});
