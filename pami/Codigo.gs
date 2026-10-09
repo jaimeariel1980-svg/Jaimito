@@ -242,7 +242,7 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '17';
+const ESQUEMA = '18';
 
 function actualizarEsquema_() {
   const props = PropertiesService.getScriptProperties();
@@ -280,11 +280,12 @@ function actualizarEsquema_() {
       plantillasIniciales_().forEach(t => {
         const i = filas.findIndex(f => f[0] === t[0]);
         if (i === -1) { pl.appendRow(t); pl.getRange(pl.getLastRow(), 3).setWrap(true); }
-        else if (t[0] === 'contacto-screening' && (String(filas[i][2]).indexOf('[POLICLINICO]') === -1 || /recursos humanos/i.test(String(filas[i][2])))) {
+        else if (t[0] === 'contacto-screening' && PropertiesService.getScriptProperties().getProperty('PLANT_SCR') !== '2') {
           pl.appendRow(['contacto-screening-anterior', 'WhatsApp', filas[i][2]]);
           pl.getRange(i + 1, 3).setValue(t[2]);
         }
       });
+      PropertiesService.getScriptProperties().setProperty('PLANT_SCR', '2');
       const todas = pl.getDataRange().getValues();
       todas.forEach((f, i) => { if (i > 0 && /equipo de Selección/.test(String(f[2]))) pl.getRange(i + 1, 3).setValue(String(f[2]).replace(/equipo de Selección/g, 'equipo de Atracción y Elección')); });
       const aj = hoja_('Ajustes'), da = aj.getDataRange().getValues();
