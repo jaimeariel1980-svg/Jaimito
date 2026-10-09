@@ -115,7 +115,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v19</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v20</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -135,7 +135,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
   <input id="ff" placeholder="Formación / profesión">
   <input id="fx" placeholder="Experiencia / palabra clave">
   <select id="fe"><option value="">Todos los estados</option></select>
-  <select id="fpo"><option value="">Todos los policlínicos</option><option value="-">Sin policlínico</option></select>
+  <select id="fpo"><option value="">Todos los policlínicos</option><option value="-">Sin policlínico (sin confirmar)</option></select>
   <select id="fsi"><option value="">Todos los sindicatos</option><option value="*">Con sindicato (cualquiera)</option><option value="-">Sin sindicato</option></select>
   <input id="fp" type="number" placeholder="Pretensión hasta $" style="width:150px">
   <select id="fr"><option value="">Todos</option><option value="1">★ Solo recomendados</option></select>
@@ -325,7 +325,7 @@ function filtra(c){
   if(g('fb')&&c.busq!==g('fb'))return false;
   if(g('fe')&&c.estado!==g('fe'))return false;
   var gsi=g('fsi');if(gsi){var lst=/^sindicato/i.test(c.recTipo||'')?String(c.recPor||'').split(';').map(function(x){return x.trim().toLowerCase();}).filter(Boolean):[];if(gsi==='-'){if(lst.length)return false;}else if(gsi==='*'){if(!lst.length)return false;}else if(lst.indexOf(gsi.toLowerCase())===-1)return false;}
-  var pe=c.policlinico||sugN(c);if(g('fpo')&&(g('fpo')==='-'?pe:pe!==g('fpo')))return false;
+  var pe=c.policlinico||sugN(c);if(g('fpo')&&(g('fpo')==='-'?(c.policlinico||/^Descartad|^Contratado/i.test(c.estado)):pe!==g('fpo')))return false;
   var p=Number(g('fp'))||0;if(p){var n=Number(String(c.pret).replace(/\D/g,''));if(!n||n>p)return false;}
   if(g('fr')&&!recom(c))return false;
   if(!coincide(c.nombre+' '+c.dni+' '+c.email,g('fq')))return false;
@@ -409,6 +409,7 @@ function render(){
   kpis();
   ajustarBoard();
 }
+function kpiPol(){document.getElementById('fpo').value='-';render();}
 function kpis(){
   var hoy=D.ahora.slice(0,10),sem=new Date(D.ahora).getTime()-7*86400000,A=D.cands.filter(function(c){return !/^Descartad|^Contratado/i.test(c.estado);});
   var nuevos=D.cands.filter(function(c){var m=String(c.fecha).match(/(\d+)\/(\d+)\/(\d+)/);return m&&new Date(m[3],m[2]-1,m[1]).getTime()>=sem;}).length;
@@ -417,7 +418,7 @@ function kpis(){
   var sinPol=A.filter(function(c){return !c.policlinico;}).length;
   var ct=D.cands.filter(function(c){return c.estado==='Contratado';}).length;
   var k=[['','En proceso',A.length],['c1','Nuevos (7 días)',nuevos],['g','Citas hoy',citas],['w','Sin movimiento',sinMov],['r','Sin policlínico',sinPol],['g','Contratados',ct]];
-  document.getElementById('kpi').innerHTML=k.map(function(x){return '<div class="kp '+x[0]+'"><b>'+x[2]+'</b><span>'+x[1]+'</span></div>';}).join('');
+  document.getElementById('kpi').innerHTML=k.map(function(x){return '<div class="kp '+x[0]+'"'+(x[1]==='Sin policlínico'?' style="cursor:pointer" title="Ver estos candidatos" onclick="kpiPol()"':'')+'><b>'+x[2]+'</b><span>'+x[1]+'</span></div>';}).join('');
 }
 function ajustarBoard(){var b=document.getElementById('board');b.style.height=Math.max(200,window.innerHeight-b.getBoundingClientRect().top-4)+'px';}
 window.addEventListener('resize',ajustarBoard);window.addEventListener('load',function(){setTimeout(ajustarBoard,300);setTimeout(ajustarBoard,1500);});
