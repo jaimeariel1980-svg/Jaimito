@@ -24,8 +24,8 @@
 .cta:hover{background:#DD4B48}
 .av{width:54px;height:54px;border-radius:50%;border:none;background:#D9A89B;color:#fff;font-weight:800;font-family:var(--font);cursor:pointer;font-size:17px;flex-shrink:0}
 @media(max-width:1480px){.hdr .sp{display:none}.hdr .lg{height:58px}.hdr .in{gap:10px;padding:12px 20px}.cta{font-size:13px;padding:12px 16px}}@media(max-width:1100px){.hdr .lg{height:48px}.hdr .in{gap:8px;padding:10px 14px}.ni b{display:none}}@media(max-width:900px){.hdr .prod{display:none}}
-#kpi{display:flex;gap:10px;padding:10px 20px 0;flex-wrap:wrap}
-.kp{flex:1 1 112px;background:#fff;border-radius:6px;border-left:5px solid var(--azul);padding:8px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 3px rgba(3,78,162,.1)}
+#kpi,#sindBar{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:12px;padding:10px 20px 0;align-items:stretch}@media(max-width:1599px){#kpi,#sindBar{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.kp{min-width:0;background:#fff;border-radius:6px;border-left:5px solid var(--azul);padding:8px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 3px rgba(3,78,162,.1)}
 .kp{cursor:pointer}.kp.on{outline:2px solid var(--azul);background:#EAF3FF}
 .kp.pp span{font-size:17px;letter-spacing:.02em;color:var(--azul)}.kp.pp b{font-size:30px}
 .kp b{font-size:26px;font-weight:800;color:var(--azul);line-height:1}
@@ -62,7 +62,7 @@
 .col.ok .col-h{background:#1E6B47;border-bottom-color:#8BD3A8}
 .col-body,.dbody{padding:8px;min-height:60px}
 .col-body{flex:1 1 0;overflow-y:auto;min-height:0}.col-body.acc{padding:0}
-#sindBar{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;padding:10px 20px 16px;align-items:stretch}#sindBar:empty{display:none}
+#sindBar{padding-bottom:16px}#sindBar:empty{display:none}
 .sl{grid-column:1/-1;font-size:11.5px;font-weight:600;color:var(--mut);display:flex;gap:14px;align-items:center;flex-wrap:wrap}.sl i,.sc .lgd i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:baseline}.sl .sep{display:none}
 .sc{display:flex;flex-direction:column;justify-content:space-between;gap:8px;min-width:0;background:#fff;border-radius:6px;border-left:5px solid var(--azul);padding:11px 14px;cursor:pointer;box-shadow:0 1px 3px rgba(3,78,162,.1)}.sc.gr{border-left-color:#8A97AB}.sc.z{opacity:.5}.sc.on{outline:2px solid var(--azul);background:#EAF3FF}
 .sc .t{display:flex;justify-content:space-between;align-items:center;gap:8px;min-width:0}.sc .n{font-weight:800;font-size:13.5px;text-transform:uppercase;color:var(--azul);letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}.sc .tot{font-size:26px;font-weight:800;color:var(--azul);line-height:1;flex-shrink:0}
@@ -123,7 +123,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v35</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v36</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -441,7 +441,7 @@ function kpis(){
   var ds=D.cands.filter(sindOk),base=ds.filter(function(c){return !sc||(sc==='-'?!c.policlinico:c.policlinico===sc);});
   var ps=[['','Todos',ds.length,'']].concat(D.policlinicos.map(function(p,i){return [p,p.replace('Policlínico ',''),ds.filter(function(c){return c.policlinico===p;}).length,i?'c1':''];}),[['-','Sin asignar',ds.filter(function(c){return !c.policlinico;}).length,'r']]);
   var h=ps.map(function(x){return '<div class="kp pp '+x[3]+(sc===x[0]?' on':'')+'" onclick="scopePol(\''+x[0]+'\')"><b>'+x[2]+'</b><span>'+esc(x[1])+'</span></div>';}).join('');
-  var k=[['proc','','En proceso'],['cit','g','Citas hoy'],['nue','c1','Nuevos (7 días)'],['mov','w','Sin movimiento'],['ct','g','Contratados']];
+  var k=[['proc','','En proceso'],['cit','g','Citas hoy'],['nue','c1','Nuevos (7 días)'],['ct','g','Contratados']];
   h+=k.map(function(x){var n=base.filter(function(c){return kpiOk(x[0],c);}).length;return '<div class="kp '+x[1]+(KF===x[0]?' on':'')+'" title="'+(KF===x[0]?'Quitar filtro':'Ver estos candidatos')+'" onclick="kpiClick(\''+x[0]+'\')"><b>'+n+'</b><span>'+x[2]+'</span></div>';}).join('');
   document.getElementById('kpi').innerHTML=h;
 }
@@ -624,8 +624,7 @@ function sindBar(){
       '<div class="bar"><i style="width:'+w(o.a)+'%;background:#034EA2"></i><i style="width:'+w(o.c)+'%;background:#1E8E5A"></i><i style="width:'+w(o.n_)+'%;background:#AEBBD0"></i><i style="width:'+w(o.d)+'%;background:#D9534F"></i></div>'+
       '<div class="lgd">'+num(o.a,'#034EA2','avanzaron')+num(o.c,'#1E8E5A','contratados')+num(o.n_,'#AEBBD0','en análisis')+num(o.d,'#D9534F','descartados')+'</div></div>';
   };
-  el.innerHTML='<div class="sl">Número grande = currículums recibidos <span class="sep">·</span> <span><i style="background:#034EA2"></i>avanzaron</span><span><i style="background:#1E8E5A"></i>contratados</span><span><i style="background:#AEBBD0"></i>en análisis</span><span><i style="background:#D9534F"></i>descartados</span></div>'+orden.map(function(k){return card(filas[k]);}).join('')+card(sin,true);
-  var N=orden.length+1,mx=Math.max(1,Math.floor((el.clientWidth+12)/200)),fl=Math.ceil(N/mx);el.style.gridTemplateColumns='repeat('+Math.ceil(N/fl)+',minmax(0,1fr))';
+  el.innerHTML='<div class="sl"><span><i style="background:#034EA2"></i>avanzaron</span><span><i style="background:#1E8E5A"></i>contratados</span><span><i style="background:#AEBBD0"></i>en análisis</span><span><i style="background:#D9534F"></i>descartados</span></div>'+orden.map(function(k){return card(filas[k]);}).join('')+card(sin,true);
 }
 var AG=null,AGF='';
 function polAg(f){var c=byFila(f);return c?c.policlinico:'';}
