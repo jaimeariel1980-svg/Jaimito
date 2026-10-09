@@ -117,7 +117,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v29</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v30</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -431,7 +431,7 @@ function kpiOk(k,c){
 }
 function kpiClick(k){KF=KF===k?'':k;render();}
 function kpis(){
-  var k=[['proc','','En proceso']].concat(D.policlinicos.map(function(p,i){return ['pol'+(i+1),i?'c1':'',p.replace('Policlínico ','')];}),[['pol','r','Sin policlínico'],['ctc','w','Contactados'],['cit','g','Citas hoy'],['nue','c1','Nuevos (7 días)'],['mov','w','Sin movimiento'],['ct','g','Contratados']]);
+  var k=[['proc','','En proceso']].concat(D.policlinicos.map(function(p,i){return ['pol'+(i+1),i?'c1':'',p.replace('Policlínico ','')];}),[['pol','r','Sin policlínico'],['cit','g','Citas hoy'],['nue','c1','Nuevos (7 días)'],['mov','w','Sin movimiento'],['ct','g','Contratados']]);
   document.getElementById('kpi').innerHTML=k.map(function(x){var n=D.cands.filter(function(c){return kpiOk(x[0],c);}).length;return '<div class="kp '+x[1]+(/^pol\d$/.test(x[0])?' pp':'')+(KF===x[0]?' on':'')+'" title="'+(KF===x[0]?'Quitar filtro':'Ver estos candidatos')+'" onclick="kpiClick(\''+x[0]+'\')"><b>'+n+'</b><span>'+x[2]+'</span></div>';}).join('');
 }
 function ajustarBoard(){var b=document.getElementById('board');b.style.height=Math.max(200,window.innerHeight-b.getBoundingClientRect().top-4)+'px';}
