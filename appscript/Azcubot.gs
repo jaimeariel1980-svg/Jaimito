@@ -65,13 +65,13 @@ function azcuMapaDirs_(forzar){
   if(t){ try{ return JSON.parse(t); }catch(e){} }
   var m = {};
   try{
-    var v = hojaMaestra_().getDataRange().getValues(), h = v[0], ic = h.indexOf('Código de Precarga'), ia = h.indexOf('Calle'), inn = h.indexOf('Número'), i;
-    for(i=1;i<v.length;i++) if(v[i][ic]) m[String(v[i][ic]).trim()] = (String(v[i][ia]||'')+' '+String(v[i][inn]||'')).trim();
+    var v = hojaMaestra_().getDataRange().getValues(), h = v[0], ic = h.indexOf('Código de Precarga'), ia = h.indexOf('Calle'), inn = h.indexOf('Número'), ip = h.indexOf('Piso'), idp = h.indexOf('Departamento'), ipa = h.indexOf('Pasillo'), i;
+    for(i=1;i<v.length;i++) if(v[i][ic]) m[String(v[i][ic]).trim()] = _dirTexto_(v[i][ia], v[i][inn], ip>-1?v[i][ip]:'', idp>-1?v[i][idp]:'', ipa>-1?v[i][ipa]:'');
     c.put('azdir', JSON.stringify(m), 21600);
   }catch(e){}
   return m;
 }
-function azcuLimpiarCache_(){ try{ var c = CacheService.getScriptCache(), n = +(c.get('azd_n') || 0), i; c.remove('azmov_90'); c.remove('azmov_30'); for(i=0;i<n;i++) c.remove('azd_'+i); c.remove('azd_n'); c.remove('azd_t'); AZCU_D_ = null; }catch(e){} }
+function azcuLimpiarCache_(){ try{ var c = CacheService.getScriptCache(), n = +(c.get('azd_n') || 0), i; c.remove('azmov_90'); c.remove('azmov_30'); for(i=0;i<n;i++) c.remove('azd_'+i); c.remove('azd_n'); c.remove('azd_t'); c.remove('azdir'); AZCU_D_ = null; }catch(e){} }
 function azcuProp_(id){
   var d = azcuDatos_(), q = azcuSinAc_(id), i;
   for(i=0;i<d.length;i++) if(String(d[i].id).trim()===String(id).trim()) return d[i];
@@ -1362,6 +1362,7 @@ function azcuMovimientos_(dias){
     var falta = false; v.forEach(function(r0){ var k0 = String(r0[0]).trim(); if(k0 && !(k0 in dirs)) falta = true; });
     if(falta) dirs = azcuMapaDirs_(true);
     Object.keys(dirs).forEach(function(k){ rev[String(dirs[k]).trim()] = k; });
+    Object.keys(dirs).forEach(function(k){ var sh = String(dirs[k]).split(' · ')[0].trim(); if(!(sh in rev)) rev[sh] = k; });
     for(i=0;i<v.length;i++){
       var n = azcuNum_(v[i][1]); if(!n) continue;
       var d = azcuDif_(hn, n); if(d<0 || d>=dias) continue;
