@@ -939,7 +939,7 @@ function ficha(id){
   var waProp=(sm.tel?'· <a href="https://wa.me/'+wa(sm.tel)+'" target="_blank" style="font-size:12px;text-transform:none;font-weight:400">WhatsApp</a>':'');
   var tokLink=(sm.tokko?'· <a href="'+sm.tokko+'" target="_blank">ver</a>':'');
   document.getElementById('ficha').innerHTML=
-    '<div class="fh"><span class="x" onclick="close_()">×</span><div class="dir">'+p.dir+'</div><div class="sub">'+p.id+' · '+(p.tipo||'—')+' · Etapa: '+p.etapa+'</div></div>'+
+    '<div class="fh"><span class="x" onclick="close_()">×</span><div class="dir">'+p.dir+' <button style="vertical-align:middle;margin-left:8px;background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.45);padding:2px 10px;font-size:12px;border-radius:8px;cursor:pointer" onclick="editarDatos(\''+p.id+'\')" title="Editar la dirección y los datos de la ficha">✏️ Editar</button></div><div class="sub">'+p.id+' · '+(p.tipo||'—')+' · Etapa: '+p.etapa+'</div></div>'+
     '<div class="fb"><div class="grid">'+
       '<div class="fi"><div class="k">Estado</div><div class="v"><span class="est" style="background:'+estColor(p.estado)+'">'+p.estado+'</span></div></div>'+
       '<div class="fi"><div class="k">Precio</div><input class="inp" value="'+(p.precio||'')+'" placeholder="—" onchange="setC(\''+p.id+'\',\'precio\',this.value)"></div>'+
@@ -1690,6 +1690,32 @@ function enviarReporte(id){
 }
 function close_(){document.getElementById('ov').classList.remove('on');}
 function closeDL(){document.getElementById('ov2').classList.remove('on');}
+const DET_CAMPOS=[['calle','Calle'],['numero','Número'],['piso','Piso'],['depto','Departamento'],['pasillo','Pasillo'],['entre1','Entrecalle 1'],['entre2','Entrecalle 2'],['ciudad','Ciudad'],['supTotal','Superficie total (m²)'],['supCub','Superficie cubierta (m²)'],['dorm','Dormitorios'],['amb','Ambientes (sin dormitorios)'],['banos','Baños'],['plantas','Plantas'],['cochera','Cochera'],['patioD','Patio delantero'],['patioT','Patio trasero'],['gas','Gas natural'],['cloaca','Cloaca'],['antig','Antigüedad (años)'],['orient','Orientación'],['inscr','Inscripción del dominio']];
+function editarDatos(id){
+  const p=DATA.find(x=>x.id===id);if(!p)return;
+  const d=p.det||{};
+  const ea=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');};
+  const campos=DET_CAMPOS.map(function(c){return '<div class="fi"><div class="k">'+c[1]+'</div><input class="inp" data-k="'+c[0]+'" value="'+ea(d[c[0]])+'"></div>';}).join('');
+  document.getElementById('dlg').innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">✏️ Editar datos de la ficha</div><div class="sub">'+p.id+' · cambiá la dirección y las características de la propiedad</div></div><div class="fb"><div class="grid2" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px">'+campos+'</div><div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end"><button class="btn s" onclick="closeDL()">Cancelar</button><button class="btn p" id="detOk" onclick="guardarDatos(\''+id+'\')">Guardar</button></div></div>';
+  document.getElementById('ov2').classList.add('on');
+}
+function guardarDatos(id){
+  const p=DATA.find(x=>x.id===id);if(!p)return;
+  const d=p.det||{},cambios={},nuevos={};
+  document.querySelectorAll('#dlg [data-k]').forEach(function(i){const k=i.dataset.k,v=i.value.trim();nuevos[k]=v;if(v!==String(d[k]==null?'':d[k]).trim())cambios[k]=v;});
+  if(!nuevos.calle){alert('La calle no puede quedar vacía.');return;}
+  if(!Object.keys(cambios).length){closeDL();return;}
+  cambios.quien=_yo();
+  const b=document.getElementById('detOk');if(b){b.textContent='Guardando…';b.disabled=true;}
+  google.script.run
+    .withSuccessHandler(function(){
+      p.det=Object.assign({},d,nuevos);p.calle=nuevos.calle;p.numero=nuevos.numero;p.ciudad=norm(nuevos.ciudad);p.dir=norm((nuevos.calle+' '+nuevos.numero).trim());
+      closeDL();render();ficha(id);
+    })
+    .withFailureHandler(function(e){alert('Error al guardar: '+(e&&e.message?e.message:e));if(b){b.textContent='Guardar';b.disabled=false;}})
+    .guardarPropiedad(id,cambios);
+}
+
 var NOV=[],NOV_KEY='tbseen';
 function _novSeen(){try{return +localStorage.getItem(NOV_KEY)||0;}catch(e){return 0;}}
 function novBadge(){
@@ -1725,7 +1751,7 @@ function adaptar(datos){
   return datos.map(function(p){
     var d0=(p.duenos&&p.duenos[0])||{};
     SIM[p.id]={prop:p.prop||d0.nombre||'',tel:d0.tel||'',mail:d0.mail||'',dni:d0.dni||'',dom:d0.dom||'',tokko:p.tokko||''};
-    return {id:p.id,creada:p.creada||'',boleto:p.boleto||'',boletoOk:p.boletoOk||'',escritura:p.escritura||'',escrituraOk:p.escrituraOk||'',ciudad:norm(p.ciudad||''),dir:norm(p.dir),tipo:norm(p.tipo),prop:norm(p.prop),precio:p.precio,estado:estFromEt(p.etapa),etapa:normEt(p.etapa),obs:p.obs,pct:(function(v){var n=parseInt(v);return (v==null||v===''||isNaN(n))?null:n;})(p.pct),papeles:p.papeles||{},duenos:p.duenos||[],origen:p.origen||'Propia',colega:p.colega||'',colegaTel:p.colegaTel||'',comision:p.comision||'',vendedor:p.vendedor||'',tokko:p.tokko||'',estadoCarga:p.estadoCarga||'',operacion:p.operacion||'',seg:p.seg||[],cons:p.cons||0,vis:p.vis||0,dias:(p.dias==null?null:p.dias),seguimientoPendiente:(function(seg){var hoy=new Date(); hoy.setHours(0,0,0,0);return (seg||[]).some(function(s){if(!/Le interesó/i.test(s.res||''))return false;if(!s.fechaProx)return true;var fp=s.fechaProx;var m=(''+fp).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);if(!m)return true;var d=new Date(parseInt(m[3]),parseInt(m[2])-1,parseInt(m[1]));return d<=hoy;});})(p.seg),plan:p.plan||'',carpeta:p.carpeta||'',motivo:p.motivo||'',docUrls:p.docUrls||{},encuesta:p.encuesta||null};
+    return {id:p.id,calle:(p.det&&p.det.calle)||'',numero:(p.det&&p.det.numero)||'',det:p.det||{},creada:p.creada||'',boleto:p.boleto||'',boletoOk:p.boletoOk||'',escritura:p.escritura||'',escrituraOk:p.escrituraOk||'',ciudad:norm(p.ciudad||''),dir:norm(p.dir),tipo:norm(p.tipo),prop:norm(p.prop),precio:p.precio,estado:estFromEt(p.etapa),etapa:normEt(p.etapa),obs:p.obs,pct:(function(v){var n=parseInt(v);return (v==null||v===''||isNaN(n))?null:n;})(p.pct),papeles:p.papeles||{},duenos:p.duenos||[],origen:p.origen||'Propia',colega:p.colega||'',colegaTel:p.colegaTel||'',comision:p.comision||'',vendedor:p.vendedor||'',tokko:p.tokko||'',estadoCarga:p.estadoCarga||'',operacion:p.operacion||'',seg:p.seg||[],cons:p.cons||0,vis:p.vis||0,dias:(p.dias==null?null:p.dias),seguimientoPendiente:(function(seg){var hoy=new Date(); hoy.setHours(0,0,0,0);return (seg||[]).some(function(s){if(!/Le interesó/i.test(s.res||''))return false;if(!s.fechaProx)return true;var fp=s.fechaProx;var m=(''+fp).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);if(!m)return true;var d=new Date(parseInt(m[3]),parseInt(m[2])-1,parseInt(m[1]));return d<=hoy;});})(p.seg),plan:p.plan||'',carpeta:p.carpeta||'',motivo:p.motivo||'',docUrls:p.docUrls||{},encuesta:p.encuesta||null};
   });
 }
 if(!(function(){try{return localStorage.getItem('azdatos_v1');}catch(e){return null;}})()) document.getElementById('dash').innerHTML='<div style="padding:22px;color:var(--gris);font-size:15px">Cargando propiedades del maestro…</div>';
