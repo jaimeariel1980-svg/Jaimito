@@ -958,7 +958,7 @@ function ficha(id){
       '<div class="fi"><div class="k">Email</div><input class="inp" value="'+(sm.mail||'')+'" onchange="setC(\''+p.id+'\',\'mail\',this.value)"></div>'+
       '<div class="fi"><div class="k">DNI</div><input class="inp" value="'+(sm.dni||'')+'" onchange="setC(\''+p.id+'\',\'dni\',this.value)"></div>'+
       '<div class="fi" style="grid-column:1/-1"><div class="k">Domicilio</div><input class="inp" value="'+(sm.dom||'').replace(/"/g,'&quot;')+'" onchange="setC(\''+p.id+'\',\'dom\',this.value)"></div>'+
-    '</div>'+ofertasHtml+
+    '</div>'+otrosPropHtml(p)+ofertasHtml+
     '<h3 class="sec">Documentación para vender <span style="text-transform:none;font-weight:400;color:var(--gris);font-size:11px">· subí el archivo para marcar como presentado</span> <button class="btn s" style="padding:2px 8px;font-size:11px;margin-left:8px;text-transform:none" onclick="docsEditor(\''+p.id+'\')">📚 Unir / separar PDF</button></h3><div class="docs">'+docsHtml+'</div>'+
     '<div id="enc-sec-'+p.id+'">'+(p.encuesta?'<h3 class="sec">Encuesta de satisfacción del cliente</h3><div class="enc-loading">Cargando...</div>':'')+'</div><h3 class="sec">Historial de consultas y visitas ('+p.cons+')</h3>'+seg+
     '<div style="display:flex;gap:10px;margin-top:18px;padding-top:16px;border-top:1px solid var(--linea)"><button class="btn p" style="flex:1;font-size:15px;padding:13px" onclick="guardar(\''+p.id+'\')">Guardar cambios</button></div>'+
@@ -1465,11 +1465,13 @@ function guardar(id){
   const sm=SIM[id]||{};
   const cambios={precio:p.precio,tipo:p.tipo,obs:p.obs,etapa:p.etapa,origen:p.origen,colega:p.colega,colegaTel:p.colegaTel,comision:p.comision,vendedor:p.vendedor,boleto:p.boleto,boletoOk:p.boletoOk,escritura:p.escritura,escrituraOk:p.escrituraOk,pct:p.pct,papeles:p.papeles,motivo:p.motivo,prop:sm.prop,tel:sm.tel,mail:sm.mail,dni:sm.dni,dom:sm.dom,tokko:sm.tokko,quien:_yo()};
   const dn=p.detNew||{};Object.keys(dn).forEach(function(k){if(dn[k]!==String((p.det||{})[k]==null?'':(p.det||{})[k]).trim())cambios[k]=dn[k];});
+  const ow=p.owNew||{};Object.keys(ow).forEach(function(k){const o=(p.duenos||[])[k-1]||{};Object.keys(ow[k]).forEach(function(f){if(ow[k][f]!==String(o[f]==null?'':o[f]).trim())cambios['d'+k+'_'+f]=ow[k][f];});});
+  const hayOw=Object.keys(cambios).some(function(k){return /^d[2-5]_/.test(k);});
   const hayDet=Object.keys(cambios).some(function(k){return DET_CAMPOS.some(function(c){return c[0]===k;});});
   if(hayDet&&!String(('calle' in cambios?cambios.calle:(p.det||{}).calle)||'').trim()){alert('La calle no puede quedar vacía.');return;}
   const btn=event&&event.target; if(btn){btn.textContent='Guardando…';btn.disabled=true;}
   google.script.run
-    .withSuccessHandler(function(){ if(hayDet){p.det=Object.assign({},p.det||{},dn);p.calle=p.det.calle||'';p.numero=p.det.numero||'';p.ciudad=norm(p.det.ciudad);p.dir=norm((p.calle+' '+p.numero).trim());p.detNew={};refrescarTitulo(p);render();} if(btn){btn.textContent='✓ Guardado';setTimeout(function(){btn.textContent='Guardar cambios';btn.disabled=false;},1500);} })
+    .withSuccessHandler(function(){ if(hayOw){Object.keys(ow).forEach(function(k){if(!p.duenos)p.duenos=[];p.duenos[k-1]=Object.assign({},p.duenos[k-1]||{},ow[k]);});p.owNew={};} if(hayDet){p.det=Object.assign({},p.det||{},dn);p.calle=p.det.calle||'';p.numero=p.det.numero||'';p.ciudad=norm(p.det.ciudad);p.dir=norm((p.calle+' '+p.numero).trim());p.detNew={};refrescarTitulo(p);render();} if(btn){btn.textContent='✓ Guardado';setTimeout(function(){btn.textContent='Guardar cambios';btn.disabled=false;},1500);} })
     .withFailureHandler(function(e){ alert('Error al guardar: '+(e&&e.message?e.message:e)); if(btn){btn.textContent='Guardar cambios';btn.disabled=false;} })
     .guardarPropiedad(id, cambios);
 }
@@ -1694,6 +1696,17 @@ function close_(){document.getElementById('ov').classList.remove('on');}
 function closeDL(){document.getElementById('ov2').classList.remove('on');}
 const DET_CAMPOS=[['calle','Calle'],['numero','Número'],['piso','Piso'],['depto','Departamento'],['pasillo','Pasillo'],['entre1','Entrecalle 1'],['entre2','Entrecalle 2'],['ciudad','Ciudad'],['supTotal','Superficie total (m²)'],['supCub','Superficie cubierta (m²)'],['dorm','Dormitorios'],['amb','Ambientes (sin dormitorios)'],['banos','Baños'],['plantas','Plantas'],['cochera','Cochera'],['patioD','Patio delantero'],['patioT','Patio trasero'],['gas','Gas natural'],['cloaca','Cloaca'],['antig','Antigüedad (años)'],['orient','Orientación'],['inscr','Inscripción del dominio']];
 function tituloFicha(p){const d=p.det||{},e=function(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');},x=[e(p.dir)];if(d.piso)x.push('Piso '+e(d.piso));if(d.depto)x.push('Dpto '+e(d.depto));if(d.pasillo)x.push('Pasillo '+e(d.pasillo));return x.join(' · ');}
+function setOw(id,k,f,v){const p=DATA.find(x=>x.id===id);if(!p)return;if(!p.owNew)p.owNew={};if(!p.owNew[k])p.owNew[k]={};p.owNew[k][f]=String(v).trim();}
+function otrosPropHtml(p){
+  const du=p.duenos||[],ea=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');};
+  const top=Math.min(5,du.length+1);let h='';
+  for(let k=2;k<=top;k++){
+    const o=du[k-1]||{};
+    const fi=function(f,lb,v,full){return '<div class="fi"'+(full?' style="grid-column:1/-1"':'')+'><div class="k">'+lb+'</div><input class="inp" value="'+ea(v)+'" onchange="setOw(\''+p.id+'\','+k+',\''+f+'\',this.value)"></div>';};
+    h+='<h3 class="sec">Propietario '+k+(o.nombre?'':' <span style="text-transform:none;font-weight:400;color:var(--gris);font-size:11px">· agregar otro propietario</span>')+'</h3><div class="grid">'+fi('nombre','Nombre',o.nombre)+fi('tel','Teléfono / WhatsApp',o.tel)+fi('mail','Email',o.mail)+fi('dni','DNI',o.dni)+fi('dom','Domicilio',o.dom,true)+'</div>';
+  }
+  return h;
+}
 function setDet(id,k,v){const p=DATA.find(x=>x.id===id);if(!p)return;if(!p.detNew)p.detNew={};p.detNew[k]=String(v).trim();}
 function detSecHtml(p){
   const d=p.det||{},ea=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');};
