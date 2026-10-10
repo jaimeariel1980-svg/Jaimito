@@ -968,7 +968,7 @@ function azcuEjecutar_(pin, accion){
     return {ok:true, mensaje:'Borré esa interacción del historial de '+p.dir+'.'};
   }
   if(tipo==='elimprop'){
-    eliminarPropiedad(p.id);
+    eliminarPropiedad(p.id, accion.quien);
     return {ok:true, mensaje:'Eliminé '+p.dir+' del maestro.'};
   }
   if(tipo==='completar'){
@@ -1214,7 +1214,7 @@ function azcuPush_(titulo, msg, url, dest, estricto, libre){
   if(PropertiesService.getScriptProperties().getProperty('AZCU_TODOS')==='1' && !/^(Azcu terminó|⏰)/.test(String(titulo||''))){ dest = null; estricto = false; }
   var us = azcuUsuarios_();
   if(us.length){
-    var personal = /^(Azcu terminó|⏰)/.test(String(titulo||'')), off = [], todos = [], gerencia = [], deGerencia = /RESERVA|VENDIDA|Reserva|Sin movimiento|Atrasos|equipo/i.test(String(titulo||''));
+    var personal = /^(Azcu terminó|⏰)/.test(String(titulo||'')), off = [], todos = [], gerencia = [], deGerencia = /RESERVA|VENDIDA|Reserva|Sin movimiento|Atrasos|equipo|eliminó/i.test(String(titulo||''));
     us.forEach(function(u){
       if(!u.activo || u.avisos==='ninguno'){ off = off.concat(u.ids); return; }
       if(u.avisos==='todos') todos = todos.concat(u.ids);

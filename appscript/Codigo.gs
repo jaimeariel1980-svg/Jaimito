@@ -2086,6 +2086,7 @@ function eliminarPropiedad(codigo, quien){
   if(fila<0)throw new Error('No encontré la propiedad '+codigo);
   try{ var hE=mae.getRange(1,1,1,mae.getLastColumn()).getValues()[0]; var dE=_dirDe_(mae,fila,hE); _audit_('elimprop','🗑 Eliminó la propiedad '+(dE||codigo), dE, quien||''); }catch(e){}
   mae.deleteRow(fila); _invalidaNovedades_();
+  try{ if(typeof azcuPush_==='function') azcuPush_('🗑 '+(String(quien||'').trim()||'Alguien')+' eliminó una propiedad', (typeof dE!=='undefined' && dE) || codigo, (typeof AZCU_WEB!=='undefined' ? AZCU_WEB+'?go=novedades' : null)); }catch(e){ Logger.log('Aviso de eliminación: '+e.message); }
   return {ok:true};
 }
 function testGuardar(){
