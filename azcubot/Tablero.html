@@ -1623,7 +1623,13 @@ function otrosPropHtml(p){
 function setDet(id,k,v){const p=DATA.find(x=>x.id===id);if(!p)return;if(!p.detNew)p.detNew={};p.detNew[k]=String(v).trim();}
 function detSecHtml(p){
   const d=p.det||{},ea=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');};
-  const fi=function(c){return '<div class="fi"><div class="k">'+c[1]+(c[0]==='antig'?' <span style="font-weight:400;color:var(--gris)">· número o «A estrenar»</span>':'')+'</div><input class="inp" '+(c[0]==='antig'?'list="antList" ':'')+'value="'+ea(d[c[0]])+'" onchange="setDet(\''+p.id+'\',\''+c[0]+'\',this.value)"></div>';};
+  const YN=['pasillo','cochera','patioD','patioT','gas','cloaca'];
+  const fiYN=function(c){
+    const raw=String(d[c[0]]==null?'':d[c[0]]).trim(),v=/^(si|sí|x|true|1|yes)$/i.test(raw)?'Si':/^(no|n|false|0)$/i.test(raw)?'No':'';
+    const extra=(raw&&!v)?'<option value="'+ea(raw)+'" selected>'+ea(raw)+'</option>':'';
+    return '<div class="fi"><div class="k">'+c[1]+'</div><select class="inp" onchange="setDet(\''+p.id+'\',\''+c[0]+'\',this.value)"><option value=""'+(!raw?' selected':'')+'>—</option><option value="Si"'+(v==='Si'?' selected':'')+'>Sí</option><option value="No"'+(v==='No'?' selected':'')+'>No</option>'+extra+'</select></div>';
+  };
+  const fi=function(c){if(YN.indexOf(c[0])>-1)return fiYN(c);return '<div class="fi"><div class="k">'+c[1]+(c[0]==='antig'?' <span style="font-weight:400;color:var(--gris)">· número o «A estrenar»</span>':'')+'</div><input class="inp" '+(c[0]==='antig'?'list="antList" ':'')+'value="'+ea(d[c[0]])+'" onchange="setDet(\''+p.id+'\',\''+c[0]+'\',this.value)"></div>';};
   return '<h3 class="sec" id="detSec">Dirección y datos de la propiedad <span style="text-transform:none;font-weight:400;color:var(--gris);font-size:11px">· se guardan con «Guardar cambios»</span></h3><div class="grid">'+DET_CAMPOS.map(fi).join('')+'</div><datalist id="antList"><option value="A estrenar"></datalist>';
 }
 function refrescarTitulo(p){
