@@ -188,12 +188,26 @@ function doGet(e) {
 
 function precargarDatos(datos, archivosBase64) {
   const sheet = _getSheet();
-  const esNuevo = !datos.codigoPrecarga;
+  let esNuevo = !datos.codigoPrecarga;
   const archivos = _archivosDesdeBase64(archivosBase64);
 
   if (esNuevo) {
-    _validarCamposObligatoriosPrimerEnvio(datos, archivos);
-    datos.codigoPrecarga = _generarCodigoPrecarga(sheet);
+    // Anti-duplicados: un mismo envío (mismo tokenEnvio) siempre devuelve el mismo código, aunque se repita.
+    const lock = LockService.getScriptLock();
+    lock.waitLock(30000);
+    try {
+      const cache = CacheService.getScriptCache();
+      const tok = datos.tokenEnvio ? 'pre_tok_' + String(datos.tokenEnvio).slice(0, 60) : '';
+      const previo = tok ? cache.get(tok) : null;
+      if (previo) {
+        datos.codigoPrecarga = previo;
+        esNuevo = false;
+      } else {
+        _validarCamposObligatoriosPrimerEnvio(datos, archivos);
+        datos.codigoPrecarga = _generarCodigoPrecarga(sheet);
+        if (tok) cache.put(tok, datos.codigoPrecarga, 21600);
+      }
+    } finally { lock.releaseLock(); }
   }
 
   const carpeta = _getOrCreatePropertyFolder(datos.codigoPrecarga, datos.calle, datos.numero);
