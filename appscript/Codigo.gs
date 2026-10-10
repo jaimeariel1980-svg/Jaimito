@@ -1725,6 +1725,8 @@ function getDatosRaw_(){
     var pctS=(''+((ci>-1&&row[ci]!=null)?row[ci]:'')).replace('%','').trim();
     var _pn=parseInt(pctS); var pct=(pctS===''||isNaN(_pn))?null:_pn;
     var calle=row[c('Calle')]||'', num=row[c('Número')]||'';
+    var gv=function(n){ var i=c(n); return i>-1&&row[i]!=null?String(row[i]):''; };
+    var det={calle:gv('Calle'),numero:gv('Número'),piso:gv('Piso'),depto:gv('Departamento'),pasillo:gv('Pasillo'),entre1:gv('Entrecalle 1'),entre2:gv('Entrecalle 2'),ciudad:gv('Ciudad'),supTotal:gv('Superficie Total (m2)'),supCub:gv('Superficie Cubierta (m2)'),dorm:gv('Dormitorios'),amb:gv('Ambientes (sin dormitorios)'),banos:gv('Baños'),plantas:gv('Plantas'),cochera:gv('Cochera'),patioD:gv('Patio delantero'),patioT:gv('Patio trasero'),gas:gv('Gas Natural'),cloaca:gv('Cloaca'),antig:gv('Antigüedad (años)'),orient:gv('Orientación'),inscr:gv('Inscripción del dominio')};
     var seg=segMap[id]||[];
     var cons=seg.length;
     var vis=seg.filter(function(s){return /visita/i.test(s.tipo)||/visitó|oferta/i.test(s.res);}).length;
@@ -1732,7 +1734,7 @@ function getDatosRaw_(){
     seg.forEach(function(s){ if(s._d){ var dd=Math.floor((hoy-s._d)/86400000); if(dias===null||dd<dias)dias=dd; } });
     var segOut=seg.map(function(s){return {_row:s._row,fecha:s.fecha,tipo:s.tipo,cli:s.cli,tel:s.tel,res:s.res,prox:s.prox,obs:s.obs,fechaProx:s.fechaProx,vend:s.vend||'',cargo:s.cargo||''};});
     out.push({
-      id:id, dir:(calle+' '+num).trim(), ciudad:row[c('Ciudad')]||'', tipo:row[c('Tipo de propiedad')]||'',
+      id:id, dir:(calle+' '+num).trim(), det:det, ciudad:row[c('Ciudad')]||'', tipo:row[c('Tipo de propiedad')]||'',
       etapa:row[c('Etapa')]||'Captación', estadoCarga:row[c('Estado de la propiedad')]||'',
       precio:fmtPrecio_(row[c('Precio')], row[c('Moneda')]), operacion:row[c('Tipo de operación')]||'',
       pct:pct, plan:row[c('Plan Tokko')]||'',
@@ -1959,7 +1961,10 @@ var MAP_CAMPOS = {
   mail:'Dueño 1 - E-mail', dni:'Dueño 1 - DNI', dom:'Dueño 1 - Domicilio',
   colega:'Inmobiliaria colega', colegaTel:'Contacto colega', comision:'Reparto de comisión',
   origen:'Origen', pct:'% Aviso Tokko', vendedor:'Vendedor asignado', motivo:'Motivo de suspensión',
-  boleto:'Plazo de boleto', boletoOk:'Boleto firmado', escritura:'Plazo de escritura', escrituraOk:'Escritura firmada'
+  boleto:'Plazo de boleto', boletoOk:'Boleto firmado', escritura:'Plazo de escritura', escrituraOk:'Escritura firmada',
+  calle:'Calle', numero:'Número', piso:'Piso', depto:'Departamento', pasillo:'Pasillo', entre1:'Entrecalle 1', entre2:'Entrecalle 2', ciudad:'Ciudad',
+  supTotal:'Superficie Total (m2)', supCub:'Superficie Cubierta (m2)', dorm:'Dormitorios', amb:'Ambientes (sin dormitorios)', banos:'Baños', plantas:'Plantas',
+  cochera:'Cochera', patioD:'Patio delantero', patioT:'Patio trasero', gas:'Gas Natural', cloaca:'Cloaca', antig:'Antigüedad (años)', orient:'Orientación', inscr:'Inscripción del dominio'
 };
 var COLS_PLAZOS = ['Plazo de boleto','Boleto firmado','Plazo de escritura','Escritura firmada'];
 function _fechaISO_(v){
@@ -1986,7 +1991,7 @@ function guardarPropiedad(codigo, cambios){
     COLS_PLAZOS.forEach(function(nm){ if(head.indexOf(nm)<0){ mae.getRange(1,mae.getLastColumn()+1).setValue(nm); head=mae.getRange(1,1,1,mae.getLastColumn()).getValues()[0]; } });
   }
   var quien=String((cambios&&(cambios.quien||cambios.cargo))||'').trim().slice(0,40), difs=[], etapaDe='', etapaA='';
-  var ETQ={precio:'Precio',tipo:'Tipo',obs:'Observaciones',tokko:'URL de ficha',origen:'Origen',colega:'Colega',colegaTel:'Contacto colega',comision:'Comisión',pct:'% aviso',vendedor:'Vendedor',motivo:'Motivo de suspensión',prop:'Propietario',tel:'Tel. propietario',mail:'Mail propietario',dni:'DNI propietario',dom:'Domicilio propietario',boleto:'Plazo de boleto',boletoOk:'Boleto firmado',escritura:'Plazo de escritura',escrituraOk:'Escritura firmada'};
+  var ETQ={precio:'Precio',tipo:'Tipo',obs:'Observaciones',tokko:'URL de ficha',origen:'Origen',colega:'Colega',colegaTel:'Contacto colega',comision:'Comisión',pct:'% aviso',vendedor:'Vendedor',motivo:'Motivo de suspensión',prop:'Propietario',tel:'Tel. propietario',mail:'Mail propietario',dni:'DNI propietario',dom:'Domicilio propietario',boleto:'Plazo de boleto',boletoOk:'Boleto firmado',escritura:'Plazo de escritura',escrituraOk:'Escritura firmada',calle:'Calle',numero:'Número',piso:'Piso',depto:'Departamento',pasillo:'Pasillo',entre1:'Entrecalle 1',entre2:'Entrecalle 2',ciudad:'Ciudad',supTotal:'Sup. total',supCub:'Sup. cubierta',dorm:'Dormitorios',amb:'Ambientes',banos:'Baños',plantas:'Plantas',cochera:'Cochera',patioD:'Patio delantero',patioT:'Patio trasero',gas:'Gas natural',cloaca:'Cloaca',antig:'Antigüedad',orient:'Orientación',inscr:'Inscripción del dominio'};
   var fv=mae.getRange(fila,1,1,mae.getLastColumn()).getValues()[0];
   function crudo(col){ var i=head.indexOf(col); return i>-1 ? fv[i] : ''; }
   function leer(col){ var v=crudo(col); return String(v==null?'':v).trim(); }
@@ -2013,6 +2018,9 @@ function guardarPropiedad(codigo, cambios){
       set(col, valor, /^(boleto|boletoOk|escritura|escrituraOk|precio)$/.test(campo) ? (av===nv) : undefined);
     }
   });
+  if('calle' in (cambios||{}) || 'numero' in (cambios||{})){
+    try{ var mu=leer('Carpeta Drive (URL)').match(/[-\w]{25,}/); if(mu) DriveApp.getFolderById(mu[0]).setName(_sanear(codigo+'_'+leer('Calle')+'_'+leer('Número'))); }catch(e){ Logger.log('No se pudo renombrar la carpeta: '+e.message); }
+  }
   set('Última actualización', new Date(), false);
   try{ if(typeof azcuLimpiarCache_==='function') azcuLimpiarCache_(); }catch(e){}
   var dir=_dirDe_(mae,fila,head);
