@@ -188,12 +188,26 @@ function doGet(e) {
 
 function precargarDatos(datos, archivosBase64) {
   const sheet = _getSheet();
-  const esNuevo = !datos.codigoPrecarga;
+  let esNuevo = !datos.codigoPrecarga;
   const archivos = _archivosDesdeBase64(archivosBase64);
 
   if (esNuevo) {
-    _validarCamposObligatoriosPrimerEnvio(datos, archivos);
-    datos.codigoPrecarga = _generarCodigoPrecarga(sheet);
+    // Anti-duplicados: un mismo envío (mismo tokenEnvio) siempre devuelve el mismo código, aunque se repita.
+    const lock = LockService.getScriptLock();
+    lock.waitLock(30000);
+    try {
+      const cache = CacheService.getScriptCache();
+      const tok = datos.tokenEnvio ? 'pre_tok_' + String(datos.tokenEnvio).slice(0, 60) : '';
+      const previo = tok ? cache.get(tok) : null;
+      if (previo) {
+        datos.codigoPrecarga = previo;
+        esNuevo = false;
+      } else {
+        _validarCamposObligatoriosPrimerEnvio(datos, archivos);
+        datos.codigoPrecarga = _generarCodigoPrecarga(sheet);
+        if (tok) cache.put(tok, datos.codigoPrecarga, 21600);
+      }
+    } finally { lock.releaseLock(); }
   }
 
   const carpeta = _getOrCreatePropertyFolder(datos.codigoPrecarga, datos.calle, datos.numero);
@@ -1677,7 +1691,9 @@ function leerSeguimiento_(){
 function getDatos(){ return (typeof azcuDatosTb_==='function') ? azcuDatosTb_() : getDatosRaw_(); }
 function _dirTexto_(calle,num,piso,depto,pasillo){
   var s=(String(calle==null?'':calle)+' '+String(num==null?'':num)).trim();
-  [['Piso',piso],['Dpto',depto],['Pasillo',pasillo]].forEach(function(x){ var v=String(x[1]==null?'':x[1]).trim(); if(v) s+=' · '+x[0]+' '+v; });
+  [['Piso',piso],['Dpto',depto]].forEach(function(x){ var v=String(x[1]==null?'':x[1]).trim(); if(v) s+=' · '+x[0]+' '+v; });
+  var pa=String(pasillo==null?'':pasillo).trim();
+  if(/^(si|sí|x|true|1|yes)$/i.test(pa)) s+=' · Pasillo'; else if(pa && !/^(no|n|false|0|-|—|ninguno|ninguna)$/i.test(pa)) s+=' · Pasillo '+pa;
   return s;
 }
 function getDatosRaw_(){

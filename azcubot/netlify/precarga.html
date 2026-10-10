@@ -1549,17 +1549,25 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
     });
   }
 
+  let YA_ENVIADO = false, ENVIANDO = false;
+  const nuevoToken = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6);
+  let TOKEN_ENVIO = nuevoToken();
   document.getElementById('form-precarga').addEventListener('submit', async function (ev) {
     ev.preventDefault();
     const btn = document.getElementById('btn-enviar');
     const estado = document.getElementById('estado-envio');
     const mensajeDiv = document.getElementById('mensaje-resultado');
+    if (YA_ENVIADO || ENVIANDO) {
+      if (YA_ENVIADO) { estado.textContent = 'Esta precarga ya fue enviada y no se puede enviar de nuevo. Para cargar otra propiedad, tocá «Cargar otra propiedad».'; setTimeout(() => { if (YA_ENVIADO) estado.textContent = ''; }, 6000); }
+      return;
+    }
+    ENVIANDO = true;
     mensajeDiv.innerHTML = '';
     btn.disabled = true;
     estado.textContent = 'Procesando archivos…';
 
     const form = ev.target;
-    const datos = { codigoPrecarga: document.getElementById('codigoPrecarga').value || '' };
+    const datos = { codigoPrecarga: document.getElementById('codigoPrecarga').value || '', tokenEnvio: TOKEN_ENVIO };
 
     Array.from(form.elements).forEach(el => {
       if (!el.name || el.type === 'file' || el.type === 'submit') return;
@@ -1586,12 +1594,26 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
     google.script.run
       .withSuccessHandler(function (res) {
         estado.textContent = '';
-        btn.disabled = false;
+        ENVIANDO = false;
+        YA_ENVIADO = true;
+        btn.disabled = true;
+        btn.textContent = '✓ Precarga enviada';
         document.getElementById('codigoPrecarga').value = res.codigoPrecarga;
-        mensajeDiv.innerHTML = `<div class="msg ok">Precarga registrada. Tu número de precarga es <strong>${res.codigoPrecarga}</strong>. Te enviamos un mail con este dato para retomarla cuando quieras.</div>`;
+        mensajeDiv.innerHTML = `<div class="msg ok">Precarga registrada. Tu número de precarga es <strong>${res.codigoPrecarga}</strong>. Te enviamos un mail con este dato para retomarla cuando quieras.<div style="margin-top:10px"><button type="button" class="btn btn-outline" id="btn-otra-precarga">Cargar otra propiedad</button></div></div>`;
+        document.getElementById('btn-otra-precarga').addEventListener('click', function () {
+          form.reset();
+          document.getElementById('codigoPrecarga').value = '';
+          document.querySelectorAll('.doc-check.visible').forEach(e => e.classList.remove('visible'));
+          document.querySelectorAll('.doc-row.has-file').forEach(e => e.classList.remove('has-file'));
+          YA_ENVIADO = false; TOKEN_ENVIO = nuevoToken();
+          btn.disabled = false; btn.textContent = 'Enviar precarga';
+          mensajeDiv.innerHTML = '';
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
       })
       .withFailureHandler(function (err) {
         estado.textContent = '';
+        ENVIANDO = false;
         btn.disabled = false;
         mensajeDiv.innerHTML = `<div class="msg error">${err.message}</div>`;
       })
