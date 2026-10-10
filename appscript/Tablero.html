@@ -1611,17 +1611,21 @@ function novBadge(){
   document.title=(n?'('+n+') ':'')+document.title.replace(/^\(\d+\+?\)\s*/,'');
 }
 function novLoad(){google.script.run.withSuccessHandler(function(d){NOV=(d&&d.items)||[];novBadge();}).withFailureHandler(function(){}).novedadesTb(90);}
-function novAbrir(){
+function novAbrir(hist){
+  hist=hist===true;
   var seen=_novSeen(),last='',h='',hoy=new Date().toDateString(),ayer=new Date(Date.now()-864e5).toDateString();
   function e(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
-  NOV.forEach(function(x){
+  var its=hist?NOV:NOV.filter(function(x){return x.ms>=Date.now()-7*864e5;}).slice(0,5);
+  its.forEach(function(x){
     var d=new Date(x.ms),k=d.toDateString(),lb=k===hoy?'Hoy':k===ayer?'Ayer':d.toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'});
-    if(lb!==last){h+='<div style="margin:14px 0 6px;font-size:12px;font-weight:700;color:var(--gris);text-transform:uppercase;letter-spacing:.04em">'+e(lb)+'</div>';last=lb;}
-    var nuevo=x.ms>seen,hora=x.h?d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'})+' · ':'';
-    h+='<div '+(x.id?'onclick=\'closeDL();ficha("'+e(x.id)+'")\' ':'')+'style="display:flex;gap:10px;padding:9px 10px;border-radius:10px;margin-bottom:4px;'+(x.id?'cursor:pointer;':'')+(nuevo?'background:#fff4f4;':'background:#f6f8fc;')+'"><span style="font-size:18px">'+e(x.ic)+'</span><div style="min-width:0"><b style="font-size:13.5px">'+e(x.t)+(nuevo?' <span style="background:#d1495b;color:#fff;border-radius:8px;padding:1px 6px;font-size:10px">NUEVO</span>':'')+'</b>'+(x.dir?'<div style="font-size:12.5px;color:#2b4a8b">'+e(x.dir)+'</div>':'')+(x.d?'<div style="font-size:12px;color:var(--gris)">'+e(x.d)+'</div>':'')+'<div style="font-size:11.5px;color:var(--gris)">'+hora+e(x.q||'')+'</div></div></div>';
+    if(hist&&lb!==last){h+='<div style="margin:14px 0 6px;font-size:12px;font-weight:700;color:var(--gris);text-transform:uppercase;letter-spacing:.04em">'+e(lb)+'</div>';last=lb;}
+    var nuevo=x.ms>seen,hora=(hist?'':lb+' · ')+(x.h?d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}):'');
+    h+='<div '+(x.id?'onclick=\'closeDL();ficha("'+e(x.id)+'")\' ':'')+'style="display:flex;gap:10px;padding:9px 10px;border-radius:10px;margin-bottom:4px;'+(x.id?'cursor:pointer;':'')+(nuevo?'background:#fff4f4;':'background:#f6f8fc;')+'"><span style="font-size:18px">'+e(x.ic)+'</span><div style="min-width:0">'+(x.q?'<div style="font-size:12.5px;font-weight:700;color:#2b4a8b">👤 '+e(x.q)+'</div>':'')+'<b style="font-size:13.5px">'+e(x.t)+(nuevo?' <span style="background:#d1495b;color:#fff;border-radius:8px;padding:1px 6px;font-size:10px">NUEVO</span>':'')+'</b>'+(x.dir?'<div style="font-size:12.5px;color:#2b4a8b">'+e(x.dir)+'</div>':'')+(x.d?'<div style="font-size:12px;color:var(--gris)">'+e(x.d)+'</div>':'')+(hora?'<div style="font-size:11.5px;color:var(--gris)">'+hora+'</div>':'')+'</div></div>';
   });
-  if(!NOV.length)h='<div style="color:var(--gris);padding:20px 0">Todo tranquilo. Cuando haya novedades, las vas a ver acá.</div>';
-  document.getElementById('dlg').innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">🔔 Novedades</div><div class="sub">Últimos 90 días · tocá una para abrir la ficha</div></div><div class="fb">'+h+'</div>';
+  if(!its.length)h='<div style="color:var(--gris);padding:20px 0">Todo tranquilo. No hubo novedades en los últimos días.</div>';
+  if(hist)h='<button class="btn s" style="margin-bottom:8px" onclick="novAbrir()">‹ Volver a novedades</button>'+h+(its.length>8?'<button class="btn p" style="position:sticky;bottom:6px;display:block;margin:10px 0 0 auto;border-radius:20px" onclick="document.querySelector(\'#dlg .fb\').scrollTo({top:0,behavior:\'smooth\'})">↑ Subir</button>':'');
+  else h+='<div style="text-align:center;margin-top:12px"><a href="#" style="font-size:12.5px;color:var(--gris)" onclick="novAbrir(true);return false">Ver historial completo</a></div>';
+  document.getElementById('dlg').innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">'+(hist?'Historial':'🔔 Novedades')+'</div><div class="sub">'+(hist?'Últimos 90 días · tocá una para abrir la ficha':'Lo más reciente · tocá una para abrir la ficha')+'</div></div><div class="fb">'+h+'</div>';
   document.getElementById('ov2').classList.add('on');
   try{localStorage.setItem(NOV_KEY,String(Date.now()));}catch(e){}
   novBadge();
@@ -1709,7 +1713,7 @@ google.script.run
 .azb-b{max-width:86%;padding:10px 13px;font-size:14px;line-height:1.5;word-wrap:break-word}
 .azb-m.a .azb-b{background:#fff;border:1px solid var(--ln);border-radius:14px 14px 14px 3px}
 .azb-tm{display:block;text-align:right;font-size:10px;opacity:.6;margin-top:3px}
-.azb-mv.tap{cursor:pointer}.azb-mv.tap:active{opacity:.7}
+.azb-mv.tap{cursor:pointer}.azb-mv.tap:active{opacity:.7}.azb-hl{text-align:center;margin:16px 0 6px}.azb-hl button{background:none;border:0;color:#8a93a8;font:500 12.5px 'Inter',sans-serif;text-decoration:underline;cursor:pointer;padding:6px 10px}.azb-up{position:sticky;bottom:10px;display:block;margin:12px 0 0 auto;background:#0a3d91;color:#fff;border:0;border-radius:999px;padding:10px 16px;font:600 13px 'Inter',sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.25);cursor:pointer}.azb-who{display:block;font-size:12.5px;color:#0a3d91;font-weight:600}
 .azb-dsep{text-align:center;margin:6px 0 12px}.azb-dsep span{background:#e8ebf2;color:#55607a;font:600 11px 'Inter',sans-serif;padding:3px 10px;border-radius:10px}
 .azb-back{display:block;width:100%;margin:0 0 12px;padding:11px;background:var(--n);color:#fff;border:0;border-radius:10px;font:600 13px 'Inter',sans-serif;cursor:pointer}
 .azb-hm{background:var(--n);color:#fff;border:0;border-radius:18px;height:34px;padding:0 13px;font:700 13px 'Inter',sans-serif;cursor:pointer;flex-shrink:0;white-space:nowrap}
@@ -2046,15 +2050,20 @@ google.script.run
     }, function(err){ st.movBusy = false; if(!st.mov || !st.mov.length) st.mov = []; st.movErr = String(err||'error'); render(); });
   }
   function movHtml(){
-    var its = st.mov, last = '', h = '<div class="azb-agh"><b>Novedades</b><span>'+(st.movBusy?'Actualizando…':'Últimas novedades')+'</span></div>';
-    if(!its) return h+'<div class="azb-empty">Cargando…</div>';
+    var hist = !!st.movHist, all = st.mov, last = '', h = '<div class="azb-agh"><b>'+(hist?'Historial':'Novedades')+'</b><span>'+(st.movBusy?'Actualizando…':(hist?'Últimos 90 días':'Lo más reciente'))+'</span></div>';
+    if(!all) return h+'<div class="azb-empty">Cargando…</div>';
     if(st.movErr) return h+es('bell','No pude cargar las novedades', /desconocida/i.test(st.movErr) ? 'Falta actualizar el servidor (AzcuBot.gs en Apps Script).' : esc(st.movErr))+'<button type="button" class="azb-back" data-a="movretry">Reintentar</button>';
-    if(!its.length) return h+es('bell','Todo tranquilo','Cuando haya novedades, las vas a ver acá.');
+    var its = hist ? all : all.filter(function(x){ return x.ms >= Date.now()-7*864e5; }).slice(0, 5);
+    if(hist) h += '<button type="button" class="azb-back" data-a="movnov" style="margin:0 0 10px">‹ Volver a novedades</button>';
+    if(!its.length) h += es('bell','Todo tranquilo', hist ? 'Todavía no hay movimientos.' : 'No hubo novedades en los últimos días.');
     its.forEach(function(x){
       var lb = dayLbl(x.ms);
-      if(lb!==last){ h += '<div class="azb-dsep"><span>'+lb+'</span></div>'; last = lb; }
-      h += '<div class="azb-mv'+((x.vf||x.id)?' tap':'')+'" '+((x.vf||x.id)?'data-mvi="'+its.indexOf(x)+'" role="button"':'')+'><span class="ic">'+x.ic+'</span><div><b>'+esc(x.t)+(x.ms>(st.movSeen||0)?' <u class="azb-nw">NUEVO</u>':'')+'</b>'+(x.dir?'<em>'+esc(x.dir)+'</em>':'')+(x.d?'<small>'+esc(x.d)+'</small>':'')+'<small>'+(x.h?hhmm(x.ms)+' · ':'')+(x.q?esc(x.q):'')+'</small></div></div>';
+      if(hist && lb!==last){ h += '<div class="azb-dsep"><span>'+lb+'</span></div>'; last = lb; }
+      var cuando = (hist ? '' : lb+' · ')+(x.h?hhmm(x.ms):'');
+      h += '<div class="azb-mv'+((x.vf||x.id)?' tap':'')+'" '+((x.vf||x.id)?'data-mvi="'+all.indexOf(x)+'" role="button"':'')+'><span class="ic">'+x.ic+'</span><div>'+(x.q?'<span class="azb-who">👤 '+esc(x.q)+'</span>':'')+'<b>'+esc(x.t)+(x.ms>(st.movSeen||0)?' <u class="azb-nw">NUEVO</u>':'')+'</b>'+(x.dir?'<em>'+esc(x.dir)+'</em>':'')+(x.d?'<small>'+esc(x.d)+'</small>':'')+(cuando?'<small>'+cuando+'</small>':'')+'</div></div>';
     });
+    if(!hist) h += '<div class="azb-hl"><button type="button" data-a="movhist">Ver historial completo</button></div>';
+    else if(its.length>8) h += '<button type="button" class="azb-up" data-a="movup">↑ Subir</button>';
     return h;
   }
   function agLoad(){
@@ -2689,9 +2698,12 @@ google.script.run
       if(tb==='home'){ st.view = 'chat'; st.menu = true; render(); }
       else if(tb==='chat'){ st.view = 'chat'; st.menu = false; render(); }
       else if(tb==='agenda'){ if(st.view!=='agenda'){ st.menu = false; st.view = 'agenda'; st.agFrom = null; st.agSel = iso(new Date()); st.agForm = false; st.agNote = ''; render(); agLoad(); } }
-      else if(tb==='mov'){ if(st.view!=='mov'){ st.menu = false; st.view = 'mov'; st.movSeen = +ls('mseen') || 0; st.movN = 0; ls('mseen', String(Date.now())); render(); movLoad(); } }
+      else if(tb==='mov'){ st.movHist = false; if(st.view!=='mov'){ st.menu = false; st.view = 'mov'; st.movSeen = +ls('mseen') || 0; st.movN = 0; ls('mseen', String(Date.now())); render(); movLoad(); } }
       else if(tb==='alert'){ st.view = 'chat'; st.menu = false; ask('¿Qué alertas tengo hoy?', 'alertas'); }
     }
+    else if(a==='movhist'){ st.movHist = true; render(); var bd = root.querySelector('.azb-body'); if(bd) bd.scrollTop = 0; }
+    else if(a==='movnov'){ st.movHist = false; render(); }
+    else if(a==='movup'){ var bd2 = root.querySelector('.azb-body'); if(bd2) bd2.scrollTo({top:0, behavior:'smooth'}); }
     else if(a==='movretry'){ st.movErr = ''; st.mov = null; render(); movLoad(); }
     else if(a==='mov'){ if(st.view==='mov'){ st.view = 'chat'; render(); } else { st.menu = false; st.entered = true; st.view = 'mov'; st.movSeen = +ls('mseen') || 0; st.movN = 0; ls('mseen', String(Date.now())); render(); movLoad(); } }
     else if(a==='agenda'){ if(st.view==='agenda'){ st.view = 'chat'; render(); } else { st.menu = false; st.view = 'agenda'; st.agFrom = null; st.agSel = iso(new Date()); st.agForm = false; st.agNote = ''; st.entered = true; render(); agLoad(); } }
