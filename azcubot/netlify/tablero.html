@@ -939,7 +939,7 @@ function ficha(id){
   var waProp=(sm.tel?'· <a href="https://wa.me/'+wa(sm.tel)+'" target="_blank" style="font-size:12px;text-transform:none;font-weight:400">WhatsApp</a>':'');
   var tokLink=(sm.tokko?'· <a href="'+sm.tokko+'" target="_blank">ver</a>':'');
   document.getElementById('ficha').innerHTML=
-    '<div class="fh"><span class="x" onclick="close_()">×</span><div class="dir">'+tituloFicha(p)+' <button style="vertical-align:middle;margin-left:8px;background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.45);padding:2px 10px;font-size:12px;border-radius:8px;cursor:pointer" onclick="editarDatos(\''+p.id+'\')" title="Editar la dirección y los datos de la ficha">✏️ Editar</button></div><div class="sub">'+p.id+' · '+(p.tipo||'—')+(p.ciudad?' · '+p.ciudad:'')+' · Etapa: '+p.etapa+'</div></div>'+
+    '<div class="fh"><span class="x" onclick="close_()">×</span><div class="dir">'+tituloFicha(p)+' <button style="vertical-align:middle;margin-left:8px;background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.45);padding:2px 10px;font-size:12px;border-radius:8px;cursor:pointer" onclick="irADatos()" title="Ir a los datos de la propiedad">✏️ Editar datos</button></div><div class="sub">'+p.id+' · '+(p.tipo||'—')+(p.ciudad?' · '+p.ciudad:'')+' · Etapa: '+p.etapa+'</div></div>'+
     '<div class="fb"><div class="grid">'+
       '<div class="fi"><div class="k">Estado</div><div class="v"><span class="est" style="background:'+estColor(p.estado)+'">'+p.estado+'</span></div></div>'+
       '<div class="fi"><div class="k">Precio</div><input class="inp" value="'+(p.precio||'')+'" placeholder="—" onchange="setC(\''+p.id+'\',\'precio\',this.value)"></div>'+
@@ -947,7 +947,7 @@ function ficha(id){
       '<div class="fi"><div class="k">Días sin movimiento</div><div class="v" style="color:'+semC(p.dias)+'">'+(p.dias===null?'sin actividad':p.dias+' días')+'</div></div>'+
       '<div class="fi"><div class="k">Salud del aviso (%)</div><div class="v"><input type="number" min="0" max="100" value="'+(p.pct===null?'':p.pct)+'" onchange="setPct(\''+p.id+'\',this.value)" style="width:72px;padding:5px 8px;border:1px solid var(--linea);border-radius:7px;font-size:14px"> %</div>'+(p.pct===null?'':av)+'</div>'+
     '</div>'+
-    '<h3 class="sec">Observaciones</h3><textarea class="inp" rows="2" placeholder="Notas de esta propiedad…" onchange="setC(\''+p.id+'\',\'obs\',this.value)">'+(p.obs||'')+'</textarea>'+
+    detSecHtml(p)+'<h3 class="sec">Observaciones</h3><textarea class="inp" rows="2" placeholder="Notas de esta propiedad…" onchange="setC(\''+p.id+'\',\'obs\',this.value)">'+(p.obs||'')+'</textarea>'+
     plazosHtml+
     '<h3 class="sec">Origen de la propiedad</h3><div class="grid"><div class="fi"><div class="k">Tipo</div><select class="inp" onchange="setOrigen(\''+p.id+'\',this.value)"><option value="Propia" '+(p.origen!=='Compartida'?'selected':'')+'>Propia</option><option value="Compartida" '+(p.origen==='Compartida'?'selected':'')+'>Compartida (colega)</option></select></div><div class="fi"><div class="k">Vendedor asignado</div><input class="inp" list="vendList" placeholder="Sin asignar" value="'+(p.vendedor||'').replace(/"/g,'&quot;')+'" onchange="setP(\''+p.id+'\',\'vendedor\',this.value)"><datalist id="vendList">'+_vendNombres().map(n=>'<option value="'+n.replace(/"/g,'&quot;')+'">').join('')+'</datalist></div>'+compHtml+'</div>'+
     '<h3 class="sec">Ficha de la propiedad</h3><div class="grid"><div class="fi" style="grid-column:1/-1"><div class="k">URL de ficha colega '+tokLink+' <span style="color:var(--gris);font-weight:400;text-transform:none">— las fotos las trae la ficha</span></div><input class="inp" placeholder="URL de ficha colega" value="'+(sm.tokko||'')+'" onchange="setC(\''+p.id+'\',\'tokko\',this.value)"></div></div>'+
@@ -1464,9 +1464,12 @@ function guardar(id){
   const p=DATA.find(x=>x.id===id); if(!p)return;
   const sm=SIM[id]||{};
   const cambios={precio:p.precio,tipo:p.tipo,obs:p.obs,etapa:p.etapa,origen:p.origen,colega:p.colega,colegaTel:p.colegaTel,comision:p.comision,vendedor:p.vendedor,boleto:p.boleto,boletoOk:p.boletoOk,escritura:p.escritura,escrituraOk:p.escrituraOk,pct:p.pct,papeles:p.papeles,motivo:p.motivo,prop:sm.prop,tel:sm.tel,mail:sm.mail,dni:sm.dni,dom:sm.dom,tokko:sm.tokko,quien:_yo()};
+  const dn=p.detNew||{};Object.keys(dn).forEach(function(k){if(dn[k]!==String((p.det||{})[k]==null?'':(p.det||{})[k]).trim())cambios[k]=dn[k];});
+  const hayDet=Object.keys(cambios).some(function(k){return DET_CAMPOS.some(function(c){return c[0]===k;});});
+  if(hayDet&&!String(('calle' in cambios?cambios.calle:(p.det||{}).calle)||'').trim()){alert('La calle no puede quedar vacía.');return;}
   const btn=event&&event.target; if(btn){btn.textContent='Guardando…';btn.disabled=true;}
   google.script.run
-    .withSuccessHandler(function(){ if(btn){btn.textContent='✓ Guardado';setTimeout(function(){btn.textContent='Guardar cambios';btn.disabled=false;},1500);} })
+    .withSuccessHandler(function(){ if(hayDet){p.det=Object.assign({},p.det||{},dn);p.calle=p.det.calle||'';p.numero=p.det.numero||'';p.ciudad=norm(p.det.ciudad);p.dir=norm((p.calle+' '+p.numero).trim());p.detNew={};refrescarTitulo(p);render();} if(btn){btn.textContent='✓ Guardado';setTimeout(function(){btn.textContent='Guardar cambios';btn.disabled=false;},1500);} })
     .withFailureHandler(function(e){ alert('Error al guardar: '+(e&&e.message?e.message:e)); if(btn){btn.textContent='Guardar cambios';btn.disabled=false;} })
     .guardarPropiedad(id, cambios);
 }
@@ -1691,30 +1694,18 @@ function close_(){document.getElementById('ov').classList.remove('on');}
 function closeDL(){document.getElementById('ov2').classList.remove('on');}
 const DET_CAMPOS=[['calle','Calle'],['numero','Número'],['piso','Piso'],['depto','Departamento'],['pasillo','Pasillo'],['entre1','Entrecalle 1'],['entre2','Entrecalle 2'],['ciudad','Ciudad'],['supTotal','Superficie total (m²)'],['supCub','Superficie cubierta (m²)'],['dorm','Dormitorios'],['amb','Ambientes (sin dormitorios)'],['banos','Baños'],['plantas','Plantas'],['cochera','Cochera'],['patioD','Patio delantero'],['patioT','Patio trasero'],['gas','Gas natural'],['cloaca','Cloaca'],['antig','Antigüedad (años)'],['orient','Orientación'],['inscr','Inscripción del dominio']];
 function tituloFicha(p){const d=p.det||{},e=function(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');},x=[e(p.dir)];if(d.piso)x.push('Piso '+e(d.piso));if(d.depto)x.push('Dpto '+e(d.depto));if(d.pasillo)x.push('Pasillo '+e(d.pasillo));return x.join(' · ');}
-function editarDatos(id){
-  const p=DATA.find(x=>x.id===id);if(!p)return;
-  const d=p.det||{};
-  const ea=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');};
-  const campos=DET_CAMPOS.map(function(c){return '<div class="fi"><div class="k">'+c[1]+'</div><input class="inp" data-k="'+c[0]+'" value="'+ea(d[c[0]])+'"></div>';}).join('');
-  document.getElementById('dlg').innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">✏️ Editar datos de la ficha</div><div class="sub">'+p.id+' · cambiá la dirección y las características de la propiedad</div></div><div class="fb"><div class="grid2" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px">'+campos+'</div><div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end"><button class="btn s" onclick="closeDL()">Cancelar</button><button class="btn p" id="detOk" onclick="guardarDatos(\''+id+'\')">Guardar</button></div></div>';
-  document.getElementById('ov2').classList.add('on');
+function setDet(id,k,v){const p=DATA.find(x=>x.id===id);if(!p)return;if(!p.detNew)p.detNew={};p.detNew[k]=String(v).trim();}
+function detSecHtml(p){
+  const d=p.det||{},ea=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');};
+  const fi=function(c){return '<div class="fi"><div class="k">'+c[1]+'</div><input class="inp" value="'+ea(d[c[0]])+'" onchange="setDet(\''+p.id+'\',\''+c[0]+'\',this.value)"></div>';};
+  return '<h3 class="sec" id="detSec">Dirección y datos de la propiedad <span style="text-transform:none;font-weight:400;color:var(--gris);font-size:11px">· se guardan con «Guardar cambios»</span></h3><div class="grid">'+DET_CAMPOS.map(fi).join('')+'</div>';
 }
-function guardarDatos(id){
-  const p=DATA.find(x=>x.id===id);if(!p)return;
-  const d=p.det||{},cambios={},nuevos={};
-  document.querySelectorAll('#dlg [data-k]').forEach(function(i){const k=i.dataset.k,v=i.value.trim();nuevos[k]=v;if(v!==String(d[k]==null?'':d[k]).trim())cambios[k]=v;});
-  if(!nuevos.calle){alert('La calle no puede quedar vacía.');return;}
-  if(!Object.keys(cambios).length){closeDL();return;}
-  cambios.quien=_yo();
-  const b=document.getElementById('detOk');if(b){b.textContent='Guardando…';b.disabled=true;}
-  google.script.run
-    .withSuccessHandler(function(){
-      p.det=Object.assign({},d,nuevos);p.calle=nuevos.calle;p.numero=nuevos.numero;p.ciudad=norm(nuevos.ciudad);p.dir=norm((nuevos.calle+' '+nuevos.numero).trim());
-      closeDL();render();ficha(id);
-    })
-    .withFailureHandler(function(e){alert('Error al guardar: '+(e&&e.message?e.message:e));if(b){b.textContent='Guardar';b.disabled=false;}})
-    .guardarPropiedad(id,cambios);
+function refrescarTitulo(p){
+  const h=document.querySelector('#ficha .fh .dir'),sb=document.querySelector('#ficha .fh .sub');
+  if(h)h.innerHTML=tituloFicha(p)+' <button style="vertical-align:middle;margin-left:8px;background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.45);padding:2px 10px;font-size:12px;border-radius:8px;cursor:pointer" onclick="irADatos()">✏️ Editar datos</button>';
+  if(sb)sb.textContent=p.id+' · '+(p.tipo||'—')+(p.ciudad?' · '+p.ciudad:'')+' · Etapa: '+p.etapa;
 }
+function irADatos(){const e=document.getElementById('detSec');if(e){e.scrollIntoView({behavior:'smooth',block:'start'});const i=e.nextElementSibling&&e.nextElementSibling.querySelector('input');if(i)setTimeout(function(){i.focus();},350);}}
 
 var NOV=[],NOV_KEY='tbseen';
 function _novSeen(){try{return +localStorage.getItem(NOV_KEY)||0;}catch(e){return 0;}}
