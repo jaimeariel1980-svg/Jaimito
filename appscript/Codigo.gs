@@ -1677,7 +1677,9 @@ function leerSeguimiento_(){
 function getDatos(){ return (typeof azcuDatosTb_==='function') ? azcuDatosTb_() : getDatosRaw_(); }
 function _dirTexto_(calle,num,piso,depto,pasillo){
   var s=(String(calle==null?'':calle)+' '+String(num==null?'':num)).trim();
-  [['Piso',piso],['Dpto',depto],['Pasillo',pasillo]].forEach(function(x){ var v=String(x[1]==null?'':x[1]).trim(); if(v) s+=' · '+x[0]+' '+v; });
+  [['Piso',piso],['Dpto',depto]].forEach(function(x){ var v=String(x[1]==null?'':x[1]).trim(); if(v) s+=' · '+x[0]+' '+v; });
+  var pa=String(pasillo==null?'':pasillo).trim();
+  if(/^(si|sí|x|true|1|yes)$/i.test(pa)) s+=' · Pasillo'; else if(pa && !/^(no|n|false|0|-|—|ninguno|ninguna)$/i.test(pa)) s+=' · Pasillo '+pa;
   return s;
 }
 function getDatosRaw_(){
