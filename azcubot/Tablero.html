@@ -1383,7 +1383,7 @@ function guardar(id){
   if(hayDet&&!String(('calle' in cambios?cambios.calle:(p.det||{}).calle)||'').trim()){alert('La calle no puede quedar vacía.');return;}
   const btn=event&&event.target; if(btn){btn.textContent='Guardando…';btn.disabled=true;}
   google.script.run
-    .withSuccessHandler(function(){ if(hayOw){Object.keys(ow).forEach(function(k){if(!p.duenos)p.duenos=[];p.duenos[k-1]=Object.assign({},p.duenos[k-1]||{},ow[k]);});p.owNew={};} if(hayDet){p.det=Object.assign({},p.det||{},dn);p.calle=p.det.calle||'';p.numero=p.det.numero||'';p.ciudad=norm(p.det.ciudad);p.dir=norm((p.calle+' '+p.numero).trim());p.detNew={};refrescarTitulo(p);render();} if(btn){btn.textContent='✓ Guardado';setTimeout(function(){btn.textContent='Guardar cambios';btn.disabled=false;},1500);} })
+    .withSuccessHandler(function(){ if(hayOw){Object.keys(ow).forEach(function(k){if(!p.duenos)p.duenos=[];p.duenos[k-1]=Object.assign({},p.duenos[k-1]||{},ow[k]);});p.owNew={};} if(hayDet){p.det=Object.assign({},p.det||{},dn);p.calle=p.det.calle||'';p.numero=p.det.numero||'';p.ciudad=norm(p.det.ciudad);p.dir=norm(dirDe(p.det));p.detNew={};refrescarTitulo(p);render();} if(btn){btn.textContent='✓ Guardado';setTimeout(function(){btn.textContent='Guardar cambios';btn.disabled=false;},1500);} })
     .withFailureHandler(function(e){ alert('Error al guardar: '+(e&&e.message?e.message:e)); if(btn){btn.textContent='Guardar cambios';btn.disabled=false;} })
     .guardarPropiedad(id, cambios);
 }
@@ -1607,7 +1607,8 @@ function enviarReporte(id){
 function close_(){document.getElementById('ov').classList.remove('on');}
 function closeDL(){document.getElementById('ov2').classList.remove('on');}
 const DET_CAMPOS=[['calle','Calle'],['numero','Número'],['piso','Piso'],['depto','Departamento'],['pasillo','Pasillo'],['entre1','Entrecalle 1'],['entre2','Entrecalle 2'],['ciudad','Ciudad'],['supTotal','Superficie total (m²)'],['supCub','Superficie cubierta (m²)'],['dorm','Dormitorios'],['amb','Ambientes (sin dormitorios)'],['banos','Baños'],['plantas','Plantas'],['cochera','Cochera'],['patioD','Patio delantero'],['patioT','Patio trasero'],['gas','Gas natural'],['cloaca','Cloaca'],['antig','Antigüedad (años)'],['orient','Orientación'],['inscr','Inscripción del dominio']];
-function tituloFicha(p){const d=p.det||{},e=function(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');},x=[e(p.dir)];if(d.piso)x.push('Piso '+e(d.piso));if(d.depto)x.push('Dpto '+e(d.depto));if(d.pasillo)x.push('Pasillo '+e(d.pasillo));return x.join(' · ');}
+function dirDe(d){const x=[((d.calle||'')+' '+(d.numero||'')).trim()];if(d.piso)x.push('Piso '+d.piso);if(d.depto)x.push('Dpto '+d.depto);if(d.pasillo)x.push('Pasillo '+d.pasillo);return x.join(' · ');}
+function tituloFicha(p){const d=p.det||{},e=function(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');};return e(d.calle?norm(dirDe(d)):p.dir);}
 function setOw(id,k,f,v){const p=DATA.find(x=>x.id===id);if(!p)return;if(!p.owNew)p.owNew={};if(!p.owNew[k])p.owNew[k]={};p.owNew[k][f]=String(v).trim();}
 function otrosPropHtml(p){
   const du=p.duenos||[],ea=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');};

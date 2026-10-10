@@ -1675,6 +1675,11 @@ function leerSeguimiento_(){
   return map;
 }
 function getDatos(){ return (typeof azcuDatosTb_==='function') ? azcuDatosTb_() : getDatosRaw_(); }
+function _dirTexto_(calle,num,piso,depto,pasillo){
+  var s=(String(calle==null?'':calle)+' '+String(num==null?'':num)).trim();
+  [['Piso',piso],['Dpto',depto],['Pasillo',pasillo]].forEach(function(x){ var v=String(x[1]==null?'':x[1]).trim(); if(v) s+=' · '+x[0]+' '+v; });
+  return s;
+}
 function getDatosRaw_(){
   var h=hojaMaestra_();
   if(h.getLastRow()<2)return [];
@@ -1734,7 +1739,7 @@ function getDatosRaw_(){
     seg.forEach(function(s){ if(s._d){ var dd=Math.floor((hoy-s._d)/86400000); if(dias===null||dd<dias)dias=dd; } });
     var segOut=seg.map(function(s){return {_row:s._row,fecha:s.fecha,tipo:s.tipo,cli:s.cli,tel:s.tel,res:s.res,prox:s.prox,obs:s.obs,fechaProx:s.fechaProx,vend:s.vend||'',cargo:s.cargo||''};});
     out.push({
-      id:id, dir:(calle+' '+num).trim(), det:det, ciudad:row[c('Ciudad')]||'', tipo:row[c('Tipo de propiedad')]||'',
+      id:id, dir:_dirTexto_(calle,num,det.piso,det.depto,det.pasillo), det:det, ciudad:row[c('Ciudad')]||'', tipo:row[c('Tipo de propiedad')]||'',
       etapa:row[c('Etapa')]||'Captación', estadoCarga:row[c('Estado de la propiedad')]||'',
       precio:fmtPrecio_(row[c('Precio')], row[c('Moneda')]), operacion:row[c('Tipo de operación')]||'',
       pct:pct, plan:row[c('Plan Tokko')]||'',
@@ -2032,7 +2037,7 @@ function guardarPropiedad(codigo, cambios){
   return {ok:true};
 }
 function _audit_(tipo, texto, dir, quien){ try{ if(typeof azcuAudit_==='function') azcuAudit_(tipo, texto, dir, quien); }catch(e){} }
-function _dirDe_(mae, fila, head){ try{ var iC=head.indexOf('Calle'), iN=head.indexOf('Número'), a=Math.min(iC,iN), b=Math.max(iC,iN), r=mae.getRange(fila,a+1,1,b-a+1).getValues()[0]; return (String(r[iC-a])+' '+String(r[iN-a])).trim(); }catch(e){ return ''; } }
+function _dirDe_(mae, fila, head){ try{ var r=mae.getRange(fila,1,1,head.length).getValues()[0], g=function(n){ var i=head.indexOf(n); return i>-1?r[i]:''; }; return _dirTexto_(g('Calle'),g('Número'),g('Piso'),g('Departamento'),g('Pasillo')); }catch(e){ return ''; } }
 function _invalidaNovedades_(){ try{ var c=CacheService.getScriptCache(); c.remove('azmov_90'); c.remove('azmov_30'); }catch(e){} try{ if(typeof azcuLimpiarCache_==='function') azcuLimpiarCache_(); }catch(e){} }
 function registrarInteraccion(codigo, datos){
   var ss=SpreadsheetApp.openById(MAESTRO_ID);
