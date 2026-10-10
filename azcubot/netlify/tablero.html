@@ -939,7 +939,7 @@ function ficha(id){
   var waProp=(sm.tel?'· <a href="https://wa.me/'+wa(sm.tel)+'" target="_blank" style="font-size:12px;text-transform:none;font-weight:400">WhatsApp</a>':'');
   var tokLink=(sm.tokko?'· <a href="'+sm.tokko+'" target="_blank">ver</a>':'');
   document.getElementById('ficha').innerHTML=
-    '<div class="fh"><span class="x" onclick="close_()">×</span><div class="dir">'+p.dir+' <button style="vertical-align:middle;margin-left:8px;background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.45);padding:2px 10px;font-size:12px;border-radius:8px;cursor:pointer" onclick="editarDatos(\''+p.id+'\')" title="Editar la dirección y los datos de la ficha">✏️ Editar</button></div><div class="sub">'+p.id+' · '+(p.tipo||'—')+' · Etapa: '+p.etapa+'</div></div>'+
+    '<div class="fh"><span class="x" onclick="close_()">×</span><div class="dir">'+tituloFicha(p)+' <button style="vertical-align:middle;margin-left:8px;background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.45);padding:2px 10px;font-size:12px;border-radius:8px;cursor:pointer" onclick="editarDatos(\''+p.id+'\')" title="Editar la dirección y los datos de la ficha">✏️ Editar</button></div><div class="sub">'+p.id+' · '+(p.tipo||'—')+(p.ciudad?' · '+p.ciudad:'')+' · Etapa: '+p.etapa+'</div></div>'+
     '<div class="fb"><div class="grid">'+
       '<div class="fi"><div class="k">Estado</div><div class="v"><span class="est" style="background:'+estColor(p.estado)+'">'+p.estado+'</span></div></div>'+
       '<div class="fi"><div class="k">Precio</div><input class="inp" value="'+(p.precio||'')+'" placeholder="—" onchange="setC(\''+p.id+'\',\'precio\',this.value)"></div>'+
@@ -962,7 +962,7 @@ function ficha(id){
     '<h3 class="sec">Documentación para vender <span style="text-transform:none;font-weight:400;color:var(--gris);font-size:11px">· subí el archivo para marcar como presentado</span> <button class="btn s" style="padding:2px 8px;font-size:11px;margin-left:8px;text-transform:none" onclick="docsEditor(\''+p.id+'\')">📚 Unir / separar PDF</button></h3><div class="docs">'+docsHtml+'</div>'+
     '<div id="enc-sec-'+p.id+'">'+(p.encuesta?'<h3 class="sec">Encuesta de satisfacción del cliente</h3><div class="enc-loading">Cargando...</div>':'')+'</div><h3 class="sec">Historial de consultas y visitas ('+p.cons+')</h3>'+seg+
     '<div style="display:flex;gap:10px;margin-top:18px;padding-top:16px;border-top:1px solid var(--linea)"><button class="btn p" style="flex:1;font-size:15px;padding:13px" onclick="guardar(\''+p.id+'\')">Guardar cambios</button></div>'+
-    '<div class="acts grp"><div class="ag"><div class="agt">Gestionar</div><div class="agb"><button class="btn p" onclick="genDoc(\''+p.id+'\')">Generar documento</button><button class="btn s" onclick="genRep(\''+p.id+'\')">📝 Reporte propietario</button><button class="btn s" onclick="cargarForm(\''+p.id+'\')">➕ Cargar consulta/visita</button><button class="btn s" onclick="agendarForm(\''+p.id+'\')">📅 Agendar visita</button><button class="btn s" onclick="verUbicacion(\''+p.id+'\')">📍 Ver ubicación</button>'+(p.etapa==='Captación'?'<button class="btn s" id="btnFichaTokko_'+p.id+'" onclick="genFichaTokko(\''+p.id+'\')">📄 Ficha de la propiedad (PDF)</button>':'')+''+(p.encuesta?'<button class="btn s" onclick="verEncuesta(\''+p.id+'\')">⭐ Ver encuesta '+(p.encuesta.cal||'?')+'/10</button>':'')+'</div></div><div class="ag env"><div class="agt">📲 Enviar por WhatsApp</div><div class="agb"><button class="btn g" onclick="enviarReporte(\''+p.id+'\')">📲 Reporte</button><button class="btn g" onclick="enviarTokko(\''+p.id+'\')">📲 Ficha</button><button class="btn g" onclick="enviarUbicacion(\''+p.id+'\')">📲 Ubicación</button><button class="btn g" onclick="enviarEncuesta(\''+p.id+'\')">📲 Encuesta</button></div></div></div></div>';
+    '<div class="acts grp"><div class="ag"><div class="agt">Gestionar</div><div class="agb"><button class="btn p" onclick="genDoc(\''+p.id+'\')">Generar documento</button><button class="btn s" onclick="genRep(\''+p.id+'\')">📝 Reporte propietario</button><button class="btn s" onclick="cargarForm(\''+p.id+'\')">➕ Cargar consulta/visita</button><button class="btn s" onclick="agendarForm(\''+p.id+'\')">📅 Agendar visita</button><button class="btn s" onclick="verUbicacion(\''+p.id+'\')">📍 Ver ubicación</button>'+'<button class="btn s" id="btnFichaTokko_'+p.id+'" onclick="genFichaTokko(\''+p.id+'\')">📄 Ficha de la propiedad (PDF)</button>'+''+(p.encuesta?'<button class="btn s" onclick="verEncuesta(\''+p.id+'\')">⭐ Ver encuesta '+(p.encuesta.cal||'?')+'/10</button>':'')+'</div></div><div class="ag env"><div class="agt">📲 Enviar por WhatsApp</div><div class="agb"><button class="btn g" onclick="enviarReporte(\''+p.id+'\')">📲 Reporte</button><button class="btn g" onclick="enviarTokko(\''+p.id+'\')">📲 Ficha</button><button class="btn g" onclick="enviarUbicacion(\''+p.id+'\')">📲 Ubicación</button><button class="btn g" onclick="enviarEncuesta(\''+p.id+'\')">📲 Encuesta</button></div></div></div></div>';
   document.getElementById('ov').classList.add('on');
 }
 function drill(tipo){
@@ -1512,8 +1512,7 @@ function enviarTokko(id){const sm=SIM[id]||{};if(!sm.tokko){alert('Cargá primer
 /**
  * Genera el PDF "ficha-carga Tokko" (toda la información de la propiedad,
  * organizada en el mismo orden en que la pide el formulario de carga de
- * Tokko) y dispara la descarga en el navegador. Solo aparece para
- * propiedades en etapa "Captación".
+ * Tokko) y dispara la descarga en el navegador. Aparece en todas las etapas.
  */
 function genFichaTokko(id){
   const btn=document.getElementById('btnFichaTokko_'+id);
@@ -1691,6 +1690,7 @@ function enviarReporte(id){
 function close_(){document.getElementById('ov').classList.remove('on');}
 function closeDL(){document.getElementById('ov2').classList.remove('on');}
 const DET_CAMPOS=[['calle','Calle'],['numero','Número'],['piso','Piso'],['depto','Departamento'],['pasillo','Pasillo'],['entre1','Entrecalle 1'],['entre2','Entrecalle 2'],['ciudad','Ciudad'],['supTotal','Superficie total (m²)'],['supCub','Superficie cubierta (m²)'],['dorm','Dormitorios'],['amb','Ambientes (sin dormitorios)'],['banos','Baños'],['plantas','Plantas'],['cochera','Cochera'],['patioD','Patio delantero'],['patioT','Patio trasero'],['gas','Gas natural'],['cloaca','Cloaca'],['antig','Antigüedad (años)'],['orient','Orientación'],['inscr','Inscripción del dominio']];
+function tituloFicha(p){const d=p.det||{},e=function(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');},x=[e(p.dir)];if(d.piso)x.push('Piso '+e(d.piso));if(d.depto)x.push('Dpto '+e(d.depto));if(d.pasillo)x.push('Pasillo '+e(d.pasillo));return x.join(' · ');}
 function editarDatos(id){
   const p=DATA.find(x=>x.id===id);if(!p)return;
   const d=p.det||{};
