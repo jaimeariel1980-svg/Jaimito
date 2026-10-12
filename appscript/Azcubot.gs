@@ -95,12 +95,13 @@ function azcuActiva_(p){ return p.etapa==='Publicada' || p.etapa==='Publicadas' 
 function azcuFalta_(p){ return Object.keys(p.papeles||{}).filter(function(k){ return !p.papeles[k]; }); }
 function azcuCorta_(p){ return {id:p.id, direccion:p.dir, tipo:p.tipo, etapa:p.etapa, precio:p.precio, propietario:p.prop}; }
 
-function azcuHerrBuscar_(a){
-  var q = azcuSinAc_(a.texto), tk = azcuTokens_(a.texto), ds = azcuDatos_();
+function azcuHerrBuscar_(a, fresco){
+  var q = azcuSinAc_(a.texto), tk = azcuTokens_(a.texto), ds = azcuDatos_(!!fresco);
   var r = ds.filter(function(p){ return azcuSinAc_([p.id,p.dir,p.prop,p.tipo].join(' ')).indexOf(q)>=0; });
   if(!r.length && tk.length){
     r = ds.filter(function(p){ var h = ' '+azcuTokens_([p.id,p.dir,p.prop,p.tipo].join(' '), true).join(' ')+' '; return tk.every(function(w){ return h.indexOf(w)>=0; }); });
   }
+  if(!r.length && !fresco) return azcuHerrBuscar_(a, true);
   return r.slice(0,20).map(azcuCorta_);
 }
 function azcuHerrFicha_(a){
@@ -811,6 +812,7 @@ function azcuChat(pin, mensajes, ctx){
   var pista = '';
   try{
     var ut = (mensajes||[]).length && mensajes[mensajes.length-1].role==='user' ? String(mensajes[mensajes.length-1].content||'') : '', cd = ut ? azcuDirEnTexto_(ut) : [];
+    if(!cd.length && /\d{2,5}/.test(ut) && /[a-zñáéíóú]{3,}/i.test(ut)){ azcuDatos_(true); cd = azcuDirEnTexto_(ut); }
     if(cd.length===1) pista = 'DATO VERIFICADO POR EL SISTEMA: el usuario nombra la propiedad '+cd[0].id+' ('+cd[0].dir+'). Usá ese id directamente; NO digas que no la encontrás.';
     else if(cd.length>1) pista = 'DATO VERIFICADO POR EL SISTEMA: en esa dirección hay '+cd.length+' unidades: '+cd.slice(0,12).map(function(p){ return p.id+' ('+p.dir+')'; }).join('; ')+'. Si falta saber cuál, preguntá piso/dpto; NO digas que no la encontrás.';
   }catch(ePista){}
