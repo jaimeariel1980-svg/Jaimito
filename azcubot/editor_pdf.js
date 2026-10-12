@@ -27,7 +27,9 @@ var EdPDF=(function(){
     '#edp .em{grid-column:1/-1;text-align:center;color:#6b7280;padding:50px 10px;border:2px dashed #b9c1d1;border-radius:14px;background:#fff}'+
     '#edp .rs{padding:6px 14px;font-size:12.5px;color:#4a5568;background:#fff;border-top:1px solid #dfe3ea}'+
     '#edp .big{display:flex;flex-direction:column;gap:4px;align-items:center;width:210px;padding:16px 12px;font-size:28px;border-radius:14px}#edp .big b{font-size:15px}#edp .big small{font-size:12px;color:#6b7280;font-weight:400;font-style:normal}#edp .rg input{width:58px;padding:6px;border:1px solid #c9d0dc;border-radius:8px}'+
-    '#edpv{position:fixed;inset:0;z-index:99995;background:rgba(10,20,40,.8);display:flex;align-items:center;justify-content:center;padding:14px;overflow:auto}#edpv canvas,#edpv img{max-width:100%;max-height:92vh;background:#fff;border-radius:6px}';
+    '#edp .tb select{max-width:340px;min-width:200px}'+
+    '#edp .hp{background:#fff8e1;border-bottom:1px solid #f0dca0;padding:8px 14px;font-size:13px;color:#5a4a10;line-height:1.45}#edp .im{cursor:zoom-in}#edp .k{width:22px;height:22px;cursor:pointer}#edp .sel{background:#e8f0fe;border-bottom:1px solid #c7d7f5;padding:8px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}'+
+    '#edpv{position:fixed;inset:0;z-index:99995;background:rgba(10,20,40,.85);display:flex;flex-direction:column;align-items:center;padding:10px;gap:8px}#edpv .vb{display:flex;gap:6px;align-items:center;flex-wrap:wrap;color:#fff;font-size:13px}#edpv .vb button{font:600 13px inherit;font-family:inherit;border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.14);color:#fff;border-radius:8px;padding:7px 12px;cursor:pointer}#edpv .vc{flex:1;overflow:auto;display:flex;align-items:flex-start;justify-content:center;width:100%}#edpv canvas,#edpv img{max-width:100%;background:#fff;border-radius:6px}';
     document.head.appendChild(c);
   }
   function nuevaId(){return 'p'+(++UID);}
@@ -41,9 +43,9 @@ var EdPDF=(function(){
       try{
         if(f.type==='application/pdf'||/\.pdf$/i.test(f.name)){
           var ab=await f.arrayBuffer(),js=await pdfjsLib.getDocument({data:ab.slice(0)}).promise,fu={t:'pdf',ab:ab,js:js,name:f.name};S.fu.push(fu);
-          for(var i=0;i<js.numPages;i++){var pg={id:nuevaId(),f:fu,i:i,rot:0,box:S.modo==='unir'&&S.dest?S.dest:'',th:''};S.pg.push(pg);nuevos.push(pg);}
+          for(var i=0;i<js.numPages;i++){var pg={id:nuevaId(),f:fu,i:i,rot:0,box:S.modo==='unir'&&S.dest?S.dest:(S.o.base||''),th:''};S.pg.push(pg);nuevos.push(pg);}
         }else if(/^image\//.test(f.type)){
-          var j=await jpegDe(f),fi={t:'img',j:j,name:f.name};S.fu.push(fi);var p2={id:nuevaId(),f:fi,i:0,rot:0,box:S.modo==='unir'&&S.dest?S.dest:'',th:j.th};S.pg.push(p2);
+          var j=await jpegDe(f),fi={t:'img',j:j,name:f.name};S.fu.push(fi);var p2={id:nuevaId(),f:fi,i:0,rot:0,box:S.modo==='unir'&&S.dest?S.dest:(S.o.base||''),th:j.th};S.pg.push(p2);
         }else{alert('«'+f.name+'»: formato no soportado (usá PDF, JPG o PNG).');}
       }catch(e){alert('No pude leer «'+f.name+'»: '+(e&&e.message?e.message:e));}
     }
@@ -99,12 +101,22 @@ var EdPDF=(function(){
     if(!S)return;
     var g=document.getElementById('edp-g'),tb=document.getElementById('edp-tb'),rs=document.getElementById('edp-rs');
     var nSel=S.sel.size,con=S.slots.length>0;
+    var base=S.o.base||'';
+    var opts=S.slots.filter(function(x){return x.key!==base;}).map(function(x){return '<option value="'+esc(x.key)+'">'+esc(x.label)+'</option>';}).join('');
+    var etq=base?'Sacar a otro documento…':'Mover a…';
+    var ext=(base?'<option value="'+esc(base)+'">↩ Dejar en «'+esc(labelDe(base))+'»</option>':'<option value="__none">Sin asignar (no se guarda)</option>');
+    var ayuda=base?'Seleccioná las páginas que querés <b>sacar</b> (tildá el cuadradito de cada una; tocá la miniatura para verla en grande) y elegí a qué documento van en <b>«Sacar a otro documento…»</b>. Las demás <b>quedan en «'+esc(labelDe(base))+'»</b>.':
+      (con&&S.modo==='unir'?'<b>Unir:</b> elegí abajo el documento donde se guarda y agregá todas las fotos y PDFs que quieras con <b>+ Archivos</b>. Se guardan juntos en un solo PDF.':
+      (con?'<b>Cómo se usa:</b> 1) tildá las páginas de un mismo documento (tocá la miniatura para verlas en grande), 2) elegí a cuál documento van en <b>«Mover a…»</b>, 3) repetí con los demás y tocá <b>Aplicar</b>. Las páginas «Sin asignar» no se guardan.':
+      'Reordená arrastrando, rotá o quitá páginas. Tocá la miniatura para verla en grande. Todo se guarda como <b>un solo PDF</b>.'));
+    document.getElementById('edp-help').innerHTML=S.pg.length?ayuda:'';
+    document.getElementById('edp-help').style.display=S.pg.length?'':'none';
     tb.innerHTML='<button data-x="all">'+(nSel===S.pg.length&&nSel?'Quitar selección':'Seleccionar todo')+'</button>'+
+      '<span style="font-size:12px;color:#6b7280">'+(nSel?'<b>'+nSel+' seleccionada(s):</b>':'Ninguna seleccionada')+'</span>'+
+      (con?'<select data-x="asig" '+(nSel?'':'disabled')+'><option value="">'+etq+'</option>'+opts+ext+'</select>':'')+
       '<button data-x="rot" '+(nSel?'':'disabled')+'>↻ Rotar</button><button data-x="del" '+(nSel?'':'disabled')+'>🗑 Quitar</button>'+
-      (con?'<select data-x="asig" '+(nSel?'':'disabled')+'><option value="">Asignar selección a…</option>'+S.slots.map(function(s){return '<option value="'+esc(s.key)+'">'+esc(s.label)+'</option>';}).join('')+'<option value="__none">Sin asignar</option></select>':'')+
-      '<span style="font-size:12px;color:#6b7280">'+(nSel?nSel+' seleccionada(s)':'Tocá las páginas para seleccionarlas · arrastrá para ordenar')+'</span>'+
-      (con&&S.modo==='unir'?'<div style="width:100%;margin-top:4px"><b style="font-size:13px">🔗 Unir todo en:</b> <select data-x="dest"><option value="">Elegí el documento…</option>'+S.slots.map(function(x){return '<option value="'+esc(x.key)+'"'+(S.dest===x.key?' selected':'')+'>'+esc(x.label)+'</option>';}).join('')+'</select> <small style="color:#6b7280">Agregá todas las fotos y PDFs que quieras con + Archivos; se guardan como un solo PDF.</small></div>':'')+
-      (con&&S.modo!=='unir'?'<div class="rg" style="width:100%;margin-top:4px;display:flex;gap:6px;align-items:center;flex-wrap:wrap"><b style="font-size:13px">✂️ Separar por páginas:</b> del <input type="number" min="1" max="'+S.pg.length+'" data-x="r1" value="1"> al <input type="number" min="1" max="'+S.pg.length+'" data-x="r2" value="'+S.pg.length+'"> es <select data-x="rasig"><option value="">Elegí el documento…</option>'+S.slots.map(function(x){return '<option value="'+esc(x.key)+'">'+esc(x.label)+'</option>';}).join('')+'</select></div>':'');
+      (con&&S.modo==='unir'?'<div style="width:100%;margin-top:4px"><b style="font-size:13px">🔗 Unir todo en:</b> <select data-x="dest"><option value="">Elegí el documento…</option>'+S.slots.map(function(x){return '<option value="'+esc(x.key)+'"'+(S.dest===x.key?' selected':'')+'>'+esc(x.label)+'</option>';}).join('')+'</select></div>':'')+
+      (con&&!base&&S.modo!=='unir'?'<div class="rg" style="width:100%;margin-top:4px;display:flex;gap:6px;align-items:center;flex-wrap:wrap"><b style="font-size:13px">✂️ Separar por páginas:</b> del <input type="number" min="1" max="'+S.pg.length+'" data-x="r1" value="1"> al <input type="number" min="1" max="'+S.pg.length+'" data-x="r2" value="'+S.pg.length+'"> es <select data-x="rasig"><option value="">Elegí el documento…</option>'+S.slots.map(function(x){return '<option value="'+esc(x.key)+'">'+esc(x.label)+'</option>';}).join('')+'</select></div>':'');
     if(!S.pg.length&&(S.modo==='unir'||S.modo==='separar')){g.innerHTML='<div class="em">'+(S.modo==='unir'?'Elegí arriba en qué documento se guarda y tocá <b>+ Archivos</b>. Agregá todas las fotos y PDFs que quieras.':'Tocá <b>+ Archivos</b> y elegí el PDF que querés separar.')+'<br><br><button data-x="add">+ Archivos</button> <button data-x="m-ini">Volver</button></div>';rs.textContent='';return;}
     if(!S.pg.length){
       var bt='<button class="big" data-x="m-unir">🔗<b>Unir</b><small>Juntá fotos y PDFs en un solo '+(con?'documento':'PDF')+'</small></button>'+(con?'<button class="big" data-x="m-sep">✂️<b>Separar</b><small>Dividí un PDF en varios documentos (a mano o con IA)</small></button>':'')+'<button class="big" data-x="m-ord">📑<b>Ordenar / editar</b><small>Reordená, rotá o quitá páginas</small></button>';
@@ -113,12 +125,12 @@ var EdPDF=(function(){
       return '<div class="c'+(S.sel.has(q.id)?' s':'')+'" draggable="true" data-id="'+q.id+'" style="border-color:'+(con&&q.box?color(q.box):'#cbd2de')+'">'+
         '<span class="n">'+(n+1)+'</span><input type="checkbox" class="k" data-k="'+q.id+'" '+(S.sel.has(q.id)?'checked':'')+'>'+
         '<div class="im" data-im="'+q.id+'" data-v="'+q.id+'">'+(q.th?'<img src="'+q.th+'" style="transform:rotate('+q.rot+'deg)">':'<i>cargando…</i>')+'</div>'+
-        (con?'<div class="t" style="background:'+color(q.box)+'">'+esc(q.box?labelDe(q.box):'Sin asignar')+'</div>':'')+
-        '<div class="a"><button data-m="-1" title="Mover antes">◀</button><button data-v="'+q.id+'" title="Ver grande">👁</button><button data-r="'+q.id+'" title="Rotar">↻</button><button data-d="'+q.id+'" title="Quitar">🗑</button><button data-m="1" title="Mover después">▶</button></div></div>';
+        (con?'<div class="t" style="background:'+color(q.box)+'">'+esc(q.box?(q.box===base?'Queda: ':'→ ')+labelDe(q.box):'Sin asignar')+'</div>':'')+
+        '<div class="a"><button data-m="-1" title="Mover antes">◀</button><button data-v="'+q.id+'" title="Ver en grande">🔍</button><button data-r="'+q.id+'" title="Rotar">↻</button><button data-d="'+q.id+'" title="Quitar">🗑</button><button data-m="1" title="Mover después">▶</button></div></div>';
     }).join('');
     if(con){
       var cnt={},sin=0;S.pg.forEach(function(q){if(q.box)cnt[q.box]=(cnt[q.box]||0)+1;else sin++;});
-      rs.innerHTML=S.slots.filter(function(s){return cnt[s.key];}).map(function(s){return '<b style="color:'+color(s.key)+'">'+esc(s.label)+'</b>: '+cnt[s.key]+' pág.';}).join(' · ')+(sin?(cnt&&Object.keys(cnt).length?' · ':'')+'<b>Sin asignar</b>: '+sin+' (no se guardan)':'');
+      rs.innerHTML=S.slots.filter(function(s){return cnt[s.key];}).map(function(s){return '<b style="color:'+color(s.key)+'">'+esc(s.label)+(s.key===base?' (queda)':'')+'</b>: '+cnt[s.key]+' pág.';}).join(' · ')+(sin?(cnt&&Object.keys(cnt).length?' · ':'')+'<b>Sin asignar</b>: '+sin+' (no se guardan)':'');
     }else rs.textContent=S.pg.length+' página(s) → se guardan como un solo PDF';
     if(con&&S.modo==='unir'&&!S.dest)rs.innerHTML='Elegí arriba en qué documento se guarda la unión.';
   }
@@ -128,14 +140,30 @@ var EdPDF=(function(){
     S.pg=rest.slice(0,at).concat(mov,rest.slice(at));
   }
   async function ver(id){
-    var q=S.pg.filter(function(x){return x.id===id;})[0];if(!q)return;
-    var o=document.createElement('div');o.id='edpv';o.onclick=function(){o.remove();};o.innerHTML='<div style="color:#fff">Cargando…</div>';document.body.appendChild(o);
+    var i=S.pg.findIndex(function(x){return x.id===id;});if(i<0)return;var q=S.pg[i];
+    var o=document.getElementById('edpv');
+    if(!o){o=document.createElement('div');o.id='edpv';document.body.appendChild(o);
+      o.addEventListener('click',function(e){var b=e.target.closest('button');if(!b){return;}var x=b.dataset.vx,k=S.pg.findIndex(function(z){return z.id===o.dataset.id;});
+        if(x==='x'){cerrarVista();return;}
+        if(x==='prev'&&k>0){ver(S.pg[k-1].id);return;}
+        if(x==='next'&&k<S.pg.length-1){ver(S.pg[k+1].id);return;}
+        if(x==='sel'){var id3=S.pg[k].id;if(S.sel.has(id3))S.sel.delete(id3);else S.sel.add(id3);render();ver(id3);return;}
+        if(x==='rot'){S.pg[k].rot=(S.pg[k].rot+90)%360;render();ver(S.pg[k].id);return;}
+      });
+      o._kd=function(e){if(!document.getElementById('edpv'))return;var k=S.pg.findIndex(function(z){return z.id===o.dataset.id;});if(e.key==='Escape')cerrarVista();else if(e.key==='ArrowLeft'&&k>0)ver(S.pg[k-1].id);else if(e.key==='ArrowRight'&&k<S.pg.length-1)ver(S.pg[k+1].id);};
+      document.addEventListener('keydown',o._kd);
+    }
+    o.dataset.id=id;
+    o.innerHTML='<div class="vb"><button data-vx="prev"'+(i===0?' disabled':'')+'>◀ Anterior</button><b>Página '+(i+1)+' de '+S.pg.length+'</b><button data-vx="next"'+(i===S.pg.length-1?' disabled':'')+'>Siguiente ▶</button><button data-vx="sel">'+(S.sel.has(id)?'☑ Seleccionada':'☐ Seleccionar esta página')+'</button><button data-vx="rot">↻ Rotar</button><button data-vx="x">✕ Cerrar</button></div><div class="vc" id="edpvc"><span style="color:#fff">Cargando…</span></div>';
+    var cont=document.getElementById('edpvc');
     try{
-      if(q.f.t==='img'){o.innerHTML='<img src="'+URL.createObjectURL(q.f.j.blob)+'" style="transform:rotate('+q.rot+'deg)">';return;}
-      var page=await q.f.js.getPage(q.i+1),v=page.getViewport({scale:1.5,rotation:(page.rotate+q.rot)%360}),c=document.createElement('canvas');c.width=Math.round(v.width);c.height=Math.round(v.height);
-      await page.render({canvasContext:c.getContext('2d'),viewport:v}).promise;o.innerHTML='';o.appendChild(c);
-    }catch(e){o.remove();}
+      if(q.f.t==='img'){cont.innerHTML='<img src="'+URL.createObjectURL(q.f.j.blob)+'" style="transform:rotate('+q.rot+'deg);max-height:calc(100vh - 70px)">';return;}
+      var page=await q.f.js.getPage(q.i+1),w=Math.min(window.innerWidth-30,900),v1=page.getViewport({scale:1,rotation:(page.rotate+q.rot)%360}),v=page.getViewport({scale:Math.min(w/v1.width,2),rotation:(page.rotate+q.rot)%360}),c=document.createElement('canvas');c.width=Math.round(v.width);c.height=Math.round(v.height);
+      await page.render({canvasContext:c.getContext('2d'),viewport:v}).promise;
+      if(document.getElementById('edpv')&&o.dataset.id===id){cont.innerHTML='';cont.appendChild(c);}
+    }catch(e){cont.textContent='No pude mostrar la página.';}
   }
+  function cerrarVista(){var v=document.getElementById('edpv');if(v){if(v._kd)document.removeEventListener('keydown',v._kd);v.remove();}}
   async function ia(){
     if(!S.pg.length){alert('Primero agregá archivos.');return;}
     var n=S.pg.length,T=8,btn=document.querySelector('#edp [data-x="ia"]');if(btn)btn.disabled=true;
@@ -162,14 +190,14 @@ var EdPDF=(function(){
     if(con){
       var sin=S.pg.filter(function(q){return !q.box;}).length;
       S.slots.forEach(function(s){var l=S.pg.filter(function(q){return q.box===s.key;});if(l.length)res[s.key]=l;});
-      if(!Object.keys(res).length){alert('Ninguna página está asignada a un documento. Usá «Asignar selección a…» o «Separar con IA».');return;}
+      if(!Object.keys(res).length){alert('Ninguna página está asignada a un documento. Seleccioná páginas y usá «Mover a…» o «Separar y unir con IA».');return;}
       if(sin&&!confirm(sin+' página(s) sin asignar no se van a guardar. ¿Seguir?'))return;
     }else res._=S.pg.slice();
     var bt=document.querySelector('#edp [data-x="ok"]');if(bt)bt.disabled=true;
     try{
       setMsg('Armando los PDF…');var out={};
       for(var k of Object.keys(res)){var by=await construir(res[k]);if(by.length>LIM)by=await compactarBytes(by,setMsg);out[k]=new File([by],(k==='_'?'documento':k.replace(/[^\w\-]+/g,'_'))+'.pdf',{type:'application/pdf'});}
-      await S.o.alAplicar(out);cerrar();
+      await S.o.alAplicar(out,{base:S.o.base||''});cerrar();
     }catch(e){setMsg('');if(bt)bt.disabled=false;if(!(e&&e.silencio))alert('No se pudo aplicar: '+(e&&e.message?e.message:e));}
   }
   async function descargar(){
@@ -182,14 +210,14 @@ var EdPDF=(function(){
       setMsg('');
     }catch(e){setMsg('');alert('No pude armar el PDF: '+(e&&e.message?e.message:e));}
   }
-  function cerrar(){var e=document.getElementById('edp');if(e)e.remove();var v=document.getElementById('edpv');if(v)v.remove();S=null;}
+  function cerrar(){var e=document.getElementById('edp');if(e)e.remove();cerrarVista();S=null;}
   function abrir(o){
     estilos();cerrar();
     S={o:o,fu:[],pg:[],sel:new Set(),slots:o.slots||[],drag:null};
     var el=document.createElement('div');el.id='edp';
     el.innerHTML='<div class="h"><b>'+esc(o.titulo||'Editor de PDF')+'</b><span id="edp-msg" style="font-size:12px;opacity:.9"></span>'+
       '<button data-x="add">+ Archivos</button>'+(S.slots.length?'<button data-x="ia" title="La IA separa las páginas por documento y junta las de cada uno">✨ Separar y unir con IA</button>':'')+'<button data-x="dl" title="Descargar el resultado en tu equipo">⬇ Descargar</button><button data-x="cancel">Cancelar</button><button class="p" data-x="ok">'+esc(o.textoOk||'Aplicar')+'</button></div>'+
-      '<div class="tb" id="edp-tb"></div><div class="g" id="edp-g"></div><div class="rs" id="edp-rs"></div>'+
+      '<div class="hp" id="edp-help" style="display:none"></div><div class="tb" id="edp-tb"></div><div class="g" id="edp-g"></div><div class="rs" id="edp-rs"></div>'+
       '<input type="file" id="edp-f" accept=".pdf,application/pdf,image/*" multiple style="display:none">';
     document.body.appendChild(el);
     var fi=document.getElementById('edp-f');
@@ -213,6 +241,7 @@ var EdPDF=(function(){
       if(b&&b.dataset.d){S.pg=S.pg.filter(function(q){return q.id!==id2;});S.sel.delete(id2);render();return;}
       if(b&&b.dataset.r){var q=S.pg.filter(function(z){return z.id===id2;})[0];q.rot=(q.rot+90)%360;render();return;}
       if(b&&b.dataset.v){ver(id2);return;}
+      if(!b&&t.closest('.im')){ver(id2);return;}
       if(b&&b.dataset.m){var i=S.pg.findIndex(function(z){return z.id===id2;}),j=i+(+b.dataset.m);if(j<0||j>=S.pg.length)return;var tmp=S.pg[i];S.pg[i]=S.pg[j];S.pg[j]=tmp;render();return;}
       if(S.sel.has(id2))S.sel.delete(id2);else S.sel.add(id2);render();
     });
