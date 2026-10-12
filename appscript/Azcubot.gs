@@ -13,7 +13,20 @@ function azcuPin_(pin){
   if(n>=10) throw new Error('Demasiados intentos. Probá de nuevo en 15 minutos.');
   if(String(pin||'')!==p){ if(pin) c.put('azcu_fail', String(n+1), 900); throw new Error('PIN incorrecto'); }
 }
-function azcuSinAc_(x){ return String(x||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim(); }
+function azcuSinAc_(x){ return String(x||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim(); }
+function azcuTokens_(x, todo){
+  var ST = {la:1,el:1,los:1,las:1,de:1,del:1,en:1,y:1,por:1,para:1,una:1,un:1,propiedad:1,ficha:1,casa:1,calle:1,necesito:1,quiero:1,dame:1,busca:1,buscame:1,datos:1,info:1,al:1,a:1,me:1,que:1,mi:1,numero:1,nro:1,n:1};
+  return azcuSinAc_(x).replace(/[^a-z0-9ñ ]+/g, ' ').split(' ').filter(function(w){ return w && (todo || !ST[w]); });
+}
+function azcuDirEnTexto_(texto){
+  var T = ' '+azcuTokens_(texto, true).join(' ')+' ', out = [];
+  azcuDatos_().forEach(function(p){
+    var d = p.det || {}, c = azcuTokens_(d.calle, true), n = azcuTokens_(d.numero, true);
+    if(!c.length || !n.length) return;
+    if(c.concat(n).every(function(w){ return T.indexOf(' '+w+' ')>=0; })) out.push(p);
+  });
+  return out;
+}
 function azcuNum_(x){
   if(x instanceof Date) return +Utilities.formatDate(x, AZCU_TZ, 'yyyyMMdd');
   var m = String(x).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
@@ -83,8 +96,12 @@ function azcuFalta_(p){ return Object.keys(p.papeles||{}).filter(function(k){ re
 function azcuCorta_(p){ return {id:p.id, direccion:p.dir, tipo:p.tipo, etapa:p.etapa, precio:p.precio, propietario:p.prop}; }
 
 function azcuHerrBuscar_(a){
-  var q = azcuSinAc_(a.texto);
-  return azcuDatos_().filter(function(p){ return azcuSinAc_([p.id,p.dir,p.prop,p.tipo].join(' ')).indexOf(q)>=0; }).slice(0,20).map(azcuCorta_);
+  var q = azcuSinAc_(a.texto), tk = azcuTokens_(a.texto), ds = azcuDatos_();
+  var r = ds.filter(function(p){ return azcuSinAc_([p.id,p.dir,p.prop,p.tipo].join(' ')).indexOf(q)>=0; });
+  if(!r.length && tk.length){
+    r = ds.filter(function(p){ var h = ' '+azcuTokens_([p.id,p.dir,p.prop,p.tipo].join(' '), true).join(' ')+' '; return tk.every(function(w){ return h.indexOf(w)>=0; }); });
+  }
+  return r.slice(0,20).map(azcuCorta_);
 }
 function azcuHerrFicha_(a){
   var p = azcuProp_(a.id);
@@ -791,7 +808,13 @@ function azcuChat(pin, mensajes, ctx){
         return {texto:(cual3==='ubicacion' ? 'Listo, la ubicación' : cual3==='encuesta' ? 'Listo, la encuesta' : 'Listo, la ficha')+(p3 ? ' de **'+p3.dir+'**' : '')+'. Elegí qué hacer 👇', acciones:[], adjuntos:adj3, panel:null}; }
     }
   }catch(e){}
-  var msgs = [{role:'system', content:azcuSistema_(ctx)}].concat((mensajes||[]).slice(-12).map(function(m){ return {role:m.role==='assistant'?'assistant':'user', content:String(m.content||'')}; }));
+  var pista = '';
+  try{
+    var ut = (mensajes||[]).length && mensajes[mensajes.length-1].role==='user' ? String(mensajes[mensajes.length-1].content||'') : '', cd = ut ? azcuDirEnTexto_(ut) : [];
+    if(cd.length===1) pista = 'DATO VERIFICADO POR EL SISTEMA: el usuario nombra la propiedad '+cd[0].id+' ('+cd[0].dir+'). Usá ese id directamente; NO digas que no la encontrás.';
+    else if(cd.length>1) pista = 'DATO VERIFICADO POR EL SISTEMA: en esa dirección hay '+cd.length+' unidades: '+cd.slice(0,12).map(function(p){ return p.id+' ('+p.dir+')'; }).join('; ')+'. Si falta saber cuál, preguntá piso/dpto; NO digas que no la encontrás.';
+  }catch(ePista){}
+  var msgs = [{role:'system', content:azcuSistema_(ctx)}].concat(pista ? [{role:'system', content:pista}] : []).concat((mensajes||[]).slice(-12).map(function(m){ return {role:m.role==='assistant'?'assistant':'user', content:String(m.content||'')}; }));
   var tools = azcuTools_(), acciones = [], adj = [], panel = null, i;
   var mapa = {proponer_cargar_interaccion:'cargar', proponer_agendar_visita:'agendar', proponer_registrar_propuesta:'propuesta', proponer_cambiar_etapa:'etapa', proponer_editar_campos:'campos', proponer_marcar_documento:'doc', proponer_borrar_documento:'borrardoc', proponer_editar_interaccion:'editarint', proponer_eliminar_interaccion:'elimint', proponer_eliminar_propiedad:'elimprop', proponer_enviar_reporte:'reporte'};
   var directo = null, ult = (mensajes||[]).length ? mensajes[mensajes.length-1] : null, esAcc = !!(ult && /carg|agend|registr|propuesta|cambi|pas[aá] a|edit|borr|elimin|marc|sub[ií]|envi|mand|record|avis|visita|document|papeles|falta|cu[aá]nto|cu[aá]ndo|qui[eé]n|tel[eé]fono|mail|historial|interacci/i.test(String(ult.content||'')) && !/^(info|datos|ficha|contame)/i.test(String(ult.content||'').trim()));
