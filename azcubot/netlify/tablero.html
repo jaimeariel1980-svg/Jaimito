@@ -818,8 +818,8 @@ function render(){
   var _enc=f.filter(function(p){return p.encuesta&&p.encuesta.cal;});
   var _sat=_enc.length?Math.round(_enc.reduce(function(a,p){return a+(parseFloat(p.encuesta.cal)||0);},0)/_enc.length*10)/10:null;
   document.getElementById('dash').innerHTML=
-    kpi(f.length,'Propiedades','',null)+kpi(activas.length,'Activas','',null)+kpi(vend,'Vendidas','g','et:Vendida')+
-    kpi(susp,'Suspendidas','','et:Suspendida')+kpi(_sat===null?'—':_sat+'/10','Satisfacción',(_sat===null?'':(_sat>=8?'g':(_sat>=5?'a':'r'))),null)+kpi(ofN,'Propuestas','g','ofertas')+kpiAl(nAl);
+    kpi(f.length,'Propiedades','','todas')+kpi(activas.length,'Activas','','activas')+kpi(vend,'Vendidas','g','et:Vendida')+
+    kpi(susp,'Suspendidas','','et:Suspendida')+kpi(_sat===null?'—':_sat+'/10','Satisfacción',(_sat===null?'':(_sat>=8?'g':(_sat>=5?'a':'r'))),'sat:Todas')+kpi(ofN,'Propuestas','g','ofertas')+kpiAl(nAl);
   const cnt={};ET.forEach(e=>cnt[e[0]]=0);f.forEach(p=>{if(cnt[p.etapa]!=null)cnt[p.etapa]++});
   const segE=ET.map(e=>({l:e[0],v:cnt[e[0]],c:e[1],k:'et:'+e[0]}));const actPct=f.length?Math.round((activas.length/f.length)*100):0;document.getElementById('bars').innerHTML=donutPanel(segE,f.length,'activas',actPct+'%');
   var _encs=f.filter(function(p){return p.encuesta&&p.encuesta.cal;});
@@ -967,6 +967,20 @@ function ficha(id){
 }
 function drill(tipo){
   var f2,rows,titulo,sub;
+  if(tipo==='todas'||tipo==='activas'){
+    f2=sortIt(filtered().filter(p=>tipo==='todas'||ACT.has(p.etapa)));
+    rows=f2.length?f2.map(p=>'<tr onclick=\'closeDL();ficha("'+p.id+'")\' style="cursor:pointer"><td><span class="idpill">'+p.id+'</span></td><td>'+p.dir+'</td><td style="color:var(--gris);font-size:12px">'+p.etapa+'</td><td>'+(p.precio||'—')+'</td></tr>').join(''):'<tr><td colspan="4" style="color:var(--gris)">Sin propiedades</td></tr>';
+    document.getElementById('dlg').innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">'+(tipo==='todas'?'Todas las propiedades':'Propiedades activas')+' ('+f2.length+')</div><div class="sub">'+(tipo==='todas'?'Según los filtros de arriba':'Publicadas y en reserva')+' · tocá una fila para abrir la ficha</div></div><div class="fb"><table><tr><th>ID</th><th>Dirección</th><th>Etapa</th><th>Precio</th></tr>'+rows+'</table></div>';
+    document.getElementById('ov2').classList.add('on');return;
+  }
+  if(tipo.indexOf('sat:')===0){
+    const dim=tipo.slice(4),DM={'Equipo':'equipo','T. respuesta':'tiempos_respuesta','T. operación':'tiempos_operacion','Recomendaría':'rec'};
+    f2=filtered().filter(p=>p.encuesta&&p.encuesta.cal);
+    const val=p=>{const e=p.encuesta;return DM[dim]?(e[DM[dim]]==null||e[DM[dim]]===''?'—':e[DM[dim]]):(e.cal+'/10');};
+    rows=f2.length?f2.map(p=>'<tr onclick=\'closeDL();ficha("'+p.id+'")\' style="cursor:pointer"><td><span class="idpill">'+p.id+'</span></td><td>'+p.dir+'</td><td style="text-align:right;font-weight:700">'+val(p)+'</td></tr>').join(''):'<tr><td colspan="3" style="color:var(--gris)">Todavía no hay encuestas respondidas</td></tr>';
+    document.getElementById('dlg').innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">Satisfacción'+(DM[dim]?': '+dim:'')+' ('+f2.length+')</div><div class="sub">Encuestas respondidas · tocá una fila para abrir la ficha</div></div><div class="fb"><table><tr><th>ID</th><th>Dirección</th><th style="text-align:right">'+(DM[dim]?dim:'Calificación')+'</th></tr>'+rows+'</table></div>';
+    document.getElementById('ov2').classList.add('on');return;
+  }
   if(tipo==='ofertas'){
     f2=filtered().filter(p=>{var e=propuestaEstado(p);return e;});
     rows=f2.length?f2.map(p=>{var e=propuestaEstado(p);return '<tr onclick=\'closeDL();ficha("'+p.id+'")\' style="cursor:pointer"><td><span class="idpill">'+p.id+'</span></td><td>'+p.dir+'</td><td><span class="pap '+e.cls+'">'+e.txt+'</span></td></tr>';}).join(''):'<tr><td colspan="3" style="color:var(--gris)">Sin propuestas</td></tr>';
