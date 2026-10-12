@@ -1000,7 +1000,7 @@
             return;
           }
           var hist = st.msgs.filter(function(m){ return !m.w; }).map(function(m){ return {role:m.role, content:(m.content||'')+(m.acciones||[]).map(function(a){ return '\n[Tarjeta '+(a.estado||'')+': '+a.resumen+(a.datos&&a.datos.id?' (id '+a.datos.id+')':'')+']'; }).join('')}; }).filter(function(m){ return m.content; }), ph = {role:'user', content:'🎤 Escuchando…'};
-          st.wz = null; st.msgs.push(ph); st.busy = true; st.status = ''; render();
+          st.wz = null; if(st.menu){ st.menu = false; st.view = 'chat'; } st.entered = true; st.msgs.push(ph); st.busy = true; st.status = ''; render();
           call('azcuVoz', [fr.result.split(',')[1], blob.type, hist, {nombre:st.nombre||'', fichaId:AZ.ctx||'', visita:st.vis||null}], function(r){
             st.busy = false;
             if(r.transcripcion) ph.content = r.transcripcion; else st.msgs.splice(st.msgs.indexOf(ph), 1);
