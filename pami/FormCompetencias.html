@@ -84,7 +84,7 @@ var FC=(function(){
     '<label class="l">Matriz de evaluación (4 niveles · score ponderado)</label><table class="m"><thead><tr><th style="text-align:left">Competencia</th><th>Peso</th><th>No demuestra</th><th>Señales</th><th>Efectividad</th><th>Solidez</th></tr></thead><tbody id="mx"></tbody></table>'+
     '<div class="score"><div><div class="l" style="margin:0">Score ponderado total</div><div id="sd" style="font-size:13px;color:#5D6B82">Completá la matriz para calcular</div></div><div><b id="sn">—</b> / 10</div></div>'+
     '<label class="l">Recomendación y justificación de viabilidad</label><textarea id="rec" rows="4" placeholder="Redactá la justificación final…"></textarea>'+
-    '<div class="ver" style="margin-top:16px"><div class="ttl">Ajuste al rol</div><div style="font-size:12px;color:#5D6B82;font-style:italic">Tu juicio profesional tiene prioridad sobre el score automático <span id="sug"></span></div><div class="vb" id="vb">'+VER.map(function(v){return '<button data-l="'+v[0]+'" onclick="FC.manual(\''+v[0]+'\')">'+v[0]+' · '+v[1]+'<small>'+v[2]+'</small></button>';}).join('')+'</div></div></div>'+
+    '<div class="ver" style="margin-top:16px"><div class="ttl">Ajuste al rol</div><div style="font-size:12px;color:#5D6B82;font-style:italic">Tu juicio profesional tiene prioridad sobre el score automático <span id="sug"></span></div><div class="vb" id="vb">'+VER.map(function(v){return '<button data-l="'+v[0]+'" onclick="FC.manual(\''+v[0]+'\')">'+v[0]+' · '+v[1]+'<small>'+v[2]+'</small></button>';}).join('')+'</div>'+motHtml()+'</div></div>'+
     '<button class="btn ok" id="save" style="width:100%;padding:14px" onclick="FC.guardar()">Guardar evaluación</button></div><div class="done card" id="done"></div></div>';
     var cs=$('#comps'),mx=$('#mx');
     D.comps.forEach(function(k){
@@ -112,12 +112,16 @@ var FC=(function(){
     $('#sug').textContent='· sugerencia automática: '+S.auto;
     marcar(S.manual||S.auto);
   }
-  function marcar(l){CONT.querySelectorAll('#vb button').forEach(function(b){b.className=b.dataset.l===l?'on '+l.replace('+','p'):'';});}
+  function motHtml(){return '<div id="mot" style="display:none;margin-top:12px"><label class="l" style="color:#D9534F">Motivo de descarte (obligatorio con C)</label><select id="m-md" onchange="FC.motSel()"><option value="">— Elegí el motivo —</option>'+D.motivos.concat(['Otro']).map(function(m){return '<option>'+esc(m)+'</option>';}).join('')+'</select><input type="text" id="m-md2" maxlength="30" placeholder="Escribí el motivo (máximo 2 palabras)" style="display:none;margin-top:6px"></div>';}
+  function motSel(){$('#m-md2').style.display=v('m-md')==='Otro'?'':'none';}
+  function motFinal(){var m=v('m-md');if(m!=='Otro')return m;var t=v('m-md2').replace(/\s+/g,' ');return (!t||t.split(' ').length>2)?null:'Otro: '+t;}
+  function marcar(l){var m=$('#mot');if(m)m.style.display=l==='C'?'':'none';CONT.querySelectorAll('#vb button').forEach(function(b){b.className=b.dataset.l===l?'on '+l.replace('+','p'):'';});}
   function manual(l){S.manual=l;marcar(l);}
   function v(id){return $('#'+id).value.trim();}
   function guardar(){
     var letra=S.manual||S.auto;
     if(!letra){alert('Evaluá al menos una competencia o elegí el ajuste al rol.');return;}
+    var mf='';if(letra==='C'){mf=motFinal();if(!mf){alert(v('m-md')==='Otro'?'En "Otro" escribí el motivo con máximo dos palabras.':'Con C hay que elegir el motivo de descarte.');($('#m-md2').style.display==='none'?$('#m-md'):$('#m-md2')).focus();return;}}
     var b=$('#save');b.disabled=true;b.textContent='Guardando…';
     var comps=D.comps.map(function(k){return {nombre:k.nombre,peso:k.pesoAct,nivel:S.niv[k.id]||0,notas:$('[data-n="'+k.id+'"]').value};});
     google.script.run.withSuccessHandler(function(r){
@@ -125,10 +129,10 @@ var FC=(function(){
       d.innerHTML='<h2 style="color:#1E8E5A">¡Evaluación guardada!</h2><p style="margin:10px 0">Ajuste: <b>'+esc(r.nota)+'</b>'+(r.score!=null?' · Score '+r.score.toFixed(1):'')+'<br>Estado del candidato: <b>'+esc(r.estado||'')+'</b></p><p><button class="btn" onclick="FC.volver()">Volver</button> <a class="btn ghost" target="_blank" href="'+esc(r.url)+'">Ver informe</a></p>';
       CONT.scrollIntoView();if(O.onDone)O.onDone(r);
     }).withFailureHandler(function(e){b.disabled=false;b.textContent='Guardar evaluación';alert('No se pudo guardar: '+e.message);})
-    .guardarCompetencias(K,{id:CID,entrevistador:v('m-ent'),fecha:v('m-fecha'),comps:comps,fortalezas:$('#fort').value,areas:$('#area').value,recomendacion:$('#rec').value,resultado:letra,
+    .guardarCompetencias(K,{id:CID,entrevistador:v('m-ent'),fecha:v('m-fecha'),comps:comps,fortalezas:$('#fort').value,areas:$('#area').value,recomendacion:$('#rec').value,resultado:letra,motivoDescarte:mf,
       meta:{edad:v('m-edad'),localidad:v('m-loc'),familia:v('m-fam'),formacion:v('m-form'),empresaAct:v('m-emp'),puestoAct:v('m-pue'),antig:v('m-ant'),remAct:v('m-ra'),remPret:v('m-rp'),disp:v('m-disp'),motivo:v('m-mot'),movilidad:v('m-mov'),referencias:v('m-ref')}});
   }
   function volver(){if(O.onClose)O.onClose();}
-  return {open:open,pesoCh:pesoCh,nivel:nivel,manual:manual,guardar:guardar,volver:volver};
+  return {open:open,pesoCh:pesoCh,nivel:nivel,manual:manual,guardar:guardar,volver:volver,motSel:motSel};
 })();
 </script>

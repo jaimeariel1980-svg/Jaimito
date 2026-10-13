@@ -33,8 +33,21 @@ function getDatosForm(k, id) {
     evalItems: tablaBusq_('Screening_Eval', bid).map(x => ({ id: String(x[1]), label: String(x[2]), peso: Number(x[3]) || 1 })),
     valItems: tablaBusq_('Screening_Val', bid).map(x => ({ id: String(x[1]), label: String(x[2]), opts: lista_(x[3], '|') })),
     comps: tablaBusq_('Competencias', bid).map(x => ({ id: String(x[1]), nombre: String(x[2]), descripcion: String(x[3]), peso: Number(x[4]) || 1, preguntas: lista_(x[5], '|') })),
-    entrevistadores: lista_(aj.entrevistadores, ','), umbral: umbrales_()
+    entrevistadores: lista_(aj.entrevistadores, ','), umbral: umbrales_(), motivos: MOTIVOS_DESCARTE
   };
+}
+
+function motivoDescarte_(nota, motivo) {
+  if (nota !== 'C') return '';
+  const m = motivoNorm_(motivo);
+  if (!m) throw new Error('Con C hay que elegir el motivo de descarte');
+  return m;
+}
+
+function guardarMotivoDescarte_(sh, fila, r, motivo, estado, quien) {
+  if (!motivo || !/^Descartad/i.test(String(estado || ''))) return;
+  sh.getRange(fila, COL.motivo).clearDataValidations().setValue(motivo);
+  registrarHistorial_(r[COL.id - 1], r[COL.nombre - 1], 'Motivo de descarte', motivo, quien);
 }
 
 function guardarEvaluacion_(sh, fila, r, etapa, p, score, nota, url, datos) {
@@ -84,6 +97,7 @@ function guardarScreening(k, p) {
   const auto = norm == null ? null : (rechazado ? 'C' : letraPorScore_(norm, u));
   const nota = ['A', 'B+', 'B', 'C'].indexOf(p.resultado) > -1 ? p.resultado : auto;
   if (!nota) throw new Error('Completá la evaluación o elegí una letra de resultado');
+  const motivoDesc = motivoDescarte_(nota, p.motivoDescarte);
   const dt = p.datos || {};
   const nivel = v => ({ alto: 'Alto', medio: 'Medio', bajo: 'Bajo' }[v] || '—');
   const cuerpo = seccion_('Ajuste al perfil') + '<table style="width:100%;border-collapse:collapse">' + d.evalItems.map(it => '<tr><td style="padding:5px 8px;border-bottom:1px solid #EEF1F5;font-size:13px">' + h_(it.label) + '</td><td style="padding:5px 8px;border-bottom:1px solid #EEF1F5;width:90px;text-align:center;font-weight:bold;font-size:12px;color:' + ({ alto: '#1E8E5A', medio: '#B58900', bajo: '#D9534F' }[ev[it.id]] || '#5D6B82') + '">' + nivel(ev[it.id]) + '</td></tr>').join('') + '</table>' +
@@ -102,6 +116,7 @@ function guardarScreening(k, p) {
   if (dt.remPret && !String(r[COL.pret - 1]).trim()) sh.getRange(fila, COL.pret).setValue(dt.remPret);
   guardarEvaluacion_(sh, fila, r, 'screening', p, norm, nota, url, { eval: ev, val: vl, datos: dt, comentario: p.comentario });
   const estado = aplicarNota_(sh, fila, 'screening', nota, p.entrevistador || 'formulario');
+  guardarMotivoDescarte_(sh, fila, r, motivoDesc, estado, p.entrevistador || 'formulario');
   return { ok: true, estado: estado, url: url, nota: nota, score: norm };
 }
 
@@ -122,6 +137,7 @@ function guardarCompetencias(k, p) {
   const auto = score == null ? null : letraPorScore_(score, d.umbral);
   const nota = ['A', 'B+', 'B', 'C'].indexOf(p.resultado) > -1 ? p.resultado : auto;
   if (!nota) throw new Error('Evaluá al menos una competencia o elegí el ajuste al rol');
+  const motivoDesc = motivoDescarte_(nota, p.motivoDescarte);
   const m = p.meta || {};
   const cuerpo = seccion_('Evaluación por competencias') + comps.map(c => '<div style="margin-top:8px;padding:8px 10px;border:1px solid #DCE3EC"><table style="width:100%"><tr><td style="font-weight:bold;font-size:13px;color:#034EA2">' + h_(c.nombre) + ' <span style="font-weight:normal;color:#5D6B82;font-size:11px">(peso ' + c.peso + ')</span></td><td style="text-align:right;font-weight:bold;font-size:12px">' + h_(NIVELES_COMP[c.nivel] || 'Sin evaluar') + '</td></tr></table>' + (c.notas ? '<div style="font-size:12px;white-space:pre-wrap;margin-top:4px">' + h_(c.notas) + '</div>' : '') + '</div>').join('') +
     (p.fortalezas ? seccion_('Fortalezas principales') + '<div style="font-size:13px;white-space:pre-wrap">' + h_(p.fortalezas) + '</div>' : '') +
@@ -139,5 +155,6 @@ function guardarCompetencias(k, p) {
   sh.getRange(fila, COL.infComp).setValue(url);
   guardarEvaluacion_(sh, fila, r, 'competencias', p, score, nota, url, { comps: comps, meta: m, fortalezas: p.fortalezas, areas: p.areas, recomendacion: p.recomendacion });
   const estado = aplicarNota_(sh, fila, 'competencias', nota, p.entrevistador || 'formulario');
+  guardarMotivoDescarte_(sh, fila, r, motivoDesc, estado, p.entrevistador || 'formulario');
   return { ok: true, estado: estado, url: url, nota: nota, score: score };
 }
