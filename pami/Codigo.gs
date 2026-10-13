@@ -1,7 +1,14 @@
 const CUENTA = 'dotacionpp1@gmail.com';
 const HEAD_CAND = ['Fecha', 'Nombre', 'Teléfono', 'DNI', 'Email', 'Localidad', 'Búsqueda', 'Pretensión', 'Nivel de Ajuste', 'Justificación', 'Resumen', 'Requisitos', 'Link CV', 'Estado', 'Entrevistó', 'Nota screening', 'Nota competencias', 'Recomendó', 'Recomendado por', 'Comentarios', 'Respuestas', 'Procesado', 'Intentos', 'Fuente', 'ID', 'Nota PAMI virtual', 'Nota entrevista técnica', 'Cita', 'Entrevistas (calendario)', 'Contactado', 'Descarte enviado', 'Informe screening', 'Informe competencias', 'Último movimiento', 'Zona', 'Formación', 'Postulación', 'Policlínico', 'Domicilio', 'Policlínico sugerido', 'Domicilio revisado', 'Motivo de descarte'];
 const COL = { fecha: 1, nombre: 2, tel: 3, dni: 4, email: 5, loc: 6, busq: 7, pret: 8, ajuste: 9, just: 10, resumen: 11, req: 12, cv: 13, estado: 14, entrev: 15, notaScr: 16, notaComp: 17, recTipo: 18, recPor: 19, coment: 20, resp: 21, proc: 22, intentos: 23, fuente: 24, id: 25, notaP1: 26, notaP2: 27, cita: 28, entrevistas: 29, contactado: 30, descarte: 31, infScr: 32, infComp: 33, mov: 34, zona: 35, formacion: 36, postulacion: 37, policlinico: 38, domicilio: 39, polSug: 40, domRev: 41, motivo: 42 };
-const MOTIVOS_DESCARTE = ['Fuera de zona', 'Fuera de edad', 'Falta de experiencia', 'Formación no adecuada', 'Remuneración fuera de rango'];
+const MOTIVOS_DESCARTE = ['Fuera de zona', 'Fuera de edad', 'Falta de experiencia', 'Formación no adecuada', 'Remuneración fuera de rango', 'Remuneración ofrecida inferior a la pretendida', 'No le interesa'];
+
+function motivoNorm_(m) {
+  m = String(m == null ? '' : m).replace(/\s+/g, ' ').trim();
+  if (m === '' || MOTIVOS_DESCARTE.indexOf(m) > -1) return m;
+  if (/^Otro: \S+( \S+)?$/.test(m) && m.length <= 40) return m;
+  throw new Error(/^Otro/.test(m) ? 'En "Otro" escribí el motivo con máximo dos palabras' : 'Motivo inválido');
+}
 const POLICLINICOS = ['Policlínico PAMI 1', 'Policlínico PAMI 2'];
 const NOTAS = ['', 'A', 'B+', 'B', 'C'];
 const HEAD_BUSQ = ['id', 'titulo', 'ubicacion', 'modalidad', 'descripcion', 'requisitos', 'estado', 'prompt_ia', 'recomendacion', 'palabras_clave', 'link_perfil', 'link_flyer'];
@@ -242,7 +249,7 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '20';
+const ESQUEMA = '21';
 
 function actualizarEsquema_() {
   const props = PropertiesService.getScriptProperties();

@@ -123,7 +123,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v37</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v38</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -376,11 +376,11 @@ function card(c){
   var pr='';
   if(ct)pr+='<span class="tag cita'+(ct.hoy?' hoy':'')+'">'+esc(ct.tipo)+' agendado · '+esc(ct.txt)+'</span>';
   if(/agendad/i.test(c.estado)&&!c.cita)pr+='<span class="tag w">Agendado · sin fecha</span>';
-  if(c.contactado&&!ct)pr+='<span class="tag ctc">💬 '+esc(contactoTxt(c.contactado))+'</span>';
+  if(c.contactado&&!ct&&!/^Descartad|^Contratado/i.test(c.estado))pr+='<span class="tag ctc">💬 '+esc(contactoTxt(c.contactado))+'</span>';
   if(c.descarte)pr+='<span class="tag">✉ Descarte enviado</span>';
   if(!terminal(c.estado)&&dd>=D.cfg.diasAlerta)pr+='<span class="tag r">🕒 '+dd+' d sin movimiento</span>';
   var mk='';
-  if(c.motivo&&/^Descartad/i.test(c.estado))mk+='<span class="tag r">✖ '+esc(c.motivo)+'</span>';
+  if(/^Descartad/i.test(c.estado))mk+=c.motivo?'<span class="tag r">✖ '+esc(c.motivo)+'</span>':'<span class="tag">Sin motivo cargado</span>';
   if(rc)mk+='<span class="tag rec">★ '+(c.recTipo?'Recomendado: ':'')+esc(rc)+'</span>';
   if(c.proc&&c.proc!=='SI')mk+='<span class="tag w">'+(c.proc==='Pendiente'?'Analizando CV…':c.proc==='NoCV'?'¿No es un CV?':'Revisar CV')+'</span>';
   if(c.fuente&&c.fuente!=='Web')mk+='<span class="tag">'+esc(c.fuente)+'</span>';
@@ -457,6 +457,8 @@ function soltar(ev,el){
 }
 
 function row(l,v){return v?'<div class="row"><span class="l">'+l+'</span><span class="v">'+esc(v)+'</span></div>':'';}
+function motSel(){document.getElementById('gMo2').style.display=document.getElementById('gMo').value==='Otro'?'':'none';}
+function motFicha(){var m=document.getElementById('gMo').value;if(m!=='Otro')return m;var t=document.getElementById('gMo2').value.replace(/\s+/g,' ').trim();return (!t||t.split(' ').length>2)?null:'Otro: '+t;}
 function opts(arr,sel,vacio){return (vacio?'<option value="">'+vacio+'</option>':'')+arr.map(function(o){return '<option'+(o===sel?' selected':'')+'>'+esc(o)+'</option>';}).join('');}
 function defRec(busq){
   var b=D.busquedas.find(function(x){return x.id===busq;}),def=b&&b.recomendacion?String(b.recomendacion).trim():'';if(!def)return null;
@@ -504,7 +506,7 @@ function abrir(f){
     '<div class="btns">'+(c.cv?'<a class="btn ghost" target="_blank" href="'+esc(c.cv)+'">📄 Ver CV</a>':'')+(c.tel?'<button class="btn wa" onclick="menuWA('+f+')">💬 WhatsApp ▾</button>':'')+(/@/.test(c.email||'')?'<a class="btn ghost" target="_blank" href="https://mail.google.com/mail/?view=cm&to='+encodeURIComponent(c.email)+'">✉ Mail</a>':'')+'<button class="btn cel" onclick="agendar('+f+')">📅 Agendar</button>'+(puedeDesc?'<button class="btn red" onclick="descarteMail('+f+',this)">✉ Descarte por mail</button>':'')+(c.proc!=='SI'?'<button class="btn sec" onclick="rean('+f+',this)">↻ Re-analizar CV</button>':'')+(c.contactado?'<button class="btn sec" onclick="borrarMarca('+f+')">✕ Borrar marca de contacto</button>':'')+'</div>'+
     (c.entrevistas?'<div class="sec">Entrevistas (calendario)</div><div class="txt">'+esc(c.entrevistas)+'</div>':'')+
     '<div class="sec">Gestión</div><div class="grid"><div class="full"><label class="l">Búsqueda</label><select id="gB">'+(c.busq?'':'<option value="">— Sin asignar —</option>')+D.busquedas.map(function(b){return '<option value="'+esc(b.id)+'"'+(b.id===c.busq?' selected':'')+'>'+esc(b.titulo)+'</option>';}).join('')+'</select></div>'+
-    '<div><label class="l">Policlínico</label><select id="gP">'+opts(D.policlinicos,c.policlinico,'— Sin asignar —')+'</select></div><div><label class="l">Estado</label><select id="gE">'+opts(D.todos,c.estado)+'</select></div><div><label class="l">Entrevistó</label><select id="gN">'+opts(D.entrevistadores,c.entrev,'—')+'</select></div><div><label class="l">Motivo de descarte</label><select id="gMo"'+(/^Descartado/.test(c.estado)&&!c.motivo?' style="border-color:#D9534F"':'')+'>'+opts(D.motivos,c.motivo,'— Sin motivo —')+'</select></div>'+recHtml+'</div>'+
+    '<div><label class="l">Policlínico</label><select id="gP">'+opts(D.policlinicos,c.policlinico,'— Sin asignar —')+'</select></div><div><label class="l">Estado</label><select id="gE">'+opts(D.todos,c.estado)+'</select></div><div><label class="l">Entrevistó</label><select id="gN">'+opts(D.entrevistadores,c.entrev,'—')+'</select></div><div><label class="l">Motivo de descarte</label><select id="gMo" onchange="motSel()"'+(/^Descartado/.test(c.estado)&&!c.motivo?' style="border-color:#D9534F"':'')+'>'+opts(D.motivos.concat(['Otro']),/^Otro: /.test(c.motivo||'')?'Otro':c.motivo,'— Sin motivo —')+'</select><input type="text" id="gMo2" maxlength="30" placeholder="Máximo 2 palabras" value="'+esc(/^Otro: /.test(c.motivo||'')?c.motivo.slice(6):'')+'" style="margin-top:6px'+(/^Otro: /.test(c.motivo||'')?'':';display:none')+'"></div>'+recHtml+'</div>'+
     '<div style="margin-top:10px"><label class="l">Observaciones (ampliá el motivo o cualquier dato)</label><textarea id="gM" rows="3">'+esc(c.coment)+'</textarea></div><div class="btns"><button class="btn ok" id="gb" onclick="guardar('+f+')">Guardar</button></div>'+
     '<div class="sec">Historial</div><div class="hist" id="hist">Cargando…</div></div>';
   document.getElementById('modal').classList.add('show');
@@ -533,7 +535,8 @@ function nota(f,et,n,btn){
 }
 function guardar(f){
   var c=byFila(f);
-  var o={busq:document.getElementById('gB').value,estado:document.getElementById('gE').value,entrev:document.getElementById('gN').value,motivo:document.getElementById('gMo').value,policlinico:document.getElementById('gP').value,coment:document.getElementById('gM').value};
+  if(motFicha()===null){alert('En "Otro" escribí el motivo con máximo dos palabras.');document.getElementById('gMo2').focus();return;}
+  var o={busq:document.getElementById('gB').value,estado:document.getElementById('gE').value,entrev:document.getElementById('gN').value,motivo:motFicha(),policlinico:document.getElementById('gP').value,coment:document.getElementById('gM').value};
   var rec=defRec(c.busq);
   if(rec){var t=document.getElementById('rcT').value;o.recTipo=t;o.recPor=t?(rec[t]?[].slice.call(document.querySelectorAll('#rcS input:checked')).map(function(x){return x.value;}).join('; '):document.getElementById('rcN').value.trim()):'';}
   var b=document.getElementById('gb');b.textContent='Guardando…';b.disabled=true;

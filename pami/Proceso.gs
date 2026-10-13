@@ -409,7 +409,7 @@ function guardarCandidato(k, fila, c) {
     set(COL.policlinico, c.policlinico);
   }
   if (c.motivo != null && /^Descartad/i.test(String(sh.getRange(fila, COL.estado).getValue()))) {
-    if (c.motivo !== '' && MOTIVOS_DESCARTE.indexOf(c.motivo) === -1) throw new Error('Motivo inválido');
+    c.motivo = motivoNorm_(c.motivo);
     const antes = String(sh.getRange(fila, COL.motivo).getValue() || '');
     set(COL.motivo, c.motivo);
     if (antes !== c.motivo) registrarHistorial_(id, nombre, 'Motivo de descarte', c.motivo || '(sin motivo)', 'tablero');
