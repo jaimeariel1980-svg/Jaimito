@@ -318,6 +318,7 @@ function citaObj_(txt) {
 
 function getTablero(k) {
   admin_(k);
+  try { asegurarColumnas_(); } catch (e) { registrarError_('asegurar columnas', e); }
   const aj = ajustes_();
   const d = hoja_('Candidatos').getDataRange().getValues();
   const cands = [];
@@ -336,12 +337,12 @@ function getTablero(k) {
       recTipo: r[COL.recTipo - 1], recPor: r[COL.recPor - 1], coment: r[COL.coment - 1], resp: resp, proc: r[COL.proc - 1], fuente: r[COL.fuente - 1],
       cita: citaObj_(r[COL.cita - 1]), entrevistas: String(r[COL.entrevistas - 1] || ''), contactado: String(r[COL.contactado - 1] || ''),
       descarte: String(r[COL.descarte - 1] || ''), infScr: String(r[COL.infScr - 1] || ''), infComp: String(r[COL.infComp - 1] || ''),
-      zona: String(r[COL.zona - 1] || ''), formacion: String(r[COL.formacion - 1] || ''), postulacion: String(r[COL.postulacion - 1] || ''), policlinico: String(r[COL.policlinico - 1] || ''), domicilio: String(r[COL.domicilio - 1] || ''), polSug: String(r[COL.polSug - 1] || ''), domRev: String(r[COL.domRev - 1] || ''), motivo: String(r[COL.motivo - 1] || ''),
+      zona: String(r[COL.zona - 1] || ''), formacion: String(r[COL.formacion - 1] || ''), postulacion: String(r[COL.postulacion - 1] || ''), policlinico: String(r[COL.policlinico - 1] || ''), domicilio: String(r[COL.domicilio - 1] || ''), polSug: String(r[COL.polSug - 1] || ''), domRev: String(r[COL.domRev - 1] || ''), motivo: String(r[COL.motivo - 1] || ''), turno: String(r[COL.turno - 1] || ''),
       conoce: (resp.find(x => /conoc[eé]s a alguien/i.test(x.q) && x.a && !/^(no|ninguno|nadie|-)\.?$/i.test(String(x.a).trim())) || {}).a || ''
     });
   }
   return JSON.stringify({
-    policlinicos: POLICLINICOS, motivos: MOTIVOS_DESCARTE, estadosCol: ESTADOS_COL, desc: ESTADOS_DESC, res: ESTADOS_RES, todos: todosEstados_(),
+    policlinicos: POLICLINICOS, motivos: MOTIVOS_DESCARTE, turnos: TURNOS, estadosCol: ESTADOS_COL, desc: ESTADOS_DESC, res: ESTADOS_RES, todos: todosEstados_(),
     entrevistadores: lista_(aj.entrevistadores, ','),
     busquedas: busquedas_().map(b => ({ id: b.id, titulo: b.titulo, recomendacion: b.recomendacion, link_perfil: b.link_perfil, link_flyer: b.link_flyer, ubicacion: b.ubicacion })),
     cfg: { sesionHoras: Number(aj.sesion_inactividad_horas) || 8, recordarDias: Number(aj.sesion_recordar_dias) || 30, cliente: aj.nombre_cliente || 'PAMI', diasAlerta: Number(aj.dias_alerta) || 7, linkAgenda: aj.link_agenda || '', duraciones: { screening: Number(aj.duracion_screening) || 30, competencias: Number(aj.duracion_competencias) || 60, pami1: Number(aj.duracion_pami1) || 30, pami2: Number(aj.duracion_pami2) || 60 } },
@@ -414,6 +415,7 @@ function guardarCandidato(k, fila, c) {
     set(COL.motivo, c.motivo);
     if (antes !== c.motivo) registrarHistorial_(id, nombre, 'Motivo de descarte', c.motivo || '(sin motivo)', 'tablero');
   }
+  if (c.turno != null) { const t = turnoNorm_(c.turno); cambio(COL.turno, t, 'Turno preferido'); set(COL.turno, t); }
   if (c.entrev != null) { cambio(COL.entrev, corto(c.entrev, 60), 'Entrevistó'); set(COL.entrev, corto(c.entrev, 60)); }
   if (c.recTipo != null) set(COL.recTipo, corto(c.recTipo, 40));
   if (c.recPor != null) {

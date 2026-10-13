@@ -17,6 +17,7 @@
 .fs .erow .t{flex:1;font-size:14px;font-weight:500}
 .fs .erow select{width:165px;font-weight:700;font-size:12px}
 .fs .pills{display:flex;gap:6px;flex-wrap:wrap}
+.fs .chk{display:flex;gap:8px;flex-wrap:wrap}.fs .ck{display:flex;align-items:center;gap:7px;border:1.5px solid var(--line);border-radius:6px;padding:8px 14px;font-size:14px;font-weight:700;cursor:pointer;background:#fff;color:#1B2B45}.fs .ck input{width:auto;margin:0}.fs .ck:has(input:checked){background:#EAF3FF;border-color:#034EA2;color:#034EA2}
 .fs .pill{border:1.5px solid var(--line);border-radius:4px;background:#fff;padding:7px 14px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--mut);cursor:pointer;user-select:none}
 .fs .pill.si,.fs .pill.alto{background:var(--ok);color:#fff;border-color:var(--ok)}
 .fs .pill.revisar,.fs .pill.medio{background:#F2B705;color:#4A3A00;border-color:#F2B705}
@@ -67,6 +68,7 @@ var FS=(function(){
     '<div class="sect card"><div class="sl">Datos del candidato</div><div class="g2"><div><label class="l">Nombre y apellido</label><input type="text" value="'+esc(c.nombre)+'" disabled></div><div><label class="l">Entrevistador/a</label><select id="d-ent"><option value="">— Elegí —</option>'+D.entrevistadores.map(function(e){return '<option'+(e===ent?' selected':'')+'>'+esc(e)+'</option>';}).join('')+'</select></div></div>'+
     '<div class="g2"><div><label class="l">Empresa actual</label><input type="text" id="d-emp"></div><div><label class="l">Posición actual</label><input type="text" id="d-pos"></div></div><div class="g1"><label class="l">Formación</label><input type="text" id="d-form" placeholder="Título, institución, estado"></div>'+
     '<div class="g2"><div><label class="l">Fecha de entrevista</label><input type="date" id="d-fecha" value="'+hoy+'"></div><div><label class="l">Disponibilidad de ingreso</label><select id="d-disp"><option value="">—</option><option>Inmediata</option><option>15 días</option><option>30 días</option><option>+30 días</option></select></div></div>'+
+    '<div class="g1"><label class="l">Turno preferido (se puede marcar más de uno)</label><div class="chk" id="d-turno">'+D.turnos.map(function(t){return '<label class="ck"><input type="checkbox" value="'+esc(t)+'"'+(String(c.turno||'').split(';').map(function(x){return x.trim();}).indexOf(t)>-1?' checked':'')+'>'+esc(t)+'</label>';}).join('')+'</div></div>'+
     '<div class="g2"><div><label class="l">Remuneración actual</label><input type="text" id="d-ra" placeholder="$"></div><div><label class="l">Remuneración pretendida</label><input type="text" id="d-rp" placeholder="$" value="'+esc(c.pret)+'"></div></div></div>'+
     '<div class="sect card"><div class="sl">Ajuste al perfil</div><div id="evs"></div></div>'+
     '<div class="sect card"><div class="sl">Validación de condiciones</div><div id="vls"></div></div>'+
@@ -120,7 +122,7 @@ var FS=(function(){
       d.innerHTML='<h2 style="color:#1E8E5A">¡Screening guardado!</h2><p style="margin:10px 0">Resultado: <b>'+esc(r.nota)+'</b>'+(r.score!=null?' · Score '+r.score.toFixed(1):'')+'<br>Estado del candidato: <b>'+esc(r.estado||'')+'</b></p><p><button class="btn" onclick="FS.volver()">Volver</button> <a class="btn ghost" target="_blank" href="'+esc(r.url)+'">Ver informe</a></p>';
       CONT.scrollIntoView();if(O.onDone)O.onDone(r);
     }).withFailureHandler(function(e){b.disabled=false;b.textContent='Guardar screening';alert('No se pudo guardar: '+e.message);})
-    .guardarScreening(K,{id:CID,entrevistador:val('d-ent'),fecha:val('d-fecha'),datos:{empresaAct:val('d-emp'),posAct:val('d-pos'),formacion:val('d-form'),remAct:val('d-ra'),remPret:val('d-rp'),disp:val('d-disp')},eval:S.eval,val:S.val,comentario:$('#com').value,resultado:letra,motivoDescarte:mf});
+    .guardarScreening(K,{id:CID,entrevistador:val('d-ent'),fecha:val('d-fecha'),datos:{empresaAct:val('d-emp'),posAct:val('d-pos'),formacion:val('d-form'),remAct:val('d-ra'),remPret:val('d-rp'),disp:val('d-disp'),turno:[].slice.call(CONT.querySelectorAll('#d-turno input:checked')).map(function(x){return x.value;}).join('; ')},eval:S.eval,val:S.val,comentario:$('#com').value,resultado:letra,motivoDescarte:mf});
   }
   function volver(){if(O.onClose)O.onClose();}
   return {open:open,onEval:onEval,pick:pick,manual:manual,guardar:guardar,volver:volver,motSel:motSel};

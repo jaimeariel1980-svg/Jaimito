@@ -27,13 +27,13 @@ function getDatosForm(k, id) {
   return {
     cand: {
       id: String(id), nombre: r[COL.nombre - 1], email: r[COL.email - 1], tel: String(r[COL.tel - 1] || ''), loc: r[COL.loc - 1], pret: String(r[COL.pret - 1] || ''),
-      notaCV: r[COL.ajuste - 1], notaScr: r[COL.notaScr - 1], notaComp: r[COL.notaComp - 1], entrev: r[COL.entrev - 1], infScr: String(r[COL.infScr - 1] || ''), resp: resp
+      turno: String(r[COL.turno - 1] || ''), notaCV: r[COL.ajuste - 1], notaScr: r[COL.notaScr - 1], notaComp: r[COL.notaComp - 1], entrev: r[COL.entrev - 1], infScr: String(r[COL.infScr - 1] || ''), resp: resp
     },
     hero: { puesto: b.titulo, ubicacion: b.ubicacion, cliente: aj.nombre_cliente || 'PAMI' },
     evalItems: tablaBusq_('Screening_Eval', bid).map(x => ({ id: String(x[1]), label: String(x[2]), peso: Number(x[3]) || 1 })),
     valItems: tablaBusq_('Screening_Val', bid).map(x => ({ id: String(x[1]), label: String(x[2]), opts: lista_(x[3], '|') })),
     comps: tablaBusq_('Competencias', bid).map(x => ({ id: String(x[1]), nombre: String(x[2]), descripcion: String(x[3]), peso: Number(x[4]) || 1, preguntas: lista_(x[5], '|') })),
-    entrevistadores: lista_(aj.entrevistadores, ','), umbral: umbrales_(), motivos: MOTIVOS_DESCARTE
+    entrevistadores: lista_(aj.entrevistadores, ','), umbral: umbrales_(), motivos: MOTIVOS_DESCARTE, turnos: TURNOS
   };
 }
 
@@ -99,6 +99,7 @@ function guardarScreening(k, p) {
   if (!nota) throw new Error('Completá la evaluación o elegí una letra de resultado');
   const motivoDesc = motivoDescarte_(nota, p.motivoDescarte);
   const dt = p.datos || {};
+  const turno = dt.turno != null ? turnoNorm_(dt.turno) : null;
   const nivel = v => ({ alto: 'Alto', medio: 'Medio', bajo: 'Bajo' }[v] || '—');
   const cuerpo = seccion_('Ajuste al perfil') + '<table style="width:100%;border-collapse:collapse">' + d.evalItems.map(it => '<tr><td style="padding:5px 8px;border-bottom:1px solid #EEF1F5;font-size:13px">' + h_(it.label) + '</td><td style="padding:5px 8px;border-bottom:1px solid #EEF1F5;width:90px;text-align:center;font-weight:bold;font-size:12px;color:' + ({ alto: '#1E8E5A', medio: '#B58900', bajo: '#D9534F' }[ev[it.id]] || '#5D6B82') + '">' + nivel(ev[it.id]) + '</td></tr>').join('') + '</table>' +
     seccion_('Validación de condiciones') + '<table style="width:100%;border-collapse:collapse">' + d.valItems.map(it => '<tr><td style="padding:5px 8px;border-bottom:1px solid #EEF1F5;font-size:13px">' + h_(it.label) + '</td><td style="padding:5px 8px;border-bottom:1px solid #EEF1F5;width:90px;text-align:center;font-weight:bold;font-size:12px">' + h_({ si: 'Sí', no: 'No', revisar: 'A revisar', alto: 'Alto', medio: 'Medio', bajo: 'Bajo' }[vl[it.id]] || '—') + '</td></tr>').join('') + '</table>' +
@@ -106,7 +107,7 @@ function guardarScreening(k, p) {
   const fecha = p.fecha || fmt_(new Date(), 'yyyy-MM-dd');
   const html = htmlInforme_('Screening inicial', { nombre: r[COL.nombre - 1], puesto: d.hero.puesto }, [
     ['Entrevistó', p.entrevistador], ['Fecha', fecha], ['Empresa actual', dt.empresaAct], ['Posición actual', dt.posAct], ['Formación', dt.formacion],
-    ['Remuneración actual', dt.remAct], ['Remuneración pretendida', dt.remPret], ['Disponibilidad', dt.disp]
+    ['Remuneración actual', dt.remAct], ['Remuneración pretendida', dt.remPret], ['Disponibilidad', dt.disp], ['Turno preferido', turno ? turno.replace(/; /g, ', ') : '']
   ], cuerpo, nota, norm, DESC_NOTA[nota]);
   const folder = DriveApp.getFolderById(ajustes_().carpeta_informes);
   const pdf = folder.createFile(Utilities.newBlob(html, 'text/html', 'x.html').getAs('application/pdf').setName('Screening_' + String(r[COL.nombre - 1]).replace(/\s+/g, '_') + '_' + fecha + '.pdf'));
@@ -115,6 +116,11 @@ function guardarScreening(k, p) {
   if (p.entrevistador) sh.getRange(fila, COL.entrev).setValue(p.entrevistador);
   if (dt.remPret && !String(r[COL.pret - 1]).trim()) sh.getRange(fila, COL.pret).setValue(dt.remPret);
   guardarEvaluacion_(sh, fila, r, 'screening', p, norm, nota, url, { eval: ev, val: vl, datos: dt, comentario: p.comentario });
+  if (turno !== null) {
+    const antesT = String(sh.getRange(fila, COL.turno).getValue() || '');
+    sh.getRange(fila, COL.turno).setValue(turno);
+    if (antesT !== turno) registrarHistorial_(r[COL.id - 1], r[COL.nombre - 1], 'Turno preferido', turno || '(sin dato)', p.entrevistador || 'formulario');
+  }
   const estado = aplicarNota_(sh, fila, 'screening', nota, p.entrevistador || 'formulario');
   guardarMotivoDescarte_(sh, fila, r, motivoDesc, estado, p.entrevistador || 'formulario');
   return { ok: true, estado: estado, url: url, nota: nota, score: norm };

@@ -87,6 +87,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 .pol{display:flex;gap:4px;margin-top:6px}.pol button{flex:1;border:1.5px solid #AEBBD0;background:#fff;border-radius:4px;font-size:11.5px;font-weight:800;padding:4px 0;cursor:pointer;color:var(--mut);font-family:var(--font)}.tag.sg{background:#D6EDFB;color:var(--azul);border:1px solid var(--celeste);font-weight:800}.pol button.sug{border-color:var(--celeste);border-style:dashed;color:var(--azul);background:#EAF6FD}
 .pol button.on{background:var(--azul);border-color:var(--azul);color:#fff}.pol button.on.p2{background:#00A3E0;border-color:#00A3E0}
 .tag.rec{background:#FFF4CC;color:#6B4E00;border:1px solid #F2B705;font-weight:800}.tag.zok{background:#D9F3E4;color:#14502F}.tag.zfu{background:#FDE3E1;color:#9B2C28}#board .card .fo{font-size:13px;color:var(--azul);font-weight:800;margin-top:3px}.alerta.rec{background:#FFF4CC;color:#6B4E00;border-left:4px solid #F2B705;font-size:14px;font-weight:800}
+.tag.tn{background:#E8E4FA;color:#3B2E8A;border:1px solid #9B8FE0;font-weight:800}.chk{display:flex;gap:8px;flex-wrap:wrap}.ck{display:flex;align-items:center;gap:7px;border:1.5px solid #AEBBD0;border-radius:6px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer;background:#fff;color:#1B2B45}.ck input{width:auto;margin:0}.ck:has(input:checked){background:#EAF3FF;border-color:#034EA2;color:#034EA2}
 .tag.cita{background:#D9F3E4;color:#14502F;border:1px solid #1E8E5A;font-weight:800}.tag.ctc{background:#FFF1D6;color:#7A5200;border:1px solid #F2B705;font-weight:700}.tag.hoy{background:#D9534F;color:#fff}.tag.w{background:#FFF1D6;color:#8A5A00}.tag.g{background:#D9F3E4;color:#14502F}.tag.r{background:#FDE3E1;color:#9B2C28}
 #fmodal{display:none;position:fixed;inset:0;background:var(--bg);z-index:60;overflow:auto}
 #fmodal.show{display:block}
@@ -123,7 +124,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v41</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v42</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -390,6 +391,7 @@ function card(c){
     (c.formacion?'<div class="fo">'+esc(c.formacion)+'</div>':'')+
     '<div class="ln"><i>📍</i><span>'+ub+(c.pret?' · '+esc(money(c.pret)):'')+' '+zona+'</span></div>'+
     der+(RO?(c.policlinico?'<div class="ln"><i>🏥</i><span>'+esc(c.policlinico)+'</span></div>':''):'<div class="pol">'+bt+'</div>')+
+    (c.turno?'<div class="ln"><i>⏰</i><div class="tags">'+String(c.turno).split(';').map(function(t){return '<span class="tag tn">'+esc(t.trim())+'</span>';}).join('')+'</div></div>':'')+
     (pr?'<div class="ln"><i>📅</i><div class="tags">'+pr+'</div></div>':'')+
     (mk?'<div class="ln"><i>⚑</i><div class="tags">'+mk+'</div></div>':'')+
     '</div>';
@@ -499,7 +501,7 @@ function abrir(f){
   var puedeDesc=/^Descartado (sin|post) screening$/.test(c.estado)&&!c.descarte&&/@/.test(c.email||'');
   document.getElementById('mbox').innerHTML=
     '<div class="hd"><div><h2>'+esc(c.nombre)+' <span class="badge '+cls(n)+'" style="vertical-align:middle">'+(esc(n)||'—')+'</span></h2><small>'+esc(tit(c.busq))+' · '+esc(c.estado)+'</small></div><button class="x" onclick="cerrar()">×</button></div><div class="bd">'+al+
-    '<div class="sec">Datos</div>'+row('Recibido',c.fecha)+row('Llegó por',c.fuente)+row('Estado',c.estado)+row('Localidad',c.loc)+row('Domicilio',c.domicilio)+row('Zona',c.zona)+row('Policlínico',c.policlinico)+row('Sugerido (por cercanía)',c.polSug)+row('Formación',c.formacion)+row('Teléfono',c.tel)+row('DNI',c.dni)+row('Email',c.email)+row('Pretensión',money(c.pret))+row('Conoce a alguien en PAMI',c.conoce)+row('Último contacto',c.contactado)+row('Descarte',c.descarte)+
+    '<div class="sec">Datos</div>'+row('Recibido',c.fecha)+row('Llegó por',c.fuente)+row('Estado',c.estado)+row('Localidad',c.loc)+row('Domicilio',c.domicilio)+row('Zona',c.zona)+row('Policlínico',c.policlinico)+row('Turno preferido',String(c.turno||'').replace(/;/g,' ·'))+row('Sugerido (por cercanía)',c.polSug)+row('Formación',c.formacion)+row('Teléfono',c.tel)+row('DNI',c.dni)+row('Email',c.email)+row('Pretensión',money(c.pret))+row('Conoce a alguien en PAMI',c.conoce)+row('Último contacto',c.contactado)+row('Descarte',c.descarte)+
     (c.just?'<div class="sec">Análisis del CV</div><div class="txt"><b>'+esc(c.just)+'</b></div>':'')+(c.resumen?'<div class="txt" style="margin-top:6px">'+esc(c.resumen)+'</div>':'')+(c.req?'<div class="txt" style="margin-top:6px;color:#5D6B82">'+esc(c.req)+'</div>':'')+resp+
     '<div class="sec">Calificaciones</div><div id="notas">'+etapasNota.map(function(et){return notaRow(c,et,vals[et]);}).join('')+'</div>'+
     '<div class="btns"><button class="btn" onclick="abrirForm(\'screening\','+f+')">📝 Formulario screening</button><button class="btn" onclick="abrirForm(\'competencias\','+f+')">💼 Formulario competencias</button>'+(c.infScr?'<a class="btn ghost" target="_blank" href="'+esc(c.infScr)+'">Ver screening</a>':'')+(c.infComp?'<a class="btn ghost" target="_blank" href="'+esc(c.infComp)+'">Ver competencias</a>':'')+(c.resp.length?'<button class="btn ghost" onclick="verPost('+f+',this)">📋 Ver postulación</button>':'')+'</div>'+
@@ -507,6 +509,7 @@ function abrir(f){
     (c.entrevistas?'<div class="sec">Entrevistas (calendario)</div><div class="txt">'+esc(c.entrevistas)+'</div>':'')+
     '<div class="sec">Gestión</div><div class="grid"><div class="full"><label class="l">Búsqueda</label><select id="gB">'+(c.busq?'':'<option value="">— Sin asignar —</option>')+D.busquedas.map(function(b){return '<option value="'+esc(b.id)+'"'+(b.id===c.busq?' selected':'')+'>'+esc(b.titulo)+'</option>';}).join('')+'</select></div>'+
     '<div><label class="l">Policlínico</label><select id="gP">'+opts(D.policlinicos,c.policlinico,'— Sin asignar —')+'</select></div><div><label class="l">Estado</label><select id="gE">'+opts(D.todos,c.estado)+'</select></div><div><label class="l">Entrevistó</label><select id="gN">'+opts(D.entrevistadores,c.entrev,'—')+'</select></div><div><label class="l">Motivo de descarte</label><select id="gMo" onchange="motSel()"'+(/^Descartado/.test(c.estado)&&!c.motivo?' style="border-color:#D9534F"':'')+'>'+opts(D.motivos.concat(['Otro']),/^Otro: /.test(c.motivo||'')?'Otro':c.motivo,'— Sin motivo —')+'</select><input type="text" id="gMo2" maxlength="30" placeholder="Máximo 2 palabras" value="'+esc(/^Otro: /.test(c.motivo||'')?c.motivo.slice(6):'')+'" style="margin-top:6px'+(/^Otro: /.test(c.motivo||'')?'':';display:none')+'"></div>'+recHtml+'</div>'+
+    '<div style="margin-top:10px"><label class="l">Turno preferido (se puede marcar más de uno)</label><div class="chk" id="gT">'+D.turnos.map(function(t){return '<label class="ck"><input type="checkbox" value="'+esc(t)+'"'+(String(c.turno||'').split(';').map(function(x){return x.trim();}).indexOf(t)>-1?' checked':'')+'>'+esc(t)+'</label>';}).join('')+'</div></div>'+
     '<div style="margin-top:10px"><label class="l">Observaciones (ampliá el motivo o cualquier dato)</label><textarea id="gM" rows="3">'+esc(c.coment)+'</textarea></div><div class="btns"><button class="btn ok" id="gb" onclick="guardar('+f+')">Guardar</button></div>'+
     '<div class="sec">Historial</div><div class="hist" id="hist">Cargando…</div></div>';
   document.getElementById('modal').classList.add('show');
@@ -536,7 +539,7 @@ function nota(f,et,n,btn){
 function guardar(f){
   var c=byFila(f);
   if(motFicha()===null){alert('En "Otro" escribí el motivo con máximo dos palabras.');document.getElementById('gMo2').focus();return;}
-  var o={busq:document.getElementById('gB').value,estado:document.getElementById('gE').value,entrev:document.getElementById('gN').value,motivo:motFicha(),policlinico:document.getElementById('gP').value,coment:document.getElementById('gM').value};
+  var o={busq:document.getElementById('gB').value,estado:document.getElementById('gE').value,entrev:document.getElementById('gN').value,motivo:motFicha(),turno:[].slice.call(document.querySelectorAll('#gT input:checked')).map(function(x){return x.value;}).join('; '),policlinico:document.getElementById('gP').value,coment:document.getElementById('gM').value};
   var rec=defRec(c.busq);
   if(rec){var t=document.getElementById('rcT').value;o.recTipo=t;o.recPor=t?(rec[t]?[].slice.call(document.querySelectorAll('#rcS input:checked')).map(function(x){return x.value;}).join('; '):document.getElementById('rcN').value.trim()):'';}
   var b=document.getElementById('gb');b.textContent='Guardando…';b.disabled=true;
