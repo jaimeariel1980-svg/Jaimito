@@ -557,14 +557,19 @@ function getAgenda(k) {
   const d = hoja_('Candidatos').getDataRange().getValues();
   const desde = fmt_(new Date(Date.now() - 3600000), 'yyyy-MM-dd HH:mm');
   const citas = [];
+  let evs = [];
+  try { evs = eventosCal_(new Date(), new Date(Date.now() + 60 * 86400000)); } catch (e) { registrarError_('leer calendarios agenda', e); }
   for (let i = 1; i < d.length; i++) {
     const c = citaObj_(d[i][COL.cita - 1]);
     if (!c || c.ts < desde || !d[i][COL.nombre - 1]) continue;
-    citas.push({ fila: i + 1, nombre: d[i][COL.nombre - 1], ts: c.ts, tipo: c.tipo, busq: d[i][COL.busq - 1], tel: String(d[i][COL.tel - 1] || '') });
+    const cand = { nombre: d[i][COL.nombre - 1], mail: String(d[i][COL.email - 1] || '').trim().toLowerCase() };
+    const ev = evs.find(e => fmt_(e.inicio, 'yyyy-MM-dd HH:mm') === c.ts && eventoEsDe_(e, cand));
+    const origen = ev ? ev.poli : '', asignado = String(d[i][COL.policlinico - 1] || '').trim();
+    citas.push({ fila: i + 1, nombre: d[i][COL.nombre - 1], ts: c.ts, tipo: c.tipo, busq: d[i][COL.busq - 1], tel: String(d[i][COL.tel - 1] || ''), origen: origen, desfase: !!(origen && asignado && origen !== asignado) });
   }
   citas.sort((a, b) => a.ts < b.ts ? -1 : 1);
   let sin = [];
-  try { sin = citasSinCandidato_(); } catch (e) { registrarError_('citas sin candidato', e); }
+  try { sin = citasSinCandidato_(evs); } catch (e) { registrarError_('citas sin candidato', e); }
   let avisos = [];
   try { avisos = estadoCalendarios_(); } catch (e) { registrarError_('estado calendarios', e); }
   return { citas: citas, sinAsignar: sin, avisos: avisos };
