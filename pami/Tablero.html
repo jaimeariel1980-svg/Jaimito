@@ -127,7 +127,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v55</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v56</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -547,7 +547,7 @@ function abrir(f){
     '<div class="sec">Calificaciones</div><div id="notas">'+etapasNota.map(function(et){return notaRow(c,et,vals[et]);}).join('')+'</div>'+
     (c.entrevistas?'<div class="sec">Entrevistas (calendario)</div><div class="txt">'+esc(c.entrevistas)+'</div>':'')+
     '<div class="sec">Gestión</div><div class="grid"><div class="full"><label class="l">Búsqueda</label><select id="gB">'+(c.busq?'':'<option value="">— Sin asignar —</option>')+D.busquedas.map(function(b){return '<option value="'+esc(b.id)+'"'+(b.id===c.busq?' selected':'')+'>'+esc(b.titulo)+'</option>';}).join('')+'</select></div>'+
-    '<div><label class="l">Policlínico</label><select id="gP">'+opts(D.policlinicos,c.policlinico,'— Sin asignar —')+'</select></div>'+(/^Descartad/i.test(c.estado)?'<div><label class="l">Descartó</label><select id="gD">'+opts(D.entrevistadores.indexOf(c.descPor)>-1||!c.descPor?D.entrevistadores:D.entrevistadores.concat([c.descPor]),c.descPor,'— Elegí quién —')+'</select></div>':'')+'<div><label class="l">Motivo de descarte</label><select id="gMo" onchange="motSel()"'+(/^Descartado/.test(c.estado)&&!c.motivo?' style="border-color:#D9534F"':'')+'>'+opts(D.motivos.concat(['Otro']),/^Otro: /.test(c.motivo||'')?'Otro':c.motivo,'— Sin motivo —')+'</select><input type="text" id="gMo2" maxlength="30" placeholder="Máximo 2 palabras" value="'+esc(/^Otro: /.test(c.motivo||'')?c.motivo.slice(6):'')+'" style="margin-top:6px'+(/^Otro: /.test(c.motivo||'')?'':';display:none')+'"></div>'+recHtml+'</div>'+
+    '<div><label class="l">Policlínico</label><select id="gP">'+opts(D.policlinicos,c.policlinico,'— Sin asignar —')+'</select></div><div><label class="l">Motivo de descarte</label><select id="gMo" onchange="motSel()"'+(/^Descartado/.test(c.estado)&&!c.motivo?' style="border-color:#D9534F"':'')+'>'+opts(D.motivos.concat(['Otro']),/^Otro: /.test(c.motivo||'')?'Otro':c.motivo,'— Sin motivo —')+'</select><input type="text" id="gMo2" maxlength="30" placeholder="Máximo 2 palabras" value="'+esc(/^Otro: /.test(c.motivo||'')?c.motivo.slice(6):'')+'" style="margin-top:6px'+(/^Otro: /.test(c.motivo||'')?'':';display:none')+'"></div>'+recHtml+'</div>'+
     '<div style="margin-top:10px"><label class="l">Turno preferido (se puede marcar más de uno)</label><div class="chk" id="gT">'+D.turnos.map(function(t){return '<label class="ck"><input type="checkbox" value="'+esc(t)+'"'+(String(c.turno||'').split(';').map(function(x){return x.trim();}).indexOf(t)>-1?' checked':'')+'>'+esc(t)+'</label>';}).join('')+'</div></div>'+
     '<div style="margin-top:10px"><label class="l">Observaciones (ampliá el motivo o cualquier dato)</label><textarea id="gM" rows="3">'+esc(c.coment)+'</textarea></div><div class="btns"><button class="btn ok" id="gb" onclick="guardar('+f+')">Guardar</button>'+'</div>'+
     '<div class="sec">Historial</div><div class="hist" id="hist">Cargando…</div></div>';
@@ -578,7 +578,7 @@ function nota(f,et,n,btn){
 function guardar(f,acc){
   var c=byFila(f);
   if(motFicha()===null){alert('En "Otro" escribí el motivo con máximo dos palabras.');document.getElementById('gMo2').focus();return;}
-  var o={busq:document.getElementById('gB').value,motivo:motFicha(),descPor:(document.getElementById('gD')||{}).value,turno:[].slice.call(document.querySelectorAll('#gT input:checked')).map(function(x){return x.value;}).join('; '),policlinico:document.getElementById('gP').value,coment:document.getElementById('gM').value};
+  var o={busq:document.getElementById('gB').value,motivo:motFicha(),turno:[].slice.call(document.querySelectorAll('#gT input:checked')).map(function(x){return x.value;}).join('; '),policlinico:document.getElementById('gP').value,coment:document.getElementById('gM').value};
   if(!acc&&o.motivo&&!/^Descartad|^Contratado/.test(c.estado))acc='descartar';
   if(acc){o.accion=acc;if(acc==='reactivar')o.motivo='';else if(!o.motivo){alert('Elegí el motivo de descarte.');document.getElementById('gMo').focus();return;}}
   var rec=defRec(c.busq);
