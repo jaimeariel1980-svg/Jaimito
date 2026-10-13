@@ -565,7 +565,9 @@ function getAgenda(k) {
   citas.sort((a, b) => a.ts < b.ts ? -1 : 1);
   let sin = [];
   try { sin = citasSinCandidato_(); } catch (e) { registrarError_('citas sin candidato', e); }
-  return { citas: citas, sinAsignar: sin };
+  let avisos = [];
+  try { avisos = estadoCalendarios_(); } catch (e) { registrarError_('estado calendarios', e); }
+  return { citas: citas, sinAsignar: sin, avisos: avisos };
 }
 
 function postulacionPdf(k, fila) {

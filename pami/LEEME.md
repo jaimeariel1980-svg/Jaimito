@@ -39,3 +39,4 @@ Ejecutar `verificarInstalacion()`. Las páginas muestran el error real. Si la UR
 - Links de agenda por policlínico: PAMI 1 usa `link_agenda_screening`, `link_agenda_competencias`, `link_agenda_pami2`; PAMI 2 usa las mismas claves con sufijo `_poli2`. Si falta el de PAMI 2, se usa el de PAMI 1.
 - El mensaje de WhatsApp elige el link según el policlínico del candidato (el confirmado, o el sugerido).
 - Los títulos de las agendas siguen llevando `Screening`, `Competencias` o `Técnica`.
+- El calendario de PAMI 2 (dotacionpp2) tiene que estar compartido con dotacionpp1 con el permiso **«Ver todos los detalles del evento»** y la invitación aceptada. Si no, la Agenda muestra un cartel rojo explicando qué falta (el sistema también intenta suscribirse solo).
