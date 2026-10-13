@@ -243,6 +243,7 @@ function etapaDeEstado_(estado) {
 
 function reactivar_(sh, fila, antes, estado) {
   if (!/^Descartad/i.test(String(antes || '')) || /^Descartad/i.test(String(estado || ''))) return;
+  sh.getRange(fila, COL.descPor).clearContent();
   const mot = String(sh.getRange(fila, COL.motivo).getValue() || '');
   if (!mot && !String(sh.getRange(fila, COL.descarte).getValue() || '').trim()) return;
   sh.getRange(fila, COL.motivo).clearContent();
@@ -250,7 +251,7 @@ function reactivar_(sh, fila, antes, estado) {
   registrarHistorial_(sh.getRange(fila, COL.id).getValue(), sh.getRange(fila, COL.nombre).getValue(), 'Reactivado', 'Sale de Descartados' + (mot ? ' (se quitó el motivo: ' + mot + ')' : ''), QUIEN_ ? 'tablero' : 'sistema');
 }
 
-function setEstado_(sh, fila, estado, nota) {
+function setEstado_(sh, fila, estado, nota, quien) {
   const c = sh.getRange(fila, COL.estado);
   const antes = String(c.getValue() || '');
   const regla = c.getDataValidation();
@@ -260,6 +261,10 @@ function setEstado_(sh, fila, estado, nota) {
   if (col) c.setBackground(col[0]).setFontColor(col[1]).setFontWeight('bold').setHorizontalAlignment('center');
   sh.getRange(fila, COL.mov).setValue(new Date());
   reactivar_(sh, fila, antes, estado);
+  if (/^Descartad/i.test(estado) && !/^Descartad/i.test(antes)) {
+    const q = QUIEN_ && (!quien || quien === 'tablero' || quien === 'formulario') ? QUIEN_ : (quien || '');
+    sh.getRange(fila, COL.descPor).setValue(q);
+  }
 }
 
 function registrarHistorial_(id, nombre, tipo, detalle, quien) {
@@ -284,7 +289,7 @@ function aplicarNota_(sh, fila, etapa, nota, quien) {
     return actual;
   }
   const estado = estadoPorNota_(etapa, v);
-  setEstado_(sh, fila, estado, v);
+  setEstado_(sh, fila, estado, v, quien);
   registrarHistorial_(r[COL.id - 1], r[COL.nombre - 1], 'Nota ' + etq, v + ' → ' + estado, quien);
   return estado;
 }
@@ -349,7 +354,7 @@ function getTablero(k) {
       fila: i + 1, id: String(r[COL.id - 1]), fecha: dt(r[0]), mov: r[COL.mov - 1] instanceof Date ? fmt_(r[COL.mov - 1], "yyyy-MM-dd'T'HH:mm") : '',
       nombre: r[COL.nombre - 1], tel: String(r[COL.tel - 1] || ''), dni: String(r[COL.dni - 1] || ''), email: r[COL.email - 1], loc: r[COL.loc - 1],
       busq: r[COL.busq - 1], pret: String(r[COL.pret - 1] || ''), ajuste: r[COL.ajuste - 1], just: r[COL.just - 1], resumen: r[COL.resumen - 1], req: r[COL.req - 1],
-      cv: r[COL.cv - 1], estado: String(r[COL.estado - 1] || 'Nuevo').trim(), entrev: r[COL.entrev - 1], ent: entPor[String(r[COL.id - 1])] || {}, descPor: descPor[String(r[COL.id - 1])] || '',
+      cv: r[COL.cv - 1], estado: String(r[COL.estado - 1] || 'Nuevo').trim(), entrev: r[COL.entrev - 1], ent: entPor[String(r[COL.id - 1])] || {}, descPor: String(r[COL.descPor - 1] || '').trim() || descPor[String(r[COL.id - 1])] || '',
       notaScr: r[COL.notaScr - 1], notaComp: r[COL.notaComp - 1], notaP1: r[COL.notaP1 - 1], notaP2: r[COL.notaP2 - 1],
       recTipo: r[COL.recTipo - 1], recPor: r[COL.recPor - 1], coment: r[COL.coment - 1], resp: resp, proc: r[COL.proc - 1], fuente: r[COL.fuente - 1],
       cita: citaObj_(r[COL.cita - 1]), entrevistas: String(r[COL.entrevistas - 1] || ''), contactado: String(r[COL.contactado - 1] || ''),
@@ -445,6 +450,7 @@ function guardarCandidato(k, fila, c) {
     set(COL.motivo, c.motivo);
     if (antes !== c.motivo) registrarHistorial_(id, nombre, 'Motivo de descarte', c.motivo || '(sin motivo)', 'tablero');
   }
+  if (c.descPor != null && /^Descartad/i.test(String(sh.getRange(fila, COL.estado).getValue()))) { cambio(COL.descPor, corto(c.descPor, 60), 'Descartó'); set(COL.descPor, corto(c.descPor, 60)); }
   if (c.turno != null) { const t = turnoNorm_(c.turno); cambio(COL.turno, t, 'Turno preferido'); set(COL.turno, t); }
   if (c.entrev != null) { cambio(COL.entrev, corto(c.entrev, 60), 'Entrevistó'); set(COL.entrev, corto(c.entrev, 60)); }
   if (c.recTipo != null) set(COL.recTipo, corto(c.recTipo, 40));
