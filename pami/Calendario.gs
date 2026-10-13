@@ -4,7 +4,27 @@ function calendario_() {
 }
 
 function calendarioPor_(id) {
-  try { return id ? CalendarApp.getCalendarById(id) : null; } catch (e) { return null; }
+  if (!id) return null;
+  try { const c = CalendarApp.getCalendarById(id); if (c) return c; } catch (e) { }
+  try { return CalendarApp.subscribeToCalendar(id); } catch (e) { return null; }
+}
+
+function estadoCalendarios_() {
+  const aj = ajustes_(), avisos = [];
+  const ahora = new Date(), desde = new Date(ahora.getTime() - 86400000), hasta = new Date(ahora.getTime() + 14 * 86400000);
+  const lista = [{ n: 'PAMI 1', id: aj.calendario, cal: () => calendario_() }];
+  if (aj.calendario_poli2) lista.push({ n: 'PAMI 2', id: aj.calendario_poli2, cal: () => calendarioPor_(aj.calendario_poli2) });
+  lista.forEach(x => {
+    let cal = null;
+    try { cal = x.cal(); } catch (e) { }
+    if (!cal) { avisos.push('Calendario ' + x.n + ': no puedo abrirlo (' + (x.id || 'sin configurar') + '). Compartilo con ' + CUENTA + ' con el permiso "Ver todos los detalles del evento" y aceptá la invitación desde esa cuenta.'); return; }
+    let evs = [];
+    try { evs = cal.getEvents(desde, hasta); } catch (e) { avisos.push('Calendario ' + x.n + ': no tengo permiso para leer sus eventos. Compartilo con ' + CUENTA + ' con "Ver todos los detalles del evento".'); return; }
+    const titulos = evs.map(e => String(e.getTitle() || '').trim());
+    if (titulos.length && titulos.every(t => !t || /^(ocupado|busy)$/i.test(t))) { avisos.push('Calendario ' + x.n + ': veo ' + titulos.length + ' turnos pero sin título (está compartido solo como libre/ocupado). Cambiá el permiso a "Ver todos los detalles del evento".'); return; }
+    if (titulos.length && !titulos.some(t => etapaDeTitulo_(t))) avisos.push('Calendario ' + x.n + ': tiene ' + titulos.length + ' turnos pero ninguno dice Screening, Competencias o Técnica en el título, por eso no se leen (ej.: "' + titulos[0].slice(0, 50) + '").');
+  });
+  return avisos;
 }
 
 function calendarios_() {
