@@ -123,7 +123,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v38</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v39</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -591,9 +591,9 @@ function sindCfg(){var sl=[];D.busquedas.forEach(function(b){var r=defRec(b.id);
 function sindDe(c){return /^sindicato/i.test(c.recTipo||'')?String(c.recPor||'').split(';').map(function(x){return x.trim();}).filter(Boolean):[];}
 function catOf(c){
   if(/^Descartad/i.test(c.estado))return 'd';
-  if(/reserva/i.test(c.estado))return 'n';
-  for(var i=0;i<D.estadosCol.length;i++)if(D.estadosCol[i][1].indexOf(c.estado)>-1)return i===0?'n':(D.estadosCol[i][0]==='Contratado'?'c':'a');
-  return 'n';
+  if(/reserva/i.test(c.estado))return 'r';
+  for(var i=0;i<D.estadosCol.length;i++)if(D.estadosCol[i][1].indexOf(c.estado)>-1)return i===0?'p':(D.estadosCol[i][0]==='Contratado'?'c':'a');
+  return 'p';
 }
 function sindOk(c){
   var g=document.getElementById('fsi').value;if(!g)return true;
@@ -611,10 +611,10 @@ function sindBar(){
   var el=document.getElementById('sindBar');if(!el)return;
   SKIPSI=true;var base=D.cands.filter(filtra);SKIPSI=false;
   var filas={},orden=[];
-  var fila=function(n){var k=n.toLowerCase();if(!filas[k]){filas[k]={n:n,v:n,a:0,d:0,c:0,n_:0,t:0};orden.push(k);}return filas[k];};
+  var fila=function(n){var k=n.toLowerCase();if(!filas[k]){filas[k]={n:n,v:n,a:0,d:0,c:0,r:0,p:0,t:0};orden.push(k);}return filas[k];};
   sindCfg().forEach(fila);
-  var sin={n:'Sin sindicato',v:'-',a:0,d:0,c:0,n_:0,t:0};
-  var cuenta=function(o,c){var k=catOf(c);if(k==='n')o.n_++;else o[k]++;o.t++;};
+  var sin={n:'Sin sindicato',v:'-',a:0,d:0,c:0,r:0,p:0,t:0};
+  var cuenta=function(o,c){o[catOf(c)]++;o.t++;};
   base.forEach(function(c){var l=sindDe(c);if(l.length)l.forEach(function(n){cuenta(fila(n),c);});else cuenta(sin,c);});
   if(!orden.length&&!sin.t){el.innerHTML='';return;}
   orden.sort(function(a,b){return filas[b].t-filas[a].t||filas[a].n.localeCompare(filas[b].n);});
@@ -624,10 +624,10 @@ function sindBar(){
     var num=function(n,col,txt,tx){return '<span class="'+(n?'':'z0')+'" style="'+(n?'color:'+tx:'')+'" title="'+n+' '+txt+'"><i style="background:'+col+'"></i>'+n+'</span>';};
     return '<div class="sc'+(gris?' gr':'')+(on?' on':'')+(o.t?'':' z')+'" onclick="sindClick(\''+esc(o.v).replace(/'/g,"\\'")+'\')" title="'+(on?'Quitar filtro':'Ver estos candidatos')+'">'+
       '<div class="t"><span class="n">'+esc(o.n)+'</span><span class="tot">'+o.t+'</span></div>'+
-      '<div class="bar"><i style="width:'+w(o.a)+'%;background:#034EA2"></i><i style="width:'+w(o.c)+'%;background:#1E8E5A"></i><i style="width:'+w(o.n_)+'%;background:#AEBBD0"></i><i style="width:'+w(o.d)+'%;background:#D9534F"></i></div>'+
-      '<div class="lgd">'+num(o.a,'#034EA2','avanzaron','#034EA2')+num(o.c,'#1E8E5A','contratados','#14764A')+num(o.n_,'#AEBBD0','en análisis','#5D6B82')+num(o.d,'#D9534F','descartados','#C0392B')+'</div></div>';
+      '<div class="bar" title="'+o.p+' todavía en análisis de CV"><i style="width:'+w(o.a)+'%;background:#034EA2"></i><i style="width:'+w(o.c)+'%;background:#1E8E5A"></i><i style="width:'+w(o.r)+'%;background:#E0A800"></i><i style="width:'+w(o.d)+'%;background:#D9534F"></i></div>'+
+      '<div class="lgd">'+num(o.a,'#034EA2','avanzaron','#034EA2')+num(o.c,'#1E8E5A','contratados','#14764A')+num(o.r,'#E0A800','en reserva','#8A6D00')+num(o.d,'#D9534F','descartados','#C0392B')+'</div></div>';
   };
-  el.innerHTML='<div class="sl"><b class="st">Por sindicato</b><span class="lgx"><span><i style="background:#034EA2"></i>avanzaron</span><span><i style="background:#1E8E5A"></i>contratados</span><span><i style="background:#AEBBD0"></i>en análisis</span><span><i style="background:#D9534F"></i>descartados</span></span></div>'+orden.map(function(k){return card(filas[k]);}).join('')+card(sin,true);
+  el.innerHTML='<div class="sl"><b class="st">Por sindicato</b><span class="lgx"><span><i style="background:#034EA2"></i>avanzaron</span><span><i style="background:#1E8E5A"></i>contratados</span><span><i style="background:#E0A800"></i>en reserva</span><span><i style="background:#D9534F"></i>descartados</span></span></div>'+orden.map(function(k){return card(filas[k]);}).join('')+card(sin,true);
 }
 var AG=null,AGF='';
 function polAg(f){var c=byFila(f);return c?c.policlinico:'';}
