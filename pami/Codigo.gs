@@ -261,7 +261,7 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '29';
+const ESQUEMA = '30';
 
 function actualizarEsquema_() {
   try { asegurarColumnas_(); } catch (e) { registrarError_('asegurar columnas', e); }
@@ -342,7 +342,7 @@ function actualizarEsquema_() {
       const i = d.findIndex(r => String(r[0]).trim() === 'entrevistadores');
       if (i < 1) return;
       const lista = lista_(d[i][1], ',');
-      ['Juan Manuel', 'Facundo', 'Gabriela'].forEach(n => { if (!lista.some(x => x.toLowerCase() === n.toLowerCase())) lista.push(n); });
+      ['Juan Manuel', 'Facundo', 'Gabriela', 'Natalia'].forEach(n => { if (!lista.some(x => x.toLowerCase() === n.toLowerCase())) lista.push(n); });
       aj.getRange(i + 1, 2).setValue(lista.join(', '));
       const n = Math.max(1, Math.min(1000, sh.getMaxRows() - 1));
       sh.getRange(2, COL.entrev, n, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(lista, true).build());
