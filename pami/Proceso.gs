@@ -403,7 +403,20 @@ function guardarCandidato(k, fila, c) {
     cambio(COL.busq, c.busq, 'Búsqueda');
     set(COL.busq, c.busq);
   }
-  if (c.estado != null) moverEstado(k, fila, c.estado);
+  if (c.accion === 'descartar' || c.accion === 'reactivar') {
+    const est = String(sh.getRange(fila, COL.estado).getValue()).trim();
+    const desc = /^Descartad/i.test(est);
+    if (c.accion === 'descartar' && !desc) {
+      if (est === 'Contratado') throw new Error('Está contratado/a: no se puede descartar');
+      if (!String(c.motivo || '').trim()) throw new Error('Elegí el motivo de descarte');
+      const i = ESTADOS_COL.findIndex(e => e[1].indexOf(est) > -1);
+      const etapa = /competencias/i.test(est) && /^Reserva/i.test(est) ? 'competencias' : /t[eé]cnica/i.test(est) && /^Reserva/i.test(est) ? 'pami2' : ETAPAS[i < 0 ? 0 : Math.min(i, 3)];
+      moverEstado(k, fila, estadoPorNota_(etapa, 'C'));
+    } else if (c.accion === 'reactivar' && desc) {
+      const i = ['sin screening', 'post screening', 'en competencias', 'en entrevista técnica'].findIndex(x => est === 'Descartado ' + x);
+      moverEstado(k, fila, ESTADOS_COL[i < 0 ? 0 : i][2]);
+    }
+  }
   if (c.policlinico != null) {
     if (c.policlinico !== '' && POLICLINICOS.indexOf(c.policlinico) === -1) throw new Error('Policlínico inválido');
     cambio(COL.policlinico, c.policlinico, 'Policlínico');
