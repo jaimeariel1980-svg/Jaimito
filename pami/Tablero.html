@@ -127,7 +127,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v51</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v52</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -579,6 +579,7 @@ function guardar(f,acc){
   var c=byFila(f);
   if(motFicha()===null){alert('En "Otro" escribí el motivo con máximo dos palabras.');document.getElementById('gMo2').focus();return;}
   var o={busq:document.getElementById('gB').value,entrev:document.getElementById('gN').value,motivo:motFicha(),turno:[].slice.call(document.querySelectorAll('#gT input:checked')).map(function(x){return x.value;}).join('; '),policlinico:document.getElementById('gP').value,coment:document.getElementById('gM').value};
+  if(!acc&&o.motivo&&!/^Descartad|^Contratado/.test(c.estado))acc='descartar';
   if(acc){o.accion=acc;if(acc==='reactivar')o.motivo='';else if(!o.motivo){alert('Elegí el motivo de descarte.');document.getElementById('gMo').focus();return;}}
   var rec=defRec(c.busq);
   if(rec){var t=document.getElementById('rcT').value;o.recTipo=t;o.recPor=t?(rec[t]?[].slice.call(document.querySelectorAll('#rcS input:checked')).map(function(x){return x.value;}).join('; '):document.getElementById('rcN').value.trim()):'';}
