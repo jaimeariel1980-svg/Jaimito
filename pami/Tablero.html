@@ -88,7 +88,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 .pol button.on{background:var(--azul);border-color:var(--azul);color:#fff}.pol button.on.p2{background:#00A3E0;border-color:#00A3E0}
 .tag.rec{background:#FFF4CC;color:#6B4E00;border:1px solid #F2B705;font-weight:800}.tag.zok{background:#D9F3E4;color:#14502F}.tag.zfu{background:#FDE3E1;color:#9B2C28}#board .card .fo{font-size:13px;color:var(--azul);font-weight:800;margin-top:3px}.alerta.rec{background:#FFF4CC;color:#6B4E00;border-left:4px solid #F2B705;font-size:14px;font-weight:800}
 .tag.tn{background:#E8E4FA;color:#3B2E8A;border:1px solid #9B8FE0;font-weight:800}.chk{display:flex;gap:8px;flex-wrap:wrap}.ck{display:flex;align-items:center;gap:7px;border:1.5px solid #AEBBD0;border-radius:6px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer;background:#fff;color:#1B2B45}.ck input{width:auto;margin:0}.ck:has(input:checked){background:#EAF3FF;border-color:#034EA2;color:#034EA2}
-.tag.cita{background:#D9F3E4;color:#14502F;border:1px solid #1E8E5A;font-weight:800}.tag.ctc{background:#FFF1D6;color:#7A5200;border:1px solid #F2B705;font-weight:700}.tag.hoy{background:#D9534F;color:#fff}.tag.w{background:#FFF1D6;color:#8A5A00}.tag.g{background:#D9F3E4;color:#14502F}.tag.r{background:#FDE3E1;color:#9B2C28}
+.tag.cita{background:#D9F3E4;color:#14502F;border:1px solid #1E8E5A;font-weight:800}.tag.ctc{background:#FFF1D6;color:#7A5200;border:1px solid #F2B705;font-weight:700}.tag.cita.hoy{background:#1E8E5A;color:#fff;border-color:#14764A}.tag.w{background:#FFF1D6;color:#8A5A00}.tag.g{background:#D9F3E4;color:#14502F}.tag.r{background:#FDE3E1;color:#9B2C28}
 #fmodal{display:none;position:fixed;inset:0;background:var(--bg);z-index:60;overflow:auto}
 #fmodal.show{display:block}
 .fbar{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid var(--line);padding:10px 20px;display:flex;gap:10px;align-items:center}
@@ -124,7 +124,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v42</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v43</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -349,8 +349,11 @@ function filtra(c){
 function ind(c){return c.notaP2||c.notaP1||c.notaComp||c.notaScr||c.ajuste;}
 function dias(c){if(!c.mov)return 0;return Math.floor((new Date(D.ahora)-new Date(c.mov))/86400000);}
 function terminal(e){return /^Descartado|reserva|Contratado/i.test(e);}
+function citaHecha(c,tipo){var t=String(tipo||(c.cita&&c.cita.tipo)||'');return (/screening/i.test(t)&&!!c.notaScr)||(/competencias/i.test(t)&&!!c.notaComp)||(/t[eé]cnica/i.test(t)&&!!(c.notaP2||c.notaP1));}
+function etapaPend(c){var e=String(c.estado||'');return /^Avanza a screening/i.test(e)?'screening':/^Avanza a competencias/i.test(e)?'competencias':/^Avanza a entrevista técnica/i.test(e)?'entrevista técnica':'';}
+function etqContacto(c){var m=String(c.contactado||'').match(/^(.*?)\s*·\s*\d{2}\/\d{2}\/\d{4}$/);return m?m[1].toLowerCase():'';}
 function citaTxt(c){
-  if(!c.cita)return null;
+  if(!c.cita||citaHecha(c))return null;
   var ts=c.cita.ts,hoy=D.ahora.slice(0,10),man=new Date(new Date(D.ahora).getTime()+86400000).toISOString().slice(0,10),d=ts.slice(0,10);
   return {txt:(d===hoy?'HOY ':d===man?'Mañana ':'')+ts.slice(8,10)+'/'+ts.slice(5,7)+' '+ts.slice(11,16),hoy:d===hoy,tipo:c.cita.tipo};
 }
@@ -377,7 +380,8 @@ function card(c){
   var pr='';
   if(ct)pr+='<span class="tag cita'+(ct.hoy?' hoy':'')+'">'+esc(ct.tipo)+' agendado · '+esc(ct.txt)+'</span>';
   if(/agendad/i.test(c.estado)&&!c.cita)pr+='<span class="tag w">Agendado · sin fecha</span>';
-  if(c.contactado&&!ct&&!/^Descartad|^Contratado/i.test(c.estado))pr+='<span class="tag ctc">💬 '+esc(contactoTxt(c.contactado))+'</span>';
+  var ep=etapaPend(c);
+  if(ep&&!ct)pr+=etqContacto(c)===ep?'<span class="tag ctc">💬 '+esc(contactoTxt(c.contactado))+'</span>':'<span class="tag w">➜ Falta contactar para '+ep+'</span>';
   if(c.descarte)pr+='<span class="tag">✉ Descarte enviado</span>';
   if(!terminal(c.estado)&&dd>=D.cfg.diasAlerta)pr+='<span class="tag r">🕒 '+dd+' d sin movimiento</span>';
   var mk='';
@@ -430,8 +434,8 @@ function kpiOk(k,c){
   var term=/^Descartad|^Contratado/i.test(c.estado);
   if(k==='proc')return !term;
   if(k==='nue'){var m=String(c.fecha).match(/(\d+)\/(\d+)\/(\d+)/);return !!m&&new Date(m[3],m[2]-1,m[1]).getTime()>=new Date(D.ahora).getTime()-7*86400000;}
-  if(k==='ctc')return !term&&!c.cita&&!/agendad/i.test(c.estado)&&/^(screening|competencias|entrevista técnica)\s*·/i.test(c.contactado||'');
-  if(k==='cit')return !!c.cita&&c.cita.ts.slice(0,10)===D.ahora.slice(0,10);
+  if(k==='ctc'){var ep=etapaPend(c);return !term&&!!ep&&etqContacto(c)===ep&&(!c.cita||citaHecha(c));}
+  if(k==='cit')return !!c.cita&&!citaHecha(c)&&c.cita.ts.slice(0,10)===D.ahora.slice(0,10);
   if(k==='mov')return !term&&!terminal(c.estado)&&dias(c)>=D.cfg.diasAlerta;
   if(k==='ct')return c.estado==='Contratado';
   return true;
@@ -653,7 +657,7 @@ function pintarAgenda(){
   h+=l.map(function(a){
     var d=a.ts.slice(8,10)+'/'+a.ts.slice(5,7)+'/'+a.ts.slice(0,4),x='';
     if(d!==dia){dia=d;x='<div class="sec">'+d+(a.ts.slice(0,10)===hoy?' · HOY':'')+'</div>';}
-    return x+'<div class="row" style="cursor:pointer'+(a.desfase?';background:#FFF9EC':'')+'" onclick="abrir('+a.fila+')"><span class="l" style="width:60px">'+a.ts.slice(11,16)+'</span><span class="v">'+badgePol(polAg(a.fila))+' <b>'+esc(a.nombre)+'</b> · '+esc(a.tipo)+' <small style="color:#5D6B82">'+esc(tit(a.busq))+'</small>'+(a.desfase?' <span style="background:#FFF1D6;color:#7A5200;border:1px solid #F2B705;border-radius:3px;padding:1px 7px;font-size:11px;font-weight:800" title="Reservó en el calendario de otro policlínico que el asignado">⚠ reservó en '+esc(a.origen.replace('Policlínico ',''))+'</span>':'')+'</span></div>';
+    return x+'<div class="row" style="cursor:pointer'+(a.desfase?';background:#FFF9EC':'')+'" onclick="abrir('+a.fila+')"><span class="l" style="width:60px">'+a.ts.slice(11,16)+'</span><span class="v">'+badgePol(polAg(a.fila))+' <b>'+esc(a.nombre)+'</b> · '+esc(a.tipo)+(citaHecha(byFila(a.fila)||{},a.tipo)?' <span style="background:#E4E9F1;color:#4A5B75;border-radius:3px;padding:1px 7px;font-size:11px;font-weight:800">✓ hecho</span>':'')+' <small style="color:#5D6B82">'+esc(tit(a.busq))+'</small>'+(a.desfase?' <span style="background:#FFF1D6;color:#7A5200;border:1px solid #F2B705;border-radius:3px;padding:1px 7px;font-size:11px;font-weight:800" title="Reservó en el calendario de otro policlínico que el asignado">⚠ reservó en '+esc(a.origen.replace('Policlínico ',''))+'</span>':'')+'</span></div>';
   }).join('');
   var pend=D.cands.filter(function(c){return kpiOk('ctc',c)&&agOk(c.policlinico,f);}).map(function(c){var m=String(c.contactado).match(/^(.*?)\s*·\s*(\d{2})\/(\d{2})\/(\d{4})/);return {c:c,etq:m?m[1]:'',d:m?new Date(m[4],m[3]-1,m[2]):null};}).sort(function(a,b){return (a.d||0)-(b.d||0);});
   if(pend.length)h+='<div class="sec" style="color:#B58900">Contactados · todavía sin agendar ('+pend.length+')</div>'+pend.map(function(x){var dias=x.d?Math.max(0,Math.floor((new Date(D.ahora)-x.d)/86400000)):null;return '<div class="row" style="cursor:pointer" onclick="abrir('+x.c.fila+')"><span class="l" style="width:70px">'+(dias==null?'':(dias===0?'hoy':'hace '+dias+' d'))+'</span><span class="v">'+badgePol(x.c.policlinico)+' <b>'+esc(x.c.nombre)+'</b> · para '+esc(x.etq)+' <small style="color:#5D6B82">'+esc(tit(x.c.busq))+'</small></span></div>';}).join('');
