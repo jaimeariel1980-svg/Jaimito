@@ -126,7 +126,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v47</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v48</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -413,12 +413,11 @@ function card(c){
   if(/^Descartad/i.test(c.estado))mk+=c.motivo?'<span class="tag r">✖ '+esc(c.motivo)+'</span>':'<span class="tag">Sin motivo cargado</span>';
   var rcc=rc?'<span class="rcc" title="'+esc((c.recTipo?'Recomendado por: ':'')+rc)+'">★ '+esc(recCorto(c))+'</span>':'';
   if(c.proc&&c.proc!=='SI')mk+='<span class="tag w">'+(c.proc==='Pendiente'?'Analizando CV…':c.proc==='NoCV'?'¿No es un CV?':'Revisar CV')+'</span>';
-  if(c.fuente&&c.fuente!=='Web')mk+='<span class="tag">'+esc(c.fuente)+'</span>';
   var bt=D.policlinicos.map(function(p,i){return '<button type="button" class="p'+(i+1)+(c.policlinico===p?' on':(!c.policlinico&&sugN(c)===p?' sug':''))+'" onclick="event.stopPropagation();asignarPol('+c.fila+','+i+')">'+esc(p.replace('Policlínico ',''))+(!c.policlinico&&sugN(c)===p?' ★':'')+'</button>';}).join('');
   return '<div class="card '+cls(n)+'" draggable="'+(RO?'false':'true')+'" data-fila="'+c.fila+'" ondragstart="event.dataTransfer.setData(\'text\',\''+c.fila+'\')" onclick="abrir('+c.fila+')">'+
     '<div class="top"><b>'+esc(c.nombre)+'</b><div class="bdg" title="'+esc(notasTxt(c)||'Sin nota todavía')+'"><span class="badge '+cls(n)+'">'+(esc(n)||'—')+'</span><small>'+esc(indEt(c))+'</small></div></div>'+
     (c.formacion||rcc?'<div class="fo2"><span class="fo">'+esc(c.formacion||'')+'</span>'+rcc+'</div>':'')+
-    '<div class="ln"><i>📍</i><span>'+ub+(c.pret?' · '+esc(money(c.pret)):'')+' '+zona+'</span></div>'+
+    '<div class="ln"><i>📍</i><span>'+ub+' '+zona+'</span></div>'+
     (c.turno?'<div class="ln"><i>⏰</i><div class="tags">'+String(c.turno).split(';').map(function(t){return '<span class="tag tn">'+esc(t.trim())+'</span>';}).join('')+'</div></div>':'')+
     (pr?'<div class="ln"><i>📅</i><div class="tags">'+pr+'</div></div>':'')+
     (mk?'<div class="ln"><i>⚑</i><div class="tags">'+mk+'</div></div>':'')+
