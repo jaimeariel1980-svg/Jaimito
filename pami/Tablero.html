@@ -80,7 +80,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 #board .card:hover{box-shadow:0 2px 8px rgba(3,78,162,.18)}
 #board .card.nA{border-left-color:#1E8E5A}#board .card.nBp{border-left-color:#8BD3A8}#board .card.nB{border-left-color:#F2B705}#board .card.nC{border-left-color:#D9534F}
 #board .card .top{display:flex;justify-content:space-between;gap:6px;align-items:flex-start}
-#board .card b{font-size:15px;line-height:1.25;font-weight:800;color:var(--navy)}#board .badge{font-size:14px;min-width:36px;padding:3px 8px}
+#board .card b{font-size:15px;line-height:1.25;font-weight:800;color:var(--navy)}#board .badge{font-size:14px;min-width:36px;padding:3px 8px}.bdg{display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0}.bdg small{font-size:9px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#5D6B82;line-height:1}
 #board .card .sub{font-size:13px;color:var(--mut);font-weight:600;margin-top:3px}
 .tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
 .tag{font-size:11.5px;background:#E4EAF3;border-radius:4px;padding:2px 8px;color:var(--mut);font-weight:700}
@@ -124,7 +124,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v43</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v44</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -347,6 +347,8 @@ function filtra(c){
   return true;
 }
 function ind(c){return c.notaP2||c.notaP1||c.notaComp||c.notaScr||c.ajuste;}
+function indEt(c){return (c.notaP2||c.notaP1)?'Técnica':c.notaComp?'Compet.':c.notaScr?'Screening':c.ajuste?'CV':'';}
+function notasTxt(c){return [['CV',c.ajuste],['Screening',c.notaScr],['Competencias',c.notaComp],['Técnica',c.notaP2||c.notaP1]].filter(function(x){return x[1];}).map(function(x){return x[0]+' '+x[1];}).join(' · ');}
 function dias(c){if(!c.mov)return 0;return Math.floor((new Date(D.ahora)-new Date(c.mov))/86400000);}
 function terminal(e){return /^Descartado|reserva|Contratado/i.test(e);}
 function citaHecha(c,tipo){var t=String(tipo||(c.cita&&c.cita.tipo)||'');return (/screening/i.test(t)&&!!c.notaScr)||(/competencias/i.test(t)&&!!c.notaComp)||(/t[eé]cnica/i.test(t)&&!!(c.notaP2||c.notaP1));}
@@ -391,7 +393,7 @@ function card(c){
   if(c.fuente&&c.fuente!=='Web')mk+='<span class="tag">'+esc(c.fuente)+'</span>';
   var bt=D.policlinicos.map(function(p,i){return '<button type="button" class="p'+(i+1)+(c.policlinico===p?' on':(!c.policlinico&&sugN(c)===p?' sug':''))+'" onclick="event.stopPropagation();asignarPol('+c.fila+','+i+')">'+esc(p.replace('Policlínico ',''))+(!c.policlinico&&sugN(c)===p?' ★':'')+'</button>';}).join('');
   return '<div class="card '+cls(n)+'" draggable="'+(RO?'false':'true')+'" data-fila="'+c.fila+'" ondragstart="event.dataTransfer.setData(\'text\',\''+c.fila+'\')" onclick="abrir('+c.fila+')">'+
-    '<div class="top"><b>'+esc(c.nombre)+'</b><span class="badge '+cls(n)+'">'+(esc(n)||'—')+'</span></div>'+
+    '<div class="top"><b>'+esc(c.nombre)+'</b><div class="bdg" title="'+esc(notasTxt(c)||'Sin nota todavía')+'"><span class="badge '+cls(n)+'">'+(esc(n)||'—')+'</span><small>'+esc(indEt(c))+'</small></div></div>'+
     (c.formacion?'<div class="fo">'+esc(c.formacion)+'</div>':'')+
     '<div class="ln"><i>📍</i><span>'+ub+(c.pret?' · '+esc(money(c.pret)):'')+' '+zona+'</span></div>'+
     der+(RO?(c.policlinico?'<div class="ln"><i>🏥</i><span>'+esc(c.policlinico)+'</span></div>':''):'<div class="pol">'+bt+'</div>')+
@@ -504,8 +506,8 @@ function abrir(f){
   var resp=c.resp.length?'<div class="sec">Respuestas del formulario</div>'+c.resp.map(function(r){return '<div class="row"><span class="l" style="width:55%">'+esc(r.q)+'</span><span class="v">'+esc(r.a)+'</span></div>';}).join(''):'';
   var puedeDesc=/^Descartado (sin|post) screening$/.test(c.estado)&&!c.descarte&&/@/.test(c.email||'');
   document.getElementById('mbox').innerHTML=
-    '<div class="hd"><div><h2>'+esc(c.nombre)+' <span class="badge '+cls(n)+'" style="vertical-align:middle">'+(esc(n)||'—')+'</span></h2><small>'+esc(tit(c.busq))+' · '+esc(c.estado)+'</small></div><button class="x" onclick="cerrar()">×</button></div><div class="bd">'+al+
-    '<div class="sec">Datos</div>'+row('Recibido',c.fecha)+row('Llegó por',c.fuente)+row('Estado',c.estado)+row('Localidad',c.loc)+row('Domicilio',c.domicilio)+row('Zona',c.zona)+row('Policlínico',c.policlinico)+row('Turno preferido',String(c.turno||'').replace(/;/g,' ·'))+row('Sugerido (por cercanía)',c.polSug)+row('Formación',c.formacion)+row('Teléfono',c.tel)+row('DNI',c.dni)+row('Email',c.email)+row('Pretensión',money(c.pret))+row('Conoce a alguien en PAMI',c.conoce)+row('Último contacto',c.contactado)+row('Descarte',c.descarte)+
+    '<div class="hd"><div><h2>'+esc(c.nombre)+' <span class="badge '+cls(n)+'" style="vertical-align:middle">'+(esc(n)||'—')+'</span>'+(indEt(c)?' <small style="font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;opacity:.8;vertical-align:middle">'+esc(indEt(c))+'</small>':'')+'</h2><small>'+esc(tit(c.busq))+' · '+esc(c.estado)+'</small></div><button class="x" onclick="cerrar()">×</button></div><div class="bd">'+al+
+    '<div class="sec">Datos</div>'+row('Recibido',c.fecha)+row('Llegó por',c.fuente)+row('Estado',c.estado)+row('Localidad',c.loc)+row('Domicilio',c.domicilio)+row('Zona',c.zona)+row('Policlínico',c.policlinico)+row('Notas por etapa',notasTxt(c))+row('Turno preferido',String(c.turno||'').replace(/;/g,' ·'))+row('Sugerido (por cercanía)',c.polSug)+row('Formación',c.formacion)+row('Teléfono',c.tel)+row('DNI',c.dni)+row('Email',c.email)+row('Pretensión',money(c.pret))+row('Conoce a alguien en PAMI',c.conoce)+row('Último contacto',c.contactado)+row('Descarte',c.descarte)+
     (c.just?'<div class="sec">Análisis del CV</div><div class="txt"><b>'+esc(c.just)+'</b></div>':'')+(c.resumen?'<div class="txt" style="margin-top:6px">'+esc(c.resumen)+'</div>':'')+(c.req?'<div class="txt" style="margin-top:6px;color:#5D6B82">'+esc(c.req)+'</div>':'')+resp+
     '<div class="sec">Calificaciones</div><div id="notas">'+etapasNota.map(function(et){return notaRow(c,et,vals[et]);}).join('')+'</div>'+
     '<div class="btns"><button class="btn" onclick="abrirForm(\'screening\','+f+')">📝 Formulario screening</button><button class="btn" onclick="abrirForm(\'competencias\','+f+')">💼 Formulario competencias</button>'+(c.infScr?'<a class="btn ghost" target="_blank" href="'+esc(c.infScr)+'">Ver screening</a>':'')+(c.infComp?'<a class="btn ghost" target="_blank" href="'+esc(c.infComp)+'">Ver competencias</a>':'')+(c.resp.length?'<button class="btn ghost" onclick="verPost('+f+',this)">📋 Ver postulación</button>':'')+'</div>'+
