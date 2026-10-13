@@ -450,7 +450,6 @@ function guardarCandidato(k, fila, c) {
     set(COL.motivo, c.motivo);
     if (antes !== c.motivo) registrarHistorial_(id, nombre, 'Motivo de descarte', c.motivo || '(sin motivo)', 'tablero');
   }
-  if (c.descPor != null && /^Descartad/i.test(String(sh.getRange(fila, COL.estado).getValue()))) { cambio(COL.descPor, corto(c.descPor, 60), 'Descartó'); set(COL.descPor, corto(c.descPor, 60)); }
   if (c.turno != null) { const t = turnoNorm_(c.turno); cambio(COL.turno, t, 'Turno preferido'); set(COL.turno, t); }
   if (c.entrev != null) { cambio(COL.entrev, corto(c.entrev, 60), 'Entrevistó'); set(COL.entrev, corto(c.entrev, 60)); }
   if (c.recTipo != null) set(COL.recTipo, corto(c.recTipo, 40));
