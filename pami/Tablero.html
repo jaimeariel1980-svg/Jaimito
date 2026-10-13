@@ -88,6 +88,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 .pol button.on{background:var(--azul);border-color:var(--azul);color:#fff}.pol button.on.p2{background:#00A3E0;border-color:#00A3E0}
 .tag.rec{background:#FFF4CC;color:#6B4E00;border:1px solid #F2B705;font-weight:800}.tag.zok{background:#D9F3E4;color:#14502F}.tag.zfu{background:#FDE3E1;color:#9B2C28}#board .card .fo{font-size:13px;color:var(--azul);font-weight:800;margin-top:3px}.alerta.rec{background:#FFF4CC;color:#6B4E00;border-left:4px solid #F2B705;font-size:14px;font-weight:800}
 .fp{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}.fp .pn{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:#fff}.fp .pn.full{grid-column:1/-1}.fp .pn h4{margin:0 0 8px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--azul);font-weight:800}.kvg{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 14px}.kv small{display:block;font-size:10px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px}.kv b{font-size:14px;font-weight:700;color:#1B2B45;word-break:break-word}@media(max-width:700px){.fp{grid-template-columns:1fr}}
+.fo2{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;margin:2px 0 4px}#board .card .fo2 .fo{margin:0}.rcc{flex-shrink:0;background:#FFF6D6;color:#7A5200;border:1px solid #E8C45A;border-radius:10px;padding:1px 9px;font-size:11px;font-weight:800;letter-spacing:.02em;white-space:nowrap}
 .tag.tn{background:#E8E4FA;color:#3B2E8A;border:1px solid #9B8FE0;font-weight:800}.chk{display:flex;gap:8px;flex-wrap:wrap}.ck{display:flex;align-items:center;gap:7px;border:1.5px solid #AEBBD0;border-radius:6px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer;background:#fff;color:#1B2B45}.ck input{width:auto;margin:0}.ck:has(input:checked){background:#EAF3FF;border-color:#034EA2;color:#034EA2}
 .tag.cita{background:#D9F3E4;color:#14502F;border:1px solid #1E8E5A;font-weight:800}.tag.ctc{background:#FFF1D6;color:#7A5200;border:1px solid #F2B705;font-weight:700}.tag.cita.hoy{background:#1E8E5A;color:#fff;border-color:#14764A}.tag.w{background:#FFF1D6;color:#8A5A00}.tag.g{background:#D9F3E4;color:#14502F}.tag.r{background:#FDE3E1;color:#9B2C28}
 #fmodal{display:none;position:fixed;inset:0;background:var(--bg);z-index:60;overflow:auto}
@@ -125,7 +126,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v45</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v46</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -329,6 +330,10 @@ function linkPost(){var b=document.getElementById('fb').value||(D.busquedas[0]&&
 function nrm(t){return String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
 function raiz(p){p=nrm(p);if(p.length>5)return p.slice(0,-2);if(p.length>3)return p.slice(0,-1);return p;}
 function coincide(texto,q){if(!q||!q.trim())return true;var t=nrm(texto),ps=q.trim().split(/\s+/);for(var i=0;i<ps.length;i++){if(t.indexOf(raiz(ps[i]))===-1)return false;}return true;}
+function recCorto(c){
+  var t=c.recTipo?(/^sindicato/i.test(c.recTipo)?String(c.recPor||'').split(';').map(function(x){return x.trim();}).filter(Boolean).join(' · ')||'Sindicato':(c.recPor||c.recTipo)):(c.conoce?c.conoce:'');
+  return t.length>22?t.slice(0,21)+'…':t;
+}
 function recom(c){return c.recTipo?(c.recTipo+(c.recPor?' · '+c.recPor:'')):(c.conoce?'Conoce a: '+c.conoce:'');}
 function pretVals(v){
   var out=[];(String(v==null?'':v).match(/\d[\d.,]*\d|\d/g)||[]).forEach(function(x){
@@ -406,13 +411,13 @@ function card(c){
   if(!terminal(c.estado)&&dd>=D.cfg.diasAlerta)pr+='<span class="tag r">🕒 '+dd+' d sin movimiento</span>';
   var mk='';
   if(/^Descartad/i.test(c.estado))mk+=c.motivo?'<span class="tag r">✖ '+esc(c.motivo)+'</span>':'<span class="tag">Sin motivo cargado</span>';
-  if(rc)mk+='<span class="tag rec">★ '+(c.recTipo?'Recomendado: ':'')+esc(rc)+'</span>';
+  var rcc=rc?'<span class="rcc" title="'+esc((c.recTipo?'Recomendado por: ':'')+rc)+'">★ '+esc(recCorto(c))+'</span>':'';
   if(c.proc&&c.proc!=='SI')mk+='<span class="tag w">'+(c.proc==='Pendiente'?'Analizando CV…':c.proc==='NoCV'?'¿No es un CV?':'Revisar CV')+'</span>';
   if(c.fuente&&c.fuente!=='Web')mk+='<span class="tag">'+esc(c.fuente)+'</span>';
   var bt=D.policlinicos.map(function(p,i){return '<button type="button" class="p'+(i+1)+(c.policlinico===p?' on':(!c.policlinico&&sugN(c)===p?' sug':''))+'" onclick="event.stopPropagation();asignarPol('+c.fila+','+i+')">'+esc(p.replace('Policlínico ',''))+(!c.policlinico&&sugN(c)===p?' ★':'')+'</button>';}).join('');
   return '<div class="card '+cls(n)+'" draggable="'+(RO?'false':'true')+'" data-fila="'+c.fila+'" ondragstart="event.dataTransfer.setData(\'text\',\''+c.fila+'\')" onclick="abrir('+c.fila+')">'+
     '<div class="top"><b>'+esc(c.nombre)+'</b><div class="bdg" title="'+esc(notasTxt(c)||'Sin nota todavía')+'"><span class="badge '+cls(n)+'">'+(esc(n)||'—')+'</span><small>'+esc(indEt(c))+'</small></div></div>'+
-    (c.formacion?'<div class="fo">'+esc(c.formacion)+'</div>':'')+
+    (c.formacion||rcc?'<div class="fo2"><span class="fo">'+esc(c.formacion||'')+'</span>'+rcc+'</div>':'')+
     '<div class="ln"><i>📍</i><span>'+ub+(c.pret?' · '+esc(money(c.pret)):'')+' '+zona+'</span></div>'+
     der+(RO?(c.policlinico?'<div class="ln"><i>🏥</i><span>'+esc(c.policlinico)+'</span></div>':''):'<div class="pol">'+bt+'</div>')+
     (c.turno?'<div class="ln"><i>⏰</i><div class="tags">'+String(c.turno).split(';').map(function(t){return '<span class="tag tn">'+esc(t.trim())+'</span>';}).join('')+'</div></div>':'')+
