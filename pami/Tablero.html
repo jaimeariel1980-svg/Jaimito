@@ -127,7 +127,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v56</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v57</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -439,7 +439,7 @@ function acordeon(titulo,clase,tipos,lista,re){
   }).join('')+'</div></div>';
 }
 function render(){
-  var lista=D.cands.filter(filtra);
+  var lista=D.cands.filter(filtra).sort(function(a,b){var x=String(a.mov||''),y=String(b.mov||'');return x<y?1:x>y?-1:0;});
   document.getElementById('cnt').textContent=lista.length+(lista.length!==D.cands.length?' de '+D.cands.length:'')+' candidatos';
   var hay=KF||['fb','fq','fz','ff','fx','fe','fp','fr','fpo','fsi'].some(function(i){return document.getElementById(i).value;});document.getElementById('cf').textContent=hay?lista.length+' resultado'+(lista.length===1?'':'s'):'';
   if(!D.cands.length){document.getElementById('board').innerHTML='<div class="loading">Todavía no hay candidatos. Cuando llegue una postulación, un mail con CV o un archivo en la carpeta, aparece acá.</div>';return;}
