@@ -123,7 +123,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v40</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v41</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -650,7 +650,7 @@ function pintarAgenda(){
   h+=l.map(function(a){
     var d=a.ts.slice(8,10)+'/'+a.ts.slice(5,7)+'/'+a.ts.slice(0,4),x='';
     if(d!==dia){dia=d;x='<div class="sec">'+d+(a.ts.slice(0,10)===hoy?' · HOY':'')+'</div>';}
-    return x+'<div class="row" style="cursor:pointer" onclick="abrir('+a.fila+')"><span class="l" style="width:60px">'+a.ts.slice(11,16)+'</span><span class="v">'+badgePol(polAg(a.fila))+' <b>'+esc(a.nombre)+'</b> · '+esc(a.tipo)+' <small style="color:#5D6B82">'+esc(tit(a.busq))+'</small></span></div>';
+    return x+'<div class="row" style="cursor:pointer'+(a.desfase?';background:#FFF9EC':'')+'" onclick="abrir('+a.fila+')"><span class="l" style="width:60px">'+a.ts.slice(11,16)+'</span><span class="v">'+badgePol(polAg(a.fila))+' <b>'+esc(a.nombre)+'</b> · '+esc(a.tipo)+' <small style="color:#5D6B82">'+esc(tit(a.busq))+'</small>'+(a.desfase?' <span style="background:#FFF1D6;color:#7A5200;border:1px solid #F2B705;border-radius:3px;padding:1px 7px;font-size:11px;font-weight:800" title="Reservó en el calendario de otro policlínico que el asignado">⚠ reservó en '+esc(a.origen.replace('Policlínico ',''))+'</span>':'')+'</span></div>';
   }).join('');
   var pend=D.cands.filter(function(c){return kpiOk('ctc',c)&&agOk(c.policlinico,f);}).map(function(c){var m=String(c.contactado).match(/^(.*?)\s*·\s*(\d{2})\/(\d{2})\/(\d{4})/);return {c:c,etq:m?m[1]:'',d:m?new Date(m[4],m[3]-1,m[2]):null};}).sort(function(a,b){return (a.d||0)-(b.d||0);});
   if(pend.length)h+='<div class="sec" style="color:#B58900">Contactados · todavía sin agendar ('+pend.length+')</div>'+pend.map(function(x){var dias=x.d?Math.max(0,Math.floor((new Date(D.ahora)-x.d)/86400000)):null;return '<div class="row" style="cursor:pointer" onclick="abrir('+x.c.fila+')"><span class="l" style="width:70px">'+(dias==null?'':(dias===0?'hoy':'hace '+dias+' d'))+'</span><span class="v">'+badgePol(x.c.policlinico)+' <b>'+esc(x.c.nombre)+'</b> · para '+esc(x.etq)+' <small style="color:#5D6B82">'+esc(tit(x.c.busq))+'</small></span></div>';}).join('');

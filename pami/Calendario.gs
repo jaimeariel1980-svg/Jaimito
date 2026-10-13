@@ -104,9 +104,9 @@ function syncCalendario() {
   }
 }
 
-function citasSinCandidato_() {
+function citasSinCandidato_(evs) {
   const ahora = new Date();
-  const eventos = eventosCal_(ahora, new Date(ahora.getTime() + 60 * 86400000));
+  const eventos = evs || eventosCal_(ahora, new Date(ahora.getTime() + 60 * 86400000));
   const d = hoja_('Candidatos').getDataRange().getValues().slice(1).filter(r => r[COL.nombre - 1]).map(r => ({ nombre: r[COL.nombre - 1], mail: String(r[COL.email - 1] || '').trim().toLowerCase() }));
   return eventos.filter(e => !d.some(c => eventoEsDe_(e, c)))
     .sort((a, b) => a.inicio - b.inicio)
