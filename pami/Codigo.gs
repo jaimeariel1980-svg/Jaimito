@@ -261,7 +261,7 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '28';
+const ESQUEMA = '29';
 
 function actualizarEsquema_() {
   try { asegurarColumnas_(); } catch (e) { registrarError_('asegurar columnas', e); }
@@ -372,6 +372,14 @@ function actualizarEsquema_() {
       const aj = hoja_('Ajustes'), d = aj.getDataRange().getValues();
       const i = d.findIndex(r => String(r[0]).trim() === 'link_agenda_competencias_poli2');
       if (i > 0 && !String(d[i][1] || '').trim()) aj.getRange(i + 1, 2).setValue('https://calendar.app.google/JuYaKfRQVGo4kthu8');
+    },
+    () => {
+      if (props.getProperty('LINK_COMP_P1')) return;
+      const aj = hoja_('Ajustes'), d = aj.getDataRange().getValues();
+      const i = d.findIndex(r => String(r[0]).trim() === 'link_agenda_competencias');
+      if (i > 0) aj.getRange(i + 1, 2).setValue('https://calendar.app.google/r8219yikePGxWB3YA');
+      else aj.appendRow(['link_agenda_competencias', 'https://calendar.app.google/r8219yikePGxWB3YA']);
+      props.setProperty('LINK_COMP_P1', '1');
     }
   ];
   let ok = true;
