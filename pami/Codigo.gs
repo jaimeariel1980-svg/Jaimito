@@ -261,7 +261,7 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '25';
+const ESQUEMA = '26';
 
 function actualizarEsquema_() {
   try { asegurarColumnas_(); } catch (e) { registrarError_('asegurar columnas', e); }
@@ -346,6 +346,26 @@ function actualizarEsquema_() {
       aj.getRange(i + 1, 2).setValue(lista.join(', '));
       const n = Math.max(1, Math.min(1000, sh.getMaxRows() - 1));
       sh.getRange(2, COL.entrev, n, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(lista, true).build());
+    },
+    () => {
+      const props = PropertiesService.getScriptProperties();
+      if (props.getProperty('TURNOS_INICIALES') === '1') return;
+      const explicitos = [['Noelia Jaime', '23 a 06; 17 a 00'], ['Ferreyra Alexis', '12 a 19']];
+      const hechos = [];
+      sh.getDataRange().getValues().forEach((r, i) => {
+        if (i === 0 || !r[COL.nombre - 1]) return;
+        const nombre = String(r[COL.nombre - 1]), actual = String(r[COL.turno - 1] || '').trim();
+        const ex = explicitos.find(e => mismoNombre_(e[0], nombre));
+        let nuevo = null;
+        if (ex) nuevo = ex[1];
+        else if (!actual && String(r[COL.policlinico - 1]).trim() === POLICLINICOS[0] && String(r[COL.notaScr - 1]).trim() && !/^Descartad/i.test(String(r[COL.estado - 1]))) nuevo = '23 a 06; 17 a 00';
+        if (nuevo === null || nuevo === actual) return;
+        sh.getRange(i + 1, COL.turno).setValue(nuevo);
+        registrarHistorial_(r[COL.id - 1], nombre, 'Turno preferido', nuevo + ' (carga inicial)', 'sistema');
+        hechos.push(nombre + ': ' + nuevo);
+      });
+      registrarHistorial_('', 'Carga inicial de turnos', 'Turno preferido', hechos.length + ' candidatos. ' + hechos.join(' | ').slice(0, 4000), 'sistema');
+      props.setProperty('TURNOS_INICIALES', '1');
     }
   ];
   let ok = true;
