@@ -89,6 +89,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 .tag.rec{background:#FFF4CC;color:#6B4E00;border:1px solid #F2B705;font-weight:800}.tag.zok{background:#D9F3E4;color:#14502F}.tag.zfu{background:#FDE3E1;color:#9B2C28}#board .card .fo{font-size:13px;color:var(--azul);font-weight:800;margin-top:3px}.alerta.rec{background:#FFF4CC;color:#6B4E00;border-left:4px solid #F2B705;font-size:14px;font-weight:800}
 .fp{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}.fp .pn{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:#fff}.fp .pn.full{grid-column:1/-1}.fp .pn h4{margin:0 0 8px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--azul);font-weight:800}.kvg{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 14px}.kv small{display:block;font-size:10px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px}.kv b{font-size:14px;font-weight:700;color:#1B2B45;word-break:break-word}@media(max-width:700px){.fp{grid-template-columns:1fr}}
 .fo2{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;margin:2px 0 4px}#board .card .fo2 .fo{margin:0}.rcc{flex-shrink:0;background:#FFF6D6;color:#7A5200;border:1px solid #E8C45A;border-radius:10px;padding:1px 9px;font-size:11px;font-weight:800;letter-spacing:.02em;white-space:nowrap}
+.ecs{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:9px}.ec{display:inline-flex;align-items:center;gap:6px;padding-bottom:3px;border-bottom:2px solid transparent}.ec small{display:inline;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;opacity:.7}.ec.on{border-bottom-color:#fff}.ec.on small{opacity:1}.hd .badge.vac{background:rgba(255,255,255,.2);color:#fff;min-width:26px;text-align:center}.hd .ec .badge{min-width:26px;text-align:center}
 .tag.tn{background:#E8E4FA;color:#3B2E8A;border:1px solid #9B8FE0;font-weight:800}.chk{display:flex;gap:8px;flex-wrap:wrap}.ck{display:flex;align-items:center;gap:7px;border:1.5px solid #AEBBD0;border-radius:6px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer;background:#fff;color:#1B2B45}.ck input{width:auto;margin:0}.ck:has(input:checked){background:#EAF3FF;border-color:#034EA2;color:#034EA2}
 .tag.cita{background:#D9F3E4;color:#14502F;border:1px solid #1E8E5A;font-weight:800}.tag.ctc{background:#FFF1D6;color:#7A5200;border:1px solid #F2B705;font-weight:700}.tag.cita.hoy{background:#1E8E5A;color:#fff;border-color:#14764A}.tag.w{background:#FFF1D6;color:#8A5A00}.tag.g{background:#D9F3E4;color:#14502F}.tag.r{background:#FDE3E1;color:#9B2C28}
 #fmodal{display:none;position:fixed;inset:0;background:var(--bg);z-index:60;overflow:auto}
@@ -126,7 +127,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v48</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v49</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -514,6 +515,13 @@ function volverFicha(){document.getElementById('fmodal').classList.remove('show'
 function kv(l,v){return v?'<div class="kv"><small>'+l+'</small><b>'+esc(v)+'</b></div>':'';}
 function panel(t,items,full){var h=items.join('');return h?'<div class="pn'+(full?' full':'')+'"><h4>'+t+'</h4><div class="kvg">'+h+'</div></div>':'';}
 function ultCont(c){var ep=etapaPend(c);return (c.contactado&&(!ep||etqContacto(c)===ep))?c.contactado:'';}
+function etapaIdx(c){for(var i=0;i<D.estadosCol.length;i++)if(D.estadosCol[i][1].indexOf(c.estado)>-1)return i<4?i:-1;return -1;}
+function etapasHdr(c){
+  var cur=etapaIdx(c);
+  return [['CV',c.ajuste],['Screening',c.notaScr],['Competencias',c.notaComp],['Técnica',c.notaP2||c.notaP1]].map(function(x,i){
+    return '<span class="ec'+(i===cur?' on':'')+'" title="'+(i===cur?'Etapa actual':'')+'"><small>'+x[0]+'</small>'+(x[1]?'<span class="badge '+cls(x[1])+'">'+esc(x[1])+'</span>':'<span class="badge vac">–</span>')+'</span>';
+  }).join('');
+}
 function abrir(f){
   CUR=f;var c=byFila(f);if(!c)return;
   var rec=defRec(c.busq),n=ind(c),ct=citaTxt(c),dd=dias(c),al='';
@@ -531,7 +539,7 @@ function abrir(f){
   var resp=c.resp.length?'<div class="sec">Respuestas del formulario</div>'+c.resp.map(function(r){return '<div class="row"><span class="l" style="width:55%">'+esc(r.q)+'</span><span class="v">'+esc(r.a)+'</span></div>';}).join(''):'';
   var puedeDesc=/^Descartado (sin|post) screening$/.test(c.estado)&&!c.descarte&&/@/.test(c.email||'');
   document.getElementById('mbox').innerHTML=
-    '<div class="hd"><div><h2>'+esc(c.nombre)+' <span class="badge '+cls(n)+'" style="vertical-align:middle">'+(esc(n)||'—')+'</span>'+(indEt(c)?' <small style="display:inline;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;opacity:.85;vertical-align:middle">'+esc(indEt(c))+'</small>':'')+'</h2><small>'+esc(tit(c.busq))+' · '+esc(c.estado)+'</small></div><button class="x" onclick="cerrar()">×</button></div><div class="bd">'+al+
+    '<div class="hd"><div><h2>'+esc(c.nombre)+'</h2><small>'+esc(tit(c.busq))+' · '+esc(c.estado)+'</small><div class="ecs">'+etapasHdr(c)+'</div></div><button class="x" onclick="cerrar()">×</button></div><div class="bd">'+al+
     '<div class="btns"><button class="btn" onclick="abrirForm(\'screening\','+f+')">📝 Formulario screening</button><button class="btn" onclick="abrirForm(\'competencias\','+f+')">💼 Formulario competencias</button>'+(c.infScr?'<a class="btn ghost" target="_blank" href="'+esc(c.infScr)+'">Ver screening</a>':'')+(c.infComp?'<a class="btn ghost" target="_blank" href="'+esc(c.infComp)+'">Ver competencias</a>':'')+(c.resp.length?'<button class="btn ghost" onclick="verPost('+f+',this)">📋 Ver postulación</button>':'')+'</div>'+
     '<div class="btns">'+(c.cv?'<a class="btn ghost" target="_blank" href="'+esc(c.cv)+'">📄 Ver CV</a>':'')+(c.tel?'<button class="btn wa" onclick="menuWA('+f+')">💬 WhatsApp ▾</button>':'')+(/@/.test(c.email||'')?'<a class="btn ghost" target="_blank" href="https://mail.google.com/mail/?view=cm&to='+encodeURIComponent(c.email)+'">✉ Mail</a>':'')+'<button class="btn cel" onclick="agendar('+f+')">📅 Agendar</button>'+(puedeDesc?'<button class="btn red" onclick="descarteMail('+f+',this)">✉ Descarte por mail</button>':'')+(c.proc!=='SI'?'<button class="btn sec" onclick="rean('+f+',this)">↻ Re-analizar CV</button>':'')+(c.contactado?'<button class="btn sec" onclick="borrarMarca('+f+')">✕ Borrar marca de contacto</button>':'')+'</div>'+
     '<div class="fp">'+panel('Contacto',[kv('Teléfono',c.tel),kv('DNI',c.dni),kv('Email',c.email),kv('Domicilio',c.domicilio),kv('Localidad',c.loc),kv('Zona',c.zona)])+panel('Postulación',[kv('Recibido',c.fecha),kv('Llegó por',c.fuente),kv('Formación',c.formacion),kv('Pretensión',money(c.pret)),kv('Conoce a alguien en PAMI',c.conoce)])+panel('Proceso',[kv('Estado',c.estado),kv('Policlínico',c.policlinico||'Sin asignar'),kv('Sugerido por cercanía',c.polSug),kv('Notas por etapa',notasTxt(c)),kv('Turno preferido',String(c.turno||'').replace(/;/g,' ·')),kv('Entrevistó',c.entrev),kv('Último contacto',ultCont(c)),kv('Descarte',c.descarte)],true)+'</div>'+
