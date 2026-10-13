@@ -84,7 +84,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 #board .card .sub{font-size:13px;color:var(--mut);font-weight:600;margin-top:3px}
 .tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}
 .tag{font-size:11.5px;background:#E4EAF3;border-radius:4px;padding:2px 8px;color:var(--mut);font-weight:700}
-.pol{display:flex;gap:4px;margin-top:6px}.pol button{flex:1;border:1.5px solid #AEBBD0;background:#fff;border-radius:4px;font-size:11.5px;font-weight:800;padding:4px 0;cursor:pointer;color:var(--mut);font-family:var(--font)}.tag.sg{background:#D6EDFB;color:var(--azul);border:1px solid var(--celeste);font-weight:800}.pol button.sug{border-color:var(--celeste);border-style:dashed;color:var(--azul);background:#EAF6FD}
+.cpol{margin-top:8px;padding-top:6px;border-top:1px solid #E4E9F1}.cpol:empty{display:none}.cpol .ln{margin-top:0}.pol{display:flex;gap:4px;margin-top:4px}.pol button{flex:1;border:1.5px solid #AEBBD0;background:#fff;border-radius:4px;font-size:11.5px;font-weight:800;padding:4px 0;cursor:pointer;color:var(--mut);font-family:var(--font)}.tag.sg{background:#D6EDFB;color:var(--azul);border:1px solid var(--celeste);font-weight:800}.pol button.sug{border-color:var(--celeste);border-style:dashed;color:var(--azul);background:#EAF6FD}
 .pol button.on{background:var(--azul);border-color:var(--azul);color:#fff}.pol button.on.p2{background:#00A3E0;border-color:#00A3E0}
 .tag.rec{background:#FFF4CC;color:#6B4E00;border:1px solid #F2B705;font-weight:800}.tag.zok{background:#D9F3E4;color:#14502F}.tag.zfu{background:#FDE3E1;color:#9B2C28}#board .card .fo{font-size:13px;color:var(--azul);font-weight:800;margin-top:3px}.alerta.rec{background:#FFF4CC;color:#6B4E00;border-left:4px solid #F2B705;font-size:14px;font-weight:800}
 .fp{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}.fp .pn{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:#fff}.fp .pn.full{grid-column:1/-1}.fp .pn h4{margin:0 0 8px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--azul);font-weight:800}.kvg{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 14px}.kv small{display:block;font-size:10px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px}.kv b{font-size:14px;font-weight:700;color:#1B2B45;word-break:break-word}@media(max-width:700px){.fp{grid-template-columns:1fr}}
@@ -126,7 +126,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v46</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v47</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -419,10 +419,10 @@ function card(c){
     '<div class="top"><b>'+esc(c.nombre)+'</b><div class="bdg" title="'+esc(notasTxt(c)||'Sin nota todavía')+'"><span class="badge '+cls(n)+'">'+(esc(n)||'—')+'</span><small>'+esc(indEt(c))+'</small></div></div>'+
     (c.formacion||rcc?'<div class="fo2"><span class="fo">'+esc(c.formacion||'')+'</span>'+rcc+'</div>':'')+
     '<div class="ln"><i>📍</i><span>'+ub+(c.pret?' · '+esc(money(c.pret)):'')+' '+zona+'</span></div>'+
-    der+(RO?(c.policlinico?'<div class="ln"><i>🏥</i><span>'+esc(c.policlinico)+'</span></div>':''):'<div class="pol">'+bt+'</div>')+
     (c.turno?'<div class="ln"><i>⏰</i><div class="tags">'+String(c.turno).split(';').map(function(t){return '<span class="tag tn">'+esc(t.trim())+'</span>';}).join('')+'</div></div>':'')+
     (pr?'<div class="ln"><i>📅</i><div class="tags">'+pr+'</div></div>':'')+
     (mk?'<div class="ln"><i>⚑</i><div class="tags">'+mk+'</div></div>':'')+
+    '<div class="cpol">'+der+(RO?(c.policlinico?'<div class="ln"><i>🏥</i><span>'+esc(c.policlinico)+'</span></div>':''):'<div class="pol">'+bt+'</div>')+'</div>'+
     '</div>';
 }
 function asignarPol(f,i){
