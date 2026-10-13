@@ -106,7 +106,7 @@ function guardarScreening(k, p) {
     (p.comentario ? seccion_('Comentario') + '<div style="font-size:13px;white-space:pre-wrap;padding-top:4px">' + h_(p.comentario) + '</div>' : '');
   const fecha = p.fecha || fmt_(new Date(), 'yyyy-MM-dd');
   const html = htmlInforme_('Screening inicial', { nombre: r[COL.nombre - 1], puesto: d.hero.puesto }, [
-    ['Entrevistó', p.entrevistador], ['Fecha', fecha], ['Empresa actual', dt.empresaAct], ['Posición actual', dt.posAct], ['Formación', dt.formacion],
+    ['Entrevistó', p.entrevistador], ['Fecha', fecha], ['Edad', dt.edad], ['Empresa actual', dt.empresaAct], ['Posición actual', dt.posAct], ['Formación', dt.formacion],
     ['Remuneración actual', dt.remAct], ['Remuneración pretendida', dt.remPret], ['Disponibilidad', dt.disp], ['Turno preferido', turno ? turno.replace(/; /g, ', ') : '']
   ], cuerpo, nota, norm, DESC_NOTA[nota]);
   const folder = DriveApp.getFolderById(ajustes_().carpeta_informes);
