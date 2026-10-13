@@ -329,6 +329,16 @@ function getTablero(k) {
       if (x[1] && x[3] && String(x[4] || '').trim()) (entPor[String(x[1])] = entPor[String(x[1])] || {})[String(x[3])] = String(x[4]).trim();
     });
   } catch (e) { registrarError_('entrevistadores por etapa', e); }
+  const descPor = {};
+  try {
+    const hs = hoja_('Historial'), n = hs.getLastRow() - 1;
+    if (n > 0) {
+      const ini = Math.max(2, hs.getLastRow() - 4999);
+      hs.getRange(ini, 1, hs.getLastRow() - ini + 1, 6).getValues().forEach(x => {
+        if (x[1] && x[3] !== 'Reactivado' && /(→\s*|a ")Descartad/.test(String(x[4]))) descPor[String(x[1])] = (String(x[5] || '').trim() || 'sistema') + (x[0] instanceof Date ? ' · ' + fmt_(x[0], 'dd/MM') : '');
+      });
+    }
+  } catch (e) { registrarError_('quién descartó', e); }
   for (let i = 1; i < d.length; i++) {
     const r = d[i];
     if (!r[COL.nombre - 1]) continue;
@@ -339,7 +349,7 @@ function getTablero(k) {
       fila: i + 1, id: String(r[COL.id - 1]), fecha: dt(r[0]), mov: r[COL.mov - 1] instanceof Date ? fmt_(r[COL.mov - 1], "yyyy-MM-dd'T'HH:mm") : '',
       nombre: r[COL.nombre - 1], tel: String(r[COL.tel - 1] || ''), dni: String(r[COL.dni - 1] || ''), email: r[COL.email - 1], loc: r[COL.loc - 1],
       busq: r[COL.busq - 1], pret: String(r[COL.pret - 1] || ''), ajuste: r[COL.ajuste - 1], just: r[COL.just - 1], resumen: r[COL.resumen - 1], req: r[COL.req - 1],
-      cv: r[COL.cv - 1], estado: String(r[COL.estado - 1] || 'Nuevo').trim(), entrev: r[COL.entrev - 1], ent: entPor[String(r[COL.id - 1])] || {},
+      cv: r[COL.cv - 1], estado: String(r[COL.estado - 1] || 'Nuevo').trim(), entrev: r[COL.entrev - 1], ent: entPor[String(r[COL.id - 1])] || {}, descPor: descPor[String(r[COL.id - 1])] || '',
       notaScr: r[COL.notaScr - 1], notaComp: r[COL.notaComp - 1], notaP1: r[COL.notaP1 - 1], notaP2: r[COL.notaP2 - 1],
       recTipo: r[COL.recTipo - 1], recPor: r[COL.recPor - 1], coment: r[COL.coment - 1], resp: resp, proc: r[COL.proc - 1], fuente: r[COL.fuente - 1],
       cita: citaObj_(r[COL.cita - 1]), entrevistas: String(r[COL.entrevistas - 1] || ''), contactado: String(r[COL.contactado - 1] || ''),
