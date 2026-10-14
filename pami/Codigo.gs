@@ -260,7 +260,7 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '37';
+const ESQUEMA = '38';
 
 function actualizarEsquema_() {
   try { asegurarColumnas_(); } catch (e) { registrarError_('asegurar columnas', e); }
@@ -430,7 +430,14 @@ function actualizarEsquema_() {
       props.setProperty('RENOVAR_INICIAL', String(ids.length));
       registrarHistorial_('', 'Renovar análisis de CV', 'Análisis CV', ids.length + ' candidatos activos en cola para renovar el texto del análisis', 'sistema');
     },
-    () => asegurarAjustes_([['carpeta_docs', ''], ['carpeta_docs_poli2', '']])
+    () => asegurarAjustes_([['carpeta_docs', ''], ['carpeta_docs_poli2', '']]),
+    () => {
+      // Carpeta "Documentación" del Drive de dotacionpp2 (compartida con dotacionpp1 como Editor).
+      const aj = hoja_('Ajustes'), d = aj.getDataRange().getValues();
+      const i = d.findIndex(r => String(r[0]).trim() === 'carpeta_docs_poli2');
+      if (i > 0 && !String(d[i][1] || '').trim()) aj.getRange(i + 1, 2).setValue('1C0HSI69hoCWhVN2UW0aBG8lTs5hV5ZGO');
+      try { DriveApp.getFolderById('1C0HSI69hoCWhVN2UW0aBG8lTs5hV5ZGO').getName(); } catch (e) { registrarError_('carpeta_docs_poli2: dotacionpp1 no tiene acceso (compartir como Editor)', e); }
+    }
   ];
   let ok = true;
   pasos.forEach(f => { try { f(); } catch (e) { ok = false; registrarError_('actualizarEsquema', e); } });
