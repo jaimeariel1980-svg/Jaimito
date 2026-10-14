@@ -193,37 +193,6 @@ function agendarCita(k, fila, o) {
   return { ok: true, url: url, ts: fmt_(inicio, 'yyyy-MM-dd HH:mm') };
 }
 
-function sincronizarAgenda(k) {
-  escritor_(k);
-  const lock = LockService.getUserLock();
-  if (!lock.tryLock(30000)) throw new Error('Se está actualizando en este momento. Probá de nuevo en un minuto.');
-  try { syncCalendario(); } finally { lock.releaseLock(); }
-  return true;
-}
-
-function diagnosticoCalendario(k) {
-  admin_(k);
-  const ahora = new Date(), hasta = new Date(ahora.getTime() + 14 * 86400000), aj = ajustes_(), porMail = estadoPorMail_();
-  const cands = hoja_('Candidatos').getDataRange().getValues().slice(1).filter(r => r[COL.nombre - 1]).map(r => candDe_(r));
-  const out = [];
-  const comp = calendariosComp_();
-  if (!comp.length) out.push({ cal: 'Competencias', error: 'no veo ningún calendario con "Competencias" en el nombre (tiene que estar en "Otros calendarios" de ' + CUENTA + ')' });
-  [['PAMI 1', () => calendario_()], ['PAMI 2', () => calendarioPor_(aj.calendario_poli2)]].concat(comp.map(c => [c.nombre, () => c.cal])).forEach(x => {
-    let cal = null;
-    try { cal = x[1](); } catch (e) { }
-    if (!cal) { out.push({ cal: x[0], error: 'no se puede abrir el calendario' }); return; }
-    let evs = [];
-    try { evs = cal.getEvents(ahora, hasta); } catch (e) { out.push({ cal: x[0], error: 'sin permiso para leer los eventos' }); return; }
-    evs.forEach(e => {
-      const inv = e.getGuestList().map(g => g.getEmail().toLowerCase());
-      const m = cands.find(c => eventoEsDe_({ titulo: e.getTitle(), invitados: inv }, c));
-      out.push({ cal: x[0], ts: fmt_(e.getStartTime(), 'yyyy-MM-dd HH:mm'), titulo: String(e.getTitle() || '').slice(0, 70), inv: inv.length, cand: m ? m.nombre : '', tipo: TIPO_ETAPA[etapaDeTitulo_(tituloEvento_(e, porMail))] || '' });
-    });
-  });
-  out.sort((a, b) => String(a.ts || '') < String(b.ts || '') ? -1 : 1);
-  return out.slice(0, 120);
-}
-
 function asociarTurno(k, fila, o) {
   escritor_(k);
   const sh = hoja_('Candidatos');
