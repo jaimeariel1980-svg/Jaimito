@@ -367,13 +367,9 @@ function tableroTecnica_() {
     const r = d[i];
     if (!r[COL.nombre - 1]) continue;
     try { permiteTecnico_(r); } catch (e) { continue; }
-    let resp = [];
-    try { resp = JSON.parse(r[COL.resp - 1] || '[]'); } catch (e) { }
-    resp = resp.filter(x => !/pretensi|remunera|sueldo|salari|conoc[eé]s a alguien/i.test(String(x.q)));
     cands.push({
       fila: i + 1, id: String(r[COL.id - 1]), nombre: r[COL.nombre - 1], busq: r[COL.busq - 1], policlinico: poliEf_(r), estado: String(r[COL.estado - 1]).trim(),
-      cita: citaObj_(r[COL.cita - 1]), ajuste: r[COL.ajuste - 1], notaScr: r[COL.notaScr - 1], notaComp: r[COL.notaComp - 1], notaP2: r[COL.notaP2 - 1],
-      turno: String(r[COL.turno - 1] || ''), zona: String(r[COL.zona - 1] || ''), formacion: String(r[COL.formacion - 1] || ''), just: r[COL.just - 1], resumen: r[COL.resumen - 1], req: r[COL.req - 1], resp: resp, mov: ''
+      cita: citaObj_(r[COL.cita - 1]), loc: r[COL.loc - 1], formacion: String(r[COL.formacion - 1] || ''), resumen: r[COL.resumen - 1], mov: ''
     });
   }
   cands.sort((a, b) => String(a.cita ? a.cita.ts : '9') < String(b.cita ? b.cita.ts : '9') ? -1 : 1);
@@ -770,6 +766,14 @@ function getResumen_(k, fila) {
       delete x.eval; delete x.val;
     }
   } catch (err) { registrarError_('resumen screening', err); }
+  if (ROL_ === 'Técnica') {
+    const pick = (o, ks) => { const x = {}; ks.forEach(c => { if (o && o[c]) x[c] = o[c]; }); return x; };
+    const S = out.screening && out.screening.datos || {}, C = out.competencias && out.competencias.datos || {};
+    return JSON.stringify({
+      screening: { datos: { datos: pick(S.datos, ['edad', 'formacion', 'empresaAct', 'posAct']), comentario: S.comentario } },
+      competencias: { datos: { meta: pick(C.meta, ['edad', 'localidad', 'formacion', 'empresaAct', 'puestoAct', 'antig']), fortalezas: C.fortalezas, areas: C.areas, recomendacion: C.recomendacion } }
+    });
+  }
   return JSON.stringify(out);
 }
 

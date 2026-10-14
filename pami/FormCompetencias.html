@@ -70,7 +70,7 @@ var FC=(function(){
   function inp(id,l,ph,v){return '<div><label class="l">'+l+'</label><input type="text" id="'+id+'" placeholder="'+(ph||'')+'" value="'+esc(v||'')+'"></div>';}
   function render(){
     var c=D.cand,h=D.hero,hoy=new Date(new Date().getTime()-3*3600000).toISOString().slice(0,10),ent=ENTRE||c.entrev||'';
-    var scr=c.notaScr?'<div><small>Screening</small>'+esc(c.notaScr)+(c.infScr?' · <a target="_blank" href="'+esc(c.infScr)+'">📄 Ver screening</a>':'')+'</div>':'';
+    var scr=(c.notaScr&&ETAPA!=='tecnica')?'<div><small>Screening</small>'+esc(c.notaScr)+(c.infScr?' · <a target="_blank" href="'+esc(c.infScr)+'">📄 Ver screening</a>':'')+'</div>':'';
     CONT.innerHTML=
     '<div class="hero"><div class="in"><div class="brandrow"><span class="lg w"></span><span class="prod">Atracción y Elección</span></div><h1>'+(ETAPA==='tecnica'?'Entrevista técnica de ':'Entrevista de ')+esc(c.nombre)+'</h1><div class="meta"><div><small>Cliente</small>'+esc(h.cliente)+'</div><div><small>Posición</small>'+esc(h.puesto)+'</div>'+(ETAPA==='tecnica'?'':'<div><small>Metodología</small>STAR (A-B-C-D-E)</div>')+scr+'</div></div></div>'+
     '<div class="wrap"><div id="form">'+
