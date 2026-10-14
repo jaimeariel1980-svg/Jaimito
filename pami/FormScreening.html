@@ -88,7 +88,7 @@ var FS=(function(){
   function pick(el){var id=el.dataset.id;CONT.querySelectorAll('.pill[data-id="'+id+'"]').forEach(function(p){p.className='pill';});el.classList.add(el.dataset.v);S.val[id]=el.dataset.v;calc();}
   function calc(){
     var score=0,total=0,hay=false;
-    D.evalItems.forEach(function(it){var v=S.eval[it.id];if(!v)return;hay=true;total+=it.peso;if(v==='alto')score+=it.peso;else if(v==='medio')score+=it.peso*0.5;});
+    D.evalItems.forEach(function(it){var v=S.eval[it.id];if(!v)return;hay=true;total+=it.peso;var pt=it.pts||[0,0.5,1];score+=it.peso*({bajo:pt[0],medio:pt[1],alto:pt[2]}[v]||0);});
     if(!hay){S.auto=null;S.norm=null;return;}
     var sal=S.val.v1;if(sal){total+=1.5;if(sal==='si')score+=1.5;else if(sal==='revisar')score+=0.75;}
     Object.keys(S.val).filter(function(k){return k!=='v1';}).map(function(k){return S.val[k];}).filter(Boolean).forEach(function(v){total+=0.3;if(v==='si'||v==='alto')score+=0.3;else if(v==='revisar'||v==='medio')score+=0.15;});
