@@ -849,7 +849,9 @@ function getFichaEnfermeria_(k, fila, forzar) {
     ficha.resumen = ''; ficha.editado = false;
   } else {
     if (forzar && ROL_ === 'Técnica') throw new Error('No autorizado');
-    ficha.resumen = (cv && obs) || (cv.length + obs.length) > 400 ? generarResumenEnf_(cv, obs) : [cv, obs].filter(Boolean).join('\n');
+    const usaIA = !!((cv && obs) || (cv.length + obs.length) > 400);
+    ficha.resumen = usaIA ? generarResumenEnf_(cv, obs) : [cv, obs].filter(Boolean).join('\n');
+    ficha.generada = usaIA;
     ficha.editado = false;
     try { sh.getRange(fila, COL.fichaEnf).setValue(JSON.stringify({ t: ficha.resumen, h: h, e: 0 })); } catch (e) { registrarError_('guardar ficha enfermería', e); }
   }
