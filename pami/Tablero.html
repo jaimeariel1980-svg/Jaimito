@@ -127,7 +127,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v59</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v60</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -699,8 +699,16 @@ function pintarAgenda(){
   var pend=D.cands.filter(function(c){return kpiOk('ctc',c)&&agOk(c.policlinico,f);}).map(function(c){var m=String(c.contactado).match(/^(.*?)\s*·\s*(\d{2})\/(\d{2})\/(\d{4})/);return {c:c,etq:m?m[1]:'',d:m?new Date(m[4],m[3]-1,m[2]):null};}).sort(function(a,b){return (a.d||0)-(b.d||0);});
   if(pend.length)h+='<div class="sec" style="color:#B58900">Contactados · todavía sin agendar ('+pend.length+')</div>'+pend.map(function(x){var dias=x.d?Math.max(0,Math.floor((new Date(D.ahora)-x.d)/86400000)):null;return '<div class="row" style="cursor:pointer" onclick="abrir('+x.c.fila+')"><span class="l" style="width:70px">'+(dias==null?'':(dias===0?'hoy':'hace '+dias+' d'))+'</span><span class="v">'+badgePol(x.c.policlinico)+' <b>'+esc(x.c.nombre)+'</b> · para '+esc(x.etq)+' <small style="color:#5D6B82">'+esc(tit(x.c.busq))+'</small></span></div>';}).join('');
   var sa=AG.sinAsignar.filter(function(a){return agOk(a.poli||'',f);});
-  if(sa.length)h+='<div class="sec" style="color:#D9534F">Turnos del calendario sin candidato asociado</div><div class="txt" style="color:#5D6B82;margin-bottom:6px">Alguien reservó pero su nombre o mail no coincide con ningún candidato cargado. Revisalos a mano.</div>'+sa.map(function(a){return '<div class="row"><span class="l" style="width:110px">'+esc(a.ts.slice(8,10)+'/'+a.ts.slice(5,7)+' '+a.ts.slice(11,16))+'</span><span class="v">'+badgePol(a.poli||'')+' '+esc(a.titulo)+(a.invitados?' <small style="color:#5D6B82">'+esc(a.invitados)+'</small>':'')+'</span></div>';}).join('');
+  if(sa.length)h+='<div class="sec" style="color:#D9534F">Turnos del calendario sin candidato asociado</div><div class="txt" style="color:#5D6B82;margin-bottom:6px">Alguien reservó con otro nombre o mail. Elegí el candidato y tocá Asociar: queda guardado para los próximos turnos.</div><datalist id="dlc">'+D.cands.map(function(c){return '<option value="'+esc(c.nombre)+'">';}).join('')+'</datalist>'+(AGSA=sa).map(function(a,i){return '<div class="row"><span class="l" style="width:110px">'+esc(a.ts.slice(8,10)+'/'+a.ts.slice(5,7)+' '+a.ts.slice(11,16))+'</span><span class="v">'+badgePol(a.poli||'')+' '+esc(a.titulo)+(a.invitados?' <small style="color:#5D6B82">'+esc(a.invitados)+'</small>':'')+'<div style="display:flex;gap:6px;margin-top:6px"><input list="dlc" id="asi'+i+'" placeholder="Candidato…" style="flex:1;min-width:0"><button class="btn" onclick="asociar('+i+',this)">Asociar</button></div></span></div>';}).join('');
   e.innerHTML=h;
+}
+var AGSA=[];
+function asociar(i,btn){
+  var n=document.getElementById('asi'+i).value.trim(),m=D.cands.filter(function(c){return c.nombre===n;});
+  if(!m.length){alert('Elegí un candidato de la lista.');return;}
+  if(m.length>1){alert('Hay más de un candidato con ese nombre; asocialo desde la planilla.');return;}
+  btn.textContent='Asociando…';btn.disabled=true;
+  gs().withSuccessHandler(function(){toast('Asociado');verAgenda();}).withFailureHandler(function(e){btn.textContent='Asociar';btn.disabled=false;fer(e);}).asociarTurno(K,m[0].fila,{titulo:AGSA[i].titulo,invitados:AGSA[i].invitados});
 }
 function exportarAgenda(){
   if(!AG)return;

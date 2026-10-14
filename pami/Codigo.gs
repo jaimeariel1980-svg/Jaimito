@@ -1,6 +1,6 @@
 const CUENTA = 'dotacionpp1@gmail.com';
-const HEAD_CAND = ['Fecha', 'Nombre', 'Teléfono', 'DNI', 'Email', 'Localidad', 'Búsqueda', 'Pretensión', 'Nivel de Ajuste', 'Justificación', 'Resumen', 'Requisitos', 'Link CV', 'Estado', 'Entrevistó', 'Nota screening', 'Nota competencias', 'Recomendó', 'Recomendado por', 'Comentarios', 'Respuestas', 'Procesado', 'Intentos', 'Fuente', 'ID', 'Nota PAMI virtual', 'Nota entrevista técnica', 'Cita', 'Entrevistas (calendario)', 'Contactado', 'Descarte enviado', 'Informe screening', 'Informe competencias', 'Último movimiento', 'Zona', 'Formación', 'Postulación', 'Policlínico', 'Domicilio', 'Policlínico sugerido', 'Domicilio revisado', 'Motivo de descarte', 'Turno preferido', 'Descartó'];
-const COL = { fecha: 1, nombre: 2, tel: 3, dni: 4, email: 5, loc: 6, busq: 7, pret: 8, ajuste: 9, just: 10, resumen: 11, req: 12, cv: 13, estado: 14, entrev: 15, notaScr: 16, notaComp: 17, recTipo: 18, recPor: 19, coment: 20, resp: 21, proc: 22, intentos: 23, fuente: 24, id: 25, notaP1: 26, notaP2: 27, cita: 28, entrevistas: 29, contactado: 30, descarte: 31, infScr: 32, infComp: 33, mov: 34, zona: 35, formacion: 36, postulacion: 37, policlinico: 38, domicilio: 39, polSug: 40, domRev: 41, motivo: 42, turno: 43, descPor: 44 };
+const HEAD_CAND = ['Fecha', 'Nombre', 'Teléfono', 'DNI', 'Email', 'Localidad', 'Búsqueda', 'Pretensión', 'Nivel de Ajuste', 'Justificación', 'Resumen', 'Requisitos', 'Link CV', 'Estado', 'Entrevistó', 'Nota screening', 'Nota competencias', 'Recomendó', 'Recomendado por', 'Comentarios', 'Respuestas', 'Procesado', 'Intentos', 'Fuente', 'ID', 'Nota PAMI virtual', 'Nota entrevista técnica', 'Cita', 'Entrevistas (calendario)', 'Contactado', 'Descarte enviado', 'Informe screening', 'Informe competencias', 'Último movimiento', 'Zona', 'Formación', 'Postulación', 'Policlínico', 'Domicilio', 'Policlínico sugerido', 'Domicilio revisado', 'Motivo de descarte', 'Turno preferido', 'Descartó', 'Alias de agenda'];
+const COL = { fecha: 1, nombre: 2, tel: 3, dni: 4, email: 5, loc: 6, busq: 7, pret: 8, ajuste: 9, just: 10, resumen: 11, req: 12, cv: 13, estado: 14, entrev: 15, notaScr: 16, notaComp: 17, recTipo: 18, recPor: 19, coment: 20, resp: 21, proc: 22, intentos: 23, fuente: 24, id: 25, notaP1: 26, notaP2: 27, cita: 28, entrevistas: 29, contactado: 30, descarte: 31, infScr: 32, infComp: 33, mov: 34, zona: 35, formacion: 36, postulacion: 37, policlinico: 38, domicilio: 39, polSug: 40, domRev: 41, motivo: 42, turno: 43, descPor: 44, alias: 45 };
 const MOTIVOS_DESCARTE = ['Fuera de zona', 'Fuera de edad', 'Falta de experiencia', 'Formación no adecuada', 'Remuneración fuera de rango', 'No le interesa', 'Alta rotación', 'No atendió / No se presentó'];
 
 const TURNOS = ['23 a 06', '17 a 00', '12 a 19', 'SADOFE'];
@@ -261,7 +261,7 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '31';
+const ESQUEMA = '32';
 
 function actualizarEsquema_() {
   try { asegurarColumnas_(); } catch (e) { registrarError_('asegurar columnas', e); }
@@ -269,7 +269,7 @@ function actualizarEsquema_() {
   if (props.getProperty('ESQUEMA') === ESQUEMA) return;
   const sh = hoja_('Candidatos');
   const pasos = [
-    () => [[COL.policlinico, 'Policlínico'], [COL.domicilio, 'Domicilio'], [COL.polSug, 'Policlínico sugerido'], [COL.domRev, 'Domicilio revisado'], [COL.motivo, 'Motivo de descarte'], [COL.turno, 'Turno preferido'], [COL.descPor, 'Descartó'], [COL.notaP2, 'Nota entrevista técnica']].forEach(x => {
+    () => [[COL.policlinico, 'Policlínico'], [COL.domicilio, 'Domicilio'], [COL.polSug, 'Policlínico sugerido'], [COL.domRev, 'Domicilio revisado'], [COL.motivo, 'Motivo de descarte'], [COL.turno, 'Turno preferido'], [COL.descPor, 'Descartó'], [COL.alias, 'Alias de agenda'], [COL.notaP2, 'Nota entrevista técnica']].forEach(x => {
       const c = sh.getRange(1, x[0]);
       const v = String(c.getValue()).trim();
       if (!v || (x[0] === COL.notaP2 && v === 'Nota PAMI presencial')) c.setValue(x[1]).setFontWeight('bold').setBackground('#034EA2').setFontColor('#FFFFFF');
@@ -380,6 +380,19 @@ function actualizarEsquema_() {
       if (i > 0) aj.getRange(i + 1, 2).setValue('https://calendar.app.google/r8219yikePGxWB3YA');
       else aj.appendRow(['link_agenda_competencias', 'https://calendar.app.google/r8219yikePGxWB3YA']);
       props.setProperty('LINK_COMP_P1', '1');
+    },
+    () => {
+      const props = PropertiesService.getScriptProperties();
+      if (props.getProperty('ALIAS_INICIAL')) return;
+      const sub = { 'nataly munoz': ['nattymunoz75@gmail.com', 'natty19 munoz'], 'federico walter rolon': ['feede rolon'] };
+      sh.getDataRange().getValues().forEach((r, i) => {
+        const add = sub[norm_(r[COL.nombre - 1]).replace(/\s+/g, ' ').trim()];
+        if (i < 1 || !add) return;
+        const act = String(r[COL.alias - 1] || '').split(';').map(x => x.trim()).filter(Boolean);
+        add.forEach(x => { if (act.indexOf(x) === -1) act.push(x); });
+        sh.getRange(i + 1, COL.alias).setValue(act.join('; '));
+      });
+      props.setProperty('ALIAS_INICIAL', '1');
     }
   ];
   let ok = true;
