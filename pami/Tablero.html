@@ -127,11 +127,12 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v72</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v73</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
     <button class="ni" onclick="verDireccion()"><span class="ic b">📊</span><b>Informe</b></button>
+    <button class="ni" onclick="vistaPreview()"><span class="ic g">🩺</span><b>Enfermería</b></button>
     <button class="ni" onclick="descartes()"><span class="ic o">✉</span><b>Descartes</b></button>
     <button class="ni" id="bPerfil" style="display:none" onclick="verPerfil()"><span class="ic b">📋</span><b>Perfil del puesto</b></button>
     <button class="ni" id="bCtl" style="display:none" onclick="panelControl()"><span class="ic b">📜</span><b>Control</b></button>
@@ -302,7 +303,7 @@ function cargar(){
   var rf=document.querySelector('#rf b');rf.textContent='Actualizando…';
   gs().withSuccessHandler(function(j){
     document.getElementById('login').classList.remove('show');guardarCred();var primera=!D;D=JSON.parse(j);if(D.tecnica){rf.textContent='Actualizar';vistaTecnica();return;}RO=(D.rol==='Lectura');ajustarRol();try{if(D.cfg.recordarDias){REM_MS=D.cfg.recordarDias*86400000;localStorage.setItem('pami_rd',String(D.cfg.recordarDias));}if(D.cfg.sesionHoras){IDLE_MS=D.cfg.sesionHoras*3600000;localStorage.setItem('pami_ih',String(D.cfg.sesionHoras));}}catch(e){}try{if(!sessionStorage.getItem('pami_ing')){sessionStorage.setItem('pami_ing','1');gs().withSuccessHandler(function(){}).withFailureHandler(function(){}).registrarAcceso(K,'Ingreso');}}catch(e){}rf.textContent='Actualizar';pintarUsuario();
-    if(primera)init();else render();
+    if(primera)init();else render();if(VP)vistaPreview();
   }).withFailureHandler(function(e){
     rf.textContent='Actualizar';
     if(/LOGIN:/.test((e&&e.message)||'')){mostrarLogin(msgLogin(e));return;}
@@ -512,7 +513,7 @@ function abrirForm(tipo,f){
   var o={K:K,cid:c.id,entre:c.entrev||'',container:document.getElementById('fbody'),onDone:function(){cargar();},onClose:volverFicha};
   if(tipo==='screening')FS.open(o);else{if(tipo==='tecnica')o.etapa='tecnica';FC.open(o);}
 }
-function volverFicha(){if(D&&D.tecnica){cerrarFormTec();return;}document.getElementById('fmodal').classList.remove('show');document.getElementById('fbody').innerHTML='';cargar();if(FORM_F)abrir(FORM_F);}
+function volverFicha(){if((D&&D.tecnica)||VP){cerrarFormTec();return;}document.getElementById('fmodal').classList.remove('show');document.getElementById('fbody').innerHTML='';cargar();if(FORM_F)abrir(FORM_F);}
 
 function kv(l,v){return v?'<div class="kv"><small>'+l+'</small><b>'+esc(v)+'</b></div>':'';}
 function panel(t,items,full){var h=items.join('');return h?'<div class="pn'+(full?' full':'')+'"><h4>'+t+'</h4><div class="kvg">'+h+'</div></div>':'';}
@@ -542,7 +543,7 @@ function abrir(f){
   var puedeDesc=/^Descartado (sin|post) screening$/.test(c.estado)&&!c.descarte&&/@/.test(c.email||'');
   document.getElementById('mbox').innerHTML=
     '<div class="hd"><div><h2>'+esc(c.nombre)+'</h2><small>'+esc(tit(c.busq))+' · '+esc(c.estado)+'</small><div class="ecs">'+etapasHdr(c)+'</div></div><button class="x" onclick="cerrar()">×</button></div><div class="bd">'+al+
-    '<div class="btns"><button class="btn" onclick="abrirForm(\'screening\','+f+')">📝 Formulario screening</button><button class="btn" onclick="abrirForm(\'competencias\','+f+')">💼 Formulario competencias</button><button class="btn" onclick="abrirForm(\'tecnica\','+f+')">🩺 Formulario técnica</button>'+(c.infScr?'<a class="btn ghost" target="_blank" href="'+esc(c.infScr)+'">Ver screening</a>':'')+(c.infComp?'<a class="btn ghost" target="_blank" href="'+esc(c.infComp)+'">Ver competencias</a>':'')+(c.resp.length?'<button class="btn ghost" onclick="verPost('+f+',this)">📋 Ver postulación</button>':'')+'<button class="btn ghost" onclick="verResumen('+f+',this)">📄 Resumen</button><button class="btn ghost" onclick="verResumen('+f+',this,true)">🩺 Para Enfermería</button></div>'+
+    '<div class="btns"><button class="btn" onclick="abrirForm(\'screening\','+f+')">📝 Formulario screening</button><button class="btn" onclick="abrirForm(\'competencias\','+f+')">💼 Formulario competencias</button><button class="btn" onclick="abrirForm(\'tecnica\','+f+')">🩺 Formulario técnica</button>'+(c.infScr?'<a class="btn ghost" target="_blank" href="'+esc(c.infScr)+'">Ver screening</a>':'')+(c.infComp?'<a class="btn ghost" target="_blank" href="'+esc(c.infComp)+'">Ver competencias</a>':'')+(c.resp.length?'<button class="btn ghost" onclick="verPost('+f+',this)">📋 Ver postulación</button>':'')+'<button class="btn ghost" onclick="verResumen('+f+',this)">📄 Resumen</button></div>'+
     '<div class="btns">'+(c.cv?'<a class="btn ghost" target="_blank" href="'+esc(c.cv)+'">📄 Ver CV</a>':'')+(c.tel?'<button class="btn wa" onclick="menuWA('+f+')">💬 WhatsApp ▾</button>':'')+(/@/.test(c.email||'')?'<a class="btn ghost" target="_blank" href="https://mail.google.com/mail/?view=cm&to='+encodeURIComponent(c.email)+'">✉ Mail</a>':'')+'<button class="btn cel" onclick="agendar('+f+')">📅 Agendar</button>'+(puedeDesc?'<button class="btn red" onclick="descarteMail('+f+',this)">✉ Descarte por mail</button>':'')+(c.proc!=='SI'?'<button class="btn sec" onclick="rean('+f+',this)">↻ Re-analizar CV</button>':'')+(c.contactado?'<button class="btn sec" onclick="borrarMarca('+f+')">✕ Borrar marca de contacto</button>':'')+'</div>'+
     '<div class="fp">'+panel('Contacto',[kv('Teléfono',c.tel),kv('DNI',c.dni),kv('Email',c.email),kv('Domicilio',c.domicilio),kv('Localidad',c.loc),kv('Zona',c.zona)])+panel('Postulación',[kv('Recibido',c.fecha),kv('Llegó por',c.fuente),kv('Formación',c.formacion),kv('Pretensión',money(c.pret)),kv('Conoce a alguien en PAMI',c.conoce)])+panel('Proceso',[kv('Estado',c.estado),kv('Policlínico',c.policlinico||'Sin asignar'),kv('Sugerido por cercanía',c.polSug),kv('Notas por etapa',notasTxt(c)),kv('Turno preferido',String(c.turno||'').replace(/;/g,' ·')),kv('Entrevistó screening',(c.ent||{}).screening),kv('Entrevistó competencias',(c.ent||{}).competencias),kv('Entrevistó técnica',(c.ent||{}).pami2),kv('Último contacto',ultCont(c)),kv('Descartó',/^Descartad/i.test(c.estado)?c.descPor:''),kv('Descarte',c.descarte)],true)+'</div>'+
     (c.just?'<div class="sec">Análisis del CV</div><div class="txt"><b>'+esc(c.just)+'</b></div>':'')+(c.resumen?'<div class="txt" style="margin-top:6px">'+esc(c.resumen)+'</div>':'')+(c.req?'<div class="txt" style="margin-top:6px;color:#5D6B82">'+esc(c.req)+'</div>':'')+resp+
@@ -711,16 +712,33 @@ function infDoc(tit,cuerpo){return '<!doctype html><html><head><meta charset="ut
 function infLogo(){var e=document.querySelector('.hdr .lg'),bg=e?getComputedStyle(e).backgroundImage:'';return bg&&bg!=='none'?'<span style="display:inline-block;height:54px;aspect-ratio:216/71;flex-shrink:0;background:'+bg.replace(/"/g,"'")+' center/contain no-repeat;filter:brightness(0) invert(1)"></span>':'';}
 function infCard(l,v){return v?'<div class="cd"><small>'+esc(l)+'</small><b>'+esc(v)+'</b></div>':'';}
 function infFecha(){var d=D.ahora.slice(0,10).split('-');return d[2]+'/'+d[1]+'/'+d[0];}
-function vistaTecnica(){
-  if(document.getElementById('fmodal').classList.contains('show'))return;
+function tecCard(c){
+  var cita=c.cita?'📅 '+c.cita.ts.slice(8,10)+'/'+c.cita.ts.slice(5,7)+' '+c.cita.ts.slice(11,16):'Sin agendar';
+  return '<div style="background:#fff;border:1px solid var(--line);border-left:5px solid var(--celeste);border-radius:8px;padding:14px 16px;margin-bottom:12px"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><b style="font-size:17px">'+esc(c.nombre)+'</b><div style="color:#5D6B82;font-size:13px">'+esc(tit(c.busq))+(VP&&c.policlinico?' · '+esc(c.policlinico.replace('Policlínico ','')):'')+'</div></div><div style="font-size:13px;font-weight:700;color:#034EA2">'+cita+'</div></div><div class="btns" style="margin-top:12px"><button class="btn ghost" onclick="verResumen('+c.fila+',this,true)">📄 Ver ficha</button><button class="btn" onclick="abrirFormTec('+c.fila+')">🩺 Evaluar</button></div></div>';
+}
+function tecOverlay(){
   var v=document.getElementById('tecv');
   if(!v){v=document.createElement('div');v.id='tecv';v.style.cssText='position:fixed;inset:0;z-index:40;background:var(--bg);overflow:auto';document.body.appendChild(v);}
-  var L=D.cands,ch=function(t,n){var col=NF[n];return col?'<span style="background:'+col[0]+';color:'+col[1]+';border-radius:5px;padding:3px 8px;font-size:12px;font-weight:800;margin-right:6px">'+t+' '+esc(n)+'</span>':'';};
-  var cita=function(c){return c.cita?'📅 '+c.cita.ts.slice(8,10)+'/'+c.cita.ts.slice(5,7)+' '+c.cita.ts.slice(11,16):'Sin agendar';};
-  v.innerHTML='<div class="hdr"><div class="in"><span class="lg w"></span><div class="prod">Entrevista técnica<small class="ver">'+esc(D.poli||'')+'</small></div><span class="sp"></span><button class="cta" onclick="cambiarPinTec()">🔑 PIN</button> <button class="cta" onclick="cerrarSesion()">Salir</button></div></div>'+
-    '<div style="max-width:900px;margin:0 auto;padding:18px 16px 60px"><div style="font-size:14px;color:#5D6B82;margin-bottom:14px">Hola <b>'+esc(D.user)+'</b>. '+(D.poli?(L.length?L.length+' candidato'+(L.length===1?'':'s')+' para entrevista técnica en '+esc(D.poli)+'.':'No hay candidatos para entrevista técnica en '+esc(D.poli)+' por ahora.'):'Todavía no tenés un policlínico asignado. Avisale al administrador.')+'</div>'+
-    L.map(function(c){return '<div style="background:#fff;border:1px solid var(--line);border-left:5px solid var(--celeste);border-radius:8px;padding:14px 16px;margin-bottom:12px"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><b style="font-size:17px">'+esc(c.nombre)+'</b><div style="color:#5D6B82;font-size:13px">'+esc(tit(c.busq))+'</div></div><div style="font-size:13px;font-weight:700;color:#034EA2">'+cita(c)+'</div></div><div style="margin:10px 0"></div><div class="btns"><button class="btn ghost" onclick="verResumen('+c.fila+',this,true)">📄 Ver ficha</button><button class="btn" onclick="abrirFormTec('+c.fila+')">🩺 Evaluar</button></div></div>';}).join('')+'</div>';
+  return v;
 }
+function vistaTecnica(){
+  if(document.getElementById('fmodal').classList.contains('show'))return;
+  var v=tecOverlay(),L=D.cands;
+  v.innerHTML='<div class="hdr"><div class="in"><span class="lg w"></span><div class="prod">Entrevista técnica<small class="ver">'+esc(D.poli||'')+'</small></div><span class="sp"></span><button class="cta" onclick="cambiarPinTec()">🔑 PIN</button> <button class="cta" onclick="cerrarSesion()">Salir</button></div></div>'+
+    '<div style="max-width:900px;margin:0 auto;padding:18px 16px 60px"><div style="font-size:14px;color:#5D6B82;margin-bottom:14px">Hola <b>'+esc(D.user)+'</b>. '+(D.poli?(L.length?L.length+' candidato'+(L.length===1?'':'s')+' para entrevista técnica en '+esc(D.poli)+'.':'No hay candidatos para entrevista técnica en '+esc(D.poli)+' por ahora.'):'Todavía no tenés un policlínico asignado. Avisale al administrador.')+'</div>'+L.map(tecCard).join('')+'</div>';
+}
+var VP=false,VPP='';
+function vistaPreview(poli){
+  if(typeof poli==='string')VPP=poli;
+  if(document.getElementById('fmodal').classList.contains('show'))return;
+  VP=true;
+  var est=['Avanza a entrevista técnica','Entrevista técnica agendada'];
+  var L=D.cands.filter(function(c){var p=c.policlinico||String(c.polSug||'').split(' · ')[0];return est.indexOf(c.estado)>-1&&(!VPP||p===VPP);}).sort(function(a,b){return String(a.cita?a.cita.ts:'9')<String(b.cita?b.cita.ts:'9')?-1:1;});
+  L.forEach(function(c){if(!c.policlinico)c.policlinico=String(c.polSug||'').split(' · ')[0];});
+  tecOverlay().innerHTML='<div class="hdr"><div class="in"><span class="lg w"></span><div class="prod">Vista de Enfermería<small class="ver">así la ven los jefes</small></div><span class="sp"></span><select style="width:auto;margin-right:8px" onchange="vistaPreview(this.value)"><option value="">Todos los policlínicos</option>'+D.policlinicos.map(function(p){return '<option'+(p===VPP?' selected':'')+'>'+p+'</option>';}).join('')+'</select><button class="cta" onclick="cerrarPreview()">← Volver al tablero</button></div></div>'+
+    '<div style="max-width:900px;margin:0 auto;padding:18px 16px 60px"><div style="font-size:14px;color:#5D6B82;margin-bottom:14px">'+(L.length?L.length+' candidato'+(L.length===1?'':'s')+' para entrevista técnica'+(VPP?' en '+esc(VPP):'')+'. Cada jefe ve solo los de su policlínico.':'No hay candidatos para entrevista técnica'+(VPP?' en '+esc(VPP):'')+' por ahora.')+'</div>'+L.map(tecCard).join('')+'</div>';
+}
+function cerrarPreview(){VP=false;var v=document.getElementById('tecv');if(v)v.remove();}
 function abrirFormTec(f){
   var c=byFila(f);FORM_F=f;
   document.getElementById('ftit').textContent='Entrevista técnica · '+c.nombre;
@@ -728,7 +746,7 @@ function abrirFormTec(f){
   document.getElementById('fmodal').classList.add('show');document.getElementById('fmodal').scrollTop=0;
   FC.open({K:K,cid:c.id,etapa:'tecnica',container:document.getElementById('fbody'),onDone:function(){},onClose:cerrarFormTec});
 }
-function cerrarFormTec(){document.getElementById('fmodal').classList.remove('show');document.getElementById('fbody').innerHTML='';cargar();}
+function cerrarFormTec(){document.getElementById('fmodal').classList.remove('show');document.getElementById('fbody').innerHTML='';cargar();if(VP)vistaPreview();}
 function cambiarPinTec(){
   var n=prompt('Nuevo PIN (de 4 a 6 números):');if(n===null)return;n=n.trim();
   if(!/^\d{4,6}$/.test(n)){alert('El PIN tiene que ser de 4 a 6 números.');return;}
