@@ -684,3 +684,19 @@ function copiaAhora(k) {
   accesoLog_(QUIEN_, 'Copia de seguridad', 'Manual: ' + n);
   return n;
 }
+
+function getResumen(k, fila) {
+  admin_(k);
+  const sh = hoja_('Candidatos');
+  fila = Number(fila);
+  if (!(fila >= 2 && fila <= sh.getLastRow())) throw new Error('Fila inválida');
+  const id = String(sh.getRange(fila, COL.id).getValue()), out = {};
+  const ev = hoja_('Evaluaciones');
+  if (ev && ev.getLastRow() > 1) ev.getRange(2, 1, ev.getLastRow() - 1, 9).getValues().forEach(x => {
+    if (String(x[1]) !== id || !x[3]) return;
+    let datos = {};
+    try { datos = JSON.parse(x[8] || '{}'); } catch (e) { }
+    out[String(x[3])] = { fecha: x[0] instanceof Date ? fmt_(x[0], 'dd/MM/yyyy') : String(x[0] || ''), entrevisto: String(x[4] || ''), nota: String(x[5] || ''), score: x[6], datos: datos };
+  });
+  return JSON.stringify(out);
+}
