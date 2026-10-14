@@ -7,7 +7,7 @@ function usuarios_() {
   let lista = [];
   try {
     const sh = hoja_('Usuarios');
-    if (sh) lista = sh.getDataRange().getValues().slice(1).filter(r => String(r[0]).trim()).map(r => ({ nombre: String(r[0]).trim(), pin: String(r[1] || '').trim(), activo: !/^no$/i.test(String(r[2] || '').trim()), rol: /^admin/i.test(String(r[4] || '').trim()) ? 'Admin' : (/^(lectura|solo)/i.test(String(r[4] || '').trim()) ? 'Lectura' : 'Entrevistador') }));
+    if (sh) lista = sh.getDataRange().getValues().slice(1).filter(r => String(r[0]).trim()).map(r => ({ nombre: String(r[0]).trim(), pin: String(r[1] || '').trim(), activo: !/^no$/i.test(String(r[2] || '').trim()), rol: /^admin/i.test(String(r[4] || '').trim()) ? 'Admin' : (/^(lectura|solo)/i.test(String(r[4] || '').trim()) ? 'Lectura' : (/^t[eé]cnic/i.test(String(r[4] || '').trim()) ? 'Técnica' : 'Entrevistador')), poli: String(r[5] || '').trim() }));
   } catch (e) { }
   if (lista.length && !lista.some(u => u.rol === 'Admin')) lista[0].rol = 'Admin';
   lista.forEach(u => { u.admin = u.rol === 'Admin'; });
@@ -47,6 +47,19 @@ function verificarPin_(u, pin) {
 
 let ROL_ADMIN_ = false;
 let ROL_ = 'Entrevistador';
+let POLI_ = '';
+let TEC_OK_ = false;
+
+function conTec_(fn) {
+  const prev = TEC_OK_;
+  TEC_OK_ = true;
+  try { return fn(); } finally { TEC_OK_ = prev; }
+}
+
+function getTablero(k) { return conTec_(() => getTablero_(k)); }
+function getResumen(k, fila) { return conTec_(() => getResumen_(k, fila)); }
+function cambiarPin(k, nuevo) { return conTec_(() => cambiarPin_(k, nuevo)); }
+function registrarAcceso(k, accion) { return conTec_(() => registrarAcceso_(k, accion)); }
 
 function admin_(k) {
   const p = String(k).split('|');
@@ -59,6 +72,8 @@ function admin_(k) {
     QUIEN_ = u.nombre;
     ROL_ = u.rol;
     ROL_ADMIN_ = !!u.admin;
+    POLI_ = u.poli || '';
+    if (ROL_ === 'Técnica' && !TEC_OK_) throw new Error('Tu usuario solo puede cargar la entrevista técnica');
   } else {
     QUIEN_ = nombre;
     ROL_ = 'Entrevistador';
@@ -89,7 +104,7 @@ function hojaUsuarios_() {
   const ss = ss_();
   let sh = ss.getSheetByName('Usuarios');
   if (!sh) sh = ss.insertSheet('Usuarios');
-  asegurarEncabezados_(sh, ['Nombre', 'PIN', 'Activo', 'Notas', 'Rol']);
+  asegurarEncabezados_(sh, ['Nombre', 'PIN', 'Activo', 'Notas', 'Rol', 'Policlínico']);
   return sh;
 }
 
@@ -124,12 +139,12 @@ function registrarUsuario(clave, nombre, pin) {
 
 function listarUsuarios(k) {
   soloAdmin_(k);
-  return usuarios_().map(u => ({ nombre: u.nombre, activo: u.activo, admin: u.admin, rol: u.rol, propietario: !!u.propietario }));
+  return usuarios_().map(u => ({ nombre: u.nombre, activo: u.activo, admin: u.admin, rol: u.rol, poli: u.poli || '', propietario: !!u.propietario }));
 }
 
-function rolValido_(r) { r = String(r || 'Entrevistador'); return ['Admin', 'Entrevistador', 'Lectura'].indexOf(r) > -1 ? r : 'Entrevistador'; }
+function rolValido_(r) { r = String(r || 'Entrevistador'); return ['Admin', 'Entrevistador', 'Lectura', 'Técnica'].indexOf(r) > -1 ? r : 'Entrevistador'; }
 
-function crearUsuario(k, nombre, rol) {
+function crearUsuario(k, nombre, rol, poli) {
   soloAdmin_(k);
   nombre = nombreUsuario_(nombre);
   if (nombre.length < 2) throw new Error('Escribí el nombre');
@@ -138,8 +153,10 @@ function crearUsuario(k, nombre, rol) {
   try {
     const sh = hojaUsuarios_();
     if (filaUsuario_(sh, nombre)) throw new Error('Ese usuario ya existe');
+    poli = POLICLINICOS.indexOf(poli) > -1 ? poli : '';
+    if (rolValido_(rol) === 'Técnica' && !poli) throw new Error('Elegí el policlínico del jefe/a');
     const pin = pinAzar_();
-    sh.appendRow([nombre, pin, 'SI', '', rolValido_(rol)]);
+    sh.appendRow([nombre, pin, 'SI', '', rolValido_(rol), poli]);
     CacheService.getScriptCache().remove('USUARIOS');
     registrarHistorial_('', nombre, 'Usuario', 'Usuario creado por ' + QUIEN_ + ' (' + rolValido_(rol) + ')', QUIEN_);
     return { nombre: nombre, pin: pin };
@@ -156,6 +173,18 @@ function cambiarRol(k, nombre, rol) {
   sh.getRange(f, 5).setValue(rolValido_(rol));
   CacheService.getScriptCache().remove('USUARIOS');
   registrarHistorial_('', nombre, 'Usuario', 'Rol cambiado a ' + rolValido_(rol) + ' por ' + QUIEN_, QUIEN_);
+  return true;
+}
+
+function cambiarPoliUsuario(k, nombre, poli) {
+  soloAdmin_(k);
+  if (POLICLINICOS.indexOf(poli) === -1) throw new Error('Policlínico inválido');
+  const sh = hojaUsuarios_();
+  const f = filaUsuario_(sh, nombre);
+  if (!f) throw new Error('Usuario no encontrado');
+  sh.getRange(f, 6).setValue(poli);
+  CacheService.getScriptCache().remove('USUARIOS');
+  registrarHistorial_('', nombre, 'Usuario', 'Policlínico cambiado a ' + poli + ' por ' + QUIEN_, QUIEN_);
   return true;
 }
 
@@ -185,7 +214,7 @@ function activarUsuario(k, nombre, activo) {
   return true;
 }
 
-function cambiarPin(k, nuevo) {
+function cambiarPin_(k, nuevo) {
   admin_(k);
   nuevo = String(nuevo || '').trim();
   if (!/^\d{4,6}$/.test(nuevo)) throw new Error('El PIN tiene que ser de 4 a 6 números');
@@ -321,8 +350,37 @@ function citaObj_(txt) {
   return { ts: m[1], tipo: m[2] };
 }
 
-function getTablero(k) {
+function poliEf_(r) { return String(r[COL.policlinico - 1] || String(r[COL.polSug - 1] || '').split(' · ')[0]).trim(); }
+
+const ESTADOS_TECNICA = ['Avanza a entrevista técnica', 'Entrevista técnica agendada'];
+
+function permiteTecnico_(r) {
+  if (ESTADOS_TECNICA.indexOf(String(r[COL.estado - 1]).trim()) === -1) throw new Error('Ese candidato no está para entrevista técnica');
+  if (!POLI_ || poliEf_(r) !== POLI_) throw new Error('Ese candidato es de otro policlínico');
+}
+
+function tableroTecnica_() {
+  const d = hoja_('Candidatos').getDataRange().getValues(), cands = [];
+  for (let i = 1; i < d.length; i++) {
+    const r = d[i];
+    if (!r[COL.nombre - 1]) continue;
+    try { permiteTecnico_(r); } catch (e) { continue; }
+    let resp = [];
+    try { resp = JSON.parse(r[COL.resp - 1] || '[]'); } catch (e) { }
+    resp = resp.filter(x => !/pretensi|remunera|sueldo|salari|conoc[eé]s a alguien/i.test(String(x.q)));
+    cands.push({
+      fila: i + 1, id: String(r[COL.id - 1]), nombre: r[COL.nombre - 1], busq: r[COL.busq - 1], policlinico: poliEf_(r), estado: String(r[COL.estado - 1]).trim(),
+      cita: citaObj_(r[COL.cita - 1]), ajuste: r[COL.ajuste - 1], notaScr: r[COL.notaScr - 1], notaComp: r[COL.notaComp - 1], notaP2: r[COL.notaP2 - 1],
+      turno: String(r[COL.turno - 1] || ''), zona: String(r[COL.zona - 1] || ''), formacion: String(r[COL.formacion - 1] || ''), just: r[COL.just - 1], resumen: r[COL.resumen - 1], req: r[COL.req - 1], resp: resp, mov: ''
+    });
+  }
+  cands.sort((a, b) => String(a.cita ? a.cita.ts : '9') < String(b.cita ? b.cita.ts : '9') ? -1 : 1);
+  return JSON.stringify({ tecnica: true, user: QUIEN_, poli: POLI_, cands: cands, busquedas: busquedas_().map(b => ({ id: b.id, titulo: b.titulo })), ahora: fmt_(new Date(), "yyyy-MM-dd'T'HH:mm"), cfg: {}, rol: ROL_ });
+}
+
+function getTablero_(k) {
   admin_(k);
+  if (ROL_ === 'Técnica') return tableroTecnica_();
   try { asegurarColumnas_(); } catch (e) { registrarError_('asegurar columnas', e); }
   const aj = ajustes_();
   const d = hoja_('Candidatos').getDataRange().getValues();
@@ -633,7 +691,7 @@ function postulacionPdf(k, fila) {
 }
 
 
-function registrarAcceso(k, accion) {
+function registrarAcceso_(k, accion) {
   admin_(k);
   if (['Ingreso', 'Cierre de sesión'].indexOf(accion) === -1) return false;
   accesoLog_(QUIEN_, accion, '');
@@ -685,11 +743,12 @@ function copiaAhora(k) {
   return n;
 }
 
-function getResumen(k, fila) {
+function getResumen_(k, fila) {
   admin_(k);
   const sh = hoja_('Candidatos');
   fila = Number(fila);
   if (!(fila >= 2 && fila <= sh.getLastRow())) throw new Error('Fila inválida');
+  if (ROL_ === 'Técnica') permiteTecnico_(sh.getRange(fila, 1, 1, HEAD_CAND.length).getValues()[0]);
   const id = String(sh.getRange(fila, COL.id).getValue()), out = {};
   const ev = hoja_('Evaluaciones');
   if (ev && ev.getLastRow() > 1) ev.getRange(2, 1, ev.getLastRow() - 1, 9).getValues().forEach(x => {

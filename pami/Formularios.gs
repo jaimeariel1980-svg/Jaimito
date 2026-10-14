@@ -13,12 +13,17 @@ function tablaBusq_(nombre, bid) {
   return hoja_(nombre).getDataRange().getValues().slice(1).filter(x => x[0] === bid && x[1]);
 }
 
-function getDatosForm(k, id) {
+function getDatosForm(k, id, etapa) { return etapa === 'tecnica' ? conTec_(() => getDatosForm_(k, id, etapa)) : getDatosForm_(k, id, etapa); }
+function guardarTecnica(k, p) { return conTec_(() => guardarTecnica_(k, p)); }
+
+function getDatosForm_(k, id, etapa) {
   admin_(k);
   const sh = hoja_('Candidatos');
   const fila = filaPorId_(sh, id);
   if (!fila) throw new Error('No encontré al candidato');
   const r = sh.getRange(fila, 1, 1, HEAD_CAND.length).getValues()[0];
+  const jefe = ROL_ === 'Técnica';
+  if (jefe) permiteTecnico_(r);
   const bid = r[COL.busq - 1];
   const b = busquedas_().find(x => x.id === bid) || { titulo: '', ubicacion: '' };
   const aj = ajustes_();
@@ -26,13 +31,13 @@ function getDatosForm(k, id) {
   try { resp = JSON.parse(r[COL.resp - 1] || '[]'); } catch (e) { }
   return {
     cand: {
-      id: String(id), nombre: r[COL.nombre - 1], email: r[COL.email - 1], tel: String(r[COL.tel - 1] || ''), loc: r[COL.loc - 1], pret: String(r[COL.pret - 1] || ''),
-      turno: String(r[COL.turno - 1] || ''), notaCV: r[COL.ajuste - 1], notaScr: r[COL.notaScr - 1], notaComp: r[COL.notaComp - 1], entrev: r[COL.entrev - 1], infScr: String(r[COL.infScr - 1] || ''), resp: resp
+      id: String(id), nombre: r[COL.nombre - 1], email: jefe ? '' : r[COL.email - 1], tel: jefe ? '' : String(r[COL.tel - 1] || ''), loc: r[COL.loc - 1], pret: jefe ? '' : String(r[COL.pret - 1] || ''),
+      turno: String(r[COL.turno - 1] || ''), notaCV: r[COL.ajuste - 1], notaScr: r[COL.notaScr - 1], notaComp: r[COL.notaComp - 1], entrev: r[COL.entrev - 1], infScr: jefe ? '' : String(r[COL.infScr - 1] || ''), resp: jefe ? [] : resp
     },
     hero: { puesto: b.titulo, ubicacion: b.ubicacion, cliente: aj.nombre_cliente || 'PAMI' },
     evalItems: tablaBusq_('Screening_Eval', bid).map(x => ({ id: String(x[1]), label: String(x[2]), peso: Number(x[3]) || 1, opts: opcionesEval_(x[2]), pts: puntosEval_(x[2]) })),
     valItems: tablaBusq_('Screening_Val', bid).map(x => ({ id: String(x[1]), label: String(x[2]), opts: lista_(x[3], '|') })),
-    comps: tablaBusq_('Competencias', bid).map(x => ({ id: String(x[1]), nombre: String(x[2]), descripcion: String(x[3]), peso: Number(x[4]) || 1, preguntas: lista_(x[5], '|') })),
+    comps: tablaBusq_(etapa === 'tecnica' ? 'Tecnica' : 'Competencias', bid).map(x => ({ id: String(x[1]), nombre: String(x[2]), descripcion: String(x[3]), peso: Number(x[4]) || 1, preguntas: lista_(x[5], '|') })),
     entrevistadores: lista_(aj.entrevistadores, ','), umbral: umbrales_(), motivos: MOTIVOS_DESCARTE, turnos: TURNOS
   };
 }
@@ -176,4 +181,28 @@ function guardarCompetencias(k, p) {
   const estado = aplicarNota_(sh, fila, 'competencias', nota, p.entrevistador || 'formulario');
   guardarMotivoDescarte_(sh, fila, r, motivoDesc, estado, p.entrevistador || 'formulario');
   return { ok: true, estado: estado, url: url, nota: nota, score: score };
+}
+
+function guardarTecnica_(k, p) {
+  escritor_(k);
+  const sh = hoja_('Candidatos');
+  const fila = filaPorId_(sh, p.id);
+  if (!fila) throw new Error('No encontré al candidato');
+  const r = sh.getRange(fila, 1, 1, HEAD_CAND.length).getValues()[0];
+  if (ROL_ === 'Técnica') permiteTecnico_(r);
+  const d = getDatosForm(k, p.id, 'tecnica');
+  const comps = (p.comps || []).map(c => ({ nombre: String(c.nombre || '').slice(0, 200), peso: Math.max(0, Number(c.peso) || 0), nivel: Math.max(0, Math.min(4, Number(c.nivel) || 0)), notas: String(c.notas || '').slice(0, 3000) }));
+  let pts = 0, max = 0;
+  comps.forEach(c => { if (c.nivel > 0 && c.peso > 0) { pts += c.nivel * c.peso; max += 4 * c.peso; } });
+  const score = max ? Math.round((pts / max) * 100) / 10 : null;
+  const auto = score == null ? null : letraPorScore_(score, d.umbral);
+  const nota = ['A', 'B+', 'B', 'C'].indexOf(p.resultado) > -1 ? p.resultado : auto;
+  if (!nota) throw new Error('Evaluá al menos un criterio o elegí el ajuste al rol');
+  const motivoDesc = motivoDescarte_(nota, p.motivoDescarte);
+  const fecha = p.fecha || fmt_(new Date(), 'yyyy-MM-dd');
+  const quien = QUIEN_ || p.entrevistador || 'formulario';
+  guardarEvaluacion_(sh, fila, r, 'pami2', { entrevistador: quien }, score, nota, '', { comps: comps, fortalezas: p.fortalezas, areas: p.areas, recomendacion: p.recomendacion, fecha: fecha });
+  const estado = aplicarNota_(sh, fila, 'pami2', nota, quien);
+  guardarMotivoDescarte_(sh, fila, r, motivoDesc, estado, quien);
+  return { ok: true, estado: estado, nota: nota, score: score };
 }

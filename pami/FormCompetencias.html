@@ -57,29 +57,29 @@
 </style>
 <script>
 var FC=(function(){
-  var K,CID,ENTRE,CONT,O,D,S;
+  var K,CID,ENTRE,CONT,O,D,S,ETAPA='';
   var NIV=['','No demuestra','Señales de desarrollo','Demuestra efectividad','Demuestra solidez'];
   var VER=[['A','Alto ajuste','Avanza'],['B+','Muy buen ajuste','Avanza'],['B','Ajuste con observaciones','Reserva'],['C','No ajusta','Descarta']];
   function esc(t){return String(t==null?'':t).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function $(s){return CONT.querySelector(s);}
   function open(o){
-    O=o;K=o.K;CID=o.cid;ENTRE=o.entre||'';CONT=o.container;S={niv:{},manual:null,auto:null,score:null};
+    O=o;ETAPA=o.etapa||'';K=o.K;CID=o.cid;ENTRE=o.entre||'';CONT=o.container;S={niv:{},manual:null,auto:null,score:null};
     CONT.className='fc';CONT.innerHTML='<div class="loading">Cargando…</div>';
-    google.script.run.withSuccessHandler(function(d){D=d;render();}).withFailureHandler(function(e){CONT.innerHTML='<div class="loading" style="color:#D9534F">Error: '+esc(e.message)+'</div>';}).getDatosForm(K,CID);
+    google.script.run.withSuccessHandler(function(d){D=d;render();}).withFailureHandler(function(e){CONT.innerHTML='<div class="loading" style="color:#D9534F">Error: '+esc(e.message)+'</div>';}).getDatosForm(K,CID,ETAPA);
   }
   function inp(id,l,ph,v){return '<div><label class="l">'+l+'</label><input type="text" id="'+id+'" placeholder="'+(ph||'')+'" value="'+esc(v||'')+'"></div>';}
   function render(){
     var c=D.cand,h=D.hero,hoy=new Date(new Date().getTime()-3*3600000).toISOString().slice(0,10),ent=ENTRE||c.entrev||'';
     var scr=c.notaScr?'<div><small>Screening</small>'+esc(c.notaScr)+(c.infScr?' · <a target="_blank" href="'+esc(c.infScr)+'">📄 Ver screening</a>':'')+'</div>':'';
     CONT.innerHTML=
-    '<div class="hero"><div class="in"><div class="brandrow"><span class="lg w"></span><span class="prod">Atracción y Elección</span></div><h1>Entrevista de '+esc(c.nombre)+'</h1><div class="meta"><div><small>Cliente</small>'+esc(h.cliente)+'</div><div><small>Posición</small>'+esc(h.puesto)+'</div><div><small>Metodología</small>STAR (A-B-C-D-E)</div>'+scr+'</div></div></div>'+
+    '<div class="hero"><div class="in"><div class="brandrow"><span class="lg w"></span><span class="prod">Atracción y Elección</span></div><h1>'+(ETAPA==='tecnica'?'Entrevista técnica de ':'Entrevista de ')+esc(c.nombre)+'</h1><div class="meta"><div><small>Cliente</small>'+esc(h.cliente)+'</div><div><small>Posición</small>'+esc(h.puesto)+'</div>'+(ETAPA==='tecnica'?'':'<div><small>Metodología</small>STAR (A-B-C-D-E)</div>')+scr+'</div></div></div>'+
     '<div class="wrap"><div id="form">'+
     '<div class="sect card"><div class="sl">Datos del candidato</div><div class="meta3">'+
     inp('m-nom','Nombre','',c.nombre).replace('<input','<input disabled')+'<div><label class="l">Fecha</label><input type="date" id="m-fecha" value="'+hoy+'"></div>'+
-    '<div><label class="l">Entrevistador/a</label><select id="m-ent"><option value="">— Elegí —</option>'+D.entrevistadores.map(function(e){return '<option'+(e===ent?' selected':'')+'>'+esc(e)+'</option>';}).join('')+'</select></div>'+
-    inp('m-edad','Edad','Ej: 38')+inp('m-loc','Localidad','Dónde vive',c.loc)+inp('m-fam','Situación familiar','Estado civil, hijos')+inp('m-form','Formación','Título, institución, estado')+inp('m-emp','Empresa actual','—')+inp('m-pue','Puesto actual','—')+inp('m-ant','Antigüedad','Ej: 3 años')+inp('m-ra','Remuneración actual','$')+inp('m-rp','Remuneración pretendida','$',c.pret)+inp('m-disp','Disponibilidad de ingreso','Ej: 15 días')+inp('m-mot','Motivo de cambio','Por qué busca')+inp('m-mov','Movilidad / traslado','Sí / No')+inp('m-ref','Referencias laborales','Nombre, lugar, tel')+'</div></div>'+
-    '<div class="sect card"><div class="sl">Guía para el entrevistador</div><div style="font-size:13px">Cada competencia tiene un peso (editable). El peso se aplica al score final y el cambio solo afecta a este candidato; el peso oficial se edita en la pestaña <b>Competencias</b> del Sheet.</div><div class="star"><div><b>A: ACCIÓN</b>¿Cómo lo abordaste?</div><div><b>B: PENSAMIENTO</b>¿Por qué elegiste ese enfoque?</div><div><b>C: RESULTADO</b>¿Cuál fue el resultado final?</div><div><b>D: APRENDIZAJE</b>¿Qué te llevaste?</div><div><b>E: APLICACIÓN</b>¿Volviste a usar lo aprendido?</div></div></div>'+
-    '<div class="sl" style="margin-top:6px">Evaluación por competencias</div><div id="comps"></div>'+
+    (ETAPA==='tecnica'?'':'<div><label class="l">Entrevistador/a</label><select id="m-ent"><option value="">— Elegí —</option>'+D.entrevistadores.map(function(e){return '<option'+(e===ent?' selected':'')+'>'+esc(e)+'</option>';}).join('')+'</select></div>')+
+    (ETAPA==='tecnica'?'':inp('m-edad','Edad','Ej: 38')+inp('m-loc','Localidad','Dónde vive',c.loc)+inp('m-fam','Situación familiar','Estado civil, hijos')+inp('m-form','Formación','Título, institución, estado')+inp('m-emp','Empresa actual','—')+inp('m-pue','Puesto actual','—')+inp('m-ant','Antigüedad','Ej: 3 años')+inp('m-ra','Remuneración actual','$')+inp('m-rp','Remuneración pretendida','$',c.pret)+inp('m-disp','Disponibilidad de ingreso','Ej: 15 días')+inp('m-mot','Motivo de cambio','Por qué busca')+inp('m-mov','Movilidad / traslado','Sí / No')+inp('m-ref','Referencias laborales','Nombre, lugar, tel'))+'</div></div>'+
+    '<div class="sect card"><div class="sl">Guía para el entrevistador</div><div style="font-size:13px">Cada criterio tiene un peso (editable). El peso se aplica al score final y el cambio solo afecta a este candidato; el peso oficial se edita en la pestaña <b>'+(ETAPA==='tecnica'?'Tecnica':'Competencias')+'</b> del Sheet.</div>'+(ETAPA==='tecnica'?'<div style="display:none">':'')+'<div class="star"><div><b>A: ACCIÓN</b>¿Cómo lo abordaste?</div><div><b>B: PENSAMIENTO</b>¿Por qué elegiste ese enfoque?</div><div><b>C: RESULTADO</b>¿Cuál fue el resultado final?</div><div><b>D: APRENDIZAJE</b>¿Qué te llevaste?</div><div><b>E: APLICACIÓN</b>¿Volviste a usar lo aprendido?</div></div>'+(ETAPA==='tecnica'?'</div>':'')+'</div>'+
+    '<div class="sl" style="margin-top:6px">'+(ETAPA==='tecnica'?'Evaluación técnica':'Evaluación por competencias')+'</div><div id="comps"></div>'+
     '<div class="sect card"><div class="sl">Síntesis y evaluación final</div><div class="g2"><div><label class="l">Fortalezas principales</label><textarea id="fort" rows="5" placeholder="•&#10;•&#10;•"></textarea></div><div><label class="l">Áreas a desarrollar</label><textarea id="area" rows="5" placeholder="•&#10;•&#10;•"></textarea></div></div>'+
     '<label class="l">Matriz de evaluación (4 niveles · score ponderado)</label><table class="m"><thead><tr><th style="text-align:left">Competencia</th><th>Peso</th><th>No demuestra</th><th>Señales</th><th>Efectividad</th><th>Solidez</th></tr></thead><tbody id="mx"></tbody></table>'+
     '<div class="score"><div><div class="l" style="margin:0">Score ponderado total</div><div id="sd" style="font-size:13px;color:#5D6B82">Completá la matriz para calcular</div></div><div><b id="sn">—</b> / 10</div></div>'+
@@ -89,7 +89,7 @@ var FC=(function(){
     var cs=$('#comps'),mx=$('#mx');
     D.comps.forEach(function(k){
       var d=document.createElement('div');d.className='comp';d.dataset.id=k.id;
-      d.innerHTML='<div class="ch"><div class="cn">'+esc(k.nombre)+'</div><div class="peso">Peso <input type="number" min="0" step="0.5" value="'+k.peso+'" oninput="FC.pesoCh(\''+esc(k.id)+'\',this.value)"></div></div><div class="cd">'+esc(k.descripcion)+'</div><div class="qb"><div class="l" style="margin-top:0">Preguntas sugeridas (STAR)</div><ul>'+k.preguntas.map(function(q){return '<li>'+esc(q)+'</li>';}).join('')+'</ul></div><div class="fr">'+[1,2,3,4].map(function(n){return '<button class="f'+n+'" onclick="FC.nivel(\''+esc(k.id)+'\','+n+')">'+NIV[n]+'</button>';}).join('')+'</div><label class="l">Notas / evidencias (situación, acción, resultado)</label><textarea rows="3" data-n="'+esc(k.id)+'" placeholder="Redactá los hallazgos…"></textarea>';
+      d.innerHTML='<div class="ch"><div class="cn">'+esc(k.nombre)+'</div><div class="peso">Peso <input type="number" min="0" step="0.5" value="'+k.peso+'" oninput="FC.pesoCh(\''+esc(k.id)+'\',this.value)"></div></div><div class="cd">'+esc(k.descripcion)+'</div><div class="qb"><div class="l" style="margin-top:0">Preguntas sugeridas'+(ETAPA==='tecnica'?'':' (STAR)')+'</div><ul>'+k.preguntas.map(function(q){return '<li>'+esc(q)+'</li>';}).join('')+'</ul></div><div class="fr">'+[1,2,3,4].map(function(n){return '<button class="f'+n+'" onclick="FC.nivel(\''+esc(k.id)+'\','+n+')">'+NIV[n]+'</button>';}).join('')+'</div><label class="l">Notas / evidencias (situación, acción, resultado)</label><textarea rows="3" data-n="'+esc(k.id)+'" placeholder="Redactá los hallazgos…"></textarea>';
       cs.appendChild(d);k.pesoAct=k.peso;
       var tr=document.createElement('tr');tr.dataset.id=k.id;tr.innerHTML='<td>'+esc(k.nombre)+'</td><td class="p" data-p="'+esc(k.id)+'">'+k.peso+'</td>'+[1,2,3,4].map(function(n){return '<td class="c" onclick="FC.nivel(\''+esc(k.id)+'\','+n+')"></td>';}).join('');mx.appendChild(tr);
     });
@@ -129,7 +129,7 @@ var FC=(function(){
       d.innerHTML='<h2 style="color:#1E8E5A">¡Evaluación guardada!</h2><p style="margin:10px 0">Ajuste: <b>'+esc(r.nota)+'</b>'+(r.score!=null?' · Score '+r.score.toFixed(1):'')+'<br>Estado del candidato: <b>'+esc(r.estado||'')+'</b></p><p><button class="btn" onclick="FC.volver()">Volver</button> <a class="btn ghost" target="_blank" href="'+esc(r.url)+'">Ver informe</a></p>';
       CONT.scrollIntoView();if(O.onDone)O.onDone(r);
     }).withFailureHandler(function(e){b.disabled=false;b.textContent='Guardar evaluación';alert('No se pudo guardar: '+e.message);})
-    .guardarCompetencias(K,{id:CID,entrevistador:v('m-ent'),fecha:v('m-fecha'),comps:comps,fortalezas:$('#fort').value,areas:$('#area').value,recomendacion:$('#rec').value,resultado:letra,motivoDescarte:mf,
+    [ETAPA==='tecnica'?'guardarTecnica':'guardarCompetencias'](K,ETAPA==='tecnica'?{id:CID,fecha:v('m-fecha'),comps:comps,fortalezas:$('#fort').value,areas:$('#area').value,recomendacion:$('#rec').value,resultado:letra,motivoDescarte:mf}:{id:CID,entrevistador:v('m-ent'),fecha:v('m-fecha'),comps:comps,fortalezas:$('#fort').value,areas:$('#area').value,recomendacion:$('#rec').value,resultado:letra,motivoDescarte:mf,
       meta:{edad:v('m-edad'),localidad:v('m-loc'),familia:v('m-fam'),formacion:v('m-form'),empresaAct:v('m-emp'),puestoAct:v('m-pue'),antig:v('m-ant'),remAct:v('m-ra'),remPret:v('m-rp'),disp:v('m-disp'),motivo:v('m-mot'),movilidad:v('m-mov'),referencias:v('m-ref')}});
   }
   function volver(){if(O.onClose)O.onClose();}
