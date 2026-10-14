@@ -60,6 +60,7 @@ function getTablero(k) { return conTec_(() => getTablero_(k)); }
 function getResumen(k, fila) { return conTec_(() => getResumen_(k, fila)); }
 function cambiarPin(k, nuevo) { return conTec_(() => cambiarPin_(k, nuevo)); }
 function registrarAcceso(k, accion) { return conTec_(() => registrarAcceso_(k, accion)); }
+function redactarIA(k, texto) { return conTec_(() => redactarIA_(k, texto)); }
 
 function admin_(k) {
   const p = String(k).split('|');
@@ -769,4 +770,20 @@ function getResumen_(k, fila) {
     }
   } catch (err) { registrarError_('resumen screening', err); }
   return JSON.stringify(out);
+}
+
+function redactarIA_(k, texto) {
+  escritor_(k);
+  texto = String(texto || '').trim();
+  if (texto.length < 8) throw new Error('Escribí o dictá algo primero');
+  const resp = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+    headers: { Authorization: 'Bearer ' + prop_('OPENAI_API_KEY') },
+    payload: JSON.stringify({ model: 'gpt-4o-mini', temperature: 0.3, max_tokens: 700, messages: [
+      { role: 'system', content: 'Reescribís las notas de un entrevistador de selección de personal (enfermería). Español rioplatense, profesional, claro y conciso; corregí ortografía y puntuación. NO inventes datos, nombres, cifras ni conclusiones que no estén en el texto, y no agregues juicios nuevos: mantené los hechos y el sentido. Si son varios puntos, devolvelos en viñetas cortas que empiecen con "• ". Devolvé solo el texto resultante, sin comillas ni explicaciones.' },
+      { role: 'user', content: texto.slice(0, 3000) }] })
+  });
+  const parsed = JSON.parse(resp.getContentText());
+  if (parsed.error) throw new Error('No pude redactar: ' + parsed.error.message);
+  return String(parsed.choices[0].message.content || '').trim();
 }
