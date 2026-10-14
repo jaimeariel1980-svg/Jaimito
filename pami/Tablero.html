@@ -127,7 +127,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v68</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v69</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -719,7 +719,7 @@ function vistaTecnica(){
   var cita=function(c){return c.cita?'📅 '+c.cita.ts.slice(8,10)+'/'+c.cita.ts.slice(5,7)+' '+c.cita.ts.slice(11,16):'Sin agendar';};
   v.innerHTML='<div class="hdr"><div class="in"><span class="lg w"></span><div class="prod">Entrevista técnica<small class="ver">'+esc(D.poli||'')+'</small></div><span class="sp"></span><button class="cta" onclick="cambiarPinTec()">🔑 PIN</button> <button class="cta" onclick="cerrarSesion()">Salir</button></div></div>'+
     '<div style="max-width:900px;margin:0 auto;padding:18px 16px 60px"><div style="font-size:14px;color:#5D6B82;margin-bottom:14px">Hola <b>'+esc(D.user)+'</b>. '+(D.poli?(L.length?L.length+' candidato'+(L.length===1?'':'s')+' para entrevista técnica en '+esc(D.poli)+'.':'No hay candidatos para entrevista técnica en '+esc(D.poli)+' por ahora.'):'Todavía no tenés un policlínico asignado. Avisale al administrador.')+'</div>'+
-    L.map(function(c){return '<div style="background:#fff;border:1px solid var(--line);border-left:5px solid var(--celeste);border-radius:8px;padding:14px 16px;margin-bottom:12px"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><b style="font-size:17px">'+esc(c.nombre)+'</b><div style="color:#5D6B82;font-size:13px">'+esc(tit(c.busq))+'</div></div><div style="font-size:13px;font-weight:700;color:#034EA2">'+cita(c)+'</div></div><div style="margin:10px 0">'+ch('CV',c.ajuste)+ch('Screening',c.notaScr)+ch('Competencias',c.notaComp)+'</div><div class="btns"><button class="btn ghost" onclick="verResumen('+c.fila+',this,true,true)">📄 Ver detalle</button><button class="btn" onclick="abrirFormTec('+c.fila+')">🩺 Evaluar</button></div></div>';}).join('')+'</div>';
+    L.map(function(c){return '<div style="background:#fff;border:1px solid var(--line);border-left:5px solid var(--celeste);border-radius:8px;padding:14px 16px;margin-bottom:12px"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><b style="font-size:17px">'+esc(c.nombre)+'</b><div style="color:#5D6B82;font-size:13px">'+esc(tit(c.busq))+'</div></div><div style="font-size:13px;font-weight:700;color:#034EA2">'+cita(c)+'</div></div><div style="margin:10px 0"></div><div class="btns"><button class="btn ghost" onclick="verResumen('+c.fila+',this,true)">📄 Ver ficha</button><button class="btn" onclick="abrirFormTec('+c.fila+')">🩺 Evaluar</button></div></div>';}).join('')+'</div>';
 }
 function abrirFormTec(f){
   var c=byFila(f);FORM_F=f;
@@ -734,43 +734,38 @@ function cambiarPinTec(){
   if(!/^\d{4,6}$/.test(n)){alert('El PIN tiene que ser de 4 a 6 números.');return;}
   gs().withSuccessHandler(function(){P=n;setK();guardarCred();toast('PIN actualizado');}).withFailureHandler(function(e){alert(msgLogin(e));}).cambiarPin(K,n);
 }
-function verResumen(f,btn,det,tec){
+function verResumen(f,btn,enf){
   var c=byFila(f),t=btn.textContent;btn.disabled=true;btn.textContent='Armando…';
-  gs().withSuccessHandler(function(r){btn.disabled=false;btn.textContent=t;abrirInforme(htmlResumen(c,JSON.parse(r),det,tec));}).withFailureHandler(function(e){btn.disabled=false;btn.textContent=t;fer(e);}).getResumen(K,f);
+  gs().withSuccessHandler(function(r){btn.disabled=false;btn.textContent=t;var ev=JSON.parse(r);abrirInforme(enf?htmlEnfermeria(c,ev):htmlResumen(c,ev));}).withFailureHandler(function(e){btn.disabled=false;btn.textContent=t;fer(e);}).getResumen(K,f);
 }
-function htmlResumen(c,ev,det,tec){
+function htmlEnfermeria(c,ev){
+  var S=(ev.screening||{}).datos||{},sd=S.datos||{},cd=(ev.competencias||{}).datos||{},cm=cd.meta||{};
+  var h='<div class="hd"><div style="display:flex;align-items:center;gap:16px">'+infLogo()+'<div><small>Ficha del candidato · '+infFecha()+'</small><h1>'+esc(c.nombre)+'</h1><div class="s">'+esc(tit(c.busq))+(c.policlinico?' · '+esc(c.policlinico):'')+'</div></div></div></div>';
+  h+='<div class="g g3">'+infCard('Edad',sd.edad||cm.edad)+infCard('Localidad',cm.localidad||c.loc)+infCard('Formación',c.formacion||sd.formacion||cm.formacion)+infCard('Experiencia actual',[sd.posAct||cm.puestoAct,sd.empresaAct||cm.empresaAct].filter(Boolean).join(' · '))+infCard('Antigüedad',cm.antig)+'</div>';
+  if(c.resumen)h+='<h2>Trayectoria (según CV)</h2><div class="cd"><div class="tx">'+esc(c.resumen)+'</div></div>';
+  var imp=cd.recomendacion||S.comentario||'';
+  if(imp||cd.fortalezas||cd.areas)h+='<h2>Impresión general</h2>'+(imp?'<div class="cd"><div class="tx">'+esc(imp)+'</div></div>':'')+(cd.fortalezas||cd.areas?'<div class="g g2">'+(cd.fortalezas?'<div class="cd"><small>Fortalezas</small><div class="tx">'+esc(cd.fortalezas)+'</div></div>':'')+(cd.areas?'<div class="cd"><small>A desarrollar</small><div class="tx">'+esc(cd.areas)+'</div></div>':'')+'</div>':'');
+  return infDoc('Ficha · '+c.nombre,h);
+}
+function htmlResumen(c,ev){
   var S=ev.screening||{},C=ev.competencias||{},T=ev.pami2||{},sd=(S.datos||{}).datos||{},cd=C.datos||{},cm=cd.meta||{},td=T.datos||{};
   var nota=function(tit,n,e){var col=NF[n];if(!col)return '<div class="nt v"><small>'+tit+'</small><div class="l">–</div><div class="q">pendiente</div></div>';var q=(e&&e.entrevisto?e.entrevisto:'')+(e&&typeof e.score==='number'&&e.score<=10?(e.entrevisto?' · ':'')+e.score+'/10':'');return '<div class="nt" style="background:'+col[0]+';color:'+col[1]+'"><small>'+tit+'</small><div class="l">'+esc(n)+'</div><div class="q">'+esc(q||'IA')+'</div></div>';};
   var fin=!!(T.nota||c.notaP2),e=String(c.estado||'');
   var rec=/^Descartad/i.test(e)?'✖ No avanza':e==='Contratado'?'✓ Contratado':/reserva/i.test(e)?'◐ En reserva':'→ '+e;
-  var h='<div class="hd"><div style="display:flex;align-items:center;gap:16px">'+infLogo()+'<div><small>'+(det?'Ficha para Enfermería':fin?'Informe final':'Resumen del candidato')+' · '+infFecha()+'</small><h1>'+esc(c.nombre)+'</h1><div class="s">'+esc(tit(c.busq))+(c.policlinico?' · '+esc(c.policlinico):'')+'</div></div></div><div class="pill">'+esc(rec)+'</div></div>';
+  var h='<div class="hd"><div style="display:flex;align-items:center;gap:16px">'+infLogo()+'<div><small>'+(fin?'Informe final':'Resumen del candidato')+' · '+infFecha()+'</small><h1>'+esc(c.nombre)+'</h1><div class="s">'+esc(tit(c.busq))+(c.policlinico?' · '+esc(c.policlinico):'')+'</div></div></div><div class="pill">'+esc(rec)+'</div></div>';
   h+='<div class="g g4">'+nota('CV',c.ajuste,null).replace('<div class="q">IA</div>','<div class="q">IA sugiere</div>')+nota('Screening',c.notaScr||S.nota,S)+nota('Competencias',c.notaComp||C.nota,C)+nota('Técnica',c.notaP2||T.nota,T)+'</div>';
   if(/^Descartad/i.test(e))h+='<div class="g g2">'+infCard('Motivo de descarte',c.motivo||'Sin motivo cargado')+infCard('Descartó',c.descPor)+'</div>';
-  h+='<div class="g g3">'+infCard('Edad',sd.edad||cm.edad)+(tec?'':infCard('Pretensión',money(c.pret)||sd.remPret||cm.remPret))+infCard('Turno preferido',String(c.turno||'').replace(/;\s*/g,' · '))+infCard('Zona',c.zona)+infCard('Disponibilidad',sd.disp||cm.disp)+infCard('Formación',c.formacion||sd.formacion||cm.formacion)+infCard('Experiencia actual',[sd.posAct||cm.puestoAct,sd.empresaAct||cm.empresaAct].filter(Boolean).join(' · '))+(tec?'':infCard('Recomendado por',c.recTipo?c.recTipo+(c.recPor?': '+c.recPor:''):''))+'</div>';
-  var comps=(cd.comps||[]).filter(function(x){return x.nivel>0;});
+  h+='<div class="g g3">'+infCard('Edad',sd.edad||cm.edad)+infCard('Pretensión',money(c.pret)||sd.remPret||cm.remPret)+infCard('Turno preferido',String(c.turno||'').replace(/;\s*/g,' · '))+infCard('Zona',c.zona)+infCard('Disponibilidad',sd.disp||cm.disp)+infCard('Formación',c.formacion||sd.formacion||cm.formacion)+infCard('Experiencia actual',[sd.posAct||cm.puestoAct,sd.empresaAct||cm.empresaAct].filter(Boolean).join(' · '))+infCard('Recomendado por',c.recTipo?c.recTipo+(c.recPor?': '+c.recPor:''):'')+'</div>';
   var bars=function(a){return a.map(function(x){return '<div class="br"><div class="n">'+esc(x.nombre)+'</div><div class="t"><i style="width:'+(x.nivel*25)+'%"></i></div><div class="v">'+x.nivel+'/4</div></div>';}).join('');};
-  if(comps.length)h+='<h2>Competencias</h2>'+bars(comps);
-  if(cd.fortalezas||cd.areas)h+='<div class="g g2">'+(cd.fortalezas?'<div class="cd"><small>Fortalezas</small><div class="tx">'+esc(cd.fortalezas)+'</div></div>':'')+(cd.areas?'<div class="cd"><small>A desarrollar</small><div class="tx">'+esc(cd.areas)+'</div></div>':'')+'</div>';
+  var duo=function(o){return o.fortalezas||o.areas?'<div class="g g2">'+(o.fortalezas?'<div class="cd"><small>Fortalezas</small><div class="tx">'+esc(o.fortalezas)+'</div></div>':'')+(o.areas?'<div class="cd"><small>A desarrollar</small><div class="tx">'+esc(o.areas)+'</div></div>':'')+'</div>':'';};
+  var comps=(cd.comps||[]).filter(function(x){return x.nivel>0;});
+  if(comps.length)h+='<h2>Competencias</h2>'+bars(comps)+duo(cd);
   var tcs=(td.comps||[]).filter(function(x){return x.nivel>0;});
-  if(tcs.length)h+='<h2>Evaluación técnica</h2>'+bars(tcs)+(td.fortalezas||td.areas?'<div class="g g2">'+(td.fortalezas?'<div class="cd"><small>Fortalezas</small><div class="tx">'+esc(td.fortalezas)+'</div></div>':'')+(td.areas?'<div class="cd"><small>A desarrollar</small><div class="tx">'+esc(td.areas)+'</div></div>':'')+'</div>':'');
-  var rc=td.recomendacion||cd.recomendacion||(td.comentario||(S.datos||{}).comentario||'');
+  if(tcs.length)h+='<h2>Evaluación técnica</h2>'+bars(tcs)+duo(td);
+  var rc=td.recomendacion||cd.recomendacion||td.comentario||(S.datos||{}).comentario||'';
   if(rc)h+='<h2>'+(td.recomendacion||td.comentario?'Evaluación técnica':'Recomendación del entrevistador')+'</h2><div class="cd"><div class="tx">'+esc(rc)+'</div></div>';
-  if(det){
-    var sg=(S.det||{}),chip=function(x){var col=/^(Alto|Sí)$/.test(x.n)?'#1E8E5A':/^(Bajo|No)$/.test(x.n)?'#D9534F':'#B58900';return '<div class="br"><div class="n" style="width:68%;font-weight:500">'+esc(x.l)+'</div><div class="v" style="width:auto;color:'+col+'">'+esc(x.n)+'</div></div>';};
-    if((sg.eval||[]).length)h+='<h2>Screening · ajuste al perfil</h2><div class="cd">'+sg.eval.map(chip).join('')+'</div>';
-    if((sg.val||[]).length)h+='<h2>Screening · condiciones</h2><div class="cd">'+sg.val.map(chip).join('')+'</div>';
-    var sc=(S.datos||{}).comentario;if(sc)h+='<h2>Comentario del screening</h2><div class="cd"><div class="tx">'+esc(sc)+'</div></div>';
-    var mt=[['Situación familiar',cm.familia],['Antigüedad',cm.antig],].concat(tec?[]:[['Remuneración actual',sd.remAct||cm.remAct],['Remuneración pretendida',sd.remPret||cm.remPret]]).concat([['Motivo de cambio',cm.motivo],['Movilidad',cm.movilidad],['Referencias laborales',cm.referencias]]);
-    if(mt.some(function(x){return x[1];}))h+='<h2>Datos de la entrevista</h2><div class="g g3">'+mt.map(function(x){return infCard(x[0],x[1]);}).join('')+'</div>';
-    var cn=(cd.comps||[]).filter(function(x){return x.notas;});
-    if(cn.length)h+='<h2>Notas por competencia</h2>'+cn.map(function(x){return '<div class="cd" style="margin-bottom:8px"><small>'+esc(x.nombre)+' · '+x.nivel+'/4</small><div class="tx">'+esc(x.notas)+'</div></div>';}).join('');
-    if(c.resumen)h+='<h2>Experiencia (según CV)</h2><div class="cd"><div class="tx">'+esc(c.resumen)+'</div></div>';
-    if(c.req)h+='<h2>Requisitos del puesto</h2><div class="cd"><div class="tx">'+esc(c.req)+'</div></div>';
-    var rs=(c.resp||[]).filter(function(x){return x.a;});
-    if(rs.length)h+='<h2>Respuestas de la postulación</h2><div class="cd">'+rs.map(function(x){return '<div style="margin:6px 0;font-size:13px"><b>'+esc(x.q)+'</b><br>'+esc(x.a)+'</div>';}).join('')+'</div>';
-  }
   if(c.just)h+='<h2>Análisis del CV</h2><div class="cd"><div class="tx">'+esc(String(c.just).replace(/^IA sugiere [A-C+]+:\s*/,''))+'</div></div>';
-  return infDoc((det?'Para Enfermería':fin?'Informe final':'Resumen')+' · '+c.nombre,h);
+  return infDoc((fin?'Informe final':'Resumen')+' · '+c.nombre,h);
 }
 function verDireccion(){
   var b=document.getElementById('fb').value,L=D.cands.filter(function(c){return !b||c.busq===b;});
