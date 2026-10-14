@@ -30,11 +30,18 @@ function getDatosForm(k, id) {
       turno: String(r[COL.turno - 1] || ''), notaCV: r[COL.ajuste - 1], notaScr: r[COL.notaScr - 1], notaComp: r[COL.notaComp - 1], entrev: r[COL.entrev - 1], infScr: String(r[COL.infScr - 1] || ''), resp: resp
     },
     hero: { puesto: b.titulo, ubicacion: b.ubicacion, cliente: aj.nombre_cliente || 'PAMI' },
-    evalItems: tablaBusq_('Screening_Eval', bid).map(x => ({ id: String(x[1]), label: String(x[2]), peso: Number(x[3]) || 1 })),
+    evalItems: tablaBusq_('Screening_Eval', bid).map(x => ({ id: String(x[1]), label: String(x[2]), peso: Number(x[3]) || 1, opts: opcionesEval_(x[2]) })),
     valItems: tablaBusq_('Screening_Val', bid).map(x => ({ id: String(x[1]), label: String(x[2]), opts: lista_(x[3], '|') })),
     comps: tablaBusq_('Competencias', bid).map(x => ({ id: String(x[1]), nombre: String(x[2]), descripcion: String(x[3]), peso: Number(x[4]) || 1, preguntas: lista_(x[5], '|') })),
     entrevistadores: lista_(aj.entrevistadores, ','), umbral: umbrales_(), motivos: MOTIVOS_DESCARTE, turnos: TURNOS
   };
+}
+
+// Textos del desplegable de "Ajuste al perfil" (de menor a mayor: bajo, medio, alto).
+// El puntaje sigue usando bajo/medio/alto; solo cambia lo que se ve.
+function opcionesEval_(etiqueta) {
+  if (/t[ií]tulo terciario/i.test(String(etiqueta))) return ['Enfermero/a Profesional', 'Lic. Enfermería', 'Lic. + Post Grado'];
+  return ['Bajo', 'Medio', 'Alto'];
 }
 
 function motivoDescarte_(nota, motivo) {
@@ -100,8 +107,8 @@ function guardarScreening(k, p) {
   const motivoDesc = motivoDescarte_(nota, p.motivoDescarte);
   const dt = p.datos || {};
   const turno = dt.turno != null ? turnoNorm_(dt.turno) : null;
-  const nivel = v => ({ alto: 'Alto', medio: 'Medio', bajo: 'Bajo' }[v] || '—');
-  const cuerpo = seccion_('Ajuste al perfil') + '<table style="width:100%;border-collapse:collapse">' + d.evalItems.map(it => '<tr><td style="padding:5px 8px;border-bottom:1px solid #EEF1F5;font-size:13px">' + h_(it.label) + '</td><td style="padding:5px 8px;border-bottom:1px solid #EEF1F5;width:90px;text-align:center;font-weight:bold;font-size:12px;color:' + ({ alto: '#1E8E5A', medio: '#B58900', bajo: '#D9534F' }[ev[it.id]] || '#5D6B82') + '">' + nivel(ev[it.id]) + '</td></tr>').join('') + '</table>' +
+  const nivel = (v, it) => ({ bajo: it.opts[0], medio: it.opts[1], alto: it.opts[2] }[v] || '—');
+  const cuerpo = seccion_('Ajuste al perfil') + '<table style="width:100%;border-collapse:collapse">' + d.evalItems.map(it => '<tr><td style="padding:5px 8px;border-bottom:1px solid #EEF1F5;font-size:13px">' + h_(it.label) + '</td><td style="padding:5px 8px;border-bottom:1px solid #EEF1F5;width:90px;text-align:center;font-weight:bold;font-size:12px;color:' + ({ alto: '#1E8E5A', medio: '#B58900', bajo: '#D9534F' }[ev[it.id]] || '#5D6B82') + '">' + h_(nivel(ev[it.id], it)) + '</td></tr>').join('') + '</table>' +
     seccion_('Validación de condiciones') + '<table style="width:100%;border-collapse:collapse">' + d.valItems.map(it => '<tr><td style="padding:5px 8px;border-bottom:1px solid #EEF1F5;font-size:13px">' + h_(it.label) + '</td><td style="padding:5px 8px;border-bottom:1px solid #EEF1F5;width:90px;text-align:center;font-weight:bold;font-size:12px">' + h_({ si: 'Sí', no: 'No', revisar: 'A revisar', alto: 'Alto', medio: 'Medio', bajo: 'Bajo' }[vl[it.id]] || '—') + '</td></tr>').join('') + '</table>' +
     (p.comentario ? seccion_('Comentario') + '<div style="font-size:13px;white-space:pre-wrap;padding-top:4px">' + h_(p.comentario) + '</div>' : '');
   const fecha = p.fecha || fmt_(new Date(), 'yyyy-MM-dd');

@@ -80,7 +80,7 @@ var FS=(function(){
     '<button class="btn ok" id="save" style="width:100%;padding:14px" onclick="FS.guardar()">Guardar screening</button></div>'+
     '<div class="done card" id="done"></div></div>';
     var evs=$('#evs');
-    D.evalItems.forEach(function(it){var r=document.createElement('div');r.className='erow';r.innerHTML='<div class="t">'+esc(it.label)+'</div><select data-e="'+esc(it.id)+'" onchange="FS.onEval(\''+esc(it.id)+'\',this)"><option value="">— Sin evaluar</option><option value="bajo">Bajo</option><option value="medio">Medio</option><option value="alto">Alto</option></select>';evs.appendChild(r);});
+    D.evalItems.forEach(function(it){var r=document.createElement('div');r.className='erow';r.innerHTML='<div class="t">'+esc(it.label)+'</div><select data-e="'+esc(it.id)+'" onchange="FS.onEval(\''+esc(it.id)+'\',this)"><option value="">— Sin evaluar</option>'+['bajo','medio','alto'].map(function(v,i){var o=it.opts||['Bajo','Medio','Alto'];return '<option value="'+v+'">'+esc(o[i])+'</option>';}).join('')+'</select>';evs.appendChild(r);});
     var vls=$('#vls');
     D.valItems.forEach(function(it){var r=document.createElement('div');r.className='erow';r.innerHTML='<div class="t">'+esc(it.label)+'</div><div class="pills">'+it.opts.map(function(o){var v=VAL[o]||o.toLowerCase();return '<div class="pill" data-id="'+esc(it.id)+'" data-v="'+esc(v)+'" onclick="FS.pick(this)">'+esc(o)+'</div>';}).join('')+'</div>';vls.appendChild(r);});
   }
