@@ -60,6 +60,7 @@ function getTablero(k) { return conTec_(() => getTablero_(k)); }
 function getResumen(k, fila) { return conTec_(() => getResumen_(k, fila)); }
 function cambiarPin(k, nuevo) { return conTec_(() => cambiarPin_(k, nuevo)); }
 function registrarAcceso(k, accion) { return conTec_(() => registrarAcceso_(k, accion)); }
+function getFichaEnfermeria(k, fila) { return conTec_(() => getFichaEnfermeria_(k, fila)); }
 function redactarIA(k, texto) { return conTec_(() => redactarIA_(k, texto)); }
 function transcribirAudio(k, b64, mime) { return conTec_(() => transcribirAudio_(k, b64, mime)); }
 
@@ -746,7 +747,7 @@ function getResumen_(k, fila) {
   const sh = hoja_('Candidatos');
   fila = Number(fila);
   if (!(fila >= 2 && fila <= sh.getLastRow())) throw new Error('Fila inválida');
-  if (ROL_ === 'Técnica') permiteTecnico_(sh.getRange(fila, 1, 1, HEAD_CAND.length).getValues()[0]);
+  if (ROL_ === 'Técnica') throw new Error('Tu usuario solo puede ver la ficha para Enfermería');
   const id = String(sh.getRange(fila, COL.id).getValue()), out = {};
   const ev = hoja_('Evaluaciones');
   if (ev && ev.getLastRow() > 1) ev.getRange(2, 1, ev.getLastRow() - 1, 9).getValues().forEach(x => {
@@ -766,14 +767,6 @@ function getResumen_(k, fila) {
       delete x.eval; delete x.val;
     }
   } catch (err) { registrarError_('resumen screening', err); }
-  if (ROL_ === 'Técnica') {
-    const pick = (o, ks) => { const x = {}; ks.forEach(c => { if (o && o[c]) x[c] = o[c]; }); return x; };
-    const S = out.screening && out.screening.datos || {}, C = out.competencias && out.competencias.datos || {};
-    return JSON.stringify({
-      screening: { datos: { datos: pick(S.datos, ['edad', 'formacion', 'empresaAct', 'posAct']), comentario: S.comentario } },
-      competencias: { datos: { meta: pick(C.meta, ['edad', 'localidad', 'formacion', 'empresaAct', 'puestoAct', 'antig']), fortalezas: C.fortalezas, areas: C.areas, recomendacion: C.recomendacion } }
-    });
-  }
   return JSON.stringify(out);
 }
 
@@ -806,4 +799,43 @@ function transcribirAudio_(k, b64, mime) {
   const parsed = JSON.parse(resp.getContentText());
   if (parsed.error) throw new Error('No pude transcribir: ' + parsed.error.message);
   return String(parsed.text || '').trim();
+}
+
+function getFichaEnfermeria_(k, fila) {
+  admin_(k);
+  const sh = hoja_('Candidatos');
+  fila = Number(fila);
+  if (!(fila >= 2 && fila <= sh.getLastRow())) throw new Error('Fila inválida');
+  const r = sh.getRange(fila, 1, 1, HEAD_CAND.length).getValues()[0];
+  if (ROL_ === 'Técnica') permiteTecnico_(r);
+  const id = String(r[COL.id - 1]), ev = {};
+  const eh = hoja_('Evaluaciones');
+  if (eh && eh.getLastRow() > 1) eh.getRange(2, 1, eh.getLastRow() - 1, 9).getValues().forEach(x => {
+    if (String(x[1]) !== id || !x[3]) return;
+    try { ev[String(x[3])] = JSON.parse(x[8] || '{}'); } catch (e) { ev[String(x[3])] = {}; }
+  });
+  const S = ev.screening || {}, sd = S.datos || {}, C = ev.competencias || {}, cm = C.meta || {};
+  const ficha = {
+    nombre: r[COL.nombre - 1], busq: r[COL.busq - 1], policlinico: poliEf_(r),
+    edad: sd.edad || cm.edad || '', localidad: cm.localidad || r[COL.loc - 1] || '', formacion: String(r[COL.formacion - 1] || sd.formacion || cm.formacion || ''),
+    experiencia: [sd.posAct || cm.puestoAct, sd.empresaAct || cm.empresaAct].filter(Boolean).join(' · '), antig: cm.antig || ''
+  };
+  const cv = String(r[COL.resumen - 1] || '').trim();
+  const obs = [S.comentario, C.recomendacion, C.fortalezas ? 'Fortalezas: ' + C.fortalezas : '', C.areas ? 'A desarrollar: ' + C.areas : ''].map(x => String(x || '').trim()).filter(Boolean).join('\n');
+  ficha.resumen = [cv, obs].filter(Boolean).join('\n');
+  if (cv && obs || (cv.length + obs.length) > 400) {
+    try {
+      const resp = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+        headers: { Authorization: 'Bearer ' + prop_('OPENAI_API_KEY') },
+        payload: JSON.stringify({ model: 'gpt-4o-mini', temperature: 0.3, max_tokens: 350, messages: [
+          { role: 'system', content: 'Redactá un resumen breve (máximo 5 líneas, un solo párrafo) de un candidato de enfermería para los jefes de enfermería, integrando su trayectoria según el CV con las observaciones del entrevistador. Usá solo hechos presentes en el texto; no inventes nada. No menciones notas, puntajes, sueldos o pretensión salarial, sindicatos ni si conviene contratar o descartar. Español rioplatense, tono profesional.' },
+          { role: 'user', content: ('CV: ' + cv + '\nObservaciones del entrevistador:\n' + obs).slice(0, 4000) }] })
+      });
+      const parsed = JSON.parse(resp.getContentText());
+      const t = parsed.choices && parsed.choices[0] && String(parsed.choices[0].message.content || '').trim();
+      if (t) ficha.resumen = t;
+    } catch (e) { registrarError_('resumen enfermería', e); }
+  }
+  return JSON.stringify(ficha);
 }
