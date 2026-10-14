@@ -127,7 +127,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v73</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v74</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -543,7 +543,7 @@ function abrir(f){
   var puedeDesc=/^Descartado (sin|post) screening$/.test(c.estado)&&!c.descarte&&/@/.test(c.email||'');
   document.getElementById('mbox').innerHTML=
     '<div class="hd"><div><h2>'+esc(c.nombre)+'</h2><small>'+esc(tit(c.busq))+' · '+esc(c.estado)+'</small><div class="ecs">'+etapasHdr(c)+'</div></div><button class="x" onclick="cerrar()">×</button></div><div class="bd">'+al+
-    '<div class="btns"><button class="btn" onclick="abrirForm(\'screening\','+f+')">📝 Formulario screening</button><button class="btn" onclick="abrirForm(\'competencias\','+f+')">💼 Formulario competencias</button><button class="btn" onclick="abrirForm(\'tecnica\','+f+')">🩺 Formulario técnica</button>'+(c.infScr?'<a class="btn ghost" target="_blank" href="'+esc(c.infScr)+'">Ver screening</a>':'')+(c.infComp?'<a class="btn ghost" target="_blank" href="'+esc(c.infComp)+'">Ver competencias</a>':'')+(c.resp.length?'<button class="btn ghost" onclick="verPost('+f+',this)">📋 Ver postulación</button>':'')+'<button class="btn ghost" onclick="verResumen('+f+',this)">📄 Resumen</button></div>'+
+    '<div class="btns"><button class="btn" onclick="abrirForm(\'screening\','+f+')">📝 Formulario screening</button><button class="btn" onclick="abrirForm(\'competencias\','+f+')">💼 Formulario competencias</button><button class="btn" onclick="abrirForm(\'tecnica\','+f+')">🩺 Formulario técnica</button>'+(c.infScr?'<a class="btn ghost" target="_blank" href="'+esc(c.infScr)+'">Ver screening</a>':'')+(c.infComp?'<a class="btn ghost" target="_blank" href="'+esc(c.infComp)+'">Ver competencias</a>':'')+(c.resp.length?'<button class="btn ghost" onclick="verPost('+f+',this)">📋 Ver postulación</button>':'')+'<button class="btn ghost" onclick="verResumen('+f+',this)">📄 Resumen</button><button class="btn ghost" onclick="editarFicha('+f+')">✏️ Ficha de Enfermería</button></div>'+
     '<div class="btns">'+(c.cv?'<a class="btn ghost" target="_blank" href="'+esc(c.cv)+'">📄 Ver CV</a>':'')+(c.tel?'<button class="btn wa" onclick="menuWA('+f+')">💬 WhatsApp ▾</button>':'')+(/@/.test(c.email||'')?'<a class="btn ghost" target="_blank" href="https://mail.google.com/mail/?view=cm&to='+encodeURIComponent(c.email)+'">✉ Mail</a>':'')+'<button class="btn cel" onclick="agendar('+f+')">📅 Agendar</button>'+(puedeDesc?'<button class="btn red" onclick="descarteMail('+f+',this)">✉ Descarte por mail</button>':'')+(c.proc!=='SI'?'<button class="btn sec" onclick="rean('+f+',this)">↻ Re-analizar CV</button>':'')+(c.contactado?'<button class="btn sec" onclick="borrarMarca('+f+')">✕ Borrar marca de contacto</button>':'')+'</div>'+
     '<div class="fp">'+panel('Contacto',[kv('Teléfono',c.tel),kv('DNI',c.dni),kv('Email',c.email),kv('Domicilio',c.domicilio),kv('Localidad',c.loc),kv('Zona',c.zona)])+panel('Postulación',[kv('Recibido',c.fecha),kv('Llegó por',c.fuente),kv('Formación',c.formacion),kv('Pretensión',money(c.pret)),kv('Conoce a alguien en PAMI',c.conoce)])+panel('Proceso',[kv('Estado',c.estado),kv('Policlínico',c.policlinico||'Sin asignar'),kv('Sugerido por cercanía',c.polSug),kv('Notas por etapa',notasTxt(c)),kv('Turno preferido',String(c.turno||'').replace(/;/g,' ·')),kv('Entrevistó screening',(c.ent||{}).screening),kv('Entrevistó competencias',(c.ent||{}).competencias),kv('Entrevistó técnica',(c.ent||{}).pami2),kv('Último contacto',ultCont(c)),kv('Descartó',/^Descartad/i.test(c.estado)?c.descPor:''),kv('Descarte',c.descarte)],true)+'</div>'+
     (c.just?'<div class="sec">Análisis del CV</div><div class="txt"><b>'+esc(c.just)+'</b></div>':'')+(c.resumen?'<div class="txt" style="margin-top:6px">'+esc(c.resumen)+'</div>':'')+(c.req?'<div class="txt" style="margin-top:6px;color:#5D6B82">'+esc(c.req)+'</div>':'')+resp+
@@ -714,7 +714,7 @@ function infCard(l,v){return v?'<div class="cd"><small>'+esc(l)+'</small><b>'+es
 function infFecha(){var d=D.ahora.slice(0,10).split('-');return d[2]+'/'+d[1]+'/'+d[0];}
 function tecCard(c){
   var cita=c.cita?'📅 '+c.cita.ts.slice(8,10)+'/'+c.cita.ts.slice(5,7)+' '+c.cita.ts.slice(11,16):'Sin agendar';
-  return '<div style="background:#fff;border:1px solid var(--line);border-left:5px solid var(--celeste);border-radius:8px;padding:14px 16px;margin-bottom:12px"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><b style="font-size:17px">'+esc(c.nombre)+'</b><div style="color:#5D6B82;font-size:13px">'+esc(tit(c.busq))+(VP&&c.policlinico?' · '+esc(c.policlinico.replace('Policlínico ','')):'')+'</div></div><div style="font-size:13px;font-weight:700;color:#034EA2">'+cita+'</div></div><div class="btns" style="margin-top:12px"><button class="btn ghost" onclick="verResumen('+c.fila+',this,true)">📄 Ver ficha</button><button class="btn" onclick="abrirFormTec('+c.fila+')">🩺 Evaluar</button></div></div>';
+  return '<div style="background:#fff;border:1px solid var(--line);border-left:5px solid var(--celeste);border-radius:8px;padding:14px 16px;margin-bottom:12px"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><b style="font-size:17px">'+esc(c.nombre)+'</b><div style="color:#5D6B82;font-size:13px">'+esc(tit(c.busq))+(VP&&c.policlinico?' · '+esc(c.policlinico.replace('Policlínico ','')):'')+'</div></div><div style="font-size:13px;font-weight:700;color:#034EA2">'+cita+'</div></div><div class="btns" style="margin-top:12px"><button class="btn ghost" onclick="verResumen('+c.fila+',this,true)">📄 Ver ficha</button><button class="btn" onclick="abrirFormTec('+c.fila+')">🩺 Evaluar</button>'+(VP?'<button class="btn ghost" onclick="editarFicha('+c.fila+')">✏️ Editar ficha</button>':'')+'</div></div>';
 }
 function tecOverlay(){
   var v=document.getElementById('tecv');
@@ -737,6 +737,24 @@ function vistaPreview(poli){
   L.forEach(function(c){if(!c.policlinico)c.policlinico=String(c.polSug||'').split(' · ')[0];});
   tecOverlay().innerHTML='<div class="hdr"><div class="in"><span class="lg w"></span><div class="prod">Vista de Enfermería<small class="ver">así la ven los jefes</small></div><span class="sp"></span><select style="width:auto;margin-right:8px" onchange="vistaPreview(this.value)"><option value="">Todos los policlínicos</option>'+D.policlinicos.map(function(p){return '<option'+(p===VPP?' selected':'')+'>'+p+'</option>';}).join('')+'</select><button class="cta" onclick="cerrarPreview()">← Volver al tablero</button></div></div>'+
     '<div style="max-width:900px;margin:0 auto;padding:18px 16px 60px"><div style="font-size:14px;color:#5D6B82;margin-bottom:14px">'+(L.length?L.length+' candidato'+(L.length===1?'':'s')+' para entrevista técnica'+(VPP?' en '+esc(VPP):'')+'. Cada jefe ve solo los de su policlínico.':'No hay candidatos para entrevista técnica'+(VPP?' en '+esc(VPP):'')+' por ahora.')+'</div>'+L.map(tecCard).join('')+'</div>';
+}
+function editarFicha(f){
+  var c=byFila(f),mb=document.getElementById('mbox');
+  mb.innerHTML='<div class="hd"><div><h2>Ficha para Enfermería</h2><small>'+esc(c.nombre)+' · es el texto que leen los jefes</small></div><button class="x" onclick="cerrar()">×</button></div><div class="bd" id="fcb"><div class="loading">Cargando…</div></div>';
+  document.getElementById('modal').classList.add('show');
+  gs().withSuccessHandler(function(r){
+    var x=JSON.parse(r),b=document.getElementById('fcb');if(!b)return;
+    b.innerHTML='<div class="txt" style="font-size:13px;color:#5D6B82;margin-bottom:8px">'+(x.editado?'Editado por vos.':'Armado por la IA con el CV y las observaciones del entrevistador.')+' Corregilo si hace falta: los jefes leen exactamente este texto.</div><textarea id="fichaTxt" rows="8" style="width:100%">'+esc(x.resumen)+'</textarea><div class="btns" style="margin-top:10px"><button class="btn ok" onclick="guardarFicha('+f+',this)">Guardar</button><button class="btn ghost" onclick="regenerarFicha('+f+',this)">🔄 Armar de nuevo con IA</button><button class="btn sec" onclick="cerrar()">Cancelar</button></div>';
+  }).withFailureHandler(fer).getFichaEnfermeria(K,f);
+}
+function guardarFicha(f,btn){
+  var t=document.getElementById('fichaTxt').value;btn.disabled=true;btn.textContent='Guardando…';
+  gs().withSuccessHandler(function(){toast('Ficha guardada');cerrar();}).withFailureHandler(function(e){btn.disabled=false;btn.textContent='Guardar';fer(e);}).guardarFichaEnfermeria(K,f,t);
+}
+function regenerarFicha(f,btn){
+  if(!confirm('Se reemplaza el texto actual por uno nuevo armado por la IA. ¿Seguir?'))return;
+  var old=btn.textContent;btn.disabled=true;btn.textContent='Armando…';
+  gs().withSuccessHandler(function(r){document.getElementById('fichaTxt').value=JSON.parse(r).resumen;btn.disabled=false;btn.textContent=old;toast('Texto nuevo armado');}).withFailureHandler(function(e){btn.disabled=false;btn.textContent=old;fer(e);}).getFichaEnfermeria(K,f,true);
 }
 function cerrarPreview(){VP=false;var v=document.getElementById('tecv');if(v)v.remove();}
 function abrirFormTec(f){
