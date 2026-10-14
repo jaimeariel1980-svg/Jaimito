@@ -682,7 +682,8 @@ ${bloque}
 === FIN DECLARADOS ===
 
 Devolvé SOLO JSON válido con este formato:
-{"es_cv":true,"nombre":"Nombre y apellido real del candidato","telefono":"","dni":"solo números","localidad":"SOLO la ciudad o localidad (ej. Rosario, Funes); nunca la calle ni el número. Vacío si el CV no la menciona","domicilio":"domicilio de residencia del candidato: el que figura como Domicilio o Dirección en sus datos personales (calle y número). NO uses direcciones de instituciones, empleadores ni lugares de estudio. Vacío si no figura","nivel_ajuste":"A/B+/B/C","justificacion":"una sola oración corta con el porqué de la nota","formacion_titulo":"título o formación principal, textual (ej. Enfermero/a Profesional)","requisitos":{"formacion":"","matricula":"","experiencia":"","zona":"","continuidad":""},"resumen_experiencia":"3-4 oraciones narrativas sobre trayectoria, atributos y actitud, sin repetir el checklist"}
+{"es_cv":true,"nombre":"Nombre y apellido real del candidato","telefono":"","dni":"solo números","localidad":"SOLO la ciudad o localidad (ej. Rosario, Funes); nunca la calle ni el número. Vacío si el CV no la menciona","domicilio":"domicilio de residencia del candidato: el que figura como Domicilio o Dirección en sus datos personales (calle y número). NO uses direcciones de instituciones, empleadores ni lugares de estudio. Vacío si no figura","nivel_ajuste":"A/B+/B/C","justificacion":"una sola oración corta y objetiva: qué requisito cumple y cuál no consta o no cumple, sin adjetivos elogiosos","formacion_titulo":"título o formación principal, textual (ej. Enfermero/a Profesional)","requisitos":{"formacion":"","matricula":"","experiencia":"","zona":"","continuidad":""},"resumen_experiencia":"2-3 oraciones OBJETIVAS y neutrales con datos verificables del CV: instituciones, puestos o servicios, períodos y duración de cada experiencia, y años totales aproximados en enfermería. Aclará lo que NO consta (por ejemplo matrícula, experiencia con adultos mayores, fechas). Sin adjetivos calificativos ni elogios. No repitas las autodescripciones del candidato (compromiso, responsabilidad, vocación, trabajo en equipo) y no infieras actitud ni personalidad"}
+TONO: objetivo y neutro, como un informe de auditoría. Reportá solo hechos que estén escritos en el CV o en los datos declarados; lo que no figure, decí "no consta". Prohibido usar adjetivos valorativos (sólido, excelente, destacado, comprometido, ideal, potente) salvo que sean parte de un dato (por ejemplo un título). La nota se justifica únicamente con el cumplimiento de los requisitos.
 Devolvé es_cv:false SOLO si el texto claramente NO es un currículum (por ejemplo una factura o publicidad). Ante la duda, es_cv:true.
 REGLAS DE LA NOTA:
 - A: cumple todo, perfil potente sin ruido.
@@ -693,7 +694,7 @@ REGLAS DE LA NOTA:
     const resp = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {
       method: 'post', contentType: 'application/json', muteHttpExceptions: true,
       headers: { Authorization: 'Bearer ' + prop_('OPENAI_API_KEY') },
-      payload: JSON.stringify({ model: 'gpt-4o-mini', response_format: { type: 'json_object' }, messages: [{ role: 'system', content: prompt }, { role: 'user', content: 'CV:\n' + texto.slice(0, 15000) }] })
+      payload: JSON.stringify({ model: 'gpt-4o-mini', temperature: 0.2, response_format: { type: 'json_object' }, messages: [{ role: 'system', content: prompt }, { role: 'user', content: 'CV:\n' + texto.slice(0, 15000) }] })
     });
     const parsed = JSON.parse(resp.getContentText());
     if (parsed.error) throw new Error('OpenAI: ' + parsed.error.message);
@@ -724,7 +725,9 @@ REGLAS DE LA NOTA:
     if (forma) sh.getRange(fila, COL.formacion).setValue(forma);
     const reqTxt = Object.keys(req).map(k => k.charAt(0).toUpperCase() + k.slice(1) + ': ' + (req[k] || 'N/D')).join(' | ');
     const nota = ['A', 'B+', 'B', 'C'].indexOf(String(c.nivel_ajuste)) > -1 ? String(c.nivel_ajuste) : 'C';
-    sh.getRange(fila, COL.ajuste, 1, 4).setValues([[nota, 'IA sugiere ' + nota + ': ' + String(c.justificacion || ''), String(c.resumen_experiencia || ''), reqTxt]]);
+    const estAct = String(r[COL.estado - 1] || '').trim(), notaAct = String(r[COL.ajuste - 1] || '').trim();
+    const yaDecidida = estAct && ESTADOS_COL[0][1].indexOf(estAct) === -1 && ['A', 'B+', 'B', 'C'].indexOf(notaAct) > -1;
+    sh.getRange(fila, COL.ajuste, 1, 4).setValues([[yaDecidida ? notaAct : nota, 'IA sugiere ' + nota + ': ' + String(c.justificacion || ''), String(c.resumen_experiencia || ''), reqTxt]]);
     registrarHistorial_(r[COL.id - 1], r[COL.nombre - 1], 'Análisis CV', 'La IA sugiere ' + nota, 'sistema');
     sh.getRange(fila, COL.proc).setValue('SI');
     try { sugerirPoliclinico_(fila); } catch (e2) { registrarError_('sugerir policlínico fila ' + fila, e2); }

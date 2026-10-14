@@ -828,8 +828,8 @@ function getFichaEnfermeria_(k, fila) {
       const resp = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {
         method: 'post', contentType: 'application/json', muteHttpExceptions: true,
         headers: { Authorization: 'Bearer ' + prop_('OPENAI_API_KEY') },
-        payload: JSON.stringify({ model: 'gpt-4o-mini', temperature: 0.3, max_tokens: 350, messages: [
-          { role: 'system', content: 'Redactá un resumen breve (máximo 5 líneas, un solo párrafo) de un candidato de enfermería para los jefes de enfermería, integrando su trayectoria según el CV con las observaciones del entrevistador. Usá solo hechos presentes en el texto; no inventes nada. No menciones notas, puntajes, sueldos o pretensión salarial, sindicatos ni si conviene contratar o descartar. Español rioplatense, tono profesional.' },
+        payload: JSON.stringify({ model: 'gpt-4o-mini', temperature: 0.1, max_tokens: 300, messages: [
+          { role: 'system', content: 'Redactá un resumen OBJETIVO y neutral (máximo 4 líneas, un solo párrafo) de un candidato de enfermería para los jefes de enfermería. Contenido: formación, experiencia (instituciones, funciones, períodos) y las observaciones del entrevistador tal como fueron registradas, incluyendo las reservas y los aspectos a mejorar con el mismo peso que lo favorable. Prohibido: adjetivos elogiosos o valorativos (excelente, sólido, destacado, cálido, comprometido, ideal), conclusiones sobre idoneidad y recomendaciones. Si un dato no consta, no lo completes. Usá solo hechos presentes en el texto. No menciones notas, puntajes, sueldos o pretensión salarial, sindicatos ni si conviene contratar o descartar. Español rioplatense, tono de informe.' },
           { role: 'user', content: ('CV: ' + cv + '\nObservaciones del entrevistador:\n' + obs).slice(0, 4000) }] })
       });
       const parsed = JSON.parse(resp.getContentText());
