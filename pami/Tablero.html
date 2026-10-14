@@ -127,7 +127,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v74</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v75</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -749,12 +749,12 @@ function editarFicha(f){
 }
 function guardarFicha(f,btn){
   var t=document.getElementById('fichaTxt').value;btn.disabled=true;btn.textContent='Guardando…';
-  gs().withSuccessHandler(function(){toast('Ficha guardada');cerrar();}).withFailureHandler(function(e){btn.disabled=false;btn.textContent='Guardar';fer(e);}).guardarFichaEnfermeria(K,f,t);
+  gs().withSuccessHandler(function(){delete FICHAS[f];toast('Ficha guardada');cerrar();}).withFailureHandler(function(e){btn.disabled=false;btn.textContent='Guardar';fer(e);}).guardarFichaEnfermeria(K,f,t);
 }
 function regenerarFicha(f,btn){
   if(!confirm('Se reemplaza el texto actual por uno nuevo armado por la IA. ¿Seguir?'))return;
   var old=btn.textContent;btn.disabled=true;btn.textContent='Armando…';
-  gs().withSuccessHandler(function(r){document.getElementById('fichaTxt').value=JSON.parse(r).resumen;btn.disabled=false;btn.textContent=old;toast('Texto nuevo armado');}).withFailureHandler(function(e){btn.disabled=false;btn.textContent=old;fer(e);}).getFichaEnfermeria(K,f,true);
+  gs().withSuccessHandler(function(r){delete FICHAS[f];document.getElementById('fichaTxt').value=JSON.parse(r).resumen;btn.disabled=false;btn.textContent=old;toast('Texto nuevo armado');}).withFailureHandler(function(e){btn.disabled=false;btn.textContent=old;fer(e);}).getFichaEnfermeria(K,f,true);
 }
 function cerrarPreview(){VP=false;var v=document.getElementById('tecv');if(v)v.remove();}
 function abrirFormTec(f){
@@ -770,9 +770,12 @@ function cambiarPinTec(){
   if(!/^\d{4,6}$/.test(n)){alert('El PIN tiene que ser de 4 a 6 números.');return;}
   gs().withSuccessHandler(function(){P=n;setK();guardarCred();toast('PIN actualizado');}).withFailureHandler(function(e){alert(msgLogin(e));}).cambiarPin(K,n);
 }
+var FICHAS={};
 function verResumen(f,btn,enf){
-  var c=byFila(f),t=btn.textContent;btn.disabled=true;btn.textContent='Armando…';
-  var ok=function(r){btn.disabled=false;btn.textContent=t;var x=JSON.parse(r);abrirInforme(enf?htmlEnfermeria(x):htmlResumen(c,x));},ko=function(e){btn.disabled=false;btn.textContent=t;fer(e);};
+  var c=byFila(f);
+  if(enf&&FICHAS[f]&&FICHAS[f].m===c.mov){abrirInforme(htmlEnfermeria(FICHAS[f].x));return;}
+  var t=btn.textContent;btn.disabled=true;btn.textContent='Abriendo…';
+  var ok=function(r){btn.disabled=false;btn.textContent=t;var x=JSON.parse(r);if(enf){FICHAS[f]={m:c.mov,x:x};if(x.generada)toast('Ficha armada con IA y guardada');}abrirInforme(enf?htmlEnfermeria(x):htmlResumen(c,x));},ko=function(e){btn.disabled=false;btn.textContent=t;fer(e);};
   if(enf)gs().withSuccessHandler(ok).withFailureHandler(ko).getFichaEnfermeria(K,f);else gs().withSuccessHandler(ok).withFailureHandler(ko).getResumen(K,f);
 }
 function htmlEnfermeria(x){
