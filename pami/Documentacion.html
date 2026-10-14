@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<base target="_top">
+<title>Documentación para el ingreso</title>
+<?!= incluir_('Estilos') ?>
+<style>
+.wrap{max-width:720px;margin:0 auto;padding:22px 16px 60px}
+.group{margin-bottom:16px}
+label.t{display:block;font-weight:700;font-size:13px;margin-bottom:5px}
+.req-s{color:var(--err)}
+small{display:block;color:var(--mut);font-size:12px;margin-bottom:5px}
+.group.invalid input,.group.invalid .drop{border-color:var(--err)}
+.errmsg{display:none;color:var(--err);font-size:12px;margin-top:4px}
+.group.invalid .errmsg{display:block}
+.drop{display:block;border:2px dashed var(--line);border-radius:4px;padding:16px;text-align:center;cursor:pointer;color:var(--mut);font-size:14px}
+.drop.has{border-color:var(--celeste);color:var(--azul);font-weight:700}
+.drop input{display:none}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+#err{display:none;background:#FDECEA;border:1px solid #E6A19A;color:#7A1F12;padding:12px 14px;border-radius:4px;margin-bottom:14px;font-size:14px}
+.ok{text-align:center;padding:30px 10px}
+.ok .tick{width:56px;height:56px;border-radius:50%;background:var(--ok);color:#fff;font-size:30px;line-height:56px;margin:0 auto 14px}
+.btn.full{width:100%;padding:14px}
+.prog{display:none;margin-top:12px;font-size:13px;color:var(--mut);text-align:center}
+.bar{height:6px;background:#EEF1F5;border-radius:3px;overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;width:0;background:var(--celeste);transition:width .3s}
+@media(max-width:560px){.g2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="brand"><div class="in"><span class="lg"></span><div class="tt">Empleos</div></div></div>
+<div class="nav"><div class="in"><span class="it" style="cursor:default"><?= poliNombre ?></span></div></div>
+<div class="wrap" id="app"></div>
+<script>
+var POL=<?!= JSON.stringify(pol) ?>,CID=<?!= JSON.stringify(cid) ?>,TIPOS=<?!= JSON.stringify(tipos) ?>;
+var MAX=10*1024*1024,EXT=['pdf','jpg','jpeg','png','heic','webp'];
+var app=document.getElementById('app'),RES=null;
+function esc(t){return String(t==null?'':t).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function campo(id,label,ph){return '<div class="group" data-req><label class="t">'+label+' <span class="req-s">*</span></label><input type="text" id="'+id+'"'+(ph?' placeholder="'+ph+'"':'')+'><div class="errmsg" id="e-'+id+'">Completá este campo</div></div>';}
+function render(){
+  app.innerHTML='<form id="form" class="card" novalidate><h2 class="ttl" style="font-size:19px;margin-bottom:6px">Documentación para el ingreso</h2>'+
+    '<p style="margin-bottom:16px;color:#5D6B82">Completá tus datos y adjuntá cada documento, preferentemente en <b>PDF</b> o <b>JPG</b> (foto nítida). Máximo 10 MB por archivo.</p><div id="err"></div>'+
+    '<div class="g2">'+campo('apellido','Apellido')+campo('nombre','Nombre')+'</div>'+
+    campo('cuil','CUIL / CUIT','Ej: 27-12345678-9')+
+    TIPOS.map(function(t){return '<div class="group" data-req data-file="'+t.id+'"><label class="t">'+esc(t.etiqueta)+' <span class="req-s">*</span></label>'+(t.id==='dni'?'<small>Podés subir más de un archivo (por ejemplo, frente y dorso).</small>':'')+
+      '<label class="drop" id="d-'+t.id+'"><span id="x-'+t.id+'">Tocá para adjuntar</span><input type="file" id="f-'+t.id+'" accept=".pdf,.jpg,.jpeg,.png,.heic,.webp,application/pdf,image/*"'+(t.id==='dni'?' multiple':'')+'></label><div class="errmsg">Adjuntá este documento</div></div>';}).join('')+
+    '<button class="btn full" type="submit" id="btn">Enviar documentación</button><div class="prog" id="prog"><span id="ptxt"></span><div class="bar"><i id="pbar"></i></div></div></form>';
+  TIPOS.forEach(function(t){var f=document.getElementById('f-'+t.id);f.addEventListener('change',function(){
+    var d=document.getElementById('d-'+t.id),x=document.getElementById('x-'+t.id);
+    if(f.files.length){d.classList.add('has');x.textContent='✓ '+Array.prototype.map.call(f.files,function(a){return a.name;}).join(', ');}else{d.classList.remove('has');x.textContent='Tocá para adjuntar';}
+  });});
+  var form=document.getElementById('form');
+  form.addEventListener('submit',function(ev){ev.preventDefault();enviar();});
+  ['input','change'].forEach(function(t){form.addEventListener(t,function(e){RES=null;var g=e.target.closest('.group');if(g)g.classList.remove('invalid');});});
+}
+function v(id){return document.getElementById(id).value.trim();}
+function cuilOk(c){
+  var d=c.replace(/\D/g,'');if(d.length!==11||['20','23','24','25','26','27','30','33','34'].indexOf(d.slice(0,2))<0)return false;
+  var p=[5,4,3,2,7,6,5,4,3,2],s=0;for(var i=0;i<10;i++)s+=p[i]*Number(d[i]);var r=s%11;if(r===1)return true;return Number(d[10])===(r===0?0:11-r);
+}
+function mostrarErr(m){var e=document.getElementById('err');e.textContent=m;e.style.display='block';e.scrollIntoView({behavior:'smooth',block:'center'});}
+function enviar(){
+  if(RES){RES.seguir();return;}
+  var bad=null;document.getElementById('err').style.display='none';
+  document.querySelectorAll('.group[data-req]').forEach(function(g){
+    var ok=true,ft=g.getAttribute('data-file');
+    if(ft)ok=document.getElementById('f-'+ft).files.length>0;
+    else{var f=g.querySelector('input');ok=!!f.value.trim();
+      if(f.id==='cuil'){var m=document.getElementById('e-cuil');m.textContent=ok?'El CUIL / CUIT no es válido. Revisá los 11 números.':'Completá este campo';if(ok)ok=cuilOk(f.value);}}
+    g.classList.toggle('invalid',!ok);if(!ok&&!bad)bad=g;
+  });
+  if(bad){bad.scrollIntoView({behavior:'smooth',block:'center'});return;}
+  var cola=[];
+  for(var i=0;i<TIPOS.length;i++){var fs=document.getElementById('f-'+TIPOS[i].id).files;
+    for(var j=0;j<fs.length;j++){var ext=(fs[j].name.split('.').pop()||'').toLowerCase();
+      if(EXT.indexOf(ext)<0){mostrarErr('"'+fs[j].name+'" no es PDF ni imagen. Subilo en PDF o JPG.');return;}
+      if(fs[j].size>MAX){mostrarErr('"'+fs[j].name+'" pesa más de 10 MB. Subí uno más liviano.');return;}
+      cola.push({tipo:TIPOS[i].id,file:fs[j],n:j+1,total:fs.length});}}
+  var datos={pol:POL,cid:CID,apellido:v('apellido'),nombre:v('nombre'),cuil:v('cuil')};
+  var btn=document.getElementById('btn');btn.disabled=true;btn.textContent='Enviando…';
+  document.getElementById('prog').style.display='block';
+  var hechos=[];
+  function fallo(m){btn.disabled=false;btn.textContent='Reintentar envío';mostrarErr(m||'No pudimos enviar la documentación. Revisá tu conexión y probá de nuevo.');}
+  function paso(k){
+    document.getElementById('pbar').style.width=Math.round(k/(cola.length+1)*100)+'%';
+    RES.k=k;if(k===cola.length){document.getElementById('ptxt').textContent='Finalizando…';
+      google.script.run.withSuccessHandler(function(r){if(!r||!r.ok)return fallo(r&&r.error);listo();}).withFailureHandler(function(){fallo();}).docsFinalizar(Object.assign({archivos:hechos},datos));return;}
+    RES.k=k;var it=cola[k];document.getElementById('ptxt').textContent='Subiendo archivo '+(k+1)+' de '+cola.length+'…';
+    var rd=new FileReader();
+    rd.onload=function(){
+      google.script.run.withSuccessHandler(function(r){if(!r||!r.ok)return fallo(r&&r.error);hechos.push(r.nombre);paso(k+1);}).withFailureHandler(function(){fallo();})
+        .docsSubirArchivo(Object.assign({tipo:it.tipo,n:it.n,total:it.total,archivo:it.file.name,base64:String(rd.result).split(',')[1]},datos));
+    };
+    rd.onerror=function(){fallo('No se pudo leer "'+it.file.name+'".');};
+    rd.readAsDataURL(it.file);
+  }
+  RES={seguir:function(){btn.disabled=true;btn.textContent='Enviando…';document.getElementById('err').style.display='none';paso(RES.k);},k:0};
+  paso(0);
+}
+function listo(){
+  app.innerHTML='<div class="card ok"><div class="tick">✓</div><h2>¡Documentación enviada!</h2><p style="margin-top:8px">Gracias. Ya recibimos tus documentos. Si falta algo, nos vamos a comunicar con vos.</p></div>';
+  window.scrollTo(0,0);
+}
+render();
+</script>
+</body>
+</html>
