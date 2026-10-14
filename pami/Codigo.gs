@@ -503,7 +503,7 @@ function doGet_(e) {
     return t;
   };
   if (docsPol_(p.docs)) {
-    const t = HtmlService.createTemplateFromFile('Documentacion');
+    const t = HtmlService.createTemplateFromFile('FormDocumentacion');
     t.pol = docsPol_(p.docs); t.cid = seguro(p.c); t.tipos = docsTipos(); t.poliNombre = poliRomano_(POLICLINICOS[Number(t.pol) - 1]);
     return salida_(t, 'Documentación para el ingreso · ' + (aj.nombre_sitio || 'Empleos'));
   }
@@ -520,7 +520,7 @@ function doGet_(e) {
 
 function verificarInstalacion() {
   const faltan = [];
-  ['Web', 'Tablero', 'Screening', 'Competencias', 'Estilos', 'FormScreening', 'FormCompetencias', 'Documentacion'].forEach(n => { try { HtmlService.createHtmlOutputFromFile(n); } catch (e) { faltan.push('archivo HTML "' + n + '"'); } });
+  ['Web', 'Tablero', 'Screening', 'Competencias', 'Estilos', 'FormScreening', 'FormCompetencias', 'FormDocumentacion'].forEach(n => { try { HtmlService.createHtmlOutputFromFile(n); } catch (e) { faltan.push('archivo HTML "' + n + '"'); } });
   ['OPENAI_API_KEY', 'ADMIN_KEY', 'SHEET_ID'].forEach(k => { if (!prop_(k)) faltan.push('propiedad ' + k); });
   ['Candidatos', 'Busquedas', 'Preguntas', 'Screening_Eval', 'Screening_Val', 'Competencias', 'Plantillas', 'Historial', 'Evaluaciones', 'Ajustes'].forEach(n => { try { if (!hoja_(n)) faltan.push('pestaña ' + n); } catch (e) { faltan.push('pestaña ' + n); } });
   Logger.log(faltan.length ? '❌ Faltan: ' + faltan.join(', ') : '✅ Todo instalado');
