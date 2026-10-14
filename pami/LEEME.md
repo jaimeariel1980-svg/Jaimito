@@ -40,3 +40,13 @@ Ejecutar `verificarInstalacion()`. Las páginas muestran el error real. Si la UR
 - El mensaje de WhatsApp elige el link según el policlínico del candidato (el confirmado, o el sugerido).
 - Los títulos de las agendas siguen llevando `Screening`, `Competencias` o `Técnica`.
 - El calendario de PAMI 2 (dotacionpp2) tiene que estar compartido con dotacionpp1 con el permiso **«Ver todos los detalles del evento»** y la invitación aceptada. Si no, la Agenda muestra un cartel rojo explicando qué falta (el sistema también intenta suscribirse solo).
+
+## Documentación para el ingreso
+- Formulario público: `<url /exec>?docs=1` (PAMI 1) y `<url /exec>?docs=2` (PAMI 2). `mostrarLinks()` los muestra.
+- Pide apellido, nombre, CUIL/CUIT (se valida) y cinco archivos (PDF o imagen, hasta 10 MB c/u): DNI (admite varios, frente y dorso), CV, constancia de CUIL, título de Enfermería y matrícula vigente.
+- Cada persona tiene su carpeta `Apellido_Nombre_CUIL` y los archivos se nombran `Apellido_Nombre_DNI`, `_CV`, `_CUIL`, `_Titulo_Enfermeria`, `_Matricula` (si se reenvía, se agrega `_v2`).
+- Dónde se guarda (pestaña Ajustes):
+  - PAMI 1 → `carpeta_docs` (se crea sola en el Drive de dotacionpp1: "Empleos PAMI - Documentación ingreso").
+  - PAMI 2 → `carpeta_docs_poli2`: en el Drive de **dotacionpp2** crear una carpeta, compartirla con dotacionpp1 como **Editor** y pegar su ID (lo que sigue a `/folders/` en el link). Mientras esté vacío, lo de PAMI 2 se guarda en la subcarpeta "PAMI 2 (falta carpeta de dotacionpp2)" dentro de la de PAMI 1.
+- Tablero → WhatsApp → "📄 Pedido de documentación": manda el link del policlínico del candidato (confirmado o sugerido) con su ID, así la documentación queda asociada a la ficha (columna Documentación y botón "📂 Documentación"). Si llega por el link general, se asocia por DNI (sale del CUIL).
+- Todo envío queda en la pestaña **Documentacion** y llega un mail a `correo_aviso`. Texto del WhatsApp: plantilla `pedido-documentacion`.

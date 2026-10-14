@@ -248,6 +248,7 @@ function plantillasIniciales_() {
     ['contacto-competencias', 'WhatsApp', 'Hola [NOMBRE], ¿cómo estás? Soy [ENTREVISTADOR] del equipo de Atracción y Elección.\nTe escribo por la búsqueda de [PUESTO] en [EMPRESA].\nNos gustaría avanzar con tu perfil a la siguiente etapa del proceso. Se trata de una entrevista de aproximadamente una hora, en la que vamos a profundizar sobre tu experiencia y tu recorrido profesional.\nSi te interesa continuar, elegí el día y horario que mejor te quede desde este link y queda agendada:\n[LINK]\n¡Nos vemos pronto!\nSaludos,\n[FIRMA]'],
     ['contacto-tecnica', 'WhatsApp', 'Hola [NOMBRE], ¿cómo estás?\nQueríamos contarte que nos gustaría avanzar con tu perfil a la siguiente etapa del proceso para la posición de [PUESTO] en [POLICLINICO].\nLa próxima instancia consiste en una entrevista técnica con la División de Enfermería, de aproximadamente una hora. Será una conversación para profundizar sobre tu experiencia y conocer los desafíos de la posición.\nSi te interesa continuar, elegí el día y horario que mejor te quede desde este link y queda agendada:\n[LINK]\nSaludos,\n[FIRMA]'],
     ['confirmacion-cita', 'WhatsApp', 'Hola [NOMBRE], te confirmamos tu entrevista de [TIPO] para la búsqueda de [PUESTO]:\n📅 [FECHA] a las [HORA]\n📍 [LUGAR]\nSi no podés asistir, avisanos con anticipación para reprogramarla. ¡Gracias!\n[FIRMA]'],
+    ['pedido-documentacion', 'WhatsApp', 'Hola [NOMBRE], ¿cómo estás? Te escribimos del equipo de Atracción y Elección del [POLI].\nPara avanzar con tu ingreso necesitamos que nos envíes la siguiente documentación (preferentemente en PDF o JPG):\n• DNI (frente y dorso)\n• Currículum Vitae\n• Constancia de CUIL\n• Título de Enfermería\n• Constancia de Matrícula de Enfermería vigente y actualizada\nPodés cargarla desde este link:\n[LINK]\n¡Muchas gracias!\n[FIRMA]'],
     ['descarte-sin', 'Mail', 'Hola [NOMBRE],\nQueremos agradecerte sinceramente por tu interés en la posición de [PUESTO] y por el tiempo dedicado a postularte.\nLuego de revisar cuidadosamente los currículums recibidos, en esta oportunidad decidimos avanzar con candidatos cuyos perfiles se encuentran más alineados con los requerimientos específicos de la posición.\nValoramos mucho tu trayectoria profesional. Conservaremos tu perfil para futuras oportunidades que puedan resultar acordes a tu experiencia.\nTe deseamos muchos éxitos en tus próximos desafíos profesionales.\nSaludos cordiales,\n[FIRMA]'],
     ['descarte-post', 'Mail', 'Hola [NOMBRE],\nMuchas gracias por el tiempo compartido durante el proceso de selección para la posición de [PUESTO].\nQueremos agradecer especialmente tu apertura y predisposición durante la conversación. Luego de analizar toda la información recabada, hemos decidido avanzar con otros perfiles que presentan un ajuste más cercano a las necesidades actuales de la posición.\nValoramos mucho tu experiencia y el intercambio mantenido, y esperamos poder considerar tu perfil para futuras oportunidades.\nTe deseamos muchos éxitos en tus próximos proyectos.\nSaludos cordiales,\n[FIRMA]'],
     ['descarte-competencias', 'WhatsApp', 'Hola [NOMBRE],\nAntes que nada, queremos agradecerte el tiempo que compartiste con nosotros durante las entrevistas para la posición de [PUESTO].\nValoramos mucho tu predisposición y el interés demostrado a lo largo del proceso.\nLuego de evaluar integralmente los perfiles, en esta oportunidad hemos decidido continuar con candidatos que presentan un ajuste más cercano a los desafíos específicos de la posición.\nEsperamos poder considerar tu perfil en futuras oportunidades. Te deseamos muchos éxitos.\nSaludos cordiales,\n[FIRMA]'],
@@ -415,7 +416,7 @@ function getTablero_(k) {
       notaScr: r[COL.notaScr - 1], notaComp: r[COL.notaComp - 1], notaP1: r[COL.notaP1 - 1], notaP2: r[COL.notaP2 - 1],
       recTipo: r[COL.recTipo - 1], recPor: r[COL.recPor - 1], coment: r[COL.coment - 1], resp: resp, proc: r[COL.proc - 1], fuente: r[COL.fuente - 1],
       cita: citaObj_(r[COL.cita - 1]), entrevistas: String(r[COL.entrevistas - 1] || ''), contactado: String(r[COL.contactado - 1] || ''),
-      descarte: String(r[COL.descarte - 1] || ''), infScr: String(r[COL.infScr - 1] || ''), infComp: String(r[COL.infComp - 1] || ''),
+      descarte: String(r[COL.descarte - 1] || ''), infScr: String(r[COL.infScr - 1] || ''), infComp: String(r[COL.infComp - 1] || ''), docs: String(r[COL.docs - 1] || ''),
       zona: String(r[COL.zona - 1] || ''), formacion: String(r[COL.formacion - 1] || ''), postulacion: String(r[COL.postulacion - 1] || ''), policlinico: String(r[COL.policlinico - 1] || ''), domicilio: String(r[COL.domicilio - 1] || ''), polSug: String(r[COL.polSug - 1] || ''), domRev: String(r[COL.domRev - 1] || ''), motivo: String(r[COL.motivo - 1] || ''), turno: String(r[COL.turno - 1] || ''),
       conoce: (resp.find(x => /conoc[eé]s a alguien/i.test(x.q) && x.a && !/^(no|ninguno|nadie|-)\.?$/i.test(String(x.a).trim())) || {}).a || ''
     });
@@ -575,12 +576,18 @@ function armarComunicacion(k, fila, tipo) {
   if (claveLink && v.aj[claveLink]) v.LINK = v.aj[claveLink];
   const polEf = String(r[COL.policlinico - 1] || String(r[COL.polSug - 1] || '').split(' · ')[0]);
   if (claveLink && /2$/.test(polEf) && v.aj[claveLink + '_poli2']) v.LINK = v.aj[claveLink + '_poli2'];
+  if (tipo === 'pedido-documentacion') {
+    const n = /2$/.test(polEf) ? '2' : /1$/.test(polEf) ? '1' : '';
+    if (!n) return { ok: false, error: 'Primero asigná el policlínico del candidato (PAMI 1 o PAMI 2): el link de documentación depende de eso.' };
+    v.LINK = linkDocs_(n, r[COL.id - 1]);
+    v.POLI = poliRomano_(POLICLINICOS[Number(n) - 1]);
+  }
   let texto = textoPlantilla_(tipo);
   if (!texto) return { ok: false, error: 'No encontré la plantilla ' + tipo + ' en la pestaña Plantillas' };
   if (!v.LINK) texto = texto.replace(/[^\n]*(link|enlace)[^\n]*\n\[LINK\]/i, 'Si te interesa, contanos qué día y horario te quedan mejor para agendarla.').replace(/ ?\[LINK\]/g, '');
   texto = rellenar_(texto, v);
   if (!String(r[COL.tel - 1]).replace(/\D/g, '')) return { ok: false, error: 'El candidato no tiene teléfono' };
-  const etq = { 'contacto-screening': 'screening', 'contacto-competencias': 'competencias', 'contacto-tecnica': 'entrevista técnica', 'descarte-competencias': 'descarte comp.', 'descarte-pami': 'descarte PAMI', 'confirmacion-cita': 'confirmación' }[tipo] || '';
+  const etq = { 'contacto-screening': 'screening', 'contacto-competencias': 'competencias', 'contacto-tecnica': 'entrevista técnica', 'descarte-competencias': 'descarte comp.', 'descarte-pami': 'descarte PAMI', 'confirmacion-cita': 'confirmación', 'pedido-documentacion': 'documentación' }[tipo] || '';
   if (etq) {
     sh.getRange(fila, COL.contactado).setValue(etq + ' · ' + fmt_(new Date(), 'dd/MM/yyyy'));
     sh.getRange(fila, COL.mov).setValue(new Date());
