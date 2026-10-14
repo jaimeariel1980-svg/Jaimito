@@ -76,15 +76,22 @@ function mismoNombre_(a, b) {
   return sub(A, B) || sub(B, A);
 }
 
+function candDe_(r) {
+  return { nombre: r[COL.nombre - 1], mail: String(r[COL.email - 1] || '').trim().toLowerCase(), alias: String(r[COL.alias - 1] || '').split(';').map(x => x.trim().toLowerCase()).filter(Boolean) };
+}
+
 function eventoEsDe_(ev, cand) {
   if (cand.mail && ev.invitados.indexOf(cand.mail) > -1) return true;
+  const al = cand.alias || [];
+  if (al.some(a => ev.invitados.indexOf(a) > -1)) return true;
   const m = ev.titulo.match(/\(([^)]+)\)/);
+  if (m && al.indexOf(norm_(m[1]).replace(/\s+/g, ' ').trim()) > -1) return true;
   return !!m && mismoNombre_(m[1], cand.nombre);
 }
 
 function estadoPorMail_() {
   const m = {};
-  hoja_('Candidatos').getDataRange().getValues().slice(1).forEach(r => { const k = String(r[COL.email - 1] || '').trim().toLowerCase(); if (k) m[k] = r[COL.estado - 1]; });
+  hoja_('Candidatos').getDataRange().getValues().slice(1).forEach(r => { const c = candDe_(r); [c.mail].concat(c.alias.filter(x => x.indexOf('@') > -1)).forEach(k => { if (k) m[k] = r[COL.estado - 1]; }); });
   return m;
 }
 
@@ -114,7 +121,7 @@ function syncCalendario() {
   for (let i = 1; i < d.length; i++) {
     const r = d[i];
     if (!r[COL.nombre - 1]) continue;
-    const cand = { nombre: r[COL.nombre - 1], mail: String(r[COL.email - 1] || '').trim().toLowerCase() };
+    const cand = candDe_(r);
     const suyos = eventos.filter(e => eventoEsDe_(e, cand));
     const fila = i + 1;
 
@@ -141,7 +148,7 @@ function syncCalendario() {
 function citasSinCandidato_(evs) {
   const ahora = new Date();
   const eventos = evs || eventosCal_(ahora, new Date(ahora.getTime() + 60 * 86400000));
-  const d = hoja_('Candidatos').getDataRange().getValues().slice(1).filter(r => r[COL.nombre - 1]).map(r => ({ nombre: r[COL.nombre - 1], mail: String(r[COL.email - 1] || '').trim().toLowerCase() }));
+  const d = hoja_('Candidatos').getDataRange().getValues().slice(1).filter(r => r[COL.nombre - 1]).map(r => candDe_(r));
   return eventos.filter(e => !d.some(c => eventoEsDe_(e, c)))
     .sort((a, b) => a.inicio - b.inicio)
     .map(e => ({ titulo: e.titulo, ts: fmt_(e.inicio, 'yyyy-MM-dd HH:mm'), tipo: TIPO_ETAPA[etapaDeTitulo_(e.titulo)], invitados: e.invitados.join(', '), poli: e.poli }));
@@ -197,7 +204,7 @@ function sincronizarAgenda(k) {
 function diagnosticoCalendario(k) {
   admin_(k);
   const ahora = new Date(), hasta = new Date(ahora.getTime() + 14 * 86400000), aj = ajustes_(), porMail = estadoPorMail_();
-  const cands = hoja_('Candidatos').getDataRange().getValues().slice(1).filter(r => r[COL.nombre - 1]).map(r => ({ nombre: r[COL.nombre - 1], mail: String(r[COL.email - 1] || '').trim().toLowerCase() }));
+  const cands = hoja_('Candidatos').getDataRange().getValues().slice(1).filter(r => r[COL.nombre - 1]).map(r => candDe_(r));
   const out = [];
   const comp = calendariosComp_();
   if (!comp.length) out.push({ cal: 'Competencias', error: 'no veo ningún calendario con "Competencias" en el nombre (tiene que estar en "Otros calendarios" de ' + CUENTA + ')' });
@@ -215,4 +222,24 @@ function diagnosticoCalendario(k) {
   });
   out.sort((a, b) => String(a.ts || '') < String(b.ts || '') ? -1 : 1);
   return out.slice(0, 120);
+}
+
+function asociarTurno(k, fila, o) {
+  escritor_(k);
+  const sh = hoja_('Candidatos');
+  fila = Number(fila);
+  if (!(fila >= 2 && fila <= sh.getLastRow())) throw new Error('Fila inválida');
+  const mails = String(o.invitados || '').split(',').map(x => x.trim().toLowerCase()).filter(x => /^[^@\s]+@[^@\s]+$/.test(x));
+  const m = String(o.titulo || '').match(/\(([^)]+)\)/);
+  const nom = m ? norm_(m[1]).replace(/\s+/g, ' ').trim() : '';
+  const nuevos = mails.concat(nom ? [nom] : []);
+  if (!nuevos.length) throw new Error('Ese turno no trae mail ni nombre para asociar');
+  const celda = sh.getRange(fila, COL.alias);
+  const act = String(celda.getValue() || '').split(';').map(x => x.trim()).filter(Boolean);
+  nuevos.forEach(x => { if (act.indexOf(x) === -1) act.push(x); });
+  celda.setValue(act.join('; ').slice(0, 500));
+  registrarHistorial_(sh.getRange(fila, COL.id).getValue(), sh.getRange(fila, COL.nombre).getValue(), 'Agenda', 'Turno asociado a mano: ' + String(o.titulo || '').slice(0, 80), 'tablero');
+  const lock = LockService.getUserLock();
+  if (lock.tryLock(25000)) { try { syncCalendario(); } finally { lock.releaseLock(); } }
+  return true;
 }

@@ -599,7 +599,7 @@ function getAgenda(k) {
   for (let i = 1; i < d.length; i++) {
     const c = citaObj_(d[i][COL.cita - 1]);
     if (!c || c.ts < desde || !d[i][COL.nombre - 1]) continue;
-    const cand = { nombre: d[i][COL.nombre - 1], mail: String(d[i][COL.email - 1] || '').trim().toLowerCase() };
+    const cand = candDe_(d[i]);
     const ev = evs.find(e => fmt_(e.inicio, 'yyyy-MM-dd HH:mm') === c.ts && eventoEsDe_(e, cand));
     const origen = ev ? ev.poli : '', asignado = String(d[i][COL.policlinico - 1] || '').trim();
     citas.push({ fila: i + 1, nombre: d[i][COL.nombre - 1], ts: c.ts, tipo: c.tipo, busq: d[i][COL.busq - 1], tel: String(d[i][COL.tel - 1] || ''), origen: origen, desfase: !!(origen && asignado && origen !== asignado) });
