@@ -127,7 +127,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v64</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v66</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -242,12 +242,12 @@ function panelUsuarios() {
   document.getElementById('modal').classList.add('show');
   gs().withSuccessHandler(function (l) {
     var e = document.getElementById('usl'); if (!e) return;
-    var ro = ['Entrevistador', 'Lectura', 'Admin'];
-    e.innerHTML = '<div style="display:flex;gap:8px;margin:14px 0 6px;flex-wrap:wrap"><input id="nuN" type="text" placeholder="Nombre y apellido" style="flex:1;min-width:160px"><select id="nuR" style="width:auto">' + ro.map(function (r) { return '<option>' + r + '</option>'; }).join('') + '</select><button class="btn" onclick="nuevoUsuario()">＋ Crear</button></div>' +
-      '<div class="txt" style="font-size:12px;color:#3F4B66;margin-bottom:8px"><b>Entrevistador</b>: carga y modifica. <b>Lectura</b>: solo mira. <b>Admin</b>: además administra usuarios y ve el control de cambios.</div>' +
+    var ro = ['Entrevistador', 'Técnica', 'Lectura', 'Admin'];
+    e.innerHTML = '<div style="display:flex;gap:8px;margin:14px 0 6px;flex-wrap:wrap"><input id="nuN" type="text" placeholder="Nombre y apellido" style="flex:1;min-width:160px"><select id="nuR" style="width:auto" onchange="document.getElementById(\'nuP\').style.display=this.value===\'Técnica\'?\'\':\'none\'">' + ro.map(function (r) { return '<option>' + r + '</option>'; }).join('') + '</select><select id="nuP" style="width:auto;display:none">' + D.policlinicos.map(function (p) { return '<option>' + p + '</option>'; }).join('') + '</select><button class="btn" onclick="nuevoUsuario()">＋ Crear</button></div>' +
+      '<div class="txt" style="font-size:12px;color:#3F4B66;margin-bottom:8px"><b>Entrevistador</b>: carga y modifica. <b>Técnica</b>: jefe/a de enfermería, solo ve y evalúa las entrevistas técnicas de su policlínico. <b>Lectura</b>: solo mira. <b>Admin</b>: además administra usuarios y ve el control de cambios.</div>' +
       l.map(function (u) {
         var yo = u.nombre.toLowerCase() === String(U).toLowerCase(), prot = u.propietario && !yo;
-        return '<div class="row" style="align-items:center;flex-wrap:wrap"><span class="v"><b>' + esc(u.nombre) + '</b> <span class="tag">' + esc(u.rol) + '</span>' + (u.propietario ? ' <span class="tag">Propietario</span>' : '') + (u.activo ? '' : ' <span class="tag r">Bloqueado</span>') + '</span>' +
+        return '<div class="row" style="align-items:center;flex-wrap:wrap"><span class="v"><b>' + esc(u.nombre) + '</b> <span class="tag">' + esc(u.rol) + '</span>' + (u.rol === 'Técnica' ? ' <select style="width:auto;padding:3px 6px;font-size:11px" data-n="' + esc(u.nombre) + '" onchange="cambiarPoliU(this.dataset.n,this.value)"><option value="">— policlínico —</option>' + D.policlinicos.map(function (p) { return '<option' + (p === u.poli ? ' selected' : '') + '>' + p + '</option>'; }).join('') + '</select>' : '') + (u.propietario ? ' <span class="tag">Propietario</span>' : '') + (u.activo ? '' : ' <span class="tag r">Bloqueado</span>') + '</span>' +
           (yo || prot ? '' : '<select style="width:auto;padding:5px 8px;font-size:12px" data-n="' + esc(u.nombre) + '" onchange="cambiarRolU(this.dataset.n,this.value)">' + ro.map(function (r) { return '<option' + (r === u.rol ? ' selected' : '') + '>' + r + '</option>'; }).join('') + '</select>') +
           (prot ? '' : '<button class="btn ghost" style="padding:6px 10px;font-size:11px;margin-left:6px" data-n="' + esc(u.nombre) + '" onclick="reiniciarPinU(this.dataset.n)">Reiniciar PIN</button>') +
           (yo || prot ? '' : '<button class="btn sec" style="padding:6px 10px;font-size:11px;margin-left:6px" data-n="' + esc(u.nombre) + '" data-a="' + (u.activo ? '0' : '1') + '" onclick="activarU(this.dataset.n,this.dataset.a===\'1\')">' + (u.activo ? 'Bloquear' : 'Habilitar') + '</button>') + '</div>';
@@ -256,8 +256,9 @@ function panelUsuarios() {
 }
 function nuevoUsuario() {
   var n = document.getElementById('nuN').value.trim(), r = document.getElementById('nuR').value; if (!n) { alert('Escribí el nombre'); return; }
-  gs().withSuccessHandler(function (x) { alert('Usuario creado: ' + x.nombre + ' (' + r + ')\nPIN: ' + x.pin + '\n\nPasale este PIN. Después puede cambiarlo desde su avatar.'); panelUsuarios(); }).withFailureHandler(fer).crearUsuario(K, n, r);
+  gs().withSuccessHandler(function (x) { alert('Usuario creado: ' + x.nombre + ' (' + r + ')\nPIN: ' + x.pin + '\n\nPasale este PIN. Después puede cambiarlo desde su avatar.'); panelUsuarios(); }).withFailureHandler(fer).crearUsuario(K, n, r, document.getElementById('nuP').value);
 }
+function cambiarPoliU(n, p) { if (!p) return; gs().withSuccessHandler(function () { toast('Policlínico actualizado'); panelUsuarios(); }).withFailureHandler(function (e) { fer(e); panelUsuarios(); }).cambiarPoliUsuario(K, n, p); }
 function cambiarRolU(n, r) { gs().withSuccessHandler(function () { toast('Rol actualizado'); panelUsuarios(); }).withFailureHandler(function (e) { fer(e); panelUsuarios(); }).cambiarRol(K, n, r); }
 function panelControl(tab) {
   tab = tab || 'cambios';
@@ -300,7 +301,7 @@ function byFila(f){return D.cands.find(function(x){return x.fila===f;});}
 function cargar(){
   var rf=document.querySelector('#rf b');rf.textContent='Actualizando…';
   gs().withSuccessHandler(function(j){
-    document.getElementById('login').classList.remove('show');guardarCred();var primera=!D;D=JSON.parse(j);RO=(D.rol==='Lectura');ajustarRol();try{if(D.cfg.recordarDias){REM_MS=D.cfg.recordarDias*86400000;localStorage.setItem('pami_rd',String(D.cfg.recordarDias));}if(D.cfg.sesionHoras){IDLE_MS=D.cfg.sesionHoras*3600000;localStorage.setItem('pami_ih',String(D.cfg.sesionHoras));}}catch(e){}try{if(!sessionStorage.getItem('pami_ing')){sessionStorage.setItem('pami_ing','1');gs().withSuccessHandler(function(){}).withFailureHandler(function(){}).registrarAcceso(K,'Ingreso');}}catch(e){}rf.textContent='Actualizar';pintarUsuario();
+    document.getElementById('login').classList.remove('show');guardarCred();var primera=!D;D=JSON.parse(j);if(D.tecnica){rf.textContent='Actualizar';vistaTecnica();return;}RO=(D.rol==='Lectura');ajustarRol();try{if(D.cfg.recordarDias){REM_MS=D.cfg.recordarDias*86400000;localStorage.setItem('pami_rd',String(D.cfg.recordarDias));}if(D.cfg.sesionHoras){IDLE_MS=D.cfg.sesionHoras*3600000;localStorage.setItem('pami_ih',String(D.cfg.sesionHoras));}}catch(e){}try{if(!sessionStorage.getItem('pami_ing')){sessionStorage.setItem('pami_ing','1');gs().withSuccessHandler(function(){}).withFailureHandler(function(){}).registrarAcceso(K,'Ingreso');}}catch(e){}rf.textContent='Actualizar';pintarUsuario();
     if(primera)init();else render();
   }).withFailureHandler(function(e){
     rf.textContent='Actualizar';
@@ -506,12 +507,12 @@ function notaRow(c,et,val){
 var FORM_F=0;
 function abrirForm(tipo,f){
   var c=byFila(f);FORM_F=f;cerrar();
-  document.getElementById('ftit').textContent=(tipo==='screening'?'Screening · ':'Competencias · ')+c.nombre;
+  document.getElementById('ftit').textContent=(tipo==='screening'?'Screening · ':tipo==='tecnica'?'Entrevista técnica · ':'Competencias · ')+c.nombre;var vb=document.querySelector('#fmodal .fbar .btn');if(vb)vb.textContent='← Volver a la ficha';
   document.getElementById('fmodal').classList.add('show');document.getElementById('fmodal').scrollTop=0;
   var o={K:K,cid:c.id,entre:c.entrev||'',container:document.getElementById('fbody'),onDone:function(){cargar();},onClose:volverFicha};
-  if(tipo==='screening')FS.open(o);else FC.open(o);
+  if(tipo==='screening')FS.open(o);else{if(tipo==='tecnica')o.etapa='tecnica';FC.open(o);}
 }
-function volverFicha(){document.getElementById('fmodal').classList.remove('show');document.getElementById('fbody').innerHTML='';cargar();if(FORM_F)abrir(FORM_F);}
+function volverFicha(){if(D&&D.tecnica){cerrarFormTec();return;}document.getElementById('fmodal').classList.remove('show');document.getElementById('fbody').innerHTML='';cargar();if(FORM_F)abrir(FORM_F);}
 
 function kv(l,v){return v?'<div class="kv"><small>'+l+'</small><b>'+esc(v)+'</b></div>':'';}
 function panel(t,items,full){var h=items.join('');return h?'<div class="pn'+(full?' full':'')+'"><h4>'+t+'</h4><div class="kvg">'+h+'</div></div>':'';}
@@ -541,7 +542,7 @@ function abrir(f){
   var puedeDesc=/^Descartado (sin|post) screening$/.test(c.estado)&&!c.descarte&&/@/.test(c.email||'');
   document.getElementById('mbox').innerHTML=
     '<div class="hd"><div><h2>'+esc(c.nombre)+'</h2><small>'+esc(tit(c.busq))+' · '+esc(c.estado)+'</small><div class="ecs">'+etapasHdr(c)+'</div></div><button class="x" onclick="cerrar()">×</button></div><div class="bd">'+al+
-    '<div class="btns"><button class="btn" onclick="abrirForm(\'screening\','+f+')">📝 Formulario screening</button><button class="btn" onclick="abrirForm(\'competencias\','+f+')">💼 Formulario competencias</button>'+(c.infScr?'<a class="btn ghost" target="_blank" href="'+esc(c.infScr)+'">Ver screening</a>':'')+(c.infComp?'<a class="btn ghost" target="_blank" href="'+esc(c.infComp)+'">Ver competencias</a>':'')+(c.resp.length?'<button class="btn ghost" onclick="verPost('+f+',this)">📋 Ver postulación</button>':'')+'<button class="btn ghost" onclick="verResumen('+f+',this)">📄 Resumen</button><button class="btn ghost" onclick="verResumen('+f+',this,true)">🩺 Para Enfermería</button></div>'+
+    '<div class="btns"><button class="btn" onclick="abrirForm(\'screening\','+f+')">📝 Formulario screening</button><button class="btn" onclick="abrirForm(\'competencias\','+f+')">💼 Formulario competencias</button><button class="btn" onclick="abrirForm(\'tecnica\','+f+')">🩺 Formulario técnica</button>'+(c.infScr?'<a class="btn ghost" target="_blank" href="'+esc(c.infScr)+'">Ver screening</a>':'')+(c.infComp?'<a class="btn ghost" target="_blank" href="'+esc(c.infComp)+'">Ver competencias</a>':'')+(c.resp.length?'<button class="btn ghost" onclick="verPost('+f+',this)">📋 Ver postulación</button>':'')+'<button class="btn ghost" onclick="verResumen('+f+',this)">📄 Resumen</button><button class="btn ghost" onclick="verResumen('+f+',this,true)">🩺 Para Enfermería</button></div>'+
     '<div class="btns">'+(c.cv?'<a class="btn ghost" target="_blank" href="'+esc(c.cv)+'">📄 Ver CV</a>':'')+(c.tel?'<button class="btn wa" onclick="menuWA('+f+')">💬 WhatsApp ▾</button>':'')+(/@/.test(c.email||'')?'<a class="btn ghost" target="_blank" href="https://mail.google.com/mail/?view=cm&to='+encodeURIComponent(c.email)+'">✉ Mail</a>':'')+'<button class="btn cel" onclick="agendar('+f+')">📅 Agendar</button>'+(puedeDesc?'<button class="btn red" onclick="descarteMail('+f+',this)">✉ Descarte por mail</button>':'')+(c.proc!=='SI'?'<button class="btn sec" onclick="rean('+f+',this)">↻ Re-analizar CV</button>':'')+(c.contactado?'<button class="btn sec" onclick="borrarMarca('+f+')">✕ Borrar marca de contacto</button>':'')+'</div>'+
     '<div class="fp">'+panel('Contacto',[kv('Teléfono',c.tel),kv('DNI',c.dni),kv('Email',c.email),kv('Domicilio',c.domicilio),kv('Localidad',c.loc),kv('Zona',c.zona)])+panel('Postulación',[kv('Recibido',c.fecha),kv('Llegó por',c.fuente),kv('Formación',c.formacion),kv('Pretensión',money(c.pret)),kv('Conoce a alguien en PAMI',c.conoce)])+panel('Proceso',[kv('Estado',c.estado),kv('Policlínico',c.policlinico||'Sin asignar'),kv('Sugerido por cercanía',c.polSug),kv('Notas por etapa',notasTxt(c)),kv('Turno preferido',String(c.turno||'').replace(/;/g,' ·')),kv('Entrevistó screening',(c.ent||{}).screening),kv('Entrevistó competencias',(c.ent||{}).competencias),kv('Entrevistó técnica',(c.ent||{}).pami2),kv('Último contacto',ultCont(c)),kv('Descartó',/^Descartad/i.test(c.estado)?c.descPor:''),kv('Descarte',c.descarte)],true)+'</div>'+
     (c.just?'<div class="sec">Análisis del CV</div><div class="txt"><b>'+esc(c.just)+'</b></div>':'')+(c.resumen?'<div class="txt" style="margin-top:6px">'+esc(c.resumen)+'</div>':'')+(c.req?'<div class="txt" style="margin-top:6px;color:#5D6B82">'+esc(c.req)+'</div>':'')+resp+
@@ -710,11 +711,34 @@ function infDoc(tit,cuerpo){return '<!doctype html><html><head><meta charset="ut
 function infLogo(){var e=document.querySelector('.hdr .lg'),bg=e?getComputedStyle(e).backgroundImage:'';return bg&&bg!=='none'?'<span style="display:inline-block;height:54px;aspect-ratio:216/71;flex-shrink:0;background:'+bg.replace(/"/g,"'")+' center/contain no-repeat;filter:brightness(0) invert(1)"></span>':'';}
 function infCard(l,v){return v?'<div class="cd"><small>'+esc(l)+'</small><b>'+esc(v)+'</b></div>':'';}
 function infFecha(){var d=D.ahora.slice(0,10).split('-');return d[2]+'/'+d[1]+'/'+d[0];}
-function verResumen(f,btn,det){
-  var c=byFila(f),t=btn.textContent;btn.disabled=true;btn.textContent='Armando…';
-  gs().withSuccessHandler(function(r){btn.disabled=false;btn.textContent=t;abrirInforme(htmlResumen(c,JSON.parse(r),det));}).withFailureHandler(function(e){btn.disabled=false;btn.textContent=t;fer(e);}).getResumen(K,f);
+function vistaTecnica(){
+  if(document.getElementById('fmodal').classList.contains('show'))return;
+  var v=document.getElementById('tecv');
+  if(!v){v=document.createElement('div');v.id='tecv';v.style.cssText='position:fixed;inset:0;z-index:40;background:var(--bg);overflow:auto';document.body.appendChild(v);}
+  var L=D.cands,ch=function(t,n){var col=NF[n];return col?'<span style="background:'+col[0]+';color:'+col[1]+';border-radius:5px;padding:3px 8px;font-size:12px;font-weight:800;margin-right:6px">'+t+' '+esc(n)+'</span>':'';};
+  var cita=function(c){return c.cita?'📅 '+c.cita.ts.slice(8,10)+'/'+c.cita.ts.slice(5,7)+' '+c.cita.ts.slice(11,16):'Sin agendar';};
+  v.innerHTML='<div class="hdr"><div class="in"><span class="lg w"></span><div class="prod">Entrevista técnica<small class="ver">'+esc(D.poli||'')+'</small></div><span class="sp"></span><button class="cta" onclick="cambiarPinTec()">🔑 PIN</button> <button class="cta" onclick="cerrarSesion()">Salir</button></div></div>'+
+    '<div style="max-width:900px;margin:0 auto;padding:18px 16px 60px"><div style="font-size:14px;color:#5D6B82;margin-bottom:14px">Hola <b>'+esc(D.user)+'</b>. '+(D.poli?(L.length?L.length+' candidato'+(L.length===1?'':'s')+' para entrevista técnica en '+esc(D.poli)+'.':'No hay candidatos para entrevista técnica en '+esc(D.poli)+' por ahora.'):'Todavía no tenés un policlínico asignado. Avisale al administrador.')+'</div>'+
+    L.map(function(c){return '<div style="background:#fff;border:1px solid var(--line);border-left:5px solid var(--celeste);border-radius:8px;padding:14px 16px;margin-bottom:12px"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><b style="font-size:17px">'+esc(c.nombre)+'</b><div style="color:#5D6B82;font-size:13px">'+esc(tit(c.busq))+'</div></div><div style="font-size:13px;font-weight:700;color:#034EA2">'+cita(c)+'</div></div><div style="margin:10px 0">'+ch('CV',c.ajuste)+ch('Screening',c.notaScr)+ch('Competencias',c.notaComp)+'</div><div class="btns"><button class="btn ghost" onclick="verResumen('+c.fila+',this,true,true)">📄 Ver detalle</button><button class="btn" onclick="abrirFormTec('+c.fila+')">🩺 Evaluar</button></div></div>';}).join('')+'</div>';
 }
-function htmlResumen(c,ev,det){
+function abrirFormTec(f){
+  var c=byFila(f);FORM_F=f;
+  document.getElementById('ftit').textContent='Entrevista técnica · '+c.nombre;
+  var vb=document.querySelector('#fmodal .fbar .btn');if(vb)vb.textContent='← Volver';
+  document.getElementById('fmodal').classList.add('show');document.getElementById('fmodal').scrollTop=0;
+  FC.open({K:K,cid:c.id,etapa:'tecnica',container:document.getElementById('fbody'),onDone:function(){},onClose:cerrarFormTec});
+}
+function cerrarFormTec(){document.getElementById('fmodal').classList.remove('show');document.getElementById('fbody').innerHTML='';cargar();}
+function cambiarPinTec(){
+  var n=prompt('Nuevo PIN (de 4 a 6 números):');if(n===null)return;n=n.trim();
+  if(!/^\d{4,6}$/.test(n)){alert('El PIN tiene que ser de 4 a 6 números.');return;}
+  gs().withSuccessHandler(function(){P=n;setK();guardarCred();toast('PIN actualizado');}).withFailureHandler(function(e){alert(msgLogin(e));}).cambiarPin(K,n);
+}
+function verResumen(f,btn,det,tec){
+  var c=byFila(f),t=btn.textContent;btn.disabled=true;btn.textContent='Armando…';
+  gs().withSuccessHandler(function(r){btn.disabled=false;btn.textContent=t;abrirInforme(htmlResumen(c,JSON.parse(r),det,tec));}).withFailureHandler(function(e){btn.disabled=false;btn.textContent=t;fer(e);}).getResumen(K,f);
+}
+function htmlResumen(c,ev,det,tec){
   var S=ev.screening||{},C=ev.competencias||{},T=ev.pami2||{},sd=(S.datos||{}).datos||{},cd=C.datos||{},cm=cd.meta||{},td=T.datos||{};
   var nota=function(tit,n,e){var col=NF[n];if(!col)return '<div class="nt v"><small>'+tit+'</small><div class="l">–</div><div class="q">pendiente</div></div>';var q=(e&&e.entrevisto?e.entrevisto:'')+(e&&typeof e.score==='number'&&e.score<=10?(e.entrevisto?' · ':'')+e.score+'/10':'');return '<div class="nt" style="background:'+col[0]+';color:'+col[1]+'"><small>'+tit+'</small><div class="l">'+esc(n)+'</div><div class="q">'+esc(q||'IA')+'</div></div>';};
   var fin=!!(T.nota||c.notaP2),e=String(c.estado||'');
@@ -722,10 +746,13 @@ function htmlResumen(c,ev,det){
   var h='<div class="hd"><div style="display:flex;align-items:center;gap:16px">'+infLogo()+'<div><small>'+(det?'Ficha para Enfermería':fin?'Informe final':'Resumen del candidato')+' · '+infFecha()+'</small><h1>'+esc(c.nombre)+'</h1><div class="s">'+esc(tit(c.busq))+(c.policlinico?' · '+esc(c.policlinico):'')+'</div></div></div><div class="pill">'+esc(rec)+'</div></div>';
   h+='<div class="g g4">'+nota('CV',c.ajuste,null).replace('<div class="q">IA</div>','<div class="q">IA sugiere</div>')+nota('Screening',c.notaScr||S.nota,S)+nota('Competencias',c.notaComp||C.nota,C)+nota('Técnica',c.notaP2||T.nota,T)+'</div>';
   if(/^Descartad/i.test(e))h+='<div class="g g2">'+infCard('Motivo de descarte',c.motivo||'Sin motivo cargado')+infCard('Descartó',c.descPor)+'</div>';
-  h+='<div class="g g3">'+infCard('Edad',sd.edad||cm.edad)+infCard('Pretensión',money(c.pret)||sd.remPret||cm.remPret)+infCard('Turno preferido',String(c.turno||'').replace(/;\s*/g,' · '))+infCard('Zona',c.zona)+infCard('Disponibilidad',sd.disp||cm.disp)+infCard('Formación',c.formacion||sd.formacion||cm.formacion)+infCard('Experiencia actual',[sd.posAct||cm.puestoAct,sd.empresaAct||cm.empresaAct].filter(Boolean).join(' · '))+infCard('Recomendado por',c.recTipo?c.recTipo+(c.recPor?': '+c.recPor:''):'')+'</div>';
+  h+='<div class="g g3">'+infCard('Edad',sd.edad||cm.edad)+(tec?'':infCard('Pretensión',money(c.pret)||sd.remPret||cm.remPret))+infCard('Turno preferido',String(c.turno||'').replace(/;\s*/g,' · '))+infCard('Zona',c.zona)+infCard('Disponibilidad',sd.disp||cm.disp)+infCard('Formación',c.formacion||sd.formacion||cm.formacion)+infCard('Experiencia actual',[sd.posAct||cm.puestoAct,sd.empresaAct||cm.empresaAct].filter(Boolean).join(' · '))+(tec?'':infCard('Recomendado por',c.recTipo?c.recTipo+(c.recPor?': '+c.recPor:''):''))+'</div>';
   var comps=(cd.comps||[]).filter(function(x){return x.nivel>0;});
-  if(comps.length)h+='<h2>Competencias</h2>'+comps.map(function(x){return '<div class="br"><div class="n">'+esc(x.nombre)+'</div><div class="t"><i style="width:'+(x.nivel*25)+'%"></i></div><div class="v">'+x.nivel+'/4</div></div>';}).join('');
+  var bars=function(a){return a.map(function(x){return '<div class="br"><div class="n">'+esc(x.nombre)+'</div><div class="t"><i style="width:'+(x.nivel*25)+'%"></i></div><div class="v">'+x.nivel+'/4</div></div>';}).join('');};
+  if(comps.length)h+='<h2>Competencias</h2>'+bars(comps);
   if(cd.fortalezas||cd.areas)h+='<div class="g g2">'+(cd.fortalezas?'<div class="cd"><small>Fortalezas</small><div class="tx">'+esc(cd.fortalezas)+'</div></div>':'')+(cd.areas?'<div class="cd"><small>A desarrollar</small><div class="tx">'+esc(cd.areas)+'</div></div>':'')+'</div>';
+  var tcs=(td.comps||[]).filter(function(x){return x.nivel>0;});
+  if(tcs.length)h+='<h2>Evaluación técnica</h2>'+bars(tcs)+(td.fortalezas||td.areas?'<div class="g g2">'+(td.fortalezas?'<div class="cd"><small>Fortalezas</small><div class="tx">'+esc(td.fortalezas)+'</div></div>':'')+(td.areas?'<div class="cd"><small>A desarrollar</small><div class="tx">'+esc(td.areas)+'</div></div>':'')+'</div>':'');
   var rc=td.recomendacion||cd.recomendacion||(td.comentario||(S.datos||{}).comentario||'');
   if(rc)h+='<h2>'+(td.recomendacion||td.comentario?'Evaluación técnica':'Recomendación del entrevistador')+'</h2><div class="cd"><div class="tx">'+esc(rc)+'</div></div>';
   if(det){
@@ -733,7 +760,7 @@ function htmlResumen(c,ev,det){
     if((sg.eval||[]).length)h+='<h2>Screening · ajuste al perfil</h2><div class="cd">'+sg.eval.map(chip).join('')+'</div>';
     if((sg.val||[]).length)h+='<h2>Screening · condiciones</h2><div class="cd">'+sg.val.map(chip).join('')+'</div>';
     var sc=(S.datos||{}).comentario;if(sc)h+='<h2>Comentario del screening</h2><div class="cd"><div class="tx">'+esc(sc)+'</div></div>';
-    var mt=[['Situación familiar',cm.familia],['Antigüedad',cm.antig],['Remuneración actual',sd.remAct||cm.remAct],['Remuneración pretendida',sd.remPret||cm.remPret],['Motivo de cambio',cm.motivo],['Movilidad',cm.movilidad],['Referencias laborales',cm.referencias]];
+    var mt=[['Situación familiar',cm.familia],['Antigüedad',cm.antig],].concat(tec?[]:[['Remuneración actual',sd.remAct||cm.remAct],['Remuneración pretendida',sd.remPret||cm.remPret]]).concat([['Motivo de cambio',cm.motivo],['Movilidad',cm.movilidad],['Referencias laborales',cm.referencias]]);
     if(mt.some(function(x){return x[1];}))h+='<h2>Datos de la entrevista</h2><div class="g g3">'+mt.map(function(x){return infCard(x[0],x[1]);}).join('')+'</div>';
     var cn=(cd.comps||[]).filter(function(x){return x.notas;});
     if(cn.length)h+='<h2>Notas por competencia</h2>'+cn.map(function(x){return '<div class="cd" style="margin-bottom:8px"><small>'+esc(x.nombre)+' · '+x.nivel+'/4</small><div class="tx">'+esc(x.notas)+'</div></div>';}).join('');

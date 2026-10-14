@@ -260,7 +260,7 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '33';
+const ESQUEMA = '34';
 
 function actualizarEsquema_() {
   try { asegurarColumnas_(); } catch (e) { registrarError_('asegurar columnas', e); }
@@ -398,6 +398,23 @@ function actualizarEsquema_() {
       if (!v) return;
       const d = v.getDataRange().getValues();
       for (let i = d.length - 1; i > 0; i--) if (/no auxiliar/i.test(String(d[i][2]))) v.deleteRow(i + 1);
+    },
+    () => {
+      const u = hoja_('Usuarios');
+      if (u) asegurarEncabezados_(u, ['Nombre', 'PIN', 'Activo', 'Notas', 'Rol', 'Policlínico']);
+      const ss = ss_();
+      if (ss.getSheetByName('Tecnica')) return;
+      const t = ss.insertSheet('Tecnica');
+      asegurarEncabezados_(t, HEAD_COMP);
+      const c = [
+        ['enfermero', 't1', 'Conocimientos clínicos y procedimientos', 'Dominio de técnicas y procedimientos de enfermería propios del servicio (curaciones, accesos venosos, sondajes, signos vitales). Evaluar con casos concretos.', 2, 'Contame cómo realizás [procedimiento] paso a paso.|¿Qué controlás antes y después?|Dame un ejemplo de una complicación y cómo la resolviste.'],
+        ['enfermero', 't2', 'Seguridad del paciente y bioseguridad', 'Aplicación de protocolos de bioseguridad, control de infecciones y prevención de eventos adversos.', 2, '¿Cómo prevenís caídas, úlceras por presión e infecciones?|¿Qué hacés ante un error o casi-error de medicación?'],
+        ['enfermero', 't3', 'Medicación y registros', 'Preparación y administración segura de medicación y registro claro en la historia clínica.', 2, '¿Cuáles son los correctos de la administración de medicación?|¿Cómo registrás y cómo hacés el pase de turno?'],
+        ['enfermero', 't4', 'Respuesta ante urgencias', 'Priorización y actuación ante situaciones críticas (paro, descompensación, emergencia).', 1, 'Contame una urgencia que te tocó resolver. ¿Qué hiciste primero?'],
+        ['enfermero', 't5', 'Cuidado del adulto mayor', 'Conocimiento y trato adecuado de pacientes geriátricos, con foco en dignidad y autonomía.', 1, '¿Qué particularidades tiene el cuidado de una persona mayor internada?']
+      ];
+      t.getRange(2, 1, c.length, 6).setValues(c);
+      t.setColumnWidth(3, 260); t.setColumnWidth(4, 420); t.setColumnWidth(6, 420);
     }
   ];
   let ok = true;
