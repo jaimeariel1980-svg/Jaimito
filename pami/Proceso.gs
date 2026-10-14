@@ -61,6 +61,7 @@ function getResumen(k, fila) { return conTec_(() => getResumen_(k, fila)); }
 function cambiarPin(k, nuevo) { return conTec_(() => cambiarPin_(k, nuevo)); }
 function registrarAcceso(k, accion) { return conTec_(() => registrarAcceso_(k, accion)); }
 function redactarIA(k, texto) { return conTec_(() => redactarIA_(k, texto)); }
+function transcribirAudio(k, b64, mime) { return conTec_(() => transcribirAudio_(k, b64, mime)); }
 
 function admin_(k) {
   const p = String(k).split('|');
@@ -786,4 +787,19 @@ function redactarIA_(k, texto) {
   const parsed = JSON.parse(resp.getContentText());
   if (parsed.error) throw new Error('No pude redactar: ' + parsed.error.message);
   return String(parsed.choices[0].message.content || '').trim();
+}
+
+function transcribirAudio_(k, b64, mime) {
+  escritor_(k);
+  if (!b64 || String(b64).length > 14000000) throw new Error('El audio está vacío o es demasiado largo (máximo unos 5 minutos)');
+  const tipo = String(mime || 'audio/webm').split(';')[0];
+  const ext = /mp4|m4a/.test(tipo) ? 'm4a' : /ogg/.test(tipo) ? 'ogg' : /wav/.test(tipo) ? 'wav' : 'webm';
+  const blob = Utilities.newBlob(Utilities.base64Decode(b64), tipo, 'dictado.' + ext);
+  const resp = UrlFetchApp.fetch('https://api.openai.com/v1/audio/transcriptions', {
+    method: 'post', muteHttpExceptions: true, headers: { Authorization: 'Bearer ' + prop_('OPENAI_API_KEY') },
+    payload: { file: blob, model: 'whisper-1', language: 'es', prompt: 'Notas de una entrevista de selección de enfermería en un policlínico de PAMI, en castellano rioplatense.' }
+  });
+  const parsed = JSON.parse(resp.getContentText());
+  if (parsed.error) throw new Error('No pude transcribir: ' + parsed.error.message);
+  return String(parsed.text || '').trim();
 }
