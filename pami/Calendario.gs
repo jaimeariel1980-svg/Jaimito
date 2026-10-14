@@ -176,3 +176,24 @@ function sincronizarAgenda(k) {
   try { syncCalendario(); } finally { lock.releaseLock(); }
   return true;
 }
+
+function diagnosticoCalendario(k) {
+  admin_(k);
+  const ahora = new Date(), hasta = new Date(ahora.getTime() + 14 * 86400000), aj = ajustes_(), porMail = estadoPorMail_();
+  const cands = hoja_('Candidatos').getDataRange().getValues().slice(1).filter(r => r[COL.nombre - 1]).map(r => ({ nombre: r[COL.nombre - 1], mail: String(r[COL.email - 1] || '').trim().toLowerCase() }));
+  const out = [];
+  [['PAMI 1', () => calendario_()], ['PAMI 2', () => calendarioPor_(aj.calendario_poli2)]].forEach(x => {
+    let cal = null;
+    try { cal = x[1](); } catch (e) { }
+    if (!cal) { out.push({ cal: x[0], error: 'no se puede abrir el calendario' }); return; }
+    let evs = [];
+    try { evs = cal.getEvents(ahora, hasta); } catch (e) { out.push({ cal: x[0], error: 'sin permiso para leer los eventos' }); return; }
+    evs.forEach(e => {
+      const inv = e.getGuestList().map(g => g.getEmail().toLowerCase());
+      const m = cands.find(c => eventoEsDe_({ titulo: e.getTitle(), invitados: inv }, c));
+      out.push({ cal: x[0], ts: fmt_(e.getStartTime(), 'yyyy-MM-dd HH:mm'), titulo: String(e.getTitle() || '').slice(0, 70), inv: inv.length, cand: m ? m.nombre : '', tipo: TIPO_ETAPA[etapaDeTitulo_(tituloEvento_(e, porMail))] || '' });
+    });
+  });
+  out.sort((a, b) => String(a.ts || '') < String(b.ts || '') ? -1 : 1);
+  return out.slice(0, 120);
+}

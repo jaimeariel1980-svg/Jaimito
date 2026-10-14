@@ -127,7 +127,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v58</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v59</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -725,10 +725,22 @@ function verAgenda(sync){
   var leer=function(){gs().withSuccessHandler(function(r){
     var e=document.getElementById('ag');if(!e)return;
     AG=r;
-    e.innerHTML=(r.avisos&&r.avisos.length?'<div style="background:#FDE3E1;border:1px solid #D9534F;color:#8B2E2B;border-radius:6px;padding:10px 12px;margin-bottom:10px;font-size:13px;font-weight:600">⚠ '+r.avisos.map(esc).join('<br>⚠ ')+'</div>':'')+'<div id="agB" style="display:flex;gap:8px;margin-bottom:6px"></div><div style="margin-bottom:8px"><button class="btn" onclick="exportarAgenda()">⬇ Exportar a Excel</button> <button class="btn" onclick="verAgenda(true)">↻ Actualizar desde Calendar</button></div><div id="agl"></div>';
+    e.innerHTML=(r.avisos&&r.avisos.length?'<div style="background:#FDE3E1;border:1px solid #D9534F;color:#8B2E2B;border-radius:6px;padding:10px 12px;margin-bottom:10px;font-size:13px;font-weight:600">⚠ '+r.avisos.map(esc).join('<br>⚠ ')+'</div>':'')+'<div id="agB" style="display:flex;gap:8px;margin-bottom:6px"></div><div style="margin-bottom:8px"><button class="btn" onclick="exportarAgenda()">⬇ Exportar a Excel</button> <button class="btn" onclick="verAgenda(true)">↻ Actualizar desde Calendar</button> <button class="btn" onclick="diagCal()">🔍 Qué lee de Calendar</button></div><div id="agl"></div>';
     pintarAgenda();
   }).withFailureHandler(fer).getAgenda(K);};
   if(sync===true)gs().withSuccessHandler(leer).withFailureHandler(function(e){fer(e);leer();}).sincronizarAgenda(K);else leer();
+}
+
+function diagCal(){
+  document.getElementById('mbox').innerHTML='<div class="hd"><div><h2>Qué lee de Calendar</h2><small>Próximos 14 días, evento por evento</small></div><button class="x" onclick="cerrar()">×</button></div><div class="bd" id="dg"><div class="loading">Leyendo Calendar…</div></div>';
+  gs().withSuccessHandler(function(r){
+    var e=document.getElementById('dg');if(!e)return;
+    e.innerHTML='<div style="margin-bottom:8px"><button class="btn" onclick="verAgenda()">← Volver a la Agenda</button></div>'+(r.length?r.map(function(x){
+      if(x.error)return '<div class="alerta a3">⚠ Calendario '+esc(x.cal)+': '+esc(x.error)+'</div>';
+      var ok=x.tipo&&x.cand,msg=ok?esc(x.cand)+' · '+esc(x.tipo):(!x.tipo?'⚠ no reconozco la etapa en el título':'⚠ no encuentro al candidato')+(x.cand?' ('+esc(x.cand)+')':'');
+      return '<div style="padding:6px 0;border-bottom:1px solid #E3E9F0;font-size:13px"><b>'+x.ts.slice(8,10)+'/'+x.ts.slice(5,7)+' '+x.ts.slice(11)+'</b> · '+esc(x.cal)+' · “'+esc(x.titulo)+'” · '+x.inv+' invitado'+(x.inv===1?'':'s')+'<br><span style="color:'+(ok?'#1E8E5A':'#B8443F')+';font-weight:700">'+msg+'</span></div>';
+    }).join(''):'<div class="loading">No hay eventos en los próximos 14 días.</div>');
+  }).withFailureHandler(fer).diagnosticoCalendario(K);
 }
 
 function descartes(){
