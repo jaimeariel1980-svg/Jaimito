@@ -90,7 +90,7 @@ label.l{display:block;font-size:11px;font-weight:800;letter-spacing:.06em;text-t
     m.onclick=function(){dictar(ta,m);};a.onclick=function(){redactar(ta,a,u);};u.onclick=function(){if(ta._prev!=null){ta.value=ta._prev;ta._prev=null;}u.style.display='none';};
     b.appendChild(m);b.appendChild(a);b.appendChild(u);ta.parentNode.insertBefore(b,ta.nextSibling);
   }
-  function scan(){if(!K_())return;[].forEach.call(document.querySelectorAll('#fbody textarea,#app textarea,#gM'),attach);}
+  function scan(){if(!K_())return;[].forEach.call(document.querySelectorAll('#fbody textarea,#app textarea,#gM,#fichaTxt'),attach);}
   function start(){scan();var t;new MutationObserver(function(){clearTimeout(t);t=setTimeout(scan,80);}).observe(document.body,{childList:true,subtree:true});}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
 })();
