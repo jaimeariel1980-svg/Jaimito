@@ -168,3 +168,11 @@ function agendarCita(k, fila, o) {
   }
   return { ok: true, url: url, ts: fmt_(inicio, 'yyyy-MM-dd HH:mm') };
 }
+
+function sincronizarAgenda(k) {
+  escritor_(k);
+  const lock = LockService.getUserLock();
+  if (!lock.tryLock(30000)) throw new Error('Se está actualizando en este momento. Probá de nuevo en un minuto.');
+  try { syncCalendario(); } finally { lock.releaseLock(); }
+  return true;
+}
