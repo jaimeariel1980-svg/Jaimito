@@ -127,7 +127,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v61</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v62</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -541,7 +541,7 @@ function abrir(f){
   var puedeDesc=/^Descartado (sin|post) screening$/.test(c.estado)&&!c.descarte&&/@/.test(c.email||'');
   document.getElementById('mbox').innerHTML=
     '<div class="hd"><div><h2>'+esc(c.nombre)+'</h2><small>'+esc(tit(c.busq))+' · '+esc(c.estado)+'</small><div class="ecs">'+etapasHdr(c)+'</div></div><button class="x" onclick="cerrar()">×</button></div><div class="bd">'+al+
-    '<div class="btns"><button class="btn" onclick="abrirForm(\'screening\','+f+')">📝 Formulario screening</button><button class="btn" onclick="abrirForm(\'competencias\','+f+')">💼 Formulario competencias</button>'+(c.infScr?'<a class="btn ghost" target="_blank" href="'+esc(c.infScr)+'">Ver screening</a>':'')+(c.infComp?'<a class="btn ghost" target="_blank" href="'+esc(c.infComp)+'">Ver competencias</a>':'')+(c.resp.length?'<button class="btn ghost" onclick="verPost('+f+',this)">📋 Ver postulación</button>':'')+'<button class="btn ghost" onclick="verResumen('+f+',this)">📄 Resumen</button></div>'+
+    '<div class="btns"><button class="btn" onclick="abrirForm(\'screening\','+f+')">📝 Formulario screening</button><button class="btn" onclick="abrirForm(\'competencias\','+f+')">💼 Formulario competencias</button>'+(c.infScr?'<a class="btn ghost" target="_blank" href="'+esc(c.infScr)+'">Ver screening</a>':'')+(c.infComp?'<a class="btn ghost" target="_blank" href="'+esc(c.infComp)+'">Ver competencias</a>':'')+(c.resp.length?'<button class="btn ghost" onclick="verPost('+f+',this)">📋 Ver postulación</button>':'')+'<button class="btn ghost" onclick="verResumen('+f+',this)">📄 Resumen</button><button class="btn ghost" onclick="verResumen('+f+',this,true)">🩺 Para Enfermería</button></div>'+
     '<div class="btns">'+(c.cv?'<a class="btn ghost" target="_blank" href="'+esc(c.cv)+'">📄 Ver CV</a>':'')+(c.tel?'<button class="btn wa" onclick="menuWA('+f+')">💬 WhatsApp ▾</button>':'')+(/@/.test(c.email||'')?'<a class="btn ghost" target="_blank" href="https://mail.google.com/mail/?view=cm&to='+encodeURIComponent(c.email)+'">✉ Mail</a>':'')+'<button class="btn cel" onclick="agendar('+f+')">📅 Agendar</button>'+(puedeDesc?'<button class="btn red" onclick="descarteMail('+f+',this)">✉ Descarte por mail</button>':'')+(c.proc!=='SI'?'<button class="btn sec" onclick="rean('+f+',this)">↻ Re-analizar CV</button>':'')+(c.contactado?'<button class="btn sec" onclick="borrarMarca('+f+')">✕ Borrar marca de contacto</button>':'')+'</div>'+
     '<div class="fp">'+panel('Contacto',[kv('Teléfono',c.tel),kv('DNI',c.dni),kv('Email',c.email),kv('Domicilio',c.domicilio),kv('Localidad',c.loc),kv('Zona',c.zona)])+panel('Postulación',[kv('Recibido',c.fecha),kv('Llegó por',c.fuente),kv('Formación',c.formacion),kv('Pretensión',money(c.pret)),kv('Conoce a alguien en PAMI',c.conoce)])+panel('Proceso',[kv('Estado',c.estado),kv('Policlínico',c.policlinico||'Sin asignar'),kv('Sugerido por cercanía',c.polSug),kv('Notas por etapa',notasTxt(c)),kv('Turno preferido',String(c.turno||'').replace(/;/g,' ·')),kv('Entrevistó screening',(c.ent||{}).screening),kv('Entrevistó competencias',(c.ent||{}).competencias),kv('Entrevistó técnica',(c.ent||{}).pami2),kv('Último contacto',ultCont(c)),kv('Descartó',/^Descartad/i.test(c.estado)?c.descPor:''),kv('Descarte',c.descarte)],true)+'</div>'+
     (c.just?'<div class="sec">Análisis del CV</div><div class="txt"><b>'+esc(c.just)+'</b></div>':'')+(c.resumen?'<div class="txt" style="margin-top:6px">'+esc(c.resumen)+'</div>':'')+(c.req?'<div class="txt" style="margin-top:6px;color:#5D6B82">'+esc(c.req)+'</div>':'')+resp+
@@ -709,16 +709,16 @@ function abrirInforme(h){var w=window.open('','_blank');if(!w){alert('Permití l
 function infDoc(tit,cuerpo){return '<!doctype html><html><head><meta charset="utf-8"><title>'+esc(tit)+'</title><meta name="viewport" content="width=device-width,initial-scale=1">'+INF_CSS+'</head><body><div class="bar"><button onclick="window.print()">🖨 Imprimir / guardar PDF</button></div><div class="pg">'+cuerpo+'<div class="ft">Confidencial · Atracción y Elección</div></div></body></html>';}
 function infCard(l,v){return v?'<div class="cd"><small>'+esc(l)+'</small><b>'+esc(v)+'</b></div>':'';}
 function infFecha(){var d=D.ahora.slice(0,10).split('-');return d[2]+'/'+d[1]+'/'+d[0];}
-function verResumen(f,btn){
+function verResumen(f,btn,det){
   var c=byFila(f),t=btn.textContent;btn.disabled=true;btn.textContent='Armando…';
-  gs().withSuccessHandler(function(r){btn.disabled=false;btn.textContent=t;abrirInforme(htmlResumen(c,JSON.parse(r)));}).withFailureHandler(function(e){btn.disabled=false;btn.textContent=t;fer(e);}).getResumen(K,f);
+  gs().withSuccessHandler(function(r){btn.disabled=false;btn.textContent=t;abrirInforme(htmlResumen(c,JSON.parse(r),det));}).withFailureHandler(function(e){btn.disabled=false;btn.textContent=t;fer(e);}).getResumen(K,f);
 }
-function htmlResumen(c,ev){
+function htmlResumen(c,ev,det){
   var S=ev.screening||{},C=ev.competencias||{},T=ev.pami2||{},sd=(S.datos||{}).datos||{},cd=C.datos||{},cm=cd.meta||{},td=T.datos||{};
   var nota=function(tit,n,e){var col=NF[n];if(!col)return '<div class="nt v"><small>'+tit+'</small><div class="l">–</div><div class="q">pendiente</div></div>';var q=(e&&e.entrevisto?e.entrevisto:'')+(e&&typeof e.score==='number'&&e.score<=10?(e.entrevisto?' · ':'')+e.score+'/10':'');return '<div class="nt" style="background:'+col[0]+';color:'+col[1]+'"><small>'+tit+'</small><div class="l">'+esc(n)+'</div><div class="q">'+esc(q||'IA')+'</div></div>';};
   var fin=!!(T.nota||c.notaP2),e=String(c.estado||'');
   var rec=/^Descartad/i.test(e)?'✖ No avanza':e==='Contratado'?'✓ Contratado':/reserva/i.test(e)?'◐ En reserva':'→ '+e;
-  var h='<div class="hd"><div><small>'+(fin?'Informe final':'Resumen del candidato')+' · '+infFecha()+'</small><h1>'+esc(c.nombre)+'</h1><div class="s">'+esc(tit(c.busq))+(c.policlinico?' · '+esc(c.policlinico):'')+'</div></div><div class="pill">'+esc(rec)+'</div></div>';
+  var h='<div class="hd"><div><small>'+(det?'Ficha para Enfermería':fin?'Informe final':'Resumen del candidato')+' · '+infFecha()+'</small><h1>'+esc(c.nombre)+'</h1><div class="s">'+esc(tit(c.busq))+(c.policlinico?' · '+esc(c.policlinico):'')+'</div></div><div class="pill">'+esc(rec)+'</div></div>';
   h+='<div class="g g4">'+nota('CV',c.ajuste,null).replace('<div class="q">IA</div>','<div class="q">IA sugiere</div>')+nota('Screening',c.notaScr||S.nota,S)+nota('Competencias',c.notaComp||C.nota,C)+nota('Técnica',c.notaP2||T.nota,T)+'</div>';
   if(/^Descartad/i.test(e))h+='<div class="g g2">'+infCard('Motivo de descarte',c.motivo||'Sin motivo cargado')+infCard('Descartó',c.descPor)+'</div>';
   h+='<div class="g g3">'+infCard('Edad',sd.edad||cm.edad)+infCard('Pretensión',money(c.pret)||sd.remPret||cm.remPret)+infCard('Turno preferido',String(c.turno||'').replace(/;\s*/g,' · '))+infCard('Zona',c.zona)+infCard('Disponibilidad',sd.disp||cm.disp)+infCard('Formación',c.formacion||sd.formacion||cm.formacion)+infCard('Experiencia actual',[sd.posAct||cm.puestoAct,sd.empresaAct||cm.empresaAct].filter(Boolean).join(' · '))+infCard('Recomendado por',c.recTipo?c.recTipo+(c.recPor?': '+c.recPor:''):'')+'</div>';
@@ -727,8 +727,22 @@ function htmlResumen(c,ev){
   if(cd.fortalezas||cd.areas)h+='<div class="g g2">'+(cd.fortalezas?'<div class="cd"><small>Fortalezas</small><div class="tx">'+esc(cd.fortalezas)+'</div></div>':'')+(cd.areas?'<div class="cd"><small>A desarrollar</small><div class="tx">'+esc(cd.areas)+'</div></div>':'')+'</div>';
   var rc=td.recomendacion||cd.recomendacion||(td.comentario||(S.datos||{}).comentario||'');
   if(rc)h+='<h2>'+(td.recomendacion||td.comentario?'Evaluación técnica':'Recomendación del entrevistador')+'</h2><div class="cd"><div class="tx">'+esc(rc)+'</div></div>';
+  if(det){
+    var sg=(S.det||{}),chip=function(x){var col=/^(Alto|Sí)$/.test(x.n)?'#1E8E5A':/^(Bajo|No)$/.test(x.n)?'#D9534F':'#B58900';return '<div class="br"><div class="n" style="width:68%;font-weight:500">'+esc(x.l)+'</div><div class="v" style="width:auto;color:'+col+'">'+esc(x.n)+'</div></div>';};
+    if((sg.eval||[]).length)h+='<h2>Screening · ajuste al perfil</h2><div class="cd">'+sg.eval.map(chip).join('')+'</div>';
+    if((sg.val||[]).length)h+='<h2>Screening · condiciones</h2><div class="cd">'+sg.val.map(chip).join('')+'</div>';
+    var sc=(S.datos||{}).comentario;if(sc)h+='<h2>Comentario del screening</h2><div class="cd"><div class="tx">'+esc(sc)+'</div></div>';
+    var mt=[['Situación familiar',cm.familia],['Antigüedad',cm.antig],['Remuneración actual',sd.remAct||cm.remAct],['Remuneración pretendida',sd.remPret||cm.remPret],['Motivo de cambio',cm.motivo],['Movilidad',cm.movilidad],['Referencias laborales',cm.referencias]];
+    if(mt.some(function(x){return x[1];}))h+='<h2>Datos de la entrevista</h2><div class="g g3">'+mt.map(function(x){return infCard(x[0],x[1]);}).join('')+'</div>';
+    var cn=(cd.comps||[]).filter(function(x){return x.notas;});
+    if(cn.length)h+='<h2>Notas por competencia</h2>'+cn.map(function(x){return '<div class="cd" style="margin-bottom:8px"><small>'+esc(x.nombre)+' · '+x.nivel+'/4</small><div class="tx">'+esc(x.notas)+'</div></div>';}).join('');
+    if(c.resumen)h+='<h2>Experiencia (según CV)</h2><div class="cd"><div class="tx">'+esc(c.resumen)+'</div></div>';
+    if(c.req)h+='<h2>Requisitos del puesto</h2><div class="cd"><div class="tx">'+esc(c.req)+'</div></div>';
+    var rs=(c.resp||[]).filter(function(x){return x.a;});
+    if(rs.length)h+='<h2>Respuestas de la postulación</h2><div class="cd">'+rs.map(function(x){return '<div style="margin:6px 0;font-size:13px"><b>'+esc(x.q)+'</b><br>'+esc(x.a)+'</div>';}).join('')+'</div>';
+  }
   if(c.just)h+='<h2>Análisis del CV</h2><div class="cd"><div class="tx">'+esc(String(c.just).replace(/^IA sugiere [A-C+]+:\s*/,''))+'</div></div>';
-  return infDoc((fin?'Informe final':'Resumen')+' · '+c.nombre,h);
+  return infDoc((det?'Para Enfermería':fin?'Informe final':'Resumen')+' · '+c.nombre,h);
 }
 function verDireccion(){
   var b=document.getElementById('fb').value,L=D.cands.filter(function(c){return !b||c.busq===b;});
@@ -775,22 +789,10 @@ function verAgenda(sync){
   var leer=function(){gs().withSuccessHandler(function(r){
     var e=document.getElementById('ag');if(!e)return;
     AG=r;
-    e.innerHTML=(r.avisos&&r.avisos.length?'<div style="background:#FDE3E1;border:1px solid #D9534F;color:#8B2E2B;border-radius:6px;padding:10px 12px;margin-bottom:10px;font-size:13px;font-weight:600">⚠ '+r.avisos.map(esc).join('<br>⚠ ')+'</div>':'')+'<div id="agB" style="display:flex;gap:8px;margin-bottom:6px"></div><div style="margin-bottom:8px"><button class="btn" onclick="exportarAgenda()">⬇ Exportar a Excel</button> <button class="btn" onclick="verAgenda(true)">↻ Actualizar desde Calendar</button> <button class="btn" onclick="diagCal()">🔍 Qué lee de Calendar</button></div><div id="agl"></div>';
+    e.innerHTML=(r.avisos&&r.avisos.length?'<div style="background:#FDE3E1;border:1px solid #D9534F;color:#8B2E2B;border-radius:6px;padding:10px 12px;margin-bottom:10px;font-size:13px;font-weight:600">⚠ '+r.avisos.map(esc).join('<br>⚠ ')+'</div>':'')+'<div id="agB" style="display:flex;gap:8px;margin-bottom:6px"></div><div style="margin-bottom:8px"><button class="btn" onclick="exportarAgenda()">⬇ Exportar a Excel</button></div><div id="agl"></div>';
     pintarAgenda();
   }).withFailureHandler(fer).getAgenda(K);};
   if(sync===true)gs().withSuccessHandler(leer).withFailureHandler(function(e){fer(e);leer();}).sincronizarAgenda(K);else leer();
-}
-
-function diagCal(){
-  document.getElementById('mbox').innerHTML='<div class="hd"><div><h2>Qué lee de Calendar</h2><small>Próximos 14 días, evento por evento</small></div><button class="x" onclick="cerrar()">×</button></div><div class="bd" id="dg"><div class="loading">Leyendo Calendar…</div></div>';
-  gs().withSuccessHandler(function(r){
-    var e=document.getElementById('dg');if(!e)return;
-    e.innerHTML='<div style="margin-bottom:8px"><button class="btn" onclick="verAgenda()">← Volver a la Agenda</button></div>'+(r.length?r.map(function(x){
-      if(x.error)return '<div class="alerta a3">⚠ Calendario '+esc(x.cal)+': '+esc(x.error)+'</div>';
-      var ok=x.tipo&&x.cand,msg=ok?esc(x.cand)+' · '+esc(x.tipo):(!x.tipo?'⚠ no reconozco la etapa en el título':'⚠ no encuentro al candidato')+(x.cand?' ('+esc(x.cand)+')':'');
-      return '<div style="padding:6px 0;border-bottom:1px solid #E3E9F0;font-size:13px"><b>'+x.ts.slice(8,10)+'/'+x.ts.slice(5,7)+' '+x.ts.slice(11)+'</b> · '+esc(x.cal)+' · “'+esc(x.titulo)+'” · '+x.inv+' invitado'+(x.inv===1?'':'s')+'<br><span style="color:'+(ok?'#1E8E5A':'#B8443F')+';font-weight:700">'+msg+'</span></div>';
-    }).join(''):'<div class="loading">No hay eventos en los próximos 14 días.</div>');
-  }).withFailureHandler(fer).diagnosticoCalendario(K);
 }
 
 function descartes(){
