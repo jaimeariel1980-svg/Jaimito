@@ -209,7 +209,6 @@ NIVEL_AJUSTE:
     ['enfermero', 'v3', 'Vive en Rosario o zona / traslado resuelto', 'Sí|No'],
     ['enfermero', 'v4', 'Preaviso razonable', 'Sí|No'],
     ['enfermero', 'v5', 'Interés real en la posición', 'Alto|Medio|Bajo'],
-    ['enfermero', 'v6', 'Título de Enfermero/a Profesional o Lic. (no auxiliar)', 'Sí|No'],
     ['enfermero', 'v7', 'Matrícula profesional vigente', 'Sí|No|A revisar'],
     ['enfermero', 'v8', 'Sin rotación alta injustificada', 'Sí|No|A revisar']]; vl.sh.getRange(2, 1, v.length, 4).setValues(v); vl.sh.setColumnWidth(3, 480); }
   const cp = tab('Competencias', HEAD_COMP);
@@ -261,7 +260,7 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '32';
+const ESQUEMA = '33';
 
 function actualizarEsquema_() {
   try { asegurarColumnas_(); } catch (e) { registrarError_('asegurar columnas', e); }
@@ -393,6 +392,12 @@ function actualizarEsquema_() {
         sh.getRange(i + 1, COL.alias).setValue(act.join('; '));
       });
       props.setProperty('ALIAS_INICIAL', '1');
+    },
+    () => {
+      const v = hoja_('Screening_Val');
+      if (!v) return;
+      const d = v.getDataRange().getValues();
+      for (let i = d.length - 1; i > 0; i--) if (/no auxiliar/i.test(String(d[i][2]))) v.deleteRow(i + 1);
     }
   ];
   let ok = true;
