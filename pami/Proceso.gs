@@ -698,5 +698,16 @@ function getResumen(k, fila) {
     try { datos = JSON.parse(x[8] || '{}'); } catch (e) { }
     out[String(x[3])] = { fecha: x[0] instanceof Date ? fmt_(x[0], 'dd/MM/yyyy') : String(x[0] || ''), entrevisto: String(x[4] || ''), nota: String(x[5] || ''), score: x[6], datos: datos };
   });
+  try {
+    if (out.screening && out.screening.datos) {
+      const d = getDatosForm(k, id), x = out.screening.datos, e = x.eval || {}, v = x.val || {};
+      const nv = { alto: 'Alto', medio: 'Medio', bajo: 'Bajo', si: 'Sí', no: 'No', revisar: 'A revisar' };
+      out.screening.det = {
+        eval: d.evalItems.filter(it => e[it.id]).map(it => ({ l: it.label, n: nv[e[it.id]] || e[it.id] })),
+        val: d.valItems.filter(it => v[it.id]).map(it => ({ l: it.label, n: nv[v[it.id]] || v[it.id] }))
+      };
+      delete x.eval; delete x.val;
+    }
+  } catch (err) { registrarError_('resumen screening', err); }
   return JSON.stringify(out);
 }
