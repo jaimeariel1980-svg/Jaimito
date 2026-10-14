@@ -127,7 +127,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v69</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v70</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -736,16 +736,14 @@ function cambiarPinTec(){
 }
 function verResumen(f,btn,enf){
   var c=byFila(f),t=btn.textContent;btn.disabled=true;btn.textContent='Armando…';
-  gs().withSuccessHandler(function(r){btn.disabled=false;btn.textContent=t;var ev=JSON.parse(r);abrirInforme(enf?htmlEnfermeria(c,ev):htmlResumen(c,ev));}).withFailureHandler(function(e){btn.disabled=false;btn.textContent=t;fer(e);}).getResumen(K,f);
+  var ok=function(r){btn.disabled=false;btn.textContent=t;var x=JSON.parse(r);abrirInforme(enf?htmlEnfermeria(x):htmlResumen(c,x));},ko=function(e){btn.disabled=false;btn.textContent=t;fer(e);};
+  if(enf)gs().withSuccessHandler(ok).withFailureHandler(ko).getFichaEnfermeria(K,f);else gs().withSuccessHandler(ok).withFailureHandler(ko).getResumen(K,f);
 }
-function htmlEnfermeria(c,ev){
-  var S=(ev.screening||{}).datos||{},sd=S.datos||{},cd=(ev.competencias||{}).datos||{},cm=cd.meta||{};
-  var h='<div class="hd"><div style="display:flex;align-items:center;gap:16px">'+infLogo()+'<div><small>Ficha del candidato · '+infFecha()+'</small><h1>'+esc(c.nombre)+'</h1><div class="s">'+esc(tit(c.busq))+(c.policlinico?' · '+esc(c.policlinico):'')+'</div></div></div></div>';
-  h+='<div class="g g3">'+infCard('Edad',sd.edad||cm.edad)+infCard('Localidad',cm.localidad||c.loc)+infCard('Formación',c.formacion||sd.formacion||cm.formacion)+infCard('Experiencia actual',[sd.posAct||cm.puestoAct,sd.empresaAct||cm.empresaAct].filter(Boolean).join(' · '))+infCard('Antigüedad',cm.antig)+'</div>';
-  if(c.resumen)h+='<h2>Trayectoria (según CV)</h2><div class="cd"><div class="tx">'+esc(c.resumen)+'</div></div>';
-  var imp=cd.recomendacion||S.comentario||'';
-  if(imp||cd.fortalezas||cd.areas)h+='<h2>Impresión general</h2>'+(imp?'<div class="cd"><div class="tx">'+esc(imp)+'</div></div>':'')+(cd.fortalezas||cd.areas?'<div class="g g2">'+(cd.fortalezas?'<div class="cd"><small>Fortalezas</small><div class="tx">'+esc(cd.fortalezas)+'</div></div>':'')+(cd.areas?'<div class="cd"><small>A desarrollar</small><div class="tx">'+esc(cd.areas)+'</div></div>':'')+'</div>':'');
-  return infDoc('Ficha · '+c.nombre,h);
+function htmlEnfermeria(x){
+  var h='<div class="hd"><div style="display:flex;align-items:center;gap:16px">'+infLogo()+'<div><small>Ficha del candidato · '+infFecha()+'</small><h1>'+esc(x.nombre)+'</h1><div class="s">'+esc(tit(x.busq))+(x.policlinico?' · '+esc(x.policlinico):'')+'</div></div></div></div>';
+  h+='<div class="g g3">'+infCard('Edad',x.edad)+infCard('Localidad',x.localidad)+infCard('Formación',x.formacion)+infCard('Experiencia actual',x.experiencia)+infCard('Antigüedad',x.antig)+'</div>';
+  if(x.resumen)h+='<h2>Resumen</h2><div class="cd"><div class="tx" style="font-size:15px;line-height:1.6">'+esc(x.resumen)+'</div></div>';
+  return infDoc('Ficha · '+x.nombre,h);
 }
 function htmlResumen(c,ev){
   var S=ev.screening||{},C=ev.competencias||{},T=ev.pami2||{},sd=(S.datos||{}).datos||{},cd=C.datos||{},cm=cd.meta||{},td=T.datos||{};
