@@ -260,7 +260,7 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '34';
+const ESQUEMA = '35';
 
 function actualizarEsquema_() {
   try { asegurarColumnas_(); } catch (e) { registrarError_('asegurar columnas', e); }
@@ -415,6 +415,20 @@ function actualizarEsquema_() {
       ];
       t.getRange(2, 1, c.length, 6).setValues(c);
       t.setColumnWidth(3, 260); t.setColumnWidth(4, 420); t.setColumnWidth(6, 420);
+    },
+    () => {
+      const props = PropertiesService.getScriptProperties();
+      if (props.getProperty('RENOVAR_INICIAL')) return;
+      const ids = [];
+      sh.getDataRange().getValues().forEach((r, i) => {
+        const est = String(r[COL.estado - 1] || '').trim();
+        if (i < 1 || !r[COL.nombre - 1] || !String(r[COL.cv - 1] || '').trim() || /^Descartad|^Contratado$/i.test(est) || String(r[COL.proc - 1]) !== 'SI') return;
+        ids.push(String(r[COL.id - 1]));
+      });
+      if (ids.length > 700) ids.length = 700;
+      props.setProperty('RENOVAR_COLA', ids.join(','));
+      props.setProperty('RENOVAR_INICIAL', String(ids.length));
+      registrarHistorial_('', 'Renovar análisis de CV', 'Análisis CV', ids.length + ' candidatos activos en cola para renovar el texto del análisis', 'sistema');
     }
   ];
   let ok = true;
@@ -656,12 +670,12 @@ function textoCvVision_(file) {
   return String(p.choices[0].message.content || '');
 }
 
-function analizarFila_(fila) {
+function analizarFila_(fila, solo) {
   const sh = hoja_('Candidatos');
   const r = sh.getRange(fila, 1, 1, HEAD_CAND.length).getValues()[0];
   const intentos = (Number(r[COL.intentos - 1]) || 0) + 1;
-  sh.getRange(fila, COL.intentos).setValue(intentos);
-  const revisar = msg => { sh.getRange(fila, COL.just, 1, 3).setValues([[msg, 'Sin análisis automático', '']]); sh.getRange(fila, COL.proc).setValue('Revisar'); };
+  if (!solo) sh.getRange(fila, COL.intentos).setValue(intentos);
+  const revisar = msg => { if (solo) return; sh.getRange(fila, COL.just, 1, 3).setValues([[msg, 'Sin análisis automático', '']]); sh.getRange(fila, COL.proc).setValue('Revisar'); };
   try {
     const b = busquedas_().find(x => x.id === r[COL.busq - 1]);
     if (!b) { revisar('Sin búsqueda asignada. Elegila en la ficha y re-analizá.'); return; }
@@ -700,13 +714,14 @@ REGLAS DE LA NOTA:
     if (parsed.error) throw new Error('OpenAI: ' + parsed.error.message);
     const c = JSON.parse(parsed.choices[0].message.content);
     if (c.es_cv === false) {
+      if (solo) return;
       sh.getRange(fila, COL.just, 1, 3).setValues([['La IA no reconoció el adjunto como un CV. Revisalo a mano.', 'Sin análisis automático', '']]);
       sh.getRange(fila, COL.proc).setValue('NoCV');
       return;
     }
     const fill = (col, v) => { v = String(v || '').trim(); if (v && !String(r[col - 1] || '').trim()) sh.getRange(fila, col).setValue(v); };
-    fill(COL.domicilio, domicilioPorEtiqueta_(texto) || c.domicilio);
-    if (String(r[COL.fuente - 1]) !== 'Web') {
+    if (!solo) fill(COL.domicilio, domicilioPorEtiqueta_(texto) || c.domicilio);
+    if (!solo && String(r[COL.fuente - 1]) !== 'Web') {
       const nom = String(c.nombre || '').trim();
       if (nom.split(/\s+/).length >= 2) sh.getRange(fila, COL.nombre).setValue(nom);
       fill(COL.tel, c.telefono);
@@ -716,23 +731,25 @@ REGLAS DE LA NOTA:
       if (locIA) fill(COL.loc, locIA);
     }
     let asumida = false;
-    if (!limpiaLoc_(sh.getRange(fila, COL.loc).getValue())) { sh.getRange(fila, COL.loc).setValue('Rosario'); asumida = true; }
+    if (!solo && !limpiaLoc_(sh.getRange(fila, COL.loc).getValue())) { sh.getRange(fila, COL.loc).setValue('Rosario'); asumida = true; }
     const req = c.requisitos || {};
     const zonaTxt = asumida ? 'Zona OK' : (/fuera/i.test(String(req.zona)) ? 'Fuera' : 'Zona OK');
     const declForm = (decl.find(x => /t[ií]tulo|formaci/i.test(x.q)) || {}).a;
-    if (zonaTxt) sh.getRange(fila, COL.zona).setValue(zonaTxt);
+    if (zonaTxt && !solo) sh.getRange(fila, COL.zona).setValue(zonaTxt);
     const forma = String(declForm || c.formacion_titulo || '').trim();
-    if (forma) sh.getRange(fila, COL.formacion).setValue(forma);
+    if (forma && !solo) sh.getRange(fila, COL.formacion).setValue(forma);
     const reqTxt = Object.keys(req).map(k => k.charAt(0).toUpperCase() + k.slice(1) + ': ' + (req[k] || 'N/D')).join(' | ');
     const nota = ['A', 'B+', 'B', 'C'].indexOf(String(c.nivel_ajuste)) > -1 ? String(c.nivel_ajuste) : 'C';
     const estAct = String(r[COL.estado - 1] || '').trim(), notaAct = String(r[COL.ajuste - 1] || '').trim();
     const yaDecidida = estAct && ESTADOS_COL[0][1].indexOf(estAct) === -1 && ['A', 'B+', 'B', 'C'].indexOf(notaAct) > -1;
     sh.getRange(fila, COL.ajuste, 1, 4).setValues([[yaDecidida ? notaAct : nota, 'IA sugiere ' + nota + ': ' + String(c.justificacion || ''), String(c.resumen_experiencia || ''), reqTxt]]);
+    if (solo) { registrarHistorial_(r[COL.id - 1], r[COL.nombre - 1], 'Análisis CV', 'Texto renovado con la lectura objetiva del CV', 'sistema'); return; }
     registrarHistorial_(r[COL.id - 1], r[COL.nombre - 1], 'Análisis CV', 'La IA sugiere ' + nota, 'sistema');
     sh.getRange(fila, COL.proc).setValue('SI');
     try { sugerirPoliclinico_(fila); } catch (e2) { registrarError_('sugerir policlínico fila ' + fila, e2); }
   } catch (e) {
     registrarError_('analizar fila ' + fila, e);
+    if (solo) return;
     sh.getRange(fila, COL.proc).setValue(intentos >= 3 ? 'Error' : 'Pendiente');
     if (intentos >= 3) sh.getRange(fila, COL.resumen).setValue('No se pudo analizar el CV automáticamente.');
   }
@@ -745,6 +762,16 @@ function procesarPendientes() {
   for (let i = 1; i < d.length && n < 5; i++) {
     if (d[i][COL.proc - 1] === 'Pendiente' && d[i][COL.nombre - 1]) { analizarFila_(i + 1); n++; }
   }
+  if (n === 0) renovarCola_();
+}
+
+function renovarCola_() {
+  const props = PropertiesService.getScriptProperties();
+  const ids = String(props.getProperty('RENOVAR_COLA') || '').split(',').filter(Boolean);
+  if (!ids.length) return;
+  const sh = hoja_('Candidatos'), lote = ids.splice(0, 6);
+  lote.forEach(id => { const f = filaPorId_(sh, id); if (f) analizarFila_(f, true); });
+  props.setProperty('RENOVAR_COLA', ids.join(','));
 }
 
 function textoAuto_(aj, nombre, busq) {
