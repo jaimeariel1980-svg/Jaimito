@@ -20,9 +20,11 @@ function estadoCalendarios_() {
     if (!cal) { avisos.push('Calendario ' + x.n + ': no puedo abrirlo (' + (x.id || 'sin configurar') + '). Compartilo con ' + CUENTA + ' con el permiso "Ver todos los detalles del evento" y aceptá la invitación desde esa cuenta.'); return; }
     let evs = [];
     try { evs = cal.getEvents(desde, hasta); } catch (e) { avisos.push('Calendario ' + x.n + ': no tengo permiso para leer sus eventos. Compartilo con ' + CUENTA + ' con "Ver todos los detalles del evento".'); return; }
-    const titulos = evs.map(e => String(e.getTitle() || '').trim());
+    const porMail = estadoPorMail_();
+    const titulos = evs.map(e => tituloEvento_(e, porMail));
     if (titulos.length && titulos.every(t => !t || /^(ocupado|busy)$/i.test(t))) { avisos.push('Calendario ' + x.n + ': veo ' + titulos.length + ' turnos pero sin título (está compartido solo como libre/ocupado). Cambiá el permiso a "Ver todos los detalles del evento".'); return; }
-    if (titulos.length && !titulos.some(t => etapaDeTitulo_(t))) avisos.push('Calendario ' + x.n + ': tiene ' + titulos.length + ' turnos pero ninguno dice Screening, Competencias o Técnica en el título, por eso no se leen (ej.: "' + titulos[0].slice(0, 50) + '").');
+    const raros = titulos.filter(t => t && !/^(ocupado|busy)$/i.test(t) && !etapaDeTitulo_(t));
+    if (raros.length) avisos.push('Calendario ' + x.n + ': ' + raros.length + ' turno' + (raros.length === 1 ? '' : 's') + ' no se lee' + (raros.length === 1 ? '' : 'n') + ' porque el título no dice Screening, Competencias o Técnica (ej.: "' + raros[0].slice(0, 50) + '"). Agregalo al título de esa agenda en Calendar.');
   });
   return avisos;
 }
@@ -63,11 +65,26 @@ function eventoEsDe_(ev, cand) {
   return !!m && mismoNombre_(m[1], cand.nombre);
 }
 
+function estadoPorMail_() {
+  const m = {};
+  hoja_('Candidatos').getDataRange().getValues().slice(1).forEach(r => { const k = String(r[COL.email - 1] || '').trim().toLowerCase(); if (k) m[k] = r[COL.estado - 1]; });
+  return m;
+}
+
+function tituloEvento_(e, porMail) {
+  const t = String(e.getTitle() || '').trim(), n = norm_(t);
+  if (/competencia|screening|tecnica/.test(n)) return t;
+  const g = e.getGuestList().map(x => x.getEmail().toLowerCase()).find(x => porMail[x] != null);
+  const i = g ? etapaDeEstado_(porMail[g]) : -1;
+  return i > 0 ? TIPO_ETAPA[ETAPAS[i]] + ' · ' + t : t;
+}
+
 function eventosCal_(desde, hasta) {
+  const porMail = estadoPorMail_();
   let evs = [];
   calendarios_().forEach((cal, i) => { try { evs = evs.concat(cal.getEvents(desde, hasta).map(e => ({ e: e, poli: POLICLINICOS[i] || '' }))); } catch (e) { registrarError_('leer calendario', e); } });
   return evs.map(x => ({
-    titulo: x.e.getTitle(), inicio: x.e.getStartTime(), invitados: x.e.getGuestList().map(g => g.getEmail().toLowerCase()), poli: x.poli
+    titulo: tituloEvento_(x.e, porMail), inicio: x.e.getStartTime(), invitados: x.e.getGuestList().map(g => g.getEmail().toLowerCase()), poli: x.poli
   })).filter(e => etapaDeTitulo_(e.titulo));
 }
 
