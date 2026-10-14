@@ -14,6 +14,7 @@ function estadoCalendarios_() {
   const ahora = new Date(), desde = new Date(ahora.getTime() - 86400000), hasta = new Date(ahora.getTime() + 14 * 86400000);
   const lista = [{ n: 'PAMI 1', id: aj.calendario, cal: () => calendario_() }];
   if (aj.calendario_poli2) lista.push({ n: 'PAMI 2', id: aj.calendario_poli2, cal: () => calendarioPor_(aj.calendario_poli2) });
+  calendariosComp_().forEach(c => lista.push({ n: c.nombre, id: c.nombre, cal: () => c.cal }));
   lista.forEach(x => {
     let cal = null;
     try { cal = x.cal(); } catch (e) { }
@@ -27,6 +28,22 @@ function estadoCalendarios_() {
     if (raros.length) avisos.push('Calendario ' + x.n + ': ' + raros.length + ' turno' + (raros.length === 1 ? '' : 's') + ' no se lee' + (raros.length === 1 ? '' : 'n') + ' porque el título no dice Screening, Competencias o Técnica (ej.: "' + raros[0].slice(0, 50) + '"). Agregalo al título de esa agenda en Calendar.');
   });
   return avisos;
+}
+
+function calendariosComp_() {
+  try {
+    return CalendarApp.getAllCalendars().filter(c => /competencia/i.test(c.getName())).map(c => {
+      const n = norm_(c.getName());
+      return { cal: c, nombre: c.getName(), poli: /pami\s*(ii|2)\b/.test(n) ? POLICLINICOS[1] : /pami\s*(i|1)\b/.test(n) ? POLICLINICOS[0] : POLICLINICOS[1] };
+    });
+  } catch (e) { return []; }
+}
+
+function fuentesCal_() {
+  const l = calendarios_().map((cal, i) => ({ cal: cal, nombre: POLICLINICOS[i] ? POLICLINICOS[i].replace('Policlínico ', '') : '', poli: POLICLINICOS[i] || '' }));
+  const ids = l.map(x => { try { return x.cal.getId(); } catch (e) { return ''; } });
+  calendariosComp_().forEach(x => { let id = ''; try { id = x.cal.getId(); } catch (e) { } if (!id || ids.indexOf(id) === -1) l.push(x); });
+  return l;
 }
 
 function calendarios_() {
@@ -55,7 +72,7 @@ function tokens_(s) { return norm_(s).replace(/[^a-z0-9 ]/g, ' ').split(/\s+/).f
 function mismoNombre_(a, b) {
   const A = tokens_(a), B = tokens_(b);
   if (A.length < 2 || B.length < 2) return false;
-  const sub = (X, Y) => X.every(t => Y.indexOf(t) > -1);
+  const sub = (X, Y) => X.every(t => Y.some(u => u === t || (t.length >= 3 && u.length >= 3 && (u.indexOf(t) === 0 || t.indexOf(u) === 0))));
   return sub(A, B) || sub(B, A);
 }
 
@@ -82,7 +99,7 @@ function tituloEvento_(e, porMail) {
 function eventosCal_(desde, hasta) {
   const porMail = estadoPorMail_();
   let evs = [];
-  calendarios_().forEach((cal, i) => { try { evs = evs.concat(cal.getEvents(desde, hasta).map(e => ({ e: e, poli: POLICLINICOS[i] || '' }))); } catch (e) { registrarError_('leer calendario', e); } });
+  fuentesCal_().forEach(f => { try { evs = evs.concat(f.cal.getEvents(desde, hasta).map(e => ({ e: e, poli: f.poli }))); } catch (e) { registrarError_('leer calendario', e); } });
   return evs.map(x => ({
     titulo: tituloEvento_(x.e, porMail), inicio: x.e.getStartTime(), invitados: x.e.getGuestList().map(g => g.getEmail().toLowerCase()), poli: x.poli
   })).filter(e => etapaDeTitulo_(e.titulo));
@@ -182,7 +199,9 @@ function diagnosticoCalendario(k) {
   const ahora = new Date(), hasta = new Date(ahora.getTime() + 14 * 86400000), aj = ajustes_(), porMail = estadoPorMail_();
   const cands = hoja_('Candidatos').getDataRange().getValues().slice(1).filter(r => r[COL.nombre - 1]).map(r => ({ nombre: r[COL.nombre - 1], mail: String(r[COL.email - 1] || '').trim().toLowerCase() }));
   const out = [];
-  [['PAMI 1', () => calendario_()], ['PAMI 2', () => calendarioPor_(aj.calendario_poli2)]].forEach(x => {
+  const comp = calendariosComp_();
+  if (!comp.length) out.push({ cal: 'Competencias', error: 'no veo ningún calendario con "Competencias" en el nombre (tiene que estar en "Otros calendarios" de ' + CUENTA + ')' });
+  [['PAMI 1', () => calendario_()], ['PAMI 2', () => calendarioPor_(aj.calendario_poli2)]].concat(comp.map(c => [c.nombre, () => c.cal])).forEach(x => {
     let cal = null;
     try { cal = x[1](); } catch (e) { }
     if (!cal) { out.push({ cal: x[0], error: 'no se puede abrir el calendario' }); return; }
