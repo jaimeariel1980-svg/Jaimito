@@ -110,6 +110,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .btns .btn{padding:8px 13px;font-size:12px}
 .btns.sm .btn{padding:6px 11px;font-size:11.5px}
+.btns .btn.warn{background:#F2B705;color:#4A3A00}.btns .btn.warn:hover{background:#DDA400}
 .btns .bg{display:inline-flex}.btns .bg>.btn:first-child{border-radius:4px 0 0 4px}.btns .bg>.ed{border-radius:0 4px 4px 0;margin-left:1px;padding:6px 8px;font-size:11px;background:#D3E2F4}.btns .bg>.ed:hover{background:#BFD5EE}
 .kv .mini{border:0;background:none;color:#8A97AB;cursor:pointer;font-size:11px;padding:0 4px;margin-left:6px;font-weight:400}.kv .mini:hover{color:#D9534F}
 .alerta{margin-top:12px;padding:9px 12px;border-radius:4px;font-size:13px;font-weight:600}
@@ -130,7 +131,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v91</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v92</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -429,6 +430,7 @@ function card(c){
   if(!terminal(c.estado)&&dd>=D.cfg.diasAlerta)pr+='<span class="tag r">🕒 '+dd+' d sin movimiento</span>';
   var mk='';
   if(/^Descartad/i.test(c.estado))mk+=c.motivo?'<span class="tag r">✖ '+esc(c.motivo.replace(/;\s*/g,' · '))+'</span>':'<span class="tag">Sin motivo cargado</span>';
+  if(!RO&&etapaIdx(c)===3&&!c.fichaOk)mk+='<span class="tag w">🩺 Falta ficha</span>';
   var rcc=rc?'<span class="rcc" title="'+esc((c.recTipo?'Recomendado por: ':'')+rc)+'">★ '+esc(recCorto(c))+'</span>':'';
   if(c.proc&&c.proc!=='SI')mk+='<span class="tag w">'+(c.proc==='Pendiente'?'Analizando CV…':c.proc==='NoCV'?'¿No es un CV?':'Revisar CV')+'</span>';
   var bt=D.policlinicos.map(function(p,i){return '<button type="button" class="p'+(i+1)+(c.policlinico===p?' on':(!c.policlinico&&sugN(c)===p?' sug':''))+'" onclick="event.stopPropagation();asignarPol('+c.fila+','+i+')">'+esc(p.replace('Policlínico ',''))+(!c.policlinico&&sugN(c)===p?' ★':'')+'</button>';}).join('');
@@ -552,6 +554,7 @@ function abrir(f){
   else if(c.proc==='Revisar')al+='<div class="alerta a2">'+esc(c.just||'Revisar a mano')+'</div>';
   else if(c.proc==='Pendiente')al+='<div class="alerta a2">El CV todavía se está analizando.</div>';
   if(!terminal(c.estado)&&dd>=D.cfg.diasAlerta)al+='<div class="alerta a3">🕒 '+dd+' días sin movimiento en "'+esc(c.estado)+'".</div>';
+  if(!RO&&etapaIdx(c)===3&&!c.fichaOk)al+='<div class="alerta a2">🩺 Falta la ficha para Enfermería. Los jefes no ven nada hasta que la prepares y la guardes: tocá "Preparar ficha para Enfermería".</div>';
   var etapasNota=['cv','screening','competencias'];
   if(c.notaP2||/técnica|Contratado/i.test(c.estado))etapasNota=etapasNota.concat(['pami2']);
   var vals={cv:c.ajuste,screening:c.notaScr,competencias:c.notaComp,pami1:c.notaP1,pami2:c.notaP2};
@@ -561,7 +564,7 @@ function abrir(f){
   document.getElementById('mbox').innerHTML=
     '<div class="hd"><div><h2>'+esc(c.nombre)+'</h2><small>'+esc(tit(c.busq))+' · '+esc(c.estado)+'</small><div class="ecs">'+etapasHdr(c)+'</div></div><button class="x" onclick="cerrar()">×</button></div><div class="bd">'+al+
     '<div class="btns">'+etapaBtn(f,'screening',c.infScr,'📝 Formulario screening','Ver screening')+etapaBtn(f,'competencias',c.infComp,'💼 Formulario competencias','Ver competencias')+'<button class="btn" onclick="abrirForm(\'tecnica\','+f+')">🩺 Formulario técnica</button></div>'+
-    '<div class="btns sm">'+(c.resp.length?'<button class="btn ghost" onclick="verPost('+f+',this)">📋 Postulación</button>':'')+(c.docs?'<a class="btn ghost" target="_blank" href="'+esc(c.docs)+'">📂 Documentación</a>':'')+'<button class="btn ghost" onclick="verResumen('+f+',this)">📄 Resumen</button><span class="bg"><button class="btn ghost" onclick="verResumen('+f+',this,true)">🩺 Ficha Enfermería</button>'+(RO?'':'<button class="btn ghost ed" title="Editar la ficha de Enfermería" onclick="editarFicha('+f+')">✏️</button>')+'</span></div>'+
+    '<div class="btns sm">'+(c.resp.length?'<button class="btn ghost" onclick="verPost('+f+',this)">📋 Postulación</button>':'')+(c.docs?'<a class="btn ghost" target="_blank" href="'+esc(c.docs)+'">📂 Documentación</a>':'')+'<button class="btn ghost" onclick="verResumen('+f+',this)">📄 Resumen</button>'+(c.fichaOk?'<span class="bg"><button class="btn ghost" onclick="verResumen('+f+',this,true)">🩺 Ficha Enfermería ✓</button>'+(RO?'':'<button class="btn ghost ed" title="Editar la ficha de Enfermería" onclick="editarFicha('+f+')">✏️</button>')+'</span>':(RO?'':'<button class="btn '+(etapaIdx(c)===3?'warn':'ghost')+'" onclick="editarFicha('+f+')">🩺 Preparar ficha para Enfermería</button>'))+'</div>'+
     '<div class="btns">'+(c.cv?'<a class="btn ghost" target="_blank" href="'+esc(c.cv)+'">📄 Ver CV</a>':'')+(c.tel?'<button class="btn wa" onclick="menuWA('+f+')">💬 WhatsApp ▾</button>':'')+(/@/.test(c.email||'')?'<a class="btn ghost" target="_blank" href="https://mail.google.com/mail/?view=cm&to='+encodeURIComponent(c.email)+'">✉ Mail</a>':'')+'<button class="btn cel" onclick="agendar('+f+')">📅 Agendar</button>'+(puedeDesc?'<button class="btn red" onclick="descarteMail('+f+',this)">✉ Descarte por mail</button>':'')+(c.proc!=='SI'?'<button class="btn sec" onclick="rean('+f+',this)">↻ Re-analizar CV</button>':'')+'</div>'+
     '<div class="fp">'+panel('Contacto',[kv('Teléfono',c.tel),kv('DNI',c.dni),kv('Email',c.email),kv('Domicilio',c.domicilio),kv('Localidad',c.loc),kv('Zona',c.zona)])+panel('Postulación',[kv('Recibido',c.fecha),kv('Llegó por',c.fuente),kv('Formación',c.formacion),kv('Pretensión',money(c.pret)),kv('Conoce a alguien en PAMI',c.conoce)])+panel('Proceso',[kv('Estado',c.estado),kv('Policlínico',c.policlinico||'Sin asignar'),kv('Sugerido por cercanía',c.polSug),kv('Notas por etapa',notasTxt(c)),kv('Turno preferido',String(c.turno||'').replace(/;/g,' ·')),kv('Entrevistó screening',(c.ent||{}).screening),kv('Entrevistó competencias',(c.ent||{}).competencias),kv('Entrevistó técnica',(c.ent||{}).pami2),(c.contactado?'<div class="kv"><small>Último contacto</small><b>'+esc(ultCont(c)||c.contactado)+(RO?'':'<button class="mini" title="Borrar la marca de contacto" onclick="borrarMarca('+f+')">✕</button>')+'</b></div>':''),kv('Descartó',/^Descartad/i.test(c.estado)?c.descPor:''),kv('Descarte',c.descarte)],true)+'</div>'+
     (c.just?'<div class="sec">Análisis del CV</div><div class="txt"><b>'+esc(c.just)+'</b></div>':'')+(c.resumen?'<div class="txt" style="margin-top:6px">'+esc(c.resumen)+'</div>':'')+(c.req?'<div class="txt" style="margin-top:6px;color:#5D6B82">'+esc(c.req)+'</div>':'')+resp+
@@ -762,12 +765,12 @@ function editarFicha(f){
   document.getElementById('modal').classList.add('show');
   gs().withSuccessHandler(function(r){
     var x=JSON.parse(r),b=document.getElementById('fcb');if(!b)return;
-    b.innerHTML='<div class="txt" style="font-size:13px;color:#5D6B82;margin-bottom:8px">'+(x.pendiente?'Todavía no hay entrevista de competencias: la IA arma el texto cuando se carga. Si querés, podés escribirlo a mano.':x.editado?'Editado por vos.':x.conInd?'Armado por la IA con tus indicaciones.':'Armado por la IA con el CV y las observaciones del entrevistador.')+' Corregilo si hace falta: los jefes leen exactamente este texto.</div><textarea id="fichaTxt" rows="8" style="width:100%">'+esc(x.resumen)+'</textarea><label class="l" style="margin-top:10px">Indicaciones para la IA (opcional)</label><input type="text" id="fichaInd" maxlength="300" placeholder="Ej: más corto · resaltá la experiencia en geriatría · mencioná la disponibilidad" style="width:100%"><div class="txt" style="font-size:12px;color:#5D6B82;margin:4px 0 0">Las usan ✨ Corregir con IA (ajusta este texto) y 🔄 Rehacer desde cero (lo arma de nuevo con el CV y las observaciones).</div><div class="btns" style="margin-top:10px"><button class="btn ok" onclick="guardarFicha('+f+',this)">Guardar</button>'+(x.pendiente?'':'<button class="btn ghost" onclick="regenerarFicha('+f+',this)">🔄 Rehacer desde cero</button>')+'<button class="btn sec" onclick="cerrar()">Cancelar</button></div>';
+    b.innerHTML='<div class="txt" style="font-size:13px;color:#5D6B82;margin-bottom:8px">'+(x.pendiente?'Todavía no hay entrevista de competencias: la IA arma el texto cuando se carga. Si querés, podés escribirlo a mano.':x.editado?'Editado por vos.':x.conInd?'Armado por la IA con tus indicaciones.':'Armado por la IA con el CV y las observaciones del entrevistador.')+' Revisalo y tocá Guardar: '+(x.revisada?'los jefes leen exactamente este texto.':'hasta entonces los jefes no lo ven.')+'</div><textarea id="fichaTxt" rows="8" style="width:100%">'+esc(x.resumen)+'</textarea><label class="l" style="margin-top:10px">Indicaciones para la IA (opcional)</label><input type="text" id="fichaInd" maxlength="300" placeholder="Ej: más corto · resaltá la experiencia en geriatría · mencioná la disponibilidad" style="width:100%"><div class="txt" style="font-size:12px;color:#5D6B82;margin:4px 0 0">Las usan ✨ Corregir con IA (ajusta este texto) y 🔄 Rehacer desde cero (lo arma de nuevo con el CV y las observaciones).</div><div class="btns" style="margin-top:10px"><button class="btn ok" onclick="guardarFicha('+f+',this)">Guardar</button>'+(x.pendiente?'':'<button class="btn ghost" onclick="regenerarFicha('+f+',this)">🔄 Rehacer desde cero</button>')+'<button class="btn sec" onclick="cerrar()">Cancelar</button></div>';
   }).withFailureHandler(fer).getFichaEnfermeria(K,f);
 }
 function guardarFicha(f,btn){
   var t=document.getElementById('fichaTxt').value;btn.disabled=true;btn.textContent='Guardando…';
-  gs().withSuccessHandler(function(){delete FICHAS[f];toast('Ficha guardada');cerrar();}).withFailureHandler(function(e){btn.disabled=false;btn.textContent='Guardar';fer(e);}).guardarFichaEnfermeria(K,f,t);
+  gs().withSuccessHandler(function(){delete FICHAS[f];var cc=byFila(f);if(cc)cc.fichaOk=!!t.trim();toast(t.trim()?'Ficha guardada: ya la ven los jefes':'Ficha borrada');cerrar();render();}).withFailureHandler(function(e){btn.disabled=false;btn.textContent='Guardar';fer(e);}).guardarFichaEnfermeria(K,f,t);
 }
 function regenerarFicha(f,btn){
   if(!confirm('Se reemplaza el texto actual por uno nuevo armado desde cero. ¿Seguir?'))return;

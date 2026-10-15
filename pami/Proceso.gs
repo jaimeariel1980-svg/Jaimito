@@ -426,6 +426,7 @@ function getTablero_(k) {
       cita: citaObj_(r[COL.cita - 1]), entrevistas: String(r[COL.entrevistas - 1] || ''), contactado: String(r[COL.contactado - 1] || ''),
       descarte: String(r[COL.descarte - 1] || ''), infScr: String(r[COL.infScr - 1] || ''), infComp: String(r[COL.infComp - 1] || ''), docs: String(r[COL.docs - 1] || ''),
       zona: String(r[COL.zona - 1] || ''), formacion: String(r[COL.formacion - 1] || ''), postulacion: String(r[COL.postulacion - 1] || ''), policlinico: String(r[COL.policlinico - 1] || ''), domicilio: String(r[COL.domicilio - 1] || ''), polSug: String(r[COL.polSug - 1] || ''), domRev: String(r[COL.domRev - 1] || ''), motivo: String(r[COL.motivo - 1] || ''), turno: String(r[COL.turno - 1] || ''),
+      fichaOk: fichaRevisada_(r[COL.fichaEnf - 1]),
       conoce: (resp.find(x => /conoc[eé]s a alguien/i.test(x.q) && x.a && !/^(no|ninguno|nadie|-)\.?$/i.test(String(x.a).trim())) || {}).a || ''
     });
   }
@@ -855,6 +856,12 @@ function generarResumenEnf_(cv, obs, indic) {
   return [cv, obs].filter(Boolean).join('\n');
 }
 
+function fichaRevisada_(raw) {
+  let g = null;
+  try { g = JSON.parse(raw || 'null'); } catch (e) { }
+  return !!(g && g.t && (g.ok === 1 || g.e === 1));
+}
+
 function getFichaEnfermeria_(k, fila, forzar, indic) {
   admin_(k);
   const sh = hoja_('Candidatos');
@@ -879,12 +886,14 @@ function getFichaEnfermeria_(k, fila, forzar, indic) {
   const h = hash_(cv + '|' + obs);
   let guardado = null;
   try { guardado = JSON.parse(r[COL.fichaEnf - 1] || 'null'); } catch (e) { }
-  const jefe = ROL_ === 'Técnica';
-  if (!forzar && guardado && guardado.t && (guardado.e || guardado.h === h || jefe)) {
-    ficha.resumen = guardado.t; ficha.editado = guardado.e === 1; ficha.conInd = guardado.e === 2;
-  } else if (jefe) {
+  const jefe = ROL_ === 'Técnica', rev = fichaRevisada_(r[COL.fichaEnf - 1]);
+  ficha.revisada = rev;
+  if (jefe) {
     if (forzar) throw new Error('No autorizado');
-    ficha.resumen = ''; ficha.editado = false; ficha.aviso = 'La ficha todavía no está lista.';
+    if (rev) { ficha.resumen = guardado.t; ficha.editado = guardado.e === 1; }
+    else { ficha.resumen = ''; ficha.editado = false; ficha.aviso = 'La ficha todavía no está lista.'; }
+  } else if (!forzar && guardado && guardado.t && (guardado.e || guardado.h === h)) {
+    ficha.resumen = guardado.t; ficha.editado = guardado.e === 1; ficha.conInd = guardado.e === 2;
   } else if (!ev.competencias) {
     if (forzar) throw new Error('La ficha se arma después de la entrevista de competencias');
     ficha.resumen = ''; ficha.editado = false; ficha.pendiente = true; ficha.aviso = 'La ficha se arma después de la entrevista de competencias.';
@@ -907,7 +916,7 @@ function guardarFichaEnfermeria(k, fila, texto) {
   fila = Number(fila);
   if (!(fila >= 2 && fila <= sh.getLastRow())) throw new Error('Fila inválida');
   texto = String(texto || '').trim().slice(0, 2000);
-  sh.getRange(fila, COL.fichaEnf).setValue(texto ? JSON.stringify({ t: texto, h: '', e: 1 }) : '');
+  sh.getRange(fila, COL.fichaEnf).setValue(texto ? JSON.stringify({ t: texto, h: '', e: 1, ok: 1 }) : '');
   registrarHistorial_(sh.getRange(fila, COL.id).getValue(), sh.getRange(fila, COL.nombre).getValue(), 'Ficha Enfermería', texto ? 'Texto editado a mano' : 'Texto borrado (se arma de nuevo con la IA)', 'tablero');
   return true;
 }
