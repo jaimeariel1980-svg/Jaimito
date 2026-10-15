@@ -64,7 +64,7 @@ function getFichaEnfermeria(k, fila, forzar, indic) { return conTec_(() => getFi
 function getCVArchivo(k, fila) { return conTec_(() => getCVArchivo_(k, fila)); }
 function redactarIA(k, texto, indic) { return redactarIA_(k, texto, indic); }
 function analizarEntrevista(k, id, texto) { return analizarEntrevista_(k, id, texto); }
-function transcribirAudio(k, b64, mime) { return conTec_(() => transcribirAudio_(k, b64, mime)); }
+function transcribirAudio(k, b64, mime) { return transcribirAudio_(k, b64, mime); }
 
 function admin_(k) {
   const p = String(k).split('|');
@@ -885,11 +885,12 @@ function getFichaEnfermeria_(k, fila, forzar, indic) {
     ficha.resumen = ''; ficha.editado = false;
   } else {
     if (forzar && ROL_ === 'Técnica') throw new Error('No autorizado');
-    const usaIA = !!((cv && obs) || (cv.length + obs.length) > 400);
+    const jefe = ROL_ === 'Técnica';
+    const usaIA = !jefe && !!((cv && obs) || (cv.length + obs.length) > 400);
     ficha.resumen = usaIA ? generarResumenEnf_(cv, obs, forzar ? indic : '') : [cv, obs].filter(Boolean).join('\n');
     ficha.generada = usaIA;
     ficha.editado = false;
-    try { sh.getRange(fila, COL.fichaEnf).setValue(JSON.stringify({ t: ficha.resumen, h: h, e: (forzar && String(indic || '').trim()) ? 2 : 0 })); } catch (e) { registrarError_('guardar ficha enfermería', e); }
+    if (!jefe) try { sh.getRange(fila, COL.fichaEnf).setValue(JSON.stringify({ t: ficha.resumen, h: h, e: (forzar && String(indic || '').trim()) ? 2 : 0 })); } catch (e) { registrarError_('guardar ficha enfermería', e); }
   }
   return JSON.stringify(ficha);
 }
