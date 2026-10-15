@@ -783,7 +783,7 @@ function getResumen_(k, fila) {
   const sh = hoja_('Candidatos');
   fila = Number(fila);
   if (!(fila >= 2 && fila <= sh.getLastRow())) throw new Error('Fila inválida');
-  if (ROL_ === 'Técnica') throw new Error('Tu usuario solo puede ver el resumen del proceso');
+  if (ROL_ === 'Técnica') throw new Error('Tu usuario solo puede ver el resumen del proceso para la entrevista técnica');
   const id = String(sh.getRange(fila, COL.id).getValue()), out = {};
   const ev = hoja_('Evaluaciones');
   if (ev && ev.getLastRow() > 1) ev.getRange(2, 1, ev.getLastRow() - 1, 9).getValues().forEach(x => {
