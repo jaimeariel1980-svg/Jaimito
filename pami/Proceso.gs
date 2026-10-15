@@ -61,6 +61,7 @@ function getResumen(k, fila) { return conTec_(() => getResumen_(k, fila)); }
 function cambiarPin(k, nuevo) { return conTec_(() => cambiarPin_(k, nuevo)); }
 function registrarAcceso(k, accion) { return conTec_(() => registrarAcceso_(k, accion)); }
 function getFichaEnfermeria(k, fila, forzar) { return conTec_(() => getFichaEnfermeria_(k, fila, forzar)); }
+function getCVArchivo(k, fila) { return conTec_(() => getCVArchivo_(k, fila)); }
 function redactarIA(k, texto) { return conTec_(() => redactarIA_(k, texto)); }
 function transcribirAudio(k, b64, mime) { return conTec_(() => transcribirAudio_(k, b64, mime)); }
 
@@ -371,7 +372,7 @@ function tableroTecnica_() {
     try { permiteTecnico_(r); } catch (e) { continue; }
     cands.push({
       fila: i + 1, id: String(r[COL.id - 1]), nombre: r[COL.nombre - 1], busq: r[COL.busq - 1], policlinico: poliEf_(r), estado: String(r[COL.estado - 1]).trim(),
-      cita: citaObj_(r[COL.cita - 1]), loc: r[COL.loc - 1], formacion: String(r[COL.formacion - 1] || ''), resumen: r[COL.resumen - 1], mov: ''
+      cita: citaObj_(r[COL.cita - 1]), loc: r[COL.loc - 1], formacion: String(r[COL.formacion - 1] || ''), resumen: r[COL.resumen - 1], tieneCV: !!String(r[COL.cv - 1] || '').trim(), mov: ''
     });
   }
   cands.sort((a, b) => String(a.cita ? a.cita.ts : '9') < String(b.cita ? b.cita.ts : '9') ? -1 : 1);
@@ -875,4 +876,21 @@ function guardarFichaEnfermeria(k, fila, texto) {
   sh.getRange(fila, COL.fichaEnf).setValue(texto ? JSON.stringify({ t: texto, h: '', e: 1 }) : '');
   registrarHistorial_(sh.getRange(fila, COL.id).getValue(), sh.getRange(fila, COL.nombre).getValue(), 'Ficha Enfermería', texto ? 'Texto editado a mano' : 'Texto borrado (se arma de nuevo con la IA)', 'tablero');
   return true;
+}
+
+function getCVArchivo_(k, fila) {
+  admin_(k);
+  const sh = hoja_('Candidatos');
+  fila = Number(fila);
+  if (!(fila >= 2 && fila <= sh.getLastRow())) throw new Error('Fila inválida');
+  const r = sh.getRange(fila, 1, 1, HEAD_CAND.length).getValues()[0];
+  if (ROL_ === 'Técnica') permiteTecnico_(r);
+  const m = String(r[COL.cv - 1] || '').match(/[-\w]{25,}/);
+  if (!m) throw new Error('Este candidato no tiene CV cargado');
+  const f = DriveApp.getFileById(m[0]);
+  let blob = f.getBlob();
+  if (/^application\/vnd\.google-apps/.test(String(blob.getContentType() || ''))) blob = f.getAs('application/pdf');
+  const bytes = blob.getBytes();
+  if (bytes.length > 7 * 1024 * 1024) throw new Error('El CV pesa demasiado para abrirlo desde acá. Pedíselo a RRHH.');
+  return { nombre: f.getName(), mime: String(blob.getContentType() || 'application/pdf'), b64: Utilities.base64Encode(bytes) };
 }
