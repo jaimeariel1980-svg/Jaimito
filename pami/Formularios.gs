@@ -42,6 +42,25 @@ function getDatosForm_(k, id, etapa) {
   };
 }
 
+function getEvalPrevia(k, id, etapa) {
+  escritor_(k);
+  if (['screening', 'competencias'].indexOf(etapa) === -1) throw new Error('Etapa inválida');
+  const sh = hoja_('Evaluaciones'), n = sh.getLastRow();
+  if (n < 2) return null;
+  const ids = sh.getRange(2, 2, n - 1, 3).getValues();
+  let fila = 0;
+  for (let i = ids.length - 1; i >= 0; i--) if (String(ids[i][0]) === String(id) && ids[i][2] === etapa) { fila = i + 2; break; }
+  if (!fila) return null;
+  const e = sh.getRange(fila, 1, 1, 9).getValues()[0];
+  let datos;
+  try { datos = JSON.parse(e[8]); } catch (x) { throw new Error('Esta evaluación es muy vieja o está incompleta y no se puede editar'); }
+  const sc = hoja_('Candidatos'), fc = filaPorId_(sc, id);
+  const r = fc ? sc.getRange(fc, 1, 1, HEAD_CAND.length).getValues()[0] : [];
+  const nota = String(e[5] || '');
+  const motivo = nota === 'C' && /^Descartad/i.test(String(r[COL.estado - 1] || '')) ? String(r[COL.motivo - 1] || '') : '';
+  return { fecha: datos.fecha || (e[0] instanceof Date ? fmt_(e[0], 'yyyy-MM-dd') : ''), entrevistador: String(e[4] || ''), nota: nota, datos: datos, motivo: motivo };
+}
+
 // Textos del desplegable de "Ajuste al perfil" (de menor a mayor: bajo, medio, alto).
 // El puntaje sigue usando bajo/medio/alto; solo cambia lo que se ve.
 function opcionesEval_(etiqueta) {
@@ -133,13 +152,15 @@ function guardarScreening(k, p) {
   sh.getRange(fila, COL.infScr).setValue(url);
   if (p.entrevistador) sh.getRange(fila, COL.entrev).setValue(p.entrevistador);
   if (dt.remPret && !String(r[COL.pret - 1]).trim()) sh.getRange(fila, COL.pret).setValue(dt.remPret);
-  guardarEvaluacion_(sh, fila, r, 'screening', p, norm, nota, url, { eval: ev, val: vl, datos: dt, comentario: p.comentario });
+  guardarEvaluacion_(sh, fila, r, 'screening', p, norm, nota, url, { eval: ev, val: vl, datos: dt, comentario: p.comentario, fecha: fecha });
   if (turno !== null) {
     const antesT = String(sh.getRange(fila, COL.turno).getValue() || '');
     sh.getRange(fila, COL.turno).setValue(turno);
     if (antesT !== turno) registrarHistorial_(r[COL.id - 1], r[COL.nombre - 1], 'Turno preferido', turno || '(sin dato)', p.entrevistador || 'formulario');
   }
-  const estado = aplicarNota_(sh, fila, 'screening', nota, p.entrevistador || 'formulario');
+  const previa = p.editar ? String(r[COL.notaScr - 1] || '') : '';
+  const estado = aplicarNota_(sh, fila, 'screening', nota, p.entrevistador || 'formulario', previa);
+  if (p.editar) registrarHistorial_(r[COL.id - 1], r[COL.nombre - 1], 'Screening editado', (previa || '—') + ' → ' + nota, QUIEN_ || p.entrevistador);
   guardarMotivoDescarte_(sh, fila, r, motivoDesc, estado, p.entrevistador || 'formulario');
   return { ok: true, estado: estado, url: url, nota: nota, score: norm };
 }
@@ -177,8 +198,10 @@ function guardarCompetencias(k, p) {
   const pdf = folder.createFile(Utilities.newBlob(html, 'text/html', 'x.html').getAs('application/pdf').setName('Competencias_' + String(r[COL.nombre - 1]).replace(/\s+/g, '_') + '_' + fecha + '.pdf'));
   const url = pdf.getUrl();
   sh.getRange(fila, COL.infComp).setValue(url);
-  guardarEvaluacion_(sh, fila, r, 'competencias', p, score, nota, url, { comps: comps, meta: m, fortalezas: p.fortalezas, areas: p.areas, recomendacion: p.recomendacion });
-  const estado = aplicarNota_(sh, fila, 'competencias', nota, p.entrevistador || 'formulario');
+  guardarEvaluacion_(sh, fila, r, 'competencias', p, score, nota, url, { comps: comps, meta: m, fortalezas: p.fortalezas, areas: p.areas, recomendacion: p.recomendacion, fecha: fecha });
+  const previa = p.editar ? String(r[COL.notaComp - 1] || '') : '';
+  const estado = aplicarNota_(sh, fila, 'competencias', nota, p.entrevistador || 'formulario', previa);
+  if (p.editar) registrarHistorial_(r[COL.id - 1], r[COL.nombre - 1], 'Competencias editado', (previa || '—') + ' → ' + nota, QUIEN_ || p.entrevistador);
   guardarMotivoDescarte_(sh, fila, r, motivoDesc, estado, p.entrevistador || 'formulario');
   return { ok: true, estado: estado, url: url, nota: nota, score: score };
 }

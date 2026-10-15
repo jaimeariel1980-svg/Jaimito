@@ -49,15 +49,30 @@
 </style>
 <script>
 var FS=(function(){
-  var K,CID,ENTRE,CONT,O,D,S;
+  var K,CID,ENTRE,CONT,O,D,S,PRE=null;
   var VAL={'Sí':'si','No':'no','A revisar':'revisar','Alto':'alto','Medio':'medio','Bajo':'bajo'};
   var VER={A:['A · Avanza','Cumple lo crítico y lo deseable. Avanza a la siguiente instancia.','g'],'B+':['B+ · Avanza','Muy bueno, cumple lo excluyente con una cuestión menor. Avanza a la siguiente instancia.','g'],B:['B · Avanza','Cumple lo crítico con algún flanco menor. Avanza a la siguiente instancia.','y'],C:['C · No avanza','No cumple lo crítico o presenta red flags importantes.','r']};
   function esc(t){return String(t==null?'':t).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function $(s){return CONT.querySelector(s);}
   function open(o){
     O=o;K=o.K;CID=o.cid;ENTRE=o.entre||'';CONT=o.container;S={eval:{},val:{},manual:null,auto:null,norm:null};
-    CONT.className='fs';CONT.innerHTML='<div class="loading">Cargando…</div>';
-    google.script.run.withSuccessHandler(function(d){D=d;render();}).withFailureHandler(function(e){CONT.innerHTML='<div class="loading" style="color:#D9534F">Error: '+esc(e.message)+'</div>';}).getDatosForm(K,CID);
+    PRE=null;CONT.className='fs';CONT.innerHTML='<div class="loading">Cargando…</div>';
+    var fail=function(e){CONT.innerHTML='<div class="loading" style="color:#D9534F">Error: '+esc(e.message)+'</div>';};
+    google.script.run.withSuccessHandler(function(d){D=d;
+      if(!o.editar){render();return;}
+      google.script.run.withSuccessHandler(function(p){if(!p){fail({message:'No encontré un screening guardado para editar'});return;}PRE=p;render();previa();}).withFailureHandler(fail).getEvalPrevia(K,CID,'screening');
+    }).withFailureHandler(fail).getDatosForm(K,CID);
+  }
+  function setV(id,v){var e=$('#'+id);if(!e||v==null||v==='')return;if(e.tagName==='SELECT'&&![].some.call(e.options,function(o){return o.value===v||o.text===v;})){var o=document.createElement('option');o.textContent=v;e.appendChild(o);}e.value=v;}
+  function previa(){
+    var x=PRE.datos||{},dt=x.datos||{};
+    setV('d-ent',PRE.entrevistador);setV('d-fecha',PRE.fecha);setV('d-edad',dt.edad);setV('d-emp',dt.empresaAct);setV('d-pos',dt.posAct);setV('d-form',dt.formacion);setV('d-ra',dt.remAct);setV('d-rp',dt.remPret);setV('d-disp',dt.disp);
+    $('#com').value=x.comentario||'';
+    var ev=x.eval||{};Object.keys(ev).forEach(function(id){var el=$('select[data-e="'+id+'"]');if(el&&ev[id]){el.value=ev[id];onEval(id,el);}});
+    var vl=x.val||{};Object.keys(vl).forEach(function(id){var el=$('.pill[data-id="'+id+'"][data-v="'+vl[id]+'"]');if(el)pick(el);});
+    if(PRE.nota&&PRE.nota!==S.auto)manual(PRE.nota);
+    var t=$('.hero h1');if(t)t.textContent+=' (edición)';
+    var b=$('#save');if(b)b.textContent='Guardar cambios';
   }
   function render(){
     var c=D.cand,h=D.hero,hoy=new Date(new Date().getTime()-3*3600000).toISOString().slice(0,10),ent=ENTRE||c.entrev||'';
@@ -75,7 +90,7 @@ var FS=(function(){
     '<div class="sect card"><div class="sl">Comentario</div><textarea id="com" rows="4" placeholder="Observaciones relevantes de la entrevista…"></textarea></div>'+
     '<div class="sect card"><div class="sl">Resultado final</div><div class="res"><div class="sem"><div class="dot" id="dg"></div><div class="dot" id="dy"></div><div class="dot" id="dr"></div></div><div class="rinfo"><div class="l" style="margin:0">Recomendación</div><div class="rt" id="rt">—</div><div id="rd" style="font-size:13px;color:#5D6B82">Completá la evaluación para obtener la recomendación</div><div class="bar"><i id="bar"></i></div></div><div class="sc"><div class="l" style="margin:0">Score</div><b id="sn">—</b><small>/ 10</small></div></div>'+
     '<div class="man"><div class="l" style="margin:0">Letra para la planilla <span id="sug" style="text-transform:none;letter-spacing:0;font-weight:600">(sugerencia automática: —)</span></div><div class="vb" id="vb"><button data-l="A" onclick="FS.manual(\'A\')">A · Avanza</button><button data-l="B+" onclick="FS.manual(\'B+\')">B+ · Avanza</button><button data-l="B" onclick="FS.manual(\'B\')">B · Avanza</button><button data-l="C" onclick="FS.manual(\'C\')">C · No avanza</button><button onclick="FS.manual(null)" style="color:#5D6B82">↺ Auto</button></div></div>'+
-    '<div id="mot" class="man" style="display:none;margin-top:12px"><div class="l" style="margin:0;color:#D9534F">Motivo de descarte (obligatorio con C)</div>'+MOT.html('d-mot',D.motivos,'')+'</div>'+
+    '<div id="mot" class="man" style="display:none;margin-top:12px"><div class="l" style="margin:0;color:#D9534F">Motivo de descarte (obligatorio con C)</div>'+MOT.html('d-mot',D.motivos,PRE?PRE.motivo:'')+'</div>'+
     '<div class="um"><span>Umbrales automáticos:</span><span>≥ '+D.umbral.a+' A</span><span>≥ '+D.umbral.bplus+' B+</span><span>≥ '+D.umbral.b+' B</span><span>&lt; '+D.umbral.b+' C</span></div></div>'+
     '<button class="btn ok" id="save" style="width:100%;padding:14px" onclick="FS.guardar()">Guardar screening</button></div>'+
     '<div class="done card" id="done"></div></div>';
@@ -118,10 +133,10 @@ var FS=(function(){
     var b=$('#save');b.disabled=true;b.textContent='Guardando…';
     google.script.run.withSuccessHandler(function(r){
       $('#form').style.display='none';var d=$('#done');d.style.display='block';
-      d.innerHTML='<h2 style="color:#1E8E5A">¡Screening guardado!</h2><p style="margin:10px 0">Resultado: <b>'+esc(r.nota)+'</b>'+(r.score!=null?' · Score '+r.score.toFixed(1):'')+'<br>Estado del candidato: <b>'+esc(r.estado||'')+'</b></p><p><button class="btn" onclick="FS.volver()">Volver</button> <a class="btn ghost" target="_blank" href="'+esc(r.url)+'">Ver informe</a></p>';
+      d.innerHTML='<h2 style="color:#1E8E5A">¡Screening '+(O.editar?'actualizado':'guardado')+'!</h2><p style="margin:10px 0">Resultado: <b>'+esc(r.nota)+'</b>'+(r.score!=null?' · Score '+r.score.toFixed(1):'')+'<br>Estado del candidato: <b>'+esc(r.estado||'')+'</b></p><p><button class="btn" onclick="FS.volver()">Volver</button> <a class="btn ghost" target="_blank" href="'+esc(r.url)+'">Ver informe</a></p>';
       CONT.scrollIntoView();if(O.onDone)O.onDone(r);
-    }).withFailureHandler(function(e){b.disabled=false;b.textContent='Guardar screening';alert('No se pudo guardar: '+e.message);})
-    .guardarScreening(K,{id:CID,entrevistador:val('d-ent'),fecha:val('d-fecha'),datos:{edad:val('d-edad'),empresaAct:val('d-emp'),posAct:val('d-pos'),formacion:val('d-form'),remAct:val('d-ra'),remPret:val('d-rp'),disp:val('d-disp'),turno:[].slice.call(CONT.querySelectorAll('#d-turno input:checked')).map(function(x){return x.value;}).join('; ')},eval:S.eval,val:S.val,comentario:$('#com').value,resultado:letra,motivoDescarte:mf});
+    }).withFailureHandler(function(e){b.disabled=false;b.textContent=O.editar?'Guardar cambios':'Guardar screening';alert('No se pudo guardar: '+e.message);})
+    .guardarScreening(K,{id:CID,entrevistador:val('d-ent'),fecha:val('d-fecha'),datos:{edad:val('d-edad'),empresaAct:val('d-emp'),posAct:val('d-pos'),formacion:val('d-form'),remAct:val('d-ra'),remPret:val('d-rp'),disp:val('d-disp'),turno:[].slice.call(CONT.querySelectorAll('#d-turno input:checked')).map(function(x){return x.value;}).join('; ')},eval:S.eval,val:S.val,comentario:$('#com').value,resultado:letra,motivoDescarte:mf,editar:!!O.editar});
   }
   function volver(){if(O.onClose)O.onClose();}
   return {open:open,onEval:onEval,pick:pick,manual:manual,guardar:guardar,volver:volver,motSel:motSel};

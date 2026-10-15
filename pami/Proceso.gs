@@ -307,7 +307,7 @@ function registrarHistorial_(id, nombre, tipo, detalle, quien) {
   try { hoja_('Historial').appendRow([new Date(), id, nombre, tipo, detalle, q]); } catch (e) { }
 }
 
-function aplicarNota_(sh, fila, etapa, nota, quien) {
+function aplicarNota_(sh, fila, etapa, nota, quien, previa) {
   let v = String(nota || '').trim().toUpperCase();
   const m = { ALTO: 'A', MEDIO: 'B', BAJO: 'C' };
   if (m[v]) v = m[v];
@@ -321,6 +321,12 @@ function aplicarNota_(sh, fila, etapa, nota, quien) {
   const etq = { cv: 'CV', screening: 'Screening', competencias: 'Competencias', pami2: 'Entrevista técnica' }[etapa];
   if (actual === 'Contratado') {
     registrarHistorial_(r[COL.id - 1], r[COL.nombre - 1], 'Nota ' + etq, v + ' (ya estaba Contratado, no cambia el estado)', quien);
+    return actual;
+  }
+  let pv = String(previa || '').trim().toUpperCase();
+  if (m[pv]) pv = m[pv];
+  if (pv && estadoPorNota_(etapa, pv) === estadoPorNota_(etapa, v)) {
+    registrarHistorial_(r[COL.id - 1], r[COL.nombre - 1], 'Nota ' + etq, pv + ' → ' + v + ' (editada, el estado no cambia)', quien);
     return actual;
   }
   const estado = estadoPorNota_(etapa, v);
