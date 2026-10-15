@@ -134,7 +134,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v107</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v109</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -433,7 +433,7 @@ function card(c){
   if(!terminal(c.estado)&&dd>=D.cfg.diasAlerta)pr+='<span class="tag r">🕒 '+dd+' d sin movimiento</span>';
   var mk='';
   if(/^Descartad/i.test(c.estado))mk+=c.motivo?'<span class="tag r">✖ '+esc(c.motivo.replace(/;\s*/g,' · '))+'</span>':'<span class="tag">Sin motivo cargado</span>';
-  if(!RO&&etapaIdx(c)===3&&!c.fichaOk)mk+='<span class="tag r">🩺 Falta resumen ET</span>';
+  if(!RO&&etapaIdx(c)===3&&!c.fichaOk&&!c.notaP2)mk+='<span class="tag r">🩺 Falta resumen ET</span>';
   var rcc=rc?'<span class="rcc" title="'+esc((c.recTipo?'Recomendado por: ':'')+rc)+'">★ '+esc(recCorto(c))+'</span>':'';
   if(c.proc&&c.proc!=='SI')mk+='<span class="tag w">'+(c.proc==='Pendiente'?'Analizando CV…':c.proc==='NoCV'?'¿No es un CV?':'Revisar CV')+'</span>';
   var bt=D.policlinicos.map(function(p,i){return '<button type="button" class="p'+(i+1)+(c.policlinico===p?' on':(!c.policlinico&&sugN(c)===p?' sug':''))+'" onclick="event.stopPropagation();asignarPol('+c.fila+','+i+')">'+esc(p.replace('Policlínico ',''))+(!c.policlinico&&sugN(c)===p?' ★':'')+'</button>';}).join('');
@@ -532,8 +532,8 @@ function abrirForm(tipo,f,ed){
   if(tipo==='screening')FS.open(o);else{if(tipo==='tecnica')o.etapa='tecnica';FC.open(o);}
 }
 function etapaBtn(f,tipo,url,nuevo,ver){
-  if(!url)return '<button class="btn" onclick="abrirForm(\''+tipo+'\','+f+')">'+nuevo+'</button>';
-  return '<span class="bg"><a class="btn ghost" target="_blank" href="'+esc(url)+'">📄 '+ver+'</a>'+(RO?'':'<button class="btn ghost ed" title="Editar '+tipo+'" onclick="abrirForm(\''+tipo+'\','+f+',true)">✏️</button>')+'</span>';
+  if(!url)return '<button class="btn" title="Cargar el formulario de '+tipo+'" onclick="abrirForm(\''+tipo+'\','+f+')">'+nuevo+'</button>';
+  return '<span class="bg"><a class="btn ghost" title="Abrir el informe en PDF" target="_blank" href="'+esc(url)+'">📄 '+ver+'</a>'+(RO?'':'<button class="btn ghost ed" title="Editar el formulario de '+tipo+' ya cargado" onclick="abrirForm(\''+tipo+'\','+f+',true)">✏️</button>')+'</span>';
 }
 function volverFicha(){if((D&&D.tecnica)||VP){cerrarFormTec();return;}document.getElementById('fmodal').classList.remove('show');document.getElementById('fbody').innerHTML='';cargar();if(FORM_F)abrir(FORM_F);}
 
@@ -565,7 +565,7 @@ function abrir(f){
   else if(c.proc==='Revisar')al+='<div class="alerta a2">'+esc(c.just||'Revisar a mano')+'</div>';
   else if(c.proc==='Pendiente')al+='<div class="alerta a2">El CV todavía se está analizando.</div>';
   if(!terminal(c.estado)&&dd>=D.cfg.diasAlerta)al+='<div class="alerta a3">🕒 '+dd+' días sin movimiento en "'+esc(c.estado)+'".</div>';
-  if(!RO&&etapaIdx(c)===3&&!c.fichaOk)al+='<div class="alerta a3">🩺 Falta el resumen del proceso para la entrevista técnica. Los jefes no ven nada hasta que lo prepares y lo guardes: tocá el botón rojo "Resumen ET".</div>';
+  if(!RO&&etapaIdx(c)===3&&!c.fichaOk&&!c.notaP2)al+='<div class="alerta a3">🩺 Falta el resumen del proceso para la entrevista técnica. Los jefes no ven nada hasta que lo prepares y lo guardes: tocá el botón rojo "Resumen ET".</div>';
   var etapasNota=['cv','screening','competencias'];
   if(c.notaP2||/técnica|Contratado/i.test(c.estado))etapasNota=etapasNota.concat(['pami2']);
   var vals={cv:c.ajuste,screening:c.notaScr,competencias:c.notaComp,pami1:c.notaP1,pami2:c.notaP2};
@@ -574,9 +574,9 @@ function abrir(f){
   var puedeDesc=/^Descartado (sin|post) screening$/.test(c.estado)&&!c.descarte&&/@/.test(c.email||'');
   document.getElementById('mbox').innerHTML=
     '<div class="hd"><div><h2>'+esc(c.nombre)+'</h2><small>'+esc(tit(c.busq))+' · '+esc(c.estado)+'</small><div class="ecs">'+etapasHdr(c)+'</div></div><button class="x" onclick="cerrar()">×</button></div><div class="bd">'+al+
-    '<div class="btns tb">'+etapaBtn(f,'screening',c.infScr,'📝 Formulario screening','Ver screening')+etapaBtn(f,'competencias',c.infComp,'💼 Formulario competencias','Ver competencias')+'</div>'+
-    '<div class="btns tb">'+(c.resp.length?'<button class="btn ghost" onclick="verPost('+f+',this)">📋 Ver postulación</button>':'')+(c.docs?'<a class="btn ghost" target="_blank" href="'+esc(c.docs)+'">📂 Documentación</a>':'')+(c.fichaOk?'<span class="bg"><button class="btn ghost" title="Resumen del proceso para la entrevista técnica" onclick="verResumen('+f+',this,true)">🧾 Resumen ET ✓</button>'+(RO?'':'<button class="btn ghost ed" title="Editar el resumen del proceso para la entrevista técnica" onclick="editarFicha('+f+')">✏️</button>')+'</span>':(!RO&&(c.notaComp||c.infComp||etapaIdx(c)===3)?'<button class="btn '+(etapaIdx(c)===3?'warn':'ghost')+'" title="Resumen del proceso para la entrevista técnica" onclick="editarFicha('+f+')">🧾 Resumen ET</button>':''))+'</div>'+
-    '<div class="btns tb">'+(c.cv?'<a class="btn ghost" target="_blank" href="'+esc(c.cv)+'">📄 Ver CV</a>':'')+(c.tel?'<button class="btn wa" onclick="menuWA('+f+')">💬 WhatsApp ▾</button>':'')+(/@/.test(c.email||'')?'<a class="btn ghost" target="_blank" href="https://mail.google.com/mail/?view=cm&to='+encodeURIComponent(c.email)+'">✉ Mail</a>':'')+'<button class="btn ghost" onclick="agendar('+f+')">📅 Agendar</button>'+(puedeDesc?'<button class="btn ghost" onclick="descarteMail('+f+',this)">✉ Descarte por mail</button>':'')+(c.proc!=='SI'?'<button class="btn ghost" onclick="rean('+f+',this)">↻ Re-analizar CV</button>':'')+'</div>'+
+    '<div class="btns tb">'+etapaBtn(f,'screening',c.infScr,'📝 Formulario screening','Ver screening')+etapaBtn(f,'competencias',c.infComp,'💼 Formulario competencias','Ver competencias')+
+    (c.resp.length?'<button class="btn ghost" title="Ver las respuestas del formulario de postulación" onclick="verPost('+f+',this)">📋 Ver postulación</button>':'')+(c.docs?'<a class="btn ghost" title="Abrir la carpeta con la documentación del candidato" target="_blank" href="'+esc(c.docs)+'">📂 Documentación</a>':'')+(c.notaP2?'<button class="btn ghost" title="Ver el resultado de la entrevista técnica" onclick="verTecnica('+f+',this)">👁 Ver entrevista técnica</button>':(c.fichaOk?'<span class="bg"><button class="btn ghost" title="Resumen del proceso para la entrevista técnica" onclick="verResumen('+f+',this,true)">🧾 Resumen ET ✓</button>'+(RO?'':'<button class="btn ghost ed" title="Editar el resumen del proceso para la entrevista técnica" onclick="editarFicha('+f+')">✏️</button>')+'</span>':(!RO&&(c.notaComp||c.infComp||etapaIdx(c)===3)?'<button class="btn '+(etapaIdx(c)===3?'warn':'ghost')+'" title="Resumen del proceso para la entrevista técnica" onclick="editarFicha('+f+')">🧾 Resumen ET</button>':'')))+
+    (c.cv?'<a class="btn ghost" title="Abrir el CV del candidato" target="_blank" href="'+esc(c.cv)+'">📄 Ver CV</a>':'')+(c.tel?'<button class="btn wa" title="Elegir un mensaje y escribirle por WhatsApp" onclick="menuWA('+f+')">💬 WhatsApp ▾</button>':'')+(/@/.test(c.email||'')?'<a class="btn ghost" title="Escribirle un mail" target="_blank" href="https://mail.google.com/mail/?view=cm&to='+encodeURIComponent(c.email)+'">✉ Mail</a>':'')+'<button class="btn ghost" title="Agendar una entrevista en el calendario" onclick="agendar('+f+')">📅 Agendar</button>'+(puedeDesc?'<button class="btn ghost" title="Enviarle el mail de descarte" onclick="descarteMail('+f+',this)">✉ Descarte por mail</button>':'')+(c.proc!=='SI'?'<button class="btn ghost" title="Volver a analizar el CV con la IA" onclick="rean('+f+',this)">↻ Re-analizar CV</button>':'')+'</div>'+
     '<div class="fp">'+panel('Contacto',[kv('Teléfono',c.tel),kv('DNI',c.dni),kv('Email',c.email),kv('Domicilio',c.domicilio),kv('Localidad',c.loc),kv('Zona',c.zona)])+panel('Postulación',[kv('Recibido',c.fecha),kv('Llegó por',c.fuente),kv('Formación',c.formacion),kv('Pretensión',money(c.pret)),kv('Conoce a alguien en PAMI',c.conoce)])+panel('Proceso',[kv('Estado',c.estado),kv('Policlínico',c.policlinico||'Sin asignar'),kv('Sugerido por cercanía',c.polSug),kv('Notas por etapa',notasTxt(c)),kv('Turno preferido',String(c.turno||'').replace(/;/g,' ·')),kv('Entrevistó screening',(c.ent||{}).screening),kv('Entrevistó competencias',(c.ent||{}).competencias),kv('Entrevistó técnica',(c.ent||{}).pami2),(c.contactado?'<div class="kv"><small>Último contacto</small><b>'+esc(ultCont(c)||c.contactado)+(RO?'':'<button class="mini" title="Borrar la marca de contacto" onclick="borrarMarca('+f+')">✕</button>')+'</b></div>':''),kv('Descartó',/^Descartad/i.test(c.estado)?c.descPor:''),kv('Descarte',c.descarte)],true)+'</div>'+
     (c.just?'<div class="sec">Análisis del CV</div><div class="txt"><b>'+esc(c.just)+'</b></div>':'')+(c.resumen?'<div class="txt" style="margin-top:6px">'+esc(c.resumen)+'</div>':'')+(c.req?'<div class="txt" style="margin-top:6px;color:#5D6B82">'+esc(c.req)+'</div>':'')+resp+
     '<div class="sec">Calificaciones</div><div id="notas">'+etapasNota.map(function(et){return notaRow(c,et,vals[et]);}).join('')+'</div>'+
@@ -588,7 +588,7 @@ function abrir(f){
     '<div class="sec">Historial</div><div class="hist" id="hist">Cargando…</div></div>';
   document.getElementById('modal').classList.add('show');
   [].forEach.call(document.querySelectorAll('#mbox .btns.tb'),function(r){r.style.setProperty('--n',(function(n){var f=Math.ceil(n/3);return Math.max(1,Math.ceil(n/f));})(r.children.length));});
-  if(!yaVista&&!RO&&etapaIdx(c)===3&&!c.fichaOk)avisoResumen(f);
+  if(!yaVista&&!RO&&etapaIdx(c)===3&&!c.fichaOk&&!c.notaP2)avisoResumen(f);
   if(rec)rcVer(true);
   if(RO)bloquearRO();
   gs().withSuccessHandler(function(h){
@@ -844,6 +844,20 @@ function verResumen(f,btn,enf){
   var t=btn.textContent;btn.disabled=true;btn.textContent='Abriendo…';
   var ok=function(r){btn.disabled=false;btn.textContent=t;var x=JSON.parse(r);if(enf){FICHAS[f]={m:c.mov,x:x};if(x.generada)toast('Resumen armado con IA y guardado');}abrirInforme(enf?htmlEnfermeria(x):htmlResumen(c,x));},ko=function(e){btn.disabled=false;btn.textContent=t;fer(e);};
   if(enf)gs().withSuccessHandler(ok).withFailureHandler(ko).getFichaEnfermeria(K,f);else gs().withSuccessHandler(ok).withFailureHandler(ko).getResumen(K,f);
+}
+function verTecnica(f,btn){
+  var c=byFila(f),t=btn.textContent;btn.disabled=true;btn.textContent='Abriendo…';
+  gs().withSuccessHandler(function(p){btn.disabled=false;btn.textContent=t;if(!p){alert('No encontré la entrevista técnica cargada');return;}abrirInforme(htmlTecnica(c,p));}).withFailureHandler(function(e){btn.disabled=false;btn.textContent=t;fer(e);}).getEvalPrevia(K,c.id,'pami2');
+}
+function htmlTecnica(c,p){
+  var d=p.datos||{},fe=String(p.fecha||'').split('-'),fecha=fe.length===3?fe[2]+'/'+fe[1]+'/'+fe[0]:'',col=NF[p.nota]||['#9AA7B8','#fff'];
+  var h='<div class="hd"><div style="display:flex;align-items:center;gap:16px">'+infLogo()+'<div><small>Entrevista técnica · '+esc(fecha)+'</small><h1>'+esc(c.nombre)+'</h1><div class="s">'+esc(tit(c.busq))+(c.policlinico?' · '+esc(c.policlinico):'')+'</div></div></div><div class="pill" style="background:'+col[0]+';color:'+col[1]+'">'+esc(p.nota||'–')+'</div></div>';
+  h+='<div class="g g3">'+infCard('Resultado',p.nota)+infCard('Score',typeof p.score==='number'&&p.score<=10?p.score.toFixed(1)+' / 10':'')+infCard('Entrevistó',p.entrevistador)+'</div>';
+  var cs=(d.comps||[]).filter(function(x){return x.nivel>0;});
+  if(cs.length)h+='<h2>Evaluación técnica</h2>'+cs.map(function(x){return '<div class="br"><div class="n">'+esc(x.nombre)+'</div><div class="t"><i style="width:'+(x.nivel*25)+'%"></i></div><div class="v">'+x.nivel+'/4</div></div>'+(x.notas?'<div class="tx" style="font-size:12px;margin:-2px 0 8px 0;color:#3F4B66">'+esc(x.notas)+'</div>':'');}).join('');
+  if(d.fortalezas||d.areas)h+='<div class="g g2">'+(d.fortalezas?'<div class="cd"><small>Fortalezas</small><div class="tx">'+esc(d.fortalezas)+'</div></div>':'')+(d.areas?'<div class="cd"><small>A desarrollar</small><div class="tx">'+esc(d.areas)+'</div></div>':'')+'</div>';
+  if(d.recomendacion)h+='<h2>Recomendación</h2><div class="cd"><div class="tx">'+esc(d.recomendacion)+'</div></div>';
+  return infDoc('Entrevista técnica · '+c.nombre,h);
 }
 function htmlEnfermeria(x){
   var h='<div class="hd"><div style="display:flex;align-items:center;gap:16px">'+infLogo()+'<div><small>Resumen del proceso para entrevista técnica · '+infFecha()+'</small><h1>'+esc(x.nombre)+'</h1><div class="s">'+esc(tit(x.busq))+(x.policlinico?' · '+esc(x.policlinico):'')+'</div></div></div></div>';

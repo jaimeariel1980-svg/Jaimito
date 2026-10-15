@@ -44,7 +44,7 @@ function getDatosForm_(k, id, etapa) {
 
 function getEvalPrevia(k, id, etapa) {
   escritor_(k);
-  if (['screening', 'competencias'].indexOf(etapa) === -1) throw new Error('Etapa inválida');
+  if (['screening', 'competencias', 'pami2'].indexOf(etapa) === -1) throw new Error('Etapa inválida');
   const sh = hoja_('Evaluaciones'), n = sh.getLastRow();
   if (n < 2) return null;
   const ids = sh.getRange(2, 2, n - 1, 3).getValues();
@@ -58,7 +58,7 @@ function getEvalPrevia(k, id, etapa) {
   const r = fc ? sc.getRange(fc, 1, 1, HEAD_CAND.length).getValues()[0] : [];
   const nota = String(e[5] || '');
   const motivo = nota === 'C' && /^Descartad/i.test(String(r[COL.estado - 1] || '')) ? String(r[COL.motivo - 1] || '') : '';
-  return { fecha: datos.fecha || (e[0] instanceof Date ? fmt_(e[0], 'yyyy-MM-dd') : ''), entrevistador: String(e[4] || ''), nota: nota, datos: datos, motivo: motivo };
+  return { score: e[6], fecha: datos.fecha || (e[0] instanceof Date ? fmt_(e[0], 'yyyy-MM-dd') : ''), entrevistador: String(e[4] || ''), nota: nota, datos: datos, motivo: motivo };
 }
 
 // Textos del desplegable de "Ajuste al perfil" (de menor a mayor: bajo, medio, alto).
