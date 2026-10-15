@@ -44,37 +44,21 @@ label.l{display:block;font-size:11px;font-weight:800;letter-spacing:.06em;text-t
   function msg(t){try{if(typeof toast==='function'){toast(t);return;}}catch(e){}alert(t);}
   var MSG_PERM='El navegador tiene bloqueado el micrófono para esta página.\n\n1) Tocá el ícono que está a la izquierda de la dirección (candado o controles).\n2) Entrá a "Configuración del sitio" → Micrófono → Permitir.\n3) Recargá la página con Ctrl+F5.\n\nTambién fijate que Windows deje usar el micrófono al navegador (Configuración → Privacidad → Micrófono).';
   function ponerTexto(ta,t){t=String(t||'').trim();if(!t)return;ta.value+=(ta.value&&!/\s$/.test(ta.value)?' ':'')+t;ta.dispatchEvent(new Event('input',{bubbles:true}));}
-  function grabar(ta,btn){
-    if(ta._mr){ta._mr.stop();return;}
-    if(!navigator.mediaDevices||!window.MediaRecorder){alert('Este navegador no permite grabar audio. Probá con Chrome o Edge.');return;}
-    navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){
-      var ch=[],mr=new MediaRecorder(st);ta._mr=mr;btn.textContent='⏹ Detener';btn.style.background='#D9534F';btn.style.color='#fff';
-      mr.ondataavailable=function(e){if(e.data&&e.data.size)ch.push(e.data);};
-      mr.onstop=function(){
-        st.getTracks().forEach(function(x){x.stop();});ta._mr=null;btn.style.background='';btn.style.color='';
-        if(!ch.length){btn.textContent='🎤 Dictar';return;}
-        btn.textContent='Transcribiendo…';btn.disabled=true;
-        var b=new Blob(ch,{type:mr.mimeType||'audio/webm'}),fr=new FileReader();
-        fr.onload=function(){
-          google.script.run.withSuccessHandler(function(t){btn.disabled=false;btn.textContent='🎤 Dictar';if(!t)msg('No escuché nada');ponerTexto(ta,t);})
-            .withFailureHandler(function(e){btn.disabled=false;btn.textContent='🎤 Dictar';alert('No se pudo transcribir: '+((e&&e.message)||e));}).transcribirAudio(K_(),String(fr.result).split(',')[1],b.type);
-        };
-        fr.readAsDataURL(b);
-      };
-      mr.start(1000);
-    }).catch(function(){alert(MSG_PERM);});
+  var DICT={};
+  var POP='<!doctype html><html><head><meta charset="utf-8"><title>Dictado por voz</title><style>body{font-family:Arial,sans-serif;margin:0;padding:22px;text-align:center;color:#192341;background:#F4F7FB}h3{margin:0 0 6px;color:#034EA2}#st{font-size:14px;color:#5D6B82;min-height:40px;margin:8px 0 14px}button{font-size:16px;font-weight:700;border:0;border-radius:8px;padding:14px 22px;cursor:pointer;color:#fff;background:#034EA2;width:100%}button.r{background:#D9534F}#t{font-size:30px;font-weight:700;margin:14px 0;letter-spacing:2px}small{color:#5D6B82}</style></head><body><h3>Dictado por voz</h3><div id="st">Tocá el botón, permití el micrófono si te lo pide y hablá.</div><div id="t">0:00</div><button id="b">🎤 Empezar a grabar</button><p><small>Cuando termines, tocá de nuevo para detener. El texto aparece en el cuadro.</small></p><script>(function(){var ID="__ID__",b=document.getElementById("b"),st=document.getElementById("st"),tm=document.getElementById("t"),mr=null,ch=[],iv=null,t0=0;function fmt(n){return Math.floor(n/60)+":"+("0"+(n%60)).slice(-2);}function err(m){st.innerHTML=m;b.textContent="🎤 Probar de nuevo";b.className="";mr=null;}b.onclick=function(){if(mr){mr.stop();return;}if(!navigator.mediaDevices||!window.MediaRecorder){err("Este navegador no permite grabar. Probá con Chrome o Edge.");return;}navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){ch=[];mr=new MediaRecorder(s);mr.ondataavailable=function(e){if(e.data&&e.data.size)ch.push(e.data);};mr.onstop=function(){clearInterval(iv);s.getTracks().forEach(function(x){x.stop();});if(!ch.length){err("No se grabó nada. Probá de nuevo.");return;}st.textContent="Enviando…";b.disabled=true;var bl=new Blob(ch,{type:mr.mimeType||"audio/webm"}),fr=new FileReader();fr.onload=function(){try{window.opener.__dictadoListo(ID,String(fr.result).split(",")[1],bl.type);window.close();}catch(e){err("No pude entregar el audio a la pantalla principal. Cerrá esta ventana y probá de nuevo.");b.disabled=false;}};fr.readAsDataURL(bl);};mr.start(1000);t0=Date.now();iv=setInterval(function(){tm.textContent=fmt(Math.round((Date.now()-t0)/1000));},500);st.textContent="Grabando… hablá tranquilo/a.";b.textContent="⏹ Detener y escribir";b.className="r";}).catch(function(e){err("No se pudo usar el micrófono ("+(e&&e.name||"error")+").<br>Tocá el candado de la barra de direcciones, elegí Micrófono → Permitir y probá de nuevo.");});};})();<\/script></body></html>';
+  window.__dictadoListo=function(id,b64,mime){var o=DICT[id];if(!o)return;delete DICT[id];transcribir(o.ta,o.btn,b64,mime);};
+  function transcribir(ta,btn,b64,mime){
+    btn.textContent='Transcribiendo…';btn.disabled=true;
+    google.script.run.withSuccessHandler(function(t){btn.disabled=false;btn.textContent='🎤 Dictar';if(!t)msg('No escuché nada');ponerTexto(ta,t);})
+      .withFailureHandler(function(e){btn.disabled=false;btn.textContent='🎤 Dictar';alert('No se pudo transcribir: '+((e&&e.message)||e));}).transcribirAudio(K_(),b64,mime);
   }
   function dictar(ta,btn){
-    var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-    if(ta._rec){ta._rec.stop();return;}
-    if(ta._mr){ta._mr.stop();return;}
-    if(!SR){grabar(ta,btn);return;}
-    var r=new SR();r.lang='es-AR';r.continuous=true;r.interimResults=false;ta._rec=r;btn.textContent='⏹ Detener';btn.style.background='#D9534F';btn.style.color='#fff';
-    var fin=function(){ta._rec=null;btn.textContent='🎤 Dictar';btn.style.background='';btn.style.color='';};
-    r.onresult=function(e){var t='';for(var i=e.resultIndex;i<e.results.length;i++)if(e.results[i].isFinal)t+=e.results[i][0].transcript;ponerTexto(ta,t);};
-    r.onerror=function(e){fin();if(e.error==='not-allowed')alert(MSG_PERM);else if(e.error==='service-not-allowed'||e.error==='network'||e.error==='audio-capture')grabar(ta,btn);};
-    r.onend=fin;
-    try{r.start();}catch(e){fin();grabar(ta,btn);}
+    var w=window.open('','dictado_pami','width=440,height=400');
+    if(!w){alert('El navegador bloqueó la ventanita del dictado. Permití las ventanas emergentes para esta página y probá de nuevo.');return;}
+    var id=String(Date.now());DICT[id]={ta:ta,btn:btn};
+    w.document.open();w.document.write(POP.replace('__ID__',id));w.document.close();
+    btn.textContent='🎤 Hablando en la ventanita…';
+    var iv=setInterval(function(){if(w.closed){clearInterval(iv);if(DICT[id]){delete DICT[id];btn.textContent='🎤 Dictar';}}},600);
   }
   function redactar(ta,btn,und){
     var t=ta.value.trim();if(t.length<8){msg('Escribí o dictá algo primero');return;}
