@@ -41,7 +41,7 @@ function transport(fn, args, ok, onErr){
   pollT = setTimeout(poll, 500); if(ls('azcu_via')==='anon') setTimeout(fallback, 300);
   if(QUICK.indexOf(fn)>=0){ var pl0; try{ pl0 = btoa(unescape(encodeURIComponent(json))); }catch(e){ pl0 = ''; } if(pl0 && pl0.length <= 6500){ jsonp('&azc='+encodeURIComponent(pl0), false); jsonp('&azc='+encodeURIComponent(pl0), true); } }
 }
-var QUICK = ['getDatos','obtenerConsultasWS','obtenerEncuesta','obtenerPropiedades','obtenerPropiedadesDoc','azcuAtajo','azcuWarm','azcuMov','novedadesTb','azcuAgenda'];
+var QUICK = ['getDatos','obtenerConsultasWS','obtenerEncuesta','obtenerPropiedades','obtenerPropiedadesDoc','azcuAtajo','azcuWarm','azcuMov','novedadesTb','visitasTb','azcuAgenda'];
 var PUBLIC = ['obtenerDatosOFallar','extraerDatosDNI','extraerDatosPropiedad','extraerDatosEscritura','clasificarPaginasLegajo','precargarDatos','guardarEncuesta'];
 var pinQ = null;
 function askPin(msg, cb){

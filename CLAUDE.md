@@ -33,6 +33,7 @@ Dueño del proyecto: Ariel (no programador). Responder en español rioplatense, 
 - Propiedades del script (no están en el repo): `AZCU_PIN`, `OPENAI_API_KEY`, `ONESIGNAL_KEY`, `AZCU_GERENCIA`, `AZCU_GERENTE` (respaldo), `AZCU_TODOS` (modo prueba), `ULTIMO_CORRELATIVO_<año>`.
 - Códigos de precarga `PRE-AAAA-NNNN`. Columnas del Maestro por nombre de encabezado (si falta una, `crearColumnasFaltantes`).
 - Transporte PWA ↔ Apps Script: pedidos por `fetch` no-cors (POST) + JSONP, con camino GET directo para pedidos chicos (`azc` en base64); deduplicación `azs_<id>`. Los pedidos arrancan **después del evento `load`** para que la pestaña no quede "cargando". Fuentes y OneSignal también se piden después de cargar.
+- **Visitas** (tarjetas «Visitas hoy/semana» y botón 🗓 en el Tablero; `visitasTb`): salen de la pestaña Seguimiento. Las visitas a propiedades de **otras inmobiliarias** no son propiedades: se guardan como filas de Seguimiento con código `EXT-…` y columnas 12–15 (Inmobiliaria, Dirección, Link ficha, Precio) vía `registrarVisitaExterna`; no entran en Propiedades ni KPIs. Chat: `proponer_visita_externa` y `visitas`.
 - Horario de silencio de avisos: viernes 18 h → lunes 8 h (cola `AZCU_COLA`).
 
 ## Usuarios y avisos
