@@ -783,7 +783,7 @@ function getResumen_(k, fila) {
   const sh = hoja_('Candidatos');
   fila = Number(fila);
   if (!(fila >= 2 && fila <= sh.getLastRow())) throw new Error('Fila inválida');
-  if (ROL_ === 'Técnica') throw new Error('Tu usuario solo puede ver el resumen para la entrevista técnica');
+  if (ROL_ === 'Técnica') throw new Error('Tu usuario solo puede ver el resumen del proceso');
   const id = String(sh.getRange(fila, COL.id).getValue()), out = {};
   const ev = hoja_('Evaluaciones');
   if (ev && ev.getLastRow() > 1) ev.getRange(2, 1, ev.getLastRow() - 1, 9).getValues().forEach(x => {
@@ -902,7 +902,7 @@ function getFichaEnfermeria_(k, fila, forzar, indic, crear) {
   } else if (!forzar && !crear) {
     ficha.editado = false;
     if (guardado && guardado.t) { ficha.resumen = guardado.t; ficha.aviso = 'Borrador sin revisar: cambió el CV o las observaciones.'; }
-    else { ficha.resumen = ''; ficha.aviso = 'El resumen todavía no está preparado. Usá "Preparar resumen técnica".'; }
+    else { ficha.resumen = ''; ficha.aviso = 'El resumen todavía no está preparado. Usá el botón "Resumen P/T".'; }
   } else {
     const usaIA = !!((cv && obs) || (cv.length + obs.length) > 400);
     ficha.resumen = usaIA ? generarResumenEnf_(cv, obs, forzar ? indic : '') : [cv, obs].filter(Boolean).join('\n');
@@ -921,7 +921,7 @@ function guardarFichaEnfermeria(k, fila, texto) {
   if (!(fila >= 2 && fila <= sh.getLastRow())) throw new Error('Fila inválida');
   texto = String(texto || '').trim().slice(0, 2000);
   sh.getRange(fila, COL.fichaEnf).setValue(texto ? JSON.stringify({ t: texto, h: '', e: 1, ok: 1 }) : '');
-  registrarHistorial_(sh.getRange(fila, COL.id).getValue(), sh.getRange(fila, COL.nombre).getValue(), 'Resumen técnica', texto ? 'Texto editado a mano' : 'Texto borrado (se arma de nuevo con la IA)', 'tablero');
+  registrarHistorial_(sh.getRange(fila, COL.id).getValue(), sh.getRange(fila, COL.nombre).getValue(), 'Resumen proceso', texto ? 'Texto editado a mano' : 'Texto borrado (se arma de nuevo con la IA)', 'tablero');
   return true;
 }
 
