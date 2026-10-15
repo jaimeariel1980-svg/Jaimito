@@ -879,21 +879,23 @@ function getFichaEnfermeria_(k, fila, forzar, indic) {
   const h = hash_(cv + '|' + obs);
   let guardado = null;
   try { guardado = JSON.parse(r[COL.fichaEnf - 1] || 'null'); } catch (e) { }
-  if (!forzar && guardado && guardado.t && (guardado.e || guardado.h === h)) {
+  const jefe = ROL_ === 'Técnica';
+  if (!forzar && guardado && guardado.t && (guardado.e || guardado.h === h || jefe)) {
     ficha.resumen = guardado.t; ficha.editado = guardado.e === 1; ficha.conInd = guardado.e === 2;
+  } else if (jefe) {
+    if (forzar) throw new Error('No autorizado');
+    ficha.resumen = ''; ficha.editado = false; ficha.aviso = 'La ficha todavía no está lista.';
   } else if (!ev.competencias) {
     if (forzar) throw new Error('La ficha se arma después de la entrevista de competencias');
-    ficha.resumen = ''; ficha.editado = false; ficha.pendiente = true;
+    ficha.resumen = ''; ficha.editado = false; ficha.pendiente = true; ficha.aviso = 'La ficha se arma después de la entrevista de competencias.';
   } else if (!cv && !obs) {
     ficha.resumen = ''; ficha.editado = false;
   } else {
-    if (forzar && ROL_ === 'Técnica') throw new Error('No autorizado');
-    const jefe = ROL_ === 'Técnica';
-    const usaIA = !jefe && !!((cv && obs) || (cv.length + obs.length) > 400);
+    const usaIA = !!((cv && obs) || (cv.length + obs.length) > 400);
     ficha.resumen = usaIA ? generarResumenEnf_(cv, obs, forzar ? indic : '') : [cv, obs].filter(Boolean).join('\n');
     ficha.generada = usaIA;
     ficha.editado = false;
-    if (!jefe) try { sh.getRange(fila, COL.fichaEnf).setValue(JSON.stringify({ t: ficha.resumen, h: h, e: (forzar && String(indic || '').trim()) ? 2 : 0 })); } catch (e) { registrarError_('guardar ficha enfermería', e); }
+    try { sh.getRange(fila, COL.fichaEnf).setValue(JSON.stringify({ t: ficha.resumen, h: h, e: (forzar && String(indic || '').trim()) ? 2 : 0 })); } catch (e) { registrarError_('guardar ficha enfermería', e); }
   }
   return JSON.stringify(ficha);
 }

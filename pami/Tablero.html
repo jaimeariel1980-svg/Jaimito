@@ -130,7 +130,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v90</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v91</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -832,7 +832,7 @@ function verResumen(f,btn,enf){
 function htmlEnfermeria(x){
   var h='<div class="hd"><div style="display:flex;align-items:center;gap:16px">'+infLogo()+'<div><small>Ficha del candidato · '+infFecha()+'</small><h1>'+esc(x.nombre)+'</h1><div class="s">'+esc(tit(x.busq))+(x.policlinico?' · '+esc(x.policlinico):'')+'</div></div></div></div>';
   h+='<div class="g g3">'+infCard('Edad',x.edad)+infCard('Localidad',x.localidad)+infCard('Formación',x.formacion)+infCard('Experiencia actual',x.experiencia)+infCard('Antigüedad',x.antig)+'</div>';
-  if(x.pendiente)h+='<div class="cd"><div class="tx" style="color:#5D6B82">La ficha se arma después de la entrevista de competencias.</div></div>';
+  if(x.aviso)h+='<div class="cd"><div class="tx" style="color:#5D6B82">'+esc(x.aviso)+'</div></div>';
   if(x.resumen)h+='<h2>Resumen</h2><div class="cd"><div class="tx" style="font-size:15px;line-height:1.6">'+esc(x.resumen)+'</div></div>';
   return infDoc('Ficha · '+x.nombre,h);
 }
