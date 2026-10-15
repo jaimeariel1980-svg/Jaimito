@@ -63,6 +63,7 @@ function registrarAcceso(k, accion) { return conTec_(() => registrarAcceso_(k, a
 function getFichaEnfermeria(k, fila, forzar, indic) { return conTec_(() => getFichaEnfermeria_(k, fila, forzar, indic)); }
 function getCVArchivo(k, fila) { return conTec_(() => getCVArchivo_(k, fila)); }
 function redactarIA(k, texto, indic) { return conTec_(() => redactarIA_(k, texto, indic)); }
+function analizarEntrevista(k, id, texto) { return analizarEntrevista_(k, id, texto); }
 function transcribirAudio(k, b64, mime) { return conTec_(() => transcribirAudio_(k, b64, mime)); }
 
 function admin_(k) {
@@ -796,15 +797,16 @@ function redactarIA_(k, texto, indic) {
 
 function transcribirAudio_(k, b64, mime) {
   escritor_(k);
-  if (!b64 || String(b64).length > 14000000) throw new Error('El audio está vacío o es demasiado largo (máximo unos 5 minutos)');
+  if (!b64 || String(b64).length > 33000000) throw new Error('El audio está vacío o es demasiado largo');
   const tipo = String(mime || 'audio/webm').split(';')[0];
   const ext = /mp4|m4a/.test(tipo) ? 'm4a' : /ogg/.test(tipo) ? 'ogg' : /wav/.test(tipo) ? 'wav' : 'webm';
   const blob = Utilities.newBlob(Utilities.base64Decode(b64), tipo, 'dictado.' + ext);
-  const resp = UrlFetchApp.fetch('https://api.openai.com/v1/audio/transcriptions', {
+  const pedir = modelo => UrlFetchApp.fetch('https://api.openai.com/v1/audio/transcriptions', {
     method: 'post', muteHttpExceptions: true, headers: { Authorization: 'Bearer ' + prop_('OPENAI_API_KEY') },
-    payload: { file: blob, model: 'whisper-1', language: 'es', prompt: 'Notas de una entrevista de selección de enfermería en un policlínico de PAMI, en castellano rioplatense.' }
+    payload: { file: blob, model: modelo, language: 'es', prompt: 'Entrevista de selección de enfermería en un policlínico de PAMI, en castellano rioplatense.' }
   });
-  const parsed = JSON.parse(resp.getContentText());
+  let parsed = JSON.parse(pedir('gpt-4o-mini-transcribe').getContentText());
+  if (parsed.error) parsed = JSON.parse(pedir('whisper-1').getContentText());
   if (parsed.error) throw new Error('No pude transcribir: ' + parsed.error.message);
   return String(parsed.text || '').trim();
 }
@@ -894,4 +896,31 @@ function getCVArchivo_(k, fila) {
   const bytes = blob.getBytes();
   if (bytes.length > 7 * 1024 * 1024) throw new Error('El CV pesa demasiado para abrirlo desde acá. Pedíselo a RRHH.');
   return { nombre: f.getName(), mime: String(blob.getContentType() || 'application/pdf'), b64: Utilities.base64Encode(bytes) };
+}
+
+function analizarEntrevista_(k, id, texto) {
+  escritor_(k);
+  if (ROL_ === 'Técnica') throw new Error('No autorizado');
+  texto = String(texto || '').trim();
+  if (texto.length < 300) throw new Error('La transcripción es muy corta para analizarla');
+  const d = getDatosForm(k, id);
+  const comps = d.comps.map(c => ({ id: c.id, nombre: c.nombre, descripcion: c.descripcion }));
+  const sistema = 'Sos un analista de selección de personal. Te paso la transcripción de una entrevista por competencias para ' + (d.hero.puesto || 'enfermería') + '. La transcripción no indica quién habla: inferilo por el contexto (las preguntas son del entrevistador, las respuestas del candidato). Evaluá SOLO con lo que dijo el candidato.\n' +
+    'COMPETENCIAS: ' + JSON.stringify(comps) + '\n' +
+    'NIVELES: 0 = no hubo evidencia en la entrevista; 1 = No demuestra; 2 = Señales de desarrollo; 3 = Demuestra efectividad; 4 = Demuestra solidez.\n' +
+    'REGLAS: Tono objetivo y neutral, sin adjetivos elogiosos. En "evidencia" escribí 1 o 2 oraciones con los hechos concretos que dijo (situación, acción, resultado) o "No surgió evidencia". Los datos del candidato completalos SOLO si los dijo explícitamente; si no, dejá "". "fortalezas" y "areas": viñetas cortas que empiecen con "• " y se basen en hechos de la entrevista. "recomendacion": 2 o 3 oraciones objetivas con lo observado y las reservas, sin decidir si contratar o descartar. No inventes nada.\n' +
+    'Devolvé SOLO JSON con este formato: {"comps":[{"id":"","nivel":0,"evidencia":""}],"fortalezas":"","areas":"","recomendacion":"","meta":{"edad":"","localidad":"","familia":"","formacion":"","empresaAct":"","puestoAct":"","antig":"","remAct":"","remPret":"","disp":"","motivo":"","movilidad":"","referencias":""}}';
+  const resp = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+    headers: { Authorization: 'Bearer ' + prop_('OPENAI_API_KEY') },
+    payload: JSON.stringify({ model: 'gpt-4o-mini', temperature: 0.1, max_tokens: 2500, response_format: { type: 'json_object' }, messages: [{ role: 'system', content: sistema }, { role: 'user', content: texto.slice(0, 60000) }] })
+  });
+  const parsed = JSON.parse(resp.getContentText());
+  if (parsed.error) throw new Error('No pude analizar la entrevista: ' + parsed.error.message);
+  const r = JSON.parse(parsed.choices[0].message.content);
+  const txt = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
+  const out = { comps: [], fortalezas: txt(r.fortalezas, 1500), areas: txt(r.areas, 1500), recomendacion: txt(r.recomendacion, 1500), meta: {} };
+  (r.comps || []).forEach(c => { if (comps.some(x => x.id === String(c.id))) out.comps.push({ id: String(c.id), nivel: Math.max(0, Math.min(4, Math.round(Number(c.nivel) || 0))), evidencia: txt(c.evidencia, 600) }); });
+  ['edad', 'localidad', 'familia', 'formacion', 'empresaAct', 'puestoAct', 'antig', 'remAct', 'remPret', 'disp', 'motivo', 'movilidad', 'referencias'].forEach(f => { out.meta[f] = txt((r.meta || {})[f], 200); });
+  return JSON.stringify(out);
 }
