@@ -400,12 +400,13 @@ function getTablero_(k) {
       if (x[1] && x[3] && String(x[4] || '').trim()) (entPor[String(x[1])] = entPor[String(x[1])] || {})[String(x[3])] = String(x[4]).trim();
     });
   } catch (e) { registrarError_('entrevistadores por etapa', e); }
-  const descPor = {};
+  const descPor = {}, docPed = {};
   try {
     const hs = hoja_('Historial'), n = hs.getLastRow() - 1;
     if (n > 0) {
       const ini = Math.max(2, hs.getLastRow() - 4999);
       hs.getRange(ini, 1, hs.getLastRow() - ini + 1, 6).getValues().forEach(x => {
+        if (x[1] && x[3] === 'Contacto' && /WhatsApp: documentaci/i.test(String(x[4])) && x[0] instanceof Date) docPed[String(x[1])] = fmt_(x[0], 'dd/MM');
         if (x[1] && x[3] !== 'Reactivado' && /(→\s*|a ")Descartad/.test(String(x[4]))) descPor[String(x[1])] = (String(x[5] || '').trim() || 'sistema') + (x[0] instanceof Date ? ' · ' + fmt_(x[0], 'dd/MM') : '');
       });
     }
@@ -427,6 +428,7 @@ function getTablero_(k) {
       descarte: String(r[COL.descarte - 1] || ''), infScr: String(r[COL.infScr - 1] || ''), infComp: String(r[COL.infComp - 1] || ''), docs: String(r[COL.docs - 1] || ''),
       zona: String(r[COL.zona - 1] || ''), formacion: String(r[COL.formacion - 1] || ''), postulacion: String(r[COL.postulacion - 1] || ''), policlinico: String(r[COL.policlinico - 1] || ''), domicilio: String(r[COL.domicilio - 1] || ''), polSug: String(r[COL.polSug - 1] || ''), domRev: String(r[COL.domRev - 1] || ''), motivo: String(r[COL.motivo - 1] || ''), turno: String(r[COL.turno - 1] || ''),
       fichaOk: fichaRevisada_(r[COL.fichaEnf - 1]),
+      docPed: docPed[String(r[COL.id - 1])] || '',
       conoce: (resp.find(x => /conoc[eé]s a alguien/i.test(x.q) && x.a && !/^(no|ninguno|nadie|-)\.?$/i.test(String(x.a).trim())) || {}).a || ''
     });
   }

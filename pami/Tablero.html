@@ -134,7 +134,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v109</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v110</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -430,6 +430,7 @@ function card(c){
   var ep=etapaPend(c);
   if(ep&&!ct)pr+=etqContacto(c)===ep?'<span class="tag ctc cx">💬 '+esc(contactoTxt(c.contactado))+(RO?'':'<button class="tdel" title="Borrar la marca de contacto" onclick="event.stopPropagation();borrarMarca('+c.fila+',1)">✕</button>')+'</span>':'<span class="tag w">➜ Falta contactar para '+ep+'</span>';
   if(c.descarte)pr+='<span class="tag">✉ Descarte enviado</span>';
+  if(c.docs)pr+='<span class="tag g">📁 Documentación recibida</span>';else if(c.docPed)pr+='<span class="tag w">📄 Documentación pedida · '+esc(c.docPed)+'</span>';
   if(!terminal(c.estado)&&dd>=D.cfg.diasAlerta)pr+='<span class="tag r">🕒 '+dd+' d sin movimiento</span>';
   var mk='';
   if(/^Descartad/i.test(c.estado))mk+=c.motivo?'<span class="tag r">✖ '+esc(c.motivo.replace(/;\s*/g,' · '))+'</span>':'<span class="tag">Sin motivo cargado</span>';
