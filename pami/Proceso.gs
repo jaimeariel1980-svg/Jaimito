@@ -62,7 +62,7 @@ function cambiarPin(k, nuevo) { return conTec_(() => cambiarPin_(k, nuevo)); }
 function registrarAcceso(k, accion) { return conTec_(() => registrarAcceso_(k, accion)); }
 function getFichaEnfermeria(k, fila, forzar, indic) { return conTec_(() => getFichaEnfermeria_(k, fila, forzar, indic)); }
 function getCVArchivo(k, fila) { return conTec_(() => getCVArchivo_(k, fila)); }
-function redactarIA(k, texto, indic) { return conTec_(() => redactarIA_(k, texto, indic)); }
+function redactarIA(k, texto, indic) { return redactarIA_(k, texto, indic); }
 function analizarEntrevista(k, id, texto) { return analizarEntrevista_(k, id, texto); }
 function transcribirAudio(k, b64, mime) { return conTec_(() => transcribirAudio_(k, b64, mime)); }
 
