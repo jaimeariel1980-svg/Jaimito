@@ -113,6 +113,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 .btns.tb{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:8px;margin-top:10px}
 .btns.tb>.btn,.btns.tb .bg>.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:38px;padding:4px 10px;font-size:12px;line-height:1.2;text-align:center;box-sizing:border-box}
 .btns.tb>.bg{display:flex}.btns.tb>.bg>.btn:first-child{flex:1;border-radius:4px 0 0 4px}.btns.tb>.bg>.ed{flex:none;width:40px;padding:0;border-radius:0 4px 4px 0;margin-left:1px;background:#D3E2F4}.btns.tb>.bg>.ed:hover{background:#BFD5EE}
+.tag .tdel{border:0;background:none;cursor:pointer;font-size:11px;padding:0 0 0 6px;opacity:.65}.tag .tdel:hover{opacity:1}
 .kv .mini{border:0;background:none;color:#8A97AB;cursor:pointer;font-size:11px;padding:0 4px;margin-left:6px;font-weight:400}.kv .mini:hover{color:#D9534F}
 .alerta{margin-top:12px;padding:9px 12px;border-radius:4px;font-size:13px;font-weight:600}
 .alerta.a1{background:var(--tint);color:var(--azul);border-left:4px solid var(--celeste)}.alerta.a2{background:#FFF1D6;color:#7A5200;border-left:4px solid #F2B705}.alerta.a3{background:#FDE3E1;color:#8B2E2B;border-left:4px solid #D9534F}
@@ -132,7 +133,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v96</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v97</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -426,7 +427,7 @@ function card(c){
   if(ct)pr+='<span class="tag cita'+(ct.hoy?' hoy':'')+'">'+esc(ct.tipo)+' agendado · '+esc(ct.txt)+'</span>';
   if(/agendad/i.test(c.estado)&&!c.cita)pr+='<span class="tag w">Agendado · sin fecha</span>';
   var ep=etapaPend(c);
-  if(ep&&!ct)pr+=etqContacto(c)===ep?'<span class="tag ctc">💬 '+esc(contactoTxt(c.contactado))+'</span>':'<span class="tag w">➜ Falta contactar para '+ep+'</span>';
+  if(ep&&!ct)pr+=etqContacto(c)===ep?'<span class="tag ctc">💬 '+esc(contactoTxt(c.contactado))+(RO?'':'<button class="tdel" title="Borrar la marca de contacto" onclick="event.stopPropagation();borrarMarca('+c.fila+',1)">🗑</button>')+'</span>':'<span class="tag w">➜ Falta contactar para '+ep+'</span>';
   if(c.descarte)pr+='<span class="tag">✉ Descarte enviado</span>';
   if(!terminal(c.estado)&&dd>=D.cfg.diasAlerta)pr+='<span class="tag r">🕒 '+dd+' d sin movimiento</span>';
   var mk='';
@@ -572,7 +573,7 @@ function abrir(f){
   var puedeDesc=/^Descartado (sin|post) screening$/.test(c.estado)&&!c.descarte&&/@/.test(c.email||'');
   document.getElementById('mbox').innerHTML=
     '<div class="hd"><div><h2>'+esc(c.nombre)+'</h2><small>'+esc(tit(c.busq))+' · '+esc(c.estado)+'</small><div class="ecs">'+etapasHdr(c)+'</div></div><button class="x" onclick="cerrar()">×</button></div><div class="bd">'+al+
-    '<div class="btns tb">'+etapaBtn(f,'screening',c.infScr,'📝 Formulario screening','Ver screening')+etapaBtn(f,'competencias',c.infComp,'💼 Formulario competencias','Ver competencias')+'<button class="btn" onclick="abrirForm(\'tecnica\','+f+')">🩺 Formulario técnica</button></div>'+
+    '<div class="btns tb">'+etapaBtn(f,'screening',c.infScr,'📝 Formulario screening','Ver screening')+etapaBtn(f,'competencias',c.infComp,'💼 Formulario competencias','Ver competencias')+'</div>'+
     '<div class="btns tb">'+(c.resp.length?'<button class="btn ghost" onclick="verPost('+f+',this)">📋 Ver postulación</button>':'')+(c.docs?'<a class="btn ghost" target="_blank" href="'+esc(c.docs)+'">📂 Documentación</a>':'')+(c.fichaOk?'<span class="bg"><button class="btn ghost" onclick="verResumen('+f+',this,true)">🩺 Resumen técnica ✓</button>'+(RO?'':'<button class="btn ghost ed" title="Editar el resumen para la entrevista técnica" onclick="editarFicha('+f+')">✏️</button>')+'</span>':(!RO&&(c.notaComp||c.infComp||etapaIdx(c)===3)?'<button class="btn '+(etapaIdx(c)===3?'warn':'ghost')+'" onclick="editarFicha('+f+')">🩺 Preparar resumen técnica</button>':''))+'</div>'+
     '<div class="btns tb">'+(c.cv?'<a class="btn ghost" target="_blank" href="'+esc(c.cv)+'">📄 Ver CV</a>':'')+(c.tel?'<button class="btn wa" onclick="menuWA('+f+')">💬 WhatsApp ▾</button>':'')+(/@/.test(c.email||'')?'<a class="btn ghost" target="_blank" href="https://mail.google.com/mail/?view=cm&to='+encodeURIComponent(c.email)+'">✉ Mail</a>':'')+'<button class="btn ghost" onclick="agendar('+f+')">📅 Agendar</button>'+(puedeDesc?'<button class="btn ghost" onclick="descarteMail('+f+',this)">✉ Descarte por mail</button>':'')+(c.proc!=='SI'?'<button class="btn ghost" onclick="rean('+f+',this)">↻ Re-analizar CV</button>':'')+'</div>'+
     '<div class="fp">'+panel('Contacto',[kv('Teléfono',c.tel),kv('DNI',c.dni),kv('Email',c.email),kv('Domicilio',c.domicilio),kv('Localidad',c.loc),kv('Zona',c.zona)])+panel('Postulación',[kv('Recibido',c.fecha),kv('Llegó por',c.fuente),kv('Formación',c.formacion),kv('Pretensión',money(c.pret)),kv('Conoce a alguien en PAMI',c.conoce)])+panel('Proceso',[kv('Estado',c.estado),kv('Policlínico',c.policlinico||'Sin asignar'),kv('Sugerido por cercanía',c.polSug),kv('Notas por etapa',notasTxt(c)),kv('Turno preferido',String(c.turno||'').replace(/;/g,' ·')),kv('Entrevistó screening',(c.ent||{}).screening),kv('Entrevistó competencias',(c.ent||{}).competencias),kv('Entrevistó técnica',(c.ent||{}).pami2),(c.contactado?'<div class="kv"><small>Último contacto</small><b>'+esc(ultCont(c)||c.contactado)+(RO?'':'<button class="mini" title="Borrar la marca de contacto" onclick="borrarMarca('+f+')">✕</button>')+'</b></div>':''),kv('Descartó',/^Descartad/i.test(c.estado)?c.descPor:''),kv('Descarte',c.descarte)],true)+'</div>'+
@@ -621,7 +622,7 @@ function guardar(f,acc){
   gs().withSuccessHandler(function(){for(var k in o)if(k!=='accion')c[k]=o[k];cerrar();render();toast();cargar();}).withFailureHandler(function(e){b.textContent='Guardar';b.disabled=false;fer(e);}).guardarCandidato(K,f,o);
 }
 function rean(f,btn){btn.textContent='Analizando…';btn.disabled=true;gs().withSuccessHandler(function(){cargar();cerrar();}).withFailureHandler(function(e){btn.textContent='↻ Re-analizar CV';btn.disabled=false;fer(e);}).reanalizar(K,f);}
-function borrarMarca(f){gs().withSuccessHandler(function(){byFila(f).contactado='';render();abrir(f);}).withFailureHandler(fer).borrarMarcaContacto(K,f);}
+function borrarMarca(f,t){gs().withSuccessHandler(function(){byFila(f).contactado='';render();if(!t)abrir(f);else toast('Marca de contacto borrada');}).withFailureHandler(fer).borrarMarcaContacto(K,f);}
 function descarteMail(f,btn){
   if(!confirm('¿Enviar el mail de descarte a este candidato? No se puede deshacer.'))return;
   btn.textContent='Enviando…';btn.disabled=true;
