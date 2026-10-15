@@ -123,6 +123,7 @@ function setup() {
     ['nombre_cliente', 'PAMI'], ['firma', 'Equipo de Atracción y Elección'], ['asunto_mail', 'Proceso de selección · PAMI'],
     ['umbral_a', '8.5'], ['umbral_bplus', '8'], ['umbral_b', '6.5'], ['dias_alerta', '7'],
     ['calendario', ''], ['url_web', ''], ['link_agenda', ''], ['link_agenda_screening', ''], ['link_agenda_competencias', ''], ['link_agenda_pami2', ''], ['carpeta_informes', ''], ['calendario_poli2', 'dotacionpp2@gmail.com'], ['link_agenda_screening_poli2', ''], ['link_agenda_competencias_poli2', ''], ['link_agenda_pami2_poli2', ''],
+    ['peso_cv', '10'], ['peso_screening', '15'], ['peso_competencias', '35'], ['peso_tecnica', '40'],
     ['duracion_screening', '30'], ['duracion_competencias', '60'], ['duracion_pami2', '60'],
     ['direccion_policlinico_1', 'Sarmiento 373, Rosario, Santa Fe, Argentina'], ['direccion_policlinico_2', 'Olive 1159, Rosario, Santa Fe, Argentina']
   ]);
