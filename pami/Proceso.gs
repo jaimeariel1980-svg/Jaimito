@@ -783,7 +783,7 @@ function getResumen_(k, fila) {
   const sh = hoja_('Candidatos');
   fila = Number(fila);
   if (!(fila >= 2 && fila <= sh.getLastRow())) throw new Error('Fila inválida');
-  if (ROL_ === 'Técnica') throw new Error('Tu usuario solo puede ver la ficha para Enfermería');
+  if (ROL_ === 'Técnica') throw new Error('Tu usuario solo puede ver el resumen para la entrevista técnica');
   const id = String(sh.getRange(fila, COL.id).getValue()), out = {};
   const ev = hoja_('Evaluaciones');
   if (ev && ev.getLastRow() > 1) ev.getRange(2, 1, ev.getLastRow() - 1, 9).getValues().forEach(x => {
@@ -891,18 +891,18 @@ function getFichaEnfermeria_(k, fila, forzar, indic, crear) {
   if (jefe) {
     if (forzar) throw new Error('No autorizado');
     if (rev) { ficha.resumen = guardado.t; ficha.editado = guardado.e === 1; }
-    else { ficha.resumen = ''; ficha.editado = false; ficha.aviso = 'La ficha todavía no está lista.'; }
+    else { ficha.resumen = ''; ficha.editado = false; ficha.aviso = 'El resumen todavía no está listo.'; }
   } else if (!forzar && guardado && guardado.t && (guardado.e || guardado.h === h)) {
     ficha.resumen = guardado.t; ficha.editado = guardado.e === 1; ficha.conInd = guardado.e === 2;
   } else if (!ev.competencias) {
-    if (forzar) throw new Error('La ficha se arma después de la entrevista de competencias');
-    ficha.resumen = ''; ficha.editado = false; ficha.pendiente = true; ficha.aviso = 'La ficha se arma después de la entrevista de competencias.';
+    if (forzar) throw new Error('El resumen se arma después de la entrevista de competencias');
+    ficha.resumen = ''; ficha.editado = false; ficha.pendiente = true; ficha.aviso = 'El resumen se arma después de la entrevista de competencias.';
   } else if (!cv && !obs) {
     ficha.resumen = ''; ficha.editado = false;
   } else if (!forzar && !crear) {
     ficha.editado = false;
     if (guardado && guardado.t) { ficha.resumen = guardado.t; ficha.aviso = 'Borrador sin revisar: cambió el CV o las observaciones.'; }
-    else { ficha.resumen = ''; ficha.aviso = 'La ficha todavía no está preparada. Usá "Preparar ficha para Enfermería".'; }
+    else { ficha.resumen = ''; ficha.aviso = 'El resumen todavía no está preparado. Usá "Preparar resumen técnica".'; }
   } else {
     const usaIA = !!((cv && obs) || (cv.length + obs.length) > 400);
     ficha.resumen = usaIA ? generarResumenEnf_(cv, obs, forzar ? indic : '') : [cv, obs].filter(Boolean).join('\n');
@@ -921,7 +921,7 @@ function guardarFichaEnfermeria(k, fila, texto) {
   if (!(fila >= 2 && fila <= sh.getLastRow())) throw new Error('Fila inválida');
   texto = String(texto || '').trim().slice(0, 2000);
   sh.getRange(fila, COL.fichaEnf).setValue(texto ? JSON.stringify({ t: texto, h: '', e: 1, ok: 1 }) : '');
-  registrarHistorial_(sh.getRange(fila, COL.id).getValue(), sh.getRange(fila, COL.nombre).getValue(), 'Ficha Enfermería', texto ? 'Texto editado a mano' : 'Texto borrado (se arma de nuevo con la IA)', 'tablero');
+  registrarHistorial_(sh.getRange(fila, COL.id).getValue(), sh.getRange(fila, COL.nombre).getValue(), 'Resumen técnica', texto ? 'Texto editado a mano' : 'Texto borrado (se arma de nuevo con la IA)', 'tablero');
   return true;
 }
 
