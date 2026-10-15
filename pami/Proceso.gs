@@ -553,10 +553,17 @@ function poliRomano_(t) {
   return String(t || '').replace(/PAMI\s*1\b/, 'PAMI I').replace(/PAMI\s*2\b/, 'PAMI II');
 }
 
-// Policlínico para los mensajes y links de agenda: el confirmado del candidato; si no tiene,
-// el del usuario que envía (pestaña Usuarios); si tampoco, el sugerido por distancia.
+// Policlínico para los mensajes y links de agenda: el asignado al candidato; si no tiene, el sugerido por distancia.
 function poliContacto_(r) {
-  return String(r[COL.policlinico - 1] || '').trim() || String(POLI_ || '').trim() || String(r[COL.polSug - 1] || '').split(' · ')[0].trim();
+  return String(r[COL.policlinico - 1] || '').trim() || String(r[COL.polSug - 1] || '').split(' · ')[0].trim();
+}
+
+// Valor de Ajustes sin importar mayúsculas, tildes ni espacios en la clave.
+function ajusteFlex_(aj, clave) {
+  if (aj[clave]) return aj[clave];
+  const n = x => norm_(x).replace(/\s+/g, '');
+  const k = Object.keys(aj).find(x => n(x) === n(clave));
+  return k ? aj[k] : '';
 }
 
 function datosComunes_(r) {
@@ -587,9 +594,14 @@ function armarComunicacion(k, fila, tipo) {
   const r = sh.getRange(fila, 1, 1, HEAD_CAND.length).getValues()[0];
   const v = datosComunes_(r);
   const claveLink = { 'contacto-screening': 'link_agenda_screening', 'contacto-competencias': 'link_agenda_competencias', 'contacto-tecnica': 'link_agenda_pami2' }[tipo];
-  if (claveLink && v.aj[claveLink]) v.LINK = v.aj[claveLink];
   const polEf = poliContacto_(r);
-  if (claveLink && /2$/.test(polEf) && v.aj[claveLink + '_poli2']) v.LINK = v.aj[claveLink + '_poli2'];
+  if (claveLink) {
+    const clave = /2$/.test(polEf) ? claveLink + '_poli2' : claveLink;
+    const link = ajusteFlex_(v.aj, clave);
+    // Nunca mandar a un candidato de PAMI 2 el link de PAMI 1: si falta, avisar.
+    if (!link && /2$/.test(polEf)) return { ok: false, error: 'Falta el link de agenda de PAMI 2: cargalo en la pestaña Ajustes, clave "' + clave + '".' };
+    if (link) v.LINK = link;
+  }
   if (tipo === 'pedido-documentacion') {
     const n = /2$/.test(polEf) ? '2' : /1$/.test(polEf) ? '1' : '';
     if (!n) return { ok: false, error: 'Primero asigná el policlínico del candidato (PAMI 1 o PAMI 2): el link de documentación depende de eso.' };
