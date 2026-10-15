@@ -112,7 +112,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 .btns .btn.warn{background:#D9534F;color:#fff}.btns .btn.warn:hover{background:#C0413D}
 .btns.tb{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin-top:10px}
 .btns.tb>.btn,.btns.tb .bg>.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:38px;padding:4px 10px;font-size:12px;line-height:1.2;text-align:center;box-sizing:border-box}
-.btns.tb .bl{display:flex;flex-direction:column;align-items:center;line-height:1.15}.btns.tb .bl small{font-size:9.5px;font-weight:600;text-transform:none;letter-spacing:0;opacity:.85}
+.btns.tb .bl{display:flex;flex-direction:column;align-items:center;line-height:1.15}.btns.tb .bl small{font-size:9px;font-weight:600;text-transform:none;letter-spacing:0;opacity:.85}
 .btns.tb>.bg{display:flex}.btns.tb>.bg>.btn:first-child{flex:1;border-radius:4px 0 0 4px}.btns.tb>.bg>.ed{flex:none;width:40px;padding:0;border-radius:0 4px 4px 0;margin-left:1px;background:#D3E2F4}.btns.tb>.bg>.ed:hover{background:#BFD5EE}
 .tag .tdel{border:0;background:none;cursor:pointer;font-size:11px;padding:0 0 0 6px;opacity:.65}.tag .tdel:hover{opacity:1}
 .kv .mini{border:0;background:none;color:#8A97AB;cursor:pointer;font-size:11px;padding:0 4px;margin-left:6px;font-weight:400}.kv .mini:hover{color:#D9534F}
@@ -134,7 +134,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v100</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v101</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -551,7 +551,7 @@ function etapasHdr(c){
 function avisoResumen(f){
   var o=document.getElementById('avRes');if(o)o.remove();
   var d=document.createElement('div');d.id='avRes';d.style.cssText='position:fixed;inset:0;background:rgba(10,20,40,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
-  d.innerHTML='<div style="background:#fff;border-radius:10px;max-width:430px;width:100%;padding:22px;border-top:6px solid #D9534F;box-shadow:0 10px 40px rgba(0,0,0,.35)"><h3 style="color:#B02A25;margin:0 0 8px;font-size:17px">🩺 Falta el resumen del proceso</h3><p style="font-size:14px;line-height:1.5;margin:0 0 18px;color:#192341">Los jefes no ven a este candidato hasta que prepares y guardes el resumen.</p><div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"><button class="btn sec" id="avRes1">Después</button><button class="btn red" id="avRes2">Prepararlo ahora</button></div></div>';
+  d.innerHTML='<div style="background:#fff;border-radius:10px;max-width:430px;width:100%;padding:22px;border-top:6px solid #D9534F;box-shadow:0 10px 40px rgba(0,0,0,.35)"><h3 style="color:#B02A25;margin:0 0 8px;font-size:17px">🩺 Falta el resumen del proceso para la entrevista técnica</h3><p style="font-size:14px;line-height:1.5;margin:0 0 18px;color:#192341">Los jefes no ven a este candidato hasta que prepares y guardes el resumen.</p><div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"><button class="btn sec" id="avRes1">Después</button><button class="btn red" id="avRes2">Prepararlo ahora</button></div></div>';
   document.body.appendChild(d);
   document.getElementById('avRes1').onclick=function(){d.remove();};
   document.getElementById('avRes2').onclick=function(){d.remove();editarFicha(f);};
@@ -566,7 +566,7 @@ function abrir(f){
   else if(c.proc==='Revisar')al+='<div class="alerta a2">'+esc(c.just||'Revisar a mano')+'</div>';
   else if(c.proc==='Pendiente')al+='<div class="alerta a2">El CV todavía se está analizando.</div>';
   if(!terminal(c.estado)&&dd>=D.cfg.diasAlerta)al+='<div class="alerta a3">🕒 '+dd+' días sin movimiento en "'+esc(c.estado)+'".</div>';
-  if(!RO&&etapaIdx(c)===3&&!c.fichaOk)al+='<div class="alerta a3">🩺 Falta el resumen del proceso. Los jefes no ven nada hasta que lo prepares y lo guardes: tocá el botón rojo "Resumen P/T".</div>';
+  if(!RO&&etapaIdx(c)===3&&!c.fichaOk)al+='<div class="alerta a3">🩺 Falta el resumen del proceso para la entrevista técnica. Los jefes no ven nada hasta que lo prepares y lo guardes: tocá el botón rojo "Resumen P/T".</div>';
   var etapasNota=['cv','screening','competencias'];
   if(c.notaP2||/técnica|Contratado/i.test(c.estado))etapasNota=etapasNota.concat(['pami2']);
   var vals={cv:c.ajuste,screening:c.notaScr,competencias:c.notaComp,pami1:c.notaP1,pami2:c.notaP2};
@@ -576,7 +576,7 @@ function abrir(f){
   document.getElementById('mbox').innerHTML=
     '<div class="hd"><div><h2>'+esc(c.nombre)+'</h2><small>'+esc(tit(c.busq))+' · '+esc(c.estado)+'</small><div class="ecs">'+etapasHdr(c)+'</div></div><button class="x" onclick="cerrar()">×</button></div><div class="bd">'+al+
     '<div class="btns tb">'+etapaBtn(f,'screening',c.infScr,'📝 Formulario screening','Ver screening')+etapaBtn(f,'competencias',c.infComp,'💼 Formulario competencias','Ver competencias')+'</div>'+
-    '<div class="btns tb">'+(c.resp.length?'<button class="btn ghost" onclick="verPost('+f+',this)">📋 Ver postulación</button>':'')+(c.docs?'<a class="btn ghost" target="_blank" href="'+esc(c.docs)+'">📂 Documentación</a>':'')+(c.fichaOk?'<span class="bg"><button class="btn ghost" onclick="verResumen('+f+',this,true)"><span class="bl">🧾 Resumen P/T ✓<small>proceso para la técnica</small></span></button>'+(RO?'':'<button class="btn ghost ed" title="Editar el resumen del proceso" onclick="editarFicha('+f+')">✏️</button>')+'</span>':(!RO&&(c.notaComp||c.infComp||etapaIdx(c)===3)?'<button class="btn '+(etapaIdx(c)===3?'warn':'ghost')+'" onclick="editarFicha('+f+')"><span class="bl">🧾 Resumen P/T<small>proceso para la técnica</small></span></button>':''))+'</div>'+
+    '<div class="btns tb">'+(c.resp.length?'<button class="btn ghost" onclick="verPost('+f+',this)">📋 Ver postulación</button>':'')+(c.docs?'<a class="btn ghost" target="_blank" href="'+esc(c.docs)+'">📂 Documentación</a>':'')+(c.fichaOk?'<span class="bg"><button class="btn ghost" onclick="verResumen('+f+',this,true)"><span class="bl">🧾 Resumen P/T ✓<small>proceso para entrevista técnica</small></span></button>'+(RO?'':'<button class="btn ghost ed" title="Editar el resumen del proceso para la entrevista técnica" onclick="editarFicha('+f+')">✏️</button>')+'</span>':(!RO&&(c.notaComp||c.infComp||etapaIdx(c)===3)?'<button class="btn '+(etapaIdx(c)===3?'warn':'ghost')+'" onclick="editarFicha('+f+')"><span class="bl">🧾 Resumen P/T<small>proceso para entrevista técnica</small></span></button>':''))+'</div>'+
     '<div class="btns tb">'+(c.cv?'<a class="btn ghost" target="_blank" href="'+esc(c.cv)+'">📄 Ver CV</a>':'')+(c.tel?'<button class="btn wa" onclick="menuWA('+f+')">💬 WhatsApp ▾</button>':'')+(/@/.test(c.email||'')?'<a class="btn ghost" target="_blank" href="https://mail.google.com/mail/?view=cm&to='+encodeURIComponent(c.email)+'">✉ Mail</a>':'')+'<button class="btn ghost" onclick="agendar('+f+')">📅 Agendar</button>'+(puedeDesc?'<button class="btn ghost" onclick="descarteMail('+f+',this)">✉ Descarte por mail</button>':'')+(c.proc!=='SI'?'<button class="btn ghost" onclick="rean('+f+',this)">↻ Re-analizar CV</button>':'')+'</div>'+
     '<div class="fp">'+panel('Contacto',[kv('Teléfono',c.tel),kv('DNI',c.dni),kv('Email',c.email),kv('Domicilio',c.domicilio),kv('Localidad',c.loc),kv('Zona',c.zona)])+panel('Postulación',[kv('Recibido',c.fecha),kv('Llegó por',c.fuente),kv('Formación',c.formacion),kv('Pretensión',money(c.pret)),kv('Conoce a alguien en PAMI',c.conoce)])+panel('Proceso',[kv('Estado',c.estado),kv('Policlínico',c.policlinico||'Sin asignar'),kv('Sugerido por cercanía',c.polSug),kv('Notas por etapa',notasTxt(c)),kv('Turno preferido',String(c.turno||'').replace(/;/g,' ·')),kv('Entrevistó screening',(c.ent||{}).screening),kv('Entrevistó competencias',(c.ent||{}).competencias),kv('Entrevistó técnica',(c.ent||{}).pami2),(c.contactado?'<div class="kv"><small>Último contacto</small><b>'+esc(ultCont(c)||c.contactado)+(RO?'':'<button class="mini" title="Borrar la marca de contacto" onclick="borrarMarca('+f+')">✕</button>')+'</b></div>':''),kv('Descartó',/^Descartad/i.test(c.estado)?c.descPor:''),kv('Descarte',c.descarte)],true)+'</div>'+
     (c.just?'<div class="sec">Análisis del CV</div><div class="txt"><b>'+esc(c.just)+'</b></div>':'')+(c.resumen?'<div class="txt" style="margin-top:6px">'+esc(c.resumen)+'</div>':'')+(c.req?'<div class="txt" style="margin-top:6px;color:#5D6B82">'+esc(c.req)+'</div>':'')+resp+
@@ -774,7 +774,7 @@ function vistaPreview(poli){
 }
 function editarFicha(f){
   var c=byFila(f),mb=document.getElementById('mbox');
-  mb.innerHTML='<div class="hd"><div><h2>Resumen del proceso</h2><small>'+esc(c.nombre)+' · es el texto que leen los jefes</small></div><button class="x" onclick="cerrar()">×</button></div><div class="bd" id="fcb"><div class="loading">Cargando…</div></div>';
+  mb.innerHTML='<div class="hd"><div><h2>Resumen del proceso para la entrevista técnica</h2><small>'+esc(c.nombre)+' · es el texto que leen los jefes</small></div><button class="x" onclick="cerrar()">×</button></div><div class="bd" id="fcb"><div class="loading">Cargando…</div></div>';
   document.getElementById('modal').classList.add('show');
   gs().withSuccessHandler(function(r){
     delete FICHAS[f];var x=JSON.parse(r),b=document.getElementById('fcb');if(!b)return;
@@ -846,12 +846,12 @@ function verResumen(f,btn,enf){
   if(enf)gs().withSuccessHandler(ok).withFailureHandler(ko).getFichaEnfermeria(K,f);else gs().withSuccessHandler(ok).withFailureHandler(ko).getResumen(K,f);
 }
 function htmlEnfermeria(x){
-  var h='<div class="hd"><div style="display:flex;align-items:center;gap:16px">'+infLogo()+'<div><small>Resumen del proceso · '+infFecha()+'</small><h1>'+esc(x.nombre)+'</h1><div class="s">'+esc(tit(x.busq))+(x.policlinico?' · '+esc(x.policlinico):'')+'</div></div></div></div>';
+  var h='<div class="hd"><div style="display:flex;align-items:center;gap:16px">'+infLogo()+'<div><small>Resumen del proceso para entrevista técnica · '+infFecha()+'</small><h1>'+esc(x.nombre)+'</h1><div class="s">'+esc(tit(x.busq))+(x.policlinico?' · '+esc(x.policlinico):'')+'</div></div></div></div>';
   h+='<div class="g g3">'+infCard('Edad',x.edad)+infCard('Localidad',x.localidad)+infCard('Formación',x.formacion)+infCard('Experiencia actual',x.experiencia)+infCard('Antigüedad',x.antig)+'</div>';
   if(x.aviso)h+='<div class="cd"><div class="tx" style="color:#5D6B82">'+esc(x.aviso)+'</div></div>';
   if(x.resumen&&x.revisada===false)h+='<div class="cd"><div class="tx" style="color:#7A5200;background:#FFF1D6">Borrador sin revisar: los jefes todavía no lo ven. Se publica desde el botón "Resumen P/T".</div></div>';
   if(x.resumen)h+='<h2>Resumen</h2><div class="cd"><div class="tx" style="font-size:15px;line-height:1.6">'+esc(x.resumen)+'</div></div>';
-  return infDoc('Resumen del proceso · '+x.nombre,h);
+  return infDoc('Resumen del proceso para entrevista técnica · '+x.nombre,h);
 }
 function htmlResumen(c,ev){
   var S=ev.screening||{},C=ev.competencias||{},T=ev.pami2||{},sd=(S.datos||{}).datos||{},cd=C.datos||{},cm=cd.meta||{},td=T.datos||{};
