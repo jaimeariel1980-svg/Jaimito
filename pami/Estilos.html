@@ -78,9 +78,9 @@ label.l{display:block;font-size:11px;font-weight:800;letter-spacing:.06em;text-t
   }
   function redactar(ta,btn,und){
     var t=ta.value.trim();if(t.length<8){msg('Escribí o dictá algo primero');return;}
-    var old=btn.textContent;btn.disabled=true;btn.textContent='Redactando…';
+    var old=btn.textContent,ind=(ta.id==='fichaTxt'&&document.getElementById('fichaInd'))?document.getElementById('fichaInd').value:'';btn.disabled=true;btn.textContent='Redactando…';
     google.script.run.withSuccessHandler(function(r){btn.disabled=false;btn.textContent=old;ta._prev=ta.value;ta.value=r;ta.dispatchEvent(new Event('input',{bubbles:true}));und.style.display='';})
-      .withFailureHandler(function(e){btn.disabled=false;btn.textContent=old;alert('No se pudo redactar: '+((e&&e.message)||e));}).redactarIA(K_(),ta.value);
+      .withFailureHandler(function(e){btn.disabled=false;btn.textContent=old;alert('No se pudo redactar: '+((e&&e.message)||e));}).redactarIA(K_(),ta.value,ind);
   }
   function attach(ta){
     if(ta.dataset.ia)return;ta.dataset.ia='1';

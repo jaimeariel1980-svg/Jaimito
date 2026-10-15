@@ -127,7 +127,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v77</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v78</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -744,7 +744,7 @@ function editarFicha(f){
   document.getElementById('modal').classList.add('show');
   gs().withSuccessHandler(function(r){
     var x=JSON.parse(r),b=document.getElementById('fcb');if(!b)return;
-    b.innerHTML='<div class="txt" style="font-size:13px;color:#5D6B82;margin-bottom:8px">'+(x.editado?'Editado por vos.':'Armado por la IA con el CV y las observaciones del entrevistador.')+' Corregilo si hace falta: los jefes leen exactamente este texto.</div><textarea id="fichaTxt" rows="8" style="width:100%">'+esc(x.resumen)+'</textarea><div class="btns" style="margin-top:10px"><button class="btn ok" onclick="guardarFicha('+f+',this)">Guardar</button><button class="btn ghost" onclick="regenerarFicha('+f+',this)">🔄 Armar de nuevo con IA</button><button class="btn sec" onclick="cerrar()">Cancelar</button></div>';
+    b.innerHTML='<div class="txt" style="font-size:13px;color:#5D6B82;margin-bottom:8px">'+(x.editado?'Editado por vos.':x.conInd?'Armado por la IA con tus indicaciones.':'Armado por la IA con el CV y las observaciones del entrevistador.')+' Corregilo si hace falta: los jefes leen exactamente este texto.</div><textarea id="fichaTxt" rows="8" style="width:100%">'+esc(x.resumen)+'</textarea><label class="l" style="margin-top:10px">Indicaciones para la IA (opcional)</label><input type="text" id="fichaInd" maxlength="300" placeholder="Ej: más corto · resaltá la experiencia en geriatría · mencioná la disponibilidad" style="width:100%"><div class="txt" style="font-size:12px;color:#5D6B82;margin:4px 0 0">Las usan ✨ Redactar con IA y 🔄 Armar de nuevo con IA.</div><div class="btns" style="margin-top:10px"><button class="btn ok" onclick="guardarFicha('+f+',this)">Guardar</button><button class="btn ghost" onclick="regenerarFicha('+f+',this)">🔄 Armar de nuevo con IA</button><button class="btn sec" onclick="cerrar()">Cancelar</button></div>';
   }).withFailureHandler(fer).getFichaEnfermeria(K,f);
 }
 function guardarFicha(f,btn){
@@ -754,17 +754,40 @@ function guardarFicha(f,btn){
 function regenerarFicha(f,btn){
   if(!confirm('Se reemplaza el texto actual por uno nuevo armado por la IA. ¿Seguir?'))return;
   var old=btn.textContent;btn.disabled=true;btn.textContent='Armando…';
-  gs().withSuccessHandler(function(r){delete FICHAS[f];document.getElementById('fichaTxt').value=JSON.parse(r).resumen;btn.disabled=false;btn.textContent=old;toast('Texto nuevo armado');}).withFailureHandler(function(e){btn.disabled=false;btn.textContent=old;fer(e);}).getFichaEnfermeria(K,f,true);
+  gs().withSuccessHandler(function(r){delete FICHAS[f];document.getElementById('fichaTxt').value=JSON.parse(r).resumen;btn.disabled=false;btn.textContent=old;toast('Texto nuevo armado');}).withFailureHandler(function(e){btn.disabled=false;btn.textContent=old;fer(e);}).getFichaEnfermeria(K,f,true,(document.getElementById('fichaInd')||{}).value||'');
+}
+var PDFJS='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+function cargarPdfJs(ok,ko){
+  if(window.pdfjsLib){ok();return;}
+  var sc=document.createElement('script');sc.src=PDFJS+'pdf.min.js';
+  sc.onload=function(){window.pdfjsLib.GlobalWorkerOptions.workerSrc=PDFJS+'pdf.worker.min.js';ok();};sc.onerror=ko;document.head.appendChild(sc);
 }
 function verCV(f,btn){
-  var w=window.open('','_blank');if(w)w.document.write('<p style="font-family:Arial;padding:24px">Abriendo CV…</p>');
-  var t=btn.textContent;btn.disabled=true;btn.textContent='Abriendo…';
+  var c=byFila(f),t=btn.textContent;btn.disabled=true;btn.textContent='Abriendo…';
   gs().withSuccessHandler(function(r){
     btn.disabled=false;btn.textContent=t;
     var bin=atob(r.b64),a=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);
-    var u=URL.createObjectURL(new Blob([a],{type:r.mime}));
-    if(w)w.location.href=u;else window.open(u,'_blank');
-  }).withFailureHandler(function(e){btn.disabled=false;btn.textContent=t;if(w)w.close();fer(e);}).getCVArchivo(K,f);
+    mostrarCV(r,a,c?c.nombre:'');
+  }).withFailureHandler(function(e){btn.disabled=false;btn.textContent=t;fer(e);}).getCVArchivo(K,f);
+}
+function mostrarCV(r,bytes,nombre){
+  var old=document.getElementById('cvv');if(old)old.remove();
+  var v=document.createElement('div');v.id='cvv';v.style.cssText='position:fixed;inset:0;z-index:80;background:#2B2F36;display:flex;flex-direction:column';
+  v.innerHTML='<div style="background:#fff;padding:10px 16px;display:flex;align-items:center;gap:10px"><b style="flex:1;font-size:15px">CV · '+esc(nombre)+'</b><button class="btn ghost" id="cvd">⬇ Descargar</button><button class="btn sec" onclick="document.getElementById(\'cvv\').remove()">✕ Cerrar</button></div><div id="cvb" style="flex:1;overflow:auto;padding:14px 12px"></div>';
+  document.body.appendChild(v);
+  var b=document.getElementById('cvb'),msg=function(t){b.innerHTML='<div style="color:#fff;text-align:center;padding:40px 16px;font-size:15px">'+t+'</div>';};
+  document.getElementById('cvd').onclick=function(){var u=URL.createObjectURL(new Blob([bytes],{type:r.mime})),a=document.createElement('a');a.href=u;a.download=r.nombre||'CV';document.body.appendChild(a);a.click();a.remove();};
+  if(/^image\//.test(r.mime)){b.innerHTML='<img src="data:'+r.mime+';base64,'+r.b64+'" style="max-width:100%;display:block;margin:0 auto;background:#fff">';return;}
+  if(r.mime!=='application/pdf'){msg('Este tipo de archivo no se puede mostrar en pantalla. Usá <b>⬇ Descargar</b>.');return;}
+  msg('Cargando CV…');
+  cargarPdfJs(function(){
+    window.pdfjsLib.getDocument({data:bytes}).promise.then(function(pdf){
+      b.innerHTML='';
+      var ancho=Math.max(280,Math.min(900,b.clientWidth-24)),dpr=Math.min(2,window.devicePixelRatio||1);
+      var pag=function(n){if(n>pdf.numPages)return;pdf.getPage(n).then(function(p){var v0=p.getViewport({scale:1}),vp=p.getViewport({scale:ancho/v0.width*dpr}),cv=document.createElement('canvas');cv.width=vp.width;cv.height=vp.height;cv.style.cssText='display:block;margin:0 auto 12px;background:#fff;width:'+ancho+'px;max-width:100%';b.appendChild(cv);p.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise.then(function(){pag(n+1);});});};
+      pag(1);
+    }).catch(function(){msg('No pude mostrar el CV en pantalla. Usá <b>⬇ Descargar</b>.');});
+  },function(){msg('No pude cargar el visor de PDF. Usá <b>⬇ Descargar</b>.');});
 }
 function cerrarPreview(){VP=false;var v=document.getElementById('tecv');if(v)v.remove();}
 function abrirFormTec(f){
