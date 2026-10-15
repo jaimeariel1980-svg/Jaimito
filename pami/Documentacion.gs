@@ -1,4 +1,4 @@
-// Documentación para el ingreso: formulario público (?docs=1 o ?docs=2, opcional &c=<ID candidato>).
+// Documentación para el ingreso: formulario público (?docs=1 o ?docs=2, opcional &cand=<ID candidato>; no usar "c": Apps Script lo reserva).
 // Cada archivo se guarda en una carpeta por persona dentro de la carpeta del policlínico:
 //   PAMI 1 → Ajustes "carpeta_docs" (Drive de dotacionpp1, se crea sola)
 //   PAMI 2 → Ajustes "carpeta_docs_poli2" (carpeta del Drive de dotacionpp2 compartida con dotacionpp1 como Editor)
@@ -142,5 +142,5 @@ function docsFinalizar(p) {
 function docsTipos() { return DOCS_TIPOS.map(t => ({ id: t.id, etiqueta: t.etiqueta })); }
 
 function linkDocs_(pol, cid) {
-  return urlBase_() + '?docs=' + (docsPol_(pol) || '1') + (cid ? '&c=' + encodeURIComponent(cid) : '');
+  return urlBase_() + '?docs=' + (docsPol_(pol) || '1') + (cid ? '&cand=' + encodeURIComponent(cid) : '');
 }
