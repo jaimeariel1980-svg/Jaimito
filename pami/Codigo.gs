@@ -528,7 +528,7 @@ function doGet_(e) {
   };
   if (docsPol_(p.docs)) {
     const t = HtmlService.createTemplateFromFile('FormDocumentacion');
-    t.pol = docsPol_(p.docs); t.cid = seguro(p.c); t.tipos = docsTipos(); t.poliNombre = poliRomano_(POLICLINICOS[Number(t.pol) - 1]);
+    t.pol = docsPol_(p.docs); t.cid = seguro(p.cand); t.tipos = docsTipos(); t.poliNombre = poliRomano_(POLICLINICOS[Number(t.pol) - 1]);
     return salida_(t, 'Documentación para el ingreso · ' + (aj.nombre_sitio || 'Empleos'));
   }
   if (p.tablero || p.tipo === 'screening' || p.tipo === 'competencias') {
