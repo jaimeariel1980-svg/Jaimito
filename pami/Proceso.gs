@@ -553,10 +553,16 @@ function poliRomano_(t) {
   return String(t || '').replace(/PAMI\s*1\b/, 'PAMI I').replace(/PAMI\s*2\b/, 'PAMI II');
 }
 
+// Policlínico para los mensajes y links de agenda: el confirmado del candidato; si no tiene,
+// el del usuario que envía (pestaña Usuarios); si tampoco, el sugerido por distancia.
+function poliContacto_(r) {
+  return String(r[COL.policlinico - 1] || '').trim() || String(POLI_ || '').trim() || String(r[COL.polSug - 1] || '').split(' · ')[0].trim();
+}
+
 function datosComunes_(r) {
   const aj = ajustes_();
   const b = busquedas_().find(x => x.id === r[COL.busq - 1]);
-  const pol = poliRomano_(r[COL.policlinico - 1] || String(r[COL.polSug - 1] || '').split(' · ')[0]);
+  const pol = poliRomano_(poliContacto_(r));
   const hayPol = pol.indexOf('Policlínico') === 0;
   const quien = String(QUIEN_ || '').trim().split(/\s+/)[0];
   return {
@@ -582,7 +588,7 @@ function armarComunicacion(k, fila, tipo) {
   const v = datosComunes_(r);
   const claveLink = { 'contacto-screening': 'link_agenda_screening', 'contacto-competencias': 'link_agenda_competencias', 'contacto-tecnica': 'link_agenda_pami2' }[tipo];
   if (claveLink && v.aj[claveLink]) v.LINK = v.aj[claveLink];
-  const polEf = String(r[COL.policlinico - 1] || String(r[COL.polSug - 1] || '').split(' · ')[0]);
+  const polEf = poliContacto_(r);
   if (claveLink && /2$/.test(polEf) && v.aj[claveLink + '_poli2']) v.LINK = v.aj[claveLink + '_poli2'];
   if (tipo === 'pedido-documentacion') {
     const n = /2$/.test(polEf) ? '2' : /1$/.test(polEf) ? '1' : '';
