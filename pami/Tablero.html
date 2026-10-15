@@ -110,7 +110,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .btns .btn{padding:8px 13px;font-size:12px}
 .btns .btn.warn{background:#D9534F;color:#fff}.btns .btn.warn:hover{background:#C0413D}
-.btns.tb{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;margin-top:10px}
+.btns.tb{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:8px;max-width:calc(var(--n,3)*240px);margin:10px auto 0}.btns.tb>.btn,.btns.tb>.bg{width:100%}
 .btns.tb>.btn,.btns.tb .bg>.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:38px;padding:4px 10px;font-size:12px;line-height:1.2;text-align:center;box-sizing:border-box}
 .btns.tb .bl{display:flex;flex-direction:column;align-items:center;line-height:1.15}.btns.tb .bl small{font-size:9px;font-weight:600;text-transform:none;letter-spacing:0;opacity:.85}
 .btns.tb>.bg{display:flex}.btns.tb>.bg>.btn:first-child{flex:1;border-radius:4px 0 0 4px}.btns.tb>.bg>.ed{flex:none;width:40px;padding:0;border-radius:0 4px 4px 0;margin-left:1px;background:#D3E2F4}.btns.tb>.bg>.ed:hover{background:#BFD5EE}
@@ -134,7 +134,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v104</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v106</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -587,6 +587,7 @@ function abrir(f){
     '<div style="margin-top:10px"><label class="l">Observaciones (ampliá el motivo o cualquier dato)</label><textarea id="gM" rows="3">'+esc(c.coment)+'</textarea></div><div class="btns"><button class="btn ok" id="gb" onclick="guardar('+f+')">Guardar</button>'+'</div>'+
     '<div class="sec">Historial</div><div class="hist" id="hist">Cargando…</div></div>';
   document.getElementById('modal').classList.add('show');
+  [].forEach.call(document.querySelectorAll('#mbox .btns.tb'),function(r){r.style.setProperty('--n',Math.min(Math.max(r.children.length,1),4));});
   if(!yaVista&&!RO&&etapaIdx(c)===3&&!c.fichaOk)avisoResumen(f);
   if(rec)rcVer(true);
   if(RO)bloquearRO();
