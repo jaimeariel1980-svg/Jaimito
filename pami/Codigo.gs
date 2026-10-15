@@ -485,9 +485,21 @@ function salida_(t, titulo) {
   return t.evaluate().setTitle(titulo).addMetaTag('viewport', 'width=device-width, initial-scale=1').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
+// URL pública /exec. getUrl() a veces devuelve la de prueba (/dev), que solo abre el dueño:
+// por eso se recuerda la /exec real cada vez que alguien entra por ella (URL_EXEC).
 function urlBase_() {
   const manual = (ajustes_().url_web || '').trim();
-  return manual || ScriptApp.getService().getUrl();
+  if (manual && !/\/dev$/.test(manual)) return manual;
+  const u = ScriptApp.getService().getUrl();
+  if (/\/exec$/.test(u)) return u;
+  return prop_('URL_EXEC') || manual || u;
+}
+
+function recordarUrlExec_() {
+  try {
+    const u = ScriptApp.getService().getUrl();
+    if (/\/exec$/.test(u) && prop_('URL_EXEC') !== u) PropertiesService.getScriptProperties().setProperty('URL_EXEC', u);
+  } catch (e) { }
 }
 
 function incluir_(n) { return HtmlService.createHtmlOutputFromFile(n).getContent(); }
@@ -502,6 +514,7 @@ function doGet(e) {
 }
 
 function doGet_(e) {
+  recordarUrlExec_();
   const p = (e && e.parameter) || {};
   const aj = ajustes_();
   const seguro = s => (/^[A-Za-z0-9_-]{1,64}$/.test(String(s || '')) ? String(s) : '');
@@ -794,7 +807,7 @@ function renovarCola_() {
 
 function textoAuto_(aj, nombre, busq) {
   const b = busquedas_().find(x => x.id === busq);
-  const link = ScriptApp.getService().getUrl() + (busq ? '?b=' + busq : '');
+  const link = urlBase_() + (busq ? '?b=' + busq : '');
   return String(aj.texto_autorespuesta || '')
     .replace(/\[NOMBRE\]/g, String(nombre).split(' ')[0]).replace(/\[PUESTO\]/g, b ? b.titulo : 'nuestras búsquedas').replace(/\[LINK\]/g, link);
 }

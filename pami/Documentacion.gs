@@ -2,7 +2,7 @@
 // Cada archivo se guarda en una carpeta por persona dentro de la carpeta del policlínico:
 //   PAMI 1 → Ajustes "carpeta_docs" (Drive de dotacionpp1, se crea sola)
 //   PAMI 2 → Ajustes "carpeta_docs_poli2" (carpeta del Drive de dotacionpp2 compartida con dotacionpp1 como Editor)
-// Nombres normalizados: Apellido_Nombre_DNI, Apellido_Nombre_CV, etc.
+// Nombres normalizados: Apellido_Nombre_DNI, Apellido_Nombre_CV, etc., más Apellido_Nombre_Completo.pdf (todo junto, lo arma el navegador).
 
 const DOCS_TIPOS = [
   { id: 'dni', etiqueta: 'DNI (frente y dorso)', sufijo: 'DNI' },
@@ -75,11 +75,12 @@ function docsCarpetaPersona_(d) {
 function docsSubirArchivo(p) {
   try {
     const d = docsDatos_(p);
-    const t = DOCS_TIPOS.find(x => x.id === String(p.tipo));
+    const comp = String(p.tipo) === 'completo';
+    const t = comp ? { sufijo: 'Completo' } : DOCS_TIPOS.find(x => x.id === String(p.tipo));
     if (!t) throw new Error('Tipo de documento inválido');
-    const ext = (String(p.archivo || '').split('.').pop() || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const ext = comp ? 'pdf' : (String(p.archivo || '').split('.').pop() || '').toLowerCase().replace(/[^a-z0-9]/g, '');
     if (!DOCS_EXT[ext]) throw new Error('Formato no permitido: subí PDF o JPG');
-    if (!p.base64 || String(p.base64).length > 14000000) throw new Error('Archivo vacío o de más de 10 MB');
+    if (!p.base64 || String(p.base64).length > (comp ? 40000000 : 14000000)) throw new Error('Archivo vacío o de más de 10 MB');
     const carpeta = docsCarpetaPersona_(d);
     const total = Number(p.total) || 1, n = Number(p.n) || 1;
     let base = d.ap + '_' + d.no + '_' + t.sufijo + (total > 1 ? '_' + n : '');
