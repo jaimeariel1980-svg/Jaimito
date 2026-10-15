@@ -84,8 +84,7 @@ function enviar(){
   function fallo(m){btn.disabled=false;btn.textContent='Reintentar envío';mostrarErr(m||'No pudimos enviar la documentación. Revisá tu conexión y probá de nuevo.');}
   function paso(k){
     document.getElementById('pbar').style.width=Math.round(k/(cola.length+1)*100)+'%';
-    RES.k=k;if(k===cola.length){document.getElementById('ptxt').textContent='Finalizando…';
-      google.script.run.withSuccessHandler(function(r){if(!r||!r.ok)return fallo(r&&r.error);listo();}).withFailureHandler(function(){fallo();}).docsFinalizar(Object.assign({archivos:hechos},datos));return;}
+    RES.k=k;if(k===cola.length)return completo();
     RES.k=k;var it=cola[k];document.getElementById('ptxt').textContent='Subiendo archivo '+(k+1)+' de '+cola.length+'…';
     var rd=new FileReader();
     rd.onload=function(){
@@ -95,8 +94,63 @@ function enviar(){
     rd.onerror=function(){fallo('No se pudo leer "'+it.file.name+'".');};
     rd.readAsDataURL(it.file);
   }
+  // PDF único con todo (Apellido_Nombre_Completo). Si no se puede armar, se sigue igual: los archivos sueltos ya están guardados.
+  function completo(){
+    if(RES.comp)return fin();
+    document.getElementById('ptxt').textContent='Armando el PDF completo…';
+    var listo_=function(){RES.comp=true;fin();};
+    armarCompleto(cola).then(function(b64){
+      if(!b64)return listo_();
+      document.getElementById('ptxt').textContent='Subiendo el PDF completo…';
+      google.script.run.withSuccessHandler(function(r){if(r&&r.ok)hechos.push(r.nombre);listo_();}).withFailureHandler(listo_)
+        .docsSubirArchivo(Object.assign({tipo:'completo',n:1,total:1,archivo:'completo.pdf',base64:b64},datos));
+    }).catch(listo_);
+  }
+  function fin(){
+    document.getElementById('pbar').style.width='100%';document.getElementById('ptxt').textContent='Finalizando…';
+    google.script.run.withSuccessHandler(function(r){if(!r||!r.ok)return fallo(r&&r.error);listo();}).withFailureHandler(function(){fallo();}).docsFinalizar(Object.assign({archivos:hechos},datos));
+  }
   RES={seguir:function(){btn.disabled=true;btn.textContent='Enviando…';document.getElementById('err').style.display='none';paso(RES.k);},k:0};
   paso(0);
+}
+function cargarLib(){
+  if(window.PDFLib)return Promise.resolve(window.PDFLib);
+  var urls=['https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js','https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js'];
+  return urls.reduce(function(pr,u){return pr.catch(function(){return new Promise(function(ok,mal){
+    var s=document.createElement('script');s.src=u;s.onload=function(){window.PDFLib?ok(window.PDFLib):mal();};s.onerror=mal;document.head.appendChild(s);
+    setTimeout(mal,25000);});});},Promise.reject());
+}
+function aJpeg(file){
+  return new Promise(function(ok,mal){
+    var u=URL.createObjectURL(file),im=new Image();
+    im.onload=function(){
+      var k=Math.min(1,2000/Math.max(im.naturalWidth,im.naturalHeight)),c=document.createElement('canvas');
+      c.width=Math.max(1,Math.round(im.naturalWidth*k));c.height=Math.max(1,Math.round(im.naturalHeight*k));
+      var x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);
+      c.toBlob(function(b){if(!b)return mal();b.arrayBuffer().then(ok,mal);},'image/jpeg',0.85);
+    };
+    im.onerror=function(){URL.revokeObjectURL(u);mal();};im.src=u;
+  });
+}
+async function armarCompleto(cola){
+  var L=await cargarLib(),doc=await L.PDFDocument.create();
+  for(var i=0;i<cola.length;i++){
+    var f=cola[i].file;
+    try{
+      if(/\.pdf$/i.test(f.name)){
+        var src=await L.PDFDocument.load(await f.arrayBuffer(),{ignoreEncryption:true});
+        (await doc.copyPages(src,src.getPageIndices())).forEach(function(pg){doc.addPage(pg);});
+      }else{
+        var img=await doc.embedJpg(await aJpeg(f)),W=595.28,H=841.89,m=24,e=Math.min((W-2*m)/img.width,(H-2*m)/img.height);
+        var pg=doc.addPage([W,H]);pg.drawImage(img,{x:(W-img.width*e)/2,y:(H-img.height*e)/2,width:img.width*e,height:img.height*e});
+      }
+    }catch(err){}
+  }
+  if(!doc.getPageCount())return null;
+  var b=await doc.save(),t='';
+  for(var j=0;j<b.length;j+=0x8000)t+=String.fromCharCode.apply(null,b.subarray(j,j+0x8000));
+  t=btoa(t);
+  return t.length>40000000?null:t;
 }
 function listo(){
   app.innerHTML='<div class="card ok"><div class="tick">✓</div><h2>¡Documentación enviada!</h2><p style="margin-top:8px">Gracias. Ya recibimos tus documentos. Si falta algo, nos vamos a comunicar con vos.</p></div>';

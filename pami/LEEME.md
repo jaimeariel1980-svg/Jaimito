@@ -45,8 +45,12 @@ Ejecutar `verificarInstalacion()`. Las páginas muestran el error real. Si la UR
 - Formulario público: `<url /exec>?docs=1` (PAMI 1) y `<url /exec>?docs=2` (PAMI 2). `mostrarLinks()` los muestra.
 - Pide apellido, nombre, CUIL/CUIT (se valida) y cinco archivos (PDF o imagen, hasta 10 MB c/u): DNI (admite varios, frente y dorso), CV, constancia de CUIL, título de Enfermería y matrícula vigente.
 - Cada persona tiene su carpeta `Apellido_Nombre_CUIL` y los archivos se nombran `Apellido_Nombre_DNI`, `_CV`, `_CUIL`, `_Titulo_Enfermeria`, `_Matricula` (si se reenvía, se agrega `_v2`).
+- Además se arma `Apellido_Nombre_Completo.pdf` con todo junto en ese orden (las fotos pasan a páginas A4). Lo arma el navegador del candidato con pdf-lib; si no se puede (PDF protegido o dañado, sin conexión a la librería), ese archivo se saltea y los sueltos quedan igual.
 - Dónde se guarda (pestaña Ajustes):
   - PAMI 1 → `carpeta_docs` (se crea sola en el Drive de dotacionpp1: "Empleos PAMI - Documentación ingreso").
   - PAMI 2 → `carpeta_docs_poli2` (cargada: carpeta "Documentación" de dotacionpp2, ID `1C0HSI69hoCWhVN2UW0aBG8lTs5hV5ZGO`). Para cambiarla: en el Drive de **dotacionpp2** crear una carpeta, compartirla con dotacionpp1 como **Editor** y pegar su ID (lo que sigue a `/folders/` en el link). Mientras esté vacío, lo de PAMI 2 se guarda en la subcarpeta "PAMI 2 (falta carpeta de dotacionpp2)" dentro de la de PAMI 1.
 - Tablero → WhatsApp → "📄 Pedido de documentación": manda el link del policlínico del candidato (confirmado o sugerido) con su ID, así la documentación queda asociada a la ficha (columna Documentación y botón "📂 Documentación"). Si llega por el link general, se asocia por DNI (sale del CUIL).
 - Todo envío queda en la pestaña **Documentacion** y llega un mail a `correo_aviso`. Texto del WhatsApp: plantilla `pedido-documentacion`.
+
+## URL pública
+`urlBase_()` usa Ajustes → `url_web` si no termina en `/dev`; si no, la `/exec` que devuelve Apps Script o la última `/exec` por la que entró alguien (propiedad `URL_EXEC`). Los links que se mandan a candidatos nunca deberían ser `/dev`.
