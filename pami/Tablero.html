@@ -127,7 +127,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v82</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v83</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -505,11 +505,11 @@ function notaRow(c,et,val){
   return '<div class="nrow"><span>'+ETQ[et]+'</span>'+['A','B+','B','C'].map(function(n){return '<button class="nb'+(val===n?' on '+n.replace('+','p'):'')+'" onclick="nota('+c.fila+',\''+et+'\',\''+n+'\',this)">'+n+'</button>';}).join('')+'</div>';
 }
 var FORM_F=0;
-function abrirForm(tipo,f){
+function abrirForm(tipo,f,ed){
   var c=byFila(f);FORM_F=f;cerrar();
   document.getElementById('ftit').textContent=(tipo==='screening'?'Screening · ':tipo==='tecnica'?'Entrevista técnica · ':'Competencias · ')+c.nombre;var vb=document.querySelector('#fmodal .fbar .btn');if(vb)vb.textContent='← Volver a la ficha';
   document.getElementById('fmodal').classList.add('show');document.getElementById('fmodal').scrollTop=0;
-  var o={K:K,cid:c.id,entre:c.entrev||'',container:document.getElementById('fbody'),onDone:function(){cargar();},onClose:volverFicha};
+  var o={K:K,cid:c.id,entre:c.entrev||'',editar:!!ed,container:document.getElementById('fbody'),onDone:function(){cargar();},onClose:volverFicha};
   if(tipo==='screening')FS.open(o);else{if(tipo==='tecnica')o.etapa='tecnica';FC.open(o);}
 }
 function volverFicha(){if((D&&D.tecnica)||VP){cerrarFormTec();return;}document.getElementById('fmodal').classList.remove('show');document.getElementById('fbody').innerHTML='';cargar();if(FORM_F)abrir(FORM_F);}
@@ -542,7 +542,7 @@ function abrir(f){
   var puedeDesc=/^Descartado (sin|post) screening$/.test(c.estado)&&!c.descarte&&/@/.test(c.email||'');
   document.getElementById('mbox').innerHTML=
     '<div class="hd"><div><h2>'+esc(c.nombre)+'</h2><small>'+esc(tit(c.busq))+' · '+esc(c.estado)+'</small><div class="ecs">'+etapasHdr(c)+'</div></div><button class="x" onclick="cerrar()">×</button></div><div class="bd">'+al+
-    '<div class="btns"><button class="btn" onclick="abrirForm(\'screening\','+f+')">📝 Formulario screening</button><button class="btn" onclick="abrirForm(\'competencias\','+f+')">💼 Formulario competencias</button><button class="btn" onclick="abrirForm(\'tecnica\','+f+')">🩺 Formulario técnica</button>'+(c.infScr?'<a class="btn ghost" target="_blank" href="'+esc(c.infScr)+'">Ver screening</a>':'')+(c.infComp?'<a class="btn ghost" target="_blank" href="'+esc(c.infComp)+'">Ver competencias</a>':'')+(c.docs?'<a class="btn ghost" target="_blank" href="'+esc(c.docs)+'">📂 Documentación</a>':'')+(c.resp.length?'<button class="btn ghost" onclick="verPost('+f+',this)">📋 Ver postulación</button>':'')+'<button class="btn ghost" onclick="verResumen('+f+',this)">📄 Resumen</button><button class="btn ghost" onclick="editarFicha('+f+')">✏️ Ficha de Enfermería</button></div>'+
+    '<div class="btns"><button class="btn" onclick="abrirForm(\'screening\','+f+')">📝 Formulario screening</button><button class="btn" onclick="abrirForm(\'competencias\','+f+')">💼 Formulario competencias</button><button class="btn" onclick="abrirForm(\'tecnica\','+f+')">🩺 Formulario técnica</button>'+(c.infScr?'<a class="btn ghost" target="_blank" href="'+esc(c.infScr)+'">Ver screening</a>'+(RO?'':'<button class="btn ghost" onclick="abrirForm(\'screening\','+f+',true)">✏️ Editar screening</button>'):'')+(c.infComp?'<a class="btn ghost" target="_blank" href="'+esc(c.infComp)+'">Ver competencias</a>'+(RO?'':'<button class="btn ghost" onclick="abrirForm(\'competencias\','+f+',true)">✏️ Editar competencias</button>'):'')+(c.docs?'<a class="btn ghost" target="_blank" href="'+esc(c.docs)+'">📂 Documentación</a>':'')+(c.resp.length?'<button class="btn ghost" onclick="verPost('+f+',this)">📋 Ver postulación</button>':'')+'<button class="btn ghost" onclick="verResumen('+f+',this)">📄 Resumen</button><button class="btn ghost" onclick="editarFicha('+f+')">✏️ Ficha de Enfermería</button></div>'+
     '<div class="btns">'+(c.cv?'<a class="btn ghost" target="_blank" href="'+esc(c.cv)+'">📄 Ver CV</a>':'')+(c.tel?'<button class="btn wa" onclick="menuWA('+f+')">💬 WhatsApp ▾</button>':'')+(/@/.test(c.email||'')?'<a class="btn ghost" target="_blank" href="https://mail.google.com/mail/?view=cm&to='+encodeURIComponent(c.email)+'">✉ Mail</a>':'')+'<button class="btn cel" onclick="agendar('+f+')">📅 Agendar</button>'+(puedeDesc?'<button class="btn red" onclick="descarteMail('+f+',this)">✉ Descarte por mail</button>':'')+(c.proc!=='SI'?'<button class="btn sec" onclick="rean('+f+',this)">↻ Re-analizar CV</button>':'')+(c.contactado?'<button class="btn sec" onclick="borrarMarca('+f+')">✕ Borrar marca de contacto</button>':'')+'</div>'+
     '<div class="fp">'+panel('Contacto',[kv('Teléfono',c.tel),kv('DNI',c.dni),kv('Email',c.email),kv('Domicilio',c.domicilio),kv('Localidad',c.loc),kv('Zona',c.zona)])+panel('Postulación',[kv('Recibido',c.fecha),kv('Llegó por',c.fuente),kv('Formación',c.formacion),kv('Pretensión',money(c.pret)),kv('Conoce a alguien en PAMI',c.conoce)])+panel('Proceso',[kv('Estado',c.estado),kv('Policlínico',c.policlinico||'Sin asignar'),kv('Sugerido por cercanía',c.polSug),kv('Notas por etapa',notasTxt(c)),kv('Turno preferido',String(c.turno||'').replace(/;/g,' ·')),kv('Entrevistó screening',(c.ent||{}).screening),kv('Entrevistó competencias',(c.ent||{}).competencias),kv('Entrevistó técnica',(c.ent||{}).pami2),kv('Último contacto',ultCont(c)),kv('Descartó',/^Descartad/i.test(c.estado)?c.descPor:''),kv('Descarte',c.descarte)],true)+'</div>'+
     (c.just?'<div class="sec">Análisis del CV</div><div class="txt"><b>'+esc(c.just)+'</b></div>':'')+(c.resumen?'<div class="txt" style="margin-top:6px">'+esc(c.resumen)+'</div>':'')+(c.req?'<div class="txt" style="margin-top:6px;color:#5D6B82">'+esc(c.req)+'</div>':'')+resp+
