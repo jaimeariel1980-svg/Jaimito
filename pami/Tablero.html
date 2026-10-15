@@ -127,7 +127,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v85</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v86</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -135,6 +135,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
     <button class="ni" onclick="vistaPreview()"><span class="ic g">🩺</span><b>Enfermería</b></button>
     <button class="ni" onclick="descartes()"><span class="ic o">✉</span><b>Descartes</b></button>
     <button class="ni" id="bPerfil" style="display:none" onclick="verPerfil()"><span class="ic b">📋</span><b>Perfil del puesto</b></button>
+    <button class="ni" id="bEnl" style="display:none" onclick="misEnlaces()"><span class="ic g">🔗</span><b>Enlaces</b></button>
     <button class="ni" id="bCtl" style="display:none" onclick="panelControl()"><span class="ic b">📜</span><b>Control</b></button>
     <button class="ni" id="bFlyer" style="display:none" onclick="verFlyer()"><span class="ic o">📢</span><b>Flyer</b></button>
   </nav>
@@ -329,6 +330,15 @@ function busqSel(){return D.busquedas.find(function(x){return x.id===document.ge
 function perfilBtn(){var b=busqSel();document.getElementById('bPerfil').style.display=b&&b.link_perfil?'':'none';document.getElementById('bFlyer').style.display=b&&b.link_flyer?'':'none';}
 function verFlyer(){var b=busqSel();if(b&&b.link_flyer)window.open(b.link_flyer,'_blank');}
 function verPerfil(){var b=busqSel();if(b&&b.link_perfil)window.open(b.link_perfil,'_blank');}
+function misEnlaces(){
+  var L=[['Web pública (portada)','Para compartir con candidatos',BASE]];
+  (D.busquedas||[]).forEach(function(b){L.push(['Postulación: '+b.titulo,'Para candidatos',BASE+'?b='+b.id]);});
+  L.push(['Documentación de ingreso · PAMI 1','Para el candidato contratado',BASE+'?docs=1'],['Documentación de ingreso · PAMI 2','Para el candidato contratado',BASE+'?docs=2'],['Tablero (privado)','Solo para vos: no lo compartas',BASE+'?tablero='+K0]);
+  var mb=document.getElementById('mbox');mb.style.maxWidth='760px';
+  mb.innerHTML='<div class="hd"><div><h2>Mis enlaces</h2><small>Todos terminan en /exec y se abren sin cuenta de Google</small></div><button class="x" onclick="cerrar()">×</button></div><div class="bd">'+L.map(function(x,i){return '<div class="pn" style="margin:10px 0"><h4>'+esc(x[0])+' <small style="font-weight:400;color:#5D6B82">· '+esc(x[1])+'</small></h4><div style="display:flex;gap:8px;align-items:center"><input type="text" readonly id="enl'+i+'" value="'+esc(x[2])+'" style="flex:1;font-size:12px" onclick="this.select()"><button class="btn" onclick="copiarEnl('+i+')">Copiar</button></div></div>';}).join('')+'</div>';
+  document.getElementById('modal').classList.add('show');
+}
+function copiarEnl(i){var e=document.getElementById('enl'+i);e.select();try{navigator.clipboard.writeText(e.value).then(function(){toast('Enlace copiado');},function(){document.execCommand('copy');toast('Enlace copiado');});}catch(x){document.execCommand('copy');toast('Enlace copiado');}}
 function linkPost(){var b=document.getElementById('fb').value||(D.busquedas[0]&&D.busquedas[0].id)||'';prompt('Link de postulación (copialo):',BASE+(b?'?b='+b:''));}
 
 function nrm(t){return String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
@@ -389,6 +399,7 @@ function citaTxt(c){
 function ajustarRol(){
   var d=document.querySelector('[onclick="descartes()"]');if(d)d.style.display=RO?'none':'';
   var c=document.getElementById('bCtl');if(c)c.style.display=D&&D.admin?'':'none';
+  var e=document.getElementById('bEnl');if(e)e.style.display=D&&D.admin?'':'none';
 }
 function bloquearRO(){
   [].forEach.call(document.querySelectorAll('#mbox button.btn,#mbox .nb,#mbox select,#mbox textarea'),function(e){if(/verPost/.test(e.getAttribute('onclick')||''))return;e.disabled=true;e.style.opacity=.5;});
