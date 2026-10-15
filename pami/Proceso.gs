@@ -902,7 +902,7 @@ function getFichaEnfermeria_(k, fila, forzar, indic, crear) {
   } else if (!forzar && !crear) {
     ficha.editado = false;
     if (guardado && guardado.t) { ficha.resumen = guardado.t; ficha.aviso = 'Borrador sin revisar: cambió el CV o las observaciones.'; }
-    else { ficha.resumen = ''; ficha.aviso = 'El resumen todavía no está preparado. Usá el botón "Resumen P/T".'; }
+    else { ficha.resumen = ''; ficha.aviso = 'El resumen todavía no está preparado. Usá el botón "Resumen ET".'; }
   } else {
     const usaIA = !!((cv && obs) || (cv.length + obs.length) > 400);
     ficha.resumen = usaIA ? generarResumenEnf_(cv, obs, forzar ? indic : '') : [cv, obs].filter(Boolean).join('\n');
