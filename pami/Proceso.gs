@@ -881,6 +881,9 @@ function getFichaEnfermeria_(k, fila, forzar, indic) {
   try { guardado = JSON.parse(r[COL.fichaEnf - 1] || 'null'); } catch (e) { }
   if (!forzar && guardado && guardado.t && (guardado.e || guardado.h === h)) {
     ficha.resumen = guardado.t; ficha.editado = guardado.e === 1; ficha.conInd = guardado.e === 2;
+  } else if (!ev.competencias) {
+    if (forzar) throw new Error('La ficha se arma después de la entrevista de competencias');
+    ficha.resumen = ''; ficha.editado = false; ficha.pendiente = true;
   } else if (!cv && !obs) {
     ficha.resumen = ''; ficha.editado = false;
   } else {
