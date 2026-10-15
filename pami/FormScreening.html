@@ -75,7 +75,7 @@ var FS=(function(){
     '<div class="sect card"><div class="sl">Comentario</div><textarea id="com" rows="4" placeholder="Observaciones relevantes de la entrevista…"></textarea></div>'+
     '<div class="sect card"><div class="sl">Resultado final</div><div class="res"><div class="sem"><div class="dot" id="dg"></div><div class="dot" id="dy"></div><div class="dot" id="dr"></div></div><div class="rinfo"><div class="l" style="margin:0">Recomendación</div><div class="rt" id="rt">—</div><div id="rd" style="font-size:13px;color:#5D6B82">Completá la evaluación para obtener la recomendación</div><div class="bar"><i id="bar"></i></div></div><div class="sc"><div class="l" style="margin:0">Score</div><b id="sn">—</b><small>/ 10</small></div></div>'+
     '<div class="man"><div class="l" style="margin:0">Letra para la planilla <span id="sug" style="text-transform:none;letter-spacing:0;font-weight:600">(sugerencia automática: —)</span></div><div class="vb" id="vb"><button data-l="A" onclick="FS.manual(\'A\')">A · Avanza</button><button data-l="B+" onclick="FS.manual(\'B+\')">B+ · Avanza</button><button data-l="B" onclick="FS.manual(\'B\')">B · Avanza</button><button data-l="C" onclick="FS.manual(\'C\')">C · No avanza</button><button onclick="FS.manual(null)" style="color:#5D6B82">↺ Auto</button></div></div>'+
-    '<div id="mot" class="man" style="display:none;margin-top:12px"><div class="l" style="margin:0;color:#D9534F">Motivo de descarte (obligatorio con C)</div><select id="d-mot" onchange="FS.motSel()"><option value="">— Elegí el motivo —</option>'+D.motivos.concat(['Otro']).map(function(m){return '<option>'+esc(m)+'</option>';}).join('')+'</select><input type="text" id="d-mot2" maxlength="30" placeholder="Escribí el motivo (máximo 2 palabras)" style="display:none;margin-top:6px"></div>'+
+    '<div id="mot" class="man" style="display:none;margin-top:12px"><div class="l" style="margin:0;color:#D9534F">Motivo de descarte (obligatorio con C)</div>'+MOT.html('d-mot',D.motivos,'')+'</div>'+
     '<div class="um"><span>Umbrales automáticos:</span><span>≥ '+D.umbral.a+' A</span><span>≥ '+D.umbral.bplus+' B+</span><span>≥ '+D.umbral.b+' B</span><span>&lt; '+D.umbral.b+' C</span></div></div>'+
     '<button class="btn ok" id="save" style="width:100%;padding:14px" onclick="FS.guardar()">Guardar screening</button></div>'+
     '<div class="done card" id="done"></div></div>';
@@ -99,8 +99,7 @@ var FS=(function(){
     veredicto(S.manual||S.auto);mot();
   }
   function mot(){var l=S.manual||S.auto;$('#mot').style.display=l==='C'?'':'none';}
-  function motSel(){$('#d-mot2').style.display=val('d-mot')==='Otro'?'':'none';}
-  function motFinal(){var m=val('d-mot');if(m!=='Otro')return m;var t=val('d-mot2').replace(/\s+/g,' ');return (!t||t.split(' ').length>2)?null:'Otro: '+t;}
+  function motSel(){}
   function veredicto(l){
     var v=VER[l];if(!v)return;
     ['dg','dy','dr'].forEach(function(i){$('#'+i).className='dot';});
@@ -114,7 +113,7 @@ var FS=(function(){
   function guardar(){
     var letra=S.manual||S.auto;
     if(!letra){alert('Completá la evaluación o elegí una letra de resultado.');return;}
-    var mf='';if(letra==='C'){mf=motFinal();if(!mf){alert(val('d-mot')==='Otro'?'En "Otro" escribí el motivo con máximo dos palabras.':'Con C hay que elegir el motivo de descarte.');($('#d-mot2').style.display==='none'?$('#d-mot'):$('#d-mot2')).focus();return;}}
+    var mf='';if(letra==='C'){var mr=MOT.valor('d-mot');if(!mr.ok||!mr.texto){alert(mr.ok?'Con C hay que elegir al menos un motivo de descarte.':mr.msg);return;}mf=mr.texto;}
     if(!val('d-ent')){if(!confirm('No elegiste entrevistador/a. ¿Guardar igual?'))return;}
     var b=$('#save');b.disabled=true;b.textContent='Guardando…';
     google.script.run.withSuccessHandler(function(r){

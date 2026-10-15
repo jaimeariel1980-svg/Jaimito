@@ -121,3 +121,22 @@ label.l{display:block;font-size:11px;font-weight:800;letter-spacing:.06em;text-t
   window.__entrevistaLista=function(id,partes){var cb=ENT[id];if(!cb)return;delete ENT[id];cb(partes);};
 })();
 </script>
+<script>
+window.MOT=(function(){
+  function e(t){return String(t==null?'':t).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  var LB='display:inline-flex;gap:6px;align-items:center;margin:3px 14px 3px 0;font-size:13px;font-weight:600;cursor:pointer';
+  return {
+    html:function(id,lista,sel){
+      var otro='',s=String(sel||'').split(/\s*;\s*/).filter(Boolean).filter(function(x){if(/^Otro: /.test(x)){otro=x.slice(6);return false;}return true;});
+      return '<div id="'+id+'">'+lista.map(function(m){return '<label style="'+LB+'"><input type="checkbox" value="'+e(m)+'"'+(s.indexOf(m)>-1?' checked':'')+' style="width:auto;margin:0"> '+e(m)+'</label>';}).join('')+'<label style="'+LB+'"><input type="checkbox" value="Otro"'+(otro?' checked':'')+' onchange="MOT.otro(\''+id+'\')" style="width:auto;margin:0"> Otro</label></div><input type="text" id="'+id+'-o" maxlength="40" placeholder="Otro motivo (máximo 3 palabras)" value="'+e(otro)+'" style="margin-top:6px;'+(otro?'':'display:none')+'">';
+    },
+    otro:function(id){var g=document.getElementById(id),c=g.querySelector('input[value="Otro"]'),t=document.getElementById(id+'-o');t.style.display=c.checked?'':'none';if(c.checked)t.focus();},
+    valor:function(id){
+      var g=document.getElementById(id);if(!g)return {ok:true,texto:''};
+      var v=[].slice.call(g.querySelectorAll('input:checked')).map(function(x){return x.value;}).filter(function(x){return x!=='Otro';}),o=g.querySelector('input[value="Otro"]');
+      if(o&&o.checked){var t=document.getElementById(id+'-o').value.replace(/\s+/g,' ').trim();if(!t||t.split(' ').length>3)return {ok:false,texto:'',msg:'En "Otro" escribí el motivo con máximo tres palabras.'};v.push('Otro: '+t);}
+      return {ok:true,texto:v.join('; ')};
+    }
+  };
+})();
+</script>
