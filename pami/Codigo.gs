@@ -1,7 +1,7 @@
 const CUENTA = 'dotacionpp1@gmail.com';
 const HEAD_CAND = ['Fecha', 'Nombre', 'Teléfono', 'DNI', 'Email', 'Localidad', 'Búsqueda', 'Pretensión', 'Nivel de Ajuste', 'Justificación', 'Resumen', 'Requisitos', 'Link CV', 'Estado', 'Entrevistó', 'Nota screening', 'Nota competencias', 'Recomendó', 'Recomendado por', 'Comentarios', 'Respuestas', 'Procesado', 'Intentos', 'Fuente', 'ID', 'Nota PAMI virtual', 'Nota entrevista técnica', 'Cita', 'Entrevistas (calendario)', 'Contactado', 'Descarte enviado', 'Informe screening', 'Informe competencias', 'Último movimiento', 'Zona', 'Formación', 'Postulación', 'Policlínico', 'Domicilio', 'Policlínico sugerido', 'Domicilio revisado', 'Motivo de descarte', 'Turno preferido', 'Descartó', 'Alias de agenda', 'Ficha Enfermería', 'Documentación'];
 const COL = { fecha: 1, nombre: 2, tel: 3, dni: 4, email: 5, loc: 6, busq: 7, pret: 8, ajuste: 9, just: 10, resumen: 11, req: 12, cv: 13, estado: 14, entrev: 15, notaScr: 16, notaComp: 17, recTipo: 18, recPor: 19, coment: 20, resp: 21, proc: 22, intentos: 23, fuente: 24, id: 25, notaP1: 26, notaP2: 27, cita: 28, entrevistas: 29, contactado: 30, descarte: 31, infScr: 32, infComp: 33, mov: 34, zona: 35, formacion: 36, postulacion: 37, policlinico: 38, domicilio: 39, polSug: 40, domRev: 41, motivo: 42, turno: 43, descPor: 44, alias: 45, fichaEnf: 46, docs: 47 };
-const MOTIVOS_DESCARTE = ['Fuera de zona', 'Fuera de edad', 'Falta de experiencia', 'Formación no adecuada', 'Remuneración fuera de rango', 'No le interesa', 'Alta rotación', 'No atendió / No se presentó'];
+const MOTIVOS_DESCARTE = ['Fuera de zona', 'Fuera de edad', 'Falta de experiencia', 'Formación no adecuada', 'Remuneración fuera de rango', 'No le interesa', 'Alta rotación', 'Incompatibilidad de horarios', 'No atendió / No se presentó'];
 
 const TURNOS = ['23 a 06', '17 a 00', '12 a 19', 'SADOFE'];
 
@@ -17,7 +17,7 @@ function asegurarColumnas_() {
 
 function motivoNorm_(m) {
   const partes = String(m == null ? '' : m).split(/\s*;\s*/).map(x => x.replace(/\s+/g, ' ').trim()).filter(Boolean), out = [];
-  if (partes.length > 9) throw new Error('Demasiados motivos');
+  if (partes.length > 10) throw new Error('Demasiados motivos');
   partes.forEach(x => {
     if (MOTIVOS_DESCARTE.indexOf(x) > -1) { if (out.indexOf(x) === -1) out.push(x); return; }
     if (/^Otro: \S+( \S+){0,2}$/.test(x) && x.length <= 50) { out.push(x); return; }
