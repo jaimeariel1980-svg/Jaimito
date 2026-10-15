@@ -73,7 +73,7 @@ var FC=(function(){
     var scr=(c.notaScr&&ETAPA!=='tecnica')?'<div><small>Screening</small>'+esc(c.notaScr)+(c.infScr?' · <a target="_blank" href="'+esc(c.infScr)+'">📄 Ver screening</a>':'')+'</div>':'';
     CONT.innerHTML=
     '<div class="hero"><div class="in"><div class="brandrow"><span class="lg w"></span><span class="prod">Atracción y Elección</span></div><h1>'+(ETAPA==='tecnica'?'Entrevista técnica de ':'Entrevista de ')+esc(c.nombre)+'</h1><div class="meta"><div><small>Cliente</small>'+esc(h.cliente)+'</div><div><small>Posición</small>'+esc(h.puesto)+'</div>'+(ETAPA==='tecnica'?'':'<div><small>Metodología</small>STAR (A-B-C-D-E)</div>')+scr+'</div></div></div>'+
-    '<div class="wrap"><div id="form">'+
+    '<div class="wrap"><div id="form">'+(ETAPA==='tecnica'?'':'<div class="sect card" id="iaBox"><div class="sl">Completar con la grabación de la entrevista</div><div style="font-size:13px;color:#3F4B66">Grabá la videollamada de Meet desde acá. Al terminar, la IA transcribe y completa el formulario para que lo revises y lo guardes. El audio no se guarda.</div><div style="margin-top:10px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button class="btn" onclick="FC.grabar()">🎙 Grabar entrevista (Meet)</button><span id="iaSt" style="font-size:13px;color:#5D6B82"></span></div></div>')+
     '<div class="sect card"><div class="sl">Datos del candidato</div><div class="meta3">'+
     inp('m-nom','Nombre','',c.nombre).replace('<input','<input disabled')+'<div><label class="l">Fecha</label><input type="date" id="m-fecha" value="'+hoy+'"></div>'+
     (ETAPA==='tecnica'?'':'<div><label class="l">Entrevistador/a</label><select id="m-ent"><option value="">— Elegí —</option>'+D.entrevistadores.map(function(e){return '<option'+(e===ent?' selected':'')+'>'+esc(e)+'</option>';}).join('')+'</select></div>')+
@@ -132,7 +132,27 @@ var FC=(function(){
     [ETAPA==='tecnica'?'guardarTecnica':'guardarCompetencias'](K,ETAPA==='tecnica'?{id:CID,fecha:v('m-fecha'),comps:comps,fortalezas:$('#fort').value,areas:$('#area').value,recomendacion:$('#rec').value,resultado:letra,motivoDescarte:mf}:{id:CID,entrevistador:v('m-ent'),fecha:v('m-fecha'),comps:comps,fortalezas:$('#fort').value,areas:$('#area').value,recomendacion:$('#rec').value,resultado:letra,motivoDescarte:mf,
       meta:{edad:v('m-edad'),localidad:v('m-loc'),familia:v('m-fam'),formacion:v('m-form'),empresaAct:v('m-emp'),puestoAct:v('m-pue'),antig:v('m-ant'),remAct:v('m-ra'),remPret:v('m-rp'),disp:v('m-disp'),motivo:v('m-mot'),movilidad:v('m-mov'),referencias:v('m-ref')}});
   }
+  function setSi(sel,v){var e=$(sel);if(e&&v&&!String(e.value||'').trim())e.value=v;}
+  function aplicar(r,texto){
+    D.comps.forEach(function(k){var x=(r.comps||[]).filter(function(c){return c.id===k.id;})[0];if(!x)return;if(x.nivel>0&&!S.niv[k.id])nivel(k.id,x.nivel);setSi('[data-n="'+k.id+'"]',x.evidencia);});
+    setSi('#fort',r.fortalezas);setSi('#area',r.areas);setSi('#rec',r.recomendacion);
+    var M={edad:'m-edad',localidad:'m-loc',familia:'m-fam',formacion:'m-form',empresaAct:'m-emp',puestoAct:'m-pue',antig:'m-ant',remAct:'m-ra',remPret:'m-rp',disp:'m-disp',motivo:'m-mot',movilidad:'m-mov',referencias:'m-ref'};
+    for(var k in M)setSi('#'+M[k],(r.meta||{})[k]);
+    var st=$('#iaSt');st.style.color='#1E8E5A';st.textContent='✓ Formulario completado por la IA. Revisá todo antes de guardar.';
+    $('#iaBox').insertAdjacentHTML('beforeend','<details style="margin-top:10px"><summary style="cursor:pointer;font-size:13px;font-weight:700;color:#034EA2">Ver transcripción</summary><div style="white-space:pre-wrap;font-size:12px;max-height:240px;overflow:auto;margin-top:6px;color:#3F4B66">'+esc(texto)+'</div></details>');
+    $('#iaBox').scrollIntoView({behavior:'smooth'});
+  }
+  function transcribir(p,i,acc,st){
+    if(i>=p.length){st.textContent='Analizando la entrevista…';
+      google.script.run.withSuccessHandler(function(r){aplicar(JSON.parse(r),acc.join(' '));}).withFailureHandler(function(e){st.textContent='';alert('No se pudo analizar: '+((e&&e.message)||e));}).analizarEntrevista(K,CID,acc.join(' '));return;}
+    st.textContent='Transcribiendo parte '+(i+1)+' de '+p.length+'…';
+    google.script.run.withSuccessHandler(function(t){acc.push(t);transcribir(p,i+1,acc,st);}).withFailureHandler(function(e){st.textContent='';alert('No se pudo transcribir: '+((e&&e.message)||e));}).transcribirAudio(K,p[i].b64,p[i].mime);
+  }
+  function grabar(){
+    var st=$('#iaSt');st.style.color='#5D6B82';st.textContent='';
+    window.EntrevistaRec.abrir(function(partes){transcribir(partes,0,[],st);});
+  }
   function volver(){if(O.onClose)O.onClose();}
-  return {open:open,pesoCh:pesoCh,nivel:nivel,manual:manual,guardar:guardar,volver:volver,motSel:motSel};
+  return {open:open,pesoCh:pesoCh,nivel:nivel,manual:manual,guardar:guardar,volver:volver,motSel:motSel,grabar:grabar};
 })();
 </script>
