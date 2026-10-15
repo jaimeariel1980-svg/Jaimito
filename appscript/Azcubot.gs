@@ -1493,7 +1493,8 @@ function azcuVisitasData_(atras, adelante){
     out.push({f:i+1, id:id, x:ext?1:0, dir:ext ? String(r[12]||'').trim() : (dirs[id]||id), im:ext ? String(r[11]||'').trim() : '', lk:ext ? String(r[13]||'').trim() : '', pr:ext ? String(r[14]||'').trim() : '', cli:String(r[3]||'').trim(), tel:String(r[4]||'').trim(), v:String(r[9]||'').trim(), c:String(r[10]||'').trim(), e:e, res:ag ? '' : res, obs:String(r[8]||'').trim().slice(0,400), d:azcuIsoN_(n), h:hh});
   }
   out.sort(function(a,b){ return a.d<b.d ? 1 : a.d>b.d ? -1 : (a.h<b.h ? 1 : a.h>b.h ? -1 : 0); });
-  var res0 = {items:out.slice(0,600), hoy:azcuIsoN_(hn), ahora:ahora};
+  var us = []; try{ azcuUsuarios_().forEach(function(u){ if(u.activo) us.push(u.nombre); }); }catch(e){}
+  var res0 = {items:out.slice(0,600), hoy:azcuIsoN_(hn), ahora:ahora, us:us};
   try{ cc.put(ck, JSON.stringify(res0), 20); }catch(e){}
   return res0;
 }
