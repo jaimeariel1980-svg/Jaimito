@@ -60,7 +60,7 @@ function getTablero(k) { return conTec_(() => getTablero_(k)); }
 function getResumen(k, fila) { return conTec_(() => getResumen_(k, fila)); }
 function cambiarPin(k, nuevo) { return conTec_(() => cambiarPin_(k, nuevo)); }
 function registrarAcceso(k, accion) { return conTec_(() => registrarAcceso_(k, accion)); }
-function getFichaEnfermeria(k, fila, forzar, indic) { return conTec_(() => getFichaEnfermeria_(k, fila, forzar, indic)); }
+function getFichaEnfermeria(k, fila, forzar, indic, crear) { return conTec_(() => getFichaEnfermeria_(k, fila, forzar, indic, crear)); }
 function getCVArchivo(k, fila) { return conTec_(() => getCVArchivo_(k, fila)); }
 function redactarIA(k, texto, indic) { return redactarIA_(k, texto, indic); }
 function analizarEntrevista(k, id, texto) { return analizarEntrevista_(k, id, texto); }
@@ -862,7 +862,7 @@ function fichaRevisada_(raw) {
   return !!(g && g.t && (g.ok === 1 || g.e === 1));
 }
 
-function getFichaEnfermeria_(k, fila, forzar, indic) {
+function getFichaEnfermeria_(k, fila, forzar, indic, crear) {
   admin_(k);
   const sh = hoja_('Candidatos');
   fila = Number(fila);
@@ -899,6 +899,10 @@ function getFichaEnfermeria_(k, fila, forzar, indic) {
     ficha.resumen = ''; ficha.editado = false; ficha.pendiente = true; ficha.aviso = 'La ficha se arma después de la entrevista de competencias.';
   } else if (!cv && !obs) {
     ficha.resumen = ''; ficha.editado = false;
+  } else if (!forzar && !crear) {
+    ficha.editado = false;
+    if (guardado && guardado.t) { ficha.resumen = guardado.t; ficha.aviso = 'Borrador sin revisar: cambió el CV o las observaciones.'; }
+    else { ficha.resumen = ''; ficha.aviso = 'La ficha todavía no está preparada. Usá "Preparar ficha para Enfermería".'; }
   } else {
     const usaIA = !!((cv && obs) || (cv.length + obs.length) > 400);
     ficha.resumen = usaIA ? generarResumenEnf_(cv, obs, forzar ? indic : '') : [cv, obs].filter(Boolean).join('\n');
