@@ -1809,15 +1809,17 @@ function novAbrir(hist){
 }
 setTimeout(novLoad,1500);setInterval(function(){if(!document.hidden)novLoad();},120000);document.addEventListener('visibilitychange',function(){if(!document.hidden)novLoad();});
 
-var VIS=[],VIS_HOY='',VIS_F={per:'prox',v:''};
+var VIS=[],VIS_HOY='',VIS_US=[],VIS_F={per:'prox',v:''};
+function _vN(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().split(/\s+/)[0];}
+function _visVends(){var m={},o=[];function add(n){n=String(n||'').trim();var k=_vN(n);if(k&&!m[k]){m[k]=1;o.push(n);}}VIS_US.forEach(add);(DATA||[]).forEach(function(x){add(x.vendedor);});VIS.forEach(function(x){add(x.v||x.c);});return o.sort();}
 function _vE(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 function _vIso(d){return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
-function visLoad(cb){google.script.run.withSuccessHandler(function(d){VIS=(d&&d.items)||[];VIS_HOY=(d&&d.hoy)||_vIso(new Date());visKpi();if(cb)cb();}).withFailureHandler(function(){if(cb)cb();}).visitasTb(60,60);}
+function visLoad(cb){google.script.run.withSuccessHandler(function(d){VIS=(d&&d.items)||[];VIS_US=(d&&d.us)||VIS_US;VIS_HOY=(d&&d.hoy)||_vIso(new Date());visKpi();if(cb)cb();}).withFailureHandler(function(){if(cb)cb();}).visitasTb(60,60);}
 function _visSem(){var d=new Date((VIS_HOY||_vIso(new Date()))+'T12:00:00'),w=(d.getDay()+6)%7,a=new Date(d),b=new Date(d);a.setDate(d.getDate()-w);b.setDate(d.getDate()-w+6);return [_vIso(a),_vIso(b)];}
 function visFiltrar(per,vend){
   var h=VIS_HOY||_vIso(new Date()),s=_visSem();
   return VIS.filter(function(x){
-    if(vend&&(x.v||x.c)!==vend)return false;
+    if(vend&&_vN(x.v||x.c)!==_vN(vend))return false;
     if(per==='hoy')return x.d===h;
     if(per==='sem')return x.d>=s[0]&&x.d<=s[1];
     if(per==='prox')return x.d>=h&&x.e==='a';
@@ -1832,13 +1834,12 @@ function visAbrir(per,vend){
   if(per)VIS_F.per=per;if(vend!==undefined)VIS_F.v=vend;
   var dl=document.getElementById('dlg');
   if(!VIS_HOY){dl.innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">🗓 Visitas</div></div><div class="fb"><div style="color:var(--gris);padding:20px 0">Cargando…</div></div>';document.getElementById('ov2').classList.add('on');visLoad(function(){if(VIS_HOY)visAbrir();else dl.querySelector('.fb').innerHTML='<div style="color:var(--rojo);padding:20px 0">No pude cargar las visitas. Probá de nuevo.</div>';});return;}
-  var CH=[['hoy','Hoy'],['sem','Semana'],['prox','Próximas'],['sinres','Sin resultado'],['real','Realizadas'],['todas','Todas']],vs={},h=VIS_HOY;
-  VIS.forEach(function(x){var n=x.v||x.c;if(n)vs[n]=1;});
+  var CH=[['hoy','Hoy'],['sem','Semana'],['prox','Próximas'],['sinres','Sin resultado'],['real','Realizadas'],['todas','Todas']],h=VIS_HOY,vs=_visVends();
   var asc=VIS_F.per==='hoy'||VIS_F.per==='sem'||VIS_F.per==='prox',l=visFiltrar(VIS_F.per,VIS_F.v);
   if(asc)l=l.slice().sort(function(a,b){return a.d<b.d?-1:a.d>b.d?1:(a.h<b.h?-1:a.h>b.h?1:0);});
   var hoyD=new Date(h+'T12:00:00'),man=new Date(hoyD);man.setDate(man.getDate()+1);var ayer=new Date(hoyD);ayer.setDate(ayer.getDate()-1);
   var html='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">'+CH.map(function(c){return '<button class="btn '+(c[0]===VIS_F.per?'p':'s')+'" style="padding:6px 11px;font-size:12.5px" onclick="visAbrir(\''+c[0]+'\')">'+c[1]+' <b>'+visFiltrar(c[0],VIS_F.v).length+'</b></button>';}).join('')+'</div>';
-  html+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap"><select onchange="visAbrir(null,this.value)" style="padding:6px 8px;border:1px solid var(--linea);border-radius:8px;font-size:13px"><option value="">Todos los vendedores</option>'+Object.keys(vs).sort().map(function(n){return '<option '+(n===VIS_F.v?'selected':'')+' value="'+_vE(n)+'">'+_vE(n)+'</option>';}).join('')+'</select><button class="btn g" style="margin-left:auto" onclick="visExtForm()">➕ Visita a otra inmobiliaria</button></div>';
+  html+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap"><select onchange="visAbrir(null,this.value)" style="padding:6px 8px;border:1px solid var(--linea);border-radius:8px;font-size:13px"><option value="">Todos los vendedores</option>'+vs.map(function(n){return '<option '+(_vN(n)===_vN(VIS_F.v)?'selected':'')+' value="'+_vE(n)+'">'+_vE(n)+'</option>';}).join('')+'</select><button class="btn g" style="margin-left:auto" onclick="visExtForm()">➕ Visita a otra inmobiliaria</button></div>';
   var last='';
   l.forEach(function(x){
     var d=new Date(x.d+'T12:00:00'),k=x.d===h?'Hoy':x.d===_vIso(man)?'Mañana':x.d===_vIso(ayer)?'Ayer':d.toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'});
@@ -1864,7 +1865,7 @@ function visBorrar(f){
 }
 function visExtForm(cod){
   var x=cod?VIS.filter(function(v){return v.id===cod;}).sort(function(a,b){return a.d<b.d?1:-1;})[0]:null,n=new Date(),loc=new Date(n.getTime()-n.getTimezoneOffset()*60000).toISOString().slice(0,16),hoy=_vIso(n),yo=_yo();
-  var vn=_vendNombres();if(yo&&vn.indexOf(yo)<0)vn.push(yo);
+  var vn=_visVends();if(yo&&!vn.some(function(v){return _vN(v)===_vN(yo);}))vn.push(yo);
   var RES2=['Solo consulta','Le interesó','No le interesó','Hizo una propuesta','Propuesta aceptada','Propuesta rechazada','No responde'];
   var inp=function(id,l,ph,v,ex){return '<label '+(ex||'')+'>'+l+'<input id="'+id+'" placeholder="'+(ph||'')+'" value="'+_vE(v||'')+'"></label>';};
   document.getElementById('dlg').innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">'+(x?'Resultado de la visita':'Visita a otra inmobiliaria')+'</div><div class="sub">'+(x?_vE('🏢 '+x.dir):'Propiedad ajena: no se guarda como propiedad, queda solo la visita')+'</div></div><div class="fb"><div class="form">'+
@@ -1875,7 +1876,7 @@ function visExtForm(cod){
     '<label class="ve-ya" style="display:'+(x?'':'none')+'">Fecha<input id="ve_fecha" type="date" value="'+hoy+'"></label>'+
     '<label class="ve-ya" style="display:'+(x?'':'none')+'">Resultado<select id="ve_res">'+RES2.map(function(r){return '<option>'+r+'</option>';}).join('')+'</select></label>'+
     (x?'':'<label class="ve-ag">Email del cliente (opc.)<input id="ve_mail" type="email" placeholder="le llega la invitación"></label>'+inp('ve_lk','Link de la ficha (Tokko, ZonaProp…)','https://…')+inp('ve_pr','Precio','Ej: U$S 85.000'))+
-    '<label>Vendedor<select id="ve_vend">'+vn.map(function(v){return '<option '+(v===yo?'selected':'')+'>'+_vE(v)+'</option>';}).join('')+'</select></label>'+
+    '<label>Vendedor<select id="ve_vend">'+vn.map(function(v){return '<option '+(_vN(v)===_vN(yo)?'selected':'')+'>'+_vE(v)+'</option>';}).join('')+'</select></label>'+
     '<label style="grid-column:1/-1">Observaciones<textarea id="ve_obs" rows="3" placeholder="Qué pasó, qué dijo, qué quiere…"></textarea></label></div>'+
     '<div class="dlbtns"><button class="btn g" id="ve_btn" onclick="visExtGuardar(\''+(x?_vE(x.id):'')+'\')">Guardar</button><button class="btn s" onclick="visAbrir()">Cancelar</button></div></div>';
   document.getElementById('ov2').classList.add('on');
