@@ -132,12 +132,12 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v94</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v95</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
     <button class="ni" onclick="verDireccion()"><span class="ic b">📊</span><b>Informe</b></button>
-    <button class="ni" onclick="vistaPreview()"><span class="ic g">🩺</span><b>Enfermería</b></button>
+    <button class="ni" onclick="vistaPreview()"><span class="ic g">🩺</span><b>Vista técnica</b></button>
     <button class="ni" onclick="descartes()"><span class="ic o">✉</span><b>Descartes</b></button>
     <button class="ni" id="bPerfil" style="display:none" onclick="verPerfil()"><span class="ic b">📋</span><b>Perfil del puesto</b></button>
     <button class="ni" id="bEnl" style="display:none" onclick="misEnlaces()"><span class="ic g">🔗</span><b>Enlaces</b></button>
@@ -431,7 +431,7 @@ function card(c){
   if(!terminal(c.estado)&&dd>=D.cfg.diasAlerta)pr+='<span class="tag r">🕒 '+dd+' d sin movimiento</span>';
   var mk='';
   if(/^Descartad/i.test(c.estado))mk+=c.motivo?'<span class="tag r">✖ '+esc(c.motivo.replace(/;\s*/g,' · '))+'</span>':'<span class="tag">Sin motivo cargado</span>';
-  if(!RO&&etapaIdx(c)===3&&!c.fichaOk)mk+='<span class="tag w">🩺 Falta ficha</span>';
+  if(!RO&&etapaIdx(c)===3&&!c.fichaOk)mk+='<span class="tag w">🩺 Falta resumen técnica</span>';
   var rcc=rc?'<span class="rcc" title="'+esc((c.recTipo?'Recomendado por: ':'')+rc)+'">★ '+esc(recCorto(c))+'</span>':'';
   if(c.proc&&c.proc!=='SI')mk+='<span class="tag w">'+(c.proc==='Pendiente'?'Analizando CV…':c.proc==='NoCV'?'¿No es un CV?':'Revisar CV')+'</span>';
   var bt=D.policlinicos.map(function(p,i){return '<button type="button" class="p'+(i+1)+(c.policlinico===p?' on':(!c.policlinico&&sugN(c)===p?' sug':''))+'" onclick="event.stopPropagation();asignarPol('+c.fila+','+i+')">'+esc(p.replace('Policlínico ',''))+(!c.policlinico&&sugN(c)===p?' ★':'')+'</button>';}).join('');
@@ -555,7 +555,7 @@ function abrir(f){
   else if(c.proc==='Revisar')al+='<div class="alerta a2">'+esc(c.just||'Revisar a mano')+'</div>';
   else if(c.proc==='Pendiente')al+='<div class="alerta a2">El CV todavía se está analizando.</div>';
   if(!terminal(c.estado)&&dd>=D.cfg.diasAlerta)al+='<div class="alerta a3">🕒 '+dd+' días sin movimiento en "'+esc(c.estado)+'".</div>';
-  if(!RO&&etapaIdx(c)===3&&!c.fichaOk)al+='<div class="alerta a2">🩺 Falta la ficha para Enfermería. Los jefes no ven nada hasta que la prepares y la guardes: tocá "Preparar ficha para Enfermería".</div>';
+  if(!RO&&etapaIdx(c)===3&&!c.fichaOk)al+='<div class="alerta a2">🩺 Falta el resumen para la entrevista técnica. Los jefes no ven nada hasta que lo prepares y lo guardes: tocá "Preparar resumen técnica".</div>';
   var etapasNota=['cv','screening','competencias'];
   if(c.notaP2||/técnica|Contratado/i.test(c.estado))etapasNota=etapasNota.concat(['pami2']);
   var vals={cv:c.ajuste,screening:c.notaScr,competencias:c.notaComp,pami1:c.notaP1,pami2:c.notaP2};
@@ -565,7 +565,7 @@ function abrir(f){
   document.getElementById('mbox').innerHTML=
     '<div class="hd"><div><h2>'+esc(c.nombre)+'</h2><small>'+esc(tit(c.busq))+' · '+esc(c.estado)+'</small><div class="ecs">'+etapasHdr(c)+'</div></div><button class="x" onclick="cerrar()">×</button></div><div class="bd">'+al+
     '<div class="btns tb">'+etapaBtn(f,'screening',c.infScr,'📝 Formulario screening','Ver screening')+etapaBtn(f,'competencias',c.infComp,'💼 Formulario competencias','Ver competencias')+'<button class="btn" onclick="abrirForm(\'tecnica\','+f+')">🩺 Formulario técnica</button></div>'+
-    '<div class="btns tb">'+(c.resp.length?'<button class="btn ghost" onclick="verPost('+f+',this)">📋 Ver postulación</button>':'')+(c.docs?'<a class="btn ghost" target="_blank" href="'+esc(c.docs)+'">📂 Documentación</a>':'')+(c.fichaOk?'<span class="bg"><button class="btn ghost" onclick="verResumen('+f+',this,true)">🩺 Ficha Enfermería ✓</button>'+(RO?'':'<button class="btn ghost ed" title="Editar la ficha de Enfermería" onclick="editarFicha('+f+')">✏️</button>')+'</span>':(!RO&&(c.notaComp||c.infComp||etapaIdx(c)===3)?'<button class="btn '+(etapaIdx(c)===3?'warn':'ghost')+'" onclick="editarFicha('+f+')">🩺 Preparar ficha Enfermería</button>':''))+'</div>'+
+    '<div class="btns tb">'+(c.resp.length?'<button class="btn ghost" onclick="verPost('+f+',this)">📋 Ver postulación</button>':'')+(c.docs?'<a class="btn ghost" target="_blank" href="'+esc(c.docs)+'">📂 Documentación</a>':'')+(c.fichaOk?'<span class="bg"><button class="btn ghost" onclick="verResumen('+f+',this,true)">🩺 Resumen técnica ✓</button>'+(RO?'':'<button class="btn ghost ed" title="Editar el resumen para la entrevista técnica" onclick="editarFicha('+f+')">✏️</button>')+'</span>':(!RO&&(c.notaComp||c.infComp||etapaIdx(c)===3)?'<button class="btn '+(etapaIdx(c)===3?'warn':'ghost')+'" onclick="editarFicha('+f+')">🩺 Preparar resumen técnica</button>':''))+'</div>'+
     '<div class="btns tb">'+(c.cv?'<a class="btn ghost" target="_blank" href="'+esc(c.cv)+'">📄 Ver CV</a>':'')+(c.tel?'<button class="btn wa" onclick="menuWA('+f+')">💬 WhatsApp ▾</button>':'')+(/@/.test(c.email||'')?'<a class="btn ghost" target="_blank" href="https://mail.google.com/mail/?view=cm&to='+encodeURIComponent(c.email)+'">✉ Mail</a>':'')+'<button class="btn ghost" onclick="agendar('+f+')">📅 Agendar</button>'+(puedeDesc?'<button class="btn ghost" onclick="descarteMail('+f+',this)">✉ Descarte por mail</button>':'')+(c.proc!=='SI'?'<button class="btn ghost" onclick="rean('+f+',this)">↻ Re-analizar CV</button>':'')+'</div>'+
     '<div class="fp">'+panel('Contacto',[kv('Teléfono',c.tel),kv('DNI',c.dni),kv('Email',c.email),kv('Domicilio',c.domicilio),kv('Localidad',c.loc),kv('Zona',c.zona)])+panel('Postulación',[kv('Recibido',c.fecha),kv('Llegó por',c.fuente),kv('Formación',c.formacion),kv('Pretensión',money(c.pret)),kv('Conoce a alguien en PAMI',c.conoce)])+panel('Proceso',[kv('Estado',c.estado),kv('Policlínico',c.policlinico||'Sin asignar'),kv('Sugerido por cercanía',c.polSug),kv('Notas por etapa',notasTxt(c)),kv('Turno preferido',String(c.turno||'').replace(/;/g,' ·')),kv('Entrevistó screening',(c.ent||{}).screening),kv('Entrevistó competencias',(c.ent||{}).competencias),kv('Entrevistó técnica',(c.ent||{}).pami2),(c.contactado?'<div class="kv"><small>Último contacto</small><b>'+esc(ultCont(c)||c.contactado)+(RO?'':'<button class="mini" title="Borrar la marca de contacto" onclick="borrarMarca('+f+')">✕</button>')+'</b></div>':''),kv('Descartó',/^Descartad/i.test(c.estado)?c.descPor:''),kv('Descarte',c.descarte)],true)+'</div>'+
     (c.just?'<div class="sec">Análisis del CV</div><div class="txt"><b>'+esc(c.just)+'</b></div>':'')+(c.resumen?'<div class="txt" style="margin-top:6px">'+esc(c.resumen)+'</div>':'')+(c.req?'<div class="txt" style="margin-top:6px;color:#5D6B82">'+esc(c.req)+'</div>':'')+resp+
@@ -757,12 +757,12 @@ function vistaPreview(poli){
   var est=['Avanza a entrevista técnica','Entrevista técnica agendada'];
   var L=D.cands.filter(function(c){var p=c.policlinico||String(c.polSug||'').split(' · ')[0];return est.indexOf(c.estado)>-1&&(!VPP||p===VPP);}).sort(function(a,b){return String(a.cita?a.cita.ts:'9')<String(b.cita?b.cita.ts:'9')?-1:1;});
   L.forEach(function(c){if(!c.policlinico)c.policlinico=String(c.polSug||'').split(' · ')[0];});
-  tecOverlay().innerHTML='<div class="hdr"><div class="in"><span class="lg w"></span><div class="prod">Vista de Enfermería<small class="ver">así la ven los jefes</small></div><span class="sp"></span><select style="width:auto;margin-right:8px" onchange="vistaPreview(this.value)"><option value="">Todos los policlínicos</option>'+D.policlinicos.map(function(p){return '<option'+(p===VPP?' selected':'')+'>'+p+'</option>';}).join('')+'</select><button class="cta" onclick="cerrarPreview()">← Volver al tablero</button></div></div>'+
+  tecOverlay().innerHTML='<div class="hdr"><div class="in"><span class="lg w"></span><div class="prod">Vista de entrevista técnica<small class="ver">así la ven los jefes</small></div><span class="sp"></span><select style="width:auto;margin-right:8px" onchange="vistaPreview(this.value)"><option value="">Todos los policlínicos</option>'+D.policlinicos.map(function(p){return '<option'+(p===VPP?' selected':'')+'>'+p+'</option>';}).join('')+'</select><button class="cta" onclick="cerrarPreview()">← Volver al tablero</button></div></div>'+
     '<div style="max-width:900px;margin:0 auto;padding:18px 16px 60px"><div style="font-size:14px;color:#5D6B82;margin-bottom:14px">'+(L.length?L.length+' candidato'+(L.length===1?'':'s')+' para entrevista técnica'+(VPP?' en '+esc(VPP):'')+'. Cada jefe ve solo los de su policlínico.':'No hay candidatos para entrevista técnica'+(VPP?' en '+esc(VPP):'')+' por ahora.')+'</div>'+L.map(tecCard).join('')+'</div>';
 }
 function editarFicha(f){
   var c=byFila(f),mb=document.getElementById('mbox');
-  mb.innerHTML='<div class="hd"><div><h2>Ficha para Enfermería</h2><small>'+esc(c.nombre)+' · es el texto que leen los jefes</small></div><button class="x" onclick="cerrar()">×</button></div><div class="bd" id="fcb"><div class="loading">Cargando…</div></div>';
+  mb.innerHTML='<div class="hd"><div><h2>Resumen para la entrevista técnica</h2><small>'+esc(c.nombre)+' · es el texto que leen los jefes</small></div><button class="x" onclick="cerrar()">×</button></div><div class="bd" id="fcb"><div class="loading">Cargando…</div></div>';
   document.getElementById('modal').classList.add('show');
   gs().withSuccessHandler(function(r){
     delete FICHAS[f];var x=JSON.parse(r),b=document.getElementById('fcb');if(!b)return;
@@ -771,7 +771,7 @@ function editarFicha(f){
 }
 function guardarFicha(f,btn){
   var t=document.getElementById('fichaTxt').value;btn.disabled=true;btn.textContent='Guardando…';
-  gs().withSuccessHandler(function(){delete FICHAS[f];var cc=byFila(f);if(cc)cc.fichaOk=!!t.trim();toast(t.trim()?'Ficha guardada: ya la ven los jefes':'Ficha borrada');cerrar();render();}).withFailureHandler(function(e){btn.disabled=false;btn.textContent='Guardar';fer(e);}).guardarFichaEnfermeria(K,f,t);
+  gs().withSuccessHandler(function(){delete FICHAS[f];var cc=byFila(f);if(cc)cc.fichaOk=!!t.trim();toast(t.trim()?'Resumen guardado: ya lo ven los jefes':'Resumen borrado');cerrar();render();}).withFailureHandler(function(e){btn.disabled=false;btn.textContent='Guardar';fer(e);}).guardarFichaEnfermeria(K,f,t);
 }
 function regenerarFicha(f,btn){
   if(!confirm('Se reemplaza el texto actual por uno nuevo armado desde cero. ¿Seguir?'))return;
@@ -830,16 +830,16 @@ function verResumen(f,btn,enf){
   var c=byFila(f);
   if(enf&&FICHAS[f]&&FICHAS[f].m===c.mov){abrirInforme(htmlEnfermeria(FICHAS[f].x));return;}
   var t=btn.textContent;btn.disabled=true;btn.textContent='Abriendo…';
-  var ok=function(r){btn.disabled=false;btn.textContent=t;var x=JSON.parse(r);if(enf){FICHAS[f]={m:c.mov,x:x};if(x.generada)toast('Ficha armada con IA y guardada');}abrirInforme(enf?htmlEnfermeria(x):htmlResumen(c,x));},ko=function(e){btn.disabled=false;btn.textContent=t;fer(e);};
+  var ok=function(r){btn.disabled=false;btn.textContent=t;var x=JSON.parse(r);if(enf){FICHAS[f]={m:c.mov,x:x};if(x.generada)toast('Resumen armado con IA y guardado');}abrirInforme(enf?htmlEnfermeria(x):htmlResumen(c,x));},ko=function(e){btn.disabled=false;btn.textContent=t;fer(e);};
   if(enf)gs().withSuccessHandler(ok).withFailureHandler(ko).getFichaEnfermeria(K,f);else gs().withSuccessHandler(ok).withFailureHandler(ko).getResumen(K,f);
 }
 function htmlEnfermeria(x){
-  var h='<div class="hd"><div style="display:flex;align-items:center;gap:16px">'+infLogo()+'<div><small>Ficha del candidato · '+infFecha()+'</small><h1>'+esc(x.nombre)+'</h1><div class="s">'+esc(tit(x.busq))+(x.policlinico?' · '+esc(x.policlinico):'')+'</div></div></div></div>';
+  var h='<div class="hd"><div style="display:flex;align-items:center;gap:16px">'+infLogo()+'<div><small>Resumen para la entrevista técnica · '+infFecha()+'</small><h1>'+esc(x.nombre)+'</h1><div class="s">'+esc(tit(x.busq))+(x.policlinico?' · '+esc(x.policlinico):'')+'</div></div></div></div>';
   h+='<div class="g g3">'+infCard('Edad',x.edad)+infCard('Localidad',x.localidad)+infCard('Formación',x.formacion)+infCard('Experiencia actual',x.experiencia)+infCard('Antigüedad',x.antig)+'</div>';
   if(x.aviso)h+='<div class="cd"><div class="tx" style="color:#5D6B82">'+esc(x.aviso)+'</div></div>';
-  if(x.resumen&&x.revisada===false)h+='<div class="cd"><div class="tx" style="color:#7A5200;background:#FFF1D6">Borrador sin revisar: los jefes todavía no lo ven. Se publica desde "Preparar ficha para Enfermería".</div></div>';
+  if(x.resumen&&x.revisada===false)h+='<div class="cd"><div class="tx" style="color:#7A5200;background:#FFF1D6">Borrador sin revisar: los jefes todavía no lo ven. Se publica desde "Preparar resumen técnica".</div></div>';
   if(x.resumen)h+='<h2>Resumen</h2><div class="cd"><div class="tx" style="font-size:15px;line-height:1.6">'+esc(x.resumen)+'</div></div>';
-  return infDoc('Ficha · '+x.nombre,h);
+  return infDoc('Resumen técnica · '+x.nombre,h);
 }
 function htmlResumen(c,ev){
   var S=ev.screening||{},C=ev.competencias||{},T=ev.pami2||{},sd=(S.datos||{}).datos||{},cd=C.datos||{},cm=cd.meta||{},td=T.datos||{};
