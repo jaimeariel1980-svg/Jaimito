@@ -91,7 +91,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 .fo2{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;margin:2px 0 4px}#board .card .fo2 .fo{margin:0}.rcc{flex-shrink:0;background:#FFF6D6;color:#7A5200;border:1px solid #E8C45A;border-radius:10px;padding:1px 9px;font-size:11px;font-weight:800;letter-spacing:.02em;white-space:nowrap}
 .ecs{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:9px}.ec{display:inline-flex;align-items:center;gap:6px;padding-bottom:3px;border-bottom:2px solid transparent}.ec small{display:inline;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;opacity:.7}.ec.on{border-bottom-color:#fff}.ec.on small{opacity:1}.hd .badge.vac{background:rgba(255,255,255,.2);color:#fff;min-width:26px;text-align:center}.hd .ec .badge{min-width:26px;text-align:center}
 .tag.tn{background:#E8E4FA;color:#3B2E8A;border:1px solid #9B8FE0;font-weight:800}.chk{display:flex;gap:8px;flex-wrap:wrap}.ck{display:flex;align-items:center;gap:7px;border:1.5px solid #AEBBD0;border-radius:6px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer;background:#fff;color:#1B2B45}.ck input{width:auto;margin:0}.ck:has(input:checked){background:#EAF3FF;border-color:#034EA2;color:#034EA2}
-.tag.cita{background:#D9F3E4;color:#14502F;border:1px solid #1E8E5A;font-weight:800}.tag.ctc{background:#FFF1D6;color:#7A5200;border:1px solid #F2B705;font-weight:700}.tag.cita.hoy{background:#1E8E5A;color:#fff;border-color:#14764A}.tag.w{background:#FFF1D6;color:#8A5A00}.tag.g{background:#D9F3E4;color:#14502F}.tag.r{background:#FDE3E1;color:#9B2C28}
+.tag.cita{background:#D9F3E4;color:#14502F;border:1px solid #1E8E5A;font-weight:800}.tag.ctc{background:#FFF1D6;color:#7A5200;border:1px solid #F2B705;font-weight:700}.tag.cita.hoy{background:#1E8E5A;color:#fff;border-color:#14764A}.tag.w{background:#FFF1D6;color:#8A5A00}.tag.g{background:#D9F3E4;color:#14502F}.tag.r{background:#FDE3E1;color:#9B2C28}.tag.gr{background:#ECEEF1;color:#4A5563;border:1px solid #AEB6C2;font-weight:700}.tag.gr .tdel{border-color:#7B8794;color:#4A5563}
 #fmodal{display:none;position:fixed;inset:0;background:var(--bg);z-index:60;overflow:auto}
 #fmodal.show{display:block}
 .fbar{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid var(--line);padding:10px 20px;display:flex;gap:10px;align-items:center}
@@ -134,7 +134,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v111</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v112</small></div>
   <nav>
     <button class="ni" id="rf" onclick="cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -430,7 +430,7 @@ function card(c){
   var ep=etapaPend(c);
   if(ep&&!ct)pr+=etqContacto(c)===ep?'<span class="tag ctc cx">💬 '+esc(contactoTxt(c.contactado))+(RO?'':'<button class="tdel" title="Borrar la marca de contacto" onclick="event.stopPropagation();borrarMarca('+c.fila+',1)">✕</button>')+'</span>':'<span class="tag w">➜ Falta contactar para '+ep+'</span>';
   if(c.descarte)pr+='<span class="tag">✉ Descarte enviado</span>';
-  if(c.docs)pr+='<span class="tag g">📁 Documentación recibida</span>';else if(c.docPed)pr+='<span class="tag w">📄 Documentación pedida · '+esc(c.docPed)+'</span>';
+  if(c.docs)pr+='<span class="tag g">📁 Documentación recibida</span>';else if(c.docPed)pr+='<span class="tag gr cx">📄 Documentación pedida · '+esc(c.docPed)+(RO?'':'<button class="tdel" title="Borrar la marca de documentación pedida" onclick="event.stopPropagation();borrarDocs('+c.fila+')">✕</button>')+'</span>';
   if(!terminal(c.estado)&&dd>=D.cfg.diasAlerta)pr+='<span class="tag r">🕒 '+dd+' d sin movimiento</span>';
   var mk='';
   if(/^Descartad/i.test(c.estado))mk+=c.motivo?'<span class="tag r">✖ '+esc(c.motivo.replace(/;\s*/g,' · '))+'</span>':'<span class="tag">Sin motivo cargado</span>';
@@ -625,6 +625,7 @@ function guardar(f,acc){
 }
 function rean(f,btn){btn.textContent='Analizando…';btn.disabled=true;gs().withSuccessHandler(function(){cargar();cerrar();}).withFailureHandler(function(e){btn.textContent='↻ Re-analizar CV';btn.disabled=false;fer(e);}).reanalizar(K,f);}
 function borrarMarca(f,t){var cc=byFila(f);if(!confirm('¿Borrar la marca de contacto'+(cc?' de '+cc.nombre:'')+'?'))return;gs().withSuccessHandler(function(){byFila(f).contactado='';render();if(!t)abrir(f);else toast('Marca de contacto borrada');}).withFailureHandler(fer).borrarMarcaContacto(K,f);}
+function borrarDocs(f){var cc=byFila(f);if(!confirm('¿Borrar la marca de documentación pedida'+(cc?' de '+cc.nombre:'')+'?'))return;gs().withSuccessHandler(function(){byFila(f).docPed='';render();toast('Marca borrada');}).withFailureHandler(fer).borrarMarcaDocs(K,f);}
 function descarteMail(f,btn){
   if(!confirm('¿Enviar el mail de descarte a este candidato? No se puede deshacer.'))return;
   btn.textContent='Enviando…';btn.disabled=true;

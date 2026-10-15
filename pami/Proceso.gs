@@ -406,6 +406,7 @@ function getTablero_(k) {
     if (n > 0) {
       const ini = Math.max(2, hs.getLastRow() - 4999);
       hs.getRange(ini, 1, hs.getLastRow() - ini + 1, 6).getValues().forEach(x => {
+        if (x[1] && x[3] === 'Contacto' && /^Documentación: marca borrada/.test(String(x[4]))) delete docPed[String(x[1])];
         if (x[1] && x[3] === 'Contacto' && /WhatsApp: documentaci/i.test(String(x[4])) && x[0] instanceof Date) docPed[String(x[1])] = fmt_(x[0], 'dd/MM');
         if (x[1] && x[3] !== 'Reactivado' && /(→\s*|a ")Descartad/.test(String(x[4]))) descPor[String(x[1])] = (String(x[5] || '').trim() || 'sistema') + (x[0] instanceof Date ? ' · ' + fmt_(x[0], 'dd/MM') : '');
       });
@@ -630,6 +631,13 @@ function armarComunicacion(k, fila, tipo) {
 function borrarMarcaContacto(k, fila) {
   escritor_(k);
   hoja_('Candidatos').getRange(Number(fila), COL.contactado).clearContent();
+  return true;
+}
+
+function borrarMarcaDocs(k, fila) {
+  escritor_(k);
+  const r = hoja_('Candidatos').getRange(Number(fila), 1, 1, COL.id).getValues()[0];
+  registrarHistorial_(r[COL.id - 1], r[COL.nombre - 1], 'Contacto', 'Documentación: marca borrada', 'tablero');
   return true;
 }
 
