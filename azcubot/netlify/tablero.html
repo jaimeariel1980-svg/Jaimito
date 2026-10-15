@@ -43,7 +43,7 @@ function transport(fn, args, ok, onErr){
   pollT = setTimeout(poll, 500); if(ls('azcu_via')==='anon') setTimeout(fallback, 300);
   if(QUICK.indexOf(fn)>=0){ var pl0; try{ pl0 = btoa(unescape(encodeURIComponent(json))); }catch(e){ pl0 = ''; } if(pl0 && pl0.length <= 6500){ jsonp('&azc='+encodeURIComponent(pl0), false); jsonp('&azc='+encodeURIComponent(pl0), true); } }
 }
-var QUICK = ['getDatos','obtenerConsultasWS','obtenerEncuesta','obtenerPropiedades','obtenerPropiedadesDoc','azcuAtajo','azcuWarm','azcuMov','novedadesTb','azcuAgenda'];
+var QUICK = ['getDatos','obtenerConsultasWS','obtenerEncuesta','obtenerPropiedades','obtenerPropiedadesDoc','azcuAtajo','azcuWarm','azcuMov','novedadesTb','visitasTb','azcuAgenda'];
 var PUBLIC = ['obtenerDatosOFallar','extraerDatosDNI','extraerDatosPropiedad','extraerDatosEscritura','clasificarPaginasLegajo','precargarDatos','guardarEncuesta'];
 var pinQ = null;
 function askPin(msg, cb){
@@ -199,7 +199,7 @@ td{padding:7px 8px;border-bottom:1px solid #f1f0ec;vertical-align:top}
 <div class="top"><div class="chip"><img id="logoimg" alt="Azcuénaga"></div>
 <div class="sep"></div><h1>Tablero de propiedades</h1><div class="dir">Mendoza 4873 · Rosario</div><button class="dlbtn" onclick="descargar()">Descargar</button></div>
 <div class="wrap">
-  <div class="nav"><button class="tab on" id="tabR" onclick="ver('resumen')">Resumen</button><button class="tab" id="tabP" onclick="ver('props')">Propiedades</button><button class="tab" id="tabC" onclick="ver('cons')">💬 Consultas WhatsApp <span id="consBadge" style="display:none;background:#d1495b;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px"></span></button><button class="tab" id="tabN" onclick="novAbrir()">🔔 Novedades <span id="novBadge" style="display:none;background:#d1495b;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px"></span></button><a class="tab" style="text-decoration:none;display:inline-block" href="#" onclick="irApp('');return false" rel="noopener">Ir a Precarga</a><a class="tab" style="text-decoration:none;display:inline-block" href="#" onclick="irApp('?app=procedimiento');return false" rel="noopener">Ir a Procedimiento de Ventas</a></div>
+  <div class="nav"><button class="tab on" id="tabR" onclick="ver('resumen')">Resumen</button><button class="tab" id="tabP" onclick="ver('props')">Propiedades</button><button class="tab" id="tabC" onclick="ver('cons')">💬 Consultas WhatsApp <span id="consBadge" style="display:none;background:#d1495b;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px"></span></button><button class="tab" id="tabV" onclick="visAbrir('prox')">🗓 Visitas</button><button class="tab" id="tabN" onclick="novAbrir()">🔔 Novedades <span id="novBadge" style="display:none;background:#d1495b;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px"></span></button><a class="tab" style="text-decoration:none;display:inline-block" href="#" onclick="irApp('');return false" rel="noopener">Ir a Precarga</a><a class="tab" style="text-decoration:none;display:inline-block" href="#" onclick="irApp('?app=procedimiento');return false" rel="noopener">Ir a Procedimiento de Ventas</a></div>
   <div id="cons" style="display:none"></div>
   <div id="resumen">
   <div class="dash" id="dash"></div>
@@ -819,7 +819,7 @@ function render(){
   var _sat=_enc.length?Math.round(_enc.reduce(function(a,p){return a+(parseFloat(p.encuesta.cal)||0);},0)/_enc.length*10)/10:null;
   document.getElementById('dash').innerHTML=
     kpi(f.length,'Propiedades','','todas')+kpi(activas.length,'Activas','','activas')+kpi(vend,'Vendidas','g','et:Vendida')+
-    kpi(susp,'Suspendidas','','et:Suspendida')+kpi(_sat===null?'—':_sat+'/10','Satisfacción',(_sat===null?'':(_sat>=8?'g':(_sat>=5?'a':'r'))),'sat:Todas')+kpi(ofN,'Propuestas','g','ofertas')+kpiAl(nAl);
+    kpi(susp,'Suspendidas','','et:Suspendida')+kpi(_sat===null?'—':_sat+'/10','Satisfacción',(_sat===null?'':(_sat>=8?'g':(_sat>=5?'a':'r'))),'sat:Todas')+kpi(ofN,'Propuestas','g','ofertas')+kpiV('Visitas hoy','kVh','hoy')+kpiV('Visitas semana','kVs','sem')+kpiAl(nAl);
   const cnt={};ET.forEach(e=>cnt[e[0]]=0);f.forEach(p=>{if(cnt[p.etapa]!=null)cnt[p.etapa]++});
   const segE=ET.map(e=>({l:e[0],v:cnt[e[0]],c:e[1],k:'et:'+e[0]}));const actPct=f.length?Math.round((activas.length/f.length)*100):0;document.getElementById('bars').innerHTML=donutPanel(segE,f.length,'activas',actPct+'%');
   var _encs=f.filter(function(p){return p.encuesta&&p.encuesta.cal;});
@@ -1157,6 +1157,7 @@ function consMarcar(fila,btn){
 setTimeout(function(){try{consCargar(true);}catch(e){}},4000);
 function recargar(reabrir){
   google.script.run.withSuccessHandler(function(datos){ DATA=adaptar(datos); try{ _ck=JSON.stringify(datos); localStorage.setItem('azdatos_v1',_ck); }catch(e){} render(); if(reabrir)ficha(reabrir); }).getDatos();
+  try{visLoad();}catch(e){}
 }
 function _subOv(txt){
   var o=document.getElementById('subOv');
@@ -1808,6 +1809,90 @@ function novAbrir(hist){
 }
 setTimeout(novLoad,1500);setInterval(function(){if(!document.hidden)novLoad();},120000);document.addEventListener('visibilitychange',function(){if(!document.hidden)novLoad();});
 
+var VIS=[],VIS_HOY='',VIS_F={per:'prox',v:''};
+function _vE(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function _vIso(d){return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2);}
+function visLoad(cb){google.script.run.withSuccessHandler(function(d){VIS=(d&&d.items)||[];VIS_HOY=(d&&d.hoy)||_vIso(new Date());visKpi();if(cb)cb();}).withFailureHandler(function(){if(cb)cb();}).visitasTb(60,60);}
+function _visSem(){var d=new Date((VIS_HOY||_vIso(new Date()))+'T12:00:00'),w=(d.getDay()+6)%7,a=new Date(d),b=new Date(d);a.setDate(d.getDate()-w);b.setDate(d.getDate()-w+6);return [_vIso(a),_vIso(b)];}
+function visFiltrar(per,vend){
+  var h=VIS_HOY||_vIso(new Date()),s=_visSem();
+  return VIS.filter(function(x){
+    if(vend&&(x.v||x.c)!==vend)return false;
+    if(per==='hoy')return x.d===h;
+    if(per==='sem')return x.d>=s[0]&&x.d<=s[1];
+    if(per==='prox')return x.d>=h&&x.e==='a';
+    if(per==='sinres')return x.e==='p';
+    if(per==='real')return x.e==='r';
+    return true;
+  });
+}
+function visKpi(){var a=document.getElementById('kVh'),b=document.getElementById('kVs');if(a)a.textContent=visFiltrar('hoy').length;if(b)b.textContent=visFiltrar('sem').length;}
+function kpiV(l,id,per){return '<div class="kpi clk" onclick="visAbrir(\''+per+'\',\'\')"><div class="n" id="'+id+'">'+(VIS_HOY?visFiltrar(per).length:'…')+'</div><div class="l">'+l+'</div><div class="hint">ver detalle</div></div>';}
+function visAbrir(per,vend){
+  if(per)VIS_F.per=per;if(vend!==undefined)VIS_F.v=vend;
+  var dl=document.getElementById('dlg');
+  if(!VIS_HOY){dl.innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">🗓 Visitas</div></div><div class="fb"><div style="color:var(--gris);padding:20px 0">Cargando…</div></div>';document.getElementById('ov2').classList.add('on');visLoad(function(){if(VIS_HOY)visAbrir();else dl.querySelector('.fb').innerHTML='<div style="color:var(--rojo);padding:20px 0">No pude cargar las visitas. Probá de nuevo.</div>';});return;}
+  var CH=[['hoy','Hoy'],['sem','Semana'],['prox','Próximas'],['sinres','Sin resultado'],['real','Realizadas'],['todas','Todas']],vs={},h=VIS_HOY;
+  VIS.forEach(function(x){var n=x.v||x.c;if(n)vs[n]=1;});
+  var asc=VIS_F.per==='hoy'||VIS_F.per==='sem'||VIS_F.per==='prox',l=visFiltrar(VIS_F.per,VIS_F.v);
+  if(asc)l=l.slice().sort(function(a,b){return a.d<b.d?-1:a.d>b.d?1:(a.h<b.h?-1:a.h>b.h?1:0);});
+  var hoyD=new Date(h+'T12:00:00'),man=new Date(hoyD);man.setDate(man.getDate()+1);var ayer=new Date(hoyD);ayer.setDate(ayer.getDate()-1);
+  var html='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">'+CH.map(function(c){return '<button class="btn '+(c[0]===VIS_F.per?'p':'s')+'" style="padding:6px 11px;font-size:12.5px" onclick="visAbrir(\''+c[0]+'\')">'+c[1]+' <b>'+visFiltrar(c[0],VIS_F.v).length+'</b></button>';}).join('')+'</div>';
+  html+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap"><select onchange="visAbrir(null,this.value)" style="padding:6px 8px;border:1px solid var(--linea);border-radius:8px;font-size:13px"><option value="">Todos los vendedores</option>'+Object.keys(vs).sort().map(function(n){return '<option '+(n===VIS_F.v?'selected':'')+' value="'+_vE(n)+'">'+_vE(n)+'</option>';}).join('')+'</select><button class="btn g" style="margin-left:auto" onclick="visExtForm()">➕ Visita a otra inmobiliaria</button></div>';
+  var last='';
+  l.forEach(function(x){
+    var d=new Date(x.d+'T12:00:00'),k=x.d===h?'Hoy':x.d===_vIso(man)?'Mañana':x.d===_vIso(ayer)?'Ayer':d.toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'});
+    if(k!==last){html+='<div style="margin:12px 0 5px;font-size:12px;font-weight:700;color:var(--gris);text-transform:uppercase;letter-spacing:.04em">'+_vE(k)+'</div>';last=k;}
+    var bd=x.e==='a'?['Agendada','#eaf1ff','#2b4a8b']:x.e==='p'?['Falta resultado','#fff1e0','#b4620a']:[x.res||'Realizada','#e9f6ee','#2e7d4f'];
+    html+='<div onclick="'+(x.x?'visDet('+x.f+')':'closeDL();ficha(\''+_vE(x.id)+'\')')+'" style="display:flex;gap:10px;padding:9px 10px;border-radius:10px;margin-bottom:4px;cursor:pointer;background:#f6f8fc"><div style="min-width:44px;font-weight:700;color:#2b4a8b;font-size:13px">'+(x.h||'—')+'</div><div style="min-width:0;flex:1"><div style="font-size:13.5px;font-weight:700">'+(x.x?'🏢 ':'🏠 ')+_vE(x.dir)+'</div><div style="font-size:12px;color:var(--gris)">'+(x.x&&x.im?_vE(x.im)+' · ':'')+_vE(x.cli||'—')+(x.v||x.c?' · 👤 '+_vE(x.v||x.c):'')+'</div></div><span style="align-self:center;background:'+bd[1]+';color:'+bd[2]+';border-radius:8px;padding:2px 8px;font-size:11px;font-weight:700;white-space:nowrap">'+_vE(bd[0])+'</span></div>';
+  });
+  if(!l.length)html+='<div style="color:var(--gris);padding:18px 0;text-align:center">No hay visitas en esta vista.</div>';
+  dl.innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">🗓 Visitas</div><div class="sub">Propias y a propiedades de otras inmobiliarias · tocá una para abrirla</div></div><div class="fb">'+html+'</div>';
+  document.getElementById('ov2').classList.add('on');
+}
+function visDet(f){
+  var x=VIS.filter(function(v){return +v.f===+f;})[0];if(!x){visAbrir();return;}
+  var row=function(a,b){return b?'<tr><td style="color:var(--gris);width:34%">'+a+'</td><td>'+b+'</td></tr>':'';};
+  var lk=x.lk?(/^https?:\/\//i.test(x.lk)?'<a href="'+_vE(x.lk)+'" target="_blank" rel="noopener">'+_vE(x.lk)+'</a>':_vE(x.lk)):'';
+  var est=x.e==='a'?'Agendada':x.e==='p'?'Ya pasó · falta cargar el resultado':(x.res||'Realizada');
+  document.getElementById('dlg').innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">🏢 '+_vE(x.dir)+'</div><div class="sub">Visita a propiedad de otra inmobiliaria</div></div><div class="fb"><table>'+row('Fecha',x.d.split('-').reverse().join('/')+(x.h?' · '+x.h:''))+row('Estado',_vE(est))+row('Inmobiliaria',_vE(x.im))+row('Cliente',_vE(x.cli))+row('Teléfono',_vE(x.tel))+row('Vendedor',_vE(x.v||x.c))+row('Precio',_vE(x.pr))+row('Ficha',lk)+row('Detalle',_vE(x.obs).replace(/\n/g,'<br>'))+'</table><div class="dlbtns">'+(x.e!=='r'?'<button class="btn g" onclick="visExtForm(\''+_vE(x.id)+'\')">✅ Cargar resultado</button>':'')+'<button class="btn s" onclick="visBorrar('+x.f+')">🗑 Borrar</button><button class="btn s" onclick="visAbrir()">‹ Volver</button></div></div>';
+  document.getElementById('ov2').classList.add('on');
+}
+function visBorrar(f){
+  if(!confirm('¿Borrar esta visita? No se puede deshacer.'))return;
+  google.script.run.withSuccessHandler(function(){VIS=[];visLoad(function(){visAbrir();});novLoad();}).withFailureHandler(function(e){alert('Error: '+(e&&e.message?e.message:e));}).eliminarInteraccion(+f,_yo());
+}
+function visExtForm(cod){
+  var x=cod?VIS.filter(function(v){return v.id===cod;}).sort(function(a,b){return a.d<b.d?1:-1;})[0]:null,n=new Date(),loc=new Date(n.getTime()-n.getTimezoneOffset()*60000).toISOString().slice(0,16),hoy=_vIso(n),yo=_yo();
+  var vn=_vendNombres();if(yo&&vn.indexOf(yo)<0)vn.push(yo);
+  var RES2=['Solo consulta','Le interesó','No le interesó','Hizo una propuesta','Propuesta aceptada','Propuesta rechazada','No responde'];
+  var inp=function(id,l,ph,v,ex){return '<label '+(ex||'')+'>'+l+'<input id="'+id+'" placeholder="'+(ph||'')+'" value="'+_vE(v||'')+'"></label>';};
+  document.getElementById('dlg').innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">'+(x?'Resultado de la visita':'Visita a otra inmobiliaria')+'</div><div class="sub">'+(x?_vE('🏢 '+x.dir):'Propiedad ajena: no se guarda como propiedad, queda solo la visita')+'</div></div><div class="fb"><div class="form">'+
+    (x?'':'<label>¿Ya la hiciste?<select id="ve_est" onchange="visExtTog()"><option value="agendar">📅 No, la agendo</option><option value="hecha">✅ Sí, ya la hice</option></select></label>')+
+    (x?'':inp('ve_dir','Dirección *','Ej: Mendoza 7201')+inp('ve_im','Inmobiliaria','Nombre'))+
+    inp('ve_cli','Cliente nuestro *','Nombre',x&&x.cli)+inp('ve_tel','Teléfono','+54 341 ...',x&&x.tel)+
+    (x?'':'<label class="ve-ag">Fecha y hora<input id="ve_cuando" type="datetime-local" value="'+loc+'"></label>')+
+    '<label class="ve-ya" style="display:'+(x?'':'none')+'">Fecha<input id="ve_fecha" type="date" value="'+hoy+'"></label>'+
+    '<label class="ve-ya" style="display:'+(x?'':'none')+'">Resultado<select id="ve_res">'+RES2.map(function(r){return '<option>'+r+'</option>';}).join('')+'</select></label>'+
+    (x?'':'<label class="ve-ag">Email del cliente (opc.)<input id="ve_mail" type="email" placeholder="le llega la invitación"></label>'+inp('ve_lk','Link de la ficha (Tokko, ZonaProp…)','https://…')+inp('ve_pr','Precio','Ej: U$S 85.000'))+
+    '<label>Vendedor<select id="ve_vend">'+vn.map(function(v){return '<option '+(v===yo?'selected':'')+'>'+_vE(v)+'</option>';}).join('')+'</select></label>'+
+    '<label style="grid-column:1/-1">Observaciones<textarea id="ve_obs" rows="3" placeholder="Qué pasó, qué dijo, qué quiere…"></textarea></label></div>'+
+    '<div class="dlbtns"><button class="btn g" id="ve_btn" onclick="visExtGuardar(\''+(x?_vE(x.id):'')+'\')">Guardar</button><button class="btn s" onclick="visAbrir()">Cancelar</button></div></div>';
+  document.getElementById('ov2').classList.add('on');
+}
+function visExtTog(){var e=document.getElementById('ve_est'),ya=e&&e.value==='hecha';[].forEach.call(document.querySelectorAll('.ve-ag'),function(l){l.style.display=ya?'none':'';});[].forEach.call(document.querySelectorAll('.ve-ya'),function(l){l.style.display=ya?'':'none';});}
+function visExtGuardar(cod){
+  var g=function(i){var e=document.getElementById(i);return e?e.value.trim():'';},fijo=!!cod,ya=fijo||g('ve_est')==='hecha';
+  var o={dir:g('ve_dir'),inmob:g('ve_im'),link:g('ve_lk'),precio:g('ve_pr'),interesado:g('ve_cli'),tel:g('ve_tel'),mail:g('ve_mail'),obs:g('ve_obs'),vendedor:g('ve_vend'),quien:_yo(),codigo:cod||''};
+  if(!fijo&&!o.dir){alert('Poné la dirección de la propiedad');return;}
+  if(!o.interesado){alert('Poné el nombre del cliente');return;}
+  if(ya){var f=g('ve_fecha');if(f)o.fecha=f.split('-').reverse().join('/');o.resultado=g('ve_res')||'Visita';}
+  else{var c=g('ve_cuando');if(!c){alert('Poné la fecha y hora');return;}o.cuando=new Date(c).toISOString();}
+  var b=document.getElementById('ve_btn');if(b){b.textContent='Guardando…';b.disabled=true;}
+  google.script.run.withSuccessHandler(function(){VIS=[];VIS_F.per=ya?'real':'prox';visLoad(function(){visAbrir();});novLoad();}).withFailureHandler(function(e){alert('Error: '+(e&&e.message?e.message:e));if(b){b.textContent='Guardar';b.disabled=false;}}).registrarVisitaExterna(o);
+}
+setTimeout(visLoad,2000);setInterval(function(){if(!document.hidden)visLoad();},180000);
+
 function adaptar(datos){
   if(!Array.isArray(datos)) return [];
   return datos.map(function(p){
@@ -2158,14 +2243,14 @@ google.script.run
   var root = document.createElement('div'); root.className = 'azb'; document.body.appendChild(root);
   function save(){ ls('msgs', JSON.stringify(st.msgs.slice(-40))); }
   function scroll(){ var b = root.querySelector('.azb-body'); if(b) b.scrollTop = b.scrollHeight; }
-  var TILE = {'Cargar una visita':['home','Cargar visita'],'Agendar una visita':['cal','Agendar visita'],'Registrar una propuesta':['chat','Propuesta'],'Mi agenda y recordatorios':['alarm','Agenda'],'Adjuntar fotos o documentos':['clip','Adjuntar'],'¿Qué alertas tengo hoy?':['bell','Alertas']};
+  var TILE = {'Cargar una visita':['home','Cargar visita'],'Agendar una visita':['cal','Agendar visita'],'Visita a otra inmobiliaria':['home','Visita externa'],'Registrar una propuesta':['chat','Propuesta'],'Mi agenda y recordatorios':['alarm','Agenda'],'Adjuntar fotos o documentos':['clip','Adjuntar'],'¿Qué alertas tengo hoy?':['bell','Alertas']};
   function icoFor(l){
     var x = [[/resumen|panel|dashboard/i,'chart'],[/documento/i,'doc'],[/encuesta/i,'star'],[/procedimiento/i,'book'],[/formulario|captaci/i,'edit'],[/tokko|ficha/i,'link'],[/buscar|contame/i,'search'],[/estado/i,'swap'],[/reporte/i,'mail'],[/recordatorio/i,'alarm'],[/agendar/i,'cal']], i;
     for(i=0;i<x.length;i++) if(x[i][0].test(l)) return x[i][1];
     return 'chat';
   }
   function shortcuts(){
-    return AZ.ctx ? [['Contame de esta propiedad'],['Agendar una visita acá'],['Mandar la ubicación de esta propiedad'],['Cargar una consulta acá'],['¿Qué documentos le faltan?'],['Repasá el formulario y qué falta']] : [['¿Qué alertas tengo hoy?','alertas'],['Resumen de la cartera','resumen'],['Consultas de WhatsApp',0,0,'¿Qué consultas de WhatsApp entraron el fin de semana y están sin atender?'],['Detalle de documentos faltantes','docs'],['Panel de la cartera (dashboard)','panel'],['Adjuntar fotos o documentos',0,'adjuntar'],['Mi agenda y recordatorios',0,'agenda'],['Mis recordatorios',0,0,'¿Qué recordatorios tengo pendientes?'],['Cargar una visita',0,'cargar'],['Agendar una visita',0,'agendar'],['Registrar una propuesta',0,'propuesta'],['Cambiar estado de una propiedad',0,'etapa'],['Enviar reporte al propietario',0,'reporte'],['Encuestas de satisfacción',0,0,'¿Cómo vienen las encuestas de satisfacción?'],['Procedimiento de ventas',0,0,'Repasame el procedimiento de ventas'],['Enlace del procedimiento (WhatsApp)',0,0,'Quiero el enlace del procedimiento de ventas para mandarlo por WhatsApp o copiarlo'],['Enlace del formulario de captación',0,0,'Quiero el enlace del formulario de captación para mandarlo a alguien'],['Repasar formulario de una propiedad',0,0,'Quiero repasar lo cargado en el formulario de captación de una propiedad y ver qué falta'],['Ficha de la propiedad (PDF)',0,0,'Quiero la ficha en PDF de una propiedad'],['Enlace de la encuesta (WhatsApp)',0,0,'Quiero el enlace de la encuesta de satisfacción de una propiedad para mandarlo por WhatsApp o copiarlo'],['Buscar una propiedad']];
+    return AZ.ctx ? [['Contame de esta propiedad'],['Agendar una visita acá'],['Mandar la ubicación de esta propiedad'],['Cargar una consulta acá'],['¿Qué documentos le faltan?'],['Repasá el formulario y qué falta']] : [['¿Qué alertas tengo hoy?','alertas'],['Resumen de la cartera','resumen'],['Consultas de WhatsApp',0,0,'¿Qué consultas de WhatsApp entraron el fin de semana y están sin atender?'],['Detalle de documentos faltantes','docs'],['Panel de la cartera (dashboard)','panel'],['Adjuntar fotos o documentos',0,'adjuntar'],['Mi agenda y recordatorios',0,'agenda'],['Mis recordatorios',0,0,'¿Qué recordatorios tengo pendientes?'],['Cargar una visita',0,'cargar'],['Agendar una visita',0,'agendar'],['Visita a otra inmobiliaria',0,'externa'],['Registrar una propuesta',0,'propuesta'],['Cambiar estado de una propiedad',0,'etapa'],['Enviar reporte al propietario',0,'reporte'],['Encuestas de satisfacción',0,0,'¿Cómo vienen las encuestas de satisfacción?'],['Procedimiento de ventas',0,0,'Repasame el procedimiento de ventas'],['Enlace del procedimiento (WhatsApp)',0,0,'Quiero el enlace del procedimiento de ventas para mandarlo por WhatsApp o copiarlo'],['Enlace del formulario de captación',0,0,'Quiero el enlace del formulario de captación para mandarlo a alguien'],['Repasar formulario de una propiedad',0,0,'Quiero repasar lo cargado en el formulario de captación de una propiedad y ver qué falta'],['Ficha de la propiedad (PDF)',0,0,'Quiero la ficha en PDF de una propiedad'],['Enlace de la encuesta (WhatsApp)',0,0,'Quiero el enlace de la encuesta de satisfacción de una propiedad para mandarlo por WhatsApp o copiarlo'],['Buscar una propiedad']];
   }
   function panelHtml(pn){
     var h = '<div class="azb-pn"><div class="azb-kp">'+pn.kpis.map(function(k){ return '<div class="azb-k1 '+(k.c||'')+'"><b>'+esc(k.n)+'</b><span>'+esc(k.l)+'</span></div>'; }).join('')+'</div>';
@@ -2440,7 +2525,7 @@ google.script.run
       if(st.wz && !st.busy && (st.wz.opts.length || st.wz.skip)){ h += '<div class="azb-opts">'+st.wz.opts.map(function(o,i){ return '<button type="button" class="azb-op" data-wo="'+i+'">'+esc(o.l)+'</button>'; }).join('')+(st.wz.skip?'<button type="button" class="azb-op s" data-ws="1">Omitir →</button>':'')+'<button type="button" class="azb-op x" data-wx="1">✕ Cancelar</button></div>'; }
       if(st.busy) h += '<div class="azb-m a">'+mk(22)+'<div class="azb-b azb-ty"><span></span><span></span><span></span>'+(st.status?'<em class="azb-st">'+esc(st.status)+'</em>':'')+'</div></div>';
       }
-      h += '</div>'+(st.rec||st.wz||st.view!=='chat'||st.att.length?'':'<div class="azb-chips">'+[['Cargar visita',0,0,'cargar'],['Agendar',0,0,'agendar'],['Propuesta',0,0,'propuesta'],['Panel','Panel de la cartera','panel'],['Atrasos','¿Qué atrasos hay?'],['Agenda',0,0,'agenda'],['Recordame','Quiero crear un recordatorio'],['Alertas','¿Qué alertas tengo hoy?','alertas'],['Resumen','Resumen de la cartera','resumen'],['Documentos','Detalle de documentos faltantes','docs'],['Cambiar estado',0,0,'etapa'],['Reporte',0,0,'reporte'],['Encuestas','¿Cómo vienen las encuestas de satisfacción?'],['Procedimiento','Repasame el procedimiento de ventas'],['Enlace procedimiento','Quiero el enlace del procedimiento de ventas para mandarlo por WhatsApp o copiarlo'],['Link de captación','Quiero el enlace del formulario de captación para mandarlo'],['Repasar formulario','Quiero repasar lo cargado en el formulario de captación de una propiedad y ver qué falta'],['Ficha propiedad','Quiero la ficha en PDF de una propiedad'],['Enlace encuesta','Quiero el enlace de la encuesta de satisfacción de una propiedad para mandarlo por WhatsApp o copiarlo'],['Buscar propiedad','Quiero buscar una propiedad']].map(function(c){ return '<button type="button" class="azb-chip" '+(c[3]==='agenda'?'data-a="agenda"':(c[3]?'data-w="'+c[3]+'"':'data-q="'+esc(c[1])+'"'))+(c[2]?' data-at="'+c[2]+'"':'')+'>'+c[0]+'</button>'; }).join('')+'</div>')+(!st.rec&&!st.wz&&!st.busy&&st.view!=='agenda'?trayHtml():'')+'<form class="azb-in" id="azbForm">'+
+      h += '</div>'+(st.rec||st.wz||st.view!=='chat'||st.att.length?'':'<div class="azb-chips">'+[['Cargar visita',0,0,'cargar'],['Agendar',0,0,'agendar'],['Visita externa',0,0,'externa'],['Propuesta',0,0,'propuesta'],['Panel','Panel de la cartera','panel'],['Atrasos','¿Qué atrasos hay?'],['Agenda',0,0,'agenda'],['Recordame','Quiero crear un recordatorio'],['Alertas','¿Qué alertas tengo hoy?','alertas'],['Resumen','Resumen de la cartera','resumen'],['Documentos','Detalle de documentos faltantes','docs'],['Cambiar estado',0,0,'etapa'],['Reporte',0,0,'reporte'],['Encuestas','¿Cómo vienen las encuestas de satisfacción?'],['Procedimiento','Repasame el procedimiento de ventas'],['Enlace procedimiento','Quiero el enlace del procedimiento de ventas para mandarlo por WhatsApp o copiarlo'],['Link de captación','Quiero el enlace del formulario de captación para mandarlo'],['Repasar formulario','Quiero repasar lo cargado en el formulario de captación de una propiedad y ver qué falta'],['Ficha propiedad','Quiero la ficha en PDF de una propiedad'],['Enlace encuesta','Quiero el enlace de la encuesta de satisfacción de una propiedad para mandarlo por WhatsApp o copiarlo'],['Buscar propiedad','Quiero buscar una propiedad']].map(function(c){ return '<button type="button" class="azb-chip" '+(c[3]==='agenda'?'data-a="agenda"':(c[3]?'data-w="'+c[3]+'"':'data-q="'+esc(c[1])+'"'))+(c[2]?' data-at="'+c[2]+'"':'')+'>'+c[0]+'</button>'; }).join('')+'</div>')+(!st.rec&&!st.wz&&!st.busy&&st.view!=='agenda'?trayHtml():'')+'<form class="azb-in" id="azbForm">'+
         '<div class="azb-pill'+(st.rec?' rec':'')+'">'+(st.rec
           ? '<button type="button" class="azb-rb2 del" data-a="reccancel" aria-label="Descartar audio">'+ICO.trash+'</button><div class="azb-wv"><span class="rd"></span><b id="azbT">0:00</b><i><s></s><s></s><s></s><s></s><s></s><s></s><s></s></i></div><button type="button" class="azb-rb2 go" data-a="recsend" aria-label="Enviar audio">'+ICO.send+'</button>'
           : '<input id="azbInp" placeholder="'+(st.wz&&st.wz.ph?esc(st.wz.ph):'Escribime acá…')+'" autocomplete="off" enterkeyhint="send"'+(st.busy?' disabled':'')+'><button type="button" class="azb-rb2 clip" data-a="attach" aria-label="Adjuntar foto o archivo"'+(st.busy?' disabled':'')+'>'+ICO.clip+'</button><button type="button" class="azb-rb2 m2" data-a="mic" aria-label="Hablar"'+(st.busy?' disabled':'')+'>'+ICO.mic+'</button><button class="azb-rb2 go snd" type="submit" aria-label="Enviar"'+(st.busy?' disabled':'')+'>'+ICO.send+'</button>')+'</div>'+(st.rec?'<div class="azb-rhint">Hablá tranquilo · flecha verde para enviar · tacho para descartar</div>':'')+'</form>';
@@ -2464,6 +2549,11 @@ google.script.run
     var tel = function(t){ var d = t.replace(/[^0-9]/g,''); return d.length>=6 ? d : null; }, mail = function(t){ return /^\S+@\S+\.\S+$/.test(t) ? t : null; };
     if(t==='cargar') return [P, T('interesado','¿Quién consultó o vino? (nombre)','Nombre del interesado'), {k:'via',q:'¿Por qué vía fue?',kind:'opt',opts:VIAS.map(function(x){return {l:x==='Visita'?'Visita realizada':x,v:x};})}, {k:'resultado',q:'¿Cómo resultó?',kind:'opt',opts:OP(RES)}, T('obs','Contame el detalle de lo que pasó (podés dictarlo 🎤)','Qué pasó, qué dijo, qué quiere…',1), T('prox','Próximo paso','Ej: llamarlo el viernes',1), T('tel','Teléfono del interesado','Teléfono',1,tel)];
     if(t==='agendar') return [P, {k:'fecha',q:'¿Qué día? Elegí o escribí dd/mm.',kind:'opt',opts:fechas(),parse:parseFecha,ph:'dd/mm'}, {k:'hora',q:'¿A qué hora? Elegí o escribila (ej 16:30).',kind:'opt',opts:OP(HORAS),parse:parseHora,ph:'hh:mm'}, T('interesado','¿Quién es el interesado?','Nombre',1), T('tel','Teléfono','Teléfono',1,tel), T('mail','Mail (le llega la invitación al Calendar)','mail@ejemplo.com',1,mail)];
+    if(t==='externa'){
+      var ag = function(d){ return d.est==='agendar'; }, ya = function(d){ return d.est==='hecha'; }, SI = function(o,f){ o.si = f; return o; };
+      var pas = function(){ var o = [], n = ['Hoy','Ayer','Anteayer'], i, d; for(i=0;i<3;i++){ d = new Date(); d.setDate(d.getDate()-i); o.push({l:n[i]+' · '+('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2), v:iso(d)}); } return o; };
+      return [T('dir','¿Cuál es la dirección de la propiedad?','Ej: Mendoza 7201'), T('inmob','¿De qué inmobiliaria es?','Nombre de la inmobiliaria',1), T('interesado','¿Quién es nuestro cliente que va a verla?','Nombre'), {k:'est',q:'¿La visita ya se hizo o la agendamos?',kind:'opt',opts:[{l:'📅 La agendamos',v:'agendar'},{l:'✅ Ya la hice',v:'hecha'}]}, SI({k:'fecha',q:'¿Qué día? Elegí o escribí dd/mm.',kind:'opt',opts:fechas(),parse:parseFecha,ph:'dd/mm'}, ag), SI({k:'fecha',q:'¿Qué día fue? Elegí o escribí dd/mm.',kind:'opt',opts:pas(),parse:parseFecha,ph:'dd/mm'}, ya), SI({k:'hora',q:'¿A qué hora? Elegí o escribila (ej 16:30).',kind:'opt',opts:OP(HORAS),parse:parseHora,ph:'hh:mm'}, ag), SI({k:'resultado',q:'¿Cómo resultó?',kind:'opt',opts:OP(RES.filter(function(x){ return x!=='Visita'; }))}, ya), T('obs','Contame el detalle (podés dictarlo 🎤)','Qué pasó, qué dijo, qué quiere…',1), T('link','Link de la ficha (Tokko, ZonaProp…)','https://…',1), T('precio','Precio publicado','Ej: U$S 85.000',1), T('tel','Teléfono del cliente','Teléfono',1,tel), SI(T('mail','Mail del cliente (le llega la invitación al Calendar)','mail@ejemplo.com',1,mail), ag)];
+    }
     if(t==='adjex') return [P];
     if(t==='adjnew') return [];
     if(t==='propuesta') return [P, T('cliente','¿Quién hizo la propuesta?','Nombre'), T('monto','¿De cuánto? (monto y moneda)','Ej: U$S 85.000'), T('obs','Condiciones o detalle de la propuesta','Condiciones',1), T('tel','Teléfono del interesado','Teléfono',1,tel)];
@@ -2474,6 +2564,7 @@ google.script.run
   function wzUser(l){ st.msgs.push({role:'user', content:l, w:1}); }
   function wzAsk(){
     var w = st.wz, sp = w.sp[w.i];
+    while(sp && sp.si && !sp.si(w.d)){ w.i++; sp = w.sp[w.i]; }
     if(!sp) return wzFin();
     wzSay(sp.q); w.opts = (sp.opts||[]).slice(); w.skip = !!sp.opt; w.ph = sp.ph||'';
     if(sp.kind==='prop' && AZ.ctx){ var cp = (st.props||[]).filter(function(p){ return p.id===AZ.ctx; })[0]; if(cp) w.opts.push({l:'📍 Esta ficha: '+cp.dir, v:cp.id, dir:cp.dir}); }
@@ -2501,7 +2592,7 @@ google.script.run
   function wzSkip(){ var w = st.wz; if(!w || w.i<0) return; wzUser('Omitir'); w.d[w.sp[w.i].k] = ''; w.i++; wzAsk(); }
   function wzCancel(){ if(!st.wz) return; st.wz = null; wzSay('Listo, lo dejamos acá. Cuando quieras retomamos.'); save(); render(); }
   function wzMode(m){
-    var w = st.wz; if(m==='libre'){ wzUser('Todo por audio'); st.wz = null; wzSay(w.t==='agendar' ? 'Dale, mandame todo en un audio (mantené apretado el 🎤) o escribilo: propiedad, día y hora, y quién viene. Yo armo la tarjeta.' : 'Dale, mandame todo en un audio (mantené apretado el 🎤) o escribilo: propiedad, quién fue, cómo (visita, WhatsApp…) y cómo resultó. Yo armo la tarjeta.'); save(); render(); return; }
+    var w = st.wz; if(m==='libre'){ wzUser('Todo por audio'); st.wz = null; wzSay(w.t==='externa' ? 'Dale, mandame todo en un audio (mantené apretado el 🎤) o escribilo: dirección, inmobiliaria si la sabés, quién es el cliente y si ya la hiciste (cómo resultó) o cuándo es (día y hora). Yo armo la tarjeta.' : w.t==='agendar' ? 'Dale, mandame todo en un audio (mantené apretado el 🎤) o escribilo: propiedad, día y hora, y quién viene. Yo armo la tarjeta.' : 'Dale, mandame todo en un audio (mantené apretado el 🎤) o escribilo: propiedad, quién fue, cómo (visita, WhatsApp…) y cómo resultó. Yo armo la tarjeta.'); save(); render(); return; }
     wzUser('Paso a paso'); w.i = 0; wzAsk();
   }
   function wzStart(t){
@@ -2510,7 +2601,7 @@ google.script.run
     var go = function(){
       st.wz = {t:t, sp:steps(t), i:0, d:{}, opts:[], skip:false, ph:''};
       if(t==='adjex' && st.pre){ var pp = (st.props||[]).filter(function(x){ return x.id===st.pre; })[0]; st.pre = null; if(pp){ st.wz.d.id = pp.id; st.wz.d.dir = pp.dir; st.wz.i = 1; wzSay('Perfecto: **'+pp.dir+'**'); } }
-      if(t==='cargar' || t==='agendar'){ st.wz.i = -1; st.wz.opts = [{l:'🎤 Todo por audio', v:'libre'},{l:'👣 Paso a paso', v:'paso'}]; wzSay('¿Cómo '+(t==='cargar'?'cargamos la visita':'agendamos')+'?'); save(); render(); }
+      if(t==='cargar' || t==='agendar' || t==='externa'){ st.wz.i = -1; st.wz.opts = [{l:'🎤 Todo por audio', v:'libre'},{l:'👣 Paso a paso', v:'paso'}]; wzSay('¿Cómo '+(t==='cargar'?'cargamos la visita':t==='externa'?'cargamos la visita a la otra inmobiliaria':'agendamos')+'?'); save(); render(); }
       else wzAsk();
     };
     if(st.props) return go();
@@ -2524,6 +2615,7 @@ google.script.run
     st.wz = null;
     if(w.t==='cargar'){ a.tipo = 'cargar'; a.datos = {id:d.id, dir:d.dir, interesado:d.interesado||'', tel:d.tel||'', via:d.via, resultado:d.resultado, prox:d.prox||'', obs:d.obs||''}; a.resumen = 'Cargar en '+d.dir+': '+d.interesado+' · '+d.via+' · '+d.resultado+(d.prox?' · próximo paso: '+d.prox:'')+(d.obs?' · detalle: '+d.obs:''); }
     else if(w.t==='agendar'){ a.tipo = 'agendar'; a.datos = {id:d.id, dir:d.dir, fecha:d.fecha, hora:d.hora, interesado:d.interesado||'', tel:d.tel||'', mail:d.mail||'', obs:''}; a.resumen = 'Agendar visita en '+d.dir+': '+fd(d.fecha)+' '+d.hora+(d.interesado?' · '+d.interesado:'')+(d.mail?' · invitación a '+d.mail:''); }
+    else if(w.t==='externa'){ var ag2 = d.est==='agendar', dx = '🏢 '+d.dir+(d.inmob?' ('+d.inmob+')':''); a.tipo = 'visitaext'; a.datos = {id:'externa', dir:dx, d:{id:'externa', estado:ag2?'agendada':'realizada', dir:d.dir, inmob:d.inmob||'', link:d.link||'', precio:d.precio||'', interesado:d.interesado||'', tel:d.tel||'', mail:d.mail||'', obs:d.obs||'', fecha:d.fecha, hora:d.hora||'', resultado:d.resultado||'Visita', codigo:''}}; a.resumen = (ag2?'Agendar visita a otra inmobiliaria: ':'Cargar visita a otra inmobiliaria: ')+dx+' · '+d.interesado+' · '+fd(d.fecha)+(ag2?' '+d.hora:' · '+(d.resultado||'Visita'))+(d.precio?' · '+d.precio:'')+(d.link?' · ficha: '+d.link:'')+(d.obs?' · detalle: '+d.obs:''); }
     else if(w.t==='propuesta'){ a.tipo = 'propuesta'; a.datos = {id:d.id, dir:d.dir, cliente:d.cliente||'', monto:d.monto||'', tel:d.tel||'', obs:d.obs||''}; a.resumen = 'Registrar propuesta en '+d.dir+': '+d.cliente+' · '+d.monto+(d.obs?' · '+d.obs:''); }
     else if(w.t==='etapa'){ a.tipo = 'etapa'; a.datos = {id:d.id, dir:d.dir, etapa:d.etapa}; a.resumen = 'Pasar '+d.dir+(pr.etapa?' de '+pr.etapa:'')+' a '+d.etapa; }
     else { a.tipo = 'reporte'; a.datos = {id:d.id, dir:d.dir}; a.resumen = 'Enviar por mail el informe de gestión de '+d.dir+' a los propietarios con mail cargado'; }
@@ -2779,6 +2871,7 @@ google.script.run
       if(r.enlaces && r.enlaces.length) st.msgs.push({role:'assistant', content:'', adj:r.enlaces});
       save(); render();
       if(typeof window.recargar==='function'){ try{ window.recargar(AZ.ctx||undefined); }catch(e){} }
+      if(typeof window.visLoad==='function'){ try{ window.visLoad(); }catch(e){} }
     }, function(err){ a.estado = 'pendiente'; a.resultado = ''; st.msgs.push({role:'assistant', content:'No pude hacerlo: '+err}); save(); render(); });
     }
   }
@@ -3032,7 +3125,7 @@ google.script.run
     var ci = q.get('ci') || '';
     try{ history.replaceState(null, '', location.pathname); }catch(e){}
     st.entered = true; st.vis = {id:id, interesado:ci};
-    var dir = id, say = function(){ st.msgs.push({role:'assistant', content:'¿Cómo te fue en la visita a **'+dir+'**'+(ci?' con **'+ci+'**':'')+'? Contame en un audio (mantené apretado el 🎤) o escribilo, y armo la tarjeta.', w:1}); save(); render(); };
+    var dir = /^EXT-/.test(id) ? 'una propiedad de otra inmobiliaria' : id, say = function(){ st.msgs.push({role:'assistant', content:'¿Cómo te fue en la visita a **'+dir+'**'+(ci?' con **'+ci+'**':'')+'? Contame en un audio (mantené apretado el 🎤) o escribilo, y armo la tarjeta.', w:1}); save(); render(); };
     if(st.props){ var f = st.props.filter(function(p){ return p.id===id; })[0]; if(f) dir = f.dir; say(); }
     else call('azcuWarm', [], function(r){ if(Array.isArray(r)){ st.props = r; var f = r.filter(function(p){ return p.id===id; })[0]; if(f) dir = f.dir; } say(); }, function(){ say(); });
   })();

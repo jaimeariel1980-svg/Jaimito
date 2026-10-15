@@ -2054,7 +2054,7 @@ function guardarPropiedad(codigo, cambios){
 }
 function _audit_(tipo, texto, dir, quien){ try{ if(typeof azcuAudit_==='function') azcuAudit_(tipo, texto, dir, quien); }catch(e){} }
 function _dirDe_(mae, fila, head){ try{ var r=mae.getRange(fila,1,1,head.length).getValues()[0], g=function(n){ var i=head.indexOf(n); return i>-1?r[i]:''; }; return _dirTexto_(g('Calle'),g('Número'),g('Piso'),g('Departamento'),g('Pasillo')); }catch(e){ return ''; } }
-function _invalidaNovedades_(){ try{ var c=CacheService.getScriptCache(); c.remove('azmov_90'); c.remove('azmov_30'); }catch(e){} try{ if(typeof azcuLimpiarCache_==='function') azcuLimpiarCache_(); }catch(e){} }
+function _invalidaNovedades_(){ try{ var c=CacheService.getScriptCache(); c.remove('azmov_90'); c.remove('azmov_30'); c.remove('azvis_60_60'); }catch(e){} try{ if(typeof azcuLimpiarCache_==='function') azcuLimpiarCache_(); }catch(e){} }
 function registrarInteraccion(codigo, datos){
   var ss=SpreadsheetApp.openById(MAESTRO_ID);
   var seg=ss.getSheetByName('Seguimiento');
@@ -2436,6 +2436,44 @@ function agendarVisita(codigo, datos){
     cargo: datos.quien||datos.cargo||''
   });
   return {ok:true, eventId:ev.getId()};
+}
+
+var SEG_EXT_ = ['Cargó','Inmobiliaria (otra)','Dirección (otra inmobiliaria)','Link ficha (otra)','Precio (otra)'];
+function registrarVisitaExterna(datos){
+  datos = datos||{};
+  var cli = String(datos.interesado||'').trim(), dir = String(datos.dir||'').trim(), inmob = String(datos.inmob||'').trim(), link = String(datos.link||'').trim(), precio = String(datos.precio||'').trim(), codigo = String(datos.codigo||'').trim(), i;
+  if(!cli) throw new Error('Falta el nombre del cliente');
+  var seg = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento');
+  if(!seg) throw new Error('No existe la pestaña Seguimiento');
+  SEG_EXT_.forEach(function(n, k){ var c = seg.getRange(1, 11+k); if(!String(c.getValue()).trim()) c.setValue(n); });
+  if(codigo){
+    var v = seg.getDataRange().getValues();
+    for(i=1;i<v.length;i++) if(String(v[i][0]).trim()===codigo){ dir = dir||String(v[i][12]||'').trim(); inmob = inmob||String(v[i][11]||'').trim(); link = link||String(v[i][13]||'').trim(); precio = precio||String(v[i][14]||'').trim(); break; }
+  } else codigo = 'EXT-'+Date.now().toString(36).toUpperCase();
+  if(!dir) throw new Error('Falta la dirección de la propiedad');
+  var tz = 'GMT-3', quien = String(datos.quien||datos.cargo||'').trim(), vend = String(datos.vendedor||quien).trim(), tel = String(datos.tel||'').trim(), obs = String(datos.obs||'').trim(), fecha, res, prox = '', fprox = '';
+  if(datos.cuando){
+    var ini = new Date(datos.cuando); if(isNaN(ini.getTime())) throw new Error('Fecha u hora inválidas');
+    var opts = {description:'Visita a una propiedad de otra inmobiliaria'+(inmob?': '+inmob:'')+'\nCliente: '+cli+'\nTel: '+tel+(link?'\nFicha: '+link:'')+(precio?'\nPrecio: '+precio:''), location:dir}, inv = [];
+    if(datos.mail) inv.push(String(datos.mail).trim());
+    try{ var uv = vend && typeof azcuUsuarioDe_==='function' ? azcuUsuarioDe_(vend) : null; if(uv && uv.activo && uv.mail && inv.indexOf(uv.mail)<0) inv.push(uv.mail); }catch(e){ Logger.log('Invitado vendedor: '+e.message); }
+    if(inv.length){ opts.guests = inv.join(','); opts.sendInvitations = true; }
+    var ev = CalendarApp.getDefaultCalendar().createEvent('Visita (otra inmobiliaria): '+dir+' - '+cli, ini, new Date(ini.getTime()+3600000), opts);
+    ev.addPopupReminder(60);
+    fecha = Utilities.formatDate(ini, tz, 'dd/MM/yyyy'); res = 'Visita agendada'; prox = 'Visita '+Utilities.formatDate(ini, tz, 'dd/MM/yyyy HH:mm');
+  } else {
+    fecha = datos.fecha||Utilities.formatDate(new Date(), tz, 'dd/MM/yyyy'); res = datos.resultado||'Visita'; prox = datos.prox||'';
+    if(/Le interesó|Le intereso/i.test(res)){
+      try{
+        var rec = new Date(); rec.setDate(rec.getDate()+2); rec.setHours(10,0,0,0);
+        CalendarApp.getDefaultCalendar().createEvent('Seguimiento: '+cli+' - '+dir, rec, new Date(rec.getTime()+1800000), {description:'Contactar a '+cli+'\nTel: '+tel+'\nVisitó '+dir+(inmob?' ('+inmob+')':'')+' el '+fecha});
+        fprox = Utilities.formatDate(rec, tz, 'dd/MM/yyyy');
+      }catch(e){ Logger.log('Error Calendar recordatorio: '+e.message); }
+    }
+  }
+  seg.appendRow([codigo, fecha, 'Visita', cli, tel, res, prox, fprox, obs, vend, quien, inmob, dir, link, precio]);
+  _invalidaNovedades_();
+  return {ok:true, codigo:codigo};
 }
 
 function eliminarInteraccion(filaSeg, quien){

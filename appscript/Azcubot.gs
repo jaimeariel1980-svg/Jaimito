@@ -175,9 +175,12 @@ function azcuHerrAlertas_(){
       if(s.res==='Visita agendada' && m && azcuNum_(m[1])===hn) out.visitas_hoy.push({hora:m[2], id:p.id, direccion:p.dir, interesado:s.cli, telefono:s.tel});
     });
   });
-  out.visitas_hoy.sort(function(a,b){ return a.hora<b.hora?-1:1; });
   try{
     var sh = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento'), v = sh.getDataRange().getValues(), ult = {}, i;
+    for(i=1;i<v.length;i++){
+      var mx = /^EXT-/.test(String(v[i][0]).trim()) && String(v[i][5]).trim()==='Visita agendada' ? String(v[i][6]).match(/^Visita (\d{2}\/\d{2}\/\d{4}) (\d{2}:\d{2})/) : null;
+      if(mx && azcuNum_(mx[1])===hn) out.visitas_hoy.push({hora:mx[2], id:String(v[i][0]).trim(), direccion:'🏢 '+v[i][12]+(v[i][11] ? ' ('+v[i][11]+')' : ''), interesado:v[i][3], telefono:v[i][4], otra_inmobiliaria:true});
+    }
     for(i=1;i<v.length;i++) if(v[i][0]) ult[String(v[i][0]).trim()+'|'+(String(v[i][4]).replace(/\D/g,'')||azcuSinAc_(v[i][3]))] = v[i];
     Object.keys(ult).forEach(function(k){
       var r = ult[k], n = azcuNum_(r[7]);
@@ -186,6 +189,7 @@ function azcuHerrAlertas_(){
       if(dd>=0 && dd<=7) out.seguimientos_para_hoy.push({id:String(r[0]).trim(), interesado:r[3], telefono:r[4], proximo_paso:r[6], vencido_hace_dias:dd});
     });
   }catch(e){}
+  out.visitas_hoy.sort(function(a,b){ return a.hora<b.hora?-1:1; });
   return out;
 }
 function azcuHerrDocs_(){
@@ -651,6 +655,8 @@ function azcuTools_(){
     t('enviar_whatsapp','Deja un botón para abrir WhatsApp con el mensaje armado. Con id va por defecto al primer propietario; sin id (captación nueva, texto libre) el usuario elige el contacto.',{id:S, que:{type:'string',enum:['encuesta','formulario_captacion','link_tokko','ubicacion','documento','texto_libre']}, documento:S, telefono:S, texto:S},['que']),
     t('generar_pdf','Genera el PDF de la ficha de una propiedad y lo deja en el chat para descargar o compartir.',{id:S},['id']),
     t('proponer_cargar_interaccion','Registrar una consulta o visita ya ocurrida. Queda pendiente de confirmación.',{id:S, interesado:S, telefono:S, via:{type:'string',enum:AZCU_VIAS}, resultado:{type:'string',enum:AZCU_RESULTADOS}, proximo_paso:S, observaciones:{type:'string',description:'Detalle completo de lo que pasó'}},['id','interesado','via','resultado']),
+    t('visitas','Visitas del equipo, propias y a propiedades de OTRAS inmobiliarias: hoy, esta semana, próximas, realizadas o un rango. Usala para "qué visitas hay hoy", "cuántas visitas hizo X", "visitas externas", etc.',{periodo:{type:'string',enum:['hoy','semana','proximas','realizadas','rango']}, desde:F, hasta:F, vendedor:S, solo_externas:{type:'boolean'}}),
+    t('proponer_visita_externa','Cargar o agendar una visita de un cliente nuestro a una propiedad de OTRA inmobiliaria (no se registra como propiedad: queda solo la visita). Pendiente de confirmación. Agendar: estado=agendada con fecha y hora. Ya hecha: estado=realizada con fecha y resultado. Para cargar el resultado de una visita externa ya agendada pasá codigo (EXT-...).',{direccion:S, inmobiliaria:S, link:{type:'string',description:'Link de la ficha (Tokko, ZonaProp, etc.)'}, precio:S, interesado:S, telefono:S, email:S, estado:{type:'string',enum:['agendada','realizada']}, fecha:F, hora:{type:'string',description:'HH:mm 24h'}, resultado:{type:'string',enum:AZCU_RESULTADOS}, observaciones:S, codigo:S},['estado','fecha','interesado']),
     t('proponer_agendar_visita','Agendar una visita futura (Calendar + seguimiento). Pendiente de confirmación.',{id:S, fecha:F, hora:{type:'string',description:'HH:mm 24h'}, interesado:S, telefono:S, email:S, nota:S},['id','fecha','hora']),
     t('proponer_registrar_propuesta','Registrar una propuesta u oferta recibida. Pendiente de confirmación.',{id:S, cliente:S, monto:{type:'string',description:'Monto y moneda'}, telefono:S, observaciones:S},['id','cliente','monto']),
     t('proponer_cambiar_etapa','Cambiar la etapa de una propiedad. Pendiente de confirmación.',{id:S, etapa:{type:'string',enum:AZCU_ETAPAS}},['id','etapa']),
@@ -666,7 +672,48 @@ function azcuTools_(){
 var AZCU_MAPC_ = {precio:'precio', observaciones:'obs', tipo:'tipo', link_tokko:'tokko', origen:'origen', colega:'colega', contacto_colega:'colegaTel', comision:'comision', vendedor:'vendedor', motivo_suspension:'motivo', pct_aviso:'pct', propietario_nombre:'prop', propietario_telefono:'tel', propietario_mail:'mail', propietario_dni:'dni', propietario_domicilio:'dom', plazo_boleto:'boleto', boleto_firmado:'boletoOk', plazo_escritura:'escritura', escritura_firmada:'escrituraOk'};
 function azcuFechaAr_(iso){ return /^\d{4}-\d{2}-\d{2}$/.test(iso||'') ? iso.split('-').reverse().join('/') : ''; }
 function azcuSegFila_(p, fila){ var i, s = p.seg||[]; for(i=0;i<s.length;i++) if(+s[i]._row===+fila) return s[i]; return null; }
+function azcuSumaDias_(iso, n){ var p = iso.split('-'); return Utilities.formatDate(new Date(Date.UTC(+p[0], +p[1]-1, +p[2]+n, 12)), 'UTC', 'yyyy-MM-dd'); }
+function azcuHerrVisitas_(a, ctx){
+  var per = a.periodo||'hoy', dv = azcuVisitasData_(60, 60), hn = dv.hoy, wd = new Date(hn+'T12:00:00Z').getUTCDay(), lun = azcuSumaDias_(hn, -((wd+6)%7)), dom = azcuSumaDias_(lun, 6), vq = azcuSlug_(a.vendedor||'');
+  var l = dv.items.filter(function(x){
+    if(per==='hoy' && x.d!==hn) return false;
+    if(per==='semana' && (x.d<lun || x.d>dom)) return false;
+    if(per==='proximas' && !(x.d>=hn && x.e==='a')) return false;
+    if(per==='realizadas' && x.e!=='r') return false;
+    if(per==='rango' && ((/^\d{4}-\d{2}-\d{2}$/.test(a.desde||'') && x.d<a.desde) || (/^\d{4}-\d{2}-\d{2}$/.test(a.hasta||'') && x.d>a.hasta))) return false;
+    if(a.solo_externas && !x.x) return false;
+    if(vq && azcuSlug_(x.v||x.c).indexOf(vq)<0) return false;
+    return true;
+  });
+  return {total:l.length, visitas:l.slice(0,60).map(function(x){ return {fecha:x.d.split('-').reverse().join('/'), hora:x.h, direccion:x.dir, id:x.x ? '' : x.id, codigo_externa:x.x ? x.id : '', otra_inmobiliaria:x.x ? (x.im||'sí') : '', cliente:x.cli, vendedor:x.v||x.c, estado:x.e==='a' ? 'agendada' : x.e==='p' ? 'ya pasó, falta cargar el resultado' : 'realizada', resultado:x.res, detalle:x.obs}; })};
+}
+function azcuValidarVisitaExt_(a){
+  var est = a.estado==='realizada' ? 'realizada' : 'agendada', d = {id:'externa', estado:est, dir:String(a.direccion||'').trim().slice(0,160), inmob:String(a.inmobiliaria||'').trim().slice(0,80), link:String(a.link||'').trim().slice(0,300), precio:String(a.precio||'').trim().slice(0,40), interesado:String(a.interesado||'').trim().slice(0,80), tel:String(a.telefono||'').replace(/[^0-9]/g,''), mail:String(a.email||'').trim().slice(0,80), obs:String(a.observaciones||'').trim().slice(0,1500), codigo:/^EXT-[A-Z0-9]+$/.test(String(a.codigo||'').trim()) ? String(a.codigo).trim() : ''};
+  if(!d.dir && !d.codigo) return {error:'Falta la dirección de la propiedad.'};
+  if(!d.interesado) return {error:'Falta el nombre del cliente.'};
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(a.fecha||'')) return {error:'Fecha inválida.'};
+  d.fecha = a.fecha;
+  if(est==='agendada'){
+    if(!/^\d{1,2}:\d{2}$/.test(a.hora||'')) return {error:'Falta la hora.'};
+    d.hora = ('0'+a.hora.split(':')[0]).slice(-2)+':'+a.hora.split(':')[1];
+  } else {
+    if(a.resultado && AZCU_RESULTADOS.indexOf(a.resultado)<0) return {error:'Resultado inválido.'};
+    d.resultado = a.resultado||'Visita';
+  }
+  d.dirTxt = '🏢 '+(d.dir||'Visita externa')+(d.inmob ? ' ('+d.inmob+')' : '');
+  var f = a.fecha.split('-').reverse().join('/');
+  return {accion:{tipo:'visitaext', datos:{id:'externa', dir:d.dirTxt, d:d}, resumen:(est==='agendada' ? 'Agendar visita a otra inmobiliaria' : 'Cargar visita a otra inmobiliaria')+': '+d.dirTxt+' · '+d.interesado+' · '+f+(est==='agendada' ? ' '+d.hora : ' · '+d.resultado)+(d.precio ? ' · '+d.precio : '')+(d.link ? ' · ficha: '+d.link : '')+(d.obs ? ' · detalle: '+d.obs : '')}};
+}
+function azcuEjecutarVisitaExt_(d, quien){
+  d = d.d||d; quien = String(quien||'').trim().slice(0,40);
+  var o = {dir:d.dir, inmob:d.inmob, link:d.link, precio:d.precio, interesado:d.interesado, tel:d.tel, mail:d.mail, obs:d.obs, codigo:d.codigo, quien:quien, vendedor:quien};
+  if(d.estado==='agendada'){ var ini = new Date(d.fecha+'T'+d.hora+':00-03:00'); if(isNaN(ini.getTime())) throw new Error('Fecha u hora inválidas'); o.cuando = ini.toISOString(); }
+  else { o.fecha = d.fecha.split('-').reverse().join('/'); o.resultado = d.resultado||'Visita'; }
+  registrarVisitaExterna(o);
+  return {ok:true, mensaje:d.estado==='agendada' ? 'Visita agendada en Calendar para el '+d.fecha.split('-').reverse().join('/')+' a las '+d.hora+'.' : 'Listo, quedó cargada la visita.'};
+}
 function azcuValidarAccion_(tipo, a){
+  if(tipo==='visitaext') return azcuValidarVisitaExt_(a);
   var p = azcuProp_(a.id);
   if(!p) return {error:'No encontré la propiedad '+a.id+'. Buscala primero.'};
   var datos = {id:p.id, dir:p.dir}, resumen, peligro = false, s;
@@ -757,9 +804,10 @@ function azcuSistema_(ctx){
     'CONSULTAS DE WHATSAPP: si preguntan por consultas/mensajes de WhatsApp (por ejemplo del fin de semana) usá consultas_whatsapp y listalas TODAS con fecha, nombre, teléfono, propiedad y mensaje; decí cuántas siguen sin atender.',
     'INFO DE UNA PROPIEDAD (REGLA): cuando pidan la info, datos, ficha, "pasame completo" o "contame" de una propiedad, llamá UNA sola vez ficha_propiedad SIN puntual: el sistema devuelve directo la ficha completa y ordenada; no llames otras herramientas ni la reescribas. Solo si preguntan un único dato concreto usá puntual:true y respondé ese dato.',
     'ÚLTIMAS INTERACCIONES: si piden las últimas interacciones/consultas/visitas cargadas (de todas las propiedades o del usuario) usá ultimas_interacciones; NUNCA las saques de ficha_propiedad salvo que pregunten por una propiedad puntual. Mostrá primero la más reciente y la fecha de cada una.',
+    'VISITAS A OTRAS INMOBILIARIAS: si cuentan o piden agendar una visita de un cliente nuestro a una propiedad que NO es nuestra (de otra inmobiliaria), usá proponer_visita_externa; NO uses buscar_propiedades para esa dirección. Obligatorios: dirección, cliente y fecha (y hora si es a futuro). Inmobiliaria, link de la ficha (Tokko, ZonaProp, etc.), precio y teléfono son opcionales: no los pidas, pero si el usuario los dice, cargalos. Ya hecha: estado=realizada con resultado y observaciones (todo el detalle); a futuro: estado=agendada. Esas propiedades no se guardan en el sistema: solo queda la visita. Para consultar visitas (hoy, semana, próximas, de un vendedor, a otras inmobiliarias) usá visitas.',
     'USUARIO: hablás con '+(ctx.nombre||'un compañero')+'.',
     'FECHAS: hoy es '+dia+' '+hoy+' y son las '+Utilities.formatDate(new Date(), AZCU_TZ, 'HH:mm')+' (Argentina). Resolvé "mañana", "el viernes", etc. a AAAA-MM-DD.',
-    (ctx.visita && ctx.visita.id) ? 'CONTEXTO VISITA: el usuario te va a contar cómo le fue en la visita a la propiedad '+String(ctx.visita.id).slice(0,40)+(ctx.visita.interesado ? ' con '+String(ctx.visita.interesado).slice(0,60) : '')+'. Usá proponer_cargar_interaccion con via=Visita y esos datos; poné en observaciones TODO lo que cuente y deducí el resultado (Le interesó, No le interesó, Hizo una propuesta, etc.). Si no queda claro, preguntalo en una sola línea.' : '',
+    (ctx.visita && /^EXT-/.test(String(ctx.visita.id))) ? 'CONTEXTO VISITA EXTERNA: el usuario te va a contar cómo le fue en la visita'+(ctx.visita.interesado ? ' de '+String(ctx.visita.interesado).slice(0,60) : '')+' a una propiedad de otra inmobiliaria (codigo '+String(ctx.visita.id).slice(0,30)+'). Usá proponer_visita_externa con estado=realizada, codigo='+String(ctx.visita.id).slice(0,30)+', la fecha de hoy, el interesado y TODO lo que cuente en observaciones; deducí el resultado. Si no queda claro, preguntalo en una sola línea.' : (ctx.visita && ctx.visita.id) ? 'CONTEXTO VISITA: el usuario te va a contar cómo le fue en la visita a la propiedad '+String(ctx.visita.id).slice(0,40)+(ctx.visita.interesado ? ' con '+String(ctx.visita.interesado).slice(0,60) : '')+'. Usá proponer_cargar_interaccion con via=Visita y esos datos; poné en observaciones TODO lo que cuente y deducí el resultado (Le interesó, No le interesó, Hizo una propuesta, etc.). Si no queda claro, preguntalo en una sola línea.' : '',
     ctx.fichaId ? 'CONTEXTO: el usuario tiene abierta en el tablero la ficha de la propiedad '+ctx.fichaId+'. Si dice "esta", "acá" o no nombra propiedad, se refiere a esa.' : 'CONTEXTO: no hay ninguna ficha abierta.'
   ].join('\n');
 }
@@ -776,7 +824,7 @@ function azcuOpenAI_(messages, tools){
 }
 
 function azcuProg_(ctx, texto){ try{ if(ctx && ctx.reqId) azcuPut_(ctx.reqId+'p', {progress:texto}); }catch(e){} }
-var AZCU_NOMBRES_ = {consultas_whatsapp:'Leyendo las consultas de WhatsApp…', buscar_propiedades:'Buscando propiedades…', ficha_propiedad:'Leyendo la ficha…', captacion_formulario:'Leyendo el formulario de captación…', guia_pagina:'Leyendo la guía…', dashboard:'Armando el panel…', resumen_semana:'Armando el resumen de la semana…', crear_recordatorio:'Guardando el recordatorio…', mis_recordatorios:'Buscando tus recordatorios…', agenda:'Revisando tu agenda…', listar_propiedades:'Filtrando propiedades…', encuestas:'Revisando encuestas…', alertas:'Revisando alertas…', resumen_cartera:'Armando el resumen…', documentos_faltantes:'Revisando documentos…', generar_pdf:'Generando el PDF…', ofrecer_ayuda:'Preparando la ayuda…', enviar_whatsapp:'Armando el mensaje…', abrir_enlace:'Buscando el enlace…'};
+var AZCU_NOMBRES_ = {consultas_whatsapp:'Leyendo las consultas de WhatsApp…', buscar_propiedades:'Buscando propiedades…', ficha_propiedad:'Leyendo la ficha…', captacion_formulario:'Leyendo el formulario de captación…', guia_pagina:'Leyendo la guía…', dashboard:'Armando el panel…', resumen_semana:'Armando el resumen de la semana…', crear_recordatorio:'Guardando el recordatorio…', mis_recordatorios:'Buscando tus recordatorios…', agenda:'Revisando tu agenda…', visitas:'Revisando las visitas…', listar_propiedades:'Filtrando propiedades…', encuestas:'Revisando encuestas…', alertas:'Revisando alertas…', resumen_cartera:'Armando el resumen…', documentos_faltantes:'Revisando documentos…', generar_pdf:'Generando el PDF…', ofrecer_ayuda:'Preparando la ayuda…', enviar_whatsapp:'Armando el mensaje…', abrir_enlace:'Buscando el enlace…'};
 function azcuAvisarListo_(nombre, texto){
   try{ if(nombre) azcuPush_('Azcu terminó ✅', String(texto||'Ya tengo tu respuesta.').replace(/[*_`#]/g,'').slice(0,110), AZCU_WEB+'/?go=chat', azcuDestinos_(nombre, true), true, true); }catch(e){}
 }
@@ -818,7 +866,7 @@ function azcuChat(pin, mensajes, ctx){
   }catch(ePista){}
   var msgs = [{role:'system', content:azcuSistema_(ctx)}].concat(pista ? [{role:'system', content:pista}] : []).concat((mensajes||[]).slice(-12).map(function(m){ return {role:m.role==='assistant'?'assistant':'user', content:String(m.content||'')}; }));
   var tools = azcuTools_(), acciones = [], adj = [], panel = null, i;
-  var mapa = {proponer_cargar_interaccion:'cargar', proponer_agendar_visita:'agendar', proponer_registrar_propuesta:'propuesta', proponer_cambiar_etapa:'etapa', proponer_editar_campos:'campos', proponer_marcar_documento:'doc', proponer_borrar_documento:'borrardoc', proponer_editar_interaccion:'editarint', proponer_eliminar_interaccion:'elimint', proponer_eliminar_propiedad:'elimprop', proponer_enviar_reporte:'reporte'};
+  var mapa = {proponer_cargar_interaccion:'cargar', proponer_agendar_visita:'agendar', proponer_visita_externa:'visitaext', proponer_registrar_propuesta:'propuesta', proponer_cambiar_etapa:'etapa', proponer_editar_campos:'campos', proponer_marcar_documento:'doc', proponer_borrar_documento:'borrardoc', proponer_editar_interaccion:'editarint', proponer_eliminar_interaccion:'elimint', proponer_eliminar_propiedad:'elimprop', proponer_enviar_reporte:'reporte'};
   var directo = null, ult = (mensajes||[]).length ? mensajes[mensajes.length-1] : null, esAcc = !!(ult && /carg|agend|registr|propuesta|cambi|pas[aá] a|edit|borr|elimin|marc|sub[ií]|envi|mand|record|avis|visita|document|papeles|falta|cu[aá]nto|cu[aá]ndo|qui[eé]n|tel[eé]fono|mail|historial|interacci/i.test(String(ult.content||'')) && !/^(info|datos|ficha|contame)/i.test(String(ult.content||'').trim()));
   function fin(t){ return {texto:t, acciones:acciones, adjuntos:adj, panel:panel}; }
   for(i=0;i<8;i++){
@@ -860,6 +908,7 @@ function azcuChat(pin, mensajes, ctx){
         else if(n==='mis_recordatorios') res = azcuHerrMisRec_(ctx);
         else if(n==='cancelar_recordatorio') res = azcuHerrCancelarRec_(args, ctx);
         else if(n==='agenda') res = azcuHerrAgenda_(args, ctx);
+        else if(n==='visitas') res = azcuHerrVisitas_(args, ctx);
         else if(n==='alertas') res = azcuHerrAlertas_();
         else if(n==='atrasos') res = azcuHerrAtrasos_(args, ctx);
         else if(n==='documentos_faltantes') res = azcuHerrDocs_();
@@ -933,6 +982,7 @@ function azcuEjecutar_(pin, accion){
     var res = azcuPush_('📣 '+(d.titulo ? String(d.titulo).slice(0,60) : 'Aviso del equipo'+(de ? ' · '+de : '')), msg, AZCU_WEB+'?go=novedades', null, false, true);
     return {ok:true, mensaje:/Nadie suscripto/.test(String(res)) ? 'No hay nadie con avisos activados todavía.' : 'Listo, mandé el aviso a todo el equipo 📣'};
   }
+  if(tipo==='visitaext' && d){ azcuLimpiarCache_(); return azcuEjecutarVisitaExt_(d, accion.quien); }
   if(!d || !d.id) throw new Error('Acción inválida');
   var p = azcuProp_(d.id);
   if(!p) throw new Error('No encontré la propiedad');
@@ -1067,7 +1117,7 @@ function azcuGet_(id){
   return s;
 }
 var AZCU_PUB_ = ['obtenerDatosOFallar','extraerDatosDNI','extraerDatosPropiedad','extraerDatosEscritura','clasificarPaginasLegajo','precargarDatos','guardarEncuesta'];
-var AZCU_TB_ = ['obtenerUrlDocumento','obtenerConsultasWS','marcarConsultaWS','marcarReporteEnviado','revisarTextoIA','obtenerPropiedadesDoc','obtenerImagenes','obtenerPropiedades','guardarDocumento','getDatos','guardarPropiedad','registrarInteraccion','editarInteraccion','eliminarInteraccion','eliminarPropiedad','agendarVisita','registrarPropuesta','subirDocumento','bajarDocumento','novedadesTb','borrarDocumento','obtenerEncuesta','enviarReportePropietario','generarInformeTokko','getAppUrl','getEncuestaUrl'];
+var AZCU_TB_ = ['obtenerUrlDocumento','obtenerConsultasWS','marcarConsultaWS','marcarReporteEnviado','revisarTextoIA','obtenerPropiedadesDoc','obtenerImagenes','obtenerPropiedades','guardarDocumento','getDatos','guardarPropiedad','registrarInteraccion','editarInteraccion','eliminarInteraccion','eliminarPropiedad','agendarVisita','registrarPropuesta','subirDocumento','bajarDocumento','novedadesTb','visitasTb','registrarVisitaExterna','borrarDocumento','obtenerEncuesta','enviarReportePropietario','generarInformeTokko','getAppUrl','getEncuestaUrl'];
 function azcuApi(e){
   var raw = (e && e.parameter && e.parameter.payload) || (e && e.postData && e.postData.contents) || '{}', req = {}, out;
   try{
@@ -1395,8 +1445,9 @@ function azcuMovimientos_(dias){
       if(res==='Visita agendada'){ ic = '📅'; t = 'Visita agendada'; }
       else if(via==='Visita'){ ic = '🏠'; t = 'Visita realizada'; }
       else if(/propuesta|oferta/i.test(res)){ ic = '💬'; t = res; }
+      var ex0 = /^EXT-/.test(String(v[i][0]).trim()), dx0 = ex0 ? '🏢 '+String(v[i][12]||'Otra inmobiliaria').trim()+(v[i][11] ? ' ('+String(v[i][11]).trim()+')' : '') : '';
       var vf = ''; if(res==='Visita agendada'){ var mv = String(v[i][6]).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); if(mv) vf = mv[3]+'-'+('0'+mv[2]).slice(-2)+'-'+('0'+mv[1]).slice(-2); }
-      out.push({ms:Date.UTC(Math.floor(n/10000), Math.floor(n/100)%100-1, n%100, 15), h:0, ic:ic, t:t, d:(cli ? cli+' · ' : '')+(res && res!==t ? res : ''), dir:dirs[String(v[i][0]).trim()] || '', q:ve, id:String(v[i][0]).trim(), vf:vf});
+      out.push({ms:Date.UTC(Math.floor(n/10000), Math.floor(n/100)%100-1, n%100, 15), h:0, ic:ic, t:t, d:(cli ? cli+' · ' : '')+(res && res!==t ? res : ''), dir:ex0 ? dx0 : (dirs[String(v[i][0]).trim()] || ''), q:ve, id:ex0 ? '' : String(v[i][0]).trim(), vf:vf});
     }
   }catch(e){}
   try{
@@ -1416,6 +1467,37 @@ function azcuMovimientos_(dias){
 function azcuHoy(pin){ azcuPin_(pin); var a = azcuHerrAlertas_(); return {v:a.visitas_hoy.length, c:a.seguimientos_para_hoy.length, p:a.propuestas_sin_respuesta.length, d:a.papeles.length}; }
 function azcuMov(pin, dias){ azcuPin_(pin); return azcuMovimientos_(dias); }
 function novedadesTb(dias){ return azcuMovimientos_(dias); }
+function azcuIsoN_(n){ n = String(n); return n.slice(0,4)+'-'+n.slice(4,6)+'-'+n.slice(6,8); }
+function azcuVisitasData_(atras, adelante){
+  atras = Math.min(Math.max(+atras||0,0),365); adelante = Math.min(Math.max(+adelante||0,0),365);
+  var cc = CacheService.getScriptCache(), ck = 'azvis_'+atras+'_'+adelante, hit = cc.get(ck);
+  if(hit){ try{ var hj = JSON.parse(hit); hj.ahora = Date.now(); return hj; }catch(e){} }
+  var hn = azcuHoy_(), ahora = Date.now(), dirs = azcuMapaDirs_(), sh = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento'), v = sh ? sh.getDataRange().getValues() : [], out = [], real = {}, i, k;
+  for(i=1;i<v.length;i++){
+    var id0 = String(v[i][0]).trim();
+    if(id0 && String(v[i][2]).trim()==='Visita' && String(v[i][5]).trim()!=='Visita agendada'){ (real[id0] = real[id0]||[]).push({n:azcuNum_(v[i][1]), nom:azcuSinAc_(v[i][3]), tel:String(v[i][4]).replace(/\D/g,'')}); }
+  }
+  for(i=1;i<v.length;i++){
+    var r = v[i], id = String(r[0]).trim(), via = String(r[2]).trim(), res = String(r[5]).trim(), ag = res==='Visita agendada', n, hh = '';
+    if(!id || (via!=='Visita' && !ag)) continue;
+    if(ag){ var m = String(r[6]).trim().match(/^Visita\s+(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})/i); if(m){ n = +(m[3]+('0'+m[2]).slice(-2)+('0'+m[1]).slice(-2)); hh = ('0'+m[4]).slice(-2)+':'+m[5]; } else n = azcuNum_(r[1]); }
+    else n = azcuNum_(r[1]);
+    if(!n) continue;
+    var dd = azcuDif_(n, hn); if(dd<-atras || dd>adelante) continue;
+    var nom = azcuSinAc_(r[3]), tel = String(r[4]).replace(/\D/g,''), hecho = false, ext = /^EXT-/.test(id), e = 'r';
+    if(ag){
+      (real[id]||[]).forEach(function(x){ if(hecho || (x.n!==null && x.n<n)) return; if((!nom && !tel) || (nom && x.nom===nom) || (tel && x.tel===tel)) hecho = true; });
+      if(hecho) continue;
+      e = new Date(azcuIsoN_(n)+'T'+(hh||'23:59')+':00-03:00').getTime() >= ahora ? 'a' : 'p';
+    }
+    out.push({f:i+1, id:id, x:ext?1:0, dir:ext ? String(r[12]||'').trim() : (dirs[id]||id), im:ext ? String(r[11]||'').trim() : '', lk:ext ? String(r[13]||'').trim() : '', pr:ext ? String(r[14]||'').trim() : '', cli:String(r[3]||'').trim(), tel:String(r[4]||'').trim(), v:String(r[9]||'').trim(), c:String(r[10]||'').trim(), e:e, res:ag ? '' : res, obs:String(r[8]||'').trim().slice(0,400), d:azcuIsoN_(n), h:hh});
+  }
+  out.sort(function(a,b){ return a.d<b.d ? 1 : a.d>b.d ? -1 : (a.h<b.h ? 1 : a.h>b.h ? -1 : 0); });
+  var res0 = {items:out.slice(0,600), hoy:azcuIsoN_(hn), ahora:ahora};
+  try{ cc.put(ck, JSON.stringify(res0), 20); }catch(e){}
+  return res0;
+}
+function visitasTb(atras, adelante){ return azcuVisitasData_(atras==null ? 60 : atras, adelante==null ? 60 : adelante); }
 function azcuAvisoDiario(){
   if(azcuEnSilencio_()) return;
   azcuLimpiarCache_();
@@ -1520,7 +1602,7 @@ function azcuAvisoPostVisita(){
       if(nj!==null && nj<vn) continue;
       if((!nom && !tel) || (nom && azcuSinAc_(v[j][3])===nom) || (tel && String(v[j][4]).replace(/\D/g,'')===tel)){ hecho = true; break; }
     }
-    cand.push({key:key, id:id, cli:String(v[i][3]||'').trim(), quien:String(v[i][9]||'').trim(), hora:m[4]+':'+m[5], hecho:hecho, veces:env[key] ? 1 : 0});
+    cand.push({key:key, id:id, dirx:/^EXT-/.test(id) ? String(v[i][12]||'').trim() : '', cli:String(v[i][3]||'').trim(), quien:String(v[i][9]||'').trim(), hora:m[4]+':'+m[5], hecho:hecho, veces:env[key] ? 1 : 0});
   }
   if(!cand.length) return;
   var datos = null;
@@ -1529,7 +1611,7 @@ function azcuAvisoPostVisita(){
       try{
         datos = datos || azcuDatos_();
         var p = null; datos.forEach(function(x){ if(String(x.id).trim()===c.id) p = x; });
-        azcuPush_(c.veces ? '⚠️ Falta cargar cómo te fue en la visita' : '¿Cómo te fue en la visita? 🏠', (p ? p.dir : c.id)+(c.cli ? ' con '+c.cli : '')+' · '+c.hora+'. Contame en un audio cómo estuvo.'+(c.veces ? ' Te lo recuerdo cada 2 días hasta que lo cargues.' : ''),
+        azcuPush_(c.veces ? '⚠️ Falta cargar cómo te fue en la visita' : '¿Cómo te fue en la visita? 🏠', (p ? p.dir : (c.dirx || c.id))+(c.cli ? ' con '+c.cli : '')+' · '+c.hora+'. Contame en un audio cómo estuvo.'+(c.veces ? ' Te lo recuerdo cada 2 días hasta que lo cargues.' : ''),
           AZCU_WEB+'?cv='+encodeURIComponent(c.id)+'&ci='+encodeURIComponent(c.cli), azcuDestinos_(c.quien || (p && p.vendedor)));
       }catch(e){ return; }
     }
@@ -1680,7 +1762,8 @@ function azcuAgendaItems_(quien, desde, dias){
       var ms = new Date(m[3]+'-'+m[2]+'-'+m[1]+'T'+m[4]+':'+m[5]+':00-03:00').getTime();
       if(ms<ini || ms>=fin) continue;
       var ve = String(v[i][9]||'').trim(), vs = azcuSlug_(ve);
-      items.push({ms:ms, tipo:'visita', texto:(mapa[String(v[i][0]).trim()]||v[i][0])+(v[i][3] ? ' · '+v[i][3] : ''), vendedor:ve||'sin asignar', es_mia:!ve || vs===q || vs===q1});
+      var cd0 = String(v[i][0]).trim(), tx0 = mapa[cd0] || (/^EXT-/.test(cd0) ? '🏢 '+(v[i][12]||'Otra inmobiliaria')+(v[i][11] ? ' ('+v[i][11]+')' : '') : v[i][0]);
+      items.push({ms:ms, tipo:'visita', texto:tx0+(v[i][3] ? ' · '+v[i][3] : ''), vendedor:ve||'sin asignar', es_mia:!ve || vs===q || vs===q1});
     }
   }catch(e){}
   return items.sort(function(x,y){ return x.ms-y.ms; });
