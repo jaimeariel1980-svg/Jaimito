@@ -112,16 +112,15 @@ var FC=(function(){
     $('#sug').textContent='· sugerencia automática: '+S.auto;
     marcar(S.manual||S.auto);
   }
-  function motHtml(){return '<div id="mot" style="display:none;margin-top:12px"><label class="l" style="color:#D9534F">Motivo de descarte (obligatorio con C)</label><select id="m-md" onchange="FC.motSel()"><option value="">— Elegí el motivo —</option>'+D.motivos.concat(['Otro']).map(function(m){return '<option>'+esc(m)+'</option>';}).join('')+'</select><input type="text" id="m-md2" maxlength="30" placeholder="Escribí el motivo (máximo 2 palabras)" style="display:none;margin-top:6px"></div>';}
-  function motSel(){$('#m-md2').style.display=v('m-md')==='Otro'?'':'none';}
-  function motFinal(){var m=v('m-md');if(m!=='Otro')return m;var t=v('m-md2').replace(/\s+/g,' ');return (!t||t.split(' ').length>2)?null:'Otro: '+t;}
+  function motHtml(){return '<div id="mot" style="display:none;margin-top:12px"><label class="l" style="color:#D9534F">Motivos de descarte (obligatorio con C · podés elegir más de uno)</label>'+MOT.html('m-md',D.motivos,'')+'</div>';}
+  function motSel(){}
   function marcar(l){var m=$('#mot');if(m)m.style.display=l==='C'?'':'none';CONT.querySelectorAll('#vb button').forEach(function(b){b.className=b.dataset.l===l?'on '+l.replace('+','p'):'';});}
   function manual(l){S.manual=l;marcar(l);}
   function v(id){return $('#'+id).value.trim();}
   function guardar(){
     var letra=S.manual||S.auto;
     if(!letra){alert('Evaluá al menos una competencia o elegí el ajuste al rol.');return;}
-    var mf='';if(letra==='C'){mf=motFinal();if(!mf){alert(v('m-md')==='Otro'?'En "Otro" escribí el motivo con máximo dos palabras.':'Con C hay que elegir el motivo de descarte.');($('#m-md2').style.display==='none'?$('#m-md'):$('#m-md2')).focus();return;}}
+    var mf='';if(letra==='C'){var mr=MOT.valor('m-md');if(!mr.ok||!mr.texto){alert(mr.ok?'Con C hay que elegir al menos un motivo de descarte.':mr.msg);return;}mf=mr.texto;}
     var b=$('#save');b.disabled=true;b.textContent='Guardando…';
     var comps=D.comps.map(function(k){return {nombre:k.nombre,peso:k.pesoAct,nivel:S.niv[k.id]||0,notas:$('[data-n="'+k.id+'"]').value};});
     google.script.run.withSuccessHandler(function(r){

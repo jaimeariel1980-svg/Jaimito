@@ -16,10 +16,14 @@ function asegurarColumnas_() {
 }
 
 function motivoNorm_(m) {
-  m = String(m == null ? '' : m).replace(/\s+/g, ' ').trim();
-  if (m === '' || MOTIVOS_DESCARTE.indexOf(m) > -1) return m;
-  if (/^Otro: \S+( \S+)?$/.test(m) && m.length <= 40) return m;
-  throw new Error(/^Otro/.test(m) ? 'En "Otro" escribí el motivo con máximo dos palabras' : 'Motivo inválido');
+  const partes = String(m == null ? '' : m).split(/\s*;\s*/).map(x => x.replace(/\s+/g, ' ').trim()).filter(Boolean), out = [];
+  if (partes.length > 9) throw new Error('Demasiados motivos');
+  partes.forEach(x => {
+    if (MOTIVOS_DESCARTE.indexOf(x) > -1) { if (out.indexOf(x) === -1) out.push(x); return; }
+    if (/^Otro: \S+( \S+){0,2}$/.test(x) && x.length <= 50) { out.push(x); return; }
+    throw new Error(/^Otro/.test(x) ? 'En "Otro" escribí el motivo con máximo tres palabras' : 'Motivo inválido');
+  });
+  return out.join('; ');
 }
 const POLICLINICOS = ['Policlínico PAMI 1', 'Policlínico PAMI 2'];
 const NOTAS = ['', 'A', 'B+', 'B', 'C'];
@@ -260,7 +264,7 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '38';
+const ESQUEMA = '39';
 
 function actualizarEsquema_() {
   try { asegurarColumnas_(); } catch (e) { registrarError_('asegurar columnas', e); }
@@ -315,7 +319,7 @@ function actualizarEsquema_() {
       const val = lista => SpreadsheetApp.newDataValidation().requireValueInList(lista, true).build();
       sh.getRange(2, COL.estado, n, 1).setDataValidation(val(todosEstados_()));
       sh.getRange(2, COL.policlinico, n, 1).setDataValidation(val(POLICLINICOS));
-      sh.getRange(2, COL.motivo, n, 1).setDataValidation(val(MOTIVOS_DESCARTE));
+      sh.getRange(2, COL.motivo, n, 1).clearDataValidations();
     },
     () => {
       const sh = hoja_('Ajustes'), d = sh.getDataRange().getValues();
