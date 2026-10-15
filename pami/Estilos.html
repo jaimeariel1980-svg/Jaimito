@@ -62,15 +62,15 @@ label.l{display:block;font-size:11px;font-weight:800;letter-spacing:.06em;text-t
   }
   function redactar(ta,btn,und){
     var t=ta.value.trim();if(t.length<8){msg('Escribí o dictá algo primero');return;}
-    var old=btn.textContent,ind=(ta.id==='fichaTxt'&&document.getElementById('fichaInd'))?document.getElementById('fichaInd').value:'';btn.disabled=true;btn.textContent='Redactando…';
+    var old=btn.textContent,ind=(ta.id==='fichaTxt'&&document.getElementById('fichaInd'))?document.getElementById('fichaInd').value:'';btn.disabled=true;btn.textContent='Corrigiendo…';
     google.script.run.withSuccessHandler(function(r){btn.disabled=false;btn.textContent=old;ta._prev=ta.value;ta.value=r;ta.dispatchEvent(new Event('input',{bubbles:true}));und.style.display='';})
-      .withFailureHandler(function(e){btn.disabled=false;btn.textContent=old;alert('No se pudo redactar: '+((e&&e.message)||e));}).redactarIA(K_(),ta.value,ind);
+      .withFailureHandler(function(e){btn.disabled=false;btn.textContent=old;alert('No se pudo corregir: '+((e&&e.message)||e));}).redactarIA(K_(),ta.value,ind);
   }
   function attach(ta){
     if(ta.dataset.ia)return;ta.dataset.ia='1';
     var b=document.createElement('div');b.style.cssText='display:flex;gap:8px;margin:6px 0 12px;flex-wrap:wrap';
     var mk=function(t){var x=document.createElement('button');x.type='button';x.className='btn ghost';x.textContent=t;x.style.cssText='padding:6px 12px;font-size:12px';return x;};
-    var m=mk('🎤 Dictar'),a=mk('✨ Redactar con IA'),u=mk('↩ Deshacer');u.style.display='none';
+    var m=mk('🎤 Dictar'),a=mk('✨ Corregir con IA'),u=mk('↩ Deshacer');u.style.display='none';
     m.onclick=function(){dictar(ta,m);};a.onclick=function(){redactar(ta,a,u);};u.onclick=function(){if(ta._prev!=null){ta.value=ta._prev;ta._prev=null;}u.style.display='none';};
     b.appendChild(m);b.appendChild(a);b.appendChild(u);ta.parentNode.insertBefore(b,ta.nextSibling);
   }
