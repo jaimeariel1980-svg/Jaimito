@@ -610,6 +610,8 @@ function armarComunicacion(k, fila, tipo) {
   }
   let texto = textoPlantilla_(tipo);
   if (!texto) return { ok: false, error: 'No encontré la plantilla ' + tipo + ' en la pestaña Plantillas' };
+  // Si en la plantilla quedó pegado un link de agenda fijo, se reemplaza por el del policlínico del candidato.
+  if (claveLink) texto = texto.replace(/https?:\/\/(calendar\.app\.google|calendar\.google\.com)\/\S+/g, '[LINK]');
   if (!v.LINK) texto = texto.replace(/[^\n]*(link|enlace)[^\n]*\n\[LINK\]/i, 'Si te interesa, contanos qué día y horario te quedan mejor para agendarla.').replace(/ ?\[LINK\]/g, '');
   texto = rellenar_(texto, v);
   if (!String(r[COL.tel - 1]).replace(/\D/g, '')) return { ok: false, error: 'El candidato no tiene teléfono' };
