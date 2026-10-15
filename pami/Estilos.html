@@ -67,7 +67,7 @@ label.l{display:block;font-size:11px;font-weight:800;letter-spacing:.06em;text-t
       .withFailureHandler(function(e){btn.disabled=false;btn.textContent=old;alert('No se pudo '+(ta.id==='fichaTxt'?'corregir':'redactar')+': '+((e&&e.message)||e));}).redactarIA(K_(),ta.value,ind);
   }
   function attach(ta){
-    if(ta.dataset.ia||(typeof D!=='undefined'&&D&&D.tecnica))return;ta.dataset.ia='1';
+    if(ta.dataset.ia||ta.id==='gM'||(typeof D!=='undefined'&&D&&D.tecnica))return;ta.dataset.ia='1';
     var b=document.createElement('div');b.style.cssText='display:flex;gap:8px;margin:6px 0 12px;flex-wrap:wrap';
     var mk=function(t){var x=document.createElement('button');x.type='button';x.className='btn ghost';x.textContent=t;x.style.cssText='padding:6px 12px;font-size:12px';return x;};
     var m=mk('🎤 Dictar'),a=mk(ta.id==='fichaTxt'?'✨ Corregir con IA':'✨ Redactar con IA'),u=mk('↩ Deshacer');u.style.display='none';
