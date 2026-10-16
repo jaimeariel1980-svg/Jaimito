@@ -2176,6 +2176,7 @@ function eliminarPropiedad(codigo, quien){
   var fila=_filaPorCodigo_(mae, codigo);
   if(fila<0)throw new Error('No encontré la propiedad '+codigo);
   try{ var hE=mae.getRange(1,1,1,mae.getLastColumn()).getValues()[0]; var dE=_dirDe_(mae,fila,hE); _audit_('elimprop','🗑 Eliminó la propiedad '+(dE||codigo), dE, quien||''); }catch(e){}
+  try{ var hP=mae.getRange(1,1,1,mae.getLastColumn()).getValues()[0], fP=mae.getRange(fila,1,1,hP.length).getValues()[0], mP={}; hP.forEach(function(h,i){ var x=fP[i]; if(h && x!=='' && x!==null && x!==undefined) mP[h]=_pj_(x); }); _aPapelera_('propiedad', (typeof dE!=='undefined' && dE) || codigo, codigo, quien, {codigo:codigo, map:mP}); }catch(e){ Logger.log('Papelera propiedad: '+e.message); }
   mae.deleteRow(fila); _invalidaNovedades_();
   try{ if(typeof azcuPush_==='function') azcuPush_('🗑 '+(String(quien||'').trim()||'Alguien')+' eliminó una propiedad', (typeof dE!=='undefined' && dE) || codigo, (typeof AZCU_WEB!=='undefined' ? AZCU_WEB+'?go=novedades' : null)); }catch(e){ Logger.log('Aviso de eliminación: '+e.message); }
   return {ok:true};
@@ -2272,6 +2273,7 @@ function borrarDocumento(codigo, docNombre, quien){
   if(i<0)throw new Error('No existe ese documento');
   var val=(''+mae.getRange(fila,i+1).getValue()).trim();
   var m=val.match(/[-\w]{25,}/);
+  if(val && !/^pendiente$/i.test(val)) _aPapelera_('documento', '«'+docNombre+'» de '+_dirDe_(mae,fila,head), codigo, quien, {codigo:codigo, doc:docNombre, prev:val, fileId:m?m[0]:''});
   if(m){ try{ DriveApp.getFileById(m[0]).setTrashed(true); }catch(e){} }
   mae.getRange(fila,i+1).setValue('Pendiente');
   _audit_('borrardoc','📄 Borró el documento «'+docNombre+'»', _dirDe_(mae,fila,head), quien||''); _invalidaNovedades_();
@@ -2581,11 +2583,80 @@ function registrarVisitaExterna(datos){
   return {ok:true, codigo:codigo};
 }
 
+var PAPELERA_DIAS_ = 30;
+function _papelera_(){
+  var ss = SpreadsheetApp.openById(MAESTRO_ID), sh = ss.getSheetByName('Papelera');
+  if(!sh){ sh = ss.insertSheet('Papelera'); sh.getRange(1,1,1,9).setValues([['ID','Fecha (ms)','Tipo','Qué','Referencia','Quién','Datos (no tocar)','Estado','Restaurado']]); sh.setFrozenRows(1); }
+  return sh;
+}
+function _pj_(v){ return v instanceof Date ? {__d:v.getTime()} : v; }
+function _pu_(v){ return (v && typeof v==='object' && v.__d!==undefined) ? new Date(v.__d) : v; }
+function _aPapelera_(tipo, que, ref, quien, datos){
+  try{
+    var sh = _papelera_(), id = 'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,5), js = JSON.stringify(datos);
+    if(js.length>48000) throw new Error('datos demasiado grandes');
+    sh.appendRow([id, Date.now(), tipo, que, ref||'', String(quien||'').trim(), js, 'en papelera', '']);
+    _purgarPapelera_();
+    return id;
+  }catch(e){ Logger.log('Papelera: '+e.message); return ''; }
+}
+function _purgarPapelera_(){
+  try{
+    var sh = _papelera_(), n = sh.getLastRow(); if(n<2) return;
+    var v = sh.getRange(2,1,n-1,2).getValues(), lim = Date.now()-PAPELERA_DIAS_*86400000, i;
+    for(i=v.length-1;i>=0;i--) if(+v[i][1] && +v[i][1]<lim) sh.deleteRow(i+2);
+  }catch(e){}
+}
+function papeleraTb(){
+  _purgarPapelera_();
+  var sh = _papelera_(), n = sh.getLastRow(), out = [], i;
+  if(n>=2){
+    var v = sh.getRange(2,1,n-1,8).getValues(), ahora = Date.now();
+    for(i=0;i<v.length;i++){
+      if(String(v[i][7])!=='en papelera') continue;
+      out.push({id:String(v[i][0]), ms:+v[i][1], tipo:String(v[i][2]), que:String(v[i][3]), ref:String(v[i][4]), quien:String(v[i][5]), dias:Math.max(0, Math.ceil((+v[i][1]+PAPELERA_DIAS_*86400000-ahora)/86400000))});
+    }
+  }
+  out.sort(function(a,b){ return b.ms-a.ms; });
+  return {items:out, dias:PAPELERA_DIAS_};
+}
+function restaurarPapelera(id, quien){
+  var sh = _papelera_(), v = sh.getDataRange().getValues(), r = -1, i;
+  for(i=1;i<v.length;i++) if(String(v[i][0])===String(id)){ r = i; break; }
+  if(r<0) throw new Error('Ya no está en la papelera');
+  if(String(v[r][7])!=='en papelera') throw new Error('Ya se restauró');
+  var tipo = String(v[r][2]), d = JSON.parse(v[r][6]), ss = SpreadsheetApp.openById(MAESTRO_ID), msg = '';
+  if(tipo==='interaccion'){
+    var seg = ss.getSheetByName('Seguimiento'); if(!seg) throw new Error('No existe la pestaña Seguimiento');
+    seg.appendRow((d.vals||[]).map(_pu_)); msg = 'volvió al historial.';
+  } else if(tipo==='propiedad'){
+    var mae = hojaMaestra_();
+    if(_filaPorCodigo_(mae, d.codigo)>0) throw new Error('Ya existe una propiedad con el código '+d.codigo);
+    var head = mae.getRange(1,1,1,mae.getLastColumn()).getValues()[0];
+    mae.appendRow(head.map(function(h){ return (h in d.map) ? _pu_(d.map[h]) : ''; }));
+    msg = 'la propiedad volvió a la planilla con todos sus datos.';
+  } else if(tipo==='documento'){
+    var m2 = hojaMaestra_(), fila = _filaPorCodigo_(m2, d.codigo);
+    if(fila<0) throw new Error('La propiedad ya no existe');
+    var h2 = m2.getRange(1,1,1,m2.getLastColumn()).getValues()[0], ci = h2.indexOf('Doc: '+d.doc);
+    if(ci<0) throw new Error('No encontré la columna del documento');
+    var okF = false;
+    if(d.fileId){ try{ DriveApp.getFileById(d.fileId).setTrashed(false); okF = true; }catch(e){ Logger.log('Restaurar archivo: '+e.message); } }
+    if(!okF && d.fileId) throw new Error('El archivo ya no está en la papelera de Drive');
+    m2.getRange(fila, ci+1).setValue(d.prev);
+    msg = 'el documento «'+d.doc+'» volvió a la ficha.';
+  } else throw new Error('Tipo desconocido');
+  sh.getRange(r+1, 8, 1, 2).setValues([['restaurado', Utilities.formatDate(new Date(), 'GMT-3', 'dd/MM/yyyy HH:mm')+(quien ? ' · '+quien : '')]]);
+  _audit_('restaurar', '♻️ Restauró: '+v[r][3], String(v[r][4]||''), quien||'');
+  _invalidaNovedades_();
+  return {ok:true, mensaje:msg, tipo:tipo};
+}
 function eliminarInteraccion(filaSeg, quien){
   var ss=SpreadsheetApp.openById(MAESTRO_ID);
   var seg=ss.getSheetByName('Seguimiento');
   if(!seg || filaSeg<2)throw new Error('Fila inválida');
   try{ var rowD=seg.getRange(filaSeg,1,1,Math.max(seg.getLastColumn(),6)).getValues()[0]; _audit_('elimint','🗑 Eliminó la interacción de '+(rowD[3]||'—')+' ('+(rowD[2]||'')+', '+(rowD[5]||'')+')', (typeof azcuMapaDirs_==='function'?(azcuMapaDirs_()[String(rowD[0]).trim()]||''):''), quien||''); }catch(e){}
+  try{ var rv = seg.getRange(filaSeg,1,1,seg.getLastColumn()).getValues()[0], cd = String(rv[0]).trim(), dx = /^EXT-/.test(cd) ? '🏢 '+String(rv[12]||'') : (typeof azcuMapaDirs_==='function' ? (azcuMapaDirs_()[cd]||cd) : cd); _aPapelera_('interaccion', 'Visita/interacción de '+(rv[3]||'—')+' · '+(rv[5]||rv[2]||'')+' ('+_fNac_(rv[1])+') en '+dx, cd, quien, {vals:rv.map(_pj_)}); }catch(e){}
   seg.deleteRow(filaSeg);
   _invalidaNovedades_();
   return {ok:true};
