@@ -597,11 +597,11 @@ function armarComunicacion(k, fila, tipo) {
   fila = Number(fila);
   const r = sh.getRange(fila, 1, 1, HEAD_CAND.length).getValues()[0];
   const v = datosComunes_(r);
-  const claveLink = { 'contacto-screening': 'link_agenda_screening', 'contacto-competencias': 'link_agenda_competencias', 'contacto-tecnica': 'link_agenda_pami2' }[tipo];
+  const claveLink = { 'contacto-screening': 'link_agenda_screening', 'contacto-competencias': 'link_agenda_competencias', 'contacto-tecnica': 'link_agenda_tecnica' }[tipo];
   const polEf = poliContacto_(r);
   if (claveLink) {
     const clave = /2$/.test(polEf) ? claveLink + '_poli2' : claveLink;
-    const link = ajusteFlex_(v.aj, clave);
+    const link = ajusteFlex_(v.aj, clave) || ajusteFlex_(v.aj, clave.replace('link_agenda_tecnica', 'link_agenda_pami2'));
     // Nunca mandar a un candidato de PAMI 2 el link de PAMI 1: si falta, avisar.
     if (!link && /2$/.test(polEf)) return { ok: false, error: 'Falta el link de agenda de PAMI 2: cargalo en la pestaña Ajustes, clave "' + clave + '".' };
     if (link) v.LINK = link;
