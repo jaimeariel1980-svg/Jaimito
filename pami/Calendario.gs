@@ -115,10 +115,13 @@ function tituloEvento_(e, porMail) {
   return i > 0 ? TIPO_ETAPA[ETAPAS[i]] + ' · ' + t : t;
 }
 
+let CAL_FALLO_ = false;
+
 function eventosCal_(desde, hasta) {
   const porMail = estadoPorMail_();
   let evs = [];
-  fuentesCal_().forEach(f => { try { evs = evs.concat(f.cal.getEvents(desde, hasta).map(e => ({ e: e, poli: f.poli, etapa: f.etapa }))); } catch (e) { registrarError_('leer calendario', e); } });
+  CAL_FALLO_ = false;
+  fuentesCal_().forEach(f => { try { evs = evs.concat(f.cal.getEvents(desde, hasta).map(e => ({ e: e, poli: f.poli, etapa: f.etapa }))); } catch (e) { CAL_FALLO_ = true; registrarError_('leer calendario', e); } });
   return evs.map(x => {
     let t = tituloEvento_(x.e, porMail);
     // En un calendario propio de una etapa (ej. agenda técnica de Enfermería), el turno es de esa etapa aunque el título no lo diga.
@@ -131,6 +134,7 @@ function syncCalendario() {
   if (!calendario_()) return;
   const ahora = new Date();
   const eventos = eventosCal_(new Date(ahora.getTime() - 180 * 86400000), new Date(ahora.getTime() + 90 * 86400000));
+  if (CAL_FALLO_) return;
   const sh = hoja_('Candidatos');
   const d = sh.getDataRange().getValues();
   for (let i = 1; i < d.length; i++) {
