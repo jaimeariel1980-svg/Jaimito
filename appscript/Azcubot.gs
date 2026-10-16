@@ -719,7 +719,7 @@ function azcuValidarVisitaExt_(a){
   }
   d.dirTxt = '🏢 '+(d.dir||'Visita externa')+(d.inmob ? ' ('+d.inmob+')' : '');
   var f = d.fecha.split('-').reverse().join('/');
-  return {accion:{tipo:'visitaext', datos:{id:'externa', dir:d.dirTxt, d:d}, resumen:(est==='agendada' ? 'Agendar visita a otra inmobiliaria' : 'Cargar visita a otra inmobiliaria')+': '+d.dirTxt+' · '+d.interesado+' · '+f+(est==='agendada' ? ' '+d.hora : ' · '+d.resultado)+(d.precio ? ' · '+d.precio : '')+(d.link ? ' · ficha: '+d.link : '')+(d.obs ? ' · detalle: '+d.obs : '')}};
+  return {accion:{tipo:'visitaext', datos:{id:'externa', dir:d.dirTxt, d:d}, resumen:(est==='agendada' ? 'Agendar visita con otra inmobiliaria' : 'Cargar visita con otra inmobiliaria')+': '+d.dirTxt+' · '+d.interesado+' · '+f+(est==='agendada' ? ' '+d.hora : ' · '+d.resultado)+(d.precio ? ' · '+d.precio : '')+(d.link ? ' · ficha: '+d.link : '')+(d.obs ? ' · detalle: '+d.obs : '')}};
 }
 function azcuEjecutarVisitaExt_(d, quien){
   d = d.d||d; quien = String(quien||'').trim().slice(0,40);
