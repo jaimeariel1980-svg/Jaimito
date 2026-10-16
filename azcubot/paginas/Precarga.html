@@ -268,6 +268,15 @@
   @keyframes ia-spin{to{transform:rotate(360deg);}}
   .ia-banner .sub{font-weight:400;opacity:0.85;font-size:12px;}
 </style>
+<script>
+  window.onerror = function (msg, src, linea) {
+    try {
+      var d = document.getElementById('aviso-error-js');
+      if (!d) { d = document.createElement('div'); d.id = 'aviso-error-js'; d.style.cssText = 'background:#fdecea;color:#8a1c1c;border:1px solid #f5c2c0;padding:10px 14px;margin:10px;border-radius:8px;font:13px/1.4 sans-serif'; (document.body || document.documentElement).insertBefore(d, (document.body || document.documentElement).firstChild); }
+      d.textContent = '⚠️ La página tuvo un error y puede no funcionar bien. Mandá captura de este mensaje: ' + msg + ' (línea ' + linea + ')';
+    } catch (e) {}
+  };
+</script>
 </head>
 <body>
 
@@ -1113,18 +1122,27 @@
     btn.textContent = '+ Añadir documentación dueño ' + (cantidadDueñosDocs + 1);
   }
 
-  window.onload = function () {
-    document.getElementById('logoimg').src = LOGO;
-    agregarDueño();
-    renderDocs();
-    document.getElementById('btn-agregar-dueño').addEventListener('click', agregarDueño);
-    document.getElementById('btn-agregar-doc-dueño').addEventListener('click', agregarDocumentacionDueño);
+  let PRECARGA_INICIADA = false;
+  function _paso(nombre, fn) { try { fn(); } catch (e) { if (window.onerror) window.onerror(nombre + ': ' + (e && e.message ? e.message : e), '', ''); } }
+  function iniciarPrecarga() {
+    if (PRECARGA_INICIADA) return;
+    PRECARGA_INICIADA = true;
+    _paso('logo', () => { document.getElementById('logoimg').src = LOGO; });
+    _paso('dueños', () => { if (!document.querySelector('#dueños-contenedor .dueño-block')) agregarDueño(); });
+    _paso('documentación', renderDocs);
+    _paso('botones', () => {
+      document.getElementById('btn-agregar-dueño').addEventListener('click', agregarDueño);
+      document.getElementById('btn-agregar-doc-dueño').addEventListener('click', agregarDocumentacionDueño);
+      const btnBuscar = document.getElementById('btn-buscar-precarga');
+      if (btnBuscar) btnBuscar.addEventListener('click', buscarPrecarga);
+    });
 
-    const btnBuscar = document.getElementById('btn-buscar-precarga');
-    if (btnBuscar) btnBuscar.addEventListener('click', buscarPrecarga);
-
+    // Los pedidos al servidor arrancan después del evento load
     const codigoPrevio = document.getElementById('codigoPrecarga').value;
-    if (codigoPrevio) buscarPrecarga(codigoPrevio);
+    if (codigoPrevio) {
+      if (document.readyState === 'complete') buscarPrecarga(codigoPrevio);
+      else window.addEventListener('load', () => buscarPrecarga(codigoPrevio), { once: true });
+    }
 
     // Delegado: se re-adjunta solo, aunque los inputs de DNI se creen
     // dinámicamente (dueños 2 a 5) después de este momento.
@@ -1143,7 +1161,10 @@
       // El autocompletado con IA (DNI / plano / escritura) está desactivado a propósito: demoraba y aportaba poco.
       // La IA solo verifica el tipo de documento después de enviar (columna «Verificación IA»).
     });
-  };
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciarPrecarga);
+  else iniciarPrecarga();
+  window.addEventListener('load', iniciarPrecarga);
 
   // Mapeo Encabezado del Sheet -> nombre de campo del formulario (sección 2)
   const MAPA_PROPIEDAD = {
