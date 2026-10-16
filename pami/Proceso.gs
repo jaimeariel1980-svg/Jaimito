@@ -824,7 +824,7 @@ function redactarIA_(k, texto, indic) {
     method: 'post', contentType: 'application/json', muteHttpExceptions: true,
     headers: { Authorization: 'Bearer ' + prop_('OPENAI_API_KEY') },
     payload: JSON.stringify({ model: 'gpt-4o-mini', temperature: 0.3, max_tokens: 700, messages: [
-      { role: 'system', content: 'Reescribís las notas de un entrevistador de selección de personal (enfermería). Español rioplatense, profesional, claro y conciso; corregí ortografía y puntuación. NO inventes datos, nombres, cifras ni conclusiones que no estén en el texto, y no agregues juicios nuevos: mantené los hechos y el sentido. Si son varios puntos, devolvelos en viñetas cortas que empiecen con "• ". Devolvé solo el texto resultante, sin comillas ni explicaciones.' },
+      { role: 'system', content: 'Reescribís las notas de un entrevistador de selección de personal (enfermería). Español rioplatense, profesional, claro y conciso; corregí ortografía y puntuación. NO inventes datos, nombres, cifras ni conclusiones que no estén en el texto, y no agregues juicios nuevos: mantené los hechos y el sentido, y el género gramatical que use el texto (no cambies enfermera por enfermero ni al revés). Si son varios puntos, devolvelos en viñetas cortas que empiecen con "• ". Devolvé solo el texto resultante, sin comillas ni explicaciones.' },
       { role: 'user', content: texto.slice(0, 3000) + (String(indic || '').trim() ? '\n\nINDICACIONES (aplicalas sin dejar de ser objetivo ni inventar datos): ' + String(indic).trim().slice(0, 300) : '') }] })
   });
   const parsed = JSON.parse(resp.getContentText());
