@@ -265,7 +265,7 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '41';
+const ESQUEMA = '42';
 
 function actualizarEsquema_() {
   try { asegurarColumnas_(); } catch (e) { registrarError_('asegurar columnas', e); }
@@ -462,7 +462,20 @@ function actualizarEsquema_() {
       // Link indicado por Ever (una sola vez, para no pisar cambios posteriores hechos en la planilla).
       if (k > 0 && !props.getProperty('LINK_TEC_P2')) { aj.getRange(k + 1, 2).setValue('https://calendar.app.google/py2AipafSEZVxhUY8'); props.setProperty('LINK_TEC_P2', '1'); }
     },
-    () => asegurarAjustes_([['calendario_tecnica', ''], ['calendario_tecnica_poli2', '']])
+    () => asegurarAjustes_([['calendario_tecnica', ''], ['calendario_tecnica_poli2', '']]),
+    () => {
+      // Datos indicados por Ever (una sola vez, para no pisar cambios posteriores hechos en la planilla).
+      if (props.getProperty('AGENDA_TEC_2')) return;
+      const aj = hoja_('Ajustes');
+      [['calendario_tecnica_poli2', 'deptoenfermeriapami2@gmail.com'], ['link_agenda_tecnica', 'https://calendar.app.google/7QSk5F4z1A7Q3qbPA']].forEach(x => {
+        asegurarAjustes_([[x[0], '']]);
+        const d = aj.getDataRange().getValues();
+        const i = d.findIndex(r => String(r[0]).trim() === x[0]);
+        if (i > 0) aj.getRange(i + 1, 2).setValue(x[1]);
+      });
+      try { calendarioPor_('deptoenfermeriapami2@gmail.com'); } catch (e) { }
+      props.setProperty('AGENDA_TEC_2', '1');
+    }
   ];
   let ok = true;
   pasos.forEach(f => { try { f(); } catch (e) { ok = false; registrarError_('actualizarEsquema', e); } });
