@@ -265,7 +265,7 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '40';
+const ESQUEMA = '41';
 
 function actualizarEsquema_() {
   try { asegurarColumnas_(); } catch (e) { registrarError_('asegurar columnas', e); }
@@ -461,7 +461,8 @@ function actualizarEsquema_() {
       const k = d.findIndex(r => String(r[0]).trim() === 'link_agenda_tecnica_poli2');
       // Link indicado por Ever (una sola vez, para no pisar cambios posteriores hechos en la planilla).
       if (k > 0 && !props.getProperty('LINK_TEC_P2')) { aj.getRange(k + 1, 2).setValue('https://calendar.app.google/py2AipafSEZVxhUY8'); props.setProperty('LINK_TEC_P2', '1'); }
-    }
+    },
+    () => asegurarAjustes_([['calendario_tecnica', ''], ['calendario_tecnica_poli2', '']])
   ];
   let ok = true;
   pasos.forEach(f => { try { f(); } catch (e) { ok = false; registrarError_('actualizarEsquema', e); } });
