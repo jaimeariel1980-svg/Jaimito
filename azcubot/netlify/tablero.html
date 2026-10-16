@@ -961,6 +961,8 @@ function ficha(id){
       '<div class="fi"><div class="k">Teléfono / WhatsApp</div><input class="inp" value="'+(sm.tel||'')+'" onchange="setC(\''+p.id+'\',\'tel\',this.value)"></div>'+
       '<div class="fi"><div class="k">Email</div><input class="inp" value="'+(sm.mail||'')+'" onchange="setC(\''+p.id+'\',\'mail\',this.value)"></div>'+
       '<div class="fi"><div class="k">DNI</div><input class="inp" value="'+(sm.dni||'')+'" onchange="setC(\''+p.id+'\',\'dni\',this.value)"></div>'+
+      '<div class="fi"><div class="k">Fecha de nacimiento</div><input class="inp" placeholder="dd/mm/aaaa" value="'+(sm.nac||'')+'" onchange="setC(\''+p.id+'\',\'nac\',this.value)"></div>'+
+      '<div class="fi"><div class="k">Nacionalidad</div><input class="inp" value="'+(sm.nacionalidad||'')+'" onchange="setC(\''+p.id+'\',\'nacionalidad\',this.value)"></div>'+
       '<div class="fi" style="grid-column:1/-1"><div class="k">Domicilio</div><input class="inp" value="'+(sm.dom||'').replace(/"/g,'&quot;')+'" onchange="setC(\''+p.id+'\',\'dom\',this.value)"></div>'+
     '</div>'+otrosPropHtml(p)+ofertasHtml+
     '<h3 class="sec">Documentación para vender <span style="text-transform:none;font-weight:400;color:var(--gris);font-size:11px">· los grises son opcionales: tocá «exigir» si hacen falta</span> <button class="btn s" style="padding:2px 8px;font-size:11px;margin-left:8px;text-transform:none" onclick="docsEditor(\''+p.id+'\')">📚 Unir / separar PDF</button></h3><div class="docs">'+docsHtml+'</div>'+
@@ -1519,7 +1521,7 @@ function setP(id,field,val){const p=DATA.find(x=>x.id===id);if(p)p[field]=val;}
 function guardar(id){
   const p=DATA.find(x=>x.id===id); if(!p)return;
   const sm=SIM[id]||{};
-  const cambios={precio:p.precio,tipo:p.tipo,obs:p.obs,etapa:p.etapa,origen:p.origen,colega:p.colega,colegaTel:p.colegaTel,comision:p.comision,vendedor:p.vendedor,boleto:p.boleto,boletoOk:p.boletoOk,escritura:p.escritura,escrituraOk:p.escrituraOk,pct:p.pct,papeles:p.papeles,motivo:p.motivo,prop:sm.prop,tel:sm.tel,mail:sm.mail,dni:sm.dni,dom:sm.dom,tokko:sm.tokko,quien:_yo()};
+  const cambios={precio:p.precio,tipo:p.tipo,obs:p.obs,etapa:p.etapa,origen:p.origen,colega:p.colega,colegaTel:p.colegaTel,comision:p.comision,vendedor:p.vendedor,boleto:p.boleto,boletoOk:p.boletoOk,escritura:p.escritura,escrituraOk:p.escrituraOk,pct:p.pct,papeles:p.papeles,motivo:p.motivo,prop:sm.prop,tel:sm.tel,mail:sm.mail,dni:sm.dni,nac:sm.nac,nacionalidad:sm.nacionalidad,dom:sm.dom,tokko:sm.tokko,quien:_yo()};
   const dn=p.detNew||{};Object.keys(dn).forEach(function(k){if(dn[k]!==String((p.det||{})[k]==null?'':(p.det||{})[k]).trim())cambios[k]=dn[k];});
   const ow=p.owNew||{};Object.keys(ow).forEach(function(k){const o=(p.duenos||[])[k-1]||{};Object.keys(ow[k]).forEach(function(f){if(ow[k][f]!==String(o[f]==null?'':o[f]).trim())cambios['d'+k+'_'+f]=ow[k][f];});});
   const hayOw=Object.keys(cambios).some(function(k){return /^d[2-5]_/.test(k);});
@@ -1761,7 +1763,7 @@ function otrosPropHtml(p){
   for(let k=2;k<=top;k++){
     const o=du[k-1]||{};
     const fi=function(f,lb,v,full){return '<div class="fi"'+(full?' style="grid-column:1/-1"':'')+'><div class="k">'+lb+'</div><input class="inp" value="'+ea(v)+'" onchange="setOw(\''+p.id+'\','+k+',\''+f+'\',this.value)"></div>';};
-    h+='<h3 class="sec">Propietario '+k+(o.nombre?'':' <span style="text-transform:none;font-weight:400;color:var(--gris);font-size:11px">· agregar otro propietario</span>')+'</h3><div class="grid">'+fi('nombre','Nombre',o.nombre)+fi('tel','Teléfono / WhatsApp',o.tel)+fi('mail','Email',o.mail)+fi('dni','DNI',o.dni)+fi('dom','Domicilio',o.dom,true)+'</div>';
+    h+='<h3 class="sec">Propietario '+k+(o.nombre?'':' <span style="text-transform:none;font-weight:400;color:var(--gris);font-size:11px">· agregar otro propietario</span>')+'</h3><div class="grid">'+fi('nombre','Nombre',o.nombre)+fi('tel','Teléfono / WhatsApp',o.tel)+fi('mail','Email',o.mail)+fi('dni','DNI',o.dni)+fi('nac','Fecha de nacimiento',o.nac)+fi('nacionalidad','Nacionalidad',o.nacionalidad)+fi('dom','Domicilio',o.dom,true)+'</div>';
   }
   return h;
 }
@@ -1910,7 +1912,7 @@ function adaptar(datos){
   if(!Array.isArray(datos)) return [];
   return datos.map(function(p){
     var d0=(p.duenos&&p.duenos[0])||{};
-    SIM[p.id]={prop:p.prop||d0.nombre||'',tel:d0.tel||'',mail:d0.mail||'',dni:d0.dni||'',dom:d0.dom||'',tokko:p.tokko||''};
+    SIM[p.id]={prop:p.prop||d0.nombre||'',tel:d0.tel||'',mail:d0.mail||'',dni:d0.dni||'',nac:d0.nac||'',nacionalidad:d0.nacionalidad||'',dom:d0.dom||'',tokko:p.tokko||''};
     return {id:p.id,calle:(p.det&&p.det.calle)||'',numero:(p.det&&p.det.numero)||'',det:p.det||{},creada:p.creada||'',boleto:p.boleto||'',boletoOk:p.boletoOk||'',escritura:p.escritura||'',escrituraOk:p.escrituraOk||'',ciudad:norm(p.ciudad||''),dir:norm(p.dir),tipo:norm(p.tipo),prop:norm(p.prop),precio:p.precio,estado:estFromEt(p.etapa),etapa:normEt(p.etapa),obs:p.obs,pct:(function(v){var n=parseInt(v);return (v==null||v===''||isNaN(n))?null:n;})(p.pct),papeles:p.papeles||{},req:p.req,docExtra:p.docExtra||[],duenos:p.duenos||[],origen:p.origen||'Propia',colega:p.colega||'',colegaTel:p.colegaTel||'',comision:p.comision||'',vendedor:p.vendedor||'',tokko:p.tokko||'',estadoCarga:p.estadoCarga||'',operacion:p.operacion||'',seg:p.seg||[],cons:p.cons||0,vis:p.vis||0,dias:(p.dias==null?null:p.dias),seguimientoPendiente:(function(seg){var hoy=new Date(); hoy.setHours(0,0,0,0);return (seg||[]).some(function(s){if(!/Le interesó/i.test(s.res||''))return false;if(!s.fechaProx)return true;var fp=s.fechaProx;var m=(''+fp).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);if(!m)return true;var d=new Date(parseInt(m[3]),parseInt(m[2])-1,parseInt(m[1]));return d<=hoy;});})(p.seg),plan:p.plan||'',carpeta:p.carpeta||'',motivo:p.motivo||'',docUrls:p.docUrls||{},encuesta:p.encuesta||null};
   });
 }
