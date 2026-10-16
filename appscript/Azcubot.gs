@@ -655,7 +655,8 @@ function azcuTools_(){
     t('enviar_whatsapp','Deja un botón para abrir WhatsApp con el mensaje armado. Con id va por defecto al primer propietario; sin id (captación nueva, texto libre) el usuario elige el contacto.',{id:S, que:{type:'string',enum:['encuesta','formulario_captacion','link_tokko','ubicacion','documento','texto_libre']}, documento:S, telefono:S, texto:S},['que']),
     t('generar_pdf','Genera el PDF de la ficha de una propiedad y lo deja en el chat para descargar o compartir.',{id:S},['id']),
     t('proponer_cargar_interaccion','Registrar una consulta o visita ya ocurrida en una propiedad NUESTRA (que está en el sistema); si es de otra inmobiliaria usá proponer_visita_externa. Queda pendiente de confirmación.',{id:S, interesado:S, telefono:S, via:{type:'string',enum:AZCU_VIAS}, resultado:{type:'string',enum:AZCU_RESULTADOS}, proximo_paso:S, observaciones:{type:'string',description:'Detalle completo de lo que pasó'}},['id','interesado','via','resultado']),
-    t('visitas','Visitas del equipo, propias y a propiedades de OTRAS inmobiliarias: hoy, esta semana, próximas, realizadas o un rango. Usala para "qué visitas hay hoy", "cuántas visitas hizo X", "visitas externas", etc.',{periodo:{type:'string',enum:['hoy','semana','proximas','realizadas','rango']}, desde:F, hasta:F, vendedor:S, solo_externas:{type:'boolean'}}),
+    t('visitas','Visitas del equipo, propias y a propiedades de OTRAS inmobiliarias: hoy, esta semana, próximas, realizadas o un rango. Usala para "qué visitas hay hoy", "cuántas visitas hizo X", "visitas externas", etc. Cada visita trae su fila (para cancelarla).',{periodo:{type:'string',enum:['hoy','semana','proximas','realizadas','canceladas','rango']}, desde:F, hasta:F, vendedor:S, solo_externas:{type:'boolean'}}),
+    t('proponer_cancelar_visita','Cancelar una visita agendada (propia o con otra inmobiliaria) porque la persona desistió o se cayó. La visita queda registrada como cancelada y se saca del Calendar. Primero ubicala con la herramienta visitas para tener su fila. Pendiente de confirmación.',{fila:{type:'number',description:'Fila de la visita (de la herramienta visitas)'}, motivo:S},['fila']),
     t('proponer_visita_externa','Cargar o agendar una visita de un cliente nuestro a una propiedad de OTRA inmobiliaria o que no está en el sistema (ej. "visita de la inmobiliaria Bertollo", "casa de otra inmobiliaria"): no se registra como propiedad, queda solo la visita. NO busques la propiedad antes. Pendiente de confirmación. Agendar: estado=agendada con fecha y hora. Ya hecha: estado=realizada con fecha y resultado. Para cargar el resultado de una visita externa ya agendada pasá codigo (EXT-...).',{direccion:{type:'string',description:'Calle y número de la propiedad ajena'}, inmobiliaria:S, colega:{type:'string',description:'Nombre del colega de la otra inmobiliaria'}, link:{type:'string',description:'Link de la ficha (Tokko, ZonaProp, etc.)'}, precio:S, interesado:{type:'string',description:'Nombre del interesado (cliente nuestro que va a ver la propiedad)'}, telefono:S, email:S, estado:{type:'string',enum:['agendada','realizada'],description:'realizada si ya fue; agendada si es a futuro'}, fecha:{type:'string',description:'AAAA-MM-DD. Si ya fue y no dicen el día, hoy'}, hora:{type:'string',description:'HH:mm 24h (solo agendada)'}, resultado:{type:'string',enum:AZCU_RESULTADOS}, observaciones:{type:'string',description:'Todo el detalle: comentarios del cliente, propuesta que va a hacer, qué quedó pendiente'}, codigo:S},['direccion','interesado']),
     t('proponer_agendar_visita','Agendar una visita futura (Calendar + seguimiento). Pendiente de confirmación.',{id:S, fecha:F, hora:{type:'string',description:'HH:mm 24h'}, interesado:S, telefono:S, email:S, nota:S},['id','fecha','hora']),
     t('proponer_registrar_propuesta','Registrar una propuesta u oferta recibida. Pendiente de confirmación.',{id:S, cliente:S, monto:{type:'string',description:'Monto y moneda'}, telefono:S, observaciones:S},['id','cliente','monto']),
@@ -676,6 +677,8 @@ function azcuSumaDias_(iso, n){ var p = iso.split('-'); return Utilities.formatD
 function azcuHerrVisitas_(a, ctx){
   var per = a.periodo||'hoy', dv = azcuVisitasData_(60, 60), hn = dv.hoy, wd = new Date(hn+'T12:00:00Z').getUTCDay(), lun = azcuSumaDias_(hn, -((wd+6)%7)), dom = azcuSumaDias_(lun, 6), vq = azcuSlug_(a.vendedor||'');
   var l = dv.items.filter(function(x){
+    if(x.e==='c' && per!=='canceladas' && per!=='rango') return false;
+    if(per==='canceladas' && x.e!=='c') return false;
     if(per==='hoy' && x.d!==hn) return false;
     if(per==='semana' && (x.d<lun || x.d>dom)) return false;
     if(per==='proximas' && !(x.d>=hn && x.e==='a')) return false;
@@ -685,7 +688,7 @@ function azcuHerrVisitas_(a, ctx){
     if(vq && azcuSlug_(x.v||x.c).indexOf(vq)<0) return false;
     return true;
   });
-  return {total:l.length, visitas:l.slice(0,60).map(function(x){ return {fecha:x.d.split('-').reverse().join('/'), hora:x.h, direccion:x.dir, id:x.x ? '' : x.id, codigo_externa:x.x ? x.id : '', otra_inmobiliaria:x.x ? (x.im||'sí') : '', cliente:x.cli, vendedor:x.v||x.c, estado:x.e==='a' ? 'agendada' : x.e==='p' ? 'ya pasó, falta cargar el resultado' : 'realizada', resultado:x.res, detalle:x.obs}; })};
+  return {total:l.length, visitas:l.slice(0,60).map(function(x){ return {fila:x.f, fecha:x.d.split('-').reverse().join('/'), hora:x.h, direccion:x.dir, id:x.x ? '' : x.id, codigo_externa:x.x ? x.id : '', otra_inmobiliaria:x.x ? (x.im||'sí') : '', cliente:x.cli, vendedor:x.v||x.c, estado:x.e==='a' ? 'agendada' : x.e==='p' ? 'ya pasó, falta cargar el resultado' : x.e==='c' ? 'cancelada' : 'realizada', resultado:x.res, detalle:x.obs}; })};
 }
 function azcuResVisita_(t){
   t = String(t||'').trim(); if(!t) return 'Visita';
@@ -729,7 +732,16 @@ function azcuEjecutarVisitaExt_(d, quien){
   registrarVisitaExterna(o);
   return {ok:true, mensaje:d.estado==='agendada' ? 'Visita agendada en Calendar para el '+d.fecha.split('-').reverse().join('/')+' a las '+d.hora+'.' : 'Listo, quedó cargada la visita.'};
 }
+function azcuValidarCancelVis_(a){
+  var fila = +a.fila, seg = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento');
+  if(!seg || !fila || fila<2 || fila>seg.getLastRow()) return {error:'No encontré esa visita. Ubicala primero con la herramienta visitas.'};
+  var r = seg.getRange(fila, 1, 1, Math.min(Math.max(seg.getLastColumn(),11),16)).getValues()[0];
+  if(String(r[5]).trim()!=='Visita agendada') return {error:'Esa visita no está agendada (ya se hizo o ya se canceló).'};
+  var cod = String(r[0]).trim(), ext = /^EXT-/.test(cod), dir = ext ? '🏢 '+String(r[12]||'').trim() : (azcuMapaDirs_()[cod]||cod), cli = String(r[3]||'').trim(), m = String(r[6]).match(/^Visita (\d{2}\/\d{2}\/\d{4}) (\d{2}:\d{2})/), mot = String(a.motivo||'').trim().slice(0,300);
+  return {accion:{tipo:'cancelvis', datos:{id:'visita', dir:dir, fila:fila, cod:cod, huella:cli, motivo:mot}, resumen:'Cancelar la visita de '+(cli||'—')+' en '+dir+(m ? ' ('+m[1]+' '+m[2]+')' : '')+(mot ? ' · motivo: '+mot : '')+'. Queda registrada como cancelada y se saca del Calendar.'}};
+}
 function azcuValidarAccion_(tipo, a){
+  if(tipo==='cancelvis') return azcuValidarCancelVis_(a);
   if(tipo==='visitaext') return azcuValidarVisitaExt_(a);
   var p = azcuProp_(a.id);
   if(!p) return {error:'No encontré la propiedad '+a.id+'. Buscala primero.'};
@@ -821,6 +833,7 @@ function azcuSistema_(ctx){
     'CONSULTAS DE WHATSAPP: si preguntan por consultas/mensajes de WhatsApp (por ejemplo del fin de semana) usá consultas_whatsapp y listalas TODAS con fecha, nombre, teléfono, propiedad y mensaje; decí cuántas siguen sin atender.',
     'INFO DE UNA PROPIEDAD (REGLA): cuando pidan la info, datos, ficha, "pasame completo" o "contame" de una propiedad, llamá UNA sola vez ficha_propiedad SIN puntual: el sistema devuelve directo la ficha completa y ordenada; no llames otras herramientas ni la reescribas. Solo si preguntan un único dato concreto usá puntual:true y respondé ese dato.',
     'ÚLTIMAS INTERACCIONES: si piden las últimas interacciones/consultas/visitas cargadas (de todas las propiedades o del usuario) usá ultimas_interacciones; NUNCA las saques de ficha_propiedad salvo que pregunten por una propiedad puntual. Mostrá primero la más reciente y la fecha de cada una.',
+    'CANCELAR VISITA: si dicen que una visita se cae, se cancela o la persona desistió, ubicala con visitas (te da la fila) y usá proponer_cancelar_visita con el motivo si lo dan. La visita queda registrada como cancelada (no se borra) y no cuenta como realizada.',
     'VISITAS A OTRAS INMOBILIARIAS: si cuentan o piden agendar una visita de un cliente nuestro a una propiedad que NO es nuestra (de otra inmobiliaria; ej. "visita de la inmobiliaria Bertollo a una casa en Pérez Bulnes 6637"), usá proponer_visita_externa de una, sin buscar_propiedades y sin pedir datos de más (si ya fue y no dicen el día, es hoy). Si además piden que les recuerdes algo ("llamarlo en dos días"), llamá también crear_recordatorio en el mismo turno; NO uses buscar_propiedades para esa dirección. Obligatorios: dirección, cliente y fecha (y hora si es a futuro). Inmobiliaria, colega (nombre de quien atiende en la otra inmobiliaria), link de la ficha (Tokko, ZonaProp, etc.), precio y teléfono son opcionales: no los pidas, pero si el usuario los dice, cargalos. Ya hecha: estado=realizada con resultado y observaciones (todo el detalle); a futuro: estado=agendada. Esas propiedades no se guardan en el sistema: solo queda la visita. Para consultar visitas (hoy, semana, próximas, de un vendedor, a otras inmobiliarias) usá visitas.',
     'USUARIO: hablás con '+(ctx.nombre||'un compañero')+'.',
     'FECHAS: hoy es '+dia+' '+hoy+' y son las '+Utilities.formatDate(new Date(), AZCU_TZ, 'HH:mm')+' (Argentina). Resolvé "mañana", "el viernes", etc. a AAAA-MM-DD.',
@@ -883,7 +896,7 @@ function azcuChat(pin, mensajes, ctx){
   }catch(ePista){}
   var msgs = [{role:'system', content:azcuSistema_(ctx)}].concat(pista ? [{role:'system', content:pista}] : []).concat((mensajes||[]).slice(-12).map(function(m){ return {role:m.role==='assistant'?'assistant':'user', content:String(m.content||'')}; }));
   var tools = azcuTools_(), acciones = [], adj = [], panel = null, i;
-  var mapa = {proponer_cargar_interaccion:'cargar', proponer_agendar_visita:'agendar', proponer_visita_externa:'visitaext', proponer_registrar_propuesta:'propuesta', proponer_cambiar_etapa:'etapa', proponer_editar_campos:'campos', proponer_marcar_documento:'doc', proponer_borrar_documento:'borrardoc', proponer_editar_interaccion:'editarint', proponer_eliminar_interaccion:'elimint', proponer_eliminar_propiedad:'elimprop', proponer_enviar_reporte:'reporte'};
+  var mapa = {proponer_cargar_interaccion:'cargar', proponer_agendar_visita:'agendar', proponer_visita_externa:'visitaext', proponer_cancelar_visita:'cancelvis', proponer_registrar_propuesta:'propuesta', proponer_cambiar_etapa:'etapa', proponer_editar_campos:'campos', proponer_marcar_documento:'doc', proponer_borrar_documento:'borrardoc', proponer_editar_interaccion:'editarint', proponer_eliminar_interaccion:'elimint', proponer_eliminar_propiedad:'elimprop', proponer_enviar_reporte:'reporte'};
   var directo = null, ult = (mensajes||[]).length ? mensajes[mensajes.length-1] : null, esAcc = !!(ult && /carg|agend|registr|propuesta|cambi|pas[aá] a|edit|borr|elimin|marc|sub[ií]|envi|mand|record|avis|visita|document|papeles|falta|cu[aá]nto|cu[aá]ndo|qui[eé]n|tel[eé]fono|mail|historial|interacci/i.test(String(ult.content||'')) && !/^(info|datos|ficha|contame)/i.test(String(ult.content||'').trim()));
   function fin(t){ return {texto:t, acciones:acciones, adjuntos:adj, panel:panel}; }
   for(i=0;i<8;i++){
@@ -981,7 +994,7 @@ function azcuNotificarEtapa_(id, dir, de, a, quien){
     azcuPush_(t, dir+(c==='r'||c==='v' ? '' : ' → '+a), AZCU_WEB+'?go=novedades');
   }catch(e){}
 }
-var AZCU_LOGT_ = {elimint:'🗑', etapa:'🔶', campos:'✏️', doc:'📄', borrardoc:'📄', adjuntar:'📎', aviso:'📣', completar:'📝', agendar:'📅', reporte:'✉️', elimprop:'🗑', nueva:'🆕', avisopersona:'📣'};
+var AZCU_LOGT_ = {elimint:'🗑', etapa:'🔶', campos:'✏️', doc:'📄', borrardoc:'📄', adjuntar:'📎', aviso:'📣', completar:'📝', agendar:'📅', reporte:'✉️', elimprop:'🗑', nueva:'🆕', avisopersona:'📣', cancelvis:'🚫'};
 function azcuEjecutar(pin, accion){
   var r, t = accion && accion.tipo;
   AZCU_NOAUDIT_ = true;
@@ -1015,6 +1028,7 @@ function azcuEjecutar_(pin, accion){
     return {ok:true, mensaje:/Nadie suscripto/.test(String(res)) ? 'No hay nadie con avisos activados todavía.' : 'Listo, mandé el aviso a todo el equipo 📣'};
   }
   if(tipo==='visitaext' && d){ azcuLimpiarCache_(); return azcuEjecutarVisitaExt_(d, accion.quien); }
+  if(tipo==='cancelvis' && d){ azcuLimpiarCache_(); azcuSegVerif_(+d.fila, d.cod, d.huella); var cr = cancelarVisita(+d.fila, d.motivo, accion.quien); return {ok:true, mensaje:'Listo, la visita quedó cancelada y registrada'+(cr.calendar ? ' (se sacó del Calendar)' : '')+'.'}; }
   if(!d || !d.id) throw new Error('Acción inválida');
   var p = azcuProp_(d.id);
   if(!p) throw new Error('No encontré la propiedad');
@@ -1149,7 +1163,7 @@ function azcuGet_(id){
   return s;
 }
 var AZCU_PUB_ = ['obtenerDatosOFallar','extraerDatosDNI','extraerDatosPropiedad','extraerDatosEscritura','clasificarPaginasLegajo','precargarDatos','guardarEncuesta'];
-var AZCU_TB_ = ['obtenerUrlDocumento','obtenerConsultasWS','marcarConsultaWS','marcarReporteEnviado','revisarTextoIA','obtenerPropiedadesDoc','obtenerImagenes','obtenerPropiedades','guardarDocumento','getDatos','guardarPropiedad','registrarInteraccion','editarInteraccion','eliminarInteraccion','eliminarPropiedad','agendarVisita','registrarPropuesta','subirDocumento','bajarDocumento','novedadesTb','visitasTb','registrarVisitaExterna','borrarDocumento','obtenerEncuesta','enviarReportePropietario','generarInformeTokko','getAppUrl','getEncuestaUrl'];
+var AZCU_TB_ = ['obtenerUrlDocumento','obtenerConsultasWS','marcarConsultaWS','marcarReporteEnviado','revisarTextoIA','obtenerPropiedadesDoc','obtenerImagenes','obtenerPropiedades','guardarDocumento','getDatos','guardarPropiedad','registrarInteraccion','editarInteraccion','eliminarInteraccion','eliminarPropiedad','agendarVisita','registrarPropuesta','subirDocumento','bajarDocumento','novedadesTb','visitasTb','registrarVisitaExterna','cancelarVisita','borrarDocumento','obtenerEncuesta','enviarReportePropietario','generarInformeTokko','getAppUrl','getEncuestaUrl'];
 function azcuApi(e){
   var raw = (e && e.parameter && e.parameter.payload) || (e && e.postData && e.postData.contents) || '{}', req = {}, out;
   try{
@@ -1477,6 +1491,7 @@ function azcuMovimientos_(dias){
       var d = azcuDif_(hn, n); if(d<0 || d>=dias) continue;
       var via = String(v[i][2]).trim(), cli = String(v[i][3]).trim(), res = String(v[i][5]).trim(), ve = String(v[i][10]||v[i][9]||'').trim(), ic = '📞', t = 'Consulta por '+via;
       if(res==='Visita agendada'){ ic = '📅'; t = 'Visita agendada'; }
+      else if(/cancelad/i.test(res)){ ic = '🚫'; t = 'Visita cancelada'; }
       else if(via==='Visita'){ ic = '🏠'; t = 'Visita realizada'; }
       else if(/propuesta|oferta/i.test(res)){ ic = '💬'; t = res; }
       var ex0 = /^EXT-/.test(String(v[i][0]).trim()), dx0 = ex0 ? '🏢 '+String(v[i][12]||'Otra inmobiliaria').trim()+(v[i][11] ? ' ('+String(v[i][11]).trim()+')' : '') : '';
@@ -1509,12 +1524,12 @@ function azcuVisitasData_(atras, adelante){
   var hn = azcuHoy_(), ahora = Date.now(), dirs = azcuMapaDirs_(), sh = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento'), v = sh ? sh.getDataRange().getValues() : [], out = [], real = {}, i, k;
   for(i=1;i<v.length;i++){
     var id0 = String(v[i][0]).trim();
-    if(id0 && String(v[i][2]).trim()==='Visita' && String(v[i][5]).trim()!=='Visita agendada'){ (real[id0] = real[id0]||[]).push({n:azcuNum_(v[i][1]), nom:azcuSinAc_(v[i][3]), tel:String(v[i][4]).replace(/\D/g,'')}); }
+    if(id0 && String(v[i][2]).trim()==='Visita' && String(v[i][5]).trim()!=='Visita agendada' && !/cancelad/i.test(String(v[i][5]))){ (real[id0] = real[id0]||[]).push({n:azcuNum_(v[i][1]), nom:azcuSinAc_(v[i][3]), tel:String(v[i][4]).replace(/\D/g,'')}); }
   }
   for(i=1;i<v.length;i++){
-    var r = v[i], id = String(r[0]).trim(), via = String(r[2]).trim(), res = String(r[5]).trim(), ag = res==='Visita agendada', n, hh = '';
-    if(!id || (via!=='Visita' && !ag)) continue;
-    if(ag){ var m = String(r[6]).trim().match(/^Visita\s+(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})/i); if(m){ n = +(m[3]+('0'+m[2]).slice(-2)+('0'+m[1]).slice(-2)); hh = ('0'+m[4]).slice(-2)+':'+m[5]; } else n = azcuNum_(r[1]); }
+    var r = v[i], id = String(r[0]).trim(), via = String(r[2]).trim(), res = String(r[5]).trim(), ag = res==='Visita agendada', can = res==='Visita cancelada', n, hh = '';
+    if(!id || (via!=='Visita' && !ag && !can)) continue;
+    if(ag || can){ var m = String(r[6]).trim().match(/^Visita\s+(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})/i); if(m){ n = +(m[3]+('0'+m[2]).slice(-2)+('0'+m[1]).slice(-2)); hh = ('0'+m[4]).slice(-2)+':'+m[5]; } else n = azcuNum_(r[1]); }
     else n = azcuNum_(r[1]);
     if(!n) continue;
     var dd = azcuDif_(n, hn); if(dd<-atras || dd>adelante) continue;
@@ -1524,7 +1539,8 @@ function azcuVisitasData_(atras, adelante){
       if(hecho) continue;
       e = new Date(azcuIsoN_(n)+'T'+(hh||'23:59')+':00-03:00').getTime() >= ahora ? 'a' : 'p';
     }
-    out.push({f:i+1, id:id, x:ext?1:0, dir:ext ? String(r[12]||'').trim() : (dirs[id]||id), im:ext ? String(r[11]||'').trim() : '', lk:ext ? String(r[13]||'').trim() : '', pr:ext ? String(r[14]||'').trim() : '', co:ext ? String(r[15]||'').trim() : '', cli:String(r[3]||'').trim(), tel:String(r[4]||'').trim(), v:String(r[9]||'').trim(), c:String(r[10]||'').trim(), e:e, res:ag ? '' : res, obs:String(r[8]||'').trim().slice(0,400), d:azcuIsoN_(n), h:hh});
+    if(can) e = 'c';
+    out.push({f:i+1, id:id, x:ext?1:0, dir:ext ? String(r[12]||'').trim() : (dirs[id]||id), im:ext ? String(r[11]||'').trim() : '', lk:ext ? String(r[13]||'').trim() : '', pr:ext ? String(r[14]||'').trim() : '', co:ext ? String(r[15]||'').trim() : '', cli:String(r[3]||'').trim(), tel:String(r[4]||'').trim(), v:String(r[9]||'').trim(), c:String(r[10]||'').trim(), e:e, res:(ag || can) ? '' : res, obs:String(r[8]||'').trim().slice(0,400), d:azcuIsoN_(n), h:hh});
   }
   out.sort(function(a,b){ return a.d<b.d ? 1 : a.d>b.d ? -1 : (a.h<b.h ? 1 : a.h>b.h ? -1 : 0); });
   var us = []; try{ azcuUsuarios_().forEach(function(u){ if(u.activo) us.push(u.nombre); }); }catch(e){}
@@ -1632,7 +1648,7 @@ function azcuAvisoPostVisita(){
     if(env[key] && ahora-env[key] < 2*86400000) continue;
     var tel = String(v[i][4]).replace(/\D/g,''), nom = azcuSinAc_(v[i][3]), vn = +(m[3]+m[2]+m[1]), hecho = false;
     for(j=i+1;j<v.length;j++){
-      if(String(v[j][0]).trim()!==id || String(v[j][5]).trim()==='Visita agendada') continue;
+      if(String(v[j][0]).trim()!==id || /^Visita (agendada|cancelada)$/.test(String(v[j][5]).trim())) continue;
       var nj = azcuNum_(v[j][1]);
       if(nj!==null && nj<vn) continue;
       if((!nom && !tel) || (nom && azcuSinAc_(v[j][3])===nom) || (tel && String(v[j][4]).replace(/\D/g,'')===tel)){ hecho = true; break; }
@@ -1667,7 +1683,7 @@ function azcuStatsSemana_(){
     if(res==='Visita agendada'){ if(T) T.visitas_agendadas++; else if(d<0 && d>=-7) prox++; continue; }
     if(!T) continue;
     T.interacciones++;
-    if(via==='Visita') T.visitas_realizadas++;
+    if(via==='Visita' && !/cancelad/i.test(res)) T.visitas_realizadas++;
     if(/propuesta|oferta/i.test(res)) T.propuestas++;
     if(/acept/i.test(res)) T.aceptadas++;
     if(/le interes/i.test(res) && !/no le/i.test(res)) T.le_intereso++;
@@ -2329,7 +2345,7 @@ function azcuAtrasos_(){
       var m = String(s.prox||'').match(/^Visita (\d{2})\/(\d{2})\/(\d{4})/); if(!m) return;
       var vn = +(m[3]+m[2]+m[1]), dd = azcuDif_(hn, vn); if(dd<4 || dd>60) return;
       var nom = azcuSinAc_(s.cli), tel = String(s.tel||'').replace(/\D/g,''), hecho = false, j;
-      for(j=i+1;j<seg.length;j++){ if(String(seg[j].res).trim()==='Visita agendada') continue; var nj = azcuNum_(seg[j].fecha); if(nj!==null && nj<vn) continue; if((!nom && !tel) || (nom && azcuSinAc_(seg[j].cli)===nom) || (tel && String(seg[j].tel||'').replace(/\D/g,'')===tel)){ hecho = true; break; } }
+      for(j=i+1;j<seg.length;j++){ if(/^Visita (agendada|cancelada)$/.test(String(seg[j].res).trim())) continue; var nj = azcuNum_(seg[j].fecha); if(nj!==null && nj<vn) continue; if((!nom && !tel) || (nom && azcuSinAc_(seg[j].cli)===nom) || (tel && String(seg[j].tel||'').replace(/\D/g,'')===tel)){ hecho = true; break; } }
       if(!hecho){ var o = {tipo:'visita', ic:'📝', texto:'Sin informe de la visita'+(s.cli ? ' con '+s.cli : ''), dir:p.dir, id:id, vendedor:ve || String(s.vend||'').trim() || 'Sin asignar', dias:dd, grave:dd>=10}; out.push(o); }
     });
     // 2. propuesta sin respuesta

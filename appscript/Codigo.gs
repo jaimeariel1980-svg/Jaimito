@@ -1273,7 +1273,7 @@ function enviarReportePropietario(codigo, logoDataUri, resumenCustom, ownerCusto
   var segMap = leerSeguimiento_();
   var seg = segMap[codigo] || [];
   var cons = seg.length;
-  var vis = seg.filter(function(s) { return /visita/i.test(s.tipo) || /visitó|oferta/i.test(s.res); }).length;
+  var vis = seg.filter(function(s) { return !/cancelad/i.test(s.res) && (/visita/i.test(s.tipo) || /visitó|oferta/i.test(s.res)); }).length;
   var ofertas = seg.filter(function(s) { return /propuesta|oferta/i.test(s.res); }).length;
   var hoy = new Date();
   var dias = null;
@@ -1811,7 +1811,7 @@ function getDatosRaw_(){
     var det={calle:gv('Calle'),numero:gv('Número'),piso:gv('Piso'),depto:gv('Departamento'),pasillo:gv('Pasillo'),entre1:gv('Entrecalle 1'),entre2:gv('Entrecalle 2'),ciudad:gv('Ciudad'),supTotal:gv('Superficie Total (m2)'),supCub:gv('Superficie Cubierta (m2)'),dorm:gv('Dormitorios'),amb:gv('Ambientes (sin dormitorios)'),banos:gv('Baños'),plantas:gv('Plantas'),cochera:gv('Cochera'),patioD:gv('Patio delantero'),patioT:gv('Patio trasero'),gas:gv('Gas Natural'),cloaca:gv('Cloaca'),antig:gv('Antigüedad (años)'),orient:gv('Orientación'),inscr:gv('Inscripción del dominio')};
     var seg=segMap[id]||[];
     var cons=seg.length;
-    var vis=seg.filter(function(s){return /visita/i.test(s.tipo)||/visitó|oferta/i.test(s.res);}).length;
+    var vis=seg.filter(function(s){return !/cancelad/i.test(s.res)&&(/visita/i.test(s.tipo)||/visitó|oferta/i.test(s.res));}).length;
     var dias=null;
     seg.forEach(function(s){ if(s._d){ var dd=Math.floor((hoy-s._d)/86400000); if(dias===null||dd<dias)dias=dd; } });
     var segOut=seg.map(function(s){return {_row:s._row,fecha:s.fecha,tipo:s.tipo,cli:s.cli,tel:s.tel,res:s.res,prox:s.prox,obs:s.obs,fechaProx:s.fechaProx,vend:s.vend||'',cargo:s.cargo||''};});
@@ -2510,6 +2510,29 @@ function agendarVisita(codigo, datos){
   return {ok:true, eventId:ev.getId()};
 }
 
+function cancelarVisita(filaSeg, motivo, quien){
+  var seg = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento');
+  if(!seg || !filaSeg || filaSeg<2 || filaSeg>seg.getLastRow()) throw new Error('Esa visita ya no existe');
+  var r = seg.getRange(filaSeg, 1, 1, Math.min(Math.max(seg.getLastColumn(),11),16)).getValues()[0];
+  if(String(r[5]).trim()!=='Visita agendada') throw new Error('Esa visita ya no está agendada');
+  var m = String(r[6]).match(/^Visita\s+(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})/), cod = String(r[0]).trim(), ext = /^EXT-/.test(cod), cli = String(r[3]||'').trim();
+  var q = String(quien||'').trim(), mot = String(motivo||'').trim().slice(0,300), hoy = Utilities.formatDate(new Date(), 'GMT-3', 'dd/MM/yyyy'), previo = String(r[8]||'').trim();
+  seg.getRange(filaSeg, 6).setValue('Visita cancelada');
+  seg.getRange(filaSeg, 9).setValue('🚫 Cancelada el '+hoy+(q?' por '+q:'')+(mot?': '+mot:'')+(previo?' · '+previo:''));
+  var borrado = false;
+  try{
+    if(m){
+      var ini = new Date(m[3]+'-'+('0'+m[2]).slice(-2)+'-'+('0'+m[1]).slice(-2)+'T'+('0'+m[4]).slice(-2)+':'+m[5]+':00-03:00'), nom = cli.toLowerCase();
+      CalendarApp.getDefaultCalendar().getEvents(new Date(ini.getTime()-60000), new Date(ini.getTime()+60000)).forEach(function(ev){
+        if(ev.getStartTime().getTime()===ini.getTime() && /^Visita/i.test(ev.getTitle()) && (!nom || ev.getTitle().toLowerCase().indexOf(nom)>-1)){ ev.deleteEvent(); borrado = true; }
+      });
+    }
+  }catch(e){ Logger.log('Cancelar visita - Calendar: '+e.message); }
+  var dir = ext ? '🏢 '+String(r[12]||'').trim() : (typeof azcuMapaDirs_==='function' ? (azcuMapaDirs_()[cod]||'') : '');
+  _audit_('cancelvis', '🚫 Canceló la visita de '+(cli||'—')+(m ? ' ('+m[1]+'/'+m[2]+' '+m[4]+':'+m[5]+')' : ''), dir, q);
+  _invalidaNovedades_();
+  return {ok:true, calendar:borrado};
+}
 var SEG_EXT_ = ['Cargó','Inmobiliaria (otra)','Dirección (otra inmobiliaria)','Link ficha (otra)','Precio (otra)','Colega (otra)'];
 function registrarVisitaExterna(datos){
   datos = datos||{};
