@@ -36,9 +36,9 @@ function estadoCalendarios_(leidos) {
 function calendariosComp_() {
   const l = [];
   try {
-    CalendarApp.getAllCalendars().filter(c => /competencia|t[eé]cnica|enfermer/i.test(c.getName())).forEach(c => {
-      const n = norm_(c.getName());
-      l.push({ cal: c, nombre: c.getName(), etapa: /competencia/.test(n) ? 'competencias' : 'pami2', poli: /pami\s*(ii|2)\b/.test(n) ? POLICLINICOS[1] : /pami\s*(i|1)\b/.test(n) ? POLICLINICOS[0] : POLICLINICOS[1] });
+    CalendarApp.getAllCalendars().filter(c => /competencia|t[eé]cnica|enfermer/i.test(c.getName()) || /^\s*pami\s*(i|ii|1|2)\s*$/i.test(c.getName())).forEach(c => {
+      const n = norm_(c.getName()), generico = !/competencia|tecnica|enfermer/.test(n);
+      l.push({ cal: c, nombre: c.getName(), etapa: generico ? '' : /competencia/.test(n) ? 'competencias' : 'pami2', poli: /pami\s*(ii|2)\b/.test(n) ? POLICLINICOS[1] : /pami\s*(i|1)\b/.test(n) ? POLICLINICOS[0] : POLICLINICOS[1] });
     });
   } catch (e) { }
   const aj = ajustes_();
