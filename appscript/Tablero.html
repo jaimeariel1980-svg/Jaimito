@@ -1552,7 +1552,7 @@ function pintarEncuesta(p,e){
 }
 function agendarForm(id){
   var p=DATA.find(x=>x.id===id); if(!p)return;
-  var hoy=new Date().toISOString().slice(0,16);
+  var _n=new Date(),hoy=new Date(_n.getTime()-_n.getTimezoneOffset()*60000).toISOString().slice(0,16);
   document.getElementById('dlg').innerHTML=
   '<div class="fh"><span class="x" onclick="closeDL()">x</span><div class="dir">Agendar visita</div><div class="sub">'+p.id+' · '+p.dir+'</div></div>'+
   '<div class="fb"><div class="form">'+

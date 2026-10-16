@@ -1155,9 +1155,7 @@ function azcuApi(e){
   try{
     var pid = String((JSON.parse(raw) || {}).id || '').replace(/[^A-Za-z0-9]/g, '');
     if(pid && !(e && e.__viaGet)){
-      var cc = CacheService.getScriptCache();
-      if(cc.get('azs_'+pid)) return ContentService.createTextOutput('{"ok":true}').setMimeType(ContentService.MimeType.JSON);
-      cc.put('azs_'+pid, '1', 600);
+      if(azcuVisto_(pid)) return ContentService.createTextOutput('{"ok":true}').setMimeType(ContentService.MimeType.JSON);
     }
   }catch(e0){}
   var tA = Date.now(), nomA = '';
@@ -1200,10 +1198,14 @@ function azcuApi(e){
   if(id){ azcuPut_(id, out); if(nomA) azcuFinAviso_(id, nomA, out, tA); return ContentService.createTextOutput('{"ok":true}').setMimeType(ContentService.MimeType.JSON); }
   return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
 }
+function azcuVisto_(id){
+  var l = LockService.getScriptLock(), c = CacheService.getScriptCache(), visto = false, tiene = false;
+  try{ l.waitLock(8000); tiene = true; }catch(e){}
+  try{ if(c.get('azs_'+id)) visto = true; else c.put('azs_'+id, '1', 600); } finally { if(tiene){ try{ l.releaseLock(); }catch(e2){} } }
+  return visto;
+}
 function azcuViaGet_(id, azc){
-  var c = CacheService.getScriptCache();
-  if(c.get('azs_'+id)) return null;
-  c.put('azs_'+id, '1', 600);
+  if(azcuVisto_(id)) return null;
   var json = Utilities.newBlob(Utilities.base64Decode(String(azc).replace(/ /g, '+'))).getDataAsString('UTF-8');
   azcuApi({parameter:{payload:json}, __viaGet:true});
   return azcuGet_(id);
