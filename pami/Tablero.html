@@ -439,7 +439,9 @@ function card(c){
   if(!terminal(c.estado)&&dd>=D.cfg.diasAlerta)pr+='<span class="tag r">🕒 '+dd+' d sin movimiento</span>';
   var mk='';
   if(/^Descartad/i.test(c.estado))mk+=c.motivo?'<span class="tag r">✖ '+esc(c.motivo.replace(/;\s*/g,' · '))+'</span>':'<span class="tag">Sin motivo cargado</span>';
-  if(!RO&&etapaIdx(c)===3&&!c.fichaOk&&!c.notaP2)mk+='<span class="tag r">🩺 Falta resumen ET</span>';
+  var ef=etapasFaltan(c);
+  if(ef.length)mk+='<span class="tag r">⚠ Falta '+ef.join(' y ')+'</span>';
+  else if(!RO&&etapaIdx(c)===3&&!c.fichaOk&&!c.notaP2)mk+='<span class="tag r">🩺 Falta resumen ET</span>';
   var rcc=rc?'<span class="rcc" title="'+esc((c.recTipo?'Recomendado por: ':'')+rc)+'">★ '+esc(recCorto(c))+'</span>':'';
   if(c.proc&&c.proc!=='SI')mk+='<span class="tag w">'+(c.proc==='Pendiente'?'Analizando CV…':c.proc==='NoCV'?'¿No es un CV?':'Revisar CV')+'</span>';
   var bt=D.policlinicos.map(function(p,i){return '<button type="button" class="p'+(i+1)+(c.policlinico===p?' on':(!c.policlinico&&sugN(c)===p?' sug':''))+'" onclick="event.stopPropagation();asignarPol('+c.fila+','+i+')">'+esc(p.replace('Policlínico ',''))+(!c.policlinico&&sugN(c)===p?' ★':'')+'</button>';}).join('');
@@ -545,6 +547,7 @@ function volverFicha(){if((D&&D.tecnica)||VP){cerrarFormTec();return;}document.g
 function kv(l,v){return v?'<div class="kv"><small>'+l+'</small><b>'+esc(v)+'</b></div>':'';}
 function panel(t,items,full){var h=items.join('');return h?'<div class="pn'+(full?' full':'')+'"><h4>'+t+'</h4><div class="kvg">'+h+'</div></div>':'';}
 function ultCont(c){var ep=etapaPend(c);return (c.contactado&&(!ep||etqContacto(c)===ep))?c.contactado:'';}
+function etapasFaltan(c){var i=etapaIdx(c),f=[];if(RO||i<2)return f;if(!c.notaScr)f.push('screening');if(i>=3&&!c.notaComp)f.push('competencias');return f;}
 function etapaIdx(c){for(var i=0;i<D.estadosCol.length;i++)if(D.estadosCol[i][1].indexOf(c.estado)>-1)return i<4?i:-1;return -1;}
 function etapasHdr(c){
   var cur=etapaIdx(c);
@@ -554,11 +557,12 @@ function etapasHdr(c){
 }
 function avisoResumen(f){
   var o=document.getElementById('avRes');if(o)o.remove();
+  var ef=etapasFaltan(byFila(f)),tt=ef.length?'⚠ Falta la etapa de '+ef.join(' y '):'🩺 Falta el resumen del proceso para la entrevista técnica',tx=ef.length?'Todavía no hay nota de '+ef.join(' ni de ')+' para este candidato'+(ef.indexOf('competencias')>-1?', por eso no se puede preparar el resumen para los jefes':'')+'.':'Los jefes no ven a este candidato hasta que prepares y guardes el resumen.';
   var d=document.createElement('div');d.id='avRes';d.style.cssText='position:fixed;inset:0;background:rgba(10,20,40,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
-  d.innerHTML='<div style="background:#fff;border-radius:10px;max-width:430px;width:100%;padding:22px;border-top:6px solid #D9534F;box-shadow:0 10px 40px rgba(0,0,0,.35)"><h3 style="color:#B02A25;margin:0 0 8px;font-size:17px">🩺 Falta el resumen del proceso para la entrevista técnica</h3><p style="font-size:14px;line-height:1.5;margin:0 0 18px;color:#192341">Los jefes no ven a este candidato hasta que prepares y guardes el resumen.</p><div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"><button class="btn sec" id="avRes1">Después</button><button class="btn red" id="avRes2">Prepararlo ahora</button></div></div>';
+  d.innerHTML='<div style="background:#fff;border-radius:10px;max-width:430px;width:100%;padding:22px;border-top:6px solid #D9534F;box-shadow:0 10px 40px rgba(0,0,0,.35)"><h3 style="color:#B02A25;margin:0 0 8px;font-size:17px">'+tt+'</h3><p style="font-size:14px;line-height:1.5;margin:0 0 18px;color:#192341">'+tx+'</p><div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap"><button class="btn sec" id="avRes1">'+(ef.length?'Entendido':'Después')+'</button>'+(ef.length?'':'<button class="btn red" id="avRes2">Prepararlo ahora</button>')+'</div></div>';
   document.body.appendChild(d);
   document.getElementById('avRes1').onclick=function(){d.remove();};
-  document.getElementById('avRes2').onclick=function(){d.remove();editarFicha(f);};
+  var b2=document.getElementById('avRes2');if(b2)b2.onclick=function(){d.remove();editarFicha(f);};
 }
 function abrir(f){
   var yaVista=document.getElementById('modal').classList.contains('show')&&CUR===f;CUR=f;var c=byFila(f);if(!c)return;
@@ -570,7 +574,9 @@ function abrir(f){
   else if(c.proc==='Revisar')al+='<div class="alerta a2">'+esc(c.just||'Revisar a mano')+'</div>';
   else if(c.proc==='Pendiente')al+='<div class="alerta a2">El CV todavía se está analizando.</div>';
   if(!terminal(c.estado)&&dd>=D.cfg.diasAlerta)al+='<div class="alerta a3">🕒 '+dd+' días sin movimiento en "'+esc(c.estado)+'".</div>';
-  if(!RO&&etapaIdx(c)===3&&!c.fichaOk&&!c.notaP2)al+='<div class="alerta a3">🩺 Falta el resumen del proceso para la entrevista técnica. Los jefes no ven nada hasta que lo prepares y lo guardes: tocá el botón rojo "Resumen ET".</div>';
+  var ef=etapasFaltan(c);
+  if(ef.length)al+='<div class="alerta a3">⚠ Falta la etapa de '+ef.join(' y ')+': todavía no hay nota cargada'+(ef.indexOf('competencias')>-1?', así que no se puede armar el resumen para la entrevista técnica':'')+'.</div>';
+  else if(!RO&&etapaIdx(c)===3&&!c.fichaOk&&!c.notaP2)al+='<div class="alerta a3">🩺 Falta el resumen del proceso para la entrevista técnica. Los jefes no ven nada hasta que lo prepares y lo guardes: tocá el botón rojo "Resumen ET".</div>';
   var etapasNota=['cv','screening','competencias'];
   if(c.notaP2||/técnica|Contratado/i.test(c.estado))etapasNota=etapasNota.concat(['pami2']);
   var vals={cv:c.ajuste,screening:c.notaScr,competencias:c.notaComp,pami1:c.notaP1,pami2:c.notaP2};
@@ -593,7 +599,7 @@ function abrir(f){
     '<div class="sec">Historial</div><div class="hist" id="hist">Cargando…</div></div>';
   document.getElementById('modal').classList.add('show');
   [].forEach.call(document.querySelectorAll('#mbox .btns.tb'),function(r){r.style.setProperty('--n',(function(n){var f=Math.ceil(n/3);return Math.max(1,Math.ceil(n/f));})(r.children.length));});
-  if(!yaVista&&!RO&&etapaIdx(c)===3&&!c.fichaOk&&!c.notaP2)avisoResumen(f);
+  if(!yaVista&&!RO&&(etapasFaltan(c).length||(etapaIdx(c)===3&&!c.fichaOk&&!c.notaP2)))avisoResumen(f);
   if(rec)rcVer(true);
   if(RO)bloquearRO();
   gs().withSuccessHandler(function(h){
