@@ -265,7 +265,7 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '42';
+const ESQUEMA = '43';
 
 function actualizarEsquema_() {
   try { asegurarColumnas_(); } catch (e) { registrarError_('asegurar columnas', e); }
@@ -475,6 +475,16 @@ function actualizarEsquema_() {
       });
       try { calendarioPor_('deptoenfermeriapami2@gmail.com'); } catch (e) { }
       props.setProperty('AGENDA_TEC_2', '1');
+    },
+    () => {
+      // Agenda técnica de PAMI 1: la creó marcostejo01@gmail.com (una sola vez).
+      if (props.getProperty('AGENDA_TEC_1')) return;
+      asegurarAjustes_([['calendario_tecnica', '']]);
+      const aj = hoja_('Ajustes'), d = aj.getDataRange().getValues();
+      const i = d.findIndex(r => String(r[0]).trim() === 'calendario_tecnica');
+      if (i > 0) aj.getRange(i + 1, 2).setValue('marcostejo01@gmail.com');
+      try { calendarioPor_('marcostejo01@gmail.com'); } catch (e) { }
+      props.setProperty('AGENDA_TEC_1', '1');
     }
   ];
   let ok = true;
