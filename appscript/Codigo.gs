@@ -42,7 +42,9 @@ const CONFIG = {
     { key: 'litoral_gas',       label: 'Litoral Gas',          obligatorio: false },
     { key: 'autorizacion_venta',label: 'Autorización de venta',obligatorio: false },
     { key: 'declaratoria_herederos', label: 'Declaratoria de herederos', obligatorio: false },
-    { key: 'expensas',              label: 'Expensas',                 obligatorio: false }
+    { key: 'expensas',              label: 'Expensas',                 obligatorio: false },
+    { key: 'usufructo',             label: 'Usufructo',                obligatorio: false },
+    { key: 'certificado_defuncion', label: 'Certificado de defunción', obligatorio: false }
   ],
 
   // Campos personales/de propiedad mínimos para el primer envío de precarga
@@ -71,6 +73,12 @@ const COLUMNAS_PROPIEDAD = [
   'Dormitorios', 'Ambientes (sin dormitorios)', 'Baños', 'Plantas',
   'Cochera', 'Patio delantero', 'Patio trasero', 'Gas Natural', 'Cloaca',
   'Antigüedad (años)', 'Orientación', 'Inscripción del dominio',
+  // Campos de la ficha de Tokko
+  'Superficie Descubierta (m2)', 'Superficie Semicubierta (m2)', 'Total construido (m2)', 'Frente (m)', 'Fondo (m)',
+  'Ambientes', 'Condición', 'Ocupación', 'Suites', 'Suites con placares', 'Toilettes', 'Zonificación',
+  'Cocheras', 'Cocheras cubiertas', 'Cocheras descubiertas',
+  'Salas comunes', 'Comedores', 'Livings', 'Salas de TV',
+  'Servicios', 'Ambientes (detalle)', 'Adicionales', 'Crédito', 'Expensas ($)',
   'Carpeta Drive (URL)', 'Estado de la propiedad', '% Completitud',
   'Última alerta de documentación enviada'
 ];
@@ -706,7 +714,9 @@ function clasificarPaginasLegajo(archivoBase64) {
     litoral_gas: 'factura de gas (Litoral Gas)',
     autorizacion_venta: 'autorización de venta firmada por el propietario',
     declaratoria_herederos: 'declaratoria de herederos / sucesión',
-    expensas: 'liquidación de expensas'
+    expensas: 'liquidación de expensas',
+    usufructo: 'escritura o constancia de usufructo (reserva o constitución de usufructo)',
+    certificado_defuncion: 'certificado / partida de defunción (Registro Civil)'
   };
   const lista = CONFIG.DOCUMENTOS.map(d => '"' + d.key + '" = ' + (ayuda[d.key] || d.label)).join('; ');
   const instrucciones =
@@ -1092,6 +1102,20 @@ function _guardarFila(sheet, datos, urlCarpeta, estadoDocs, verificacionIA) {
   const filaExistente = _buscarFilaPorCodigo(sheet, datos.codigoPrecarga);
   estadoDocs = estadoDocs || calcularEstadoDocumentacion(datos.codigoPrecarga) || {};
 
+  // El formulario nuevo (campos de Tokko) manda listas y cantidades; de ahí se
+  // derivan las columnas viejas (Cochera, Gas Natural, Ambientes sin dormitorios…)
+  // que siguen usando el chat, el Tablero y los documentos.
+  const enLista_ = (lista, item) => lista === undefined ? undefined
+    : (String(lista).split(',').map(s => s.trim().toLowerCase()).indexOf(item.toLowerCase()) !== -1 ? 'Si' : 'No');
+  const vacio_ = x => x === undefined || x === null || String(x).trim() === '';
+  if (datos.gasNatural === undefined) datos.gasNatural = enLista_(datos.servicios, 'Gas Natural');
+  if (datos.cloaca === undefined) datos.cloaca = enLista_(datos.servicios, 'Cloaca');
+  if (datos.patioDelantero === undefined) datos.patioDelantero = enLista_(datos.ambientesDetalle, 'Patio delantero');
+  if (datos.patioTrasero === undefined) datos.patioTrasero = enLista_(datos.ambientesDetalle, 'Patio trasero');
+  if (datos.cochera === undefined && !vacio_(datos.cocheras)) datos.cochera = Number(datos.cocheras) > 0 ? 'Si' : 'No';
+  if (datos.ambientes === undefined && !vacio_(datos.ambientesTotal) && !isNaN(Number(datos.ambientesTotal)))
+    datos.ambientes = Math.max(0, Number(datos.ambientesTotal) - (Number(datos.dormitorios) || 0));
+
   const mapaValores = {
     'Código de Precarga': datos.codigoPrecarga,
     'Fecha de creación': filaExistente ? undefined : new Date(),
@@ -1119,6 +1143,30 @@ function _guardarFila(sheet, datos, urlCarpeta, estadoDocs, verificacionIA) {
     'Antigüedad (años)': datos.antiguedad,
     'Orientación': datos.orientacion,
     'Inscripción del dominio': datos.inscripcionDominio,
+    'Superficie Descubierta (m2)': datos.superficieDescubierta,
+    'Superficie Semicubierta (m2)': datos.superficieSemicubierta,
+    'Total construido (m2)': datos.totalConstruido,
+    'Frente (m)': datos.frente,
+    'Fondo (m)': datos.fondo,
+    'Ambientes': datos.ambientesTotal,
+    'Condición': datos.condicion,
+    'Ocupación': datos.ocupacion,
+    'Suites': datos.suites,
+    'Suites con placares': datos.suitesPlacares,
+    'Toilettes': datos.toilettes,
+    'Zonificación': datos.zonificacion,
+    'Cocheras': datos.cocheras,
+    'Cocheras cubiertas': datos.cocherasCubiertas,
+    'Cocheras descubiertas': datos.cocherasDescubiertas,
+    'Salas comunes': datos.salasComunes,
+    'Comedores': datos.comedores,
+    'Livings': datos.livings,
+    'Salas de TV': datos.salasTV,
+    'Servicios': datos.servicios,
+    'Ambientes (detalle)': datos.ambientesDetalle,
+    'Adicionales': datos.adicionales,
+    'Crédito': datos.credito,
+    'Expensas ($)': datos.expensas,
     'Carpeta Drive (URL)': urlCarpeta,
     'Estado de la propiedad': filaExistente ? undefined : 'Verificación para la carga'
     ,'Etapa': filaExistente ? undefined : 'Captación'
@@ -1473,61 +1521,74 @@ function generarInformeTokko(codigo) {
   // 2. Información general
   body.appendParagraph('2. Información general').setAttributes(subEstilo);
 
+  // Valor nuevo de Tokko o, si está vacío, el de la columna vieja
+  function vo(campo, respaldo) { const x = v(campo); return x !== FALTA ? x : (respaldo !== undefined ? respaldo : FALTA); }
+  function enLista(col, item, viejo) {
+    const lista = String(d[col] || '').trim();
+    if (lista) return lista.split(',').map(s => s.trim().toLowerCase()).indexOf(item.toLowerCase()) !== -1 ? 'Sí' : 'No';
+    return viejo ? siNo(viejo) : FALTA;
+  }
+  const ambViejo = (d['Ambientes (sin dormitorios)'] !== '' && d['Ambientes (sin dormitorios)'] != null)
+    ? String((Number(d['Ambientes (sin dormitorios)']) || 0) + (Number(d['Dormitorios']) || 0)) : undefined;
+
   body.appendParagraph('Características generales').setAttributes(subSubEstilo);
-  fila_('Ambientes', v('Ambientes (sin dormitorios)'));
+  fila_('Ambientes', vo('Ambientes', ambViejo));
   fila_('Antigüedad', v('Antigüedad (años)'));
   fila_('Baños', v('Baños'));
-  fila_('Condición', FALTA);
+  fila_('Condición', v('Condición'));
   fila_('Dormitorios', v('Dormitorios'));
-  fila_('Ocupación', FALTA);
+  fila_('Ocupación', v('Ocupación'));
   fila_('Orientación', v('Orientación'));
   fila_('Plantas', v('Plantas'));
-  fila_('Suites', FALTA);
-  fila_('Suites con placares', FALTA);
-  fila_('Toilettes', FALTA);
-  fila_('Zonificación', FALTA);
+  fila_('Suites', v('Suites'));
+  fila_('Suites con placares', v('Suites con placares'));
+  fila_('Toilettes', v('Toilettes'));
+  fila_('Zonificación', v('Zonificación'));
 
   body.appendParagraph('Cocheras').setAttributes(subSubEstilo);
-  fila_('Cocheras', siNo('Cochera'));
-  fila_('Cocheras cubiertas', FALTA);
-  fila_('Cocheras descubiertas', FALTA);
+  fila_('Cocheras', vo('Cocheras', d['Cochera'] ? siNo('Cochera') : undefined));
+  fila_('Cocheras cubiertas', v('Cocheras cubiertas'));
+  fila_('Cocheras descubiertas', v('Cocheras descubiertas'));
 
   body.appendParagraph('Salas comunes').setAttributes(subSubEstilo);
-  fila_('Salas comunes', FALTA);
-  fila_('Comedores', FALTA);
-  fila_('Livings', FALTA);
-  fila_('Salas de TV', FALTA);
+  fila_('Salas comunes', v('Salas comunes'));
+  fila_('Comedores', v('Comedores'));
+  fila_('Livings', v('Livings'));
+  fila_('Salas de TV', v('Salas de TV'));
 
   body.appendParagraph('Superficies y medidas').setAttributes(subSubEstilo);
   fila_('Terreno', v('Superficie Total (m2)'));
-  fila_('Descubierta', FALTA);
+  fila_('Descubierta', v('Superficie Descubierta (m2)'));
   fila_('Superficie cubierta', v('Superficie Cubierta (m2)'));
-  fila_('Superficie semicubierta', FALTA);
-  fila_('Total construido', v('Superficie Cubierta (m2)'));
-  fila_('Fondo', FALTA);
-  fila_('Frente', FALTA);
+  fila_('Superficie semicubierta', v('Superficie Semicubierta (m2)'));
+  fila_('Total construido', vo('Total construido (m2)', v('Superficie Cubierta (m2)')));
+  fila_('Fondo', v('Fondo (m)'));
+  fila_('Frente', v('Frente (m)'));
+
+  body.appendParagraph('Crédito y expensas').setAttributes(subSubEstilo);
+  fila_('Crédito', vo('Crédito', 'No especificado'));
+  fila_('Expensas', v('Expensas ($)'));
 
   // 3. Servicios, ambientes y adicionales
   body.appendParagraph('3. Servicios, ambientes y adicionales').setAttributes(subEstilo);
 
   body.appendParagraph('Servicios').setAttributes(subSubEstilo);
-  fila_('Agua Corriente', FALTA);
-  fila_('Cable', FALTA);
-  fila_('Cloaca', siNo('Cloaca'));
-  fila_('Electricidad', FALTA);
-  fila_('Gas Natural', siNo('Gas Natural'));
-  fila_('Internet', FALTA);
-  fila_('Pavimento', FALTA);
-  fila_('Teléfono', FALTA);
-  fila_('Wifi', FALTA);
+  fila_('Agua Corriente', enLista('Servicios', 'Agua Corriente'));
+  fila_('Cable', enLista('Servicios', 'Cable'));
+  fila_('Cloaca', enLista('Servicios', 'Cloaca', 'Cloaca'));
+  fila_('Electricidad', enLista('Servicios', 'Electricidad'));
+  fila_('Gas Natural', enLista('Servicios', 'Gas Natural', 'Gas Natural'));
+  fila_('Internet', enLista('Servicios', 'Internet'));
+  fila_('Pavimento', enLista('Servicios', 'Pavimento'));
+  fila_('Teléfono', enLista('Servicios', 'Teléfono'));
+  fila_('Wifi', enLista('Servicios', 'Wifi'));
 
   body.appendParagraph('Ambientes').setAttributes(subSubEstilo);
-  fila_('Patio delantero', siNo('Patio delantero'));
-  fila_('Patio trasero', siNo('Patio trasero'));
-  fila_('Otros ambientes (Altillo, Balcón, Baulera, Biblioteca, Cocina, Comedor diario, Dependencia, Escritorio, Galería, etc.)', FALTA);
+  fila_('Tiene', String(d['Ambientes (detalle)'] || '').trim() ||
+    ['Patio delantero', 'Patio trasero'].filter(x => siNo(x) === 'Sí').join(', ') || FALTA);
 
   body.appendParagraph('Adicionales').setAttributes(subSubEstilo);
-  fila_('Aire Acondicionado / Calefacción / Amoblado / Alarma / Apto mascotas / Apto profesional, etc.', FALTA);
+  fila_('Tiene', v('Adicionales'));
 
   // 4. Datos internos — NO publicar en Tokko
   body.appendParagraph('4. Datos internos — NO publicar en Tokko').setAttributes(subEstilo);
@@ -2133,6 +2194,7 @@ function subirDocumento(codigo, docNombre, base64, filename, mime, quien){
   var blob=Utilities.newBlob(bytes, mime||'application/octet-stream', (docNombre+' - '+(filename||'')).trim());
   var archivo=carpeta.createFile(blob);
   var i=head.indexOf('Doc: '+docNombre);
+  if(i<0 && _docPorLabel(docNombre)){ i=head.length; mae.getRange(1,i+1).setValue('Doc: '+docNombre); head.push('Doc: '+docNombre); } // documento nuevo del catálogo sin columna todavía
   if(i>-1){
     var previo=String(mae.getRange(fila,i+1).getValue()).match(/[-\w]{25,}/);
     mae.getRange(fila,i+1).setValue(archivo.getUrl());

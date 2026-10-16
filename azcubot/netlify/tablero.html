@@ -1451,7 +1451,7 @@ var EdPDF=(function(){
 })();
 /*ED_PDF_FIN*/
 
-const LEG_KEYS={'Plano de edificación':'plano_edificacion','Plano de mensura':'plano_mensura','Escritura':'escritura','DNI propietario':'dni_propietario','CUIL Propietario':'cuil_propietario','Título de propiedad':'titulo_propiedad','TGI Municipal':'tgi_municipal','API Provincial':'api_provincial','EPE Luz':'epe_luz','Aguas Santafesinas':'aguas_santafesinas','Litoral Gas':'litoral_gas','Autorización de venta':'autorizacion_venta','Declaratoria de herederos':'declaratoria_herederos','Expensas':'expensas'};
+const LEG_KEYS={'Plano de edificación':'plano_edificacion','Plano de mensura':'plano_mensura','Escritura':'escritura','DNI propietario':'dni_propietario','CUIL Propietario':'cuil_propietario','Título de propiedad':'titulo_propiedad','TGI Municipal':'tgi_municipal','API Provincial':'api_provincial','EPE Luz':'epe_luz','Aguas Santafesinas':'aguas_santafesinas','Litoral Gas':'litoral_gas','Autorización de venta':'autorizacion_venta','Declaratoria de herederos':'declaratoria_herederos','Expensas':'expensas','Usufructo':'usufructo','Certificado de defunción':'certificado_defuncion'};
 function _subirArchivo(id,doc,f){return new Promise(function(ok,ko){_comprimir(f,function(b64,nombre,tipo){google.script.run.withSuccessHandler(function(res){const p=DATA.find(x=>x.id===id);if(p){if(!p.papeles)p.papeles={};p.papeles[doc]=1;if(!p.docUrls)p.docUrls={};if(res&&res.url)p.docUrls[doc]=res.url;}ok(res);}).withFailureHandler(function(e){ko(new Error(e&&e.message?e.message:e));}).subirDocumento(id,doc,b64,nombre,tipo,_yo());});});}
 function docsEditor(id){
   const p=DATA.find(x=>x.id===id);if(!p)return;
