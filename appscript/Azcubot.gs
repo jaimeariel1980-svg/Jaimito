@@ -115,7 +115,7 @@ function azcuHerrFicha_(a){
     salud_aviso_pct:p.pct, observaciones:p.obs, consultas:p.cons, visitas:p.vis, propuestas:(p.seg||[]).filter(function(s){ return /propuesta|oferta/i.test(s.res); }).length, estado_propuesta:azcuPropEstado_(p),
     plazo_boleto:p.boleto||'', boleto_firmado:p.boletoOk||'', plazo_escritura:p.escritura||'', escritura_firmada:p.escrituraOk||'',
     dias_sin_movimiento:p.dias, documentos_al_dia:azcuReq_(p).length-azcuFalta_(p).length, documentos_total:azcuReq_(p).length, documentos_faltan:azcuFalta_(p), documentos_opcionales_sin_cargar:docs.filter(function(k){ return azcuReq_(p).indexOf(k)<0 && !p.papeles[k]; }), documentos_con_archivo:Object.keys(p.docUrls||{}),
-    propietarios:(p.duenos||[]).map(function(d){ return {nombre:d.nombre, dni:d.dni, telefono:d.tel, mail:d.mail, domicilio:d.dom}; }),
+    propietarios:(p.duenos||[]).map(function(d){ return {nombre:d.nombre, dni:d.dni, fecha_nacimiento:d.nac||'', nacionalidad:d.nacionalidad||'', telefono:d.tel, mail:d.mail, domicilio:d.dom}; }),
     encuesta:p.encuesta ? {nota:p.encuesta.cal, nombre:p.encuesta.nombre, recomienda:p.encuesta.rec} : null,
     ultimas_interacciones:(p.seg||[]).slice().sort(function(x,y){ return (azcuNum_(y.fecha)||0)-(azcuNum_(x.fecha)||0) || y._row-x._row; }).slice(0,40).map(function(s){ return {fila:s._row, fecha:s.fecha, via:s.tipo, interesado:s.cli, telefono:s.tel, resultado:s.res, proximo_paso:s.prox, fecha_proximo_contacto:s.fechaProx, obs:s.obs, vendedor:s.vend, cargo:s.cargo}; })
   };
