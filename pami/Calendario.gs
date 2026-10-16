@@ -14,7 +14,7 @@ function estadoCalendarios_() {
   const ahora = new Date(), desde = new Date(ahora.getTime() - 86400000), hasta = new Date(ahora.getTime() + 14 * 86400000);
   const lista = [{ n: 'PAMI 1', id: aj.calendario, cal: () => calendario_() }];
   if (aj.calendario_poli2) lista.push({ n: 'PAMI 2', id: aj.calendario_poli2, cal: () => calendarioPor_(aj.calendario_poli2) });
-  calendariosComp_().forEach(c => lista.push({ n: c.nombre, id: c.nombre, cal: () => c.cal }));
+  calendariosComp_().forEach(c => lista.push({ n: c.nombre, id: c.nombre, cal: () => c.cal, etapa: c.etapa }));
   lista.forEach(x => {
     let cal = null;
     try { cal = x.cal(); } catch (e) { }
@@ -24,25 +24,37 @@ function estadoCalendarios_() {
     const porMail = estadoPorMail_();
     const titulos = evs.map(e => tituloEvento_(e, porMail));
     if (titulos.length && titulos.every(t => !t || /^(ocupado|busy)$/i.test(t))) { avisos.push('Calendario ' + x.n + ': veo ' + titulos.length + ' turnos pero sin título (está compartido solo como libre/ocupado). Cambiá el permiso a "Ver todos los detalles del evento".'); return; }
-    const raros = titulos.filter(t => t && !/^(ocupado|busy)$/i.test(t) && !etapaDeTitulo_(t));
+    const raros = x.etapa ? [] : titulos.filter(t => t && !/^(ocupado|busy)$/i.test(t) && !etapaDeTitulo_(t));
     if (raros.length) avisos.push('Calendario ' + x.n + ': ' + raros.length + ' turno' + (raros.length === 1 ? '' : 's') + ' no se lee' + (raros.length === 1 ? '' : 'n') + ' porque el título no dice Screening, Competencias o Técnica (ej.: "' + raros[0].slice(0, 50) + '"). Agregalo al título de esa agenda en Calendar.');
   });
   return avisos;
 }
 
+// Calendarios aparte (además del principal de cada cuenta): los que dotacionpp1 tiene en su lista y se llaman
+// "Competencias…" o "Técnica…/Enfermería…", y los de Ajustes calendario_tecnica / calendario_tecnica_poli2.
 function calendariosComp_() {
+  const l = [];
   try {
-    return CalendarApp.getAllCalendars().filter(c => /competencia/i.test(c.getName())).map(c => {
+    CalendarApp.getAllCalendars().filter(c => /competencia|t[eé]cnica|enfermer/i.test(c.getName())).forEach(c => {
       const n = norm_(c.getName());
-      return { cal: c, nombre: c.getName(), poli: /pami\s*(ii|2)\b/.test(n) ? POLICLINICOS[1] : /pami\s*(i|1)\b/.test(n) ? POLICLINICOS[0] : POLICLINICOS[1] };
+      l.push({ cal: c, nombre: c.getName(), etapa: /competencia/.test(n) ? 'competencias' : 'pami2', poli: /pami\s*(ii|2)\b/.test(n) ? POLICLINICOS[1] : /pami\s*(i|1)\b/.test(n) ? POLICLINICOS[0] : POLICLINICOS[1] });
     });
-  } catch (e) { return []; }
+  } catch (e) { }
+  const aj = ajustes_();
+  [['calendario_tecnica', 0], ['calendario_tecnica_poli2', 1]].forEach(x => {
+    const id = String(aj[x[0]] || '').trim();
+    if (!id) return;
+    const c = calendarioPor_(id);
+    if (c) l.push({ cal: c, nombre: 'Técnica ' + POLICLINICOS[x[1]].replace('Policlínico ', ''), etapa: 'pami2', poli: POLICLINICOS[x[1]] });
+    else l.push({ cal: null, nombre: 'Técnica ' + POLICLINICOS[x[1]].replace('Policlínico ', '') + ' (' + id + ')', etapa: 'pami2', poli: POLICLINICOS[x[1]] });
+  });
+  return l;
 }
 
 function fuentesCal_() {
   const l = calendarios_().map((cal, i) => ({ cal: cal, nombre: POLICLINICOS[i] ? POLICLINICOS[i].replace('Policlínico ', '') : '', poli: POLICLINICOS[i] || '' }));
   const ids = l.map(x => { try { return x.cal.getId(); } catch (e) { return ''; } });
-  calendariosComp_().forEach(x => { let id = ''; try { id = x.cal.getId(); } catch (e) { } if (!id || ids.indexOf(id) === -1) l.push(x); });
+  calendariosComp_().filter(x => x.cal).forEach(x => { let id = ''; try { id = x.cal.getId(); } catch (e) { } if (!id || ids.indexOf(id) === -1) { ids.push(id); l.push(x); } });
   return l;
 }
 
@@ -106,10 +118,13 @@ function tituloEvento_(e, porMail) {
 function eventosCal_(desde, hasta) {
   const porMail = estadoPorMail_();
   let evs = [];
-  fuentesCal_().forEach(f => { try { evs = evs.concat(f.cal.getEvents(desde, hasta).map(e => ({ e: e, poli: f.poli }))); } catch (e) { registrarError_('leer calendario', e); } });
-  return evs.map(x => ({
-    titulo: tituloEvento_(x.e, porMail), inicio: x.e.getStartTime(), invitados: x.e.getGuestList().map(g => g.getEmail().toLowerCase()), poli: x.poli
-  })).filter(e => etapaDeTitulo_(e.titulo));
+  fuentesCal_().forEach(f => { try { evs = evs.concat(f.cal.getEvents(desde, hasta).map(e => ({ e: e, poli: f.poli, etapa: f.etapa }))); } catch (e) { registrarError_('leer calendario', e); } });
+  return evs.map(x => {
+    let t = tituloEvento_(x.e, porMail);
+    // En un calendario propio de una etapa (ej. agenda técnica de Enfermería), el turno es de esa etapa aunque el título no lo diga.
+    if (x.etapa && t && !etapaDeTitulo_(t)) t = TIPO_ETAPA[x.etapa] + ' · ' + t;
+    return { titulo: t, inicio: x.e.getStartTime(), invitados: x.e.getGuestList().map(g => g.getEmail().toLowerCase()), poli: x.poli };
+  }).filter(e => etapaDeTitulo_(e.titulo));
 }
 
 function syncCalendario() {
