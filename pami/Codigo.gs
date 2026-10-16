@@ -459,7 +459,8 @@ function actualizarEsquema_() {
       });
       const d = aj.getDataRange().getValues();
       const k = d.findIndex(r => String(r[0]).trim() === 'link_agenda_tecnica_poli2');
-      if (k > 0 && !String(d[k][1] || '').trim()) aj.getRange(k + 1, 2).setValue('https://calendar.app.google/py2AipafSEZVxhUY8');
+      // Link indicado por Ever (una sola vez, para no pisar cambios posteriores hechos en la planilla).
+      if (k > 0 && !props.getProperty('LINK_TEC_P2')) { aj.getRange(k + 1, 2).setValue('https://calendar.app.google/py2AipafSEZVxhUY8'); props.setProperty('LINK_TEC_P2', '1'); }
     }
   ];
   let ok = true;
