@@ -1674,9 +1674,10 @@ function otrosPropHtml(p){
   const du=p.duenos||[],ea=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');};
   const top=Math.min(5,du.length+1);let h='';
   for(let k=2;k<=top;k++){
+    const nuevo=k>du.length;
     const o=du[k-1]||{};
     const fi=function(f,lb,v,full){return '<div class="fi"'+(full?' style="grid-column:1/-1"':'')+'><div class="k">'+lb+'</div><input class="inp" value="'+ea(v)+'" onchange="setOw(\''+p.id+'\','+k+',\''+f+'\',this.value)"></div>';};
-    h+='<h3 class="sec">Propietario '+k+(o.nombre?'':' <span style="text-transform:none;font-weight:400;color:var(--gris);font-size:11px">· agregar otro propietario</span>')+'</h3><div class="grid">'+fi('nombre','Nombre',o.nombre)+fi('tel','Teléfono / WhatsApp',o.tel)+fi('mail','Email',o.mail)+fi('dni','DNI',o.dni)+fi('nac','Fecha de nacimiento',o.nac)+fi('nacionalidad','Nacionalidad',o.nacionalidad)+fi('dom','Domicilio',o.dom,true)+'</div>';
+    h+=(nuevo?'<details class="tec"><summary>➕ Agregar otro propietario <span>· propietario '+k+'</span></summary><div style="padding:0 12px 12px">':'')+'<h3 class="sec">Propietario '+k+'</h3><div class="grid">'+fi('nombre','Nombre',o.nombre)+fi('tel','Teléfono / WhatsApp',o.tel)+fi('mail','Email',o.mail)+fi('dni','DNI',o.dni)+fi('nac','Fecha de nacimiento',o.nac)+fi('nacionalidad','Nacionalidad',o.nacionalidad)+fi('dom','Domicilio',o.dom,true)+'</div>'+(nuevo?'</div></details>':'');
   }
   return h;
 }
