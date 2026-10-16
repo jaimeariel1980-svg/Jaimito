@@ -134,7 +134,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v124</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v125</small></div>
   <nav>
     <button class="ni" id="rf" onclick="actualizar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -431,7 +431,12 @@ function card(c){
   var der=(!c.policlinico&&sugN(c))?'<div class="ln sg"><i>🏥</i><span>Sugerido: '+esc(sugN(c).replace('Policlínico ',''))+' · '+esc(sugD(c))+'</span></div>':'';
   var pr='';
   if(ct)pr+='<span class="tag cita'+(ct.hoy?' hoy':'')+'">'+esc(ct.tipo)+' agendado · '+esc(ct.txt)+'</span>';
-  if(/agendad/i.test(c.estado)&&!c.cita)pr+='<span class="tag w">Agendado · sin fecha</span>';
+  if(/agendad/i.test(c.estado)&&!c.cita){
+    var tp=/^Screening/i.test(c.estado)?'Screening':/^Competencias/i.test(c.estado)?'Competencias':'Entrevista técnica',
+        ev=String(c.entrevistas||'').split('\n').filter(function(l){return l.indexOf(tp)===0;})[0],
+        mm=ev&&ev.match(/(\d{2}\/\d{2})\/\d{4}/);
+    pr+=mm?'<span class="tag w" title="La fecha ya pasó y todavía no está cargado el resultado">'+tp+' del '+mm[1]+' · falta cargar</span>':'<span class="tag w" title="No hay ninguna cita de esta persona en el calendario: se canceló o no se creó">Agendado · no está en el calendario</span>';
+  }
   var ep=etapaPend(c);
   if(ep&&!ct)pr+=etqContacto(c)===ep?'<span class="tag ctc cx">💬 '+esc(contactoTxt(c.contactado))+(RO?'':'<button class="tdel" title="Borrar la marca de contacto" onclick="event.stopPropagation();borrarMarca('+c.fila+',1)">✕</button>')+'</span>':'<span class="tag w">➜ Falta contactar para '+ep+'</span>';
   if(c.descarte)pr+='<span class="tag">✉ Descarte enviado</span>';
