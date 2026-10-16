@@ -120,21 +120,28 @@ function azcuHerrFicha_(a){
     ultimas_interacciones:(p.seg||[]).slice().sort(function(x,y){ return (azcuNum_(y.fecha)||0)-(azcuNum_(x.fecha)||0) || y._row-x._row; }).slice(0,40).map(function(s){ return {fila:s._row, fecha:s.fecha, via:s.tipo, interesado:s.cli, telefono:s.tel, resultado:s.res, proximo_paso:s.prox, fecha_proximo_contacto:s.fechaProx, obs:s.obs, vendedor:s.vend, cargo:s.cargo}; })
   };
 }
-function azcuFmtFicha_(id){
-  var f = azcuHerrFicha_({id:id}); if(f.error) return null;
+function azcuBtnsFicha_(id){
+  var p = azcuProp_(id); if(!p) return [];
+  return [{k:'b', label:'🔧 Ver datos técnicos', act:'ask', id:'Mostrame los datos técnicos de '+p.dir}, {k:'b', label:'🕘 Ver historial', act:'ask', id:'Mostrame el historial de interacciones de '+p.dir}];
+}
+function azcuFmtFicha_(id, modo){
+  var tec = modo==='tec', f = azcuHerrFicha_({id:id}); if(f.error) return null;
   var c = azcuHerrCaptacion_({id:id}), fo = (c && c.formulario_captacion) || {}, t = '', L = [];
   function lin(k, v){ if(v!==undefined && v!==null && String(v).trim()!=='' ) L.push('- **'+k+':** '+v); }
   function sec(n){ if(L.length) t += '**'+n+'**\n'+L.join('\n')+'\n\n'; L = []; }
+  if(!tec){
   lin('Dirección', f.direccion+(f.ciudad ? ', '+f.ciudad : '')); lin('Código', f.id); lin('Tipo', f.tipo); lin('Operación', f.operacion); lin('Etapa', f.etapa); lin('Motivo de suspensión', f.motivo_suspension);
   lin('Vendedor', f.vendedor); lin('Origen', f.origen); lin('Inmobiliaria colega', f.colega); lin('Contacto colega', f.contacto_colega); lin('Comisión', f.comision); lin('Alta', f.creada); lin('Salud del aviso', f.salud_aviso_pct!=null && f.salud_aviso_pct!=='' ? f.salud_aviso_pct+'%' : ''); lin('Plan Tokko', f.plan_tokko);
   sec('Datos y operación');
   lin('Precio', f.precio); lin('Plazo de boleto', f.plazo_boleto); lin('Boleto firmado', f.boleto_firmado); lin('Plazo de escritura', f.plazo_escritura); lin('Escritura firmada', f.escritura_firmada); lin('Estado de propuesta', f.estado_propuesta);
   sec('Precio y plazos');
-  (f.propietarios||[]).forEach(function(d, i){ lin('Propietario '+(i+1), [d.nombre, d.dni ? 'DNI '+d.dni : '', d.telefono ? 'tel '+d.telefono : '', d.mail, d.domicilio].filter(Boolean).join(' · ')); });
+  (f.propietarios||[]).forEach(function(d, i){ lin('Propietario '+(i+1), [d.nombre, d.dni ? 'DNI '+d.dni : '', d.fecha_nacimiento ? 'nac. '+d.fecha_nacimiento : '', d.telefono ? 'tel '+d.telefono : '', d.mail, d.domicilio].filter(Boolean).join(' · ')); });
   sec('Propietarios');
+  }
   var skip = /^(Código de Precarga|Fecha de creación|Última actualización|Calle|Número|Ciudad|Etapa|Precio|Moneda|Tipo de operación|Origen|Vendedor asignado|Link|Observaciones|Carpeta|Estado de la propiedad|% |Plan Tokko|Plazo|Boleto|Escritura firmada|Motivo|Inmobiliaria|Contacto|Reparto|Dueño|Última alerta)/;
-  Object.keys(fo).forEach(function(k){ if(!skip.test(k)) lin(k, fo[k]); });
-  sec('Datos del inmueble (formulario)');
+  if(tec){ Object.keys(fo).forEach(function(k){ if(!skip.test(k)) lin(k, fo[k]); });
+  sec('Datos técnicos — '+f.direccion); }
+  if(!tec){
   lin('Documentos al día', f.documentos_al_dia+' de '+f.documentos_total); lin('Faltan', (f.documentos_faltan||[]).join(', ')); lin('Con archivo cargado', (f.documentos_con_archivo||[]).join(', '));
   sec('Documentación');
   lin('Consultas', f.consultas); lin('Visitas', f.visitas); lin('Propuestas', f.propuestas); lin('Días sin movimiento', f.dias_sin_movimiento);
@@ -143,7 +150,9 @@ function azcuFmtFicha_(id){
   sec('Encuesta');
   lin('Observaciones', f.observaciones); lin('Ficha / link Tokko', f.link_tokko); lin('Carpeta Drive', f.carpeta_drive);
   sec('Notas y links');
-  return t.trim()+'\n\n¿Querés que te muestre el historial de interacciones?';
+  }
+  if(tec) return t.trim() ? t.trim() : 'Todavía no hay datos técnicos cargados de '+f.direccion+'.';
+  return t.trim()+'\n\n¿Querés ver los datos técnicos o el historial de interacciones?';
 }
 function azcuHerrConsWS_(a){
   var r = obtenerConsultasWS(); if(!r.ok) return {error:r.error};
@@ -654,6 +663,9 @@ function azcuTools_(){
     t('generar_pdf','Genera el PDF de la ficha de una propiedad y lo deja en el chat para descargar o compartir.',{id:S},['id']),
     t('proponer_cargar_interaccion','Registrar una consulta o visita ya ocurrida en una propiedad NUESTRA (que está en el sistema); si es de otra inmobiliaria usá proponer_visita_externa. Queda pendiente de confirmación.',{id:S, interesado:S, telefono:S, via:{type:'string',enum:AZCU_VIAS}, resultado:{type:'string',enum:AZCU_RESULTADOS}, proximo_paso:S, observaciones:{type:'string',description:'Detalle completo de lo que pasó'}},['id','interesado','via','resultado']),
     t('visitas','Visitas del equipo, propias y a propiedades de OTRAS inmobiliarias: hoy, esta semana, próximas, realizadas o un rango. Usala para "qué visitas hay hoy", "cuántas visitas hizo X", "visitas externas", etc. Cada visita trae su fila (para cancelarla).',{periodo:{type:'string',enum:['hoy','semana','proximas','realizadas','canceladas','rango']}, desde:F, hasta:F, vendedor:S, solo_externas:{type:'boolean'}}),
+    t('datos_tecnicos','Datos técnicos de una propiedad (superficies, ambientes, cochera, patios, servicios, antigüedad, orientación, etc.). Usala cuando pidan datos técnicos o más detalles de una propiedad.',{id:S},['id']),
+    t('papelera','Papelera de reciclaje: propiedades, visitas/interacciones y documentos borrados en los últimos 30 días, que se pueden restaurar. Cada uno trae su id.',{}),
+    t('proponer_restaurar','Restaurar algo de la papelera (usar el id de la herramienta papelera). Pendiente de confirmación.',{id:S},['id']),
     t('proponer_cancelar_visita','Cancelar una visita agendada (propia o con otra inmobiliaria) porque la persona desistió o se cayó. La visita queda registrada como cancelada y se saca del Calendar. Primero ubicala con la herramienta visitas para tener su fila. Pendiente de confirmación.',{fila:{type:'number',description:'Fila de la visita (de la herramienta visitas)'}, motivo:S},['fila']),
     t('proponer_visita_externa','Cargar o agendar una visita de un cliente nuestro a una propiedad de OTRA inmobiliaria o que no está en el sistema (ej. "visita de la inmobiliaria Bertollo", "casa de otra inmobiliaria"): no se registra como propiedad, queda solo la visita. NO busques la propiedad antes. Pendiente de confirmación. Agendar: estado=agendada con fecha y hora. Ya hecha: estado=realizada con fecha y resultado. Para cargar el resultado de una visita externa ya agendada pasá codigo (EXT-...).',{direccion:{type:'string',description:'Calle y número de la propiedad ajena'}, inmobiliaria:S, colega:{type:'string',description:'Nombre del colega de la otra inmobiliaria'}, link:{type:'string',description:'Link de la ficha (Tokko, ZonaProp, etc.)'}, precio:S, interesado:{type:'string',description:'Nombre del interesado (cliente nuestro que va a ver la propiedad)'}, telefono:S, email:S, estado:{type:'string',enum:['agendada','realizada'],description:'realizada si ya fue; agendada si es a futuro'}, fecha:{type:'string',description:'AAAA-MM-DD. Si ya fue y no dicen el día, hoy'}, hora:{type:'string',description:'HH:mm 24h (solo agendada)'}, resultado:{type:'string',enum:AZCU_RESULTADOS}, observaciones:{type:'string',description:'Todo el detalle: comentarios del cliente, propuesta que va a hacer, qué quedó pendiente'}, codigo:S},['direccion','interesado']),
     t('proponer_agendar_visita','Agendar una visita futura (Calendar + seguimiento). Pendiente de confirmación.',{id:S, fecha:F, hora:{type:'string',description:'HH:mm 24h'}, interesado:S, telefono:S, email:S, nota:S},['id','fecha','hora']),
@@ -738,7 +750,13 @@ function azcuValidarCancelVis_(a){
   var cod = String(r[0]).trim(), ext = /^EXT-/.test(cod), dir = ext ? '🏢 '+String(r[12]||'').trim() : (azcuMapaDirs_()[cod]||cod), cli = String(r[3]||'').trim(), m = String(r[6]).match(/^Visita (\d{2}\/\d{2}\/\d{4}) (\d{2}:\d{2})/), mot = String(a.motivo||'').trim().slice(0,300);
   return {accion:{tipo:'cancelvis', datos:{id:'visita', dir:dir, fila:fila, cod:cod, huella:cli, motivo:mot}, resumen:'Cancelar la visita de '+(cli||'—')+' en '+dir+(m ? ' ('+m[1]+' '+m[2]+')' : '')+(mot ? ' · motivo: '+mot : '')+'. Queda registrada como cancelada y se saca del Calendar.'}};
 }
+function azcuValidarRestaurar_(a){
+  var it = papeleraTb().items.filter(function(x){ return x.id===String(a.id||''); })[0];
+  if(!it) return {error:'No encontré eso en la papelera. Consultala con la herramienta papelera.'};
+  return {accion:{tipo:'restaurar', datos:{id:'papelera', dir:it.que, pid:it.id}, resumen:'Restaurar de la papelera: '+it.que+(it.quien ? ' (lo borró '+it.quien+')' : '')+'.'}};
+}
 function azcuValidarAccion_(tipo, a){
+  if(tipo==='restaurar') return azcuValidarRestaurar_(a);
   if(tipo==='cancelvis') return azcuValidarCancelVis_(a);
   if(tipo==='visitaext') return azcuValidarVisitaExt_(a);
   var p = azcuProp_(a.id);
@@ -831,6 +849,7 @@ function azcuSistema_(ctx){
     'CONSULTAS DE WHATSAPP: si preguntan por consultas/mensajes de WhatsApp (por ejemplo del fin de semana) usá consultas_whatsapp y listalas TODAS con fecha, nombre, teléfono, propiedad y mensaje; decí cuántas siguen sin atender.',
     'INFO DE UNA PROPIEDAD (REGLA): cuando pidan la info, datos, ficha, "pasame completo" o "contame" de una propiedad, llamá UNA sola vez ficha_propiedad SIN puntual: el sistema devuelve directo la ficha completa y ordenada; no llames otras herramientas ni la reescribas. Solo si preguntan un único dato concreto usá puntual:true y respondé ese dato.',
     'ÚLTIMAS INTERACCIONES: si piden las últimas interacciones/consultas/visitas cargadas (de todas las propiedades o del usuario) usá ultimas_interacciones; NUNCA las saques de ficha_propiedad salvo que pregunten por una propiedad puntual. Mostrá primero la más reciente y la fecha de cada una.',
+    'PAPELERA: lo que se borra (propiedades, visitas/interacciones, documentos) queda 30 días en la Papelera. Si piden recuperar o restaurar algo borrado, mirá con papelera y armá la tarjeta con proponer_restaurar. Al borrar algo, avisá que se puede restaurar durante 30 días.',
     'CANCELAR VISITA: si dicen que una visita se cae, se cancela o la persona desistió, ubicala con visitas (te da la fila) y usá proponer_cancelar_visita con el motivo si lo dan. La visita queda registrada como cancelada (no se borra) y no cuenta como realizada.',
     'VISITAS A OTRAS INMOBILIARIAS: si cuentan o piden agendar una visita de un cliente nuestro a una propiedad que NO es nuestra (de otra inmobiliaria; ej. "visita de la inmobiliaria Bertollo a una casa en Pérez Bulnes 6637"), usá proponer_visita_externa de una, sin buscar_propiedades y sin pedir datos de más (si ya fue y no dicen el día, es hoy). Si además piden que les recuerdes algo ("llamarlo en dos días"), llamá también crear_recordatorio en el mismo turno; NO uses buscar_propiedades para esa dirección. Obligatorios: dirección, cliente y fecha (y hora si es a futuro). Inmobiliaria, colega (nombre de quien atiende en la otra inmobiliaria), link de la ficha (Tokko, ZonaProp, etc.), precio y teléfono son opcionales: no los pidas, pero si el usuario los dice, cargalos. Ya hecha: estado=realizada con resultado y observaciones (todo el detalle); a futuro: estado=agendada. Esas propiedades no se guardan en el sistema: solo queda la visita. Para consultar visitas (hoy, semana, próximas, de un vendedor, a otras inmobiliarias) usá visitas.',
     'USUARIO: hablás con '+(ctx.nombre||'un compañero')+'.',
@@ -852,7 +871,7 @@ function azcuOpenAI_(messages, tools){
 }
 
 function azcuProg_(ctx, texto){ try{ if(ctx && ctx.reqId) azcuPut_(ctx.reqId+'p', {progress:texto}); }catch(e){} }
-var AZCU_NOMBRES_ = {consultas_whatsapp:'Leyendo las consultas de WhatsApp…', buscar_propiedades:'Buscando propiedades…', ficha_propiedad:'Leyendo la ficha…', captacion_formulario:'Leyendo el formulario de captación…', guia_pagina:'Leyendo la guía…', dashboard:'Armando el panel…', resumen_semana:'Armando el resumen de la semana…', crear_recordatorio:'Guardando el recordatorio…', mis_recordatorios:'Buscando tus recordatorios…', agenda:'Revisando tu agenda…', visitas:'Revisando las visitas…', listar_propiedades:'Filtrando propiedades…', encuestas:'Revisando encuestas…', alertas:'Revisando alertas…', resumen_cartera:'Armando el resumen…', documentos_faltantes:'Revisando documentos…', generar_pdf:'Generando el PDF…', ofrecer_ayuda:'Preparando la ayuda…', enviar_whatsapp:'Armando el mensaje…', abrir_enlace:'Buscando el enlace…'};
+var AZCU_NOMBRES_ = {consultas_whatsapp:'Leyendo las consultas de WhatsApp…', buscar_propiedades:'Buscando propiedades…', ficha_propiedad:'Leyendo la ficha…', captacion_formulario:'Leyendo el formulario de captación…', guia_pagina:'Leyendo la guía…', dashboard:'Armando el panel…', resumen_semana:'Armando el resumen de la semana…', crear_recordatorio:'Guardando el recordatorio…', mis_recordatorios:'Buscando tus recordatorios…', agenda:'Revisando tu agenda…', visitas:'Revisando las visitas…', papelera:'Revisando la papelera…', datos_tecnicos:'Buscando los datos técnicos…', listar_propiedades:'Filtrando propiedades…', encuestas:'Revisando encuestas…', alertas:'Revisando alertas…', resumen_cartera:'Armando el resumen…', documentos_faltantes:'Revisando documentos…', generar_pdf:'Generando el PDF…', ofrecer_ayuda:'Preparando la ayuda…', enviar_whatsapp:'Armando el mensaje…', abrir_enlace:'Buscando el enlace…'};
 function azcuAvisarListo_(nombre, texto){
   try{ if(nombre) azcuPush_('Azcu terminó ✅', String(texto||'Ya tengo tu respuesta.').replace(/[*_`#]/g,'').slice(0,110), AZCU_WEB+'/?go=chat', azcuDestinos_(nombre, true), true, true); }catch(e){}
 }
@@ -875,7 +894,14 @@ function azcuChat(pin, mensajes, ctx){
   azcuPin_(pin);
   ctx = ctx || {};
   try{ var lm = (mensajes||[]).length ? mensajes[mensajes.length-1] : null, cr = lm && lm.role==='user' ? azcuCalc_(lm.content) : null; if(cr) return {texto:cr.texto, acciones:[], adjuntos:[], panel:null}; }catch(e){}
-  try{ var tx2 = (mensajes||[]).length && mensajes[mensajes.length-1].role==='user' ? String(mensajes[mensajes.length-1].content||'') : ''; if(ctx.fichaId && tx2 && /contame|cont[aá] de|info|datos|ficha|completo|detalle|todo/i.test(tx2) && !/cu[aá]nto|cu[aá]ndo|qui[eé]n|d[oó]nde|precio|tel[eé]fono|mail|historial|interacci|papeles|falta|document|\bmand|\benvi|compart|pdf/i.test(tx2)){ var dd = azcuFmtFicha_(ctx.fichaId); if(dd) return {texto:dd, acciones:[], adjuntos:[], panel:null}; } }catch(e){}
+  try{
+    var txT = (mensajes||[]).length && mensajes[mensajes.length-1].role==='user' ? String(mensajes[mensajes.length-1].content||'') : '';
+    if(txT && /datos t[eé]cnicos|detalles t[eé]cnicos|m[aá]s detalles|m[aá]s datos|ver detalles/i.test(txT)){
+      var cdT = azcuDirEnTexto_(txT), idT = cdT.length===1 ? cdT[0].id : (ctx.fichaId || ''), ttT = idT ? azcuFmtFicha_(idT, 'tec') : null;
+      if(ttT){ var pT = azcuProp_(idT); return {texto:ttT, acciones:[], adjuntos:[{k:'b', label:'📋 Ver la ficha resumida', act:'ask', id:'Contame de '+(pT ? pT.dir : idT)}], panel:null}; }
+    }
+  }catch(e){}
+  try{ var tx2 = (mensajes||[]).length && mensajes[mensajes.length-1].role==='user' ? String(mensajes[mensajes.length-1].content||'') : ''; if(ctx.fichaId && tx2 && /contame|cont[aá] de|info|datos|ficha|completo|detalle|todo/i.test(tx2) && !/cu[aá]nto|cu[aá]ndo|qui[eé]n|d[oó]nde|precio|tel[eé]fono|mail|historial|interacci|papeles|falta|document|\bmand|\benvi|compart|pdf/i.test(tx2)){ var dd = azcuFmtFicha_(ctx.fichaId); if(dd) return {texto:dd, acciones:[], adjuntos:azcuBtnsFicha_(ctx.fichaId), panel:null}; } }catch(e){}
   try{
     var tx3 = (mensajes||[]).length && mensajes[mensajes.length-1].role==='user' ? String(mensajes[mensajes.length-1].content||'') : '';
     if(ctx.fichaId && tx3 && /\b(mand|envi|pas[aá]me|compart|dame)/i.test(tx3)){
@@ -894,7 +920,7 @@ function azcuChat(pin, mensajes, ctx){
   }catch(ePista){}
   var msgs = [{role:'system', content:azcuSistema_(ctx)}].concat(pista ? [{role:'system', content:pista}] : []).concat((mensajes||[]).slice(-12).map(function(m){ return {role:m.role==='assistant'?'assistant':'user', content:String(m.content||'')}; }));
   var tools = azcuTools_(), acciones = [], adj = [], panel = null, i;
-  var mapa = {proponer_cargar_interaccion:'cargar', proponer_agendar_visita:'agendar', proponer_visita_externa:'visitaext', proponer_cancelar_visita:'cancelvis', proponer_registrar_propuesta:'propuesta', proponer_cambiar_etapa:'etapa', proponer_editar_campos:'campos', proponer_marcar_documento:'doc', proponer_borrar_documento:'borrardoc', proponer_editar_interaccion:'editarint', proponer_eliminar_interaccion:'elimint', proponer_eliminar_propiedad:'elimprop', proponer_enviar_reporte:'reporte'};
+  var mapa = {proponer_cargar_interaccion:'cargar', proponer_agendar_visita:'agendar', proponer_visita_externa:'visitaext', proponer_cancelar_visita:'cancelvis', proponer_restaurar:'restaurar', proponer_registrar_propuesta:'propuesta', proponer_cambiar_etapa:'etapa', proponer_editar_campos:'campos', proponer_marcar_documento:'doc', proponer_borrar_documento:'borrardoc', proponer_editar_interaccion:'editarint', proponer_eliminar_interaccion:'elimint', proponer_eliminar_propiedad:'elimprop', proponer_enviar_reporte:'reporte'};
   var directo = null, ult = (mensajes||[]).length ? mensajes[mensajes.length-1] : null, esAcc = !!(ult && /carg|agend|registr|propuesta|cambi|pas[aá] a|edit|borr|elimin|marc|sub[ií]|envi|mand|record|avis|visita|document|papeles|falta|cu[aá]nto|cu[aá]ndo|qui[eé]n|tel[eé]fono|mail|historial|interacci/i.test(String(ult.content||'')) && !/^(info|datos|ficha|contame)/i.test(String(ult.content||'').trim()));
   function fin(t){ return {texto:t, acciones:acciones, adjuntos:adj, panel:panel}; }
   for(i=0;i<8;i++){
@@ -907,9 +933,10 @@ function azcuChat(pin, mensajes, ctx){
       var args = {}, res, n = tc.function.name; azcuProg_(ctx, AZCU_NOMBRES_[n] || 'Preparando la tarjeta…');
       try{ args = JSON.parse(tc.function.arguments||'{}'); }catch(e){}
       try{
-        if(n==='buscar_propiedades'){ res = azcuHerrBuscar_(args); if(res.length===1 && !directo && !esAcc && !args.puntual) directo = azcuFmtFicha_(res[0].id); }
+        if(n==='buscar_propiedades'){ res = azcuHerrBuscar_(args); if(res.length===1 && !directo && !esAcc && !args.puntual){ directo = azcuFmtFicha_(res[0].id); adj.push.apply(adj, azcuBtnsFicha_(res[0].id)); } }
         else if(n==='consultas_whatsapp') res = azcuHerrConsWS_(args);
-        else if(n==='ficha_propiedad'){ res = azcuHerrFicha_(args); if(!args.puntual && !res.error && !directo && !esAcc) directo = azcuFmtFicha_(args.id); }
+        else if(n==='ficha_propiedad'){ res = azcuHerrFicha_(args); if(!args.puntual && !res.error && !directo && !esAcc){ directo = azcuFmtFicha_(args.id); adj.push.apply(adj, azcuBtnsFicha_(args.id)); } }
+        else if(n==='datos_tecnicos'){ res = azcuHerrFicha_({id:args.id}); if(!res.error){ directo = azcuFmtFicha_(args.id, 'tec'); } }
         else if(n==='ultimas_interacciones') res = azcuHerrUltimas_(args, ctx);
         else if(n==='captacion_formulario') res = azcuHerrCaptacion_(args);
         else if(n==='guia_pagina') res = azcuHerrGuia_(args);
@@ -937,6 +964,7 @@ function azcuChat(pin, mensajes, ctx){
         else if(n==='cancelar_recordatorio') res = azcuHerrCancelarRec_(args, ctx);
         else if(n==='agenda') res = azcuHerrAgenda_(args, ctx);
         else if(n==='visitas') res = azcuHerrVisitas_(args, ctx);
+        else if(n==='papelera') res = papeleraTb();
         else if(n==='alertas') res = azcuHerrAlertas_();
         else if(n==='atrasos') res = azcuHerrAtrasos_(args, ctx);
         else if(n==='documentos_faltantes') res = azcuHerrDocs_();
@@ -992,7 +1020,7 @@ function azcuNotificarEtapa_(id, dir, de, a, quien){
     azcuPush_(t, dir+(c==='r'||c==='v' ? '' : ' → '+a), AZCU_WEB+'?go=novedades');
   }catch(e){}
 }
-var AZCU_LOGT_ = {elimint:'🗑', etapa:'🔶', campos:'✏️', doc:'📄', borrardoc:'📄', adjuntar:'📎', aviso:'📣', completar:'📝', agendar:'📅', reporte:'✉️', elimprop:'🗑', nueva:'🆕', avisopersona:'📣', cancelvis:'🚫'};
+var AZCU_LOGT_ = {elimint:'🗑', etapa:'🔶', campos:'✏️', doc:'📄', borrardoc:'📄', adjuntar:'📎', aviso:'📣', completar:'📝', agendar:'📅', reporte:'✉️', elimprop:'🗑', nueva:'🆕', avisopersona:'📣', cancelvis:'🚫', restaurar:'♻️'};
 function azcuEjecutar(pin, accion){
   var r, t = accion && accion.tipo;
   AZCU_NOAUDIT_ = true;
@@ -1026,6 +1054,7 @@ function azcuEjecutar_(pin, accion){
     return {ok:true, mensaje:/Nadie suscripto/.test(String(res)) ? 'No hay nadie con avisos activados todavía.' : 'Listo, mandé el aviso a todo el equipo 📣'};
   }
   if(tipo==='visitaext' && d){ azcuLimpiarCache_(); return azcuEjecutarVisitaExt_(d, accion.quien); }
+  if(tipo==='restaurar' && d){ azcuLimpiarCache_(); var rr = restaurarPapelera(d.pid, accion.quien); return {ok:true, mensaje:'Listo, '+rr.mensaje}; }
   if(tipo==='cancelvis' && d){ azcuLimpiarCache_(); azcuSegVerif_(+d.fila, d.cod, d.huella); var cr = cancelarVisita(+d.fila, d.motivo, accion.quien); return {ok:true, mensaje:'Listo, la visita quedó cancelada y registrada'+(cr.calendar ? ' (se sacó del Calendar)' : '')+'.'}; }
   if(!d || !d.id) throw new Error('Acción inválida');
   var p = azcuProp_(d.id);
@@ -1071,7 +1100,7 @@ function azcuEjecutar_(pin, accion){
   if(tipo==='borrardoc'){
     if(Object.keys(p.papeles||{}).indexOf(d.documento)<0) throw new Error('Documento inválido');
     borrarDocumento(p.id, d.documento);
-    return {ok:true, mensaje:'Borré "'+d.documento+'" de '+p.dir+'.'};
+    return {ok:true, mensaje:'Borré "'+d.documento+'" de '+p.dir+'. Queda 30 días en la Papelera por si hay que restaurarlo.'};
   }
   if(tipo==='editarint'){
     azcuSegVerif_(+d.fila, p.id, d.huella);
@@ -1084,11 +1113,11 @@ function azcuEjecutar_(pin, accion){
   if(tipo==='elimint'){
     azcuSegVerif_(+d.fila, p.id, d.huella);
     eliminarInteraccion(+d.fila);
-    return {ok:true, mensaje:'Borré esa interacción del historial de '+p.dir+'.'};
+    return {ok:true, mensaje:'Borré esa interacción del historial de '+p.dir+'. Queda 30 días en la Papelera por si hay que restaurarla.'};
   }
   if(tipo==='elimprop'){
     eliminarPropiedad(p.id, accion.quien);
-    return {ok:true, mensaje:'Eliminé '+p.dir+' del maestro.'};
+    return {ok:true, mensaje:'Eliminé '+p.dir+' del maestro. Queda 30 días en la Papelera por si hay que restaurarla.'};
   }
   if(tipo==='completar'){
     var cm2 = azcuCompletarCampos_(p.id, d.campos||[]);
@@ -1161,7 +1190,7 @@ function azcuGet_(id){
   return s;
 }
 var AZCU_PUB_ = ['obtenerDatosOFallar','extraerDatosDNI','extraerDatosPropiedad','extraerDatosEscritura','clasificarPaginasLegajo','precargarDatos','guardarEncuesta'];
-var AZCU_TB_ = ['obtenerUrlDocumento','obtenerConsultasWS','marcarConsultaWS','marcarReporteEnviado','revisarTextoIA','obtenerPropiedadesDoc','obtenerImagenes','obtenerPropiedades','guardarDocumento','getDatos','guardarPropiedad','registrarInteraccion','editarInteraccion','eliminarInteraccion','eliminarPropiedad','agendarVisita','registrarPropuesta','subirDocumento','bajarDocumento','novedadesTb','visitasTb','registrarVisitaExterna','cancelarVisita','borrarDocumento','obtenerEncuesta','enviarReportePropietario','generarInformeTokko','getAppUrl','getEncuestaUrl'];
+var AZCU_TB_ = ['obtenerUrlDocumento','obtenerConsultasWS','marcarConsultaWS','marcarReporteEnviado','revisarTextoIA','obtenerPropiedadesDoc','obtenerImagenes','obtenerPropiedades','guardarDocumento','getDatos','guardarPropiedad','registrarInteraccion','editarInteraccion','eliminarInteraccion','eliminarPropiedad','agendarVisita','registrarPropuesta','subirDocumento','bajarDocumento','novedadesTb','visitasTb','registrarVisitaExterna','cancelarVisita','papeleraTb','restaurarPapelera','borrarDocumento','obtenerEncuesta','enviarReportePropietario','generarInformeTokko','getAppUrl','getEncuestaUrl'];
 function azcuApi(e){
   var raw = (e && e.parameter && e.parameter.payload) || (e && e.postData && e.postData.contents) || '{}', req = {}, out;
   try{

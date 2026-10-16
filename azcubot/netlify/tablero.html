@@ -43,7 +43,7 @@ function transport(fn, args, ok, onErr){
   pollT = setTimeout(poll, 500); if(ls('azcu_via')==='anon') setTimeout(fallback, 300);
   if(QUICK.indexOf(fn)>=0){ var pl0; try{ pl0 = btoa(unescape(encodeURIComponent(json))); }catch(e){ pl0 = ''; } if(pl0 && pl0.length <= 6500){ jsonp('&azc='+encodeURIComponent(pl0), false); jsonp('&azc='+encodeURIComponent(pl0), true); } }
 }
-var QUICK = ['getDatos','obtenerConsultasWS','obtenerEncuesta','obtenerPropiedades','obtenerPropiedadesDoc','azcuAtajo','azcuWarm','azcuMov','novedadesTb','visitasTb','azcuAgenda'];
+var QUICK = ['getDatos','obtenerConsultasWS','obtenerEncuesta','obtenerPropiedades','obtenerPropiedadesDoc','azcuAtajo','azcuWarm','azcuMov','novedadesTb','visitasTb','papeleraTb','azcuAgenda'];
 var PUBLIC = ['obtenerDatosOFallar','extraerDatosDNI','extraerDatosPropiedad','extraerDatosEscritura','clasificarPaginasLegajo','precargarDatos','guardarEncuesta'];
 var pinQ = null;
 function askPin(msg, cb){
@@ -176,6 +176,7 @@ td{padding:7px 8px;border-bottom:1px solid #f1f0ec;vertical-align:top}
 .doc .ic{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;flex-shrink:0}
 .doc.ok .ic{background:var(--verde)}.doc.no .ic{background:var(--rojo)}
 .doc.no{background:#fdecef;border-color:#f2c9d2}
+.tec{margin:8px 0;border:1px solid var(--linea);border-radius:10px;background:#fbfaf7}.tec>summary{cursor:pointer;padding:9px 12px;font-weight:700;font-size:12.5px;color:var(--azul);list-style:none}.tec>summary::-webkit-details-marker{display:none}.tec>summary:before{content:'▸ '}.tec[open]>summary:before{content:'▾ '}.tec>summary span{font-weight:400;color:var(--gris);font-size:11.5px}.tec .grid{padding:0 12px 12px}
 .doc.opt{background:#f4f4f2;border-color:#e4e4df;color:#8a8f98}.doc.opt .ic{background:#c9ccd1}
 .pap{display:inline-block;font-size:9.5px;font-weight:700;border-radius:20px;padding:1px 7px;margin-bottom:7px}
 .pap.v{background:#e6f6ec;color:#1f7a44}.pap.a{background:#fdf3e0;color:#a9781f}.pap.r{background:#fdecef;color:var(--rojo)}
@@ -202,7 +203,7 @@ td{padding:7px 8px;border-bottom:1px solid #f1f0ec;vertical-align:top}
 <div class="top"><div class="chip"><img id="logoimg" alt="Azcuénaga"></div>
 <div class="sep"></div><h1>Tablero de propiedades</h1><div class="dir">Mendoza 4873 · Rosario</div><button class="dlbtn" onclick="descargar()">Descargar</button></div>
 <div class="wrap">
-  <div class="nav"><button class="tab on" id="tabR" onclick="ver('resumen')">Resumen</button><button class="tab" id="tabP" onclick="ver('props')">Propiedades</button><button class="tab" id="tabC" onclick="ver('cons')">💬 Consultas WhatsApp <span id="consBadge" style="display:none;background:#d1495b;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px"></span></button><button class="tab" id="tabV" onclick="visAbrir('prox')">🗓 Visitas</button><button class="tab" id="tabN" onclick="novAbrir()">🔔 Novedades <span id="novBadge" style="display:none;background:#d1495b;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px"></span></button><a class="tab" style="text-decoration:none;display:inline-block" href="#" onclick="irApp('');return false" rel="noopener">Ir a Precarga</a><a class="tab" style="text-decoration:none;display:inline-block" href="#" onclick="irApp('?app=procedimiento');return false" rel="noopener">Ir a Procedimiento de Ventas</a></div>
+  <div class="nav"><button class="tab on" id="tabR" onclick="ver('resumen')">Resumen</button><button class="tab" id="tabP" onclick="ver('props')">Propiedades</button><button class="tab" id="tabC" onclick="ver('cons')">💬 Consultas WhatsApp <span id="consBadge" style="display:none;background:#d1495b;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px"></span></button><button class="tab" id="tabV" onclick="visAbrir('prox')">🗓 Visitas</button><button class="tab" id="tabPap" onclick="papAbrir()">🗑 Papelera</button><button class="tab" id="tabN" onclick="novAbrir()">🔔 Novedades <span id="novBadge" style="display:none;background:#d1495b;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px"></span></button><a class="tab" style="text-decoration:none;display:inline-block" href="#" onclick="irApp('');return false" rel="noopener">Ir a Precarga</a><a class="tab" style="text-decoration:none;display:inline-block" href="#" onclick="irApp('?app=procedimiento');return false" rel="noopener">Ir a Procedimiento de Ventas</a></div>
   <div id="cons" style="display:none"></div>
   <div id="resumen">
   <div class="dash" id="dash"></div>
@@ -1777,14 +1778,18 @@ function detSecHtml(p){
     return '<div class="fi"><div class="k">'+c[1]+'</div><select class="inp" onchange="setDet(\''+p.id+'\',\''+c[0]+'\',this.value)"><option value=""'+(!raw?' selected':'')+'>—</option><option value="Si"'+(v==='Si'?' selected':'')+'>Sí</option><option value="No"'+(v==='No'?' selected':'')+'>No</option>'+extra+'</select></div>';
   };
   const fi=function(c){if(YN.indexOf(c[0])>-1)return fiYN(c);return '<div class="fi"><div class="k">'+c[1]+(c[0]==='antig'?' <span style="font-weight:400;color:var(--gris)">· número o «A estrenar»</span>':'')+'</div><input class="inp" '+(c[0]==='antig'?'list="antList" ':'')+'value="'+ea(d[c[0]])+'" onchange="setDet(\''+p.id+'\',\''+c[0]+'\',this.value)"></div>';};
-  return '<h3 class="sec" id="detSec">Dirección y datos de la propiedad <span style="text-transform:none;font-weight:400;color:var(--gris);font-size:11px">· se guardan con «Guardar cambios»</span></h3><div class="grid">'+DET_CAMPOS.map(fi).join('')+'</div><datalist id="antList"><option value="A estrenar"></datalist>';
+  const si=function(x){return /^(si|sí|x|true|1|yes)$/i.test(String(x==null?'':x).trim());};
+  const res=[d.supTotal&&d.supTotal+' m²',d.dorm&&d.dorm+' dorm.',d.banos&&d.banos+' baño'+(String(d.banos)==='1'?'':'s'),si(d.cochera)?'cochera':'',d.antig&&(/estrenar/i.test(d.antig)?'a estrenar':d.antig+' años')].filter(Boolean).join(' · ')||'sin cargar';
+  return '<details class="tec" id="detSec"><summary>📍 Dirección <span>· calle, número, piso, dpto, pasillo…</span></summary><div class="grid">'+DET_CAMPOS.slice(0,8).map(fi).join('')+'</div></details>'+
+    '<details class="tec"><summary>🔧 Datos técnicos <span>· '+ea(res)+'</span></summary><div class="grid">'+DET_CAMPOS.slice(8).map(fi).join('')+'</div></details>'+
+    '<div style="font-size:11px;color:var(--gris);margin:-2px 0 8px">Se guardan con «Guardar cambios»</div><datalist id="antList"><option value="A estrenar"></datalist>';
 }
 function refrescarTitulo(p){
   const h=document.querySelector('#ficha .fh .dir'),sb=document.querySelector('#ficha .fh .sub');
   if(h)h.innerHTML=tituloFicha(p)+' <button style="vertical-align:middle;margin-left:8px;background:rgba(255,255,255,.18);color:#fff;border:1px solid rgba(255,255,255,.45);padding:0 5px;font-size:11px;line-height:18px;border-radius:6px;cursor:pointer" onclick="irADatos()" title="Editar datos">✏️</button>';
   if(sb)sb.textContent=p.id+' · '+(p.tipo||'—')+(p.ciudad?' · '+p.ciudad:'')+' · Etapa: '+p.etapa;
 }
-function irADatos(){const e=document.getElementById('detSec');if(e){e.scrollIntoView({behavior:'smooth',block:'start'});const i=e.nextElementSibling&&e.nextElementSibling.querySelector('input');if(i)setTimeout(function(){i.focus();},350);}}
+function irADatos(){const e=document.getElementById('detSec');if(e){e.open=true;e.scrollIntoView({behavior:'smooth',block:'start'});const i=e.querySelector('input');if(i)setTimeout(function(){i.focus();},350);}}
 
 var NOV=[],NOV_KEY='tbseen';
 function _novSeen(){try{return +localStorage.getItem(NOV_KEY)||0;}catch(e){return 0;}}
@@ -1867,6 +1872,24 @@ function visDet(f){
   var est=x.e==='a'?'Agendada':x.e==='p'?'Ya pasó · falta cargar el resultado':x.e==='c'?'Cancelada':(x.res||'Realizada'),pend=x.e==='a'||x.e==='p';
   document.getElementById('dlg').innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">'+(x.x?'🏢 ':'🏠 ')+_vE(x.dir)+'</div><div class="sub">'+(x.x?'Visita con otra inmobiliaria':'Visita a una propiedad nuestra')+'</div></div><div class="fb"><table>'+row('Fecha',x.d.split('-').reverse().join('/')+(x.h?' · '+x.h:''))+row('Estado',_vE(est))+row('Inmobiliaria',_vE(x.im))+row('Colega',_vE(x.co))+row('Interesado',_vE(x.cli))+row('Teléfono',_vE(x.tel))+row('Vendedor',_vE(x.v||x.c))+row('Precio',_vE(x.pr))+row('Ficha',lk)+row('Detalle',_vE(x.obs).replace(/\n/g,'<br>'))+'</table><div class="dlbtns">'+(!x.x?'<button class="btn p" onclick="closeDL();ficha(\''+_vE(x.id)+'\')">🏠 Abrir ficha</button>':'')+(pend?'<button class="btn g" onclick="'+(x.x?'visExtForm(\''+_vE(x.id)+'\')':'closeDL();cargarForm(\''+_vE(x.id)+'\')')+'">✅ Cargar resultado</button><button class="btn s" onclick="visCancelar('+x.f+')">🚫 Cancelar visita</button>':'')+'<button class="btn s" onclick="visBorrar('+x.f+')">🗑 Borrar</button><button class="btn s" onclick="visAbrir()">‹ Volver</button></div></div>';
   document.getElementById('ov2').classList.add('on');
+}
+function papAbrir(){
+  var dl=document.getElementById('dlg');
+  dl.innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">🗑 Papelera</div><div class="sub">Lo que se borra queda 30 días y se puede restaurar</div></div><div class="fb"><div style="color:var(--gris);padding:20px 0">Cargando…</div></div>';
+  document.getElementById('ov2').classList.add('on');
+  google.script.run.withSuccessHandler(function(d){
+    var its=(d&&d.items)||[],h='',IC={propiedad:'🏠',interaccion:'💬',documento:'📄'};
+    its.forEach(function(x){
+      var f=new Date(x.ms),cuando=f.toLocaleDateString('es-AR',{day:'numeric',month:'short'})+' '+f.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+      h+='<div style="display:flex;gap:10px;padding:9px 10px;border-radius:10px;margin-bottom:5px;background:#f6f8fc"><span style="font-size:18px">'+(IC[x.tipo]||'🗑')+'</span><div style="min-width:0;flex:1"><div style="font-size:13.5px;font-weight:700;word-break:break-word">'+_vE(x.que)+'</div><div style="font-size:12px;color:var(--gris)">'+(x.quien?'👤 '+_vE(x.quien)+' · ':'')+cuando+' · quedan '+x.dias+' día'+(x.dias===1?'':'s')+'</div></div><button class="btn g" style="align-self:center;padding:5px 10px;font-size:12px" onclick="papRestaurar(\''+_vE(x.id)+'\',this)">↩ Restaurar</button></div>';
+    });
+    if(!its.length)h='<div style="color:var(--gris);padding:20px 0;text-align:center">La papelera está vacía.</div>';
+    dl.querySelector('.fb').innerHTML=h;
+  }).withFailureHandler(function(e){dl.querySelector('.fb').innerHTML='<div style="color:var(--rojo);padding:20px 0">No pude cargar la papelera: '+_vE(e&&e.message?e.message:e)+'</div>';}).papeleraTb();
+}
+function papRestaurar(id,b){
+  if(b){b.disabled=true;b.textContent='Restaurando…';}
+  google.script.run.withSuccessHandler(function(r){alert('Listo: '+((r&&r.mensaje)||'restaurado'));VIS=[];try{recargar();}catch(e){}visLoad();novLoad();papAbrir();}).withFailureHandler(function(e){alert('No se pudo restaurar: '+(e&&e.message?e.message:e));papAbrir();}).restaurarPapelera(id,_yo());
 }
 function visBorrar(f){
   if(!confirm('¿Borrar esta visita? No se puede deshacer.'))return;
@@ -2994,7 +3017,7 @@ google.script.run
     else if(a==='attdel'){ st.att.splice(+t.dataset.i, 1); render(); }
     else if(a==='attsave'){ attMsg('guardar en una propiedad'); wzStart('adjex'); }
     else if(a==='copy'){ var cu = t.dataset.u, okc = function(){ t.textContent = '✓ Enlace copiado'; }; try{ navigator.clipboard.writeText(cu).then(okc, function(){ window.prompt('Copiá el enlace:', cu); }); }catch(e){ window.prompt('Copiá el enlace:', cu); } }
-    else if(a==='adjb'){ if(t.dataset.act==='plok'){ var pp = String(t.dataset.id||'').split('|'); call('azcuPlazoOk', [pp[0], pp[1], st.nombre||''], function(){ st.msgs.push({role:'assistant', content:'✅ Anotado: '+(pp[1]==='escritura' ? 'la escritura' : 'el boleto')+' quedó como firmado. Dejo de avisarte por eso.', w:1}); save(); render(); }, function(err){ st.msgs.push({role:'assistant', content:'No pude anotarlo: '+err, w:1}); render(); }); } else if(t.dataset.act==='repok'){ call('azcuReporteEnviado', [t.dataset.id, st.nombre||''], function(){ st.msgs.push({role:'assistant', content:'✅ Anotado: ya está enviado. Te lo vuelvo a recordar en unos días.', w:1}); save(); render(); }, function(err){ st.msgs.push({role:'assistant', content:'No pude anotarlo: '+err, w:1}); render(); }); } else if(t.dataset.act==='attprop'){ st.pre = t.dataset.id; st.sheet = true; render(); } else if(t.dataset.act==='compl'){ complStart(t.dataset.id); } }
+    else if(a==='adjb'){ if(t.dataset.act==='plok'){ var pp = String(t.dataset.id||'').split('|'); call('azcuPlazoOk', [pp[0], pp[1], st.nombre||''], function(){ st.msgs.push({role:'assistant', content:'✅ Anotado: '+(pp[1]==='escritura' ? 'la escritura' : 'el boleto')+' quedó como firmado. Dejo de avisarte por eso.', w:1}); save(); render(); }, function(err){ st.msgs.push({role:'assistant', content:'No pude anotarlo: '+err, w:1}); render(); }); } else if(t.dataset.act==='repok'){ call('azcuReporteEnviado', [t.dataset.id, st.nombre||''], function(){ st.msgs.push({role:'assistant', content:'✅ Anotado: ya está enviado. Te lo vuelvo a recordar en unos días.', w:1}); save(); render(); }, function(err){ st.msgs.push({role:'assistant', content:'No pude anotarlo: '+err, w:1}); render(); }); } else if(t.dataset.act==='ask'){ ask(t.dataset.id); } else if(t.dataset.act==='attprop'){ st.pre = t.dataset.id; st.sheet = true; render(); } else if(t.dataset.act==='compl'){ complStart(t.dataset.id); } }
     else if(a==='attread'){ attRead(); }
     else if(a==='mic'){ startRec(); }
     else if(a==='recsend'){ stopRec(true); }
