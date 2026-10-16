@@ -92,7 +92,8 @@ function azcuProp_(id){
   return hit.length===1 ? hit[0] : null;
 }
 function azcuActiva_(p){ return p.etapa==='Publicada' || p.etapa==='Publicadas' || p.etapa==='Reserva'; }
-function azcuFalta_(p){ return Object.keys(p.papeles||{}).filter(function(k){ return !p.papeles[k]; }); }
+function azcuReq_(p){ return Array.isArray(p.req) ? p.req : Object.keys(p.papeles||{}); }
+function azcuFalta_(p){ return azcuReq_(p).filter(function(k){ return !p.papeles[k]; }); }
 function azcuCorta_(p){ return {id:p.id, direccion:p.dir, tipo:p.tipo, etapa:p.etapa, precio:p.precio, propietario:p.prop}; }
 
 function azcuHerrBuscar_(a, fresco){
@@ -113,7 +114,7 @@ function azcuHerrFicha_(a){
     colega:p.colega, contacto_colega:p.colegaTel, comision:p.comision, vendedor:p.vendedor, link_tokko:p.tokko, plan_tokko:p.plan, carpeta_drive:p.carpeta,
     salud_aviso_pct:p.pct, observaciones:p.obs, consultas:p.cons, visitas:p.vis, propuestas:(p.seg||[]).filter(function(s){ return /propuesta|oferta/i.test(s.res); }).length, estado_propuesta:azcuPropEstado_(p),
     plazo_boleto:p.boleto||'', boleto_firmado:p.boletoOk||'', plazo_escritura:p.escritura||'', escritura_firmada:p.escrituraOk||'',
-    dias_sin_movimiento:p.dias, documentos_al_dia:docs.length-azcuFalta_(p).length, documentos_total:docs.length, documentos_faltan:azcuFalta_(p), documentos_con_archivo:Object.keys(p.docUrls||{}),
+    dias_sin_movimiento:p.dias, documentos_al_dia:azcuReq_(p).length-azcuFalta_(p).length, documentos_total:azcuReq_(p).length, documentos_faltan:azcuFalta_(p), documentos_opcionales_sin_cargar:docs.filter(function(k){ return azcuReq_(p).indexOf(k)<0 && !p.papeles[k]; }), documentos_con_archivo:Object.keys(p.docUrls||{}),
     propietarios:(p.duenos||[]).map(function(d){ return {nombre:d.nombre, dni:d.dni, telefono:d.tel, mail:d.mail, domicilio:d.dom}; }),
     encuesta:p.encuesta ? {nota:p.encuesta.cal, nombre:p.encuesta.nombre, recomienda:p.encuesta.rec} : null,
     ultimas_interacciones:(p.seg||[]).slice().sort(function(x,y){ return (azcuNum_(y.fecha)||0)-(azcuNum_(x.fecha)||0) || y._row-x._row; }).slice(0,40).map(function(s){ return {fila:s._row, fecha:s.fecha, via:s.tipo, interesado:s.cli, telefono:s.tel, resultado:s.res, proximo_paso:s.prox, fecha_proximo_contacto:s.fechaProx, obs:s.obs, vendedor:s.vend, cargo:s.cargo}; })
@@ -211,14 +212,11 @@ function azcuFilaMaestro_(id){
   return {fila:f, head:mae.getRange(1,1,1,mae.getLastColumn()).getValues()[0], row:mae.getRange(f,1,1,mae.getLastColumn()).getValues()[0]};
 }
 function azcuV_(v, max){ if(v instanceof Date) return Utilities.formatDate(v, AZCU_TZ, 'dd/MM/yyyy'); return String(v==null?'':v).slice(0, max||200); }
-function azcuPapEstado_(pa){
-  if(!pa) return null;
-  var ks = Object.keys(pa); if(!ks.length) return null;
-  var falta = ks.filter(function(k){ return !pa[k]; }), crit = ['Escritura','Título de propiedad','DNI propietario'];
-  var cf = crit.some(function(k){ return ks.indexOf(k)>-1 && !pa[k]; });
-  if(!falta.length) return 'ok';
-  if(cf && falta.length>=3) return 'no';
-  return 'med';
+function azcuPapEstado_(p){
+  if(!p || !p.papeles) return null;
+  var ks = azcuReq_(p); if(!ks.length) return null;
+  var pct = Math.round(ks.filter(function(k){ return !!p.papeles[k]; }).length/ks.length*100);
+  return pct>=100 ? 'ok' : pct>=50 ? 'med' : 'no';
 }
 function azcuPropEstado_(p){
   var pr = (p.seg||[]).filter(function(s){ return /propuesta|oferta/i.test(s.res); });
@@ -490,7 +488,7 @@ function azcuHerrDashboard_(){
     por[e] = (por[e]||0)+1;
     if(ac){ act++; if(p.dias===null || p.dias>30) sinMov++; if(p.vis===0) sinVis++; }
     if(e==='Vendida') vend++; if(e==='Suspendida') susp++; if(e==='Captación') capt++;
-    var pe = azcuPapEstado_(p.papeles);
+    var pe = azcuPapEstado_(p);
     if(pe==='ok') pap['Al día']++; else if(pe==='med') pap['Incompletos']++; else if(pe==='no') pap['Faltan papeles']++;
     var ps = azcuPropEstado_(p); if(ps) pr[ps]++;
     if(p.encuesta && p.encuesta.cal) enc.push(p.encuesta);
@@ -518,7 +516,7 @@ function azcuPanel_(){
 function azcuHerrListar_(a){
   var f = a.filtro||'', et = azcuSinAc_(a.etapa), tp = azcuSinAc_(a.tipo), vd = azcuSinAc_(a.vendedor), og = azcuSinAc_(a.origen);
   var out = azcuDatos_().filter(function(p){
-    var e = azcuEtapaN_(p.etapa), ac = e==='Publicadas' || e==='Reserva', ps = azcuPropEstado_(p), pe = azcuPapEstado_(p.papeles), cal = p.encuesta ? parseFloat(p.encuesta.cal) : NaN;
+    var e = azcuEtapaN_(p.etapa), ac = e==='Publicadas' || e==='Reserva', ps = azcuPropEstado_(p), pe = azcuPapEstado_(p), cal = p.encuesta ? parseFloat(p.encuesta.cal) : NaN;
     if(et && azcuSinAc_(e)!==et && azcuSinAc_(p.etapa)!==et) return false;
     if(tp && azcuSinAc_(p.tipo)!==tp) return false;
     if(vd && azcuSinAc_(p.vendedor).indexOf(vd)<0) return false;

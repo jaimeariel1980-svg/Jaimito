@@ -1757,6 +1757,11 @@ function _dirTexto_(calle,num,piso,depto,pasillo){
   if(/^(si|sí|x|true|1|yes)$/i.test(pa)) s+=' · Pasillo'; else if(pa && !/^(no|n|false|0|-|—|ninguno|ninguna)$/i.test(pa)) s+=' · Pasillo '+pa;
   return s;
 }
+var DOC_OBLIG_ = ['EPE Luz','Litoral Gas','Aguas Santafesinas','TGI Municipal','API Provincial','Escritura','Autorización de venta','DNI propietario'];
+function _docsReq_(papeles, tipo, extra){
+  var dpto = /depart|dpto|depto/i.test(String(tipo||'')), ex = extra||[];
+  return Object.keys(papeles||{}).filter(function(d){ return DOC_OBLIG_.indexOf(d)>-1 || (d==='Expensas' && dpto) || ex.indexOf(d)>-1; });
+}
 function getDatosRaw_(){
   var h=hojaMaestra_();
   if(h.getLastRow()<2)return [];
@@ -1809,6 +1814,7 @@ function getDatosRaw_(){
     var calle=row[c('Calle')]||'', num=row[c('Número')]||'';
     var gv=function(n){ var i=c(n); return i>-1&&row[i]!=null?String(row[i]):''; };
     var det={calle:gv('Calle'),numero:gv('Número'),piso:gv('Piso'),depto:gv('Departamento'),pasillo:gv('Pasillo'),entre1:gv('Entrecalle 1'),entre2:gv('Entrecalle 2'),ciudad:gv('Ciudad'),supTotal:gv('Superficie Total (m2)'),supCub:gv('Superficie Cubierta (m2)'),dorm:gv('Dormitorios'),amb:gv('Ambientes (sin dormitorios)'),banos:gv('Baños'),plantas:gv('Plantas'),cochera:gv('Cochera'),patioD:gv('Patio delantero'),patioT:gv('Patio trasero'),gas:gv('Gas Natural'),cloaca:gv('Cloaca'),antig:gv('Antigüedad (años)'),orient:gv('Orientación'),inscr:gv('Inscripción del dominio')};
+    var docExtra=gv('Docs exigidos (extra)').split(';').map(function(x){return x.trim();}).filter(Boolean);
     var seg=segMap[id]||[];
     var cons=seg.length;
     var vis=seg.filter(function(s){return !/cancelad/i.test(s.res)&&(/visita/i.test(s.tipo)||/visitó|oferta/i.test(s.res));}).length;
@@ -1820,7 +1826,7 @@ function getDatosRaw_(){
       etapa:row[c('Etapa')]||'Captación', estadoCarga:row[c('Estado de la propiedad')]||'',
       precio:fmtPrecio_(row[c('Precio')], row[c('Moneda')]), operacion:row[c('Tipo de operación')]||'',
       pct:pct, plan:row[c('Plan Tokko')]||'',
-            papeles:papeles, docUrls:docUrls, encuesta:(encMap[id]||null),
+            papeles:papeles, docExtra:docExtra, req:_docsReq_(papeles, row[c('Tipo de propiedad')], docExtra), docUrls:docUrls, encuesta:(encMap[id]||null),
       origen:row[c('Origen')]||'Propia', colega:row[c('Inmobiliaria colega')]||'', colegaTel:row[c('Contacto colega')]||'',
       comision:row[c('Reparto de comisión')]||'', vendedor:row[c('Vendedor asignado')]||'', tokko:row[c('Link Tokko')]||'',
       creada:_fechaISO_(c('Fecha de creación')>-1?row[c('Fecha de creación')]:''),
@@ -2038,7 +2044,7 @@ function partirScript(){
   Logger.log('¿hay </script dentro?: ' + (js.indexOf('</script') > -1));
 }
 var MAP_CAMPOS = {
-  precio:'Precio', tipo:'Tipo de propiedad', obs:'Observaciones comerciales',
+  docExtra:'Docs exigidos (extra)', precio:'Precio', tipo:'Tipo de propiedad', obs:'Observaciones comerciales',
   tokko:'Link Tokko', prop:'Dueño 1 - Nombre y Apellido', tel:'Dueño 1 - Celular',
   mail:'Dueño 1 - E-mail', dni:'Dueño 1 - DNI', dom:'Dueño 1 - Domicilio',
   colega:'Inmobiliaria colega', colegaTel:'Contacto colega', comision:'Reparto de comisión',
@@ -2073,8 +2079,9 @@ function guardarPropiedad(codigo, cambios){
   if(cambios && ('boleto' in cambios || 'boletoOk' in cambios || 'escritura' in cambios || 'escrituraOk' in cambios)){
     COLS_PLAZOS.forEach(function(nm){ if(head.indexOf(nm)<0){ mae.getRange(1,mae.getLastColumn()+1).setValue(nm); head=mae.getRange(1,1,1,mae.getLastColumn()).getValues()[0]; } });
   }
+  if(cambios && ('docExtra' in cambios) && head.indexOf('Docs exigidos (extra)')<0){ mae.getRange(1,mae.getLastColumn()+1).setValue('Docs exigidos (extra)'); head=mae.getRange(1,1,1,mae.getLastColumn()).getValues()[0]; }
   var quien=String((cambios&&(cambios.quien||cambios.cargo))||'').trim().slice(0,40), difs=[], etapaDe='', etapaA='';
-  var ETQ={precio:'Precio',tipo:'Tipo',obs:'Observaciones',tokko:'URL de ficha',origen:'Origen',colega:'Colega',colegaTel:'Contacto colega',comision:'Comisión',pct:'% aviso',vendedor:'Vendedor',motivo:'Motivo de suspensión',prop:'Propietario',tel:'Tel. propietario',mail:'Mail propietario',dni:'DNI propietario',dom:'Domicilio propietario',boleto:'Plazo de boleto',boletoOk:'Boleto firmado',escritura:'Plazo de escritura',escrituraOk:'Escritura firmada',calle:'Calle',numero:'Número',piso:'Piso',depto:'Departamento',pasillo:'Pasillo',entre1:'Entrecalle 1',entre2:'Entrecalle 2',ciudad:'Ciudad',supTotal:'Sup. total',supCub:'Sup. cubierta',dorm:'Dormitorios',amb:'Ambientes',banos:'Baños',plantas:'Plantas',cochera:'Cochera',patioD:'Patio delantero',patioT:'Patio trasero',gas:'Gas natural',cloaca:'Cloaca',antig:'Antigüedad',orient:'Orientación',inscr:'Inscripción del dominio'};
+  var ETQ={docExtra:'Documentos exigidos',precio:'Precio',tipo:'Tipo',obs:'Observaciones',tokko:'URL de ficha',origen:'Origen',colega:'Colega',colegaTel:'Contacto colega',comision:'Comisión',pct:'% aviso',vendedor:'Vendedor',motivo:'Motivo de suspensión',prop:'Propietario',tel:'Tel. propietario',mail:'Mail propietario',dni:'DNI propietario',dom:'Domicilio propietario',boleto:'Plazo de boleto',boletoOk:'Boleto firmado',escritura:'Plazo de escritura',escrituraOk:'Escritura firmada',calle:'Calle',numero:'Número',piso:'Piso',depto:'Departamento',pasillo:'Pasillo',entre1:'Entrecalle 1',entre2:'Entrecalle 2',ciudad:'Ciudad',supTotal:'Sup. total',supCub:'Sup. cubierta',dorm:'Dormitorios',amb:'Ambientes',banos:'Baños',plantas:'Plantas',cochera:'Cochera',patioD:'Patio delantero',patioT:'Patio trasero',gas:'Gas natural',cloaca:'Cloaca',antig:'Antigüedad',orient:'Orientación',inscr:'Inscripción del dominio'};
   for(var kk=2;kk<=5;kk++){ ETQ['d'+kk+'_nombre']='Propietario '+kk+' (nombre)'; ETQ['d'+kk+'_dni']='Propietario '+kk+' (DNI)'; ETQ['d'+kk+'_tel']='Propietario '+kk+' (teléfono)'; ETQ['d'+kk+'_mail']='Propietario '+kk+' (mail)'; ETQ['d'+kk+'_dom']='Propietario '+kk+' (domicilio)'; }
   var fv=mae.getRange(fila,1,1,mae.getLastColumn()).getValues()[0];
   function crudo(col){ var i=head.indexOf(col); return i>-1 ? fv[i] : ''; }
