@@ -134,7 +134,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v130</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v131</small></div>
   <nav>
     <button class="ni" id="rf" onclick="actualizar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -436,7 +436,7 @@ function card(c){
         ev=String(c.entrevistas||'').split('\n').filter(function(l){return l.indexOf(tp)===0;})[0],
         mm=ev&&ev.match(/(\d{2})\/(\d{2})\/(\d{4}) (\d{2}:\d{2})/);
     if(mm&&new Date(mm[3]+'-'+mm[2]+'-'+mm[1]+'T'+mm[4]+':00-03:00')>=new Date())pr+='<span class="tag cita">'+tp+' agendado · '+mm[1]+'/'+mm[2]+' '+mm[4]+'</span>';
-    else pr+=mm?'<span class="tag w" title="La fecha ya pasó y todavía no está cargado el resultado">'+tp+' del '+mm[1]+'/'+mm[2]+' · falta cargar</span>':'<span class="tag w" title="No hay ninguna cita de esta persona en el calendario: se canceló o no se creó">Agendado · no está en el calendario</span>';
+    else pr+=mm?'<span class="tag r" title="La fecha ya pasó y todavía no está cargado el resultado">'+tp+' del '+mm[1]+'/'+mm[2]+' · falta cargar</span>':'<span class="tag w" title="No hay ninguna cita de esta persona en el calendario: se canceló o no se creó">Agendado · no está en el calendario</span>';
   }
   var ep=etapaPend(c);
   if(ep&&!ct)pr+=etqContacto(c)===ep?'<span class="tag ctc cx">💬 '+esc(contactoTxt(c.contactado))+(RO?'':'<button class="tdel" title="Borrar la marca de contacto" onclick="event.stopPropagation();borrarMarca('+c.fila+',1)">✕</button>')+'</span>':'<span class="tag w">➜ Falta contactar para '+ep+'</span>';
