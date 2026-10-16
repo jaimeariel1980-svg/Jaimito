@@ -2405,9 +2405,19 @@ function _vendedorDe_(codigo){
   var head=mae.getRange(1,1,1,mae.getLastColumn()).getValues()[0], i=head.indexOf('Vendedor asignado');
   return i<0 ? '' : String(mae.getRange(fila,i+1).getValue()||'').trim();
 }
+function _visitaDuplicada_(codigo, cli, prox, dirExt){
+  var seg=SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento'); if(!seg || seg.getLastRow()<2) return false;
+  var nc=Math.min(13, seg.getLastColumn()), n=Math.min(seg.getLastRow()-1, 200), v=seg.getRange(seg.getLastRow()-n+1,1,n,nc).getValues(), nom=String(cli||'').trim().toLowerCase(), de=String(dirExt||'').trim().toLowerCase();
+  for(var i=0;i<v.length;i++){
+    if(String(v[i][5]).trim()!=='Visita agendada' || String(v[i][6]).trim()!==prox || String(v[i][3]).trim().toLowerCase()!==nom) continue;
+    if(dirExt ? (/^EXT-/.test(String(v[i][0]).trim()) && String(v[i][12]||'').trim().toLowerCase()===de) : String(v[i][0]).trim()===codigo) return true;
+  }
+  return false;
+}
 function agendarVisita(codigo, datos){
   var cal=CalendarApp.getDefaultCalendar();
   var ini=new Date(datos.cuando);
+  if(!isNaN(ini.getTime()) && _visitaDuplicada_(codigo, datos.interesado, 'Visita '+Utilities.formatDate(ini,'GMT-3','dd/MM/yyyy HH:mm'))) return {ok:true, duplicada:true};
   var fin=new Date(ini.getTime()+60*60*1000);
   var titulo='Visita: '+(datos.dir||codigo)+(datos.interesado?(' - '+datos.interesado):'');
   var opts={
@@ -2454,6 +2464,7 @@ function registrarVisitaExterna(datos){
   var tz = 'GMT-3', quien = String(datos.quien||datos.cargo||'').trim(), vend = String(datos.vendedor||quien).trim(), tel = String(datos.tel||'').trim(), obs = String(datos.obs||'').trim(), fecha, res, prox = '', fprox = '';
   if(datos.cuando){
     var ini = new Date(datos.cuando); if(isNaN(ini.getTime())) throw new Error('Fecha u hora inválidas');
+    if(_visitaDuplicada_('', cli, 'Visita '+Utilities.formatDate(ini, tz, 'dd/MM/yyyy HH:mm'), dir)) return {ok:true, codigo:codigo, duplicada:true};
     var opts = {description:'Visita a una propiedad de otra inmobiliaria'+(inmob?': '+inmob:'')+'\nCliente: '+cli+'\nTel: '+tel+(link?'\nFicha: '+link:'')+(precio?'\nPrecio: '+precio:''), location:dir}, inv = [];
     if(datos.mail) inv.push(String(datos.mail).trim());
     try{ var uv = vend && typeof azcuUsuarioDe_==='function' ? azcuUsuarioDe_(vend) : null; if(uv && uv.activo && uv.mail && inv.indexOf(uv.mail)<0) inv.push(uv.mail); }catch(e){ Logger.log('Invitado vendedor: '+e.message); }
