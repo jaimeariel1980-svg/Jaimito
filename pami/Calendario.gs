@@ -115,13 +115,15 @@ function tituloEvento_(e, porMail) {
   return i > 0 ? TIPO_ETAPA[ETAPAS[i]] + ' · ' + t : t;
 }
 
-let CAL_FALLO_ = false;
+let CAL_FALLO_ = false, CAL_N_ = 0;
 
 function eventosCal_(desde, hasta) {
   const porMail = estadoPorMail_();
   let evs = [];
   CAL_FALLO_ = false;
-  fuentesCal_().forEach(f => { try { evs = evs.concat(f.cal.getEvents(desde, hasta).map(e => ({ e: e, poli: f.poli, etapa: f.etapa }))); } catch (e) { CAL_FALLO_ = true; registrarError_('leer calendario', e); } });
+  const fuentes = fuentesCal_();
+  CAL_N_ = fuentes.length;
+  fuentes.forEach(f => { try { evs = evs.concat(f.cal.getEvents(desde, hasta).map(e => ({ e: e, poli: f.poli, etapa: f.etapa }))); } catch (e) { CAL_FALLO_ = true; registrarError_('leer calendario', e); } });
   return evs.map(x => {
     let t = tituloEvento_(x.e, porMail);
     // En un calendario propio de una etapa (ej. agenda técnica de Enfermería), el turno es de esa etapa aunque el título no lo diga.
@@ -134,7 +136,13 @@ function syncCalendario() {
   if (!calendario_()) return;
   const ahora = new Date();
   const eventos = eventosCal_(new Date(ahora.getTime() - 180 * 86400000), new Date(ahora.getTime() + 90 * 86400000));
-  if (CAL_FALLO_) return;
+  const P = PropertiesService.getScriptProperties(), antes = Number(P.getProperty('CAL_N') || 0), baja = Number(P.getProperty('CAL_BAJA') || 0);
+  if ((CAL_FALLO_ || CAL_N_ < antes) && baja < 3) {
+    P.setProperty('CAL_BAJA', String(baja + 1));
+    registrarError_('sync calendario', new Error((CAL_FALLO_ ? 'Falló la lectura de un calendario' : 'Ahora leo ' + CAL_N_ + ' calendarios y antes ' + antes) + ': no actualizo las citas para no borrarlas (intento ' + (baja + 1) + ' de 3)'));
+    return;
+  }
+  if (!CAL_FALLO_) { P.setProperty('CAL_N', String(CAL_N_)); P.setProperty('CAL_BAJA', '0'); }
   const sh = hoja_('Candidatos');
   const d = sh.getDataRange().getValues();
   for (let i = 1; i < d.length; i++) {
