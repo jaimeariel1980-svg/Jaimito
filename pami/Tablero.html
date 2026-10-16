@@ -134,7 +134,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v131</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v132</small></div>
   <nav>
     <button class="ni" id="rf" onclick="actualizar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -455,6 +455,7 @@ function card(c){
     '<div class="top"><b>'+esc(c.nombre)+'</b><div class="bdg" title="'+esc(notasTxt(c)||'Sin nota todavía')+'"><span class="badge '+cls(n)+'">'+(esc(n)||'—')+'</span><small>'+esc(indEt(c))+'</small></div></div>'+
     (c.formacion||rcc?'<div class="fo2"><span class="fo">'+esc(c.formacion||'')+'</span>'+rcc+'</div>':'')+
     '<div class="ln"><i>📍</i><span>'+ub+' '+zona+'</span></div>'+
+    (c.turno?'<div class="ln"><i>⏰</i><div class="tags">'+String(c.turno).split(';').map(function(t){return '<span class="tag tn">'+esc(t.trim())+'</span>';}).join('')+'</div></div>':'')+
     (pr?'<div class="ln"><i>📅</i><div class="tags">'+pr+'</div></div>':'')+
     (mk?'<div class="ln"><i>⚑</i><div class="tags">'+mk+'</div></div>':'')+
     '<div class="cpol">'+der+(RO?(c.policlinico?'<div class="ln"><i>🏥</i><span>'+esc(c.policlinico)+'</span></div>':''):'<div class="pol">'+bt+'</div>')+'</div>'+
@@ -891,7 +892,7 @@ function htmlTecnica(c,p){
 }
 function htmlEnfermeria(x){
   var h='<div class="hd"><div style="display:flex;align-items:center;gap:16px">'+infLogo()+'<div><small>Resumen del proceso para entrevista técnica · '+infFecha()+'</small><h1>'+esc(x.nombre)+'</h1><div class="s">'+esc(tit(x.busq))+(x.policlinico?' · '+esc(x.policlinico):'')+'</div></div></div></div>';
-  h+='<div class="g g3">'+infCard('Edad',x.edad)+infCard('Localidad',x.localidad)+infCard('Formación',x.formacion)+infCard('Experiencia actual',x.experiencia)+infCard('Antigüedad',x.antig)+'</div>';
+  h+='<div class="g g3">'+infCard('Edad',x.edad)+infCard('Localidad',x.localidad)+infCard('Formación',x.formacion)+infCard('Experiencia actual',x.experiencia)+infCard('Antigüedad',x.antig)+infCard('Turno preferido',x.turno)+'</div>';
   if(x.aviso)h+='<div class="cd"><div class="tx" style="color:#5D6B82">'+esc(x.aviso)+'</div></div>';
   if(x.resumen&&x.revisada===false)h+='<div class="cd"><div class="tx" style="color:#7A5200;background:#FFF1D6">Borrador sin revisar: los jefes todavía no lo ven. Se publica desde el botón "Resumen ET".</div></div>';
   if(x.resumen)h+='<h2>Resumen</h2><div class="cd"><div class="tx" style="font-size:15px;line-height:1.6">'+esc(x.resumen)+'</div></div>';
