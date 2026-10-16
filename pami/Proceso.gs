@@ -850,14 +850,14 @@ function transcribirAudio_(k, b64, mime) {
 
 function hash_(t) { let h = 5381; const x = String(t); for (let i = 0; i < x.length; i++) h = ((h << 5) + h + x.charCodeAt(i)) | 0; return String(h); }
 
-function generarResumenEnf_(cv, obs, indic) {
+function generarResumenEnf_(cv, obs, indic, nombre) {
   try {
     const resp = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {
       method: 'post', contentType: 'application/json', muteHttpExceptions: true,
       headers: { Authorization: 'Bearer ' + prop_('OPENAI_API_KEY') },
       payload: JSON.stringify({ model: 'gpt-4o-mini', temperature: 0.2, max_tokens: 900, messages: [
-        { role: 'system', content: 'Redactá el resumen de un candidato de enfermería para los jefes que lo van a entrevistar: tienen que quedarse con una foto clara de la persona antes de verla. Extensión: 2 o 3 párrafos cortos (unas 10 a 14 líneas en total), no una síntesis telegráfica. Contenido: (1) quién es: formación, trayectoria y experiencia con instituciones, servicios, funciones y períodos, y su situación actual; (2) cómo se lo percibió en las entrevistas: estilo de comunicación, actitud, motivación, cómo se desenvolvió, ejemplos o situaciones que contó, tal como lo registraron los entrevistadores; (3) fortalezas observadas y aspectos a trabajar o reservas, con el mismo peso, y qué convendría profundizar en la entrevista técnica. Podés usar lenguaje descriptivo y matices, atribuyendo las percepciones a los entrevistadores, sin exagerar ni embellecer. Prohibido: letras de calificación (A, B, C), puntajes, niveles numéricos o datos duros de evaluación, sueldo o pretensión salarial, sindicatos, y decir si conviene contratar o descartar. Usá solo hechos presentes en el texto; si un dato no consta, no lo completes. Español rioplatense, tono de informe profesional.' },
-        { role: 'user', content: ('CV: ' + cv + '\nObservaciones del entrevistador:\n' + obs).slice(0, 6000) + (String(indic || '').trim() ? '\n\nINDICACIONES (aplicalas sin dejar de ser objetivo ni inventar datos): ' + String(indic).trim().slice(0, 300) : '') }] })
+        { role: 'system', content: 'Redactá el resumen de un candidato de enfermería para los jefes que lo van a entrevistar: tienen que quedarse con una foto clara de la persona antes de verla. Extensión: 2 o 3 párrafos cortos (unas 10 a 14 líneas en total), no una síntesis telegráfica. Contenido: (1) quién es: formación, trayectoria y experiencia con instituciones, servicios, funciones y períodos, y su situación actual; (2) cómo se lo percibió en las entrevistas: estilo de comunicación, actitud, motivación, cómo se desenvolvió, ejemplos o situaciones que contó, tal como lo registraron los entrevistadores; (3) fortalezas observadas y aspectos a trabajar o reservas, con el mismo peso, y qué convendría profundizar en la entrevista técnica. Podés usar lenguaje descriptivo y matices, atribuyendo las percepciones a los entrevistadores, sin exagerar ni embellecer. Prohibido: letras de calificación (A, B, C), puntajes, niveles numéricos o datos duros de evaluación, sueldo o pretensión salarial, sindicatos, y decir si conviene contratar o descartar. Usá solo hechos presentes en el texto; si un dato no consta, no lo completes. Respetá el género gramatical de la persona según su nombre de pila (si es una mujer: enfermera, ella, la candidata; si es un varón: enfermero, él, el candidato), también en los títulos que figuren como "Enfermero/a" o "Lic./Lic.": adaptalos. Si el nombre es ambiguo, usá formas neutras (profesional de enfermería, la persona). Español rioplatense, tono de informe profesional.' },
+        { role: 'user', content: ('Candidato/a: ' + String(nombre || '').trim() + '\nCV: ' + cv + '\nObservaciones del entrevistador:\n' + obs).slice(0, 6000) + (String(indic || '').trim() ? '\n\nINDICACIONES (aplicalas sin dejar de ser objetivo ni inventar datos): ' + String(indic).trim().slice(0, 300) : '') }] })
     });
     const parsed = JSON.parse(resp.getContentText());
     const t = parsed.choices && parsed.choices[0] && String(parsed.choices[0].message.content || '').trim();
@@ -915,7 +915,7 @@ function getFichaEnfermeria_(k, fila, forzar, indic, crear) {
     else { ficha.resumen = ''; ficha.aviso = 'El resumen todavía no está preparado. Usá el botón "Resumen ET".'; }
   } else {
     const usaIA = !!((cv && obs) || (cv.length + obs.length) > 400);
-    ficha.resumen = usaIA ? generarResumenEnf_(cv, obs, forzar ? indic : '') : [cv, obs].filter(Boolean).join('\n');
+    ficha.resumen = usaIA ? generarResumenEnf_(cv, obs, forzar ? indic : '', ficha.nombre) : [cv, obs].filter(Boolean).join('\n');
     ficha.generada = usaIA;
     ficha.editado = false;
     try { sh.getRange(fila, COL.fichaEnf).setValue(JSON.stringify({ t: ficha.resumen, h: h, e: (forzar && String(indic || '').trim()) ? 2 : 0 })); } catch (e) { registrarError_('guardar ficha enfermería', e); }
