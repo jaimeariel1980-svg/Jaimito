@@ -1,0 +1,406 @@
+// ==========================================
+// CONFIGURACIONES DEL SERVICIO
+// ==========================================
+var CARPETA_DESTINO_ID = "1Xeex7XE9kvTTdvuLJPWXl41ezQXjYRk1";
+var URL_SERVIDOR_RRHH = "https://script.google.com/macros/s/AKfycbx0TqvJN3h632AoKgX3bMw3NTFgRpY2LoscIKh3wA-fSWu88UBtfJ1u50oe2a1GeGqH1A/exec"; 
+
+function onOpen() {
+  var ui = SpreadsheetApp.getUi();
+  ui.createMenu('⚙️ Gestión de Turnos')
+    .addItem('Crear Archivo del Mes Siguiente', 'crearArchivoMesSiguiente')
+    .addItem('Traer Licencias del Reloj', 'traerLicenciasDelReloj')
+    .addToUi();
+}
+
+function crearArchivoMesSiguiente() {
+  var ssOrigen = SpreadsheetApp.getActiveSpreadsheet();
+  var ui = SpreadsheetApp.getUi();
+  
+  var resNombre = ui.prompt('Paso 1/4', 'Nombre del nuevo archivo:', ui.ButtonSet.OK_CANCEL);
+  if (resNombre.getSelectedButton() != ui.Button.OK) return;
+  var nombreNuevoArchivo = resNombre.getResponseText();
+  
+  var resFechaVieja = ui.prompt('Paso 2/4', '¿De qué mes y año es ESTA planilla actual? (ej: 09/2026):', ui.ButtonSet.OK_CANCEL);
+  if (resFechaVieja.getSelectedButton() != ui.Button.OK) return;
+  var strFechaVieja = resFechaVieja.getResponseText().trim();
+  
+  var resFecha = ui.prompt('Paso 3/4', 'Ingresá el mes y año a GENERAR (ej: 10/2026):', ui.ButtonSet.OK_CANCEL);
+  if (resFecha.getSelectedButton() != ui.Button.OK) return;
+  var strFecha = resFecha.getResponseText().trim();
+  
+  var partesViejas = strFechaVieja.split("/");
+  var mesViejo = parseInt(partesViejas[0], 10) - 1;
+  var anioViejo = parseInt(partesViejas[1], 10);
+  var offsetViejo = (new Date(anioViejo, mesViejo, 1).getDay() + 6) % 7;
+  
+  var columnasSemanaVieja = []; 
+  for (var d = 1; d <= 7; d++) {
+     var dsViejo = (offsetViejo + d - 1) % 7;
+     columnasSemanaVieja[dsViejo] = d;
+  }
+
+  var partesFecha = strFecha.split("/");
+  var mesNuevo = parseInt(partesFecha[0], 10) - 1; 
+  var anioNuevo = parseInt(partesFecha[1], 10);
+  var primerDiaNuevoDate = new Date(anioNuevo, mesNuevo, 1);
+  var offsetPrimerDiaNuevo = (primerDiaNuevoDate.getDay() + 6) % 7; 
+  var diasDelMesNuevo = new Date(anioNuevo, mesNuevo + 1, 0).getDate();
+  
+  var feriadosDelMes = [];
+  try {
+    var cal = CalendarApp.getCalendarById('es.ar#holiday@group.v.calendar.google.com');
+    if (cal) {
+      var fechaInicio = new Date(anioNuevo, mesNuevo, 1, 0, 0, 0);
+      var fechaFin = new Date(anioNuevo, mesNuevo + 1, 0, 23, 59, 59);
+      var eventos = cal.getEvents(fechaInicio, fechaFin);
+      
+      for (var ev = 0; ev < eventos.length; ev++) {
+        var tituloFeriado = eventos[ev].getTitle().toLowerCase();
+        
+        if (tituloFeriado.indexOf("judío") === -1 && 
+            tituloFeriado.indexOf("judio") === -1 && 
+            tituloFeriado.indexOf("islámico") === -1 && 
+            tituloFeriado.indexOf("islamico") === -1 && 
+            tituloFeriado.indexOf("perdón") === -1 && 
+            tituloFeriado.indexOf("pascua") === -1) {
+            
+          var fechaEvento = eventos[ev].getStartTime();
+          var diaExacto = parseInt(Utilities.formatDate(fechaEvento, "America/Argentina/Buenos_Aires", "d"), 10);
+          if (feriadosDelMes.indexOf(diaExacto) === -1) {
+            feriadosDelMes.push(diaExacto);
+          }
+        }
+      }
+    }
+  } catch(e) {}
+  
+  // === NUEVO PASO 4: INTERACCIÓN CON EL USUARIO PARA CONFIRMAR FERIADOS ===
+  var textoFeriadosDefecto = feriadosDelMes.length > 0 ? feriadosDelMes.join(", ") : "";
+  var resFeriados = ui.prompt('Paso 4/4: Control de Feriados 📅', 
+    'Google detectó estos feriados: ' + (textoFeriadosDefecto || "Ninguno") + '\n\n' +
+    'Si falta alguno (ej: feriados puente, Día de la Sanidad) agregalos o modificalos separados por coma (ej: 12, 13).\n' +
+    'Si está todo OK, dejá lo que está escrito y tocá Aceptar:', 
+    ui.ButtonSet.OK_CANCEL);
+    
+  if (resFeriados.getSelectedButton() != ui.Button.OK) return;
+  
+  var inputFeriados = resFeriados.getResponseText().trim();
+  feriadosDelMes = []; // Reiniciamos para usar estrictamente lo que el usuario confirmó
+  if (inputFeriados !== "" && inputFeriados.toLowerCase() !== "ninguno") {
+    var arrayManuales = inputFeriados.split(",");
+    for (var f = 0; f < arrayManuales.length; f++) {
+      var numFeriado = parseInt(arrayManuales[f].trim(), 10);
+      if (!isNaN(numFeriado)) {
+        feriadosDelMes.push(numFeriado);
+      }
+    }
+  }
+  
+  var coloresMes = [];
+  for (var d = 1; d <= 31; d++) {
+    if (d > diasDelMesNuevo) {
+      coloresMes.push(null);
+    } else {
+      var diaSemana = (offsetPrimerDiaNuevo + d - 1) % 7; 
+      var esFeriado = feriadosDelMes.indexOf(d) !== -1;
+      if (diaSemana === 5 || diaSemana === 6 || esFeriado) {
+        coloresMes.push("#f3f3f3"); 
+      } else {
+        coloresMes.push(null);
+      }
+    }
+  }
+
+  var archivoOrigen = DriveApp.getFileById(ssOrigen.getId());
+  var idNuevoArchivo;
+  if (CARPETA_DESTINO_ID && CARPETA_DESTINO_ID !== "PEGAR_ACA_EL_ID_DE_LA_CARPETA") {
+    try {
+      var carpeta = DriveApp.getFolderById(CARPETA_DESTINO_ID);
+      idNuevoArchivo = archivoOrigen.makeCopy(nombreNuevoArchivo, carpeta).getId();
+    } catch (e) {
+      idNuevoArchivo = archivoOrigen.makeCopy(nombreNuevoArchivo).getId();
+    }
+  } else {
+    idNuevoArchivo = archivoOrigen.makeCopy(nombreNuevoArchivo).getId();
+  }
+  
+  var ssNuevo = SpreadsheetApp.openById(idNuevoArchivo);
+  var hojas = ssNuevo.getSheets();
+  
+  for (var h = 0; h < hojas.length; h++) {
+    var hoja = hojas[h];
+    var ultimaFila = hoja.getLastRow();
+    
+    if (ultimaFila > 1) {
+      var celdaA1 = hoja.getRange(1, 1).getValue().toString();
+      var nuevaA1 = celdaA1.replace(/\d{1,2}\/\d{4}/, strFecha);
+      if (nuevaA1 !== celdaA1) {
+        hoja.getRange(1, 1).setValue(nuevaA1);
+      } else {
+        var separador = celdaA1.indexOf("·") !== -1 ? "·" : (celdaA1.indexOf("-") !== -1 ? "-" : "");
+        if (separador !== "") {
+           var partesA1 = celdaA1.split(separador);
+           partesA1[partesA1.length - 1] = " " + strFecha; 
+           hoja.getRange(1, 1).setValue(partesA1.join(separador));
+        }
+      }
+
+      var datos = hoja.getRange(1, 1, ultimaFila, 34).getValues();
+      var valoresAActualizar = []; 
+      
+      for (var i = 0; i < datos.length; i++) {
+        var fila = datos[i];
+        var leg = fila[0];
+        var tipo = fila[2]; 
+        var nuevaFila = fila.slice(); 
+        
+        if (i === 0) { 
+          valoresAActualizar.push(nuevaFila);
+          continue;
+        }
+        
+        if (tipo === "Habitual") {
+          
+          var patronLeido = ["F","F","F","F","F","F","F"];
+          if (columnasSemanaVieja.length > 0) {
+             for (var ds = 0; ds < 7; ds++) {
+                var diaDelMesViejo = columnasSemanaVieja[ds];
+                var turnoViejo = fila[diaDelMesViejo + 2]; 
+                patronLeido[ds] = turnoViejo ? turnoViejo.toString() : "F";
+             }
+          }
+          
+          for (var dia = 1; dia <= 31; dia++) {
+            if (dia > diasDelMesNuevo) {
+              nuevaFila[dia + 2] = ""; 
+            } else {
+              var diaSemanaNuevo = (offsetPrimerDiaNuevo + dia - 1) % 7; 
+              var turnoNuevo = patronLeido[diaSemanaNuevo];
+              
+              if (turnoNuevo.indexOf("/") !== -1 && !turnoNuevo.startsWith("'")) {
+                turnoNuevo = "'" + turnoNuevo;
+              }
+              nuevaFila[dia + 2] = turnoNuevo;
+            }
+          }
+        } else if (tipo === "Cambio" || tipo === "Extra" || tipo === "Licencias") {
+           for (var dia = 1; dia <= 31; dia++) {
+             nuevaFila[dia + 2] = "";
+           }
+        }
+        valoresAActualizar.push(nuevaFila);
+      }
+      
+      hoja.getRange(1, 4, ultimaFila, 31).setNumberFormat("@"); 
+      hoja.getRange(1, 1, ultimaFila, 34).setValues(valoresAActualizar);
+      
+      var matrizFondos = [];
+      for (var r = 0; r < ultimaFila - 1; r++) {
+        matrizFondos.push(coloresMes);
+      }
+      hoja.getRange(2, 4, ultimaFila - 1, 31).setBackgrounds(matrizFondos);
+    }
+  }
+  ui.alert('¡Archivo creado con éxito!\n\nSe ajustaron los feriados según la validación.');
+}
+
+function traerLicenciasDelReloj() {
+  var ui = SpreadsheetApp.getUi();
+  var ssDestino = SpreadsheetApp.getActiveSpreadsheet();
+  
+  var hojaReferencia = ssDestino.getSheets()[0];
+  var celdaA1 = hojaReferencia.getRange(1, 1).getValue().toString();
+  var matchFecha = celdaA1.match(/\d{1,2}\/\d{4}/);
+  var mesNormalizado = "";
+  
+  if (!matchFecha) {
+    var resMes = ui.prompt('Traer Licencias', 'No detecté el mes en la celda A1.\n¿De qué mes querés traer las licencias? (ej: 09/2026):', ui.ButtonSet.OK_CANCEL);
+    if (resMes.getSelectedButton() != ui.Button.OK) return;
+    var partesPrompt = resMes.getResponseText().trim().split("/");
+    mesNormalizado = (partesPrompt[0].length === 1 ? "0" + partesPrompt[0] : partesPrompt[0]) + "/" + partesPrompt[1];
+  } else {
+    var partesMes = matchFecha[0].split("/");
+    mesNormalizado = (partesMes[0].length === 1 ? "0" + partesMes[0] : partesMes[0]) + "/" + partesMes[1];
+  }
+  
+  var respuestaServidor = UrlFetchApp.fetch(URL_SERVIDOR_RRHH + "?action=getLicencias&mes=" + mesNormalizado).getContentText();
+  var respuestaJson = JSON.parse(respuestaServidor);
+  
+  if (respuestaJson.status !== "ok") {
+    ui.alert("Mensaje del sistema: " + respuestaJson.message);
+    return;
+  }
+  var licenciasMes = respuestaJson.data; 
+  
+  var hojas = ssDestino.getSheets();
+  var cambiosRealizados = 0;
+  
+  for (var h = 0; h < hojas.length; h++) {
+    var hoja = hojas[h];
+    var ultimaFila = hoja.getLastRow();
+    if (ultimaFila < 2) continue;
+    
+    var datos = hoja.getRange(1, 1, ultimaFila, 34).getValues();
+    var fondos = hoja.getRange(1, 1, ultimaFila, 34).getBackgrounds();
+    var huboCambiosEnHoja = false;
+    var legajoEnMemoria = ""; 
+    
+    for (var f = 0; f < datos.length; f++) {
+      if (datos[f][0] !== "") {
+        legajoEnMemoria = datos[f][0].toString().trim();
+      }
+      var tipo = datos[f][2] ? datos[f][2].toString().trim() : "";
+      
+      // ==============================================================
+      // 1. SI ESTAMOS EN LA FILA "Cambio" -> RESCATAMOS LOS "C/H"
+      // ==============================================================
+      if (tipo === "Cambio" && licenciasMes[legajoEnMemoria]) {
+        var novedadesAgente = licenciasMes[legajoEnMemoria];
+        for (var dia = 1; dia <= 31; dia++) {
+          if (novedadesAgente[dia]) {
+            var textoNovedad = novedadesAgente[dia].texto.toString().toUpperCase();
+            
+            // Si el texto de la novedad contiene "C/H" o "CAMBIO", lo pegamos acá
+            if (textoNovedad.indexOf("C/H") !== -1 || textoNovedad.indexOf("CAMBIO") !== -1) {
+              datos[f][dia + 2] = novedadesAgente[dia].texto; 
+              fondos[f][dia + 2] = novedadesAgente[dia].color;
+              cambiosRealizados++;
+              huboCambiosEnHoja = true;
+              
+              // Lo eliminamos de la memoria para que no se duplique en Licencias
+              delete novedadesAgente[dia]; 
+            }
+          }
+        }
+      }
+      
+      // ==============================================================
+      // 2. SI ESTAMOS EN LA FILA "Licencias" -> PEGAMOS TODO EL RESTO
+      // ==============================================================
+      if (tipo === "Licencias" && licenciasMes[legajoEnMemoria]) {
+        var novedadesAgente = licenciasMes[legajoEnMemoria];
+        for (var dia = 1; dia <= 31; dia++) {
+          if (novedadesAgente[dia]) {
+            datos[f][dia + 2] = novedadesAgente[dia].texto; 
+            fondos[f][dia + 2] = novedadesAgente[dia].color;
+            cambiosRealizados++;
+            huboCambiosEnHoja = true;
+          }
+        }
+        delete licenciasMes[legajoEnMemoria]; // Ya liquidamos a esta persona
+      }
+    }
+    
+    if (huboCambiosEnHoja) {
+      hoja.getRange(1, 1, ultimaFila, 34).setValues(datos);
+      hoja.getRange(1, 1, ultimaFila, 34).setBackgrounds(fondos);
+    }
+  }
+  
+  var mensajeFinal = '¡Cruce completado!\n\n';
+  if (respuestaJson.reporte) {
+    mensajeFinal += respuestaJson.reporte;
+  }
+  ui.alert(mensajeFinal);
+}
+function generarReporteExtras() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var hojas = ss.getSheets(); // Ahora buscamos TODAS las pestañas
+  
+  var reporte = [];
+  // Agregamos la columna "Servicio" para saber de dónde viene
+  reporte.push(["Servicio", "Legajo", "Apellido", "Día", "Habitual", "Horario Extra", "Hs 50%", "Hs 100%"]);
+
+  // Recorremos pestaña por pestaña
+  for (var h = 0; h < hojas.length; h++) {
+    var hoja = hojas[h];
+    var nombreHoja = hoja.getName();
+    
+    // Ignoramos la pestaña del reporte viejo para que no se lea a sí misma
+    if (nombreHoja.indexOf("Reporte Extras") !== -1 || nombreHoja.indexOf("Extras -") !== -1) {
+      continue;
+    }
+    
+    var ultimaFila = hoja.getLastRow();
+    if (ultimaFila < 1) continue;
+    
+    var datos = hoja.getRange(1, 1, ultimaFila, 34).getValues();
+
+    for (var f = 0; f < datos.length; f++) {
+      var tipo = datos[f][2]; 
+      
+      if (tipo === "Extra") {
+        var legajo = datos[f - 2] ? datos[f - 2][0] : ""; 
+        var apellido = datos[f - 2] ? datos[f - 2][1] : ""; 
+        
+        for (var c = 3; c <= 33; c++) {
+          var valorExtra = datos[f][c];
+          
+          if (valorExtra && valorExtra.toString().trim() !== "") {
+            var dia = c - 2; 
+            var habitual = datos[f - 2] ? datos[f - 2][c] : ""; 
+            var textoExtra = valorExtra.toString().trim();
+            
+            var hs50 = 0;
+            var hs100 = 0;
+            var horasClasificadas = false;
+            
+            if (textoExtra.indexOf("/") !== -1) {
+              var partes = textoExtra.split("/");
+              var inicio = parseInt(partes[0], 10);
+              var fin = parseInt(partes[1], 10);
+              
+              if (!isNaN(inicio) && !isNaN(fin)) {
+                horasClasificadas = true;
+                
+                var horasTotales = (fin > inicio) ? (fin - inicio) : (fin + 24 - inicio);
+                
+                for (var i = 0; i < horasTotales; i++) {
+                  var hora = (inicio + i) % 24; 
+                  if (hora >= 6 && hora < 22) {
+                    hs50++;
+                  } else {
+                    hs100++;
+                  }
+                }
+              }
+            }
+            
+            reporte.push([
+              nombreHoja, // Nombre de la pestaña (Servicio)
+              legajo, 
+              apellido, 
+              dia, 
+              habitual, 
+              textoExtra, 
+              horasClasificadas ? hs50 : "-", 
+              horasClasificadas ? hs100 : "-"
+            ]);
+          }
+        }
+      }
+    }
+  }
+
+  if (reporte.length === 1) {
+    SpreadsheetApp.getUi().alert("No se encontraron horas extras cargadas en ninguna pestaña de este mes.");
+    return;
+  }
+
+  var nombreReporte = "Reporte Extras Global";
+  var hojaReporte = ss.getSheetByName(nombreReporte);
+  
+  if (hojaReporte) {
+    hojaReporte.clear(); 
+  } else {
+    hojaReporte = ss.insertSheet(nombreReporte, 0); // La crea al principio de todo
+  }
+
+  // Pegamos los datos y pintamos la tabla (ahora son 8 columnas)
+  hojaReporte.getRange(1, 1, reporte.length, 8).setValues(reporte);
+  hojaReporte.getRange(1, 1, 1, 8).setFontWeight("bold").setBackground("#fff2cc");
+  hojaReporte.getRange(1, 1, reporte.length, 8).setHorizontalAlignment("center");
+  hojaReporte.autoResizeColumns(1, 8);
+
+  SpreadsheetApp.getUi().alert("¡Reporte global generado!\n\nSe procesaron absolutamente todas las pestañas.");
+}
