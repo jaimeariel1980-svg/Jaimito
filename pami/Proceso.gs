@@ -932,7 +932,7 @@ function getFichaEnfermeria_(k, fila, forzar, indic, crear) {
   const ficha = {
     nombre: r[COL.nombre - 1], busq: r[COL.busq - 1], policlinico: poliEf_(r),
     edad: sd.edad || cm.edad || '', localidad: cm.localidad || r[COL.loc - 1] || '', formacion: String(r[COL.formacion - 1] || sd.formacion || cm.formacion || ''),
-    experiencia: [sd.posAct || cm.puestoAct, sd.empresaAct || cm.empresaAct].filter(Boolean).join(' · '), antig: cm.antig || ''
+    experiencia: [sd.posAct || cm.puestoAct, sd.empresaAct || cm.empresaAct].filter(Boolean).join(' · '), antig: cm.antig || '', turno: String(r[COL.turno - 1] || '').replace(/;\s*/g, ' · ')
   };
   const cv = String(r[COL.resumen - 1] || '').trim();
   const obs = [S.comentario, C.recomendacion, C.fortalezas ? 'Fortalezas: ' + C.fortalezas : '', C.areas ? 'A desarrollar: ' + C.areas : '', (C.comps || []).filter(x => x && x.notas).map(x => x.nombre + ': ' + x.notas).join('\n')].map(x => String(x || '').trim()).filter(Boolean).join('\n');
