@@ -626,7 +626,7 @@ function agregarCandidato_(o) {
       const dniE = String(datos[i][COL.dni - 1] || '').replace(/\D/g, '');
       const mailE = String(datos[i][COL.email - 1] || '').trim().toLowerCase();
       if ((dni && dniE === dni) || (email && mailE === email)) return 'DUPLICADO';
-      if (kn && datos[i][COL.busq - 1] === (o.busq || '') && claveDup_('', '', '', datos[i][COL.nombre - 1]).n === kn) return 'DUPLICADO';
+      if (kn && datos[i][COL.busq - 1] === (o.busq || '') && claveDup_('', '', '', datos[i][COL.nombre - 1]).n === kn && !(dni && dniE && dni !== dniE)) return 'DUPLICADO';
     }
     const file = o.archivo();
     const row = new Array(HEAD_CAND.length).fill('');
@@ -888,7 +888,7 @@ function ciclo() {
   const lock = LockService.getUserLock();
   if (!lock.tryLock(1000)) return;
   try {
-    [actualizarEsquema_, procesarCorreos, procesarCarpeta, procesarPendientes, completarDomicilios_, verificarDomicilios_, sugerirPendientes_, syncCalendario].forEach(fn => { try { fn(); } catch (e) { registrarError_(fn.name, e); } });
+    [actualizarEsquema_, limpiarDuplicados_, procesarCorreos, procesarCarpeta, procesarPendientes, completarDomicilios_, verificarDomicilios_, sugerirPendientes_, syncCalendario].forEach(fn => { try { fn(); } catch (e) { registrarError_(fn.name, e); } });
   } finally { lock.releaseLock(); }
 }
 

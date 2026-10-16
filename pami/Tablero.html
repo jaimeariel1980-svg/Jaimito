@@ -134,7 +134,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v119</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v120</small></div>
   <nav>
     <button class="ni" id="rf" onclick="actualizar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -422,20 +422,6 @@ function contactoTxt(t){
   var f=m[2]+'/'+m[3];
   return /^(screening|competencias|entrevista técnica)$/i.test(m[1])?'Contactado para '+m[1]+' · '+f+' · sin agendar':m[1]+' · '+f;
 }
-function dupKeys(c){
-  var k=[],d=String(c.dni||'').replace(/\D/g,''),e=String(c.email||'').trim().toLowerCase(),t=String(c.tel||'').replace(/\D/g,'').slice(-8),
-      n=String(c.nombre||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z ]/g,' ').split(/\s+/).filter(Boolean).sort().join(' ');
-  if(d.length>=6)k.push('d'+d);if(e)k.push('e'+e);if(t.length>=8)k.push('t'+t);if(n.length>5)k.push('n'+n);return k;
-}
-function dupsDe(c){
-  if(!D._dm){D._dm={};D.cands.forEach(function(x){dupKeys(x).forEach(function(q){(D._dm[q]=D._dm[q]||[]).push(x);});});}
-  var out=[];dupKeys(c).forEach(function(q){(D._dm[q]||[]).forEach(function(x){if(x!==c&&out.indexOf(x)<0)out.push(x);});});return out;
-}
-function eliminarDup(f){
-  var c=byFila(f),o=dupsDe(c).filter(function(x){return x.fila>c.fila;})[0];if(!c||!o)return;
-  if(!confirm('Vas a eliminar la ficha MÁS ANTIGUA de '+c.nombre+' (cargada el '+c.fecha+', estado "'+c.estado+'").\nSe conserva la más nueva (cargada el '+o.fecha+', estado "'+o.estado+'").\n\n¿Eliminar la antigua?'))return;
-  gs().withSuccessHandler(function(){FICHAS={};cerrar();cargar();toast('Duplicado eliminado');}).withFailureHandler(fer).eliminarDuplicado(K,f,c.id);
-}
 function sugN(c){var x=String(c.polSug||'').split(' · ')[0];return D.policlinicos.indexOf(x)>-1?x:'';}
 function sugD(c){var m=String(c.polSug||'').split(' · ')[1];return m?m.replace(/\s*\(.*$/,''):'';}
 function card(c){
@@ -455,7 +441,6 @@ function card(c){
   if(/^Descartad/i.test(c.estado))mk+=c.motivo?'<span class="tag r">✖ '+esc(c.motivo.replace(/;\s*/g,' · '))+'</span>':'<span class="tag">Sin motivo cargado</span>';
   if(!RO&&etapaIdx(c)===3&&!c.fichaOk&&!c.notaP2)mk+='<span class="tag r">🩺 Falta resumen ET</span>';
   var rcc=rc?'<span class="rcc" title="'+esc((c.recTipo?'Recomendado por: ':'')+rc)+'">★ '+esc(recCorto(c))+'</span>':'';
-  if(dupsDe(c).length)mk+='<span class="tag r" title="Hay otra ficha de la misma persona (mismo DNI, mail, teléfono o nombre)">⚠ Posible duplicado</span>';
   if(c.proc&&c.proc!=='SI')mk+='<span class="tag w">'+(c.proc==='Pendiente'?'Analizando CV…':c.proc==='NoCV'?'¿No es un CV?':'Revisar CV')+'</span>';
   var bt=D.policlinicos.map(function(p,i){return '<button type="button" class="p'+(i+1)+(c.policlinico===p?' on':(!c.policlinico&&sugN(c)===p?' sug':''))+'" onclick="event.stopPropagation();asignarPol('+c.fila+','+i+')">'+esc(p.replace('Policlínico ',''))+(!c.policlinico&&sugN(c)===p?' ★':'')+'</button>';}).join('');
   return '<div class="card '+cls(n)+'" draggable="'+(RO?'false':'true')+'" data-fila="'+c.fila+'" ondragstart="event.dataTransfer.setData(\'text\',\''+c.fila+'\')" onclick="abrir('+c.fila+')">'+
@@ -578,7 +563,6 @@ function avisoResumen(f){
 function abrir(f){
   var yaVista=document.getElementById('modal').classList.contains('show')&&CUR===f;CUR=f;var c=byFila(f);if(!c)return;
   var rec=defRec(c.busq),n=ind(c),ct=citaTxt(c),dd=dias(c),al='';
-  var dp=dupsDe(c);if(dp.length)al+='<div class="alerta a3">⚠ Posible duplicado: hay otra ficha de '+esc(dp[0].nombre)+' (cargada el '+esc(dp[0].fecha)+', estado "'+esc(dp[0].estado)+'").'+(D.admin&&!RO&&dp.some(function(x){return x.fila>c.fila;})?' <button class="btn ghost" style="margin-left:8px" onclick="eliminarDup('+f+')">🗑 Eliminar esta (la más antigua)</button>':'')+'</div>';
   if(c.motivo&&/^Descartad/i.test(c.estado))al+='<div class="alerta a3">✖ Motivos de descarte: '+esc(c.motivo.replace(/;\s*/g,' · '))+'</div>';
   if(recom(c))al+='<div class="alerta rec">★ '+(c.recTipo?'Recomendado por: ':'')+esc(recom(c))+'</div>';
   if(ct)al+='<div class="alerta '+(ct.hoy?'a3':'a1')+'">📅 '+esc(ct.tipo)+': '+esc(ct.txt)+'</div>';
