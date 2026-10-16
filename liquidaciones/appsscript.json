@@ -1,1 +1,7 @@
-{"timeZone":"America/Argentina/Buenos_Aires","exceptionLogging":"STACKDRIVER","runtimeVersion":"V8"}
+{
+  "timeZone": "America/Argentina/Buenos_Aires",
+  "dependencies": {
+  },
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8"
+}
