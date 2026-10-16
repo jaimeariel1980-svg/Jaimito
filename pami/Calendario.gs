@@ -125,11 +125,17 @@ function eventosCal_(desde, hasta) {
   const fuentes = fuentesCal_();
   CAL_N_ = fuentes.length;
   fuentes.forEach(f => { try { evs = evs.concat(f.cal.getEvents(desde, hasta).map(e => ({ e: e, poli: f.poli, etapa: f.etapa }))); } catch (e) { CAL_FALLO_ = true; registrarError_('leer calendario', e); } });
+  let cands = null;
   return evs.map(x => {
     let t = tituloEvento_(x.e, porMail);
-    // En un calendario propio de una etapa (ej. agenda técnica de Enfermería), el turno es de esa etapa aunque el título no lo diga.
-    if (x.etapa && t && !etapaDeTitulo_(t)) t = TIPO_ETAPA[x.etapa] + ' · ' + t;
-    return { titulo: t, inicio: x.e.getStartTime(), invitados: x.e.getGuestList().map(g => g.getEmail().toLowerCase()), poli: x.poli };
+    const o = { titulo: t, inicio: x.e.getStartTime(), invitados: x.e.getGuestList().map(g => g.getEmail().toLowerCase()), poli: x.poli };
+    // En un calendario propio de una etapa (ej. agenda técnica de Enfermería), el turno es de esa etapa aunque el título no lo diga,
+    // pero solo si es de un candidato: así no aparecen eventos personales de la cuenta (ej. un calendario personal compartido).
+    if (x.etapa && t && !etapaDeTitulo_(t)) {
+      if (!cands) cands = hoja_('Candidatos').getDataRange().getValues().slice(1).filter(r => r[COL.nombre - 1]).map(r => candDe_(r));
+      if (cands.some(c => eventoEsDe_(o, c))) o.titulo = TIPO_ETAPA[x.etapa] + ' · ' + t;
+    }
+    return o;
   }).filter(e => etapaDeTitulo_(e.titulo));
 }
 
