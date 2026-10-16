@@ -1820,6 +1820,8 @@ function visFiltrar(per,vend){
   var h=VIS_HOY||_vIso(new Date()),s=_visSem();
   return VIS.filter(function(x){
     if(vend&&_vN(x.v||x.c)!==_vN(vend))return false;
+    if(x.e==='c'&&per!=='canc'&&per!=='todas')return false;
+    if(per==='canc')return x.e==='c';
     if(per==='hoy')return x.d===h;
     if(per==='sem')return x.d>=s[0]&&x.d<=s[1];
     if(per==='prox')return x.d>=h&&x.e==='a';
@@ -1834,7 +1836,7 @@ function visAbrir(per,vend){
   if(per)VIS_F.per=per;if(vend!==undefined)VIS_F.v=vend;
   var dl=document.getElementById('dlg');
   if(!VIS_HOY){dl.innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">🗓 Visitas</div></div><div class="fb"><div style="color:var(--gris);padding:20px 0">Cargando…</div></div>';document.getElementById('ov2').classList.add('on');visLoad(function(){if(VIS_HOY)visAbrir();else dl.querySelector('.fb').innerHTML='<div style="color:var(--rojo);padding:20px 0">No pude cargar las visitas. Probá de nuevo.</div>';});return;}
-  var CH=[['hoy','Hoy'],['sem','Semana'],['prox','Próximas'],['sinres','Sin resultado'],['real','Realizadas'],['todas','Todas']],h=VIS_HOY,vs=_visVends();
+  var CH=[['hoy','Hoy'],['sem','Semana'],['prox','Próximas'],['sinres','Sin resultado'],['real','Realizadas'],['canc','Canceladas'],['todas','Todas']],h=VIS_HOY,vs=_visVends();
   var asc=VIS_F.per==='hoy'||VIS_F.per==='sem'||VIS_F.per==='prox',l=visFiltrar(VIS_F.per,VIS_F.v);
   if(asc)l=l.slice().sort(function(a,b){return a.d<b.d?-1:a.d>b.d?1:(a.h<b.h?-1:a.h>b.h?1:0);});
   var hoyD=new Date(h+'T12:00:00'),man=new Date(hoyD);man.setDate(man.getDate()+1);var ayer=new Date(hoyD);ayer.setDate(ayer.getDate()-1);
@@ -1844,24 +1846,29 @@ function visAbrir(per,vend){
   l.forEach(function(x){
     var d=new Date(x.d+'T12:00:00'),k=x.d===h?'Hoy':x.d===_vIso(man)?'Mañana':x.d===_vIso(ayer)?'Ayer':d.toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'});
     if(k!==last){html+='<div style="margin:12px 0 5px;font-size:12px;font-weight:700;color:var(--gris);text-transform:uppercase;letter-spacing:.04em">'+_vE(k)+'</div>';last=k;}
-    var bd=x.e==='a'?['Agendada','#eaf1ff','#2b4a8b']:x.e==='p'?['Falta resultado','#fff1e0','#b4620a']:[x.res||'Realizada','#e9f6ee','#2e7d4f'];
-    html+='<div onclick="'+(x.x?'visDet('+x.f+')':'closeDL();ficha(\''+_vE(x.id)+'\')')+'" style="display:flex;gap:10px;padding:9px 10px;border-radius:10px;margin-bottom:4px;cursor:pointer;background:#f6f8fc"><div style="min-width:44px;font-weight:700;color:#2b4a8b;font-size:13px">'+(x.h||'—')+'</div><div style="min-width:0;flex:1"><div style="font-size:13.5px;font-weight:700">'+(x.x?'🏢 ':'🏠 ')+_vE(x.dir)+(x.x?' <span style="background:#fff1e0;color:#b4620a;border-radius:6px;padding:1px 6px;font-size:10px;font-weight:700;vertical-align:middle;white-space:nowrap">OTRA INMOBILIARIA</span>':'')+'</div><div style="font-size:12px;color:var(--gris)">'+(x.x&&(x.im||x.co)?_vE(x.im||'')+(x.co?(x.im?' · ':'')+'colega '+_vE(x.co):'')+' · ':'')+_vE(x.cli||'—')+(x.v||x.c?' · 👤 '+_vE(x.v||x.c):'')+'</div></div><span style="align-self:center;background:'+bd[1]+';color:'+bd[2]+';border-radius:8px;padding:2px 8px;font-size:11px;font-weight:700;white-space:nowrap">'+_vE(bd[0])+'</span></div>';
+    var bd=x.e==='a'?['Agendada','#eaf1ff','#2b4a8b']:x.e==='p'?['Falta resultado','#fff1e0','#b4620a']:x.e==='c'?['Cancelada','#eee','#666']:[x.res||'Realizada','#e9f6ee','#2e7d4f'];
+    html+='<div onclick="visDet('+x.f+')" style="display:flex;gap:10px;padding:9px 10px;border-radius:10px;margin-bottom:4px;cursor:pointer;background:#f6f8fc'+(x.e==='c'?';opacity:.65':'')+'"><div style="min-width:44px;font-weight:700;color:#2b4a8b;font-size:13px">'+(x.h||'—')+'</div><div style="min-width:0;flex:1"><div style="font-size:13.5px;font-weight:700">'+(x.x?'🏢 ':'🏠 ')+_vE(x.dir)+(x.x?' <span style="background:#fff1e0;color:#b4620a;border-radius:6px;padding:1px 6px;font-size:10px;font-weight:700;vertical-align:middle;white-space:nowrap">OTRA INMOBILIARIA</span>':'')+'</div><div style="font-size:12px;color:var(--gris)">'+(x.x&&(x.im||x.co)?_vE(x.im||'')+(x.co?(x.im?' · ':'')+'colega '+_vE(x.co):'')+' · ':'')+_vE(x.cli||'—')+(x.v||x.c?' · 👤 '+_vE(x.v||x.c):'')+'</div></div><span style="align-self:center;background:'+bd[1]+';color:'+bd[2]+';border-radius:8px;padding:2px 8px;font-size:11px;font-weight:700;white-space:nowrap">'+_vE(bd[0])+'</span></div>';
   });
   if(!l.length)html+='<div style="color:var(--gris);padding:18px 0;text-align:center">No hay visitas en esta vista.</div>';
-  dl.innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">🗓 Visitas</div><div class="sub">Propias y a propiedades de otras inmobiliarias · tocá una para abrirla</div></div><div class="fb">'+html+'</div>';
+  dl.innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">🗓 Visitas</div><div class="sub">Propias y a propiedades de otras inmobiliarias · tocá una para ver el detalle</div></div><div class="fb">'+html+'</div>';
   document.getElementById('ov2').classList.add('on');
 }
 function visDet(f){
   var x=VIS.filter(function(v){return +v.f===+f;})[0];if(!x){visAbrir();return;}
   var row=function(a,b){return b?'<tr><td style="color:var(--gris);width:34%">'+a+'</td><td>'+b+'</td></tr>':'';};
   var lk=x.lk?(/^https?:\/\//i.test(x.lk)?'<a href="'+_vE(x.lk)+'" target="_blank" rel="noopener">'+_vE(x.lk)+'</a>':_vE(x.lk)):'';
-  var est=x.e==='a'?'Agendada':x.e==='p'?'Ya pasó · falta cargar el resultado':(x.res||'Realizada');
-  document.getElementById('dlg').innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">🏢 '+_vE(x.dir)+'</div><div class="sub">Visita con otra inmobiliaria</div></div><div class="fb"><table>'+row('Fecha',x.d.split('-').reverse().join('/')+(x.h?' · '+x.h:''))+row('Estado',_vE(est))+row('Inmobiliaria',_vE(x.im))+row('Colega',_vE(x.co))+row('Cliente',_vE(x.cli))+row('Teléfono',_vE(x.tel))+row('Vendedor',_vE(x.v||x.c))+row('Precio',_vE(x.pr))+row('Ficha',lk)+row('Detalle',_vE(x.obs).replace(/\n/g,'<br>'))+'</table><div class="dlbtns">'+(x.e!=='r'?'<button class="btn g" onclick="visExtForm(\''+_vE(x.id)+'\')">✅ Cargar resultado</button>':'')+'<button class="btn s" onclick="visBorrar('+x.f+')">🗑 Borrar</button><button class="btn s" onclick="visAbrir()">‹ Volver</button></div></div>';
+  var est=x.e==='a'?'Agendada':x.e==='p'?'Ya pasó · falta cargar el resultado':x.e==='c'?'Cancelada':(x.res||'Realizada'),pend=x.e==='a'||x.e==='p';
+  document.getElementById('dlg').innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">'+(x.x?'🏢 ':'🏠 ')+_vE(x.dir)+'</div><div class="sub">'+(x.x?'Visita con otra inmobiliaria':'Visita a una propiedad nuestra')+'</div></div><div class="fb"><table>'+row('Fecha',x.d.split('-').reverse().join('/')+(x.h?' · '+x.h:''))+row('Estado',_vE(est))+row('Inmobiliaria',_vE(x.im))+row('Colega',_vE(x.co))+row('Interesado',_vE(x.cli))+row('Teléfono',_vE(x.tel))+row('Vendedor',_vE(x.v||x.c))+row('Precio',_vE(x.pr))+row('Ficha',lk)+row('Detalle',_vE(x.obs).replace(/\n/g,'<br>'))+'</table><div class="dlbtns">'+(!x.x?'<button class="btn p" onclick="closeDL();ficha(\''+_vE(x.id)+'\')">🏠 Abrir ficha</button>':'')+(pend?'<button class="btn g" onclick="'+(x.x?'visExtForm(\''+_vE(x.id)+'\')':'closeDL();cargarForm(\''+_vE(x.id)+'\')')+'">✅ Cargar resultado</button><button class="btn s" onclick="visCancelar('+x.f+')">🚫 Cancelar visita</button>':'')+'<button class="btn s" onclick="visBorrar('+x.f+')">🗑 Borrar</button><button class="btn s" onclick="visAbrir()">‹ Volver</button></div></div>';
   document.getElementById('ov2').classList.add('on');
 }
 function visBorrar(f){
   if(!confirm('¿Borrar esta visita? No se puede deshacer.'))return;
   google.script.run.withSuccessHandler(function(){VIS=[];visLoad(function(){visAbrir();});novLoad();}).withFailureHandler(function(e){alert('Error: '+(e&&e.message?e.message:e));}).eliminarInteraccion(+f,_yo());
+}
+function visCancelar(f){
+  var m=prompt('Cancelar la visita: queda registrada como cancelada y se saca del Calendar.\nMotivo (opcional):','');
+  if(m===null)return;
+  google.script.run.withSuccessHandler(function(){VIS=[];VIS_F.per='canc';visLoad(function(){visAbrir();});novLoad();try{recargar();}catch(e){}}).withFailureHandler(function(e){alert('Error: '+(e&&e.message?e.message:e));}).cancelarVisita(+f,m.trim(),_yo());
 }
 function visExtForm(cod){
   var x=cod?VIS.filter(function(v){return v.id===cod;}).sort(function(a,b){return a.d<b.d?1:-1;})[0]:null,n=new Date(),loc=new Date(n.getTime()-n.getTimezoneOffset()*60000).toISOString().slice(0,16),hoy=_vIso(n),yo=_yo();
