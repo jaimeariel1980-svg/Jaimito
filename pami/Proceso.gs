@@ -414,7 +414,7 @@ function getTablero_(k) {
   } catch (e) { registrarError_('quién descartó', e); }
   for (let i = 1; i < d.length; i++) {
     const r = d[i];
-    if (!r[COL.nombre - 1]) continue;
+    if (!r[COL.nombre - 1] || String(r[COL.estado - 1]).trim() === ESTADO_DUP_) continue;
     let resp = [];
     try { resp = JSON.parse(r[COL.resp - 1] || '[]'); } catch (e) { }
     const dt = v => v instanceof Date ? fmt_(v, 'dd/MM/yyyy') : String(v || '');
@@ -626,6 +626,39 @@ function armarComunicacion(k, fila, tipo) {
     registrarHistorial_(r[COL.id - 1], r[COL.nombre - 1], 'Contacto', 'WhatsApp: ' + etq, 'tablero');
   }
   return { ok: true, url: 'https://wa.me/' + telWa_(r[COL.tel - 1]) + '?text=' + encodeURIComponent(texto), texto: texto };
+}
+
+const ESTADO_DUP_ = 'Duplicado (oculto)';
+
+function claveDup_(dni, email, tel, nombre) {
+  const d = String(dni || '').replace(/\D/g, ''), t = String(tel || '').replace(/\D/g, '').slice(-8);
+  const n = norm_(nombre).replace(/[^a-z ]/g, ' ').split(/\s+/).filter(Boolean).sort().join(' ');
+  return { d: d.length >= 6 ? d : '', e: String(email || '').trim().toLowerCase(), t: t.length >= 8 ? t : '', n: n.length > 5 ? n : '' };
+}
+
+function eliminarDuplicado(k, fila, id) {
+  soloAdmin_(k);
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const sh = hoja_('Candidatos');
+    fila = Number(fila);
+    const datos = sh.getDataRange().getValues();
+    if (!(fila >= 2 && fila <= datos.length)) throw new Error('Fila inválida');
+    const r = datos[fila - 1];
+    if (String(r[COL.id - 1]) !== String(id)) throw new Error('La lista cambió: actualizá y probá de nuevo');
+    const a = claveDup_(r[COL.dni - 1], r[COL.email - 1], r[COL.tel - 1], r[COL.nombre - 1]);
+    let keep = null;
+    for (let i = fila; i < datos.length; i++) {
+      const b = claveDup_(datos[i][COL.dni - 1], datos[i][COL.email - 1], datos[i][COL.tel - 1], datos[i][COL.nombre - 1]);
+      if (String(datos[i][COL.estado - 1]).trim() !== ESTADO_DUP_ && ((a.d && a.d === b.d) || (a.e && a.e === b.e) || (a.t && a.t === b.t) || (a.n && a.n === b.n))) { keep = datos[i]; break; }
+    }
+    if (!keep) throw new Error('No hay una ficha más nueva de la misma persona: no se elimina');
+    sh.getRange(fila, COL.estado).setValue(ESTADO_DUP_);
+    sh.getRange(fila, COL.mov).setValue(new Date());
+    registrarHistorial_(String(r[COL.id - 1]), String(r[COL.nombre - 1]), 'Duplicado eliminado', 'Estaba en "' + r[COL.estado - 1] + '". Se conserva la ficha ' + keep[COL.id - 1] + '. Para recuperarla, cambiar el Estado en la planilla.', 'tablero');
+    return true;
+  } finally { lock.releaseLock(); }
 }
 
 function borrarMarcaContacto(k, fila) {
