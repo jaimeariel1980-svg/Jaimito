@@ -636,28 +636,28 @@ function claveDup_(dni, email, tel, nombre) {
   return { d: d.length >= 6 ? d : '', e: String(email || '').trim().toLowerCase(), t: t.length >= 8 ? t : '', n: n.length > 5 ? n : '' };
 }
 
-function eliminarDuplicado(k, fila, id) {
-  soloAdmin_(k);
+function limpiarDuplicados_() {
   const lock = LockService.getScriptLock();
-  lock.waitLock(20000);
+  if (!lock.tryLock(5000)) return;
   try {
-    const sh = hoja_('Candidatos');
-    fila = Number(fila);
-    const datos = sh.getDataRange().getValues();
-    if (!(fila >= 2 && fila <= datos.length)) throw new Error('Fila inválida');
-    const r = datos[fila - 1];
-    if (String(r[COL.id - 1]) !== String(id)) throw new Error('La lista cambió: actualizá y probá de nuevo');
-    const a = claveDup_(r[COL.dni - 1], r[COL.email - 1], r[COL.tel - 1], r[COL.nombre - 1]);
-    let keep = null;
-    for (let i = fila; i < datos.length; i++) {
-      const b = claveDup_(datos[i][COL.dni - 1], datos[i][COL.email - 1], datos[i][COL.tel - 1], datos[i][COL.nombre - 1]);
-      if (String(datos[i][COL.estado - 1]).trim() !== ESTADO_DUP_ && ((a.d && a.d === b.d) || (a.e && a.e === b.e) || (a.t && a.t === b.t) || (a.n && a.n === b.n))) { keep = datos[i]; break; }
+    const sh = hoja_('Candidatos'), datos = sh.getDataRange().getValues();
+    const avance = r => [COL.notaScr, COL.notaComp, COL.notaP1, COL.notaP2].filter(c => String(r[c - 1] || '').trim()).length + (String(r[COL.estado - 1]).trim() === 'Contratado' ? 10 : 0);
+    const vistos = [];
+    let ocultos = 0;
+    for (let i = 1; i < datos.length && ocultos < 20; i++) {
+      const r = datos[i];
+      if (!r[COL.nombre - 1] || String(r[COL.estado - 1]).trim() === ESTADO_DUP_) continue;
+      const k = claveDup_(r[COL.dni - 1], r[COL.email - 1], '', r[COL.nombre - 1]), busq = r[COL.busq - 1];
+      const pos = vistos.findIndex(v => (k.d && k.d === v.k.d) || (k.e && k.e === v.k.e) || (k.n && k.n === v.k.n && busq === v.busq && !(k.d && v.k.d && k.d !== v.k.d)));
+      if (pos < 0) { vistos.push({ i: i, k: k, busq: busq }); continue; }
+      const p = vistos[pos].i, viejo = avance(datos[p]) > avance(r) ? i : p, quedan = viejo === i ? p : i;
+      sh.getRange(viejo + 1, COL.estado).setValue(ESTADO_DUP_);
+      sh.getRange(viejo + 1, COL.mov).setValue(new Date());
+      registrarHistorial_(String(datos[viejo][COL.id - 1]), String(datos[viejo][COL.nombre - 1]), 'Duplicado eliminado', 'Estaba en "' + datos[viejo][COL.estado - 1] + '". Se conserva la ficha ' + datos[quedan][COL.id - 1] + '. Para recuperarla, cambiar el Estado en la planilla.', 'sistema');
+      datos[viejo][COL.estado - 1] = ESTADO_DUP_;
+      vistos[pos] = { i: quedan, k: claveDup_(datos[quedan][COL.dni - 1], datos[quedan][COL.email - 1], '', datos[quedan][COL.nombre - 1]), busq: datos[quedan][COL.busq - 1] };
+      ocultos++;
     }
-    if (!keep) throw new Error('No hay una ficha más nueva de la misma persona: no se elimina');
-    sh.getRange(fila, COL.estado).setValue(ESTADO_DUP_);
-    sh.getRange(fila, COL.mov).setValue(new Date());
-    registrarHistorial_(String(r[COL.id - 1]), String(r[COL.nombre - 1]), 'Duplicado eliminado', 'Estaba en "' + r[COL.estado - 1] + '". Se conserva la ficha ' + keep[COL.id - 1] + '. Para recuperarla, cambiar el Estado en la planilla.', 'tablero');
-    return true;
   } finally { lock.releaseLock(); }
 }
 
