@@ -134,7 +134,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v127</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v128</small></div>
   <nav>
     <button class="ni" id="rf" onclick="actualizar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -967,7 +967,7 @@ function verAgenda(){
   var leer=function(){gs().withSuccessHandler(function(r){
     var e=document.getElementById('ag');if(!e)return;
     AG=r;
-    e.innerHTML=(r.avisos&&r.avisos.length?'<div style="background:#FDE3E1;border:1px solid #D9534F;color:#8B2E2B;border-radius:6px;padding:10px 12px;margin-bottom:10px;font-size:13px;font-weight:600">⚠ '+r.avisos.map(esc).join('<br>⚠ ')+'</div>':'')+'<div id="agB" style="display:flex;gap:8px;margin-bottom:6px"></div><div style="margin-bottom:8px"><button class="btn" onclick="exportarAgenda()">⬇ Exportar a Excel</button></div><div id="agl"></div>';
+    e.innerHTML=(r.avisos&&r.avisos.length?'<div style="background:#FDE3E1;border:1px solid #D9534F;color:#8B2E2B;border-radius:6px;padding:10px 12px;margin-bottom:10px;font-size:13px;font-weight:600">⚠ '+r.avisos.map(esc).join('<br>⚠ ')+'</div>':'')+(r.leidos&&r.leidos.length?'<div style="font-size:12px;color:#5D6B82;margin-bottom:8px">Calendarios que estoy leyendo (próximas 2 semanas): '+r.leidos.map(esc).join(' · ')+'</div>':'')+'<div id="agB" style="display:flex;gap:8px;margin-bottom:6px"></div><div style="margin-bottom:8px"><button class="btn" onclick="exportarAgenda()">⬇ Exportar a Excel</button></div><div id="agl"></div>';
     pintarAgenda();
   }).withFailureHandler(fer).getAgenda(K);};
   leer();

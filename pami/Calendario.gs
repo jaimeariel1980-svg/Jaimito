@@ -9,7 +9,7 @@ function calendarioPor_(id) {
   try { return CalendarApp.subscribeToCalendar(id); } catch (e) { return null; }
 }
 
-function estadoCalendarios_() {
+function estadoCalendarios_(leidos) {
   const aj = ajustes_(), avisos = [];
   const ahora = new Date(), desde = new Date(ahora.getTime() - 86400000), hasta = new Date(ahora.getTime() + 14 * 86400000);
   const lista = [{ n: 'PAMI 1', id: aj.calendario, cal: () => calendario_() }];
@@ -21,6 +21,7 @@ function estadoCalendarios_() {
     if (!cal) { avisos.push('Calendario ' + x.n + ': no puedo abrirlo (' + (x.id || 'sin configurar') + '). Compartilo con ' + CUENTA + ' con el permiso "Ver todos los detalles del evento" y aceptá la invitación desde esa cuenta.'); return; }
     let evs = [];
     try { evs = cal.getEvents(desde, hasta); } catch (e) { avisos.push('Calendario ' + x.n + ': no tengo permiso para leer sus eventos. Compartilo con ' + CUENTA + ' con "Ver todos los detalles del evento".'); return; }
+    if (leidos) leidos.push(x.n + ': ' + evs.length + ' turno' + (evs.length === 1 ? '' : 's'));
     const porMail = estadoPorMail_();
     const titulos = evs.map(e => tituloEvento_(e, porMail));
     if (titulos.length && titulos.every(t => !t || /^(ocupado|busy)$/i.test(t))) { avisos.push('Calendario ' + x.n + ': veo ' + titulos.length + ' turnos pero sin título (está compartido solo como libre/ocupado). Cambiá el permiso a "Ver todos los detalles del evento".'); return; }
