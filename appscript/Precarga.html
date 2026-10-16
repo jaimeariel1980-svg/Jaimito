@@ -423,7 +423,7 @@
           <div class="tk-sub">Crédito y expensas</div>
           <div class="tk-grid">
             <div class="field"><label>Crédito</label><select name="credito"><option value="">No especificado</option><option>Apto crédito</option><option>No elegible</option></select></div>
-            <div class="field"><label>Expensas <span class="opt">($)</span></label><input type="number" name="expensas" min="0" step="any"></div>
+            <div class="field"><label>Expensas <span class="opt">(en pesos)</span></label><input type="number" name="expensas" min="0" step="any"></div>
           </div>
         </div>
 
@@ -1180,13 +1180,13 @@
     'Cocheras': 'cocheras', 'Cocheras cubiertas': 'cocherasCubiertas', 'Cocheras descubiertas': 'cocherasDescubiertas',
     'Salas comunes': 'salasComunes', 'Comedores': 'comedores', 'Livings': 'livings', 'Salas de TV': 'salasTV',
     'Servicios': 'servicios', 'Ambientes (detalle)': 'ambientesDetalle', 'Adicionales': 'adicionales',
-    'Crédito': 'credito', 'Expensas ($)': 'expensas',
+    'Crédito': 'credito', ['Expensas (' + String.fromCharCode(36) + ')']: 'expensas', // sin el signo pesos literal: Apps Script rompe la página
     'Inscripción del dominio': 'inscripcionDominio'
   };
   // Precargas viejas (antes de los campos de Tokko): pasar sus datos a los campos nuevos
   function _completarDesdeViejos(r) {
     r = Object.assign({}, r);
-    const si = c => /^(si|sí|true|x|1)$/i.test(String(r[c] || '').trim());
+    const si = c => ['si', 'sí', 'true', 'x', '1'].indexOf(String(r[c] || '').trim().toLowerCase()) !== -1;
     const agregar = (col, viejos) => {
       if (String(r[col] || '').trim()) return;
       r[col] = viejos.filter(si).join(', ');
