@@ -5,7 +5,7 @@ on:
       proyecto:
         description: Qué proyecto
         type: choice
-        options: [pami, azcu]
+        options: [pami, azcu, liq]
         default: pami
       accion:
         description: bajar = copia el proyecto real al repo; publicar = sube el repo al proyecto
@@ -14,7 +14,7 @@ on:
         default: bajar
   push:
     branches: [main, claude/recruitment-automation-google-b1Ric]
-    paths: ['pami/**', 'appscript/**']
+    paths: ['pami/**', 'appscript/**', 'liquidaciones/**']
 permissions:
   contents: write
 concurrency: apps-script
@@ -27,6 +27,7 @@ jobs:
         include:
           - {id: pami, dir: pami, secret: CLASPRC_PAMI, depvar: DEPLOYMENT_PAMI}
           - {id: azcu, dir: appscript, secret: CLASPRC_AZCU, depvar: DEPLOYMENT_AZCU}
+          - {id: liq, dir: liquidaciones, secret: CLASPRC_PAMI, depvar: DEPLOYMENT_LIQ}
     steps:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0}
@@ -81,4 +82,4 @@ jobs:
         working-directory: ${{ matrix.dir }}
         run: |
           clasp push -f
-          clasp deploy -i "${{ vars[matrix.depvar] }}" -d "GitHub ${{ github.sha }}"
+          [ -n "${{ vars[matrix.depvar] }}" ] && clasp deploy -i "${{ vars[matrix.depvar] }}" -d "GitHub ${{ github.sha }}" || echo "sin deployment (proyecto con menú)"

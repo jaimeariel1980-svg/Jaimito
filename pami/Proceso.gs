@@ -390,6 +390,10 @@ function getTablero_(k) {
   admin_(k);
   if (ROL_ === 'Técnica') return tableroTecnica_();
   try { asegurarColumnas_(); } catch (e) { registrarError_('asegurar columnas', e); }
+  try {
+    const cache = CacheService.getScriptCache();
+    if (!cache.get('dup_chk')) { cache.put('dup_chk', '1', 300); limpiarDuplicados_(); }
+  } catch (e) { registrarError_('limpiar duplicados', e); }
   const aj = ajustes_();
   const d = hoja_('Candidatos').getDataRange().getValues();
   const cands = [];
@@ -414,7 +418,7 @@ function getTablero_(k) {
   } catch (e) { registrarError_('quién descartó', e); }
   for (let i = 1; i < d.length; i++) {
     const r = d[i];
-    if (!r[COL.nombre - 1]) continue;
+    if (!r[COL.nombre - 1] || String(r[COL.estado - 1]).trim() === ESTADO_DUP_) continue;
     let resp = [];
     try { resp = JSON.parse(r[COL.resp - 1] || '[]'); } catch (e) { }
     const dt = v => v instanceof Date ? fmt_(v, 'dd/MM/yyyy') : String(v || '');
@@ -626,6 +630,39 @@ function armarComunicacion(k, fila, tipo) {
     registrarHistorial_(r[COL.id - 1], r[COL.nombre - 1], 'Contacto', 'WhatsApp: ' + etq, 'tablero');
   }
   return { ok: true, url: 'https://wa.me/' + telWa_(r[COL.tel - 1]) + '?text=' + encodeURIComponent(texto), texto: texto };
+}
+
+const ESTADO_DUP_ = 'Duplicado (oculto)';
+
+function claveDup_(dni, email, tel, nombre) {
+  const d = String(dni || '').replace(/\D/g, ''), t = String(tel || '').replace(/\D/g, '').slice(-8);
+  const n = norm_(nombre).replace(/[^a-z ]/g, ' ').split(/\s+/).filter(Boolean).sort().join(' ');
+  return { d: d.length >= 6 ? d : '', e: String(email || '').trim().toLowerCase(), t: t.length >= 8 ? t : '', n: n.length > 5 ? n : '' };
+}
+
+function limpiarDuplicados_() {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) return;
+  try {
+    const sh = hoja_('Candidatos'), datos = sh.getDataRange().getValues();
+    const avance = r => [COL.notaScr, COL.notaComp, COL.notaP1, COL.notaP2].filter(c => String(r[c - 1] || '').trim()).length + (String(r[COL.estado - 1]).trim() === 'Contratado' ? 10 : 0);
+    const vistos = [];
+    let ocultos = 0;
+    for (let i = 1; i < datos.length && ocultos < 20; i++) {
+      const r = datos[i];
+      if (!r[COL.nombre - 1] || String(r[COL.estado - 1]).trim() === ESTADO_DUP_) continue;
+      const k = claveDup_(r[COL.dni - 1], r[COL.email - 1], r[COL.tel - 1], r[COL.nombre - 1]), busq = r[COL.busq - 1];
+      const pos = vistos.findIndex(v => (k.d && k.d === v.k.d) || (k.e && k.e === v.k.e) || (k.n && k.n === v.k.n && ((k.t && k.t === v.k.t) || (busq === v.busq && !(k.d && v.k.d && k.d !== v.k.d)))));
+      if (pos < 0) { vistos.push({ i: i, k: k, busq: busq }); continue; }
+      const p = vistos[pos].i, viejo = avance(datos[p]) > avance(r) ? i : p, quedan = viejo === i ? p : i;
+      sh.getRange(viejo + 1, COL.estado).setValue(ESTADO_DUP_);
+      sh.getRange(viejo + 1, COL.mov).setValue(new Date());
+      registrarHistorial_(String(datos[viejo][COL.id - 1]), String(datos[viejo][COL.nombre - 1]), 'Duplicado eliminado', 'Estaba en "' + datos[viejo][COL.estado - 1] + '". Se conserva la ficha ' + datos[quedan][COL.id - 1] + '. Para recuperarla, cambiar el Estado en la planilla.', 'sistema');
+      datos[viejo][COL.estado - 1] = ESTADO_DUP_;
+      vistos[pos] = { i: quedan, k: claveDup_(datos[quedan][COL.dni - 1], datos[quedan][COL.email - 1], datos[quedan][COL.tel - 1], datos[quedan][COL.nombre - 1]), busq: datos[quedan][COL.busq - 1] };
+      ocultos++;
+    }
+  } finally { lock.releaseLock(); }
 }
 
 function borrarMarcaContacto(k, fila) {

@@ -154,12 +154,13 @@ var FC=(function(){
       meta:{edad:v('m-edad'),localidad:v('m-loc'),familia:v('m-fam'),formacion:v('m-form'),empresaAct:v('m-emp'),puestoAct:v('m-pue'),antig:v('m-ant'),remAct:v('m-ra'),remPret:v('m-rp'),disp:v('m-disp'),motivo:v('m-mot'),movilidad:v('m-mov'),referencias:v('m-ref')}});
   }
   function setSi(sel,v){var e=$(sel);if(e&&v&&!String(e.value||'').trim())e.value=v;}
+  function sumaSi(sel,v){var e=$(sel);v=String(v||'').trim();if(!e||!v)return;var c=String(e.value||'').trim();if(!c)e.value=v;else if(c.toLowerCase().indexOf(v.toLowerCase())<0)e.value=c+'\n'+v;e.dispatchEvent(new Event('input',{bubbles:true}));}
   function aplicar(r,texto){
-    D.comps.forEach(function(k){var x=(r.comps||[]).filter(function(c){return c.id===k.id;})[0];if(!x)return;if(x.nivel>0&&!S.niv[k.id])nivel(k.id,x.nivel);setSi('[data-n="'+k.id+'"]',x.evidencia);});
-    setSi('#fort',r.fortalezas);setSi('#area',r.areas);setSi('#rec',r.recomendacion);
+    D.comps.forEach(function(k){var x=(r.comps||[]).filter(function(c){return c.id===k.id;})[0];if(!x)return;if(x.nivel>0&&!S.niv[k.id])nivel(k.id,x.nivel);sumaSi('[data-n="'+k.id+'"]',x.evidencia);});
+    sumaSi('#fort',r.fortalezas);sumaSi('#area',r.areas);sumaSi('#rec',r.recomendacion);
     var M={edad:'m-edad',localidad:'m-loc',familia:'m-fam',formacion:'m-form',empresaAct:'m-emp',puestoAct:'m-pue',antig:'m-ant',remAct:'m-ra',remPret:'m-rp',disp:'m-disp',motivo:'m-mot',movilidad:'m-mov',referencias:'m-ref'};
     for(var k in M)setSi('#'+M[k],(r.meta||{})[k]);
-    var st=$('#iaSt');st.style.color='#1E8E5A';st.textContent='✓ Formulario completado por la IA. Revisá todo antes de guardar.';
+    var st=$('#iaSt');st.style.color='#1E8E5A';st.textContent='✓ Formulario completado por la IA (lo que ya habías escrito se mantuvo y se le sumó). Revisá todo antes de guardar.';
     $('#iaBox').insertAdjacentHTML('beforeend','<details style="margin-top:10px"><summary style="cursor:pointer;font-size:13px;font-weight:700;color:#034EA2">Ver transcripción</summary><div style="white-space:pre-wrap;font-size:12px;max-height:240px;overflow:auto;margin-top:6px;color:#3F4B66">'+esc(texto)+'</div></details>');
     $('#iaBox').scrollIntoView({behavior:'smooth'});
   }

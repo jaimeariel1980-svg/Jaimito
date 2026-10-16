@@ -26,3 +26,4 @@ build/
 # Apps Script (clasp)
 !pami/*.json
 !appscript/*.json
+!liquidaciones/*.json

@@ -265,7 +265,7 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '40';
+const ESQUEMA = '41';
 
 function actualizarEsquema_() {
   try { asegurarColumnas_(); } catch (e) { registrarError_('asegurar columnas', e); }
@@ -461,7 +461,8 @@ function actualizarEsquema_() {
       const k = d.findIndex(r => String(r[0]).trim() === 'link_agenda_tecnica_poli2');
       // Link indicado por Ever (una sola vez, para no pisar cambios posteriores hechos en la planilla).
       if (k > 0 && !props.getProperty('LINK_TEC_P2')) { aj.getRange(k + 1, 2).setValue('https://calendar.app.google/py2AipafSEZVxhUY8'); props.setProperty('LINK_TEC_P2', '1'); }
-    }
+    },
+    () => asegurarAjustes_([['calendario_tecnica', ''], ['calendario_tecnica_poli2', '']])
   ];
   let ok = true;
   pasos.forEach(f => { try { f(); } catch (e) { ok = false; registrarError_('actualizarEsquema', e); } });
@@ -621,11 +622,14 @@ function agregarCandidato_(o) {
     const datos = sh.getDataRange().getValues();
     const dni = String(o.dni || '').replace(/\D/g, '');
     const email = String(o.email || '').trim().toLowerCase();
+    const kn = claveDup_('', '', '', o.nombre).n;
+    const kt = claveDup_('', '', o.tel, '').t;
     for (let i = 1; i < datos.length; i++) {
-      if (datos[i][COL.busq - 1] !== (o.busq || '')) continue;
       const dniE = String(datos[i][COL.dni - 1] || '').replace(/\D/g, '');
       const mailE = String(datos[i][COL.email - 1] || '').trim().toLowerCase();
       if ((dni && dniE === dni) || (email && mailE === email)) return 'DUPLICADO';
+      if (kn && kt && claveDup_('', '', datos[i][COL.tel - 1], datos[i][COL.nombre - 1]).t === kt && claveDup_('', '', '', datos[i][COL.nombre - 1]).n === kn) return 'DUPLICADO';
+      if (kn && datos[i][COL.busq - 1] === (o.busq || '') && claveDup_('', '', '', datos[i][COL.nombre - 1]).n === kn && !(dni && dniE && dni !== dniE)) return 'DUPLICADO';
     }
     const file = o.archivo();
     const row = new Array(HEAD_CAND.length).fill('');
@@ -887,7 +891,7 @@ function ciclo() {
   const lock = LockService.getUserLock();
   if (!lock.tryLock(1000)) return;
   try {
-    [actualizarEsquema_, procesarCorreos, procesarCarpeta, procesarPendientes, completarDomicilios_, verificarDomicilios_, sugerirPendientes_, syncCalendario].forEach(fn => { try { fn(); } catch (e) { registrarError_(fn.name, e); } });
+    [actualizarEsquema_, limpiarDuplicados_, procesarCorreos, procesarCarpeta, procesarPendientes, completarDomicilios_, verificarDomicilios_, sugerirPendientes_, syncCalendario].forEach(fn => { try { fn(); } catch (e) { registrarError_(fn.name, e); } });
   } finally { lock.releaseLock(); }
 }
 
