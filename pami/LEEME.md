@@ -26,7 +26,7 @@ Todo se edita desde el Sheet: Busquedas, Preguntas, Screening_Eval, Screening_Va
 ## Agenda de citas (Google Calendar)
 1. En Google Calendar de dotacionpp1 → Crear → "Agenda de citas" (una por tipo de entrevista).
 2. El título de la agenda tiene que incluir la palabra: `Screening`, `Competencias` o `Técnica`.
-3. Copiar el link público de cada agenda en la pestaña Ajustes: `link_agenda_screening`, `link_agenda_competencias`, `link_agenda_pami2` (esta última es la de la entrevista técnica).
+3. Copiar el link público de cada agenda en la pestaña Ajustes: `link_agenda_screening`, `link_agenda_competencias`, `link_agenda_tecnica` (entrevista técnica con los jefes de Enfermería).
 4. Los mensajes de WhatsApp (pestaña Plantillas) mandan ese link. Cuando el candidato reserva, el sistema lo detecta solo (cada 10 min) por su mail o por el nombre que figura entre paréntesis en el evento, pasa a "Screening agendado" (o Competencias/Técnica) y muestra día y hora en la tarjeta, la ficha y Agenda. Mientras tanto la tarjeta dice "Contactado para screening · sin agendar" (en amarillo) y Agenda los lista en "Contactados · todavía sin agendar".
 5. Los turnos reservados que no coinciden con ningún candidato aparecen en Agenda como "sin candidato asociado".
 
@@ -36,7 +36,7 @@ Ejecutar `verificarInstalacion()`. Las páginas muestran el error real. Si la UR
 ## Dos policlínicos (PAMI 1 y PAMI 2)
 - PAMI 1 usa el calendario de dotacionpp1; PAMI 2, el de dotacionpp2 (Ajustes → `calendario_poli2`).
 - dotacionpp2 le comparte su calendario a dotacionpp1 con permiso "Ver todos los detalles de los eventos" (o "Hacer cambios en eventos" para que el tablero cree citas ahí). El sistema lee los dos calendarios y asocia cada turno al candidato.
-- Links de agenda por policlínico: PAMI 1 usa `link_agenda_screening`, `link_agenda_competencias`, `link_agenda_pami2`; PAMI 2 usa las mismas claves con sufijo `_poli2`. Si falta el de PAMI 2, se usa el de PAMI 1.
+- Links de agenda por policlínico: PAMI 1 usa `link_agenda_screening`, `link_agenda_competencias`, `link_agenda_tecnica`; PAMI 2 usa las mismas claves con sufijo `_poli2`. Si a un candidato de PAMI 2 le falta su link, el tablero avisa (no manda el de PAMI 1). Las claves viejas `link_agenda_pami2(_poli2)` se renombraron solas a `link_agenda_tecnica(_poli2)`.
 - El mensaje de WhatsApp elige el link según el policlínico del candidato (el confirmado, o el sugerido).
 - Los títulos de las agendas siguen llevando `Screening`, `Competencias` o `Técnica`.
 - El calendario de PAMI 2 (dotacionpp2) tiene que estar compartido con dotacionpp1 con el permiso **«Ver todos los detalles del evento»** y la invitación aceptada. Si no, la Agenda muestra un cartel rojo explicando qué falta (el sistema también intenta suscribirse solo).

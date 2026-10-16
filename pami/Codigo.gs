@@ -122,7 +122,7 @@ function setup() {
   asegurarAjustes_([
     ['nombre_cliente', 'PAMI'], ['firma', 'Equipo de Atracción y Elección'], ['asunto_mail', 'Proceso de selección · PAMI'],
     ['umbral_a', '8.5'], ['umbral_bplus', '8'], ['umbral_b', '6.5'], ['dias_alerta', '7'],
-    ['calendario', ''], ['url_web', ''], ['link_agenda', ''], ['link_agenda_screening', ''], ['link_agenda_competencias', ''], ['link_agenda_pami2', ''], ['carpeta_informes', ''], ['calendario_poli2', 'dotacionpp2@gmail.com'], ['link_agenda_screening_poli2', ''], ['link_agenda_competencias_poli2', ''], ['link_agenda_pami2_poli2', ''],
+    ['calendario', ''], ['url_web', ''], ['link_agenda', ''], ['link_agenda_screening', ''], ['link_agenda_competencias', ''], ['link_agenda_tecnica', ''], ['carpeta_informes', ''], ['calendario_poli2', 'dotacionpp2@gmail.com'], ['link_agenda_screening_poli2', ''], ['link_agenda_competencias_poli2', ''], ['link_agenda_pami2_poli2', ''],
     ['peso_cv', '10'], ['peso_screening', '15'], ['peso_competencias', '35'], ['peso_tecnica', '40'],
     ['duracion_screening', '30'], ['duracion_competencias', '60'], ['duracion_pami2', '60'],
     ['direccion_policlinico_1', 'Sarmiento 373, Rosario, Santa Fe, Argentina'], ['direccion_policlinico_2', 'Olive 1159, Rosario, Santa Fe, Argentina']
@@ -265,7 +265,7 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '39';
+const ESQUEMA = '40';
 
 function actualizarEsquema_() {
   try { asegurarColumnas_(); } catch (e) { registrarError_('asegurar columnas', e); }
@@ -297,7 +297,7 @@ function actualizarEsquema_() {
     () => asegurarAjustes_([['zona_max_km', '40']]),
     () => repararLocalidades_(),
     () => asegurarAjustes_([['sesion_inactividad_horas', '8'], ['sesion_recordar_dias', '30']]),
-    () => asegurarAjustes_([['calendario_poli2', 'dotacionpp2@gmail.com'], ['link_agenda_screening_poli2', ''], ['link_agenda_competencias_poli2', ''], ['link_agenda_pami2_poli2', '']]),
+    () => asegurarAjustes_([['calendario_poli2', 'dotacionpp2@gmail.com'], ['link_agenda_screening_poli2', ''], ['link_agenda_competencias_poli2', ''], ['link_agenda_tecnica_poli2', '']]),
     () => asegurarAjustes_([['direccion_policlinico_1', 'Sarmiento 373, Rosario, Santa Fe, Argentina'], ['direccion_policlinico_2', 'Olive 1159, Rosario, Santa Fe, Argentina']]),
     () => {
       const pl = hoja_('Plantillas'), filas = pl.getDataRange().getValues();
@@ -442,6 +442,25 @@ function actualizarEsquema_() {
       const i = d.findIndex(r => String(r[0]).trim() === 'carpeta_docs_poli2');
       if (i > 0 && !String(d[i][1] || '').trim()) aj.getRange(i + 1, 2).setValue('1C0HSI69hoCWhVN2UW0aBG8lTs5hV5ZGO');
       try { DriveApp.getFolderById('1C0HSI69hoCWhVN2UW0aBG8lTs5hV5ZGO').getName(); } catch (e) { registrarError_('carpeta_docs_poli2: dotacionpp1 no tiene acceso (compartir como Editor)', e); }
+    },
+    () => {
+      // Links de la agenda de entrevista técnica (jefes de Enfermería), uno por policlínico.
+      // Las claves viejas link_agenda_pami2(_poli2) se renombran conservando el valor.
+      const aj = hoja_('Ajustes');
+      [['link_agenda_pami2', 'link_agenda_tecnica'], ['link_agenda_pami2_poli2', 'link_agenda_tecnica_poli2']].forEach(x => {
+        const d = aj.getDataRange().getValues();
+        const i = d.findIndex(r => String(r[0]).trim() === x[0]);
+        const j = d.findIndex(r => String(r[0]).trim() === x[1]);
+        if (j < 1) { if (i > 0) aj.getRange(i + 1, 1).setValue(x[1]); else aj.appendRow([x[1], '']); return; }
+        if (i > 0) {
+          if (!String(d[j][1] || '').trim() && String(d[i][1] || '').trim()) aj.getRange(j + 1, 2).setValue(d[i][1]);
+          aj.deleteRow(i + 1);
+        }
+      });
+      const d = aj.getDataRange().getValues();
+      const k = d.findIndex(r => String(r[0]).trim() === 'link_agenda_tecnica_poli2');
+      // Link indicado por Ever (una sola vez, para no pisar cambios posteriores hechos en la planilla).
+      if (k > 0 && !props.getProperty('LINK_TEC_P2')) { aj.getRange(k + 1, 2).setValue('https://calendar.app.google/py2AipafSEZVxhUY8'); props.setProperty('LINK_TEC_P2', '1'); }
     }
   ];
   let ok = true;
