@@ -855,9 +855,9 @@ function generarResumenEnf_(cv, obs, indic) {
     const resp = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {
       method: 'post', contentType: 'application/json', muteHttpExceptions: true,
       headers: { Authorization: 'Bearer ' + prop_('OPENAI_API_KEY') },
-      payload: JSON.stringify({ model: 'gpt-4o-mini', temperature: 0.1, max_tokens: 300, messages: [
-        { role: 'system', content: 'Redactá un resumen OBJETIVO y neutral (máximo 4 líneas, un solo párrafo) de un candidato de enfermería para los jefes de enfermería. Contenido: formación, experiencia (instituciones, funciones, períodos) y las observaciones del entrevistador tal como fueron registradas, incluyendo las reservas y los aspectos a mejorar con el mismo peso que lo favorable. Prohibido: adjetivos elogiosos o valorativos (excelente, sólido, destacado, cálido, comprometido, ideal), conclusiones sobre idoneidad y recomendaciones. Si un dato no consta, no lo completes. Usá solo hechos presentes en el texto. No menciones notas, puntajes, sueldos o pretensión salarial, sindicatos ni si conviene contratar o descartar. Español rioplatense, tono de informe.' },
-        { role: 'user', content: ('CV: ' + cv + '\nObservaciones del entrevistador:\n' + obs).slice(0, 4000) + (String(indic || '').trim() ? '\n\nINDICACIONES (aplicalas sin dejar de ser objetivo ni inventar datos): ' + String(indic).trim().slice(0, 300) : '') }] })
+      payload: JSON.stringify({ model: 'gpt-4o-mini', temperature: 0.2, max_tokens: 900, messages: [
+        { role: 'system', content: 'Redactá el resumen de un candidato de enfermería para los jefes que lo van a entrevistar: tienen que quedarse con una foto clara de la persona antes de verla. Extensión: 2 o 3 párrafos cortos (unas 10 a 14 líneas en total), no una síntesis telegráfica. Contenido: (1) quién es: formación, trayectoria y experiencia con instituciones, servicios, funciones y períodos, y su situación actual; (2) cómo se lo percibió en las entrevistas: estilo de comunicación, actitud, motivación, cómo se desenvolvió, ejemplos o situaciones que contó, tal como lo registraron los entrevistadores; (3) fortalezas observadas y aspectos a trabajar o reservas, con el mismo peso, y qué convendría profundizar en la entrevista técnica. Podés usar lenguaje descriptivo y matices, atribuyendo las percepciones a los entrevistadores, sin exagerar ni embellecer. Prohibido: letras de calificación (A, B, C), puntajes, niveles numéricos o datos duros de evaluación, sueldo o pretensión salarial, sindicatos, y decir si conviene contratar o descartar. Usá solo hechos presentes en el texto; si un dato no consta, no lo completes. Español rioplatense, tono de informe profesional.' },
+        { role: 'user', content: ('CV: ' + cv + '\nObservaciones del entrevistador:\n' + obs).slice(0, 6000) + (String(indic || '').trim() ? '\n\nINDICACIONES (aplicalas sin dejar de ser objetivo ni inventar datos): ' + String(indic).trim().slice(0, 300) : '') }] })
     });
     const parsed = JSON.parse(resp.getContentText());
     const t = parsed.choices && parsed.choices[0] && String(parsed.choices[0].message.content || '').trim();
@@ -892,7 +892,7 @@ function getFichaEnfermeria_(k, fila, forzar, indic, crear) {
     experiencia: [sd.posAct || cm.puestoAct, sd.empresaAct || cm.empresaAct].filter(Boolean).join(' · '), antig: cm.antig || ''
   };
   const cv = String(r[COL.resumen - 1] || '').trim();
-  const obs = [S.comentario, C.recomendacion, C.fortalezas ? 'Fortalezas: ' + C.fortalezas : '', C.areas ? 'A desarrollar: ' + C.areas : ''].map(x => String(x || '').trim()).filter(Boolean).join('\n');
+  const obs = [S.comentario, C.recomendacion, C.fortalezas ? 'Fortalezas: ' + C.fortalezas : '', C.areas ? 'A desarrollar: ' + C.areas : '', (C.comps || []).filter(x => x && x.notas).map(x => x.nombre + ': ' + x.notas).join('\n')].map(x => String(x || '').trim()).filter(Boolean).join('\n');
   const h = hash_(cv + '|' + obs);
   let guardado = null;
   try { guardado = JSON.parse(r[COL.fichaEnf - 1] || 'null'); } catch (e) { }
