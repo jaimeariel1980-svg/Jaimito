@@ -134,10 +134,9 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v114</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v115</small></div>
   <nav>
-    <button class="ni" id="rf" onclick="FICHAS={};cargar()"><span class="ic g">↻</span><b>Actualizar</b></button>
-    <button class="ni" title="Limpia la memoria de la pantalla y la vuelve a cargar desde cero. Tu sesión se mantiene." onclick="recargarApp(this)"><span class="ic g">🧹</span><b>Recargar</b></button>
+    <button class="ni" id="rf" onclick="actualizar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
     <button class="ni" onclick="verDireccion()"><span class="ic b">📊</span><b>Informe</b></button>
     <button class="ni" onclick="vistaPreview()"><span class="ic g">🩺</span><b>Vista técnica</b></button>
@@ -308,14 +307,10 @@ function fer(e){alert('Error: '+(e&&e.message?e.message:e));}
 function gs(){return google.script.run;}
 function byFila(f){return D.cands.find(function(x){return x.fila===f;});}
 
-function recargarApp(btn){
-  btn.querySelector('b').textContent='Recargando…';
-  var fin=function(){location.reload();};
-  try{FICHAS={};}catch(e){}
-  var p=[];
-  try{if(window.caches)p.push(caches.keys().then(function(k){return Promise.all(k.map(function(n){return caches.delete(n);}));}));}catch(e){}
-  try{if(navigator.serviceWorker)p.push(navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister();}));}));}catch(e){}
-  Promise.all(p).then(fin,fin);setTimeout(fin,2500);
+function actualizar(){
+  FICHAS={};
+  try{if(window.caches)caches.keys().then(function(k){k.forEach(function(n){caches.delete(n);});});}catch(e){}
+  cargar();
 }
 function cargar(){
   var rf=document.querySelector('#rf b');rf.textContent='Actualizando…';
