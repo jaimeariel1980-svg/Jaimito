@@ -64,7 +64,7 @@ label.l{display:block;font-size:11px;font-weight:800;letter-spacing:.06em;text-t
     var t=ta.value.trim();if(t.length<8){msg('Escribí o dictá algo primero');return;}
     var old=btn.textContent,ind=(ta.id==='fichaTxt'&&document.getElementById('fichaInd'))?document.getElementById('fichaInd').value:'';btn.disabled=true;btn.textContent=ta.id==='fichaTxt'?'Corrigiendo…':'Redactando…';
     google.script.run.withSuccessHandler(function(r){btn.disabled=false;btn.textContent=old;ta._prev=ta.value;ta.value=r;ta.dispatchEvent(new Event('input',{bubbles:true}));und.style.display='';})
-      .withFailureHandler(function(e){btn.disabled=false;btn.textContent=old;alert('No se pudo '+(ta.id==='fichaTxt'?'corregir':'redactar')+': '+((e&&e.message)||e));}).redactarIA(K_(),ta.value,ind);
+      .withFailureHandler(function(e){btn.disabled=false;btn.textContent=old;alert('No se pudo '+(ta.id==='fichaTxt'?'corregir':'redactar')+': '+((e&&e.message)||e));}).redactarIA(K_(),ta.value,ind,ta.id==='fichaTxt'?'resumen':'');
   }
   function attach(ta){
     if(ta.dataset.ia||ta.id==='gM'||(typeof D!=='undefined'&&D&&D.tecnica))return;ta.dataset.ia='1';
