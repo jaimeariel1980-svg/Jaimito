@@ -2448,24 +2448,24 @@ function agendarVisita(codigo, datos){
   return {ok:true, eventId:ev.getId()};
 }
 
-var SEG_EXT_ = ['Cargó','Inmobiliaria (otra)','Dirección (otra inmobiliaria)','Link ficha (otra)','Precio (otra)'];
+var SEG_EXT_ = ['Cargó','Inmobiliaria (otra)','Dirección (otra inmobiliaria)','Link ficha (otra)','Precio (otra)','Colega (otra)'];
 function registrarVisitaExterna(datos){
   datos = datos||{};
-  var cli = String(datos.interesado||'').trim(), dir = String(datos.dir||'').trim(), inmob = String(datos.inmob||'').trim(), link = String(datos.link||'').trim(), precio = String(datos.precio||'').trim(), codigo = String(datos.codigo||'').trim(), i;
+  var cli = String(datos.interesado||'').trim(), dir = String(datos.dir||'').trim(), inmob = String(datos.inmob||'').trim(), link = String(datos.link||'').trim(), precio = String(datos.precio||'').trim(), colega = String(datos.colega||'').trim(), codigo = String(datos.codigo||'').trim(), i;
   if(!cli) throw new Error('Falta el nombre del cliente');
   var seg = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento');
   if(!seg) throw new Error('No existe la pestaña Seguimiento');
   SEG_EXT_.forEach(function(n, k){ var c = seg.getRange(1, 11+k); if(!String(c.getValue()).trim()) c.setValue(n); });
   if(codigo){
     var v = seg.getDataRange().getValues();
-    for(i=1;i<v.length;i++) if(String(v[i][0]).trim()===codigo){ dir = dir||String(v[i][12]||'').trim(); inmob = inmob||String(v[i][11]||'').trim(); link = link||String(v[i][13]||'').trim(); precio = precio||String(v[i][14]||'').trim(); break; }
+    for(i=1;i<v.length;i++) if(String(v[i][0]).trim()===codigo){ dir = dir||String(v[i][12]||'').trim(); inmob = inmob||String(v[i][11]||'').trim(); link = link||String(v[i][13]||'').trim(); precio = precio||String(v[i][14]||'').trim(); colega = colega||String(v[i][15]||'').trim(); break; }
   } else codigo = 'EXT-'+Date.now().toString(36).toUpperCase();
   if(!dir) throw new Error('Falta la dirección de la propiedad');
   var tz = 'GMT-3', quien = String(datos.quien||datos.cargo||'').trim(), vend = String(datos.vendedor||quien).trim(), tel = String(datos.tel||'').trim(), obs = String(datos.obs||'').trim(), fecha, res, prox = '', fprox = '';
   if(datos.cuando){
     var ini = new Date(datos.cuando); if(isNaN(ini.getTime())) throw new Error('Fecha u hora inválidas');
     if(_visitaDuplicada_('', cli, 'Visita '+Utilities.formatDate(ini, tz, 'dd/MM/yyyy HH:mm'), dir)) return {ok:true, codigo:codigo, duplicada:true};
-    var opts = {description:'Visita a una propiedad de otra inmobiliaria'+(inmob?': '+inmob:'')+'\nCliente: '+cli+'\nTel: '+tel+(link?'\nFicha: '+link:'')+(precio?'\nPrecio: '+precio:''), location:dir}, inv = [];
+    var opts = {description:'Visita a una propiedad de otra inmobiliaria'+(inmob?': '+inmob:'')+'\nCliente: '+cli+'\nTel: '+tel+(colega?'\nColega: '+colega:'')+(link?'\nFicha: '+link:'')+(precio?'\nPrecio: '+precio:''), location:dir}, inv = [];
     if(datos.mail) inv.push(String(datos.mail).trim());
     try{ var uv = vend && typeof azcuUsuarioDe_==='function' ? azcuUsuarioDe_(vend) : null; if(uv && uv.activo && uv.mail && inv.indexOf(uv.mail)<0) inv.push(uv.mail); }catch(e){ Logger.log('Invitado vendedor: '+e.message); }
     if(inv.length){ opts.guests = inv.join(','); opts.sendInvitations = true; }
@@ -2482,7 +2482,7 @@ function registrarVisitaExterna(datos){
       }catch(e){ Logger.log('Error Calendar recordatorio: '+e.message); }
     }
   }
-  seg.appendRow([codigo, fecha, 'Visita', cli, tel, res, prox, fprox, obs, vend, quien, inmob, dir, link, precio]);
+  seg.appendRow([codigo, fecha, 'Visita', cli, tel, res, prox, fprox, obs, vend, quien, inmob, dir, link, precio, colega]);
   _invalidaNovedades_();
   return {ok:true, codigo:codigo};
 }
