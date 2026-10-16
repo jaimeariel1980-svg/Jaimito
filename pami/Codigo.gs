@@ -621,11 +621,12 @@ function agregarCandidato_(o) {
     const datos = sh.getDataRange().getValues();
     const dni = String(o.dni || '').replace(/\D/g, '');
     const email = String(o.email || '').trim().toLowerCase();
+    const kn = claveDup_('', '', '', o.nombre).n;
     for (let i = 1; i < datos.length; i++) {
-      if (datos[i][COL.busq - 1] !== (o.busq || '')) continue;
       const dniE = String(datos[i][COL.dni - 1] || '').replace(/\D/g, '');
       const mailE = String(datos[i][COL.email - 1] || '').trim().toLowerCase();
       if ((dni && dniE === dni) || (email && mailE === email)) return 'DUPLICADO';
+      if (kn && datos[i][COL.busq - 1] === (o.busq || '') && claveDup_('', '', '', datos[i][COL.nombre - 1]).n === kn) return 'DUPLICADO';
     }
     const file = o.archivo();
     const row = new Array(HEAD_CAND.length).fill('');
