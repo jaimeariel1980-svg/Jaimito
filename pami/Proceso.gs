@@ -738,7 +738,7 @@ function getAgenda(k) {
   try { evs = eventosCal_(new Date(), new Date(Date.now() + 60 * 86400000)); } catch (e) { registrarError_('leer calendarios agenda', e); }
   for (let i = 1; i < d.length; i++) {
     const c = citaObj_(d[i][COL.cita - 1]);
-    if (!c || c.ts < desde || !d[i][COL.nombre - 1]) continue;
+    if (!c || c.ts < desde || !d[i][COL.nombre - 1] || String(d[i][COL.estado - 1]).trim() === ESTADO_DUP_) continue;
     const cand = candDe_(d[i]);
     const ev = evs.find(e => fmt_(e.inicio, 'yyyy-MM-dd HH:mm') === c.ts && eventoEsDe_(e, cand));
     const origen = ev ? ev.poli : '', asignado = String(d[i][COL.policlinico - 1] || '').trim();
@@ -748,8 +748,9 @@ function getAgenda(k) {
   let sin = [];
   try { sin = citasSinCandidato_(evs); } catch (e) { registrarError_('citas sin candidato', e); }
   let avisos = [];
-  try { avisos = estadoCalendarios_(); } catch (e) { registrarError_('estado calendarios', e); }
-  return { citas: citas, sinAsignar: sin, avisos: avisos };
+  const leidos = [];
+  try { avisos = estadoCalendarios_(leidos); } catch (e) { registrarError_('estado calendarios', e); }
+  return { citas: citas, sinAsignar: sin, avisos: avisos, leidos: leidos };
 }
 
 function postulacionPdf(k, fila) {
