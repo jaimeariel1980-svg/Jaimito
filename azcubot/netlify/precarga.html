@@ -237,6 +237,12 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
     margin-bottom:0;
   }
 
+  .tk-sub{font-weight:700;color:var(--navy);font-size:13.5px;margin:16px 0 8px;padding-top:12px;border-top:1px solid var(--line);}
+  .tk-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px 14px;}
+  .tk-chk{display:grid;grid-template-columns:repeat(3,1fr);gap:8px 14px;}
+  .tk-chk label{display:flex;align-items:center;gap:6px;font-weight:400;font-size:13px;margin:0;}
+  @media (max-width:560px){ .tk-grid,.tk-chk{grid-template-columns:1fr 1fr;} }
+
   .btn{
     display:inline-flex;align-items:center;gap:6px;
     border:none;border-radius:8px;
@@ -441,41 +447,67 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
         <div class="field"><label>Entrecalle 1 *</label><input type="text" name="entrecalle1" required></div>
         <div class="field"><label>Entrecalle 2 *</label><input type="text" name="entrecalle2" required></div>
 
-        <div class="field"><label>Superficie Total <span class="opt">(m², solo números)</span></label><input type="number" name="superficieTotal" min="0"></div>
-        <div class="field"><label>Superficie Construida - Cubierta <span class="opt">(m², solo números)</span></label><input type="number" name="superficieCubierta" min="0"></div>
+        <!-- Campos iguales a la ficha de Tokko -->
+        <div class="field full">
+          <div class="tk-sub">Superficies y medidas</div>
+          <div class="tk-grid">
+            <div class="field"><label>Terreno <span class="opt">(m²)</span></label><input type="number" name="superficieTotal" min="0" step="any"></div>
+            <div class="field"><label>Descubierta <span class="opt">(m²)</span></label><input type="number" name="superficieDescubierta" min="0" step="any"></div>
+            <div class="field"><label>Superficie cubierta <span class="opt">(m²)</span></label><input type="number" name="superficieCubierta" min="0" step="any"></div>
+            <div class="field"><label>Superficie semicubierta <span class="opt">(m²)</span></label><input type="number" name="superficieSemicubierta" min="0" step="any"></div>
+            <div class="field"><label>Total construido <span class="opt">(m²)</span></label><input type="number" name="totalConstruido" min="0" step="any"></div>
+            <div class="field"><label>Frente <span class="opt">(m)</span></label><input type="number" name="frente" min="0" step="any"></div>
+            <div class="field"><label>Fondo <span class="opt">(m)</span></label><input type="number" name="fondo" min="0" step="any"></div>
+          </div>
 
-        <div class="field"><label>Cantidad de Dormitorios <span class="opt">(solo números)</span></label><input type="number" name="dormitorios" min="0"></div>
-        <div class="field"><label>Cantidad de Ambientes <span class="opt">(sin contar dormitorios)</span></label><input type="number" name="ambientes" min="0"></div>
+          <div class="tk-sub">Características generales</div>
+          <div class="tk-grid">
+            <div class="field"><label>Ambientes</label><input type="number" name="ambientesTotal" min="0" step="any"></div>
+            <div class="field"><label>Antigüedad <span class="opt">(años o «A estrenar»)</span></label><input type="text" name="antiguedad" list="antList" inputmode="numeric" placeholder="Ej: 15 o A estrenar" autocomplete="off"><datalist id="antList"><option value="A estrenar"></datalist></div>
+            <div class="field"><label>Baños</label><input type="number" name="baños" min="0" step="any"></div>
+            <div class="field"><label>Condición</label><select name="condicion"><option value="">---</option><option>Regular</option><option>A refaccionar</option><option>Reciclado</option><option>Bueno</option><option>Muy bueno</option><option>Excelente</option><option>En reforma</option><option>Semi nuevo</option><option>Usado</option></select></div>
+            <div class="field"><label>Dormitorios</label><input type="number" name="dormitorios" min="0" step="any"></div>
+            <div class="field"><label>Ocupación</label><select name="ocupacion"><option value="">---</option><option>Habitada</option><option>Vacía</option><option>Propietario</option><option>Inquilino</option><option>Constructora</option></select></div>
+            <div class="field"><label>Orientación</label><select name="orientacion"><option value="">---</option><option>Norte</option><option>Sur</option><option>Este</option><option>Oeste</option><option>Noroeste</option><option>Noreste</option><option>Sudeste</option><option>Sudoeste</option></select></div>
+            <div class="field"><label>Plantas</label><input type="number" name="plantas" min="0" step="any"></div>
+            <div class="field"><label>Suites</label><input type="number" name="suites" min="0" step="any"></div>
+            <div class="field"><label>Suites con placares</label><input type="number" name="suitesPlacares" min="0" step="any"></div>
+            <div class="field"><label>Toilettes</label><input type="number" name="toilettes" min="0" step="any"></div>
+            <div class="field"><label>Zonificación</label><input type="text" name="zonificacion" list="zonList" placeholder="Ej: urbano" autocomplete="off"><datalist id="zonList"><option value="urbano"><option value="residencial"><option value="comercial"><option value="industrial"><option value="rural"></datalist></div>
+          </div>
 
-        <div class="field"><label>Cantidad de Baños <span class="opt">(solo números)</span></label><input type="number" name="baños" min="0"></div>
-        <div class="field"><label>Plantas <span class="opt">(opcional, solo números)</span></label><input type="number" name="plantas" min="0"></div>
+          <div class="tk-sub">Cocheras</div>
+          <div class="tk-grid">
+            <div class="field"><label>Cocheras</label><input type="number" name="cocheras" min="0" step="any"></div>
+            <div class="field"><label>Cocheras cubiertas</label><input type="number" name="cocherasCubiertas" min="0" step="any"></div>
+            <div class="field"><label>Cocheras descubiertas</label><input type="number" name="cocherasDescubiertas" min="0" step="any"></div>
+          </div>
 
-        <div class="field">
-          <label>Orientación <span class="opt">(opcional)</span></label>
-          <select name="orientacion">
-            <option value="">— Seleccionar —</option>
-            <option>Norte</option><option>Sur</option><option>Este</option><option>Oeste</option>
-            <option>Noroeste</option><option>Noreste</option><option>Sudeste</option><option>Sudoeste</option>
-          </select>
+          <div class="tk-sub">Salas comunes</div>
+          <div class="tk-grid">
+            <div class="field"><label>Salas comunes</label><input type="number" name="salasComunes" min="0" step="any"></div>
+            <div class="field"><label>Comedores</label><input type="number" name="comedores" min="0" step="any"></div>
+            <div class="field"><label>Livings</label><input type="number" name="livings" min="0" step="any"></div>
+            <div class="field"><label>Salas de TV</label><input type="number" name="salasTV" min="0" step="any"></div>
+          </div>
+
+          <div class="tk-sub">Servicios</div>
+          <div class="tk-chk"><label><input type="checkbox" name="servicios" value="Agua Corriente" data-lista="1"> Agua Corriente</label><label><input type="checkbox" name="servicios" value="Cable" data-lista="1"> Cable</label><label><input type="checkbox" name="servicios" value="Cloaca" data-lista="1"> Cloaca</label><label><input type="checkbox" name="servicios" value="Electricidad" data-lista="1"> Electricidad</label><label><input type="checkbox" name="servicios" value="Gas Natural" data-lista="1"> Gas Natural</label><label><input type="checkbox" name="servicios" value="Internet" data-lista="1"> Internet</label><label><input type="checkbox" name="servicios" value="Pavimento" data-lista="1"> Pavimento</label><label><input type="checkbox" name="servicios" value="Teléfono" data-lista="1"> Teléfono</label><label><input type="checkbox" name="servicios" value="Wifi" data-lista="1"> Wifi</label></div>
+          <div class="tk-sub">Ambientes</div>
+          <div class="tk-chk"><label><input type="checkbox" name="ambientesDetalle" value="Altillo" data-lista="1"> Altillo</label><label><input type="checkbox" name="ambientesDetalle" value="Balcón" data-lista="1"> Balcón</label><label><input type="checkbox" name="ambientesDetalle" value="Baulera" data-lista="1"> Baulera</label><label><input type="checkbox" name="ambientesDetalle" value="Biblioteca" data-lista="1"> Biblioteca</label><label><input type="checkbox" name="ambientesDetalle" value="Cocina" data-lista="1"> Cocina</label><label><input type="checkbox" name="ambientesDetalle" value="Comedor diario" data-lista="1"> Comedor diario</label><label><input type="checkbox" name="ambientesDetalle" value="Dependencia" data-lista="1"> Dependencia</label><label><input type="checkbox" name="ambientesDetalle" value="Escritorio" data-lista="1"> Escritorio</label><label><input type="checkbox" name="ambientesDetalle" value="Galería" data-lista="1"> Galería</label><label><input type="checkbox" name="ambientesDetalle" value="Patio delantero" data-lista="1"> Patio delantero</label><label><input type="checkbox" name="ambientesDetalle" value="Patio trasero" data-lista="1"> Patio trasero</label></div>
+          <div class="tk-sub">Adicionales</div>
+          <div class="tk-chk"><label><input type="checkbox" name="adicionales" value="Aire Acondicionado individual" data-lista="1"> Aire Acondicionado individual</label><label><input type="checkbox" name="adicionales" value="Alarma" data-lista="1"> Alarma</label><label><input type="checkbox" name="adicionales" value="Amoblado" data-lista="1"> Amoblado</label><label><input type="checkbox" name="adicionales" value="Apto mascotas" data-lista="1"> Apto mascotas</label><label><input type="checkbox" name="adicionales" value="Apto profesional" data-lista="1"> Apto profesional</label><label><input type="checkbox" name="adicionales" value="Calefacción" data-lista="1"> Calefacción</label><label><input type="checkbox" name="adicionales" value="Calefacción central" data-lista="1"> Calefacción central</label><label><input type="checkbox" name="adicionales" value="Calefacción individual" data-lista="1"> Calefacción individual</label><label><input type="checkbox" name="adicionales" value="Calefacción por aire" data-lista="1"> Calefacción por aire</label></div>
+
+          <div class="tk-sub">Crédito y expensas</div>
+          <div class="tk-grid">
+            <div class="field"><label>Crédito</label><select name="credito"><option value="">No especificado</option><option>Apto crédito</option><option>No elegible</option></select></div>
+            <div class="field"><label>Expensas <span class="opt">($)</span></label><input type="number" name="expensas" min="0" step="any"></div>
+          </div>
         </div>
-
-        <div class="field"><label>Antigüedad de la construcción <span class="opt">(años, o elegí «A estrenar»)</span></label><input type="text" name="antiguedad" list="antList" inputmode="numeric" placeholder="Ej: 15 o A estrenar" autocomplete="off"><datalist id="antList"><option value="A estrenar"></datalist></div>
-        <div class="field"></div>
 
         <div class="field full">
           <label>Inscripción del dominio <span class="opt">(opcional — se completa automáticamente al leer la escritura)</span></label>
           <input type="text" name="inscripcionDominio" placeholder="Ej: Matrícula 12.345, Folio Real de Rosario">
-        </div>
-
-        <div class="field full">
-          <label>Características adicionales <span class="opt">(opcional)</span></label>
-          <div class="toggle-group" style="flex-wrap:wrap;gap:10px 18px;">
-            <label><input type="checkbox" name="cochera"> Cochera</label>
-            <label><input type="checkbox" name="patioDelantero"> Patio delantero</label>
-            <label><input type="checkbox" name="patioTrasero"> Patio trasero</label>
-            <label><input type="checkbox" name="gasNatural"> Gas Natural</label>
-            <label><input type="checkbox" name="cloaca"> Cloaca</label>
-          </div>
         </div>
       </div>
     </div>
@@ -1059,7 +1091,9 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
     { key: 'litoral_gas',        label: 'Litoral Gas',          obligatorio: false },
     { key: 'autorizacion_venta', label: 'Autorización de venta',obligatorio: false },
     { key: 'declaratoria_herederos', label: 'Declaratoria de herederos', obligatorio: false },
-    { key: 'expensas',              label: 'Expensas',                 obligatorio: false }
+    { key: 'expensas',              label: 'Expensas',                 obligatorio: false },
+    { key: 'usufructo',             label: 'Usufructo',                obligatorio: false },
+    { key: 'certificado_defuncion', label: 'Certificado de defunción', obligatorio: false }
   ];
 
   function toggleTipoPropiedadOtro(sel) {
@@ -1203,12 +1237,34 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
     'Calle': 'calle', 'Número': 'numero', 'Departamento': 'departamento', 'Piso': 'piso',
     'Pasillo': 'pasillo', 'Entrecalle 1': 'entrecalle1', 'Entrecalle 2': 'entrecalle2', 'Ciudad': 'ciudad',
     'Tipo de propiedad': 'tipoPropiedad', 'Superficie Total (m2)': 'superficieTotal',
-    'Superficie Cubierta (m2)': 'superficieCubierta', 'Dormitorios': 'dormitorios',
-    'Ambientes (sin dormitorios)': 'ambientes', 'Baños': 'baños', 'Plantas': 'plantas', 'Cochera': 'cochera',
-    'Patio delantero': 'patioDelantero', 'Patio trasero': 'patioTrasero',
-    'Gas Natural': 'gasNatural', 'Cloaca': 'cloaca', 'Antigüedad (años)': 'antiguedad',
-    'Orientación': 'orientacion', 'Inscripción del dominio': 'inscripcionDominio'
+    'Superficie Descubierta (m2)': 'superficieDescubierta', 'Superficie Cubierta (m2)': 'superficieCubierta',
+    'Superficie Semicubierta (m2)': 'superficieSemicubierta', 'Total construido (m2)': 'totalConstruido',
+    'Frente (m)': 'frente', 'Fondo (m)': 'fondo',
+    'Ambientes': 'ambientesTotal', 'Antigüedad (años)': 'antiguedad', 'Baños': 'baños', 'Condición': 'condicion',
+    'Dormitorios': 'dormitorios', 'Ocupación': 'ocupacion', 'Orientación': 'orientacion', 'Plantas': 'plantas',
+    'Suites': 'suites', 'Suites con placares': 'suitesPlacares', 'Toilettes': 'toilettes', 'Zonificación': 'zonificacion',
+    'Cocheras': 'cocheras', 'Cocheras cubiertas': 'cocherasCubiertas', 'Cocheras descubiertas': 'cocherasDescubiertas',
+    'Salas comunes': 'salasComunes', 'Comedores': 'comedores', 'Livings': 'livings', 'Salas de TV': 'salasTV',
+    'Servicios': 'servicios', 'Ambientes (detalle)': 'ambientesDetalle', 'Adicionales': 'adicionales',
+    'Crédito': 'credito', 'Expensas ($)': 'expensas',
+    'Inscripción del dominio': 'inscripcionDominio'
   };
+  // Precargas viejas (antes de los campos de Tokko): pasar sus datos a los campos nuevos
+  function _completarDesdeViejos(r) {
+    r = Object.assign({}, r);
+    const si = c => /^(si|sí|true|x|1)$/i.test(String(r[c] || '').trim());
+    const agregar = (col, viejos) => {
+      if (String(r[col] || '').trim()) return;
+      r[col] = viejos.filter(si).join(', ');
+    };
+    agregar('Servicios', ['Gas Natural', 'Cloaca']);
+    agregar('Ambientes (detalle)', ['Patio delantero', 'Patio trasero']);
+    if (String(r['Cocheras'] || '') === '' && si('Cochera')) r['Cocheras'] = 1;
+    const sinDorm = r['Ambientes (sin dormitorios)'];
+    if (String(r['Ambientes'] || '') === '' && sinDorm !== undefined && String(sinDorm) !== '' && !isNaN(+sinDorm))
+      r['Ambientes'] = +sinDorm + (+r['Dormitorios'] || 0);
+    return r;
+  }
   const CAMPOS_DUEÑO = ['nombre', 'dni', 'fechaNac', 'nacionalidad', 'domicilio', 'pasillo', 'celular', 'email'];
   const COLUMNAS_DUEÑO = ['Nombre y Apellido', 'DNI', 'Fecha de Nacimiento', 'Nacionalidad', 'Domicilio', 'Pasillo', 'Celular', 'E-mail'];
 
@@ -1254,9 +1310,10 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
     const form = document.getElementById('form-precarga');
 
     // Sección 2: propiedad
+    const regProp = _completarDesdeViejos(registro);
     Object.keys(MAPA_PROPIEDAD).forEach(header => {
       const campo = MAPA_PROPIEDAD[header];
-      const valor = registro[header];
+      const valor = regProp[header];
       if (valor === undefined || valor === '') return;
       _asignarValorCampo(form, campo, valor);
     });
@@ -1328,6 +1385,9 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
     const primero = elementos[0];
     if (primero.type === 'radio') {
       elementos.forEach(el => { el.checked = (el.value === valor); });
+    } else if (primero.type === 'checkbox' && primero.dataset.lista) {
+      const elegidos = String(valor).split(',').map(s => s.trim().toLowerCase());
+      elementos.forEach(el => { el.checked = elegidos.indexOf(el.value.toLowerCase()) !== -1; });
     } else if (primero.type === 'checkbox') {
       primero.checked = (valor === 'Si' || valor === true);
     } else if (primero.type === 'date' && typeof valor === 'string' && valor) {
@@ -1572,6 +1632,11 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
     Array.from(form.elements).forEach(el => {
       if (!el.name || el.type === 'file' || el.type === 'submit') return;
       if (el.type === 'radio') { if (el.checked) datos[el.name] = el.value; return; }
+      if (el.type === 'checkbox' && el.dataset.lista) {
+        const marcados = Array.from(form.querySelectorAll('input[name="' + el.name + '"]:checked')).map(x => x.value);
+        datos[el.name] = marcados.join(', ');
+        return;
+      }
       if (el.type === 'checkbox') { datos[el.name] = el.checked ? 'Si' : 'No'; return; }
       datos[el.name] = el.value;
     });
