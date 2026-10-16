@@ -146,6 +146,7 @@ function syncCalendario() {
   if (!CAL_FALLO_) { P.setProperty('CAL_N', String(CAL_N_)); P.setProperty('CAL_BAJA', '0'); }
   const sh = hoja_('Candidatos');
   const d = sh.getDataRange().getValues();
+  let revertidos = 0;
   for (let i = 1; i < d.length; i++) {
     const r = d[i];
     if (!r[COL.nombre - 1]) continue;
@@ -168,6 +169,15 @@ function syncCalendario() {
       if (actual > -1 && actual <= ETAPAS.indexOf(etapa) && estado !== AGENDADO[etapa]) {
         setEstado_(sh, fila, AGENDADO[etapa], null);
         registrarHistorial_(r[COL.id - 1], r[COL.nombre - 1], 'Agenda', TIPO_ETAPA[etapa] + ' agendado: ' + fmt_(prox.inicio, 'dd/MM/yyyy HH:mm') + (prox.titulo ? ' (' + prox.titulo + ')' : ''), 'calendario');
+      }
+    }
+    else {
+      const estadoAg = String(r[COL.estado - 1]).trim(), etapaAg = ETAPAS.find(e => AGENDADO[e] === estadoAg);
+      if (etapaAg && revertidos < 15 && !suyos.some(e => etapaDeTitulo_(e.titulo) === etapaAg)) {
+        const vuelta = ESTADOS_COL[ETAPAS.indexOf(etapaAg)][2];
+        setEstado_(sh, fila, vuelta, null);
+        registrarHistorial_(r[COL.id - 1], r[COL.nombre - 1], 'Agenda', TIPO_ETAPA[etapaAg] + ': la cita ya no está en el calendario, vuelve a "' + vuelta + '"', 'calendario');
+        revertidos++;
       }
     }
   }
