@@ -62,7 +62,7 @@ function cambiarPin(k, nuevo) { return conTec_(() => cambiarPin_(k, nuevo)); }
 function registrarAcceso(k, accion) { return conTec_(() => registrarAcceso_(k, accion)); }
 function getFichaEnfermeria(k, fila, forzar, indic, crear) { return conTec_(() => getFichaEnfermeria_(k, fila, forzar, indic, crear)); }
 function getCVArchivo(k, fila) { return conTec_(() => getCVArchivo_(k, fila)); }
-function redactarIA(k, texto, indic) { return redactarIA_(k, texto, indic); }
+function redactarIA(k, texto, indic, modo) { return redactarIA_(k, texto, indic, modo); }
 function analizarEntrevista(k, id, texto) { return analizarEntrevista_(k, id, texto); }
 function transcribirAudio(k, b64, mime) { return transcribirAudio_(k, b64, mime); }
 
@@ -816,16 +816,17 @@ function getResumen_(k, fila) {
   return JSON.stringify(out);
 }
 
-function redactarIA_(k, texto, indic) {
+function redactarIA_(k, texto, indic, modo) {
   escritor_(k);
   texto = String(texto || '').trim();
   if (texto.length < 8) throw new Error('Escribí o dictá algo primero');
+  const res = modo === 'resumen';
   const resp = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {
     method: 'post', contentType: 'application/json', muteHttpExceptions: true,
     headers: { Authorization: 'Bearer ' + prop_('OPENAI_API_KEY') },
-    payload: JSON.stringify({ model: 'gpt-4o-mini', temperature: 0.3, max_tokens: 700, messages: [
-      { role: 'system', content: 'Reescribís las notas de un entrevistador de selección de personal (enfermería). Español rioplatense, profesional, claro y conciso; corregí ortografía y puntuación. NO inventes datos, nombres, cifras ni conclusiones que no estén en el texto, y no agregues juicios nuevos: mantené los hechos y el sentido, y el género gramatical que use el texto (no cambies enfermera por enfermero ni al revés). Si son varios puntos, devolvelos en viñetas cortas que empiecen con "• ". Devolvé solo el texto resultante, sin comillas ni explicaciones.' },
-      { role: 'user', content: texto.slice(0, 3000) + (String(indic || '').trim() ? '\n\nINDICACIONES (aplicalas sin dejar de ser objetivo ni inventar datos): ' + String(indic).trim().slice(0, 300) : '') }] })
+    payload: JSON.stringify({ model: 'gpt-4o-mini', temperature: 0.3, max_tokens: res ? 900 : 700, messages: [
+      { role: 'system', content: res ? 'Te paso un resumen ya escrito de una persona candidata de enfermería. Reescribilo de forma que quede mejor: más claro, fluido y cercano, bien redactado y con más detalle del perfil si el texto lo permite, sin inventar datos. No lo conviertas en viñetas ni en una lista: tiene que seguir siendo texto corrido en 2 o 3 párrafos. ' + promptResumenEnf_() + ' Devolvé solo el texto resultante, sin comillas ni explicaciones.' : 'Reescribís las notas de un entrevistador de selección de personal (enfermería). Español rioplatense, profesional, claro y conciso; corregí ortografía y puntuación. NO inventes datos, nombres, cifras ni conclusiones que no estén en el texto, y no agregues juicios nuevos: mantené los hechos y el sentido, y el género gramatical que use el texto (no cambies enfermera por enfermero ni al revés). Si son varios puntos, devolvelos en viñetas cortas que empiecen con "• ". Devolvé solo el texto resultante, sin comillas ni explicaciones.' },
+      { role: 'user', content: texto.slice(0, res ? 6000 : 3000) + (String(indic || '').trim() ? '\n\nINDICACIONES (aplicalas sin dejar de ser objetivo ni inventar datos): ' + String(indic).trim().slice(0, 300) : '') }] })
   });
   const parsed = JSON.parse(resp.getContentText());
   if (parsed.error) throw new Error('No pude redactar: ' + parsed.error.message);
@@ -850,13 +851,17 @@ function transcribirAudio_(k, b64, mime) {
 
 function hash_(t) { let h = 5381; const x = String(t); for (let i = 0; i < x.length; i++) h = ((h << 5) + h + x.charCodeAt(i)) | 0; return String(h); }
 
+function promptResumenEnf_() {
+  return 'Redactá el resumen de un candidato de enfermería para los jefes que lo van a entrevistar: tienen que quedarse con una foto clara de la persona antes de verla. Extensión: 2 o 3 párrafos cortos (unas 10 a 14 líneas en total), no una síntesis telegráfica. Empezá siempre por el nombre de pila de la persona, en tono cercano y natural, como si se la presentaras a un colega (por ejemplo: "Sofía es enfermera profesional, tiene 8 años de experiencia..."), y seguí hablando de ella por su nombre o con el pronombre que corresponda. Contenido: (1) quién es: formación, trayectoria y experiencia con instituciones, servicios, funciones y períodos, y su situación actual; (2) cómo se lo percibió en las entrevistas: estilo de comunicación, actitud, motivación, cómo se desenvolvió, ejemplos o situaciones que contó, tal como lo registraron los entrevistadores; (3) fortalezas observadas y aspectos a trabajar o reservas, con el mismo peso, y qué convendría profundizar en la entrevista técnica. Podés usar lenguaje descriptivo y matices, atribuyendo las percepciones a los entrevistadores, sin exagerar ni embellecer. Prohibido: letras de calificación (A, B, C), puntajes, niveles numéricos o datos duros de evaluación, sueldo o pretensión salarial, sindicatos, y decir si conviene contratar o descartar. Usá solo hechos presentes en el texto; si un dato no consta, no lo completes. Respetá el género gramatical de la persona según su nombre de pila (si es una mujer: enfermera, ella, la candidata; si es un varón: enfermero, él, el candidato), también en los títulos que figuren como "Enfermero/a" o "Lic./Lic.": adaptalos. Si el nombre es ambiguo, usá formas neutras (profesional de enfermería, la persona). Español rioplatense, tono de informe profesional.';
+}
+
 function generarResumenEnf_(cv, obs, indic, nombre) {
   try {
     const resp = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {
       method: 'post', contentType: 'application/json', muteHttpExceptions: true,
       headers: { Authorization: 'Bearer ' + prop_('OPENAI_API_KEY') },
       payload: JSON.stringify({ model: 'gpt-4o-mini', temperature: 0.2, max_tokens: 900, messages: [
-        { role: 'system', content: 'Redactá el resumen de un candidato de enfermería para los jefes que lo van a entrevistar: tienen que quedarse con una foto clara de la persona antes de verla. Extensión: 2 o 3 párrafos cortos (unas 10 a 14 líneas en total), no una síntesis telegráfica. Contenido: (1) quién es: formación, trayectoria y experiencia con instituciones, servicios, funciones y períodos, y su situación actual; (2) cómo se lo percibió en las entrevistas: estilo de comunicación, actitud, motivación, cómo se desenvolvió, ejemplos o situaciones que contó, tal como lo registraron los entrevistadores; (3) fortalezas observadas y aspectos a trabajar o reservas, con el mismo peso, y qué convendría profundizar en la entrevista técnica. Podés usar lenguaje descriptivo y matices, atribuyendo las percepciones a los entrevistadores, sin exagerar ni embellecer. Prohibido: letras de calificación (A, B, C), puntajes, niveles numéricos o datos duros de evaluación, sueldo o pretensión salarial, sindicatos, y decir si conviene contratar o descartar. Usá solo hechos presentes en el texto; si un dato no consta, no lo completes. Respetá el género gramatical de la persona según su nombre de pila (si es una mujer: enfermera, ella, la candidata; si es un varón: enfermero, él, el candidato), también en los títulos que figuren como "Enfermero/a" o "Lic./Lic.": adaptalos. Si el nombre es ambiguo, usá formas neutras (profesional de enfermería, la persona). Español rioplatense, tono de informe profesional.' },
+        { role: 'system', content: promptResumenEnf_() },
         { role: 'user', content: ('Candidato/a: ' + String(nombre || '').trim() + '\nCV: ' + cv + '\nObservaciones del entrevistador:\n' + obs).slice(0, 6000) + (String(indic || '').trim() ? '\n\nINDICACIONES (aplicalas sin dejar de ser objetivo ni inventar datos): ' + String(indic).trim().slice(0, 300) : '') }] })
     });
     const parsed = JSON.parse(resp.getContentText());
