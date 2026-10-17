@@ -662,7 +662,7 @@ function azcuTools_(){
     t('enviar_whatsapp','Deja un botón para abrir WhatsApp con el mensaje armado. Con id va por defecto al primer propietario; sin id (captación nueva, texto libre) el usuario elige el contacto.',{id:S, que:{type:'string',enum:['encuesta','formulario_captacion','link_tokko','ubicacion','documento','texto_libre']}, documento:S, telefono:S, texto:S},['que']),
     t('generar_pdf','Genera el PDF de la ficha de una propiedad y lo deja en el chat para descargar o compartir.',{id:S},['id']),
     t('proponer_cargar_interaccion','Registrar una consulta o visita ya ocurrida en una propiedad NUESTRA (que está en el sistema); si es de otra inmobiliaria usá proponer_visita_externa. Queda pendiente de confirmación.',{id:S, interesado:S, telefono:S, via:{type:'string',enum:AZCU_VIAS}, resultado:{type:'string',enum:AZCU_RESULTADOS}, proximo_paso:S, observaciones:{type:'string',description:'Detalle completo de lo que pasó'}},['id','interesado','via','resultado']),
-    t('visitas','Visitas del equipo, propias y a propiedades de OTRAS inmobiliarias: hoy, esta semana, próximas, realizadas o un rango. Usala para "qué visitas hay hoy", "cuántas visitas hizo X", "visitas externas", etc. Cada visita trae su fila (para cancelarla).',{periodo:{type:'string',enum:['hoy','semana','proximas','realizadas','canceladas','rango']}, desde:F, hasta:F, vendedor:S, solo_externas:{type:'boolean'}}),
+    t('visitas','Visitas del equipo, propias y a propiedades de OTRAS inmobiliarias: hoy, esta semana, próximas, realizadas o un rango. Usala para "qué visitas hay hoy", "cuántas visitas hizo X", "visitas externas", etc. Cada visita trae su fila (para cancelarla).',{periodo:{type:'string',enum:['hoy','semana','proximas','pendientes','realizadas','canceladas','todas','rango']}, texto:{type:'string',description:'Filtra por dirección, inmobiliaria, colega o cliente'}, desde:F, hasta:F, vendedor:S, solo_externas:{type:'boolean'}}),
     t('datos_tecnicos','Datos técnicos de una propiedad (superficies, ambientes, cochera, patios, servicios, antigüedad, orientación, etc.). Usala cuando pidan datos técnicos o más detalles de una propiedad.',{id:S},['id']),
     t('papelera','Papelera de reciclaje: propiedades, visitas/interacciones y documentos borrados en los últimos 30 días, que se pueden restaurar. Cada uno trae su id.',{}),
     t('proponer_restaurar','Restaurar algo de la papelera (usar el id de la herramienta papelera). Pendiente de confirmación.',{id:S},['id']),
@@ -674,8 +674,8 @@ function azcuTools_(){
     t('proponer_editar_campos','Editar datos de la propiedad o del primer propietario. Pendiente de confirmación.',{id:S, precio:S, observaciones:S, tipo:S, link_tokko:S, origen:S, colega:S, contacto_colega:S, comision:S, vendedor:S, motivo_suspension:S, pct_aviso:{type:'string',description:'0 a 100'}, propietario_nombre:S, propietario_telefono:S, propietario_mail:S, propietario_dni:S, propietario_domicilio:S, plazo_boleto:{type:'string',description:'Fecha AAAA-MM-DD del plazo para firmar el boleto'}, boleto_firmado:{type:'string',description:'Fecha AAAA-MM-DD en que se firmó el boleto'}, plazo_escritura:{type:'string',description:'Fecha AAAA-MM-DD del plazo de la escritura'}, escritura_firmada:{type:'string',description:'Fecha AAAA-MM-DD en que se firmó la escritura'}},['id']),
     t('proponer_marcar_documento','Marcar un documento como cargado o pendiente. Pendiente de confirmación.',{id:S, documento:S, estado:{type:'string',enum:['cargado','pendiente']}},['id','documento','estado']),
     t('proponer_borrar_documento','Borrar un documento subido (se saca de Drive). Pendiente de confirmación.',{id:S, documento:S},['id','documento']),
-    t('proponer_editar_interaccion','Corregir una interacción del historial (usar la fila de la ficha). Pendiente de confirmación.',{id:S, fila:{type:'number'}, fecha:F, via:S, interesado:S, telefono:S, resultado:S, proximo_paso:S, observaciones:S},['id','fila']),
-    t('proponer_eliminar_interaccion','Borrar una interacción del historial (usar la fila de la ficha). Pendiente de confirmación.',{id:S, fila:{type:'number'}},['id','fila']),
+    t('proponer_editar_interaccion','Corregir una interacción del historial (usar la fila de la ficha). Para una visita con OTRA inmobiliaria: id = codigo_externa y fila = fila (ambos de la herramienta visitas); ahí también se puede corregir inmobiliaria, direccion, colega, link y precio. Pendiente de confirmación.',{id:S, fila:{type:'number'}, fecha:F, via:S, interesado:S, telefono:S, resultado:S, proximo_paso:S, observaciones:S, inmobiliaria:S, direccion:S, colega:S, link:S, precio:S},['id','fila']),
+    t('proponer_eliminar_interaccion','Borrar una interacción del historial (usar la fila de la ficha). Para una visita con OTRA inmobiliaria: id = codigo_externa y fila = fila de la herramienta visitas. Pendiente de confirmación.',{id:S, fila:{type:'number'}},['id','fila']),
     t('proponer_eliminar_propiedad','Eliminar una propiedad del maestro. Irreversible. Pendiente de confirmación.',{id:S},['id']),
     t('proponer_enviar_reporte','Enviar por mail el informe de gestión a los propietarios. Pendiente de confirmación.',{id:S},['id'])
   ];
@@ -685,10 +685,12 @@ function azcuFechaAr_(iso){ return /^\d{4}-\d{2}-\d{2}$/.test(iso||'') ? iso.spl
 function azcuSegFila_(p, fila){ var i, s = p.seg||[]; for(i=0;i<s.length;i++) if(+s[i]._row===+fila) return s[i]; return null; }
 function azcuSumaDias_(iso, n){ var p = iso.split('-'); return Utilities.formatDate(new Date(Date.UTC(+p[0], +p[1]-1, +p[2]+n, 12)), 'UTC', 'yyyy-MM-dd'); }
 function azcuHerrVisitas_(a, ctx){
-  var per = a.periodo||'hoy', dv = azcuVisitasData_(60, 60), hn = dv.hoy, wd = new Date(hn+'T12:00:00Z').getUTCDay(), lun = azcuSumaDias_(hn, -((wd+6)%7)), dom = azcuSumaDias_(lun, 6), vq = azcuSlug_(a.vendedor||'');
+  var per = a.periodo||'hoy', dv = azcuVisitasData_(60, 60), hn = dv.hoy, wd = new Date(hn+'T12:00:00Z').getUTCDay(), lun = azcuSumaDias_(hn, -((wd+6)%7)), dom = azcuSumaDias_(lun, 6), vq = azcuSlug_(a.vendedor||''), tkv = azcuTokens_(a.texto||'');
   var l = dv.items.filter(function(x){
     if(x.e==='c' && per!=='canceladas' && per!=='rango') return false;
     if(per==='canceladas' && x.e!=='c') return false;
+    if(per==='pendientes' && !(x.e==='a' || x.e==='p')) return false;
+    if(tkv.length){ var Hv = ' '+azcuTokens_([x.dir, x.im, x.co, x.cli, x.v].join(' '), true).join(' ')+' '; if(!tkv.every(function(t){ return Hv.indexOf(' '+t+' ')>-1; })) return false; }
     if(per==='hoy' && x.d!==hn) return false;
     if(per==='semana' && (x.d<lun || x.d>dom)) return false;
     if(per==='proximas' && !(x.d>=hn && x.e==='a')) return false;
@@ -717,10 +719,50 @@ function azcuFechaIso_(x){
   if(m){ var y = m[3] ? (+m[3]<100 ? 2000+ +m[3] : +m[3]) : +Utilities.formatDate(new Date(), AZCU_TZ, 'yyyy'); return y+'-'+('0'+m[2]).slice(-2)+'-'+('0'+m[1]).slice(-2); }
   return '';
 }
+function azcuBuscarVisExtPend_(dir, cli){
+  var its = azcuVisitasData_(60,60).items.filter(function(x){ return x.x && (x.e==='a' || x.e==='p'); });
+  var td = azcuTokens_(dir||''), nc = azcuSinAc_(cli||''), c1 = nc.split(' ')[0];
+  var porNom = function(x){ var n = azcuSinAc_(x.cli); return !!c1 && (n.indexOf(c1)>-1 || nc.indexOf(n.split(' ')[0])>-1); };
+  var porDir = function(x){ var T = ' '+azcuTokens_(x.dir, true).join(' ')+' '; return td.length>0 && td.every(function(t){ return T.indexOf(' '+t+' ')>-1; }); };
+  var a = its.filter(function(x){ return porDir(x) && porNom(x); });
+  if(a.length===1) return a[0];
+  if(!td.length){ var b = its.filter(porNom); if(b.length===1) return b[0]; }
+  return null;
+}
+function azcuBuscarVisExt_(texto){
+  var tk = azcuTokens_(texto||''); if(!tk.length) return [];
+  return azcuVisitasData_(60,60).items.filter(function(x){
+    if(!x.x) return false;
+    var H = ' '+azcuTokens_([x.dir, x.im, x.co, x.cli].join(' '), true).join(' ')+' ';
+    return tk.every(function(t){ return H.indexOf(' '+t+' ')>-1; });
+  }).slice(0,6).map(function(x){ return {codigo_externa:x.id, fila:x.f, direccion:x.dir, inmobiliaria:x.im, colega:x.co, cliente:x.cli, fecha:x.d.split('-').reverse().join('/')+(x.h ? ' '+x.h : ''), estado:x.e==='a' ? 'agendada' : x.e==='p' ? 'ya pasó, falta el resultado' : x.e==='c' ? 'cancelada' : 'realizada'}; });
+}
+function azcuValidarIntExt_(tipo, a){
+  var fila = +a.fila, seg = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento');
+  if(!seg || !fila || fila<2 || fila>seg.getLastRow()) return {error:'No encontré esa visita. Ubicala primero con la herramienta visitas.'};
+  var r = seg.getRange(fila, 1, 1, Math.min(Math.max(seg.getLastColumn(),11),16)).getValues()[0], cod = String(r[0]).trim();
+  if(cod!==String(a.id||'').trim()) return {error:'Esa fila no corresponde a esa visita. Ubicala con la herramienta visitas (codigo_externa y fila).'};
+  var dir = '🏢 '+String(r[12]||'').trim(), cli = String(r[3]||'').trim(), res = String(r[5]||'').trim(), fe = azcuV_(r[1], 12);
+  if(tipo==='elimint') return {accion:{tipo:'elimint', peligro:true, datos:{id:'visita', dir:dir, fila:fila, cod:cod, huella:cli, ext:true}, resumen:'Borrar la visita de '+(cli||'—')+' en '+dir+' ('+fe+' · '+res+'). Queda 30 días en la Papelera.'}};
+  var c = {}, pt = [], fa;
+  if(a.fecha){ fa = azcuFechaAr_(a.fecha); if(!fa) return {error:'Fecha inválida.'}; c.fecha = fa; pt.push('fecha → '+fa); }
+  if(a.interesado){ c.interesado = String(a.interesado).trim(); pt.push('interesado → '+c.interesado); }
+  if(a.telefono){ c.tel = String(a.telefono).replace(/[^0-9]/g,''); pt.push('teléfono → '+c.tel); }
+  if(a.resultado){ c.resultado = azcuResVisita_(a.resultado); pt.push('resultado → '+c.resultado); }
+  if(a.observaciones){ c.obs = String(a.observaciones).trim(); pt.push('detalle → '+c.obs); }
+  if(a.inmobiliaria){ c.inmob = String(a.inmobiliaria).trim(); pt.push('inmobiliaria → '+c.inmob); }
+  if(a.direccion){ c.dirExt = String(a.direccion).trim(); pt.push('dirección → '+c.dirExt); }
+  if(a.link){ c.link = String(a.link).trim(); pt.push('link → '+c.link); }
+  if(a.precio){ c.precio = String(a.precio).trim(); pt.push('precio → '+c.precio); }
+  if(a.colega){ c.colega = String(a.colega).trim(); pt.push('colega → '+c.colega); }
+  if(!pt.length) return {error:'No indicaste qué corregir.'};
+  return {accion:{tipo:'editarint', datos:{id:'visita', dir:dir, fila:fila, cod:cod, huella:cli, ext:true, campos:c}, resumen:'Corregir la visita de '+(cli||'—')+' en '+dir+': '+pt.join(' · ')}};
+}
 function azcuValidarVisitaExt_(a){
   var hoy = Utilities.formatDate(new Date(), AZCU_TZ, 'yyyy-MM-dd'), fe = azcuFechaIso_(a.fecha), hm = String(a.hora||'').trim().match(/^(\d{1,2})(?:[:.hH](\d{2}))?/), hora = hm && +hm[1]<24 ? ('0'+hm[1]).slice(-2)+':'+(hm[2]||'00') : '';
   var est = a.estado==='realizada' || a.estado==='agendada' ? a.estado : (hora && (!fe || fe>=hoy) ? 'agendada' : 'realizada');
   var d = {id:'externa', estado:est, dir:String(a.direccion||'').trim().slice(0,160), inmob:String(a.inmobiliaria||'').trim().slice(0,80), colega:String(a.colega||'').trim().slice(0,80), link:String(a.link||'').trim().slice(0,300), precio:String(a.precio||'').trim().slice(0,40), interesado:String(a.interesado||'').trim().slice(0,80), tel:String(a.telefono||'').replace(/[^0-9]/g,''), mail:String(a.email||'').trim().slice(0,80), obs:String(a.observaciones||'').trim().slice(0,1500), codigo:/^EXT-[A-Z0-9]+$/.test(String(a.codigo||'').trim()) ? String(a.codigo).trim() : ''};
+  if(est==='realizada' && !d.codigo && d.interesado){ var pend = azcuBuscarVisExtPend_(d.dir, d.interesado); if(pend){ d.codigo = pend.id; if(!d.dir) d.dir = pend.dir; if(!d.inmob) d.inmob = pend.im; d.vinculada = pend.d.split('-').reverse().join('/')+(pend.h ? ' '+pend.h : ''); } }
   if(!d.dir && !d.codigo) return {error:'Falta la dirección de la propiedad.'};
   if(!d.interesado) return {error:'Falta el nombre del cliente.'};
   if(est==='agendada'){
@@ -732,7 +774,7 @@ function azcuValidarVisitaExt_(a){
   }
   d.dirTxt = '🏢 '+(d.dir||'Visita externa')+(d.inmob ? ' ('+d.inmob+')' : '');
   var f = d.fecha.split('-').reverse().join('/');
-  return {accion:{tipo:'visitaext', datos:{id:'externa', dir:d.dirTxt, d:d}, resumen:(est==='agendada' ? 'Agendar visita con otra inmobiliaria' : 'Cargar visita con otra inmobiliaria')+': '+d.dirTxt+' · '+d.interesado+' · '+f+(est==='agendada' ? ' '+d.hora : ' · '+d.resultado)+(d.colega ? ' · colega: '+d.colega : '')+(d.precio ? ' · '+d.precio : '')+(d.link ? ' · ficha: '+d.link : '')+(d.obs ? ' · detalle: '+d.obs : '')}};
+  return {accion:{tipo:'visitaext', datos:{id:'externa', dir:d.dirTxt, d:d}, resumen:(est==='agendada' ? 'Agendar visita con otra inmobiliaria' : 'Cargar visita con otra inmobiliaria')+': '+d.dirTxt+' · '+d.interesado+' · '+f+(est==='agendada' ? ' '+d.hora : ' · '+d.resultado)+(d.colega ? ' · colega: '+d.colega : '')+(d.vinculada ? ' · cierra la visita agendada del '+d.vinculada : '')+(d.precio ? ' · '+d.precio : '')+(d.link ? ' · ficha: '+d.link : '')+(d.obs ? ' · detalle: '+d.obs : '')}};
 }
 function azcuEjecutarVisitaExt_(d, quien){
   d = d.d||d; quien = String(quien||'').trim().slice(0,40);
@@ -756,6 +798,7 @@ function azcuValidarRestaurar_(a){
   return {accion:{tipo:'restaurar', datos:{id:'papelera', dir:it.que, pid:it.id}, resumen:'Restaurar de la papelera: '+it.que+(it.quien ? ' (lo borró '+it.quien+')' : '')+'.'}};
 }
 function azcuValidarAccion_(tipo, a){
+  if((tipo==='editarint' || tipo==='elimint') && /^EXT-/.test(String(a.id||''))) return azcuValidarIntExt_(tipo, a);
   if(tipo==='restaurar') return azcuValidarRestaurar_(a);
   if(tipo==='cancelvis') return azcuValidarCancelVis_(a);
   if(tipo==='visitaext') return azcuValidarVisitaExt_(a);
@@ -850,6 +893,7 @@ function azcuSistema_(ctx){
     'INFO DE UNA PROPIEDAD (REGLA): cuando pidan la info, datos, ficha, "pasame completo" o "contame" de una propiedad, llamá UNA sola vez ficha_propiedad SIN puntual: el sistema devuelve directo la ficha completa y ordenada; no llames otras herramientas ni la reescribas. Solo si preguntan un único dato concreto usá puntual:true y respondé ese dato.',
     'ÚLTIMAS INTERACCIONES: si piden las últimas interacciones/consultas/visitas cargadas (de todas las propiedades o del usuario) usá ultimas_interacciones; NUNCA las saques de ficha_propiedad salvo que pregunten por una propiedad puntual. Mostrá primero la más reciente y la fecha de cada una.',
     'PAPELERA: lo que se borra (propiedades, visitas/interacciones, documentos) queda 30 días en la Papelera. Si piden recuperar o restaurar algo borrado, mirá con papelera y armá la tarjeta con proponer_restaurar. Al borrar algo, avisá que se puede restaurar durante 30 días.',
+    'RESULTADO O CAMBIOS DE UNA VISITA CON OTRA INMOBILIARIA: si cuentan cómo les fue, o piden corregir, borrar o cancelar una visita a una propiedad que NO es de Azcuénaga, NO digas que no la encontrás: ubicala con visitas (periodo pendientes o todas, y texto con la dirección o el cliente), que te da codigo_externa y fila. Resultado → proponer_visita_externa con estado=realizada y ese codigo; corregir/borrar → proponer_editar_interaccion / proponer_eliminar_interaccion con id=codigo_externa y la fila; cancelar → proponer_cancelar_visita.',
     'CANCELAR VISITA: si dicen que una visita se cae, se cancela o la persona desistió, ubicala con visitas (te da la fila) y usá proponer_cancelar_visita con el motivo si lo dan. La visita queda registrada como cancelada (no se borra) y no cuenta como realizada.',
     'VISITAS A OTRAS INMOBILIARIAS: si cuentan o piden agendar una visita de un cliente nuestro a una propiedad que NO es nuestra (de otra inmobiliaria; ej. "visita de la inmobiliaria Bertollo a una casa en Pérez Bulnes 6637"), usá proponer_visita_externa de una, sin buscar_propiedades y sin pedir datos de más (si ya fue y no dicen el día, es hoy). Si además piden que les recuerdes algo ("llamarlo en dos días"), llamá también crear_recordatorio en el mismo turno; NO uses buscar_propiedades para esa dirección. Obligatorios: dirección, cliente y fecha (y hora si es a futuro). Inmobiliaria, colega (nombre de quien atiende en la otra inmobiliaria), link de la ficha (Tokko, ZonaProp, etc.), precio y teléfono son opcionales: no los pidas, pero si el usuario los dice, cargalos. Ya hecha: estado=realizada con resultado y observaciones (todo el detalle); a futuro: estado=agendada. Esas propiedades no se guardan en el sistema: solo queda la visita. Para consultar visitas (hoy, semana, próximas, de un vendedor, a otras inmobiliarias) usá visitas.',
     'USUARIO: hablás con '+(ctx.nombre||'un compañero')+'.',
@@ -933,7 +977,7 @@ function azcuChat(pin, mensajes, ctx){
       var args = {}, res, n = tc.function.name; azcuProg_(ctx, AZCU_NOMBRES_[n] || 'Preparando la tarjeta…');
       try{ args = JSON.parse(tc.function.arguments||'{}'); }catch(e){}
       try{
-        if(n==='buscar_propiedades'){ res = azcuHerrBuscar_(args); if(res.length===1 && !directo && !esAcc && !args.puntual){ directo = azcuFmtFicha_(res[0].id); adj.push.apply(adj, azcuBtnsFicha_(res[0].id)); } }
+        if(n==='buscar_propiedades'){ res = azcuHerrBuscar_(args); if(res.length===1 && !directo && !esAcc && !args.puntual){ directo = azcuFmtFicha_(res[0].id); adj.push.apply(adj, azcuBtnsFicha_(res[0].id)); } if(!res.length){ var vxe = azcuBuscarVisExt_(args.texto); if(vxe.length) res = {propiedades_del_sistema:[], posibles_visitas_con_otra_inmobiliaria:vxe, nota:'No es una propiedad de Azcuénaga: son visitas con otra inmobiliaria. Para cargar el resultado usá proponer_visita_externa con el codigo_externa; para corregir o borrar usá proponer_editar_interaccion o proponer_eliminar_interaccion (id = codigo_externa, con su fila); para cancelar, proponer_cancelar_visita.'}; } }
         else if(n==='consultas_whatsapp') res = azcuHerrConsWS_(args);
         else if(n==='ficha_propiedad'){ res = azcuHerrFicha_(args); if(!args.puntual && !res.error && !directo && !esAcc){ directo = azcuFmtFicha_(args.id); adj.push.apply(adj, azcuBtnsFicha_(args.id)); } }
         else if(n==='datos_tecnicos'){ res = azcuHerrFicha_({id:args.id}); if(!res.error){ directo = azcuFmtFicha_(args.id, 'tec'); } }
@@ -1054,6 +1098,11 @@ function azcuEjecutar_(pin, accion){
     return {ok:true, mensaje:/Nadie suscripto/.test(String(res)) ? 'No hay nadie con avisos activados todavía.' : 'Listo, mandé el aviso a todo el equipo 📣'};
   }
   if(tipo==='visitaext' && d){ azcuLimpiarCache_(); return azcuEjecutarVisitaExt_(d, accion.quien); }
+  if((tipo==='editarint' || tipo==='elimint') && d && d.ext){
+    azcuLimpiarCache_(); azcuSegVerif_(+d.fila, d.cod, d.huella);
+    if(tipo==='elimint'){ eliminarInteraccion(+d.fila, accion.quien); return {ok:true, mensaje:'Borré esa visita. Queda 30 días en la Papelera por si hay que restaurarla.'}; }
+    editarInteraccion(+d.fila, d.campos||{}); return {ok:true, mensaje:'Corregí la visita.'};
+  }
   if(tipo==='restaurar' && d){ azcuLimpiarCache_(); var rr = restaurarPapelera(d.pid, accion.quien); return {ok:true, mensaje:'Listo, '+rr.mensaje}; }
   if(tipo==='cancelvis' && d){ azcuLimpiarCache_(); azcuSegVerif_(+d.fila, d.cod, d.huella); var cr = cancelarVisita(+d.fila, d.motivo, accion.quien); return {ok:true, mensaje:'Listo, la visita quedó cancelada y registrada'+(cr.calendar ? ' (se sacó del Calendar)' : '')+'.'}; }
   if(!d || !d.id) throw new Error('Acción inválida');
