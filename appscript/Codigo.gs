@@ -2167,6 +2167,7 @@ function editarInteraccion(filaSeg, datos){
   set('Fecha',datos.fecha); set('Vía',datos.via); set('Interesado',datos.interesado);
   set('Teléfono',datos.tel); set('Resultado',datos.resultado); set('Próximo paso',datos.prox);
   set('Observaciones',datos.obs);
+  set('Inmobiliaria (otra)',datos.inmob); set('Dirección (otra inmobiliaria)',datos.dirExt); set('Link ficha (otra)',datos.link); set('Precio (otra)',datos.precio); set('Colega (otra)',datos.colega);
   try{ var rowE=seg.getRange(filaSeg,1,1,Math.max(seg.getLastColumn(),4)).getValues()[0]; _audit_('campos','✏️ Editó la interacción de '+(datos.interesado||rowE[3]||'—')+' ('+(datos.resultado||rowE[5]||'')+')', (typeof azcuMapaDirs_==='function'?(azcuMapaDirs_()[String(rowE[0]).trim()]||''):''), datos.cargo||datos.quien||''); }catch(e){}
   _invalidaNovedades_();
   return {ok:true};
@@ -2554,7 +2555,7 @@ function registrarVisitaExterna(datos){
   SEG_EXT_.forEach(function(n, k){ var c = seg.getRange(1, 11+k); if(!String(c.getValue()).trim()) c.setValue(n); });
   if(codigo){
     var v = seg.getDataRange().getValues();
-    for(i=1;i<v.length;i++) if(String(v[i][0]).trim()===codigo){ dir = dir||String(v[i][12]||'').trim(); inmob = inmob||String(v[i][11]||'').trim(); link = link||String(v[i][13]||'').trim(); precio = precio||String(v[i][14]||'').trim(); colega = colega||String(v[i][15]||'').trim(); break; }
+    for(i=1;i<v.length;i++) if(String(v[i][0]).trim()===codigo){ dir = dir||String(v[i][12]||'').trim(); inmob = inmob||String(v[i][11]||'').trim(); link = link||String(v[i][13]||'').trim(); precio = precio||String(v[i][14]||'').trim(); colega = colega||String(v[i][15]||'').trim(); var cO = String(v[i][3]||'').trim(), c1 = cli.toLowerCase().split(/\s+/)[0]; if(cO && c1 && cO.toLowerCase().indexOf(c1)>-1) cli = cO; if(!String(datos.tel||'').trim()) datos.tel = String(v[i][4]||''); break; }
   } else codigo = 'EXT-'+Date.now().toString(36).toUpperCase();
   if(!dir) throw new Error('Falta la dirección de la propiedad');
   var tz = 'GMT-3', quien = String(datos.quien||datos.cargo||'').trim(), vend = String(datos.vendedor||quien).trim(), tel = String(datos.tel||'').trim(), obs = String(datos.obs||'').trim(), fecha, res, prox = '', fprox = '';
