@@ -105,8 +105,34 @@ function nombreFich_(leg, d, cfg) {
   return x ? x.nombre : '';
 }
 
+function marcasDia_(leg, d, cfg) {
+  var x = fichDia_(d, cfg)[leg];
+  return x ? x.marcas : [];
+}
+
+function cruzaMedianoche_(r) {
+  var w = parseTurno(r[4]);
+  if (w && w.fin >= 1440) return true;
+  return [r[7], r[8]].some(function (x) {
+    var m = String(x || '').match(/(\d\d:\d\d) a (\d\d:\d\d)/);
+    return !!m && horaToMin(m[2]) <= horaToMin(m[1]);
+  });
+}
+
+function agregarFichas_(filas, desde, leg, d, cfg) {
+  var h = function (arr, suf) { return arr.map(function (m) { return minToHora(m) + suf; }); };
+  var hoy = h(marcasDia_(leg, d, cfg), ''), man = h(marcasDia_(leg, d + 1, cfg).filter(function (m) { return m < 720; }), '(+1)');
+  for (var i = desde; i < filas.length; i++) {
+    var t = cruzaMedianoche_(filas[i]) ? hoy.concat(man) : hoy;
+    filas[i].push('[' + (t.length ? t.join(' · ') : 'sin fichadas') + ']');
+  }
+}
+
 function procesarAgente_(a, serv, cfg, ctx, filas) {
+  var n0 = filas.length;
   for (var d = 1; d <= _diasMes; d++) {
+    if (d > 1) agregarFichas_(filas, n0, a.leg, d - 1, cfg);
+    n0 = filas.length;
     var cd = { anio: ctx.anio, mes: ctx.mes, dia: d, feriados: ctx.feriados, noLab: ctx.noLab };
     var fer = !!ctx.feriados[claveFecha_(new Date(ctx.anio, ctx.mes - 1, d))];
     var turnoTxt = a.cam[d] || a.hab[d] || '-', ext = a.ext[d], base = [serv, a.leg, a.ape, d, turnoTxt];
@@ -124,7 +150,10 @@ function procesarAgente_(a, serv, cfg, ctx, filas) {
           if (s && (!mejor || s.dur > mejor.dur)) mejor = s;
         });
         var txt = minToHora(w.ini) + ' a ' + minToHora(w.fin), cond = fer ? 'feriado' : '';
-        if (!mejor || !mejor.dur) { filas.push(base.concat([mejor ? minToHora(mejor.ent) : '', mejor ? minToHora(mejor.sal) : '', txt, '', 0, 0, 'A REVISAR', 'no fichó la extra (no se paga)'])); return; }
+        if (!mejor || !mejor.dur) {
+          var hoy = marcasDia_(a.leg, d, cfg), e0 = mejor ? mejor.ent : (hoy.length ? hoy[0] : null), s0 = mejor ? mejor.sal : (hoy.length > 1 ? hoy[hoy.length - 1] : null);
+          filas.push(base.concat([minToHora(e0), minToHora(s0), txt, '', 0, 0, 'A REVISAR', 'no fichó la extra (no se paga)'])); return;
+        }
         var r = calcularExtra(mejor.dur, mejor.ri, cd);
         if (mejor.ri > w.ini || mejor.rf < w.fin) cond += (cond ? ' + ' : '') + 'realizó menos que lo autorizado';
         if (r.h50 + r.h100 <= 0) { filas.push(base.concat([minToHora(mejor.ent), minToHora(mejor.sal), txt, minToHora(mejor.ri) + ' a ' + minToHora(mejor.rf), 0, 0, 'A REVISAR', 'menos de 1 h (no se paga)'])); return; }
@@ -148,6 +177,7 @@ function procesarAgente_(a, serv, cfg, ctx, filas) {
     if (rn.h50 + rn.h100 <= 0) continue;
     filas.push(base.concat([minToHora(entrada), minToHora(salida), '', minToHora(t.fin) + ' a ' + minToHora(salida), rn.h50, rn.h100, 'A REVISAR', 'extra NO autorizada (no hay franja declarada)']));
   }
+  agregarFichas_(filas, n0, a.leg, _diasMes, cfg);
 }
 
 function liquidarExtras() {
@@ -187,7 +217,7 @@ function liquidarExtras() {
   });
   out.sort(function (a, b) { return String(a[2]).localeCompare(String(b[2])) || a[3] - b[3]; });
 
-  var cab = ['Servicio', 'Legajo', 'Apellido', 'Día', 'Turno', 'Entrada', 'Salida', 'Aut. Jefatura', 'Franja realizada', 'Hs 50%', 'Hs 100%', 'Estado', 'Condición',
+  var cab = ['Servicio', 'Legajo', 'Apellido', 'Día', 'Turno', 'Entrada', 'Salida', 'Aut. Jefatura', 'Franja realizada', 'Hs 50%', 'Hs 100%', 'Estado', 'Condición', 'Fichadas del día',
              'Aut GRH 50%', 'Aut GRH 100%', 'Total real mes', 'A pagar (tope ' + cfg.tope + ')', 'Alerta mensual'];
   escribir_(SpreadsheetApp.openById(ID_BASE), 'LIQUIDACION', cab, out, 5, 9);
   var aut = filas.filter(function (r) { return r[11] === 'AUTORIZADA'; }).length;

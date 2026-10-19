@@ -55,6 +55,13 @@ rows=sim(F({5:['22:55'],6:['6:03']}),ag({hab:{5:'23/6'}}));assert.strictEqual(ro
 rows=sim(F({12:['6:58','17:05']}),ag({hab:{12:'7/14'}}));assert.strictEqual(rows.length,0);
 // 7) 18/24 + cola 0/6 no da falso positivo
 rows=sim(F({5:['17:58'],6:['6:02','17:55'],7:['6:01']}),ag({hab:{5:'18/24',6:'0/6'}}));assert.strictEqual(rows.length,0);
+// 9) la entrada siempre se ve: omisión de salida (solo entrada fichada) y columna con todas las fichadas
+rows=sim(F({5:['6:58']}),ag({hab:{5:'7/14'},ext:{5:'14/19'}}));
+assert.deepStrictEqual([rows[0][5],rows[0][6],rows[0][11]],['06:58','','A REVISAR']);assert.strictEqual(rows[0][13],'[06:58]');
+rows=sim(F({5:['6:58','19:10']}),ag({hab:{5:'7/14'},ext:{5:'14/19'}}));assert.strictEqual(rows[0][13],'[06:58 · 19:10]');
+rows=sim(F({5:['5:51','17:10'],6:['5:50','17:08']}),ag({hab:{5:'6/13',6:'6/13'}}));
+assert.strictEqual(rows.length,2);assert.deepStrictEqual([rows[0][5],rows[0][6],rows[0][13]],['05:51','17:10','[05:51 · 17:10]']);assert.deepStrictEqual([rows[1][5],rows[1][6],rows[1][13]],['05:50','17:08','[05:50 · 17:08]']);
+rows=sim(F({5:['22:55'],6:['6:03']}),ag({hab:{5:'23/6'},ext:{5:'19/23'}}));assert.ok(/22:55/.test(rows[0][13]));
 // 8) identidad
 const f2=F({5:['6:58','19:10']});f2[5]['1'].nombre='ALONSO Cecilia';
 rows=sim(f2,ag({hab:{5:'7/14'},ext:{5:'14/19'}}));assert.strictEqual(rows[0][11],'REVISAR IDENTIDAD');
