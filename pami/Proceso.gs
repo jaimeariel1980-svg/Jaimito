@@ -248,7 +248,7 @@ function plantillasIniciales_() {
   return [
     ['contacto-screening', 'WhatsApp', 'Hola [NOMBRE], ¿cómo estás? Soy [ENTREVISTADOR] de Recursos humanos del [POLI].\nTe contacto por la búsqueda de [PUESTO].\nMe gustaría coordinar una breve charla telefónica con vos para conocerte.\nSi te interesa, elegí el día y horario que mejor te quede desde este link y queda agendado:\n[LINK]\nSaludos!'],
     ['contacto-competencias', 'WhatsApp', 'Hola [NOMBRE], ¿cómo estás? Soy [ENTREVISTADOR] del equipo de Atracción y Elección.\nTe escribo por la búsqueda de [PUESTO] en [EMPRESA].\nNos gustaría avanzar con tu perfil a la siguiente etapa del proceso. Se trata de una entrevista de aproximadamente una hora, en la que vamos a profundizar sobre tu experiencia y tu recorrido profesional.\nSi te interesa continuar, elegí el día y horario que mejor te quede desde este link y queda agendada:\n[LINK]\n¡Nos vemos pronto!\nSaludos,\n[FIRMA]'],
-    ['contacto-tecnica', 'WhatsApp', 'Hola [NOMBRE], ¿cómo estás?\nQueríamos contarte que nos gustaría avanzar con tu perfil a la siguiente etapa del proceso para la posición de [PUESTO] en [POLICLINICO].\nLa próxima instancia consiste en una entrevista técnica con la División de Enfermería, de aproximadamente una hora. Será una conversación para profundizar sobre tu experiencia y conocer los desafíos de la posición.\nSi te interesa continuar, elegí el día y horario que mejor te quede desde este link y queda agendada:\n[LINK]\nSaludos,\n[FIRMA]'],
+    ['contacto-tecnica', 'WhatsApp', 'Hola [NOMBRE], ¿cómo estás?\nQueríamos contarte que nos gustaría avanzar con tu perfil a la siguiente etapa del proceso para la posición de [PUESTO] en [POLICLINICO].\nLa próxima instancia consiste en una entrevista técnica con la División de Enfermería, de aproximadamente una hora. Será una conversación para profundizar sobre tu experiencia y conocer los desafíos de la posición.\nLa entrevista es presencial en [DIRECCION].\nSi te interesa continuar, elegí el día y horario que mejor te quede desde este link y queda agendada:\n[LINK]\nSaludos,\n[FIRMA]'],
     ['confirmacion-cita', 'WhatsApp', 'Hola [NOMBRE], te confirmamos tu entrevista de [TIPO] para la búsqueda de [PUESTO]:\n📅 [FECHA] a las [HORA]\n📍 [LUGAR]\nSi no podés asistir, avisanos con anticipación para reprogramarla. ¡Gracias!\n[FIRMA]'],
     ['pedido-documentacion', 'WhatsApp', 'Hola [NOMBRE], ¿cómo estás? Te escribimos del equipo de Atracción y Elección del [POLI].\nPara avanzar con tu ingreso necesitamos que nos envíes la siguiente documentación (preferentemente en PDF o JPG):\n• DNI (frente y dorso)\n• Currículum Vitae\n• Constancia de CUIL\n• Título de Enfermería\n• Constancia de Matrícula de Enfermería vigente y actualizada\nPodés cargarla desde este link:\n[LINK]\n¡Muchas gracias!\n[FIRMA]'],
     ['descarte-sin', 'Mail', 'Hola [NOMBRE],\nQueremos agradecerte sinceramente por tu interés en la posición de [PUESTO] y por el tiempo dedicado a postularte.\nLuego de revisar cuidadosamente los currículums recibidos, en esta oportunidad decidimos avanzar con candidatos cuyos perfiles se encuentran más alineados con los requerimientos específicos de la posición.\nValoramos mucho tu trayectoria profesional. Conservaremos tu perfil para futuras oportunidades que puedan resultar acordes a tu experiencia.\nTe deseamos muchos éxitos en tus próximos desafíos profesionales.\nSaludos cordiales,\n[FIRMA]'],
@@ -610,6 +610,10 @@ function armarComunicacion(k, fila, tipo) {
     if (!link && /2$/.test(polEf)) return { ok: false, error: 'Falta el link de agenda de PAMI 2: cargalo en la pestaña Ajustes, clave "' + clave + '".' };
     if (link) v.LINK = link;
   }
+  if (tipo === 'contacto-tecnica') {
+    const p2 = /2$/.test(polEf);
+    v.DIRECCION = String(ajusteFlex_(v.aj, p2 ? 'direccion_tecnica_poli2' : 'direccion_tecnica') || '').trim() || String(ajusteFlex_(v.aj, p2 ? 'direccion_policlinico_2' : 'direccion_policlinico_1') || '').replace(/,\s*Rosario.*$/i, '').trim();
+  }
   if (tipo === 'pedido-documentacion') {
     const n = /2$/.test(polEf) ? '2' : /1$/.test(polEf) ? '1' : '';
     if (!n) return { ok: false, error: 'Primero asigná el policlínico del candidato (PAMI 1 o PAMI 2): el link de documentación depende de eso.' };
@@ -621,6 +625,7 @@ function armarComunicacion(k, fila, tipo) {
   // Si en la plantilla quedó pegado un link de agenda fijo, se reemplaza por el del policlínico del candidato.
   if (claveLink) texto = texto.replace(/https?:\/\/(calendar\.app\.google|calendar\.google\.com)\/\S+/g, '[LINK]');
   if (!v.LINK) texto = texto.replace(/[^\n]*(link|enlace)[^\n]*\n\[LINK\]/i, 'Si te interesa, contanos qué día y horario te quedan mejor para agendarla.').replace(/ ?\[LINK\]/g, '');
+  if (tipo === 'contacto-tecnica' && !v.DIRECCION) texto = texto.replace(/[^\n]*\[DIRECCION\][^\n]*\n?/g, '');
   texto = rellenar_(texto, v);
   if (!String(r[COL.tel - 1]).replace(/\D/g, '')) return { ok: false, error: 'El candidato no tiene teléfono' };
   const etq = { 'contacto-screening': 'screening', 'contacto-competencias': 'competencias', 'contacto-tecnica': 'entrevista técnica', 'descarte-competencias': 'descarte comp.', 'descarte-pami': 'descarte PAMI', 'confirmacion-cita': 'confirmación', 'pedido-documentacion': 'documentación' }[tipo] || '';
