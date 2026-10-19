@@ -1803,6 +1803,7 @@ function getDatosRaw_(){
       if(mo && parseInt(mo[1])>nOwn) return;
       if(!(d.label in papeles)) papeles[d.label]=0;
     });
+    if(String(row[c('Origen')]||'').trim()==='Otra inmobiliaria'){ papeles={}; docUrls={}; }
     var verifIA={};
     verifCols.forEach(function(d){
       var mo=d.nombre.match(/Due[ñn]o\s+(\d)/i);
@@ -2551,17 +2552,38 @@ function cancelarVisita(filaSeg, motivo, quien){
   _invalidaNovedades_();
   return {ok:true, calendar:borrado};
 }
-var SEG_EXT_ = ['Cargó','Inmobiliaria (otra)','Dirección (otra inmobiliaria)','Link ficha (otra)','Precio (otra)','Colega (otra)'];
+var SEG_EXT_ = ['Cargó','Inmobiliaria (otra)','Dirección (otra inmobiliaria)','Link ficha (otra)','Precio (otra)','Colega (otra)','Tipo (otra)'];
+function _ndir_(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9ñ ]+/g,' ').replace(/\s+/g,' ').trim(); }
+function _asegurarFichaExt_(codigo, d){
+  var mae = hojaMaestra_(); if(_filaPorCodigo_(mae, codigo)>0) return false;
+  var need = ['Código de Precarga','Fecha de creación','Última actualización','Calle','Número','Tipo de propiedad','Etapa','Precio','Moneda','Origen','Inmobiliaria colega','Contacto colega','Link Tokko','Vendedor asignado','Observaciones comerciales'];
+  var head = mae.getRange(1,1,1,mae.getLastColumn()).getValues()[0];
+  need.forEach(function(n){ if(head.indexOf(n)<0){ mae.getRange(1, head.length+1).setValue(n); head.push(n); } });
+  var t = String(d.dir||'').trim(), m = t.match(/^(.*?)[\s,]+(\d{3,6})\b\s*(.*)$/) || t.match(/^(.*?)[\s,]+(\d{1,6})()$/);
+  var calle = m ? m[1].trim() : t, num = m ? m[2] : '', resto = m ? String(m[3]||'').trim() : '';
+  var pn = String(d.precio||'').replace(/[^\d]/g,''), mon = /u\$s|usd|d[oó]lar/i.test(String(d.precio||'')) ? 'USD' : (pn ? 'ARS' : '');
+  var val = {'Código de Precarga':codigo, 'Fecha de creación':new Date(), 'Última actualización':new Date(), 'Calle':calle, 'Número':num, 'Tipo de propiedad':d.tipo||'', 'Etapa':'Otras inmobiliarias', 'Precio':pn ? Number(pn) : '', 'Moneda':mon, 'Origen':'Otra inmobiliaria', 'Inmobiliaria colega':d.inmob||'', 'Contacto colega':d.colega||'', 'Link Tokko':d.link||'', 'Vendedor asignado':d.vendedor||d.quien||'', 'Observaciones comerciales':resto ? 'Ubicación: '+resto : ''};
+  mae.appendRow(head.map(function(h){ return (h in val) ? val[h] : ''; }));
+  _audit_('nueva', '🏢 Se creó la ficha de una propiedad de otra inmobiliaria', t, d.quien||'');
+  _invalidaNovedades_();
+  return true;
+}
 function registrarVisitaExterna(datos){
   datos = datos||{};
-  var cli = String(datos.interesado||'').trim(), dir = String(datos.dir||'').trim(), inmob = String(datos.inmob||'').trim(), link = String(datos.link||'').trim(), precio = String(datos.precio||'').trim(), colega = String(datos.colega||'').trim(), codigo = String(datos.codigo||'').trim(), i;
+  var cli = String(datos.interesado||'').trim(), dir = String(datos.dir||'').trim(), inmob = String(datos.inmob||'').trim(), link = String(datos.link||'').trim(), precio = String(datos.precio||'').trim(), colega = String(datos.colega||'').trim(), tipo = String(datos.tipo||'').trim(), codigo = String(datos.codigo||'').trim(), explicito = !!codigo, i;
   if(!cli) throw new Error('Falta el nombre del cliente');
   var seg = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento');
   if(!seg) throw new Error('No existe la pestaña Seguimiento');
   SEG_EXT_.forEach(function(n, k){ var c = seg.getRange(1, 11+k); if(!String(c.getValue()).trim()) c.setValue(n); });
+  var v = seg.getDataRange().getValues(), cO = '', telO = '';
+  if(!codigo && dir){ var nd = _ndir_(dir); for(i=1;i<v.length;i++) if(/^EXT-/.test(String(v[i][0]).trim()) && _ndir_(v[i][12])===nd){ codigo = String(v[i][0]).trim(); break; } }
   if(codigo){
-    var v = seg.getDataRange().getValues();
-    for(i=1;i<v.length;i++) if(String(v[i][0]).trim()===codigo){ dir = dir||String(v[i][12]||'').trim(); inmob = inmob||String(v[i][11]||'').trim(); link = link||String(v[i][13]||'').trim(); precio = precio||String(v[i][14]||'').trim(); colega = colega||String(v[i][15]||'').trim(); var cO = String(v[i][3]||'').trim(), c1 = cli.toLowerCase().split(/\s+/)[0]; if(cO && c1 && cO.toLowerCase().indexOf(c1)>-1) cli = cO; if(!String(datos.tel||'').trim()) datos.tel = String(v[i][4]||''); break; }
+    for(i=1;i<v.length;i++) if(String(v[i][0]).trim()===codigo){
+      dir = dir||String(v[i][12]||'').trim(); inmob = inmob||String(v[i][11]||'').trim(); link = link||String(v[i][13]||'').trim(); precio = precio||String(v[i][14]||'').trim(); colega = colega||String(v[i][15]||'').trim(); tipo = tipo||String(v[i][16]||'').trim();
+      if(explicito && !cO){ cO = String(v[i][3]||'').trim(); telO = String(v[i][4]||''); }
+    }
+    if(explicito && cO){ var c1 = cli.toLowerCase().split(/\s+/)[0]; if(c1 && cO.toLowerCase().indexOf(c1)>-1) cli = cO; if(!String(datos.tel||'').trim()) datos.tel = telO; }
+    if(!dir && typeof azcuMapaDirs_==='function') dir = azcuMapaDirs_()[codigo]||'';
   } else codigo = 'EXT-'+Date.now().toString(36).toUpperCase();
   if(!dir) throw new Error('Falta la dirección de la propiedad');
   var tz = 'GMT-3', quien = String(datos.quien||datos.cargo||'').trim(), vend = String(datos.vendedor||quien).trim(), tel = String(datos.tel||'').trim(), obs = String(datos.obs||'').trim(), fecha, res, prox = '', fprox = '';
@@ -2585,9 +2607,13 @@ function registrarVisitaExterna(datos){
       }catch(e){ Logger.log('Error Calendar recordatorio: '+e.message); }
     }
   }
-  seg.appendRow([codigo, fecha, 'Visita', cli, tel, res, prox, fprox, obs, vend, quien, inmob, dir, link, precio, colega]);
+  seg.appendRow([codigo, fecha, 'Visita', cli, tel, res, prox, fprox, obs, vend, quien, inmob, dir, link, precio, colega, tipo]);
+  var ficha = false;
+  if(!datos.cuando && /Le interesó|Le intereso|propuesta/i.test(res) && !/no le|rechaz/i.test(res)){
+    try{ ficha = _asegurarFichaExt_(codigo, {dir:dir, inmob:inmob, colega:colega, link:link, precio:precio, tipo:tipo, vendedor:vend, quien:quien}); }catch(e){ Logger.log('Ficha externa: '+e.message); }
+  }
   _invalidaNovedades_();
-  return {ok:true, codigo:codigo};
+  return {ok:true, codigo:codigo, ficha:ficha};
 }
 
 var PAPELERA_DIAS_ = 30;
