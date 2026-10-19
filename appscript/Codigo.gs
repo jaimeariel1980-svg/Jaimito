@@ -1764,7 +1764,33 @@ function _docsReq_(papeles, tipo, extra){
   return Object.keys(papeles||{}).filter(function(d){ return DOC_OBLIG_.indexOf(d)>-1 || (d==='Expensas' && dpto) || ex.indexOf(d)>-1; });
 }
 function _etapaN_(e){ e = String(e==null?'':e).trim(); return /^suspendid/i.test(e) ? 'Baja' : e; }
+function _sincFichasExt_(forzar){
+  var cc = CacheService.getScriptCache();
+  if(!forzar && cc.get('azsfe')) return 0;
+  cc.put('azsfe', '1', 600);
+  var seg = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento'); if(!seg || seg.getLastRow()<2) return 0;
+  var v = seg.getDataRange().getValues(), porDir = {}, i, creadas = 0;
+  for(i=1;i<v.length;i++){
+    var cod = String(v[i][0]).trim(); if(!/^EXT-/.test(cod)) continue;
+    var nd = _ndir_(v[i][12]); if(!nd) continue;
+    var g = porDir[nd] = porDir[nd] || {cod:cod, filas:[], interes:false, inm:'', col:'', link:'', pre:'', tipo:'', vend:'', dir:''};
+    g.filas.push(i);
+    var res = String(v[i][5]).trim();
+    if(/Le interesó|Le intereso|propuesta/i.test(res) && !/no le|rechaz|cancelad/i.test(res)) g.interes = true;
+    g.inm = g.inm||String(v[i][11]||'').trim(); g.col = g.col||String(v[i][15]||'').trim(); g.link = g.link||String(v[i][13]||'').trim(); g.pre = g.pre||String(v[i][14]||'').trim(); g.tipo = g.tipo||String(v[i][16]||'').trim(); g.vend = g.vend||String(v[i][9]||'').trim(); g.dir = g.dir||String(v[i][12]||'').trim();
+  }
+  var mae = hojaMaestra_();
+  Object.keys(porDir).forEach(function(k){
+    var g = porDir[k];
+    g.filas.forEach(function(r){ if(String(v[r][0]).trim()!==g.cod){ seg.getRange(r+1, 1).setValue(g.cod); } });
+    if(g.interes && _filaPorCodigo_(mae, g.cod)<0){
+      if(_asegurarFichaExt_(g.cod, {dir:g.dir, inmob:g.inm, colega:g.col, link:g.link, precio:g.pre, tipo:g.tipo, vendedor:g.vend, quien:'Sistema'})) creadas++;
+    }
+  });
+  return creadas;
+}
 function getDatosRaw_(){
+  try{ _sincFichasExt_(); }catch(e){ Logger.log('Sinc fichas externas: '+e.message); }
   var h=hojaMaestra_();
   if(h.getLastRow()<2)return [];
   var data=h.getRange(1,1,h.getLastRow(),h.getLastColumn()).getValues();
