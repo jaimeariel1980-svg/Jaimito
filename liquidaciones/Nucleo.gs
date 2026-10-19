@@ -36,17 +36,24 @@ function esHoraAl100(fecha, hora, ctx) {
   return dow === 0 || hora >= 22 || hora < 6 || (dow === 6 && hora >= 13);
 }
 
-function calcularExtra(exc, inicioAbs, ctx) {
-  var liquidar = Math.floor(exc / 30) * 30;
-  if (liquidar < 60) return { h50: 0, h100: 0, descartados: Math.max(0, exc) };
-  var min50 = 0, min100 = 0, fechas = {};
-  for (var m = 0; m < liquidar; m++) {
-    var abs = inicioAbs + m, off = Math.floor(abs / 1440);
-    var f = fechas[off] || (fechas[off] = new Date(ctx.anio, ctx.mes - 1, ctx.dia + off));
-    if (esHoraAl100(f, Math.floor((((abs % 1440) + 1440) % 1440) / 60), ctx)) min100++; else min50++;
-  }
+function calcularExtraTramos(tramos, ctx) {
+  var total = tramos.reduce(function (s, t) { return s + Math.max(0, t[1] - t[0]); }, 0);
+  var liquidar = Math.floor(total / 30) * 30;
+  if (liquidar < 60) return { h50: 0, h100: 0, total: total };
+  var min50 = 0, resto = liquidar, fechas = {};
+  tramos.forEach(function (t) {
+    for (var abs = t[0]; abs < t[1] && resto > 0; abs++, resto--) {
+      var off = Math.floor(abs / 1440);
+      var f = fechas[off] || (fechas[off] = new Date(ctx.anio, ctx.mes - 1, ctx.dia + off));
+      if (!esHoraAl100(f, Math.floor((((abs % 1440) + 1440) % 1440) / 60), ctx)) min50++;
+    }
+  });
   var b50 = Math.round(min50 / 30) * 30;
-  return { h50: b50 / 60, h100: (liquidar - b50) / 60, descartados: exc - liquidar };
+  return { h50: b50 / 60, h100: (liquidar - b50) / 60, total: total };
+}
+
+function calcularExtra(exc, inicioAbs, ctx) {
+  return calcularExtraTramos([[inicioAbs, inicioAbs + Math.max(0, exc)]], ctx);
 }
 
 function normaliza_(s) {
@@ -72,13 +79,6 @@ function apellidoCoincide(apeGrilla, nomFichada) {
     for (var j = 0; j < tf.length; j++) if (tf[j].length >= 3 && dice(ta[i], tf[j]) >= 0.6) return true;
   }
   return false;
-}
-
-function solape_(dIni, dFin, marcas) {
-  if (marcas.length < 2) return null;
-  var ent = marcas[0], sal = marcas[marcas.length - 1];
-  var ri = Math.max(dIni, ent), rf = Math.min(dFin, sal);
-  return { ent: ent, sal: sal, ri: ri, rf: rf, dur: Math.max(0, rf - ri) };
 }
 
 function consolidarGRH_(real50, real100, aut50, aut100, hayGRH, tope) {
