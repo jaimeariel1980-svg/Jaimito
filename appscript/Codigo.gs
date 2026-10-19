@@ -2188,6 +2188,7 @@ function registrarInteraccion(codigo, datos){
     datos.resultado||'', datos.prox||'', fechaProx, datos.obs||'', datos.vendedor||'', datos.cargo||''
   ]);
   try{ if(!String(seg.getRange(1,11).getValue()).trim()) seg.getRange(1,11).setValue('Cargó'); }catch(e){}
+  if(/Propuesta aceptada/i.test(String(datos.resultado||''))) _extAReserva_(codigo, datos.cargo);
   _invalidaNovedades_();
   return {ok:true};
 }
@@ -2580,6 +2581,14 @@ function cancelarVisita(filaSeg, motivo, quien){
 }
 var SEG_EXT_ = ['Cargó','Inmobiliaria (otra)','Dirección (otra inmobiliaria)','Link ficha (otra)','Precio (otra)','Colega (otra)','Tipo (otra)'];
 function _ndir_(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9ñ ]+/g,' ').replace(/\s+/g,' ').trim(); }
+function _extAReserva_(codigo, quien){
+  try{
+    if(!/^EXT-/.test(String(codigo))) return;
+    var mae = hojaMaestra_(), f = _filaPorCodigo_(mae, codigo); if(f<0) return;
+    var head = mae.getRange(1,1,1,mae.getLastColumn()).getValues()[0], i = head.indexOf('Etapa'); if(i<0) return;
+    if(_etapaN_(mae.getRange(f,i+1).getValue())==='Otras inmobiliarias') guardarPropiedad(codigo, {etapa:'Reserva', quien:quien||''});
+  }catch(e){ Logger.log('Ext a Reserva: '+e.message); }
+}
 function _asegurarFichaExt_(codigo, d){
   var mae = hojaMaestra_(); if(_filaPorCodigo_(mae, codigo)>0) return false;
   var need = ['Código de Precarga','Fecha de creación','Última actualización','Calle','Número','Tipo de propiedad','Etapa','Precio','Moneda','Origen','Inmobiliaria colega','Contacto colega','Link Tokko','Vendedor asignado','Observaciones comerciales'];
@@ -2638,6 +2647,7 @@ function registrarVisitaExterna(datos){
   if(!datos.cuando && /Le interesó|Le intereso|propuesta/i.test(res) && !/no le|rechaz/i.test(res)){
     try{ ficha = _asegurarFichaExt_(codigo, {dir:dir, inmob:inmob, colega:colega, link:link, precio:precio, tipo:tipo, vendedor:vend, quien:quien}); }catch(e){ Logger.log('Ficha externa: '+e.message); }
   }
+  if(!datos.cuando && /Propuesta aceptada/i.test(res)) _extAReserva_(codigo, quien);
   _invalidaNovedades_();
   return {ok:true, codigo:codigo, ficha:ficha};
 }

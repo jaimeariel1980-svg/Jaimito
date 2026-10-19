@@ -786,12 +786,42 @@ function donutPanel(segs,total,centerLabel,centerNum,modo){
   const lab=String(centerLabel).split(' ');const l1=lab.length>1?lab.slice(0,Math.ceil(lab.length/2)).join(' '):lab[0],l2=lab.length>1?lab.slice(Math.ceil(lab.length/2)).join(' '):'';
   return '<div class="donutwrap"><svg viewBox="0 0 140 140"><g>'+paths+'</g><circle cx="70" cy="70" r="'+(r-1)+'" fill="#fff"></circle><text x="70" y="72" text-anchor="middle" class="ctr" style="font-size:27px">'+centerNum+'</text><text x="70" y="86" text-anchor="middle" style="font-size:8.5px;fill:#5b6573;font-weight:600">'+l1+'</text><text x="70" y="96" text-anchor="middle" style="font-size:8.5px;fill:#5b6573;font-weight:600">'+l2+'</text></svg><div class="legbox">'+leg+'</div></div>';
 }
+function extHilos(p){
+  const h={};
+  (p.seg||[]).forEach(s=>{
+    const k=String(s.tel||'').replace(/\D/g,'')||String(s.cli||'—').trim().toLowerCase(),r=String(s.res||'');let e=null;
+    if(/cancelad|no le interes/i.test(r))e='cerrado';
+    else if(/rechaz/i.test(r))e='rechazada';
+    else if(/acept/i.test(r))e='aceptada';
+    else if(/propuesta|oferta/i.test(r))e='propuesta';
+    else if(/interes/i.test(r))e='interes';
+    else if(r)e='visita';
+    if(e){if(!h[k])h[k]={cli:s.cli,estado:e,obs:''};h[k].estado=e;h[k].cli=s.cli||h[k].cli;if(e==='rechazada'||e==='cerrado')h[k].obs=s.obs||'';}
+  });
+  return Object.keys(h).map(k=>h[k]);
+}
+function extSinInteresados(p){
+  if(p.origen!=='Otra inmobiliaria'||p.etapa==='Vendida'||p.etapa==='Baja')return false;
+  const H=extHilos(p);return H.length>0&&!H.some(x=>x.estado==='interes'||x.estado==='propuesta'||x.estado==='aceptada'||x.estado==='visita');
+}
 function extTag(p){
-  if(p.etapa==='Vendida')return '<div><span class="pap v">🎉 Vendida</span></div>';
-  const pe=propuestaEstado(p);
-  if(pe&&pe.cls!=='r')return '<div><span class="pap v">'+(/acept/.test(pe.txt)?'Propuesta aceptada':'Hizo propuesta')+'</span></div>';
-  if((p.seg||[]).some(s=>/interes/i.test(s.res||'')&&!/no le/i.test(s.res||'')))return '<div><span class="pap v">Le interesó</span></div>';
+  const v=t=>'<div><span class="pap v">'+t+'</span></div>';
+  if(p.etapa==='Vendida')return v('🎉 Vendida');
+  const H=extHilos(p),has=e=>H.some(x=>x.estado===e);
+  if(has('aceptada'))return v('Propuesta aceptada');
+  if(has('propuesta'))return v('Hizo propuesta');
+  if(has('interes'))return v('Le interesó');
+  if(extSinInteresados(p))return (has('rechazada')?'<div><span class="pap" style="background:#eef0f2;color:#5b6470">Propuesta rechazada</span></div>':'')+'<div><span class="warn">sin interesados</span></div>';
   return '';
+}
+function bajaRapida(id){
+  const p=DATA.find(x=>x.id===id);if(!p)return;
+  const H=extHilos(p).filter(x=>x.estado==='rechazada'||x.estado==='cerrado'),u=H[H.length-1]||{};
+  const motivo=(u.estado==='rechazada'?'Propuesta rechazada':'Sin interesados')+(u.obs?': '+u.obs:'');
+  if(!confirm('¿Dar de baja «'+p.dir+'»?\nMotivo: '+motivo))return;
+  p.etapa='Baja';p.motivo=motivo;
+  google.script.run.withSuccessHandler(function(){close_();recargar();}).withFailureHandler(function(e){alert('No pude darla de baja: '+(e&&e.message?e.message:e));recargar();}).guardarPropiedad(id,{etapa:'Baja',motivo:motivo,quien:_yo()});
+  render();
 }
 function cardHTML(p,col){
   const sc=semC(p.dias),dtxt=p.dias===null?'—':p.dias;
@@ -862,6 +892,7 @@ function ficha(id){
   var encuestaHtml='';
   if(p.encuesta){ google.script.run.withSuccessHandler(function(e){ if(e){ p.encuesta=e; var sec=document.getElementById('enc-sec-'+p.id); if(sec)sec.innerHTML=pintarEncuestaFicha(e); } }).obtenerEncuesta(p.id); }
   var ext=p.origen==='Otra inmobiliaria';
+  var bajaSug=(extSinInteresados(p)?'<div style="background:#fff4e5;border:1px solid #f0c98a;border-radius:10px;padding:10px 12px;margin:8px 0;font-size:13px">⚠️ Ya no quedan interesados activos en esta propiedad. <button class="btn s" style="padding:4px 10px;font-size:12px;margin-left:6px" onclick="bajaRapida(\''+p.id+'\')">📉 Dar de baja</button></div>':'');
   var waProp=(sm.tel?'· <a href="https://wa.me/'+wa(sm.tel)+'" target="_blank" style="font-size:12px;text-transform:none;font-weight:400">WhatsApp</a>':'');
   var tokLink=(sm.tokko?'· <a href="'+sm.tokko+'" target="_blank">ver</a>':'');
   document.getElementById('ficha').innerHTML=
@@ -877,7 +908,7 @@ function ficha(id){
     plazosHtml+
     (ext?'<h3 class="sec">Otra inmobiliaria</h3><div class="grid">':'<h3 class="sec">Origen de la propiedad</h3><div class="grid"><div class="fi"><div class="k">Tipo</div><select class="inp" onchange="setOrigen(\''+p.id+'\',this.value)"><option value="Propia" '+(p.origen!=='Compartida'?'selected':'')+'>Propia</option><option value="Compartida" '+(p.origen==='Compartida'?'selected':'')+'>Compartida (colega)</option></select></div>')+'<div class="fi"><div class="k">Vendedor asignado</div><input class="inp" list="vendList" placeholder="Sin asignar" value="'+(p.vendedor||'').replace(/"/g,'&quot;')+'" onchange="setP(\''+p.id+'\',\'vendedor\',this.value)"><datalist id="vendList">'+_vendNombres().map(n=>'<option value="'+n.replace(/"/g,'&quot;')+'">').join('')+'</datalist></div>'+compHtml+'</div>'+
     '<h3 class="sec">Ficha de la propiedad</h3><div class="grid"><div class="fi" style="grid-column:1/-1"><div class="k">URL de ficha colega '+tokLink+' <span style="color:var(--gris);font-weight:400;text-transform:none">— las fotos las trae la ficha</span></div><input class="inp" placeholder="URL de ficha colega" value="'+(sm.tokko||'')+'" onchange="setC(\''+p.id+'\',\'tokko\',this.value)"></div></div>'+
-    '<div style="margin:2px 0 10px;display:flex;align-items:center;gap:8px"><span style="font-size:12px;color:var(--gris)">Cambiar etapa:</span><select onchange="changeEtapa(\''+p.id+'\',this.value)" style="padding:6px 10px;border:1px solid var(--linea);border-radius:8px">'+ET.map(e=>'<option '+(p.etapa===e[0]?'selected':'')+'>'+e[0]+'</option>').join('')+'<option '+(p.etapa==='Baja'?'selected':'')+'>Baja</option></select></div>'+suspHtml+
+    '<div style="margin:2px 0 10px;display:flex;align-items:center;gap:8px"><span style="font-size:12px;color:var(--gris)">Cambiar etapa:</span><select onchange="changeEtapa(\''+p.id+'\',this.value)" style="padding:6px 10px;border:1px solid var(--linea);border-radius:8px">'+ET.map(e=>'<option '+(p.etapa===e[0]?'selected':'')+'>'+e[0]+'</option>').join('')+'<option '+(p.etapa==='Baja'?'selected':'')+'>Baja</option></select></div>'+suspHtml+bajaSug+
     (ext?'':('<h3 class="sec">Datos del propietario '+waProp+'</h3><div class="grid">'+
       '<div class="fi"><div class="k">Nombre</div><input class="inp" value="'+(sm.prop||p.prop||'').replace(/"/g,'&quot;')+'" onchange="setC(\''+p.id+'\',\'prop\',this.value)"></div>'+
       '<div class="fi"><div class="k">Teléfono / WhatsApp</div><input class="inp" value="'+(sm.tel||'')+'" onchange="setC(\''+p.id+'\',\'tel\',this.value)"></div>'+
@@ -1029,6 +1060,7 @@ function guardarConsulta(id){
   const datos={ fecha:_fechaAr(g('cf_fecha')), via:g('cf_via'), interesado:g('cf_cli'),
     tel:g('cf_tel'), resultado:g('cf_res'), prox:g('cf_prox'), obs:g('cf_obs'), vendedor:_vend(id), cargo:_yo() };
   if(!datos.interesado){ alert('Poné al menos el nombre del interesado'); return; }
+  if(/rechaz|no le interes/i.test(datos.resultado)&&!String(datos.obs||'').trim()){ alert('Anotá el motivo en Observaciones: queda registrado.'); return; }
   const btn=document.getElementById('cf_btn'); if(btn){btn.textContent='Guardando…';btn.disabled=true;}
   google.script.run
     .withSuccessHandler(function(){ if(/Propuesta aceptada/i.test(datos.resultado)){google.script.run.guardarPropiedad(id,{etapa:'Reserva',quien:_yo()});} closeDL(); recargar(id); })
@@ -1906,6 +1938,7 @@ function visExtGuardar(cod){
   var o={dir:g('ve_dir'),inmob:g('ve_im'),colega:g('ve_co'),link:g('ve_lk'),precio:g('ve_pr'),tipo:g('ve_tipo'),interesado:g('ve_cli'),tel:g('ve_tel'),mail:g('ve_mail'),obs:g('ve_obs'),vendedor:g('ve_vend'),quien:_yo(),codigo:cod||''};
   if(!fijo&&!o.dir){alert('Poné la dirección de la propiedad');return;}
   if(!o.interesado){alert('Poné el nombre del cliente');return;}
+  if(ya&&/rechaz|no le interes/i.test(g('ve_res'))&&!o.obs){alert('Anotá el motivo en Observaciones: queda registrado.');return;}
   if(ya){var f=g('ve_fecha');if(f)o.fecha=f.split('-').reverse().join('/');o.resultado=g('ve_res')||'Visita';}
   else{var c=g('ve_cuando');if(!c){alert('Poné la fecha y hora');return;}o.cuando=new Date(c).toISOString();}
   var b=document.getElementById('ve_btn');if(b){b.textContent='Guardando…';b.disabled=true;}
@@ -2581,12 +2614,12 @@ if(!window.festejar) window.festejar = function(msg){
     var P = {k:'prop', q:'¿De qué propiedad? Escribí parte de la dirección o el propietario.', kind:'prop', ph:'Ej: Mendoza 7201'};
     var T = function(k,q,ph,opt,parse){ return {k:k, q:q, kind:'text', ph:ph, opt:opt, parse:parse}; };
     var tel = function(t){ var d = t.replace(/[^0-9]/g,''); return d.length>=6 ? d : null; }, mail = function(t){ return /^\S+@\S+\.\S+$/.test(t) ? t : null; };
-    if(t==='cargar') return [P, T('interesado','¿Quién consultó o vino? (nombre)','Nombre del interesado'), {k:'via',q:'¿Por qué vía fue?',kind:'opt',opts:VIAS.map(function(x){return {l:x==='Visita'?'Visita realizada':x,v:x};})}, {k:'resultado',q:'¿Cómo resultó?',kind:'opt',opts:OP(RES)}, T('obs','Contame el detalle de lo que pasó (podés dictarlo 🎤)','Qué pasó, qué dijo, qué quiere…',1), T('prox','Próximo paso','Ej: llamarlo el viernes',1), T('tel','Teléfono del interesado','Teléfono',1,tel)];
+    if(t==='cargar') return [P, T('interesado','¿Quién consultó o vino? (nombre)','Nombre del interesado'), {k:'via',q:'¿Por qué vía fue?',kind:'opt',opts:VIAS.map(function(x){return {l:x==='Visita'?'Visita realizada':x,v:x};})}, {k:'resultado',q:'¿Cómo resultó?',kind:'opt',opts:OP(RES)}, Object.assign(T('obs','Contame el detalle de lo que pasó (podés dictarlo 🎤)','Qué pasó, qué dijo, qué quiere…',1),{si:function(d){return !/rechaz|no le interes/i.test(d.resultado||'');}}), Object.assign(T('obs','¿Cuál es el motivo? (queda registrado)','Motivo'),{si:function(d){return /rechaz|no le interes/i.test(d.resultado||'');}}), T('prox','Próximo paso','Ej: llamarlo el viernes',1), T('tel','Teléfono del interesado','Teléfono',1,tel)];
     if(t==='agendar') return [P, {k:'fecha',q:'¿Qué día? Elegí o escribí dd/mm.',kind:'opt',opts:fechas(),parse:parseFecha,ph:'dd/mm'}, {k:'hora',q:'¿A qué hora? Elegí o escribila (ej 16:30).',kind:'opt',opts:OP(HORAS),parse:parseHora,ph:'hh:mm'}, T('interesado','¿Quién es el interesado?','Nombre',1), T('tel','Teléfono','Teléfono',1,tel), T('mail','Mail (le llega la invitación al Calendar)','mail@ejemplo.com',1,mail)];
     if(t==='externa'){
       var ag = function(d){ return d.est==='agendar'; }, ya = function(d){ return d.est==='hecha'; }, SI = function(o,f){ o.si = f; return o; };
       var pas = function(){ var o = [], n = ['Hoy','Ayer','Anteayer'], i, d; for(i=0;i<3;i++){ d = new Date(); d.setDate(d.getDate()-i); o.push({l:n[i]+' · '+('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2), v:iso(d)}); } return o; };
-      return [T('dir','¿Cuál es la dirección de la propiedad?','Ej: Mendoza 7201'), T('inmob','¿De qué inmobiliaria es?','Nombre de la inmobiliaria',1), T('colega','¿Con qué colega de la otra inmobiliaria hablaste? (nombre)','Nombre del colega',1), T('interesado','¿Quién es el interesado (nuestro cliente)?','Nombre'), {k:'est',q:'¿La visita ya se hizo o la agendamos?',kind:'opt',opts:[{l:'📅 La agendamos',v:'agendar'},{l:'✅ Ya la hice',v:'hecha'}]}, SI({k:'fecha',q:'¿Qué día? Elegí o escribí dd/mm.',kind:'opt',opts:fechas(),parse:parseFecha,ph:'dd/mm'}, ag), SI({k:'fecha',q:'¿Qué día fue? Elegí o escribí dd/mm.',kind:'opt',opts:pas(),parse:parseFecha,ph:'dd/mm'}, ya), SI({k:'hora',q:'¿A qué hora? Elegí o escribila (ej 16:30).',kind:'opt',opts:OP(HORAS),parse:parseHora,ph:'hh:mm'}, ag), SI({k:'resultado',q:'¿Cómo resultó?',kind:'opt',opts:OP(RES.filter(function(x){ return x!=='Visita'; }))}, ya), T('obs','Contame el detalle (podés dictarlo 🎤)','Qué pasó, qué dijo, qué quiere…',1), T('link','Link de la ficha (Tokko, ZonaProp…)','https://…',1), T('precio','Precio publicado','Ej: U$S 85.000',1), {k:'tipo',q:'¿Qué tipo de propiedad es?',kind:'opt',opts:OP(['Casa','Departamento','PH','Local','Terreno','Otro']),opt:1}, T('tel','Teléfono del cliente','Teléfono',1,tel), SI(T('mail','Mail del cliente (le llega la invitación al Calendar)','mail@ejemplo.com',1,mail), ag)];
+      return [T('dir','¿Cuál es la dirección de la propiedad?','Ej: Mendoza 7201'), T('inmob','¿De qué inmobiliaria es?','Nombre de la inmobiliaria',1), T('colega','¿Con qué colega de la otra inmobiliaria hablaste? (nombre)','Nombre del colega',1), T('interesado','¿Quién es el interesado (nuestro cliente)?','Nombre'), {k:'est',q:'¿La visita ya se hizo o la agendamos?',kind:'opt',opts:[{l:'📅 La agendamos',v:'agendar'},{l:'✅ Ya la hice',v:'hecha'}]}, SI({k:'fecha',q:'¿Qué día? Elegí o escribí dd/mm.',kind:'opt',opts:fechas(),parse:parseFecha,ph:'dd/mm'}, ag), SI({k:'fecha',q:'¿Qué día fue? Elegí o escribí dd/mm.',kind:'opt',opts:pas(),parse:parseFecha,ph:'dd/mm'}, ya), SI({k:'hora',q:'¿A qué hora? Elegí o escribila (ej 16:30).',kind:'opt',opts:OP(HORAS),parse:parseHora,ph:'hh:mm'}, ag), SI({k:'resultado',q:'¿Cómo resultó?',kind:'opt',opts:OP(RES.filter(function(x){ return x!=='Visita'; }))}, ya), Object.assign(T('obs','Contame el detalle (podés dictarlo 🎤)','Qué pasó, qué dijo, qué quiere…',1),{si:function(d){return !/rechaz|no le interes/i.test(d.resultado||'');}}), Object.assign(T('obs','¿Cuál es el motivo? (queda registrado)','Motivo'),{si:function(d){return /rechaz|no le interes/i.test(d.resultado||'');}}), T('link','Link de la ficha (Tokko, ZonaProp…)','https://…',1), T('precio','Precio publicado','Ej: U$S 85.000',1), {k:'tipo',q:'¿Qué tipo de propiedad es?',kind:'opt',opts:OP(['Casa','Departamento','PH','Local','Terreno','Otro']),opt:1}, T('tel','Teléfono del cliente','Teléfono',1,tel), SI(T('mail','Mail del cliente (le llega la invitación al Calendar)','mail@ejemplo.com',1,mail), ag)];
     }
     if(t==='adjex') return [P];
     if(t==='adjnew') return [];
