@@ -49,7 +49,7 @@ rows=sim(F({5:['17:55','23:58'],6:['6:02']}),ag({hab:{5:'18/24'},ext:{6:'0/6'}})
 assert.strictEqual(rows.length,1);assert.deepStrictEqual([rows[0][9],rows[0][10]],[0,6]);
 // 5) sin declarar, fichó de más: 7/14 sale 17:05 => A REVISAR no autorizada 3h
 rows=sim(F({6:['6:58','17:05']}),ag({hab:{6:'7/14'}}));
-assert.strictEqual(rows.length,1);assert.ok(/NO autorizada/.test(rows[0][12]));assert.strictEqual(rows[0][9],3);
+assert.strictEqual(rows.length,1);assert.ok(/NO autorizada/.test(rows[0][12]));assert.strictEqual(rows[0][9],3);assert.deepStrictEqual([rows[0][5],rows[0][6]],['06:58','17:05']);
 // 6) turno noche 23/6 sin extras, salida normal => nada; y feriado no genera
 rows=sim(F({5:['22:55'],6:['6:03']}),ag({hab:{5:'23/6'}}));assert.strictEqual(rows.length,0);
 rows=sim(F({12:['6:58','17:05']}),ag({hab:{12:'7/14'}}));assert.strictEqual(rows.length,0);
