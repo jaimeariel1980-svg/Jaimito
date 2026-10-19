@@ -11,9 +11,9 @@ function fichDia_(n, cfg) {
       var leg = String(d[r][0]).trim();
       if (!/^\d+$/.test(leg)) continue;
       var mk = [];
-      for (var c = 7; c <= 12; c++) { var m = horaToMin(d[r][c]); if (m !== null) mk.push(m); }
-      mk.sort(function (a, b) { return a - b; });
-      if (!out[leg] || mk.length > out[leg].marcas.length) out[leg] = { marcas: mk, nombre: String(d[r][1]).trim() };
+      for (var c = 7; c <= 12; c++) { var t = String(d[r][c]).trim(), m = horaToMin(t); if (m !== null) mk.push({ m: m, t: t }); }
+      mk.sort(function (a, b) { return a.m - b.m; });
+      if (!out[leg] || mk.length > out[leg].marcas.length) out[leg] = { marcas: mk.map(function (x) { return x.m; }), txt: mk.map(function (x) { return x.t; }), nombre: String(d[r][1]).trim() };
     }
   }
   return (_fich[n] = out);
@@ -84,22 +84,6 @@ function esCola_(a, d) {
   return !!(t && t.ini === 0 && p && p.fin === 1440);
 }
 
-function corridas_(leg, d, desde, hasta, cfg) {
-  var mk = [];
-  [-1, 0, 1].forEach(function (o) {
-    var x = fichDia_(d + o, cfg)[leg];
-    if (x) x.marcas.forEach(function (m) { var abs = m + o * 1440; if (abs >= desde && abs <= hasta) mk.push(abs); });
-  });
-  mk.sort(function (a, b) { return a - b; });
-  var out = [], cur = [];
-  mk.forEach(function (m) {
-    if (cur.length && m - cur[cur.length - 1] > 780) { out.push(cur); cur = []; }
-    cur.push(m);
-  });
-  if (cur.length) out.push(cur);
-  return out;
-}
-
 function nombreFich_(leg, d, cfg) {
   var x = fichDia_(d, cfg)[leg];
   return x ? x.nombre : '';
@@ -107,12 +91,23 @@ function nombreFich_(leg, d, cfg) {
 
 function marcasDia_(leg, d, cfg) {
   var x = fichDia_(d, cfg)[leg];
-  return x ? x.marcas : [];
+  return x ? x.marcas.map(function (m, i) { return { m: m, t: x.txt ? x.txt[i] : minToHora(m) }; }) : [];
+}
+
+function marcasAbs_(leg, d, desde, hasta, cfg) {
+  var out = [];
+  [-1, 0, 1].forEach(function (o) {
+    marcasDia_(leg, d + o, cfg).forEach(function (x) {
+      var abs = x.m + o * 1440;
+      if (abs >= desde && abs <= hasta) out.push({ m: abs, t: x.t + (o < 0 ? '(-1)' : o > 0 ? '(+1)' : '') });
+    });
+  });
+  return out.sort(function (x, y) { return x.m - y.m; });
 }
 
 function cruzaMedianoche_(r) {
   var w = parseTurno(r[4]);
-  if (w && w.fin >= 1440) return true;
+  if (w && w.fin >= 1440 || /\(\+1\)/.test(r[6])) return true;
   return [r[7], r[8]].some(function (x) {
     var m = String(x || '').match(/(\d\d:\d\d) a (\d\d:\d\d)/);
     return !!m && horaToMin(m[2]) <= horaToMin(m[1]);
@@ -120,20 +115,13 @@ function cruzaMedianoche_(r) {
 }
 
 function agregarFichas_(filas, desde, leg, d, cfg) {
-  var h = function (arr, suf) { return arr.map(function (m) { return minToHora(m) + suf; }); };
-  var hoy = h(marcasDia_(leg, d, cfg), ''), man = h(marcasDia_(leg, d + 1, cfg).filter(function (m) { return m < 720; }), '(+1)');
+  var t = function (arr) { return arr.map(function (x) { return x.t; }); };
+  var hoy = t(marcasDia_(leg, d, cfg));
+  var ayer = t(marcasAbs_(leg, d, -720, -1, cfg)), man = t(marcasAbs_(leg, d, 1440, 2159, cfg));
   for (var i = desde; i < filas.length; i++) {
-    var t = cruzaMedianoche_(filas[i]) ? hoy.concat(man) : hoy;
-    filas[i].push('[' + (t.length ? t.join(' · ') : 'sin fichadas') + ']');
+    var l = (/\(-1\)/.test(filas[i][5]) ? ayer : []).concat(hoy, cruzaMedianoche_(filas[i]) ? man : []);
+    filas[i].push('[' + (l.length ? l.join(' · ') : 'sin fichadas') + ']');
   }
-}
-
-function marcasAbs_(leg, d, desde, hasta, cfg) {
-  var out = [];
-  [-1, 0, 1].forEach(function (o) {
-    marcasDia_(leg, d + o, cfg).forEach(function (m) { var abs = m + o * 1440; if (abs >= desde && abs <= hasta) out.push(abs); });
-  });
-  return out.sort(function (x, y) { return x - y; });
 }
 
 function bloquesTurno_(a, d) {
@@ -141,6 +129,15 @@ function bloquesTurno_(a, d) {
     var t = turnoCompleto_(a, x[1]);
     return t && { ini: t.ini + x[0], fin: t.fin + x[0] };
   }).filter(Boolean);
+}
+
+function tramosPares_(M, ini, fin) {
+  var out = [];
+  for (var k = 0; k + 1 < M.length; k += 2) {
+    var i0 = Math.max(ini, M[k].m), f0 = Math.min(fin, M[k + 1].m);
+    if (f0 > i0) out.push([i0, f0]);
+  }
+  return out;
 }
 
 function presencia_(a, d, w, cfg) {
@@ -151,15 +148,20 @@ function presencia_(a, d, w, cfg) {
   });
   var eDesde = contiguo ? bIni - 240 : w.ini - 180, eHasta = contiguo ? bIni + 180 : w.ini + 180;
   var M = marcasAbs_(a.leg, d, eDesde, (contiguo ? bFin : w.fin) + 240, cfg);
-  if (!M.length || M[0] > eHasta) return { estado: 'sin' };
-  var res = { ent: M[0], sal: M.length > 1 ? M[M.length - 1] : null };
-  if (M.length % 2) { res.estado = 'irregular'; res.nota = 'cantidad impar de fichadas (' + M.length + '): falta una'; return res; }
-  for (var k = 1; k + 1 < M.length; k += 2) {
-    if (Math.min(w.fin, M[k + 1]) - Math.max(w.ini, M[k]) > 30) { res.estado = 'irregular'; res.nota = 'según fichadas estuvo ausente de ' + horaAbs_(M[k]) + ' a ' + horaAbs_(M[k + 1]); return res; }
-  }
-  res.ri = Math.max(w.ini, M[0]); res.rf = Math.min(w.fin, M[M.length - 1]);
-  res.dur = Math.max(0, res.rf - res.ri); res.estado = 'ok';
+  if (!M.length || M[0].m > eHasta) return { estado: 'sin' };
+  var res = { ent: M[0].t, sal: M.length > 1 ? M[M.length - 1].t : '', n: M.length };
+  if (M.length === 1) { res.estado = 'omision'; return res; }
+  if (M.length % 2) { res.estado = 'impar'; res.tramos = tramosPares_([M[0], M[M.length - 1]], w.ini, w.fin); return res; }
+  res.estado = 'ok'; res.tramos = tramosPares_(M, w.ini, w.fin);
   return res;
+}
+
+function textoTramos_(tr) {
+  return tr.map(function (x) { return horaAbs_(x[0]) + ' a ' + horaAbs_(x[1]); }).join(' + ');
+}
+
+function horas_(tr) {
+  return Math.round(tr.reduce(function (s, x) { return s + x[1] - x[0]; }, 0) / 6) / 10;
 }
 
 function procesarAgente_(a, serv, cfg, ctx, filas) {
@@ -178,29 +180,24 @@ function procesarAgente_(a, serv, cfg, ctx, filas) {
       if (ident()) { filas.push(base.concat(['', '', ext, '', '', '', 'REVISAR IDENTIDAD', 'fichada: ' + nf])); continue; }
       if (!fr.length) { filas.push(base.concat(['', '', ext, '', '', '', 'A REVISAR', 'franja ilegible'])); continue; }
       var bloques = bloquesTurno_(a, d).concat(parseFranjas(a.ext[d - 1]).map(function (w) { return { ini: w.ini - 1440, fin: w.fin - 1440 }; }));
-      var hoy = marcasDia_(a.leg, d, cfg);
+      var hoy = marcasDia_(a.leg, d, cfg), hE = hoy.length ? hoy[0].t : '', hS = hoy.length > 1 ? hoy[hoy.length - 1].t : '';
       fr.forEach(function (w0) {
         var txt = minToHora(w0.ini) + ' a ' + minToHora(w0.fin), piezas = restar_(w0, bloques);
         if (!piezas.length) {
-          filas.push(base.concat([hoy.length ? minToHora(hoy[0]) : '', hoy.length > 1 ? minToHora(hoy[hoy.length - 1]) : '', txt, '', 0, 0, 'A REVISAR', 'la franja declarada cae dentro del turno o de otra extra (no es extra)']));
+          filas.push(base.concat([hE, hS, txt, '', 0, 0, 'A REVISAR', 'la franja declarada cae dentro del turno o de otra extra (no es extra)']));
           return;
         }
         piezas.forEach(function (w) {
           var cond = fer ? 'feriado' : '', pr = presencia_(a, d, w, cfg);
           if (w.ini !== w0.ini || w.fin !== w0.fin) cond += (cond ? ' + ' : '') + 'se descontó lo que cae dentro del turno';
-          if (pr.estado === 'sin') {
-            filas.push(base.concat([hoy.length ? minToHora(hoy[0]) : '', hoy.length > 1 ? minToHora(hoy[hoy.length - 1]) : '', txt, '', 0, 0, 'A REVISAR', 'no fichó la extra (no se paga)' + (cond ? ' · ' + cond : '')]));
-            return;
-          }
-          if (pr.estado === 'irregular') {
-            filas.push(base.concat([horaAbs_(pr.ent), horaAbs_(pr.sal), txt, '', 0, 0, 'A REVISAR', 'fichadas irregulares, revisar a mano: ' + pr.nota]));
-            return;
-          }
-          if (!pr.dur) { filas.push(base.concat([horaAbs_(pr.ent), horaAbs_(pr.sal), txt, '', 0, 0, 'A REVISAR', 'las fichadas no cubren la franja (no se paga)'])); return; }
-          var r = calcularExtra(pr.dur, pr.ri, cd), fz = horaAbs_(pr.ri) + ' a ' + horaAbs_(pr.rf);
-          if (pr.ri > w.ini || pr.rf < w.fin) cond += (cond ? ' + ' : '') + 'realizó menos que lo autorizado';
-          if (r.h50 + r.h100 <= 0) { filas.push(base.concat([horaAbs_(pr.ent), horaAbs_(pr.sal), txt, fz, 0, 0, 'A REVISAR', 'menos de 1 h (no se paga)'])); return; }
-          filas.push(base.concat([horaAbs_(pr.ent), horaAbs_(pr.sal), txt, fz, r.h50, r.h100, 'AUTORIZADA', cond]));
+          if (pr.estado === 'sin') { filas.push(base.concat([hE, hS, txt, '', 0, 0, 'A REVISAR', 'no fichó la extra (no se paga)' + (cond ? ' · ' + cond : '')])); return; }
+          if (pr.estado === 'omision') { filas.push(base.concat([pr.ent, '', txt, '', 0, 0, 'A REVISAR', 'omisión: una sola fichada, no corresponde extra'])); return; }
+          if (pr.estado === 'impar') { filas.push(base.concat([pr.ent, pr.sal, txt, '', 0, 0, 'A REVISAR', pr.n + ' fichadas (impar): falta una. Entre la primera y la última serían ' + horas_(pr.tramos) + ' h, revisar a mano'])); return; }
+          if (!pr.tramos.length) { filas.push(base.concat([pr.ent, pr.sal, txt, '', 0, 0, 'A REVISAR', 'las fichadas no cubren la franja (no se paga)'])); return; }
+          var r = calcularExtraTramos(pr.tramos, cd), fz = textoTramos_(pr.tramos);
+          if (r.total < w.fin - w.ini) cond += (cond ? ' + ' : '') + 'realizó menos que lo autorizado';
+          if (r.h50 + r.h100 <= 0) { filas.push(base.concat([pr.ent, pr.sal, txt, fz, 0, 0, 'A REVISAR', 'menos de 1 h (no se paga)'])); return; }
+          filas.push(base.concat([pr.ent, pr.sal, txt, fz, r.h50, r.h100, 'AUTORIZADA', cond]));
         });
       });
       continue;
@@ -209,17 +206,18 @@ function procesarAgente_(a, serv, cfg, ctx, filas) {
     if (fer || esCola_(a, d)) continue;
     var t = turnoCompleto_(a, d);
     if (!t) continue;
-    var salida = null, entrada = null;
-    corridas_(a.leg, d, t.ini - 240, t.fin + 480, cfg).forEach(function (c) {
-      if (c.length >= 2 && c.some(function (m) { return m >= t.ini - 240 && m <= t.ini + 180; })) salida = c[c.length - 1]; entrada = c[0];
-    });
-    if (salida === null || salida - t.fin < 60) continue;
+    var M = marcasAbs_(a.leg, d, t.ini - 240, t.fin + 480, cfg);
+    if (M.length < 2 || M[0].m > t.ini + 180) continue;
+    var ult = M[M.length - 1].m, impar = M.length % 2 === 1;
+    var tr = tramosPares_(impar ? [M[0], M[M.length - 1]] : M, t.fin, Infinity);
+    if (!tr.length || ult - t.fin < 60) continue;
     var decl = parseFranjas(a.ext[d + 1]).map(function (w) { return { ini: w.ini + 1440, fin: w.fin + 1440 }; });
-    if (decl.some(function (w) { return w.ini < salida && w.fin > t.fin; })) continue;
+    if (decl.some(function (w) { return w.ini < ult && w.fin > t.fin; })) continue;
     if (ident()) { filas.push(base.concat(['', '', '', '', '', '', 'REVISAR IDENTIDAD', 'fichada: ' + nf])); continue; }
-    var rn = calcularExtra(salida - t.fin, t.fin, cd);
+    var rn = calcularExtraTramos(tr, cd);
     if (rn.h50 + rn.h100 <= 0) continue;
-    filas.push(base.concat([horaAbs_(entrada), horaAbs_(salida), '', horaAbs_(t.fin) + ' a ' + horaAbs_(salida), rn.h50, rn.h100, 'A REVISAR', 'extra NO autorizada (no hay franja declarada)']));
+    filas.push(base.concat([M[0].t, M[M.length - 1].t, '', textoTramos_(tr), impar ? 0 : rn.h50, impar ? 0 : rn.h100, 'A REVISAR',
+      'extra NO autorizada (no hay franja declarada)' + (impar ? ' · ' + M.length + ' fichadas (impar): serían ' + horas_(tr) + ' h' : '')]));
   }
   agregarFichas_(filas, n0, a.leg, _diasMes, cfg);
 }
