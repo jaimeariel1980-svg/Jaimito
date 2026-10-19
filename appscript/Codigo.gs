@@ -1659,7 +1659,7 @@ function volcarVentas(){
   if(mae.getLastRow()>1){mae.getRange(2,1,mae.getLastRow()-1,1).getValues().forEach(function(r){existentes[r[0]]=1;});}
   function idx(nombre){return mh.indexOf(nombre);}
 
-  var em={'En venta':'Publicada','Reservada':'Reserva','Vendida':'Vendida','Suspendida':'Suspendida'};
+  var em={'En venta':'Publicada','Reservada':'Reserva','Vendida':'Vendida','Suspendida':'Baja'};
   var nuevas=[], saltadas=0;
 
   for(var r=1;r<vd.length;r++){
@@ -1763,6 +1763,7 @@ function _docsReq_(papeles, tipo, extra){
   var dpto = /depart|dpto|depto/i.test(String(tipo||'')), ex = extra||[];
   return Object.keys(papeles||{}).filter(function(d){ return DOC_OBLIG_.indexOf(d)>-1 || (d==='Expensas' && dpto) || ex.indexOf(d)>-1; });
 }
+function _etapaN_(e){ e = String(e==null?'':e).trim(); return /^suspendid/i.test(e) ? 'Baja' : e; }
 function getDatosRaw_(){
   var h=hojaMaestra_();
   if(h.getLastRow()<2)return [];
@@ -1824,7 +1825,7 @@ function getDatosRaw_(){
     var segOut=seg.map(function(s){return {_row:s._row,fecha:s.fecha,tipo:s.tipo,cli:s.cli,tel:s.tel,res:s.res,prox:s.prox,obs:s.obs,fechaProx:s.fechaProx,vend:s.vend||'',cargo:s.cargo||''};});
     out.push({
       id:id, dir:_dirTexto_(calle,num,det.piso,det.depto,det.pasillo), det:det, ciudad:row[c('Ciudad')]||'', tipo:row[c('Tipo de propiedad')]||'',
-      etapa:row[c('Etapa')]||'Captación', estadoCarga:row[c('Estado de la propiedad')]||'',
+      etapa:_etapaN_(row[c('Etapa')]||'Captación'), bajaFecha:gv('Fecha de baja'), bajaPor:gv('Baja por'), etapaAntes:gv('Etapa antes de la baja'), estadoCarga:row[c('Estado de la propiedad')]||'',
       precio:fmtPrecio_(row[c('Precio')], row[c('Moneda')]), operacion:row[c('Tipo de operación')]||'',
       pct:pct, plan:row[c('Plan Tokko')]||'',
             papeles:papeles, docExtra:docExtra, req:_docsReq_(papeles, row[c('Tipo de propiedad')], docExtra), docUrls:docUrls, encuesta:(encMap[id]||null),
@@ -1881,7 +1882,7 @@ function corregirMigracion(){
 
   var mh=mae.getRange(1,1,1,mae.getLastColumn()).getValues()[0];
   function idx(n){return mh.indexOf(n);}
-  var em={'en venta':'Publicada','reservada':'Reserva','vendida':'Vendida','suspendida':'Suspendida','alquilada':'Publicada'};
+  var em={'en venta':'Publicada','reservada':'Reserva','vendida':'Vendida','suspendida':'Baja','alquilada':'Publicada'};
   var nuevas=[];
   for(var r=hdr+1;r<all.length;r++){
     var row=all[r];
@@ -2097,10 +2098,15 @@ function guardarPropiedad(codigo, cambios){
         set('Doc: '+doc, pap[doc]?'Cargado':'Pendiente', !!pap[doc]===antesOk);
       });
     } else if(campo==='etapa'){
-      var et=cambios.etapa==='Publicadas'?'Publicada':cambios.etapa;
-      var ea=leer('Etapa')||'Publicada';
+      var et=_etapaN_(cambios.etapa==='Publicadas'?'Publicada':cambios.etapa);
+      var ea=_etapaN_(leer('Etapa')||'Publicada');
       if(ea!==et){ difs.push('Etapa: '+ea+' → '+et); etapaDe=ea; etapaA=et; }
       set('Etapa', et);
+      if(ea!==et && (et==='Baja' || ea==='Baja')){
+        ['Fecha de baja','Baja por','Etapa antes de la baja'].forEach(function(nm){ if(head.indexOf(nm)<0){ mae.getRange(1,mae.getLastColumn()+1).setValue(nm); head=mae.getRange(1,1,1,mae.getLastColumn()).getValues()[0]; } });
+        var onB = et==='Baja';
+        set('Fecha de baja', onB ? Utilities.formatDate(new Date(),'GMT-3','dd/MM/yyyy') : '', false); set('Baja por', onB ? quien : '', false); set('Etapa antes de la baja', onB ? ea : '', false);
+      }
     } else if(MAP_CAMPOS[campo]){
       var col=MAP_CAMPOS[campo], av=leer(col), nv=(cambios[campo]==null?'':String(cambios[campo])).trim();
       if(/^(boleto|boletoOk|escritura|escrituraOk)$/.test(campo)){ av=_fechaISO_(crudo(col)); nv=_fechaISO_(nv); }
