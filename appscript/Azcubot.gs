@@ -771,6 +771,7 @@ function azcuValidarVisitaExt_(a){
     d.fecha = fe; d.hora = hora;
   } else {
     d.fecha = fe || hoy; d.resultado = azcuResVisita_(a.resultado);
+    if(/rechaz|no le interes/i.test(d.resultado) && !d.obs) return {error:'Falta el motivo (por qué se rechazó o no le interesó): preguntalo en una línea; queda registrado.'};
   }
   d.dirTxt = '🏢 '+(d.dir||'Visita externa')+(d.inmob ? ' ('+d.inmob+')' : '');
   var f = d.fecha.split('-').reverse().join('/');
@@ -807,6 +808,7 @@ function azcuValidarAccion_(tipo, a){
   var datos = {id:p.id, dir:p.dir}, resumen, peligro = false, s;
   if(tipo==='cargar'){
     if(AZCU_VIAS.indexOf(a.via)<0 || AZCU_RESULTADOS.indexOf(a.resultado)<0) return {error:'Vía o resultado inválidos.'};
+    if(/rechaz|no le interes/i.test(a.resultado||'') && !String(a.observaciones||'').trim()) return {error:'Falta el motivo (por qué se rechazó o no le interesó): preguntalo en una línea; queda registrado.'};
     datos.interesado = a.interesado||''; datos.tel = String(a.telefono||'').replace(/[^0-9]/g,''); datos.via = a.via; datos.resultado = a.resultado; datos.prox = a.proximo_paso||''; datos.obs = a.observaciones||'';
     resumen = 'Cargar en '+p.dir+': '+datos.interesado+' · '+datos.via+' · '+datos.resultado+(datos.prox?' · próximo paso: '+datos.prox:'')+(datos.obs?' · detalle: '+datos.obs:'');
   } else if(tipo==='agendar'){
@@ -896,6 +898,7 @@ function azcuSistema_(ctx){
     'ÚLTIMAS INTERACCIONES: si piden las últimas interacciones/consultas/visitas cargadas (de todas las propiedades o del usuario) usá ultimas_interacciones; NUNCA las saques de ficha_propiedad salvo que pregunten por una propiedad puntual. Mostrá primero la más reciente y la fecha de cada una.',
     'PAPELERA: lo que se borra (propiedades, visitas/interacciones, documentos) queda 30 días en la Papelera. Si piden recuperar o restaurar algo borrado, mirá con papelera y armá la tarjeta con proponer_restaurar. Al borrar algo, avisá que se puede restaurar durante 30 días.',
     'RESULTADO O CAMBIOS DE UNA VISITA CON OTRA INMOBILIARIA: si cuentan cómo les fue, o piden corregir, borrar o cancelar una visita a una propiedad que NO es de Azcuénaga, NO digas que no la encontrás: ubicala con visitas (periodo pendientes o todas, y texto con la dirección o el cliente), que te da codigo_externa y fila. Resultado → proponer_visita_externa con estado=realizada y ese codigo; corregir/borrar → proponer_editar_interaccion / proponer_eliminar_interaccion con id=codigo_externa y la fila; cancelar → proponer_cancelar_visita.',
+    'MOTIVOS Y BAJAS: siempre que el resultado sea «Propuesta rechazada» o «No le interesó» pedí el motivo (precio, condiciones, zona…) y ponelo en observaciones: queda registrado. En una propiedad de otra inmobiliaria, si se rechaza una propuesta y no quedan otros interesados activos, ofrecé darla de baja con proponer_cambiar_etapa (etapa Baja y ese motivo). «Propuesta aceptada» pasa sola la propiedad a Reserva.',
     'CANCELAR VISITA: si dicen que una visita se cae, se cancela o la persona desistió, ubicala con visitas (te da la fila) y usá proponer_cancelar_visita con el motivo si lo dan. La visita queda registrada como cancelada (no se borra) y no cuenta como realizada.',
     'VISITAS A OTRAS INMOBILIARIAS: si cuentan o piden agendar una visita de un cliente nuestro a una propiedad que NO es nuestra (de otra inmobiliaria; ej. "visita de la inmobiliaria Bertollo a una casa en Pérez Bulnes 6637"), usá proponer_visita_externa de una, sin buscar_propiedades y sin pedir datos de más (si ya fue y no dicen el día, es hoy). Si además piden que les recuerdes algo ("llamarlo en dos días"), llamá también crear_recordatorio en el mismo turno; NO uses buscar_propiedades para esa dirección. Obligatorios: dirección, cliente y fecha (y hora si es a futuro). Inmobiliaria, colega (nombre de quien atiende en la otra inmobiliaria), link de la ficha (Tokko, ZonaProp, etc.), precio y teléfono son opcionales: no los pidas, pero si el usuario los dice, cargalos. Ya hecha: estado=realizada con resultado y observaciones (todo el detalle); a futuro: estado=agendada. Esas propiedades no se guardan en el sistema: solo queda la visita. Para consultar visitas (hoy, semana, próximas, de un vendedor, a otras inmobiliarias) usá visitas.',
     'USUARIO: hablás con '+(ctx.nombre||'un compañero')+'.',
