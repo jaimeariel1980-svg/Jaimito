@@ -264,11 +264,12 @@ function liquidarExtras() {
     var m = mens[r[1]];
     return r.concat(m ? [m.g ? m.g.a50 : '', m.g ? m.g.a100 : '', m.c.total, m.c.pagar, m.c.alerta] : ['', '', '', '', '']);
   });
-  out.sort(function (a, b) { return String(a[2]).localeCompare(String(b[2])) || a[3] - b[3]; });
+  out.sort(function (a, b) { return tipoFila_(a) - tipoFila_(b) || String(a[2]).localeCompare(String(b[2])) || a[3] - b[3]; });
 
   var cab = ['Servicio', 'Legajo', 'Apellido', 'Día', 'Turno', 'Entrada', 'Salida', 'Aut. Jefatura', 'Franja realizada', 'Hs 50%', 'Hs 100%', 'Estado', 'Condición', 'Fichadas del día',
              'Aut GRH 50%', 'Aut GRH 100%', 'Total real mes', 'A pagar (tope ' + cfg.tope + ')', 'Alerta mensual'];
-  escribir_(SpreadsheetApp.openById(ID_BASE), 'LIQUIDACION', cab, out, 5, 9);
+  var h = escribir_(SpreadsheetApp.openById(ID_BASE), 'LIQUIDACION', cab, out, 5, 9);
+  pintarLiquidacion_(h, out, cab.length);
   var aut = filas.filter(function (r) { return r[11] === 'AUTORIZADA'; }).length;
   avisar_('LIQUIDACION lista: ' + out.length + ' filas (' + aut + ' autorizadas) · ' + Object.keys(mens).length + ' agentes' + (cfg.fichadasAuto ? '\nFichadas: ' + cfg.fichadasAuto : '') + (grh ? '' : '\nSin Excel GRH en CONFIG: no hay consolidado de autorizaciones.'));
 }
@@ -281,4 +282,30 @@ function escribir_(ss, nombre, cab, filas, textoDesde, textoHasta) {
   if (filas.length) h.getRange(2, 1, filas.length, cab.length).setValues(filas);
   h.setFrozenRows(1);
   h.autoResizeColumns(1, cab.length);
+  return h;
+}
+
+function pintarLiquidacion_(h, filas, nc) {
+  h.setRowHeight(1, 32);
+  h.getRange(1, 1, 1, nc).setVerticalAlignment('middle').setHorizontalAlignment('center').setWrap(true);
+  if (!filas.length) return;
+  var rg = h.getRange(2, 1, filas.length, nc), fondos = [], est = [];
+  filas.forEach(function (r) {
+    var t = tipoFila_(r), c = TIPOS_FILA[t][1];
+    fondos.push(new Array(nc).fill(c));
+    est.push([t === 0 ? '#c9ebcf' : c]);
+  });
+  rg.setBackgrounds(fondos).setFontSize(10).setVerticalAlignment('middle')
+    .setBorder(true, true, true, true, true, true, '#c8c8c8', SpreadsheetApp.BorderStyle.SOLID);
+  h.getRange(2, 12, filas.length, 1).setBackgrounds(est).setFontWeight('bold').setHorizontalAlignment('center');
+  h.getRange(2, 4, filas.length, 8).setHorizontalAlignment('center');
+  h.getRange(2, 10, filas.length, 2).setNumberFormat('0.0');
+  for (var i = 1; i < filas.length; i++) {
+    if (tipoFila_(filas[i]) !== tipoFila_(filas[i - 1])) h.getRange(i + 1, 1, 1, nc).setBorder(null, null, true, null, null, null, '#555555', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+  }
+  var ley = TIPOS_FILA.map(function (x) { return [x[0]]; }), col = nc + 2;
+  h.getRange(1, col).setValue('Referencias').setFontWeight('bold');
+  h.getRange(2, col, ley.length, 1).setValues(ley).setBackgrounds(TIPOS_FILA.map(function (x) { return [x[1]]; }))
+    .setBorder(true, true, true, true, true, true, '#c8c8c8', SpreadsheetApp.BorderStyle.SOLID);
+  h.setColumnWidth(col, 330);
 }
