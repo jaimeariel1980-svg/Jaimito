@@ -1,4 +1,4 @@
-var _fich = {}, _ssFich = null, _diasMes = 31;
+var _fich = {}, _ssFich = null, _diasMes = 31, _mes = 1, _anio = 2026;
 
 function fichDia_(n, cfg) {
   if (n < 1 || n > _diasMes) return {};
@@ -66,8 +66,13 @@ function leerGRH_(id) {
   return out;
 }
 
+function licVigente_(txt, d) {
+  var m = String(txt || '').match(/al\s+(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  return !m || new Date(+m[3], +m[2] - 1, +m[1]) >= new Date(_anio, _mes - 1, d);
+}
+
 function turnoDia_(a, d) {
-  if (a.lic[d]) return null;
+  if (a.lic[d] && licVigente_(a.lic[d], d)) return null;
   var c = a.cam[d], t = c ? parseTurno(c) : null;
   if (c && !t) return null;
   return t || parseTurno(a.hab[d]);
@@ -146,8 +151,9 @@ function presencia_(a, d, w, cfg) {
     if (Math.abs(t.fin - w.ini) <= 30) { bIni = Math.min(bIni, t.ini); contiguo = true; }
     if (Math.abs(t.ini - w.fin) <= 30) { bFin = Math.max(bFin, t.fin); contiguo = true; }
   });
-  var eDesde = contiguo ? bIni - 240 : w.ini - 180, eHasta = contiguo ? bIni + 180 : w.ini + 180;
-  var M = marcasAbs_(a.leg, d, eDesde, (contiguo ? bFin : w.fin) + 240, cfg);
+  var eDesde = contiguo ? bIni - 240 : w.ini - 180, eHasta = contiguo ? bIni + 180 : w.ini + 180, fin = contiguo ? bFin : w.fin, prox = Infinity;
+  bloquesTurno_(a, d).forEach(function (t) { if (t.ini >= fin + 30) prox = Math.min(prox, t.ini); });
+  var M = marcasAbs_(a.leg, d, eDesde, Math.min(fin + 480, prox - 240), cfg);
   if (!M.length || M[0].m > eHasta) return { estado: 'sin' };
   var res = { ent: M[0].t, sal: M.length > 1 ? M[M.length - 1].t : '', n: M.length };
   if (M.length === 1) { res.estado = 'omision'; return res; }
@@ -165,6 +171,7 @@ function horas_(tr) {
 }
 
 function procesarAgente_(a, serv, cfg, ctx, filas) {
+  _mes = ctx.mes; _anio = ctx.anio;
   var n0 = filas.length;
   for (var d = 1; d <= _diasMes; d++) {
     if (d > 1) agregarFichas_(filas, n0, a.leg, d - 1, cfg);
