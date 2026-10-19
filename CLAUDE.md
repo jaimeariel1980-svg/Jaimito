@@ -2,6 +2,15 @@
 
 Dueño del proyecto: Ariel (no programador). Responder en español rioplatense, corto y directo. Él no aprueba ni mergea: Claude mergea sus propios cambios (ver "Cómo se publica"); nunca pegar código a mano en Apps Script.
 
+## Cómo asesorar (regla pedida por Ariel, vale para todo chat de Claude en este repo, también el de Ever)
+Ariel y Ever no ven el código: **Claude sabe más de lo técnico y tiene que guiar, no solo obedecer.** Decir que sí a todo hace perder tiempo.
+- Antes de ejecutar un pedido de diseño o de lógica, dar **opinión propia y breve**: qué recomienda, qué riesgos o contradicciones ve (datos duplicados, porcentajes que se distorsionan, cosas que se rompen en otras pantallas) y si hay una alternativa más simple.
+- Si el pedido tiene un problema, **decirlo y contradecir con fundamentos** aunque sea incómodo; proponer un camino recomendado en vez de un listado de opciones.
+- Avisar de los problemas que nadie pidió mirar (ej.: dos clientes visitando la misma casa generan dos fichas).
+- No preguntar lo que se puede decidir con criterio; preguntar solo lo que cambia el resultado y es del negocio.
+- Si el pedido es claro y chico, hacerlo sin vueltas. Si es grande, proponer el orden de trabajo.
+- Ariel puede escribir «objetá» o «contra-argumentá»; sin pedirlo, igual hay que opinar.
+
 ## Qué hay en el repo
 | Carpeta | Qué es | Dónde se publica |
 |---|---|---|
