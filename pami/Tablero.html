@@ -134,7 +134,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v134</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v135</small></div>
   <nav>
     <button class="ni" id="rf" onclick="actualizar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -769,6 +769,18 @@ function tecCard(c){
   var cita=c.cita?'📅 '+c.cita.ts.slice(8,10)+'/'+c.cita.ts.slice(5,7)+' '+c.cita.ts.slice(11,16):'Sin agendar';
   return '<div style="background:#fff;border:1px solid var(--line);border-left:5px solid var(--celeste);border-radius:8px;padding:14px 16px;margin-bottom:12px"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><b style="font-size:17px">'+esc(c.nombre)+'</b><div style="color:#5D6B82;font-size:13px">'+esc(tit(c.busq))+(VP&&c.policlinico?' · '+esc(c.policlinico.replace('Policlínico ','')):'')+'</div></div><div style="font-size:13px;font-weight:700;color:#034EA2">'+cita+'</div></div><div class="btns" style="margin-top:12px"><button class="btn ghost" onclick="verResumen('+c.fila+',this,true)">📄 Ver ficha</button><button class="btn" onclick="abrirFormTec('+c.fila+')">🩺 Evaluar</button>'+((c.cv||c.tieneCV)?'<button class="btn ghost" onclick="verCV('+c.fila+',this)">📎 Ver CV</button>':'')+'</div></div>';
 }
+function tecAgenda(L){
+  var DIAS=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'],desde=D.ahora.slice(0,10)+' 00:00',g={},ks=[];
+  L.forEach(function(c){if(!c.cita||c.cita.ts<desde)return;var d=c.cita.ts.slice(0,10);if(!g[d]){g[d]=[];ks.push(d);}g[d].push(c);});
+  if(!ks.length)return '';
+  ks.sort();
+  return '<div style="background:#fff;border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin-bottom:16px"><div style="font-weight:800;color:#034EA2;margin-bottom:8px">📅 Agenda de entrevistas técnicas</div>'+ks.map(function(d){
+    var p=d.split('-'),dt=new Date(+p[0],+p[1]-1,+p[2]),hoy=d===D.ahora.slice(0,10);
+    return '<div style="margin-bottom:8px"><div style="font-size:12px;font-weight:700;color:'+(hoy?'#1E8E5A':'#5D6B82')+';text-transform:uppercase;letter-spacing:.06em">'+(hoy?'Hoy · ':'')+DIAS[dt.getDay()]+' '+p[2]+'/'+p[1]+'</div>'+g[d].sort(function(a,b){return a.cita.ts<b.cita.ts?-1:1;}).map(function(c){
+      return '<div style="display:flex;gap:10px;align-items:center;padding:5px 0;border-top:1px solid var(--line)"><b style="min-width:48px;color:#034EA2">'+c.cita.ts.slice(11,16)+'</b><span style="flex:1">'+esc(c.nombre)+'</span><button class="btn ghost" onclick="verResumen('+c.fila+',this,true)">📄 Ficha</button></div>';
+    }).join('')+'</div>';
+  }).join('')+'</div>';
+}
 function tecOverlay(){
   var v=document.getElementById('tecv');
   if(!v){v=document.createElement('div');v.id='tecv';v.style.cssText='position:fixed;inset:0;z-index:40;background:var(--bg);overflow:auto';document.body.appendChild(v);}
@@ -778,7 +790,7 @@ function vistaTecnica(){
   if(document.getElementById('fmodal').classList.contains('show'))return;
   var v=tecOverlay(),L=D.cands;
   v.innerHTML='<div class="hdr"><div class="in"><span class="lg w"></span><div class="prod">Entrevista técnica<small class="ver">'+esc(D.poli||'')+'</small></div><span class="sp"></span><button class="cta" onclick="cambiarPinTec()">🔑 PIN</button> <button class="cta" onclick="cerrarSesion()">Salir</button></div></div>'+
-    '<div style="max-width:900px;margin:0 auto;padding:18px 16px 60px"><div style="font-size:14px;color:#5D6B82;margin-bottom:14px">Hola <b>'+esc(D.user)+'</b>. '+(D.poli?(L.length?L.length+' candidato'+(L.length===1?'':'s')+' para entrevista técnica en '+esc(D.poli)+'.':'No hay candidatos para entrevista técnica en '+esc(D.poli)+' por ahora.'):'Todavía no tenés un policlínico asignado. Avisale al administrador.')+'</div>'+L.map(tecCard).join('')+'</div>';
+    '<div style="max-width:900px;margin:0 auto;padding:18px 16px 60px"><div style="font-size:14px;color:#5D6B82;margin-bottom:14px">Hola <b>'+esc(D.user)+'</b>. '+(D.poli?(L.length?L.length+' candidato'+(L.length===1?'':'s')+' para entrevista técnica en '+esc(D.poli)+'.':'No hay candidatos para entrevista técnica en '+esc(D.poli)+' por ahora.'):'Todavía no tenés un policlínico asignado. Avisale al administrador.')+'</div>'+tecAgenda(L)+L.map(tecCard).join('')+'</div>';
 }
 var VP=false,VPP='';
 function vistaPreview(poli){
@@ -789,7 +801,7 @@ function vistaPreview(poli){
   var L=D.cands.filter(function(c){var p=c.policlinico||String(c.polSug||'').split(' · ')[0];return est.indexOf(c.estado)>-1&&(!VPP||p===VPP);}).sort(function(a,b){return String(a.cita?a.cita.ts:'9')<String(b.cita?b.cita.ts:'9')?-1:1;});
   L.forEach(function(c){if(!c.policlinico)c.policlinico=String(c.polSug||'').split(' · ')[0];});
   tecOverlay().innerHTML='<div class="hdr"><div class="in"><span class="lg w"></span><div class="prod">Vista de entrevista técnica<small class="ver">así la ven los jefes</small></div><span class="sp"></span><select style="width:auto;margin-right:8px" onchange="vistaPreview(this.value)"><option value="">Todos los policlínicos</option>'+D.policlinicos.map(function(p){return '<option'+(p===VPP?' selected':'')+'>'+p+'</option>';}).join('')+'</select><button class="cta" onclick="cerrarPreview()">← Volver al tablero</button></div></div>'+
-    '<div style="max-width:900px;margin:0 auto;padding:18px 16px 60px"><div style="font-size:14px;color:#5D6B82;margin-bottom:14px">'+(L.length?L.length+' candidato'+(L.length===1?'':'s')+' para entrevista técnica'+(VPP?' en '+esc(VPP):'')+'. Cada jefe ve solo los de su policlínico.':'No hay candidatos para entrevista técnica'+(VPP?' en '+esc(VPP):'')+' por ahora.')+'</div>'+L.map(tecCard).join('')+'</div>';
+    '<div style="max-width:900px;margin:0 auto;padding:18px 16px 60px"><div style="font-size:14px;color:#5D6B82;margin-bottom:14px">'+(L.length?L.length+' candidato'+(L.length===1?'':'s')+' para entrevista técnica'+(VPP?' en '+esc(VPP):'')+'. Cada jefe ve solo los de su policlínico.':'No hay candidatos para entrevista técnica'+(VPP?' en '+esc(VPP):'')+' por ahora.')+'</div>'+tecAgenda(L)+L.map(tecCard).join('')+'</div>';
 }
 function editarFicha(f){
   var c=byFila(f),mb=document.getElementById('mbox');
