@@ -3,7 +3,7 @@ var CONFIG_DEF = [
   ['mes', 10, 'Mes a liquidar (1-12)'],
   ['anio', 2026, 'Año'],
   ['id_horarios', '1mxpaPAUGhe-QEtc_asX_xX4bLaq9ujFrgXBlMDmSpOE', 'Planilla de horarios del mes (link o ID)'],
-  ['id_fichadas', '', 'Fichadas del reloj del mes: una pestaña por día "1".."31" (link o ID)'],
+  ['id_fichadas', '', 'Fichadas del reloj del mes (link o ID). Vacío = se busca solo en el Drive el archivo "Tarjeta Reloj por persona - <Mes> <Año>"'],
   ['id_grh', '', 'Excel GRH con las autorizaciones del mes (link o ID). Vacío = sin consolidado GRH'],
   ['feriados_extra', '', 'Días feriado que no estén marcados FDO en la planilla, separados por coma (ej: 12, 13)'],
   ['no_laborables', '', 'Días no laborables (se tratan como sábado), separados por coma'],
@@ -54,6 +54,20 @@ function leerConfig_() {
   };
   if (!(c.mes >= 1 && c.mes <= 12) || !(c.anio >= 2020)) throw new Error('CONFIG: revisá mes y año.');
   if (!c.idHorarios) throw new Error('CONFIG: falta id_horarios.');
-  if (!c.idFichadas) throw new Error('CONFIG: falta id_fichadas (fichadas del reloj del mes).');
+  if (!c.idFichadas) {
+    var f = buscarFichadas_(c.mes, c.anio);
+    c.idFichadas = f.getId(); c.fichadasAuto = f.getName();
+  }
   return c;
+}
+
+var MESES_ = [['enero'], ['febrero'], ['marzo'], ['abril'], ['mayo'], ['junio'], ['julio'], ['agosto'], ['septiembre', 'setiembre'], ['octubre'], ['noviembre'], ['diciembre']];
+
+function buscarFichadas_(mes, anio) {
+  var nom = MESES_[mes - 1].map(function (m) { return "title contains '" + m + "'"; }).join(' or ');
+  var it = DriveApp.searchFiles("title contains 'Tarjeta Reloj' and (" + nom + ") and title contains '" + anio + "' and mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false");
+  var mejor = null;
+  while (it.hasNext()) { var f = it.next(); if (!mejor || f.getLastUpdated() > mejor.getLastUpdated()) mejor = f; }
+  if (!mejor) throw new Error('No encontré en el Drive el archivo "Tarjeta Reloj por persona - ' + MESES_[mes - 1][0] + ' ' + anio + '". Pegá su link en CONFIG (id_fichadas).');
+  return mejor;
 }
