@@ -136,9 +136,9 @@ function procesarAgente_(a, serv, cfg, ctx, filas) {
     if (fer || esCola_(a, d)) continue;
     var t = turnoCompleto_(a, d);
     if (!t) continue;
-    var salida = null;
+    var salida = null, entrada = null;
     corridas_(a.leg, d, t.ini - 240, t.fin + 480, cfg).forEach(function (c) {
-      if (c.length >= 2 && c.some(function (m) { return m >= t.ini - 240 && m <= t.ini + 180; })) salida = c[c.length - 1];
+      if (c.length >= 2 && c.some(function (m) { return m >= t.ini - 240 && m <= t.ini + 180; })) salida = c[c.length - 1]; entrada = c[0];
     });
     if (salida === null || salida - t.fin < 60) continue;
     var decl = parseFranjas(a.ext[d + 1]).map(function (w) { return { ini: w.ini + 1440, fin: w.fin + 1440 }; });
@@ -146,7 +146,7 @@ function procesarAgente_(a, serv, cfg, ctx, filas) {
     if (ident()) { filas.push(base.concat(['', '', '', '', '', '', 'REVISAR IDENTIDAD', 'fichada: ' + nf])); continue; }
     var rn = calcularExtra(salida - t.fin, t.fin, cd);
     if (rn.h50 + rn.h100 <= 0) continue;
-    filas.push(base.concat(['', minToHora(salida), '', minToHora(t.fin) + ' a ' + minToHora(salida), rn.h50, rn.h100, 'A REVISAR', 'extra NO autorizada (no hay franja declarada)']));
+    filas.push(base.concat([minToHora(entrada), minToHora(salida), '', minToHora(t.fin) + ' a ' + minToHora(salida), rn.h50, rn.h100, 'A REVISAR', 'extra NO autorizada (no hay franja declarada)']));
   }
 }
 
