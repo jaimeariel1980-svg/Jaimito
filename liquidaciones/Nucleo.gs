@@ -95,3 +95,22 @@ function consolidarGRH_(real50, real100, aut50, aut100, hayGRH, tope) {
   if (recorte > 0) al.push('EXCEDE ' + tope + ' (-' + recorte + 'h)');
   return { total: total, pagar: pagar, alerta: al.length ? al.join(' + ') : 'OK' };
 }
+
+function restar_(w, bloques) {
+  var piezas = [{ ini: w.ini, fin: w.fin }];
+  bloques.forEach(function (b) {
+    var nuevas = [];
+    piezas.forEach(function (p) {
+      if (b.fin <= p.ini || b.ini >= p.fin) { nuevas.push(p); return; }
+      if (b.ini > p.ini) nuevas.push({ ini: p.ini, fin: b.ini });
+      if (b.fin < p.fin) nuevas.push({ ini: b.fin, fin: p.fin });
+    });
+    piezas = nuevas;
+  });
+  return piezas;
+}
+
+function horaAbs_(m) {
+  if (m === null || m === undefined || m === '') return '';
+  return minToHora(m) + (m < 0 ? '(-1)' : m >= 1440 ? '(+1)' : '');
+}

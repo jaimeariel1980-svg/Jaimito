@@ -45,7 +45,7 @@ assert.strictEqual(rows[0][11],'A REVISAR');assert.strictEqual(rows[0][9],0);
 rows=sim(F({5:['6:58','17:20']}),ag({hab:{5:'7/14'},ext:{5:'14/19'}}));
 assert.deepStrictEqual([rows[0][9],rows[0][11]],[3,'AUTORIZADA']);assert.ok(/menos/.test(rows[0][12]));
 // 4) extra 0/6 tras turno 18/24 del día anterior (salida 06:02 en pestaña del día 6)
-rows=sim(F({5:['17:55','23:58'],6:['6:02']}),ag({hab:{5:'18/24'},ext:{6:'0/6'}}));
+rows=sim(F({5:['17:55'],6:['6:02']}),ag({hab:{5:'18/24'},ext:{6:'0/6'}}));
 assert.strictEqual(rows.length,1);assert.deepStrictEqual([rows[0][9],rows[0][10]],[0,6]);
 // 5) sin declarar, fichó de más: 7/14 sale 17:05 => A REVISAR no autorizada 3h
 rows=sim(F({6:['6:58','17:05']}),ag({hab:{6:'7/14'}}));
@@ -62,6 +62,24 @@ rows=sim(F({5:['6:58','19:10']}),ag({hab:{5:'7/14'},ext:{5:'14/19'}}));assert.st
 rows=sim(F({5:['5:51','17:10'],6:['5:50','17:08']}),ag({hab:{5:'6/13',6:'6/13'}}));
 assert.strictEqual(rows.length,2);assert.deepStrictEqual([rows[0][5],rows[0][6],rows[0][13]],['05:51','17:10','[05:51 · 17:10]']);assert.deepStrictEqual([rows[1][5],rows[1][6],rows[1][13]],['05:50','17:08','[05:50 · 17:08]']);
 rows=sim(F({5:['22:55'],6:['6:03']}),ag({hab:{5:'23/6'},ext:{5:'19/23'}}));assert.ok(/22:55/.test(rows[0][13]));
+// 10) casos reales vistos en octubre
+// RABINOVICH: 12/19 con extra 7/12 pero fichó 06:52 07:42 12:11 19:00 => ausente 07:42-12:11, NO se paga
+rows=sim(F({8:['19:15'],9:['6:52','7:42','12:11','19:00']}),ag({hab:{9:'12/19'},ext:{9:'7/12'}}));
+assert.strictEqual(rows.length,1);assert.strictEqual(rows[0][11],'A REVISAR');assert.ok(/ausente/.test(rows[0][12]));assert.strictEqual(rows[0][9],0);
+// SARBA: 17/24 con extra 19/22 (cae dentro del turno) => no es extra
+rows=sim(F({1:['11:57','22:12']}),ag({hab:{1:'17/24'},ext:{1:'19/22'}}));
+assert.strictEqual(rows[0][11],'A REVISAR');assert.ok(/dentro del turno/.test(rows[0][12]));
+// PAY/NIETO: extra 0/6 que es la cola de un turno nocturno 23/6 del día anterior => no es extra
+rows=sim(F({9:['23:53'],10:['6:05']}),ag({hab:{9:'23/6'},ext:{10:'0/6'}}));
+assert.strictEqual(rows[0][11],'A REVISAR');assert.ok(/dentro del turno/.test(rows[0][12]));
+// misma marca pero el día anterior era franco (la noche fue extra): se paga una vez y la entrada se ve con (-1)
+rows=sim(F({9:['23:53'],10:['6:05']}),ag({hab:{9:'F'},ext:{10:'0/6'}}));
+assert.deepStrictEqual([rows[0][11],rows[0][10],rows[0][5]],['AUTORIZADA',6,'23:53(-1)']);
+// NARVAEZ: extra 0/6 sin presencia a esa hora (salió 23:59 y volvió a las 13:10) => no se paga
+rows=sim(F({13:['13:05','23:59'],14:['13:10']}),ag({hab:{13:'13/24',14:'6/13'},ext:{14:'0/6'}}));
+assert.strictEqual(rows[0][11],'A REVISAR');assert.strictEqual(rows[0][9],0);
+// entrada sin salida en la franja => irregular, no se paga
+rows=sim(F({5:['6:58']}),ag({hab:{5:'7/14'},ext:{5:'14/19'}}));assert.strictEqual(rows[0][11],'A REVISAR');
 // 8) identidad
 const f2=F({5:['6:58','19:10']});f2[5]['1'].nombre='ALONSO Cecilia';
 rows=sim(f2,ag({hab:{5:'7/14'},ext:{5:'14/19'}}));assert.strictEqual(rows[0][11],'REVISAR IDENTIDAD');
