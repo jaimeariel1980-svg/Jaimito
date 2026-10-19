@@ -1,7 +1,7 @@
 var AZCU_MODEL = 'gpt-4o-mini';
 var AZCU_TZ = 'America/Argentina/Buenos_Aires';
 var AZCU_KB = 'Azcuénaga Inmobiliaria es una empresa familiar de Rosario, fundada en 1981 por Rubén Alberto Novillo. Oficina en Mendoza 4873. Más de 450 propiedades en cartera de alquileres (se asegura el pago al cliente), tasaciones y gran variedad de propiedades a la venta. Valores: responsabilidad, atención y capacidad de gestión en negocios. Combina experiencia con juventud.';
-var AZCU_ETAPAS = ['Captación','Publicada','Reserva','Vendida','Suspendida'];
+var AZCU_ETAPAS = ['Captación','Publicada','Reserva','Vendida','Otras inmobiliarias','Baja'];
 var AZCU_VIAS = ['Visita','WhatsApp','Llamada','Mail'];
 var AZCU_RESULTADOS = ['Solo consulta','Visita','Le interesó','No le interesó','Hizo una propuesta','Propuesta aceptada','Propuesta rechazada','No responde'];
 var AZCU_D_ = null;
@@ -203,7 +203,7 @@ function azcuHerrAlertas_(){
   return out;
 }
 function azcuHerrDocs_(){
-  return azcuDatos_().filter(function(p){ return p.etapa!=='Vendida' && p.etapa!=='Suspendida' && azcuFalta_(p).length; }).map(function(p){ return {id:p.id, direccion:p.dir, etapa:p.etapa, faltan:azcuFalta_(p)}; });
+  return azcuDatos_().filter(function(p){ return p.etapa!=='Vendida' && p.etapa!=='Baja' && p.etapa!=='Otras inmobiliarias' && azcuFalta_(p).length; }).map(function(p){ return {id:p.id, direccion:p.dir, etapa:p.etapa, faltan:azcuFalta_(p)}; });
 }
 function azcuHerrResumen_(){
   var d = azcuDatos_(), por = {}, act = 0, pap = 0, sm = 0;
@@ -496,7 +496,7 @@ function azcuHerrDashboard_(){
     var e = azcuEtapaN_(p.etapa), ac = e==='Publicadas' || e==='Reserva';
     por[e] = (por[e]||0)+1;
     if(ac){ act++; if(p.dias===null || p.dias>30) sinMov++; if(p.vis===0) sinVis++; }
-    if(e==='Vendida') vend++; if(e==='Suspendida') susp++; if(e==='Captación') capt++;
+    if(e==='Vendida') vend++; if(e==='Baja') susp++; if(e==='Captación') capt++;
     var pe = azcuPapEstado_(p);
     if(pe==='ok') pap['Al día']++; else if(pe==='med') pap['Incompletos']++; else if(pe==='no') pap['Faltan papeles']++;
     var ps = azcuPropEstado_(p); if(ps) pr[ps]++;
@@ -504,7 +504,7 @@ function azcuHerrDashboard_(){
     if(p.pct!==null && p.pct!==undefined && isFinite(p.pct)) pcts.push(p.pct);
   });
   return {
-    propiedades:d.length, activas:act, vendidas:vend, suspendidas:susp, en_captacion:capt, por_etapa:por,
+    propiedades:d.length, activas:act, vendidas:vend, bajas:susp, en_captacion:capt, por_etapa:por,
     propuestas_en_curso:pr.abierta+pr.aceptada, detalle_propuestas:pr, activas_sin_movimiento_30d:sinMov, activas_sin_visitas:sinVis, papeles:pap,
     salud_aviso_tokko_promedio_pct:pcts.length ? Math.round(pcts.reduce(function(s,x){ return s+x; },0)/pcts.length) : null,
     encuestas:{cantidad:enc.length, satisfaccion_promedio:azcuAvg_(enc,function(e){ return parseFloat(e.cal)||0; }), equipo:azcuAvg_(enc,function(e){ return parseFloat(e.equipo)||0; }),
@@ -513,11 +513,11 @@ function azcuHerrDashboard_(){
   };
 }
 function azcuPanel_(){
-  var x = azcuHerrDashboard_(), sat = x.encuestas.satisfaccion_promedio, cet = {'Captación':'#7a5cc0','Publicadas':'#3b6fb5','Reserva':'#e0a53d','Vendida':'#2e9e5b','Suspendida':'#9aa0a6'};
+  var x = azcuHerrDashboard_(), sat = x.encuestas.satisfaccion_promedio, cet = {'Captación':'#7a5cc0','Publicadas':'#3b6fb5','Reserva':'#e0a53d','Vendida':'#2e9e5b','Otras inmobiliarias':'#c2761a'};
   return {
-    kpis:[{n:x.propiedades,l:'Propiedades'},{n:x.activas,l:'Activas'},{n:x.vendidas,l:'Vendidas',c:'g'},{n:x.suspendidas,l:'Suspendidas'},
+    kpis:[{n:x.propiedades,l:'Propiedades'},{n:x.activas,l:'Activas'},{n:x.vendidas,l:'Vendidas',c:'g'},{n:x.bajas,l:'Bajas'},
       {n:sat===null?'—':sat+'/10',l:'Satisfacción',c:sat===null?'':(sat>=8?'g':(sat>=5?'a':'r'))},{n:x.propuestas_en_curso,l:'Propuestas',c:'g'},{n:x.activas_sin_movimiento_30d,l:'Sin movimiento',c:x.activas_sin_movimiento_30d?'r':'g'}],
-    etapas:['Captación','Publicadas','Reserva','Vendida','Suspendida'].map(function(k){ return {l:k, v:x.por_etapa[k]||0, c:cet[k]}; }),
+    etapas:['Captación','Publicadas','Reserva','Vendida','Otras inmobiliarias'].map(function(k){ return {l:k, v:x.por_etapa[k]||0, c:cet[k]}; }),
     papeles:[{l:'Al día',v:x.papeles['Al día'],c:'#2e9e5b'},{l:'Incompletos',v:x.papeles['Incompletos'],c:'#e0a53d'},{l:'Faltan papeles',v:x.papeles['Faltan papeles'],c:'#d1495b'}]
   };
 }
@@ -670,7 +670,7 @@ function azcuTools_(){
     t('proponer_visita_externa','Cargar o agendar una visita de un cliente nuestro a una propiedad de OTRA inmobiliaria o que no está en el sistema (ej. "visita de la inmobiliaria Bertollo", "casa de otra inmobiliaria"): no se registra como propiedad, queda solo la visita. NO busques la propiedad antes. Pendiente de confirmación. Agendar: estado=agendada con fecha y hora. Ya hecha: estado=realizada con fecha y resultado. Para cargar el resultado de una visita externa ya agendada pasá codigo (EXT-...).',{direccion:{type:'string',description:'Calle y número de la propiedad ajena'}, inmobiliaria:S, colega:{type:'string',description:'Nombre del colega de la otra inmobiliaria'}, link:{type:'string',description:'Link de la ficha (Tokko, ZonaProp, etc.)'}, precio:S, interesado:{type:'string',description:'Nombre del interesado (cliente nuestro que va a ver la propiedad)'}, telefono:S, email:S, estado:{type:'string',enum:['agendada','realizada'],description:'realizada si ya fue; agendada si es a futuro'}, fecha:{type:'string',description:'AAAA-MM-DD. Si ya fue y no dicen el día, hoy'}, hora:{type:'string',description:'HH:mm 24h (solo agendada)'}, resultado:{type:'string',enum:AZCU_RESULTADOS}, observaciones:{type:'string',description:'Todo el detalle: comentarios del cliente, propuesta que va a hacer, qué quedó pendiente'}, codigo:S},['direccion','interesado']),
     t('proponer_agendar_visita','Agendar una visita futura (Calendar + seguimiento). Pendiente de confirmación.',{id:S, fecha:F, hora:{type:'string',description:'HH:mm 24h'}, interesado:S, telefono:S, email:S, nota:S},['id','fecha','hora']),
     t('proponer_registrar_propuesta','Registrar una propuesta u oferta recibida. Pendiente de confirmación.',{id:S, cliente:S, monto:{type:'string',description:'Monto y moneda'}, telefono:S, observaciones:S},['id','cliente','monto']),
-    t('proponer_cambiar_etapa','Cambiar la etapa de una propiedad. Pendiente de confirmación.',{id:S, etapa:{type:'string',enum:AZCU_ETAPAS}},['id','etapa']),
+    t('proponer_cambiar_etapa','Cambiar la etapa de una propiedad. Para «Baja» hace falta el motivo. «Otras inmobiliarias» es para propiedades que no son nuestras. Pendiente de confirmación.',{id:S, etapa:{type:'string',enum:AZCU_ETAPAS}, motivo:{type:'string',description:'Motivo de la baja (obligatorio si etapa=Baja)'}},['id','etapa']),
     t('proponer_editar_campos','Editar datos de la propiedad o del primer propietario. Pendiente de confirmación.',{id:S, precio:S, observaciones:S, tipo:S, link_tokko:S, origen:S, colega:S, contacto_colega:S, comision:S, vendedor:S, motivo_suspension:S, pct_aviso:{type:'string',description:'0 a 100'}, propietario_nombre:S, propietario_telefono:S, propietario_mail:S, propietario_dni:S, propietario_domicilio:S, plazo_boleto:{type:'string',description:'Fecha AAAA-MM-DD del plazo para firmar el boleto'}, boleto_firmado:{type:'string',description:'Fecha AAAA-MM-DD en que se firmó el boleto'}, plazo_escritura:{type:'string',description:'Fecha AAAA-MM-DD del plazo de la escritura'}, escritura_firmada:{type:'string',description:'Fecha AAAA-MM-DD en que se firmó la escritura'}},['id']),
     t('proponer_marcar_documento','Marcar un documento como cargado o pendiente. Pendiente de confirmación.',{id:S, documento:S, estado:{type:'string',enum:['cargado','pendiente']}},['id','documento','estado']),
     t('proponer_borrar_documento','Borrar un documento subido (se saca de Drive). Pendiente de confirmación.',{id:S, documento:S},['id','documento']),
@@ -818,8 +818,10 @@ function azcuValidarAccion_(tipo, a){
     datos.cliente = a.cliente; datos.monto = String(a.monto); datos.tel = String(a.telefono||'').replace(/[^0-9]/g,''); datos.obs = a.observaciones||'';
     resumen = 'Registrar propuesta en '+p.dir+': '+datos.cliente+' · '+datos.monto+(datos.obs?' · '+datos.obs:'');
   } else if(tipo==='etapa'){
+    if(a.etapa==='Suspendida') a.etapa = 'Baja';
     if(AZCU_ETAPAS.indexOf(a.etapa)<0) return {error:'Etapa inválida.'};
-    datos.etapa = a.etapa; resumen = 'Pasar '+p.dir+' de '+p.etapa+' a '+a.etapa;
+    if(a.etapa==='Baja' && !String(a.motivo||'').trim()) return {error:'Falta el motivo de la baja. Preguntalo.'};
+    datos.etapa = a.etapa; datos.motivo = String(a.motivo||'').trim().slice(0,300); resumen = 'Pasar '+p.dir+' de '+p.etapa+' a '+a.etapa+(datos.motivo ? ' · motivo: '+datos.motivo : '');
   } else if(tipo==='campos'){
     datos.campos = {}; var partes = [];
     Object.keys(AZCU_MAPC_).forEach(function(k){
@@ -1130,7 +1132,7 @@ function azcuEjecutar_(pin, accion){
   }
   if(tipo==='etapa'){
     if(AZCU_ETAPAS.indexOf(d.etapa)<0) throw new Error('Etapa inválida');
-    guardarPropiedad(p.id, {etapa:d.etapa});
+    guardarPropiedad(p.id, d.motivo ? {etapa:d.etapa, motivo:d.motivo, quien:quien} : {etapa:d.etapa, quien:quien});
     return {ok:true, mensaje:p.dir+' ahora está en '+d.etapa+'.'};
   }
   if(tipo==='campos'){
@@ -1636,7 +1638,7 @@ function azcuAvisoDiario(){
   if(lunes && a.sin_movimiento.length) p.push('🛑 '+a.sin_movimiento.length+' sin movimiento');
   if(p.length) azcuPush_('Buen día ☀️ Esto es lo de hoy', p.join(' · '), lunes && a.papeles.length && p.length===1 ? AZCU_WEB+'?ayuda=docs' : (a.visitas_hoy.length && !a.seguimientos_para_hoy.length && !a.propuestas_sin_respuesta.length ? AZCU_WEB+'?go=agenda' : AZCU_WEB+'?go=alertas'));
 }
-var AZCU_COD_ = {'Captación':'c','Publicada':'p','Publicadas':'p','Reserva':'r','Vendida':'v','Suspendida':'s'};
+var AZCU_COD_ = {'Captación':'c','Publicada':'p','Publicadas':'p','Reserva':'r','Vendida':'v','Suspendida':'s','Baja':'s','Otras inmobiliarias':'o'};
 function azcuEstadosGet_(pref){
   pref = pref || 'AZCU_EST';
   var pr = PropertiesService.getScriptProperties(), n = +(pr.getProperty(pref+'_n')||0), s = '', i;
@@ -1774,7 +1776,7 @@ function azcuStatsSemana_(){
 }
 function azcuHerrSemana_(){
   var S = azcuStatsSemana_(), D = azcuHerrDashboard_(), A = azcuHerrAlertas_();
-  return {actividad:S, cartera:{propiedades:D.propiedades, activas:D.activas, en_captacion:D.en_captacion, vendidas:D.vendidas, suspendidas:D.suspendidas, satisfaccion:D.encuestas.satisfaccion_promedio},
+  return {actividad:S, cartera:{propiedades:D.propiedades, activas:D.activas, en_captacion:D.en_captacion, vendidas:D.vendidas, bajas:D.bajas, satisfaccion:D.encuestas.satisfaccion_promedio},
     atencion:{sin_movimiento_30d:D.activas_sin_movimiento_30d, sin_visitas:D.activas_sin_visitas, papeles_faltan:D.papeles['Faltan papeles'], propuestas_sin_respuesta:A.propuestas_sin_respuesta.length}};
 }
 function azcuDelta_(a, b){

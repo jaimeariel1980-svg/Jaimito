@@ -115,7 +115,7 @@ td{padding:7px 8px;border-bottom:1px solid #f1f0ec;vertical-align:top}
 <div class="top"><div class="chip"><img id="logoimg" alt="Azcuénaga"></div>
 <div class="sep"></div><h1>Tablero de propiedades</h1><div class="dir">Mendoza 4873 · Rosario</div><button class="dlbtn" onclick="descargar()">Descargar</button></div>
 <div class="wrap">
-  <div class="nav"><button class="tab on" id="tabR" onclick="ver('resumen')">Resumen</button><button class="tab" id="tabP" onclick="ver('props')">Propiedades</button><button class="tab" id="tabC" onclick="ver('cons')">💬 Consultas WhatsApp <span id="consBadge" style="display:none;background:#d1495b;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px"></span></button><button class="tab" id="tabV" onclick="visAbrir('prox')">🗓 Visitas</button><button class="tab" id="tabPap" onclick="papAbrir()">🗑 Papelera</button><button class="tab" id="tabN" onclick="novAbrir()">🔔 Novedades <span id="novBadge" style="display:none;background:#d1495b;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px"></span></button><a class="tab" style="text-decoration:none;display:inline-block" href="#" onclick="irApp('');return false" rel="noopener">Ir a Precarga</a><a class="tab" style="text-decoration:none;display:inline-block" href="#" onclick="irApp('?app=procedimiento');return false" rel="noopener">Ir a Procedimiento de Ventas</a></div>
+  <div class="nav"><button class="tab on" id="tabR" onclick="ver('resumen')">Resumen</button><button class="tab" id="tabP" onclick="ver('props')">Propiedades</button><button class="tab" id="tabC" onclick="ver('cons')">💬 Consultas WhatsApp <span id="consBadge" style="display:none;background:#d1495b;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px"></span></button><button class="tab" id="tabV" onclick="visAbrir('prox')">🗓 Visitas</button><button class="tab" id="tabBajas" onclick="bajasAbrir()">📉 Bajas</button><button class="tab" id="tabPap" onclick="papAbrir()">🗑 Papelera</button><button class="tab" id="tabN" onclick="novAbrir()">🔔 Novedades <span id="novBadge" style="display:none;background:#d1495b;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px"></span></button><a class="tab" style="text-decoration:none;display:inline-block" href="#" onclick="irApp('');return false" rel="noopener">Ir a Precarga</a><a class="tab" style="text-decoration:none;display:inline-block" href="#" onclick="irApp('?app=procedimiento');return false" rel="noopener">Ir a Procedimiento de Ventas</a></div>
   <div id="cons" style="display:none"></div>
   <div id="resumen">
   <div class="dash" id="dash"></div>
@@ -680,13 +680,13 @@ var LOGO="data:image/png;base64,"+
 "oDYF0t+3PxyMpPh/AcLoP4JjaZ+MAAAAAElFTkSuQmCC";
 document.getElementById('logoimg').src=LOGO;
 let DATA=[];let EDIT=false;
-const ET=[["Captación","#7a5cc0"],["Publicadas","#3b6fb5"],["Reserva","#e0a53d"],["Vendida","#2e9e5b"],["Suspendida","#9aa0a6"]];
+const ET=[["Captación","#7a5cc0"],["Publicadas","#3b6fb5"],["Reserva","#e0a53d"],["Vendida","#2e9e5b"],["Otras inmobiliarias","#c2761a"]];
 const ACT=new Set(["Publicadas","Reserva"]);
 let SIM={};
 const TIPOS=['Casa','Departamento','Local','Galpón','Terreno','Oficina','Cochera','Quinta','Campo','Duplex','PH'];
 const RES_OPC=['Solo consulta','Visita','Le interesó','No le interesó','Hizo una propuesta','Propuesta aceptada','Propuesta rechazada','No responde'];
 let DOCLIST=[];
-const ET2EST={"Captación":"En venta","Publicadas":"En venta","Reserva":"Reservada","Vendida":"Vendida","Suspendida":"Suspendida"};
+const ET2EST={"Captación":"En venta","Publicadas":"En venta","Reserva":"Reservada","Vendida":"Vendida","Otras inmobiliarias":"Otra inmobiliaria","Baja":"Baja","Suspendida":"Baja"};
 let ALERT_INACT=[],ALERT_SINVIS=[];
 const DOC_OBLIG=["EPE Luz","Litoral Gas","Aguas Santafesinas","TGI Municipal","API Provincial","Escritura","Autorización de venta","DNI propietario"];
 function reqDe(p){if(!p||!p.papeles)return[];const ks=Object.keys(p.papeles);if(Array.isArray(p.req))return ks.filter(d=>p.req.indexOf(d)>-1);const ex=p.docExtra||[],dp=/depart|dpto|depto/i.test(p.tipo||'');return ks.filter(d=>DOC_OBLIG.indexOf(d)>-1||(d==='Expensas'&&dp)||ex.indexOf(d)>-1);}
@@ -699,12 +699,12 @@ function healthC(p){if(p===null)return"var(--neutro)";if(p>=90)return"var(--verd
 function priceNum(s){if(!s)return -1;const n=parseInt((''+s).replace(/[^0-9]/g,''));return isNaN(n)?-1:n;}
 function wa(t){var d=(''+t).replace(/\D/g,'');if(!d)return '';if(d.indexOf('54')===0)return d;return '549'+d.replace(/^0/,'').replace(/^15/,'');}
 function norm(t){t=(''+ (t==null?'':t)).replace(/\s+/g,' ').trim();if(!t)return '';return t.replace(/\w\S*/g,function(w){return w.charAt(0).toUpperCase()+w.slice(1).toLowerCase();});}
-function estFromEt(e){return {'Publicadas':'En venta','Publicada':'En venta','Reserva':'Reservada','Vendida':'Vendida','Suspendida':'Suspendida','Captación':'Captación'}[e]||'En venta';}
-function normEt(e){return e==='Publicada'?'Publicadas':(e||'Publicadas');}
+function estFromEt(e){return {'Publicadas':'En venta','Publicada':'En venta','Reserva':'Reservada','Vendida':'Vendida','Otras inmobiliarias':'Otra inmobiliaria','Baja':'Baja','Suspendida':'Baja','Captación':'Captación'}[e]||'En venta';}
+function normEt(e){e=(e==='Suspendida'?'Baja':e);return e==='Publicada'?'Publicadas':(e||'Publicadas');}
 function filtered(){
   const q=(document.getElementById('q').value||'').toLowerCase();
   const ft=document.getElementById('ftipo').value;
-  return DATA.filter(p=>(!q||[p.dir,p.id,p.prop,p.tipo].join(' ').toLowerCase().includes(q))&&(!ft||p.tipo===ft));
+  return DATA.filter(p=>p.etapa!=='Baja'&&(!q||[p.dir,p.id,p.prop,p.tipo].join(' ').toLowerCase().includes(q))&&(!ft||p.tipo===ft));
 }
 function sortIt(arr){
   const o=document.getElementById('orden').value;
@@ -725,7 +725,7 @@ function render(){
   poblarTipos();
   const f=filtered();
   const activas=f.filter(p=>ACT.has(p.etapa));
-  const vend=f.filter(p=>p.etapa==='Vendida').length;const susp=f.filter(p=>p.etapa==='Suspendida').length;
+  const vend=f.filter(p=>p.etapa==='Vendida').length;const susp=DATA.filter(p=>p.etapa==='Baja').length;
   const cp=f.filter(p=>p.pct!==null&&isFinite(p.pct));
   let avg=cp.length?Math.round(cp.reduce((a,p)=>a+p.pct,0)/cp.length):0;
   if(!isFinite(avg))avg=0;
@@ -736,7 +736,7 @@ function render(){
   var _sat=_enc.length?Math.round(_enc.reduce(function(a,p){return a+(parseFloat(p.encuesta.cal)||0);},0)/_enc.length*10)/10:null;
   document.getElementById('dash').innerHTML=
     kpi(f.length,'Propiedades','','todas')+kpi(activas.length,'Activas','','activas')+kpi(vend,'Vendidas','g','et:Vendida')+
-    kpi(susp,'Suspendidas','','et:Suspendida')+kpi(_sat===null?'—':_sat+'/10','Satisfacción',(_sat===null?'':(_sat>=8?'g':(_sat>=5?'a':'r'))),'sat:Todas')+kpi(ofN,'Propuestas','g','ofertas')+kpiV('Visitas hoy','kVh','hoy')+kpiV('Visitas semana','kVs','sem')+kpiAl(nAl);
+    kpi(susp,'Bajas','','bajas')+kpi(_sat===null?'—':_sat+'/10','Satisfacción',(_sat===null?'':(_sat>=8?'g':(_sat>=5?'a':'r'))),'sat:Todas')+kpi(ofN,'Propuestas','g','ofertas')+kpiV('Visitas hoy','kVh','hoy')+kpiV('Visitas semana','kVs','sem')+kpiAl(nAl);
   const cnt={};ET.forEach(e=>cnt[e[0]]=0);f.forEach(p=>{if(cnt[p.etapa]!=null)cnt[p.etapa]++});
   const segE=ET.map(e=>({l:e[0],v:cnt[e[0]],c:e[1],k:'et:'+e[0]}));const actPct=f.length?Math.round((activas.length/f.length)*100):0;document.getElementById('bars').innerHTML=donutPanel(segE,f.length,'activas',actPct+'%');
   var _encs=f.filter(function(p){return p.encuesta&&p.encuesta.cal;});
@@ -827,7 +827,7 @@ function verifBadge(estado){
   const txt=ok?'IA: OK':(sinVerificar?'IA: sin verificar':'IA: revisar');
   return '<span style="font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:10px;background:'+bg+';color:'+col+';white-space:nowrap;margin:0 6px" title="'+estado.replace(/"/g,'&quot;')+'">'+txt+'</span>';
 }
-function estColor(e){return {"En venta":"#eaf1fb;color:#2b4a8b","Reservada":"#fdf3e0;color:#a9781f","Vendida":"#e6f6ec;color:#1f7a44","Suspendida":"#eef0f2;color:#5b6470"}[e]||"#eee";}
+function estColor(e){return {"En venta":"#eaf1fb;color:#2b4a8b","Reservada":"#fdf3e0;color:#a9781f","Vendida":"#e6f6ec;color:#1f7a44","Baja":"#eef0f2;color:#5b6470","Otra inmobiliaria":"#fff1e0;color:#b4620a"}[e]||"#eee";}
 function ficha(id){
   const p=DATA.find(x=>x.id===id);
   const sm=SIM[id]||{};
@@ -848,7 +848,7 @@ function ficha(id){
       '<div class="fi"><div class="k">Inmobiliaria colega</div><input class="inp" value="'+(p.colega||'').replace(/"/g,'&quot;')+'" onchange="setP(\''+p.id+'\',\'colega\',this.value)"></div>'+
       '<div class="fi"><div class="k">Contacto colega</div><input class="inp" value="'+(p.colegaTel||'')+'" onchange="setP(\''+p.id+'\',\'colegaTel\',this.value)"></div>'+
       '<div class="fi"><div class="k">Reparto de comisión</div><input class="inp" value="'+(p.comision||'')+'" placeholder="Ej: 50%" onchange="setP(\''+p.id+'\',\'comision\',this.value)"></div>' : '');
-  var suspHtml=(p.etapa==='Suspendida'?'<h3 class="sec">Motivo de suspensión</h3><textarea class="inp" rows="2" placeholder="Escribí por qué está suspendida" onchange="setC(\''+p.id+'\',\'motivo\',this.value)">'+(p.motivo||'')+'</textarea>':'');
+  var suspHtml=(p.etapa==='Baja'?'<h3 class="sec">Motivo de la baja</h3><textarea class="inp" rows="2" placeholder="Escribí por qué se da de baja" onchange="setC(\''+p.id+'\',\'motivo\',this.value)">'+(p.motivo||'')+'</textarea>':'');
   var plazosHtml=(p.etapa==='Reserva'||p.etapa==='Vendida')?'<h3 class="sec">Plazos de la operación</h3><div class="grid">'+
     [['boleto','Plazo de boleto'],['escritura','Plazo de escritura']].map(function(x){var f=p[x[0]]||'',ok=p[x[0]+'Ok']||'';return '<div class="fi"><div class="k">'+x[1]+'</div><input class="inp" type="date" value="'+f+'" onchange="setP(\''+p.id+'\',\''+x[0]+'\',this.value)"><label style="font-size:12px;display:flex;align-items:center;gap:6px;margin-top:5px;color:var(--gris)"><input type="checkbox" '+(ok?'checked':'')+' onchange="setP(\''+p.id+'\',\''+x[0]+'Ok\',this.checked?new Date(Date.now()-3*3600000).toISOString().slice(0,10):\'\')"> Firmado'+(ok?' ('+ok.split('-').reverse().join('/')+')':'')+'</label></div>';}).join('')+'</div><div style="font-size:11.5px;color:var(--gris);margin:-4px 0 6px">Al vencer, Azcu le avisa al vendedor y insiste hasta que se marque como firmado. Cada 20 días le recuerda contarle al comprador cómo viene.</div>':'';
   var encuestaHtml='';
@@ -868,7 +868,7 @@ function ficha(id){
     plazosHtml+
     '<h3 class="sec">Origen de la propiedad</h3><div class="grid"><div class="fi"><div class="k">Tipo</div><select class="inp" onchange="setOrigen(\''+p.id+'\',this.value)"><option value="Propia" '+(p.origen!=='Compartida'?'selected':'')+'>Propia</option><option value="Compartida" '+(p.origen==='Compartida'?'selected':'')+'>Compartida (colega)</option></select></div><div class="fi"><div class="k">Vendedor asignado</div><input class="inp" list="vendList" placeholder="Sin asignar" value="'+(p.vendedor||'').replace(/"/g,'&quot;')+'" onchange="setP(\''+p.id+'\',\'vendedor\',this.value)"><datalist id="vendList">'+_vendNombres().map(n=>'<option value="'+n.replace(/"/g,'&quot;')+'">').join('')+'</datalist></div>'+compHtml+'</div>'+
     '<h3 class="sec">Ficha de la propiedad</h3><div class="grid"><div class="fi" style="grid-column:1/-1"><div class="k">URL de ficha colega '+tokLink+' <span style="color:var(--gris);font-weight:400;text-transform:none">— las fotos las trae la ficha</span></div><input class="inp" placeholder="URL de ficha colega" value="'+(sm.tokko||'')+'" onchange="setC(\''+p.id+'\',\'tokko\',this.value)"></div></div>'+
-    '<div style="margin:2px 0 10px;display:flex;align-items:center;gap:8px"><span style="font-size:12px;color:var(--gris)">Cambiar etapa:</span><select onchange="changeEtapa(\''+p.id+'\',this.value)" style="padding:6px 10px;border:1px solid var(--linea);border-radius:8px">'+ET.map(e=>'<option '+(p.etapa===e[0]?'selected':'')+'>'+e[0]+'</option>').join('')+'</select></div>'+suspHtml+
+    '<div style="margin:2px 0 10px;display:flex;align-items:center;gap:8px"><span style="font-size:12px;color:var(--gris)">Cambiar etapa:</span><select onchange="changeEtapa(\''+p.id+'\',this.value)" style="padding:6px 10px;border:1px solid var(--linea);border-radius:8px">'+ET.map(e=>'<option '+(p.etapa===e[0]?'selected':'')+'>'+e[0]+'</option>').join('')+'<option '+(p.etapa==='Baja'?'selected':'')+'>Baja</option></select></div>'+suspHtml+
     '<h3 class="sec">Datos del propietario '+waProp+'</h3><div class="grid">'+
       '<div class="fi"><div class="k">Nombre</div><input class="inp" value="'+(sm.prop||p.prop||'').replace(/"/g,'&quot;')+'" onchange="setC(\''+p.id+'\',\'prop\',this.value)"></div>'+
       '<div class="fi"><div class="k">Teléfono / WhatsApp</div><input class="inp" value="'+(sm.tel||'')+'" onchange="setC(\''+p.id+'\',\'tel\',this.value)"></div>'+
@@ -886,6 +886,7 @@ function ficha(id){
 }
 function drill(tipo){
   var f2,rows,titulo,sub;
+  if(tipo==='bajas'){bajasAbrir();return;}
   if(tipo==='todas'||tipo==='activas'){
     f2=sortIt(filtered().filter(p=>tipo==='todas'||ACT.has(p.etapa)));
     rows=f2.length?f2.map(p=>'<tr onclick=\'closeDL();ficha("'+p.id+'")\' style="cursor:pointer"><td><span class="idpill">'+p.id+'</span></td><td>'+p.dir+'</td><td style="color:var(--gris);font-size:12px">'+p.etapa+'</td><td>'+(p.precio||'—')+'</td></tr>').join(''):'<tr><td colspan="4" style="color:var(--gris)">Sin propiedades</td></tr>';
@@ -1433,6 +1434,7 @@ function setOrigen(id,v){const p=DATA.find(x=>x.id===id);if(p)p.origen=v;ficha(i
 function setP(id,field,val){const p=DATA.find(x=>x.id===id);if(p)p[field]=val;}
 function guardar(id){
   const p=DATA.find(x=>x.id===id); if(!p)return;
+  if(p.etapa==='Baja'&&!String(p.motivo||'').trim()){alert('Escribí el motivo de la baja antes de guardar.');return;}
   const sm=SIM[id]||{};
   const cambios={precio:p.precio,tipo:p.tipo,obs:p.obs,etapa:p.etapa,origen:p.origen,colega:p.colega,colegaTel:p.colegaTel,comision:p.comision,vendedor:p.vendedor,boleto:p.boleto,boletoOk:p.boletoOk,escritura:p.escritura,escrituraOk:p.escrituraOk,pct:p.pct,papeles:p.papeles,motivo:p.motivo,prop:sm.prop,tel:sm.tel,mail:sm.mail,dni:sm.dni,nac:sm.nac,nacionalidad:sm.nacionalidad,dom:sm.dom,tokko:sm.tokko,quien:_yo()};
   const dn=p.detNew||{};Object.keys(dn).forEach(function(k){if(dn[k]!==String((p.det||{})[k]==null?'':(p.det||{})[k]).trim())cambios[k]=dn[k];});
@@ -1786,6 +1788,20 @@ function visDet(f){
   document.getElementById('dlg').innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">'+(x.x?'🏢 ':'🏠 ')+_vE(x.dir)+'</div><div class="sub">'+(x.x?'Visita con otra inmobiliaria':'Visita a una propiedad nuestra')+'</div></div><div class="fb"><table>'+row('Fecha',x.d.split('-').reverse().join('/')+(x.h?' · '+x.h:''))+row('Estado',_vE(est))+row('Inmobiliaria',_vE(x.im))+row('Colega',_vE(x.co))+row('Interesado',_vE(x.cli))+row('Teléfono',_vE(x.tel))+row('Vendedor',_vE(x.v||x.c))+row('Precio',_vE(x.pr))+row('Ficha',lk)+row('Detalle',_vE(x.obs).replace(/\n/g,'<br>'))+'</table><div class="dlbtns">'+(!x.x?'<button class="btn p" onclick="closeDL();ficha(\''+_vE(x.id)+'\')">🏠 Abrir ficha</button>':'')+(x.x?'<button class="btn s" onclick="visEditar('+x.f+')">✏️ Editar</button>':'')+(pend?'<button class="btn g" onclick="'+(x.x?'visExtForm(\''+_vE(x.id)+'\')':'closeDL();cargarForm(\''+_vE(x.id)+'\')')+'">✅ Cargar resultado</button><button class="btn s" onclick="visCancelar('+x.f+')">🚫 Cancelar visita</button>':'')+'<button class="btn s" onclick="visBorrar('+x.f+')">🗑 Borrar</button><button class="btn s" onclick="visAbrir()">‹ Volver</button></div></div>';
   document.getElementById('ov2').classList.add('on');
 }
+function bajasAbrir(){
+  var l=DATA.filter(function(p){return p.etapa==='Baja';}).sort(function(a,b){var k=function(x){return String(x.bajaFecha||'').split('/').reverse().join('');};return k(b).localeCompare(k(a));});
+  var h=l.map(function(p){return '<div style="display:flex;gap:10px;padding:9px 10px;border-radius:10px;margin-bottom:5px;background:#f6f8fc"><span style="font-size:18px">'+(p.origen==='Otra inmobiliaria'?'🏢':'🏠')+'</span><div style="min-width:0;flex:1;cursor:pointer" onclick="closeDL();ficha(\''+p.id+'\')"><div style="font-size:13.5px;font-weight:700">'+_vE(p.dir)+'</div><div style="font-size:12.5px;color:#2b4a8b">'+(p.motivo?_vE(p.motivo):'<i style="color:var(--gris)">sin motivo cargado</i>')+'</div><div style="font-size:12px;color:var(--gris)">'+(p.bajaFecha?_vE(p.bajaFecha)+' · ':'')+(p.bajaPor?'👤 '+_vE(p.bajaPor):'')+'</div></div><button class="btn g" style="align-self:center;padding:5px 10px;font-size:12px" onclick="reactivar(\''+p.id+'\')">↩ Reactivar</button></div>';}).join('')||'<div style="color:var(--gris);padding:20px 0;text-align:center">No hay propiedades de baja.</div>';
+  document.getElementById('dlg').innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">📉 Bajas ('+l.length+')</div><div class="sub">Propiedades dadas de baja, con su motivo · tocá una para ver la ficha</div></div><div class="fb">'+h+'</div>';
+  document.getElementById('ov2').classList.add('on');
+}
+function reactivar(id){
+  const p=DATA.find(x=>x.id===id);if(!p)return;
+  const e=(p.etapaAntes&&p.etapaAntes!=='Baja')?normEt(p.etapaAntes):(p.origen==='Otra inmobiliaria'?'Otras inmobiliarias':'Publicadas');
+  if(!confirm('¿Reactivar «'+p.dir+'»? Vuelve a la columna «'+e+'».'))return;
+  p.etapa=e;p.estado=ET2EST[e]||p.estado;
+  google.script.run.withSuccessHandler(function(){recargar();}).withFailureHandler(function(er){alert('No pude reactivarla: '+(er&&er.message?er.message:er));recargar();}).guardarPropiedad(id,{etapa:e==='Publicadas'?'Publicada':e,quien:_yo()});
+  render();bajasAbrir();
+}
 function papAbrir(){
   var dl=document.getElementById('dlg');
   dl.innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">🗑 Papelera</div><div class="sub">Lo que se borra queda 30 días y se puede restaurar</div></div><div class="fb"><div style="color:var(--gris);padding:20px 0">Cargando…</div></div>';
@@ -1870,7 +1886,7 @@ function adaptar(datos){
   return datos.map(function(p){
     var d0=(p.duenos&&p.duenos[0])||{};
     SIM[p.id]={prop:p.prop||d0.nombre||'',tel:d0.tel||'',mail:d0.mail||'',dni:d0.dni||'',nac:d0.nac||'',nacionalidad:d0.nacionalidad||'',dom:d0.dom||'',tokko:p.tokko||''};
-    return {id:p.id,calle:(p.det&&p.det.calle)||'',numero:(p.det&&p.det.numero)||'',det:p.det||{},creada:p.creada||'',boleto:p.boleto||'',boletoOk:p.boletoOk||'',escritura:p.escritura||'',escrituraOk:p.escrituraOk||'',ciudad:norm(p.ciudad||''),dir:norm(p.dir),tipo:norm(p.tipo),prop:norm(p.prop),precio:p.precio,estado:estFromEt(p.etapa),etapa:normEt(p.etapa),obs:p.obs,pct:(function(v){var n=parseInt(v);return (v==null||v===''||isNaN(n))?null:n;})(p.pct),papeles:p.papeles||{},req:p.req,docExtra:p.docExtra||[],duenos:p.duenos||[],origen:p.origen||'Propia',colega:p.colega||'',colegaTel:p.colegaTel||'',comision:p.comision||'',vendedor:p.vendedor||'',tokko:p.tokko||'',estadoCarga:p.estadoCarga||'',operacion:p.operacion||'',seg:p.seg||[],cons:p.cons||0,vis:p.vis||0,dias:(p.dias==null?null:p.dias),seguimientoPendiente:(function(seg){var hoy=new Date(); hoy.setHours(0,0,0,0);return (seg||[]).some(function(s){if(!/Le interesó/i.test(s.res||''))return false;if(!s.fechaProx)return true;var fp=s.fechaProx;var m=(''+fp).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);if(!m)return true;var d=new Date(parseInt(m[3]),parseInt(m[2])-1,parseInt(m[1]));return d<=hoy;});})(p.seg),plan:p.plan||'',carpeta:p.carpeta||'',motivo:p.motivo||'',docUrls:p.docUrls||{},encuesta:p.encuesta||null};
+    return {id:p.id,calle:(p.det&&p.det.calle)||'',numero:(p.det&&p.det.numero)||'',det:p.det||{},creada:p.creada||'',boleto:p.boleto||'',boletoOk:p.boletoOk||'',escritura:p.escritura||'',escrituraOk:p.escrituraOk||'',ciudad:norm(p.ciudad||''),dir:norm(p.dir),tipo:norm(p.tipo),prop:norm(p.prop),precio:p.precio,estado:estFromEt(p.etapa),etapa:normEt(p.etapa),obs:p.obs,pct:(function(v){var n=parseInt(v);return (v==null||v===''||isNaN(n))?null:n;})(p.pct),papeles:p.papeles||{},req:p.req,docExtra:p.docExtra||[],duenos:p.duenos||[],origen:p.origen||'Propia',colega:p.colega||'',colegaTel:p.colegaTel||'',comision:p.comision||'',vendedor:p.vendedor||'',tokko:p.tokko||'',estadoCarga:p.estadoCarga||'',operacion:p.operacion||'',seg:p.seg||[],cons:p.cons||0,vis:p.vis||0,dias:(p.dias==null?null:p.dias),seguimientoPendiente:(function(seg){var hoy=new Date(); hoy.setHours(0,0,0,0);return (seg||[]).some(function(s){if(!/Le interesó/i.test(s.res||''))return false;if(!s.fechaProx)return true;var fp=s.fechaProx;var m=(''+fp).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);if(!m)return true;var d=new Date(parseInt(m[3]),parseInt(m[2])-1,parseInt(m[1]));return d<=hoy;});})(p.seg),plan:p.plan||'',carpeta:p.carpeta||'',motivo:p.motivo||'',bajaFecha:p.bajaFecha||'',bajaPor:p.bajaPor||'',etapaAntes:p.etapaAntes||'',docUrls:p.docUrls||{},encuesta:p.encuesta||null};
   });
 }
 if(!(function(){try{return localStorage.getItem('azdatos_v1');}catch(e){return null;}})()) document.getElementById('dash').innerHTML='<div style="padding:22px;color:var(--gris);font-size:15px">Cargando propiedades del maestro…</div>';
@@ -2506,7 +2522,7 @@ google.script.run
     var nm = root.querySelector('#azbName'); if(nm && st.open) nm.focus();
   }
   function ns(x){ return String(x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim(); }
-  var VIAS = ['Visita','WhatsApp','Llamada','Mail'], RES = ['Solo consulta','Visita','Le interesó','No le interesó','Hizo una propuesta','Propuesta aceptada','Propuesta rechazada','No responde'], ETAPAS = ['Captación','Publicada','Reserva','Vendida','Suspendida'], HORAS = ['09:00','10:00','11:00','12:00','15:00','16:00','17:00','18:00'];
+  var VIAS = ['Visita','WhatsApp','Llamada','Mail'], RES = ['Solo consulta','Visita','Le interesó','No le interesó','Hizo una propuesta','Propuesta aceptada','Propuesta rechazada','No responde'], ETAPAS = ['Captación','Publicada','Reserva','Vendida','Otras inmobiliarias','Baja'], HORAS = ['09:00','10:00','11:00','12:00','15:00','16:00','17:00','18:00'];
   function iso(d){ return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
   function fechas(){ var o = [], n = ['Hoy','Mañana','Pasado mañana'], i, d; for(i=0;i<3;i++){ d = new Date(); d.setDate(d.getDate()+i); o.push({l:n[i]+' · '+('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2), v:iso(d)}); } return o; }
   function parseFecha(t){ var m = t.match(/^(\d{1,2})[\/\-.](\d{1,2})(?:[\/\-.](\d{2,4}))?$/); if(!m) return null; var y = m[3] ? (+m[3]<100 ? 2000+ +m[3] : +m[3]) : new Date().getFullYear(), d = new Date(y, +m[2]-1, +m[1]); if(isNaN(d) || d.getDate()!==+m[1]) return null; return iso(d); }
@@ -2526,7 +2542,7 @@ google.script.run
     if(t==='adjex') return [P];
     if(t==='adjnew') return [];
     if(t==='propuesta') return [P, T('cliente','¿Quién hizo la propuesta?','Nombre'), T('monto','¿De cuánto? (monto y moneda)','Ej: U$S 85.000'), T('obs','Condiciones o detalle de la propuesta','Condiciones',1), T('tel','Teléfono del interesado','Teléfono',1,tel)];
-    if(t==='etapa') return [P, {k:'etapa',q:'¿A qué etapa la pasamos?',kind:'opt',opts:OP(ETAPAS)}];
+    if(t==='etapa') return [P, {k:'etapa',q:'¿A qué etapa la pasamos?',kind:'opt',opts:OP(ETAPAS)}, {k:'motivo',q:'¿Cuál es el motivo de la baja?',kind:'text',ph:'Motivo',si:function(d){ return d.etapa==='Baja'; }}];
     return [P];
   }
   function wzSay(q){ st.msgs.push({role:'assistant', content:q, w:1}); }
@@ -2586,7 +2602,7 @@ google.script.run
     else if(w.t==='agendar'){ a.tipo = 'agendar'; a.datos = {id:d.id, dir:d.dir, fecha:d.fecha, hora:d.hora, interesado:d.interesado||'', tel:d.tel||'', mail:d.mail||'', obs:''}; a.resumen = 'Agendar visita en '+d.dir+': '+fd(d.fecha)+' '+d.hora+(d.interesado?' · '+d.interesado:'')+(d.mail?' · invitación a '+d.mail:''); }
     else if(w.t==='externa'){ var ag2 = d.est==='agendar', dx = '🏢 '+d.dir+(d.inmob?' ('+d.inmob+')':''); a.tipo = 'visitaext'; a.datos = {id:'externa', dir:dx, d:{id:'externa', estado:ag2?'agendada':'realizada', dir:d.dir, inmob:d.inmob||'', colega:d.colega||'', link:d.link||'', precio:d.precio||'', interesado:d.interesado||'', tel:d.tel||'', mail:d.mail||'', obs:d.obs||'', fecha:d.fecha, hora:d.hora||'', resultado:d.resultado||'Visita', codigo:''}}; a.resumen = (ag2?'Agendar visita con otra inmobiliaria: ':'Cargar visita con otra inmobiliaria: ')+dx+(d.colega?' · colega: '+d.colega:'')+' · '+d.interesado+' · '+fd(d.fecha)+(ag2?' '+d.hora:' · '+(d.resultado||'Visita'))+(d.precio?' · '+d.precio:'')+(d.link?' · ficha: '+d.link:'')+(d.obs?' · detalle: '+d.obs:''); }
     else if(w.t==='propuesta'){ a.tipo = 'propuesta'; a.datos = {id:d.id, dir:d.dir, cliente:d.cliente||'', monto:d.monto||'', tel:d.tel||'', obs:d.obs||''}; a.resumen = 'Registrar propuesta en '+d.dir+': '+d.cliente+' · '+d.monto+(d.obs?' · '+d.obs:''); }
-    else if(w.t==='etapa'){ a.tipo = 'etapa'; a.datos = {id:d.id, dir:d.dir, etapa:d.etapa}; a.resumen = 'Pasar '+d.dir+(pr.etapa?' de '+pr.etapa:'')+' a '+d.etapa; }
+    else if(w.t==='etapa'){ a.tipo = 'etapa'; a.datos = {id:d.id, dir:d.dir, etapa:d.etapa, motivo:d.motivo||''}; a.resumen = 'Pasar '+d.dir+(pr.etapa?' de '+pr.etapa:'')+' a '+d.etapa+(d.motivo?' · motivo: '+d.motivo:''); }
     else { a.tipo = 'reporte'; a.datos = {id:d.id, dir:d.dir}; a.resumen = 'Enviar por mail el informe de gestión de '+d.dir+' a los propietarios con mail cargado'; }
     st.msgs.push({role:'assistant', content:'Listo, revisá y confirmá 👇', acciones:[a]}); save(); render();
   }

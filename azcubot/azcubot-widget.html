@@ -615,7 +615,7 @@
     var nm = root.querySelector('#azbName'); if(nm && st.open) nm.focus();
   }
   function ns(x){ return String(x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim(); }
-  var VIAS = ['Visita','WhatsApp','Llamada','Mail'], RES = ['Solo consulta','Visita','Le interesó','No le interesó','Hizo una propuesta','Propuesta aceptada','Propuesta rechazada','No responde'], ETAPAS = ['Captación','Publicada','Reserva','Vendida','Suspendida'], HORAS = ['09:00','10:00','11:00','12:00','15:00','16:00','17:00','18:00'];
+  var VIAS = ['Visita','WhatsApp','Llamada','Mail'], RES = ['Solo consulta','Visita','Le interesó','No le interesó','Hizo una propuesta','Propuesta aceptada','Propuesta rechazada','No responde'], ETAPAS = ['Captación','Publicada','Reserva','Vendida','Otras inmobiliarias','Baja'], HORAS = ['09:00','10:00','11:00','12:00','15:00','16:00','17:00','18:00'];
   function iso(d){ return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
   function fechas(){ var o = [], n = ['Hoy','Mañana','Pasado mañana'], i, d; for(i=0;i<3;i++){ d = new Date(); d.setDate(d.getDate()+i); o.push({l:n[i]+' · '+('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2), v:iso(d)}); } return o; }
   function parseFecha(t){ var m = t.match(/^(\d{1,2})[\/\-.](\d{1,2})(?:[\/\-.](\d{2,4}))?$/); if(!m) return null; var y = m[3] ? (+m[3]<100 ? 2000+ +m[3] : +m[3]) : new Date().getFullYear(), d = new Date(y, +m[2]-1, +m[1]); if(isNaN(d) || d.getDate()!==+m[1]) return null; return iso(d); }
@@ -635,7 +635,7 @@
     if(t==='adjex') return [P];
     if(t==='adjnew') return [];
     if(t==='propuesta') return [P, T('cliente','¿Quién hizo la propuesta?','Nombre'), T('monto','¿De cuánto? (monto y moneda)','Ej: U$S 85.000'), T('obs','Condiciones o detalle de la propuesta','Condiciones',1), T('tel','Teléfono del interesado','Teléfono',1,tel)];
-    if(t==='etapa') return [P, {k:'etapa',q:'¿A qué etapa la pasamos?',kind:'opt',opts:OP(ETAPAS)}];
+    if(t==='etapa') return [P, {k:'etapa',q:'¿A qué etapa la pasamos?',kind:'opt',opts:OP(ETAPAS)}, {k:'motivo',q:'¿Cuál es el motivo de la baja?',kind:'text',ph:'Motivo',si:function(d){ return d.etapa==='Baja'; }}];
     return [P];
   }
   function wzSay(q){ st.msgs.push({role:'assistant', content:q, w:1}); }
@@ -695,7 +695,7 @@
     else if(w.t==='agendar'){ a.tipo = 'agendar'; a.datos = {id:d.id, dir:d.dir, fecha:d.fecha, hora:d.hora, interesado:d.interesado||'', tel:d.tel||'', mail:d.mail||'', obs:''}; a.resumen = 'Agendar visita en '+d.dir+': '+fd(d.fecha)+' '+d.hora+(d.interesado?' · '+d.interesado:'')+(d.mail?' · invitación a '+d.mail:''); }
     else if(w.t==='externa'){ var ag2 = d.est==='agendar', dx = '🏢 '+d.dir+(d.inmob?' ('+d.inmob+')':''); a.tipo = 'visitaext'; a.datos = {id:'externa', dir:dx, d:{id:'externa', estado:ag2?'agendada':'realizada', dir:d.dir, inmob:d.inmob||'', colega:d.colega||'', link:d.link||'', precio:d.precio||'', interesado:d.interesado||'', tel:d.tel||'', mail:d.mail||'', obs:d.obs||'', fecha:d.fecha, hora:d.hora||'', resultado:d.resultado||'Visita', codigo:''}}; a.resumen = (ag2?'Agendar visita con otra inmobiliaria: ':'Cargar visita con otra inmobiliaria: ')+dx+(d.colega?' · colega: '+d.colega:'')+' · '+d.interesado+' · '+fd(d.fecha)+(ag2?' '+d.hora:' · '+(d.resultado||'Visita'))+(d.precio?' · '+d.precio:'')+(d.link?' · ficha: '+d.link:'')+(d.obs?' · detalle: '+d.obs:''); }
     else if(w.t==='propuesta'){ a.tipo = 'propuesta'; a.datos = {id:d.id, dir:d.dir, cliente:d.cliente||'', monto:d.monto||'', tel:d.tel||'', obs:d.obs||''}; a.resumen = 'Registrar propuesta en '+d.dir+': '+d.cliente+' · '+d.monto+(d.obs?' · '+d.obs:''); }
-    else if(w.t==='etapa'){ a.tipo = 'etapa'; a.datos = {id:d.id, dir:d.dir, etapa:d.etapa}; a.resumen = 'Pasar '+d.dir+(pr.etapa?' de '+pr.etapa:'')+' a '+d.etapa; }
+    else if(w.t==='etapa'){ a.tipo = 'etapa'; a.datos = {id:d.id, dir:d.dir, etapa:d.etapa, motivo:d.motivo||''}; a.resumen = 'Pasar '+d.dir+(pr.etapa?' de '+pr.etapa:'')+' a '+d.etapa+(d.motivo?' · motivo: '+d.motivo:''); }
     else { a.tipo = 'reporte'; a.datos = {id:d.id, dir:d.dir}; a.resumen = 'Enviar por mail el informe de gestión de '+d.dir+' a los propietarios con mail cargado'; }
     st.msgs.push({role:'assistant', content:'Listo, revisá y confirmá 👇', acciones:[a]}); save(); render();
   }
