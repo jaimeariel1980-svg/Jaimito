@@ -13,7 +13,7 @@ function fichDia_(n, cfg) {
       var mk = [];
       for (var c = 7; c <= 12; c++) { var t = String(d[r][c]).trim(), m = horaToMin(t); if (m !== null) mk.push({ m: m, t: t }); }
       mk.sort(function (a, b) { return a.m - b.m; });
-      if (!out[leg] || mk.length > out[leg].marcas.length) out[leg] = { marcas: mk.map(function (x) { return x.m; }), txt: mk.map(function (x) { return x.t; }), nombre: String(d[r][1]).trim() };
+      if (!out[leg] || mk.length > out[leg].marcas.length) out[leg] = { marcas: mk.map(function (x) { return x.m; }), txt: mk.map(function (x) { return x.t; }), nombre: String(d[r][1]).trim(), horario: String(d[r][5]).trim() };
     }
   }
   return (_fich[n] = out);
@@ -125,8 +125,17 @@ function agregarFichas_(filas, desde, leg, d, cfg) {
   var ayer = t(marcasAbs_(leg, d, -720, -1, cfg)), man = t(marcasAbs_(leg, d, 1440, 2159, cfg));
   for (var i = desde; i < filas.length; i++) {
     var l = (/\(-1\)/.test(filas[i][5]) ? ayer : []).concat(hoy, cruzaMedianoche_(filas[i]) ? man : []);
-    filas[i].push('[' + (l.length ? l.join(' · ') : 'sin fichadas') + ']');
+    filas[i].push('[' + (l.length ? l.join(' · ') : 'sin fichadas') + ']', horarioReloj_(leg, d, filas[i][4], cfg));
   }
+}
+
+function horarioReloj_(leg, d, turnoTxt, cfg) {
+  var x = fichDia_(d, cfg)[leg], h = x ? x.horario : '';
+  var m = String(h).match(/(\d{1,2}):(\d{2})\s*a\s*(\d{1,2}):(\d{2})/);
+  if (!m) return h;
+  var r = parseTurno(m[1] + ':' + m[2] + '/' + m[3] + ':' + m[4]), t = parseTurno(turnoTxt);
+  if (!t) return h;
+  return Math.abs(r.ini - t.ini) > 30 || Math.abs(r.fin - t.fin) > 30 ? h + ' ≠ planilla ' + turnoTxt : h;
 }
 
 function bloquesTurno_(a, d) {
@@ -159,6 +168,12 @@ function presencia_(a, d, w, cfg) {
   if (M.length === 1) { res.estado = 'omision'; return res; }
   if (M.length % 2) { res.estado = 'impar'; res.tramos = tramosPares_([M[0], M[M.length - 1]], w.ini, w.fin); return res; }
   res.estado = 'ok'; res.tramos = tramosPares_(M, w.ini, w.fin);
+  for (var k = 1; k + 1 < M.length; k += 2) {
+    if (Math.min(w.fin, M[k + 1].m) - Math.max(w.ini, M[k].m) > 30) {
+      res.estado = 'hueco';
+      res.nota = M.length + ' fichadas: entre ' + M[k].t + ' y ' + M[k + 1].t + ' no estuvo. Por pares cuenta ' + horas_(res.tramos) + ' h; si esa salida/entrada fue un error de marcación serían ' + horas_(tramosPares_([M[0], M[M.length - 1]], w.ini, w.fin)) + ' h. Revisar a mano';
+    }
+  }
   return res;
 }
 
@@ -200,6 +215,7 @@ function procesarAgente_(a, serv, cfg, ctx, filas) {
           if (pr.estado === 'sin') { filas.push(base.concat([hE, hS, txt, '', 0, 0, 'A REVISAR', 'no fichó la extra (no se paga)' + (cond ? ' · ' + cond : '')])); return; }
           if (pr.estado === 'omision') { filas.push(base.concat([pr.ent, '', txt, '', 0, 0, 'A REVISAR', 'omisión: una sola fichada, no corresponde extra'])); return; }
           if (pr.estado === 'impar') { filas.push(base.concat([pr.ent, pr.sal, txt, '', 0, 0, 'A REVISAR', pr.n + ' fichadas (impar): falta una. Entre la primera y la última serían ' + horas_(pr.tramos) + ' h, revisar a mano'])); return; }
+          if (pr.estado === 'hueco') { filas.push(base.concat([pr.ent, pr.sal, txt, textoTramos_(pr.tramos), 0, 0, 'A REVISAR', pr.nota])); return; }
           if (!pr.tramos.length) { filas.push(base.concat([pr.ent, pr.sal, txt, '', 0, 0, 'A REVISAR', 'las fichadas no cubren la franja (no se paga)'])); return; }
           var r = calcularExtraTramos(pr.tramos, cd), fz = textoTramos_(pr.tramos);
           if (r.total < w.fin - w.ini) cond += (cond ? ' + ' : '') + 'realizó menos que lo autorizado';
@@ -266,7 +282,7 @@ function liquidarExtras() {
   });
   out.sort(function (a, b) { return tipoFila_(a) - tipoFila_(b) || String(a[2]).localeCompare(String(b[2])) || a[3] - b[3]; });
 
-  var cab = ['Servicio', 'Legajo', 'Apellido', 'Día', 'Turno', 'Entrada', 'Salida', 'Aut. Jefatura', 'Franja realizada', 'Hs 50%', 'Hs 100%', 'Estado', 'Condición', 'Fichadas del día',
+  var cab = ['Servicio', 'Legajo', 'Apellido', 'Día', 'Turno', 'Entrada', 'Salida', 'Aut. Jefatura', 'Franja realizada', 'Hs 50%', 'Hs 100%', 'Estado', 'Condición', 'Fichadas del día', 'Horario en tarjeta reloj',
              'Aut GRH 50%', 'Aut GRH 100%', 'Total real mes', 'A pagar (tope ' + cfg.tope + ')', 'Alerta mensual'];
   var h = escribir_(SpreadsheetApp.openById(ID_BASE), 'LIQUIDACION', cab, out, 5, 9);
   pintarLiquidacion_(h, out, cab.length);
@@ -300,6 +316,8 @@ function pintarLiquidacion_(h, filas, nc) {
   h.getRange(2, 12, filas.length, 1).setBackgrounds(est).setFontWeight('bold').setHorizontalAlignment('center');
   h.getRange(2, 4, filas.length, 8).setHorizontalAlignment('center');
   h.getRange(2, 10, filas.length, 2).setNumberFormat('0.0');
+  var hr = h.getRange(2, 15, filas.length, 1), fc = hr.getValues().map(function (v) { return [/≠/.test(v[0]) ? '#c62828' : '#000000']; });
+  hr.setFontColors(fc);
   for (var i = 1; i < filas.length; i++) {
     if (tipoFila_(filas[i]) !== tipoFila_(filas[i - 1])) h.getRange(i + 1, 1, 1, nc).setBorder(null, null, true, null, null, null, '#555555', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
   }
