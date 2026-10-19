@@ -76,6 +76,14 @@ r=R(sim(F({9:['23:53'],10:['6:05']}),ag({hab:{9:'F'},ext:{10:'0/6'}}))[0]);asser
 r=R(sim(F({13:['13:05','23:59'],14:['13:10']}),ag({hab:{13:'13/24',14:'6/13'},ext:{14:'0/6'}}))[0]);assert.deepStrictEqual([r.est,r.h50,r.h100],['A REVISAR',0,0]);
 // 15) Nieva: 6/13 sin extra declarada, 5:51:03-17:10:47 => entrada y salida como en la tarjeta
 r=R(sim(F({13:['5:51:03','17:10:47']}),ag({hab:{13:'6/13'}}))[0]);assert.deepStrictEqual([r.ent,r.sal,r.fich,r.h50],['5:51:03','17:10:47','[5:51:03 · 17:10:47]',4]);
+// 17) CANALES: 23/6 con extra 19/23 y licencia vieja "13 LAO al 11/09/2026" en la planilla; la salida está en la pestaña del día siguiente
+rows=sim(F({8:['6:05:05','18:48:58'],9:['6:02:30','18:37:44'],10:['6:00:15']}),ag({hab:{8:'23/6',9:'23/6',10:'F'},ext:{8:'19/23',9:'19/23'},lic:{8:'13 LAO al 11/09/2026',9:'13 LAO al 11/09/2026'}}));
+r=R(rows[0]);assert.deepStrictEqual([r.est,r.h50,r.h100,r.ent,r.sal],['AUTORIZADA',3,1,'18:48:58','6:02:30(+1)']);
+r=R(rows[1]);assert.deepStrictEqual([r.est,r.h50,r.h100,r.ent,r.sal],['AUTORIZADA',3,1,'18:37:44','6:00:15(+1)']);
+// misma extra sin turno conocido (licencia vigente): igual encuentra la salida del día siguiente
+r=R(sim(F({8:['18:48:58'],9:['6:02:30']}),ag({hab:{8:'23/6'},ext:{8:'19/23'},lic:{8:'LAO al 30/10/2026'}}))[0]);assert.deepStrictEqual([r.est,r.h50,r.h100],['AUTORIZADA',3,1]);
+// extra en franco 19/23, al otro día entra 5:50 a su 6/13: no se mezcla esa entrada
+r=R(sim(F({5:['18:55','23:05'],6:['5:50','13:02']}),ag({hab:{5:'F',6:'6/13'},ext:{5:'19/23'}}))[0]);assert.deepStrictEqual([r.est,r.h50,r.h100],['AUTORIZADA',3,1]);
 // 16) identidad
 const f2=F({5:['6:58','19:10']});f2[5]['1'].nombre='ALONSO Cecilia';
 assert.strictEqual(R(sim(f2,ag({hab:{5:'7/14'},ext:{5:'14/19'}}))[0]).est,'REVISAR IDENTIDAD');
