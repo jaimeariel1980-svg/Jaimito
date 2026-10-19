@@ -58,22 +58,22 @@ assert.strictEqual(sim(F({5:['17:58'],6:['6:02','17:55'],7:['6:01']}),ag({hab:{5
 // 8) OMISIÓN: una sola fichada => nunca hay extra
 r=R(sim(F({5:['6:58']}),ag({hab:{5:'7/14'},ext:{5:'14/19'}}))[0]);assert.deepStrictEqual([r.ent,r.sal,r.est,r.h50,r.fich],['6:58','','A REVISAR',0,'[6:58]']);assert.ok(/omisión/.test(r.cond));
 assert.strictEqual(sim(F({6:['6:58']}),ag({hab:{6:'7/14'}})).length,0);
-// 9) 4 fichadas con extra hecha: 6:00-13:00 y 13:30-17:30 => extra 13/17 cuenta 13:30-17:00 = 3.5h
+// 9) 4 fichadas: las intermedias no cuentan, jornada completa 6:00-17:30 => extra 13/17 = 4h
 r=R(sim(F({5:['6:00','13:00','13:30','17:30']}),ag({hab:{5:'6/13'},ext:{5:'13/17'}}))[0]);
-assert.deepStrictEqual([r.est,r.h50,r.fr],['AUTORIZADA',3.5,'13:30 a 17:00']);
-// 10) RABINOVICH: 12/19 + extra 7/12, fichó 6:52 7:42 12:11 19:00 => solo estuvo 7:00-7:42 => <1h, no se paga
-r=R(sim(F({8:['19:15'],9:['6:52','7:42','12:11','19:00']}),ag({hab:{9:'12/19'},ext:{9:'7/12'}}))[0]);
-assert.deepStrictEqual([r.est,r.h50,r.fr],['A REVISAR',0,'07:00 a 07:42']);assert.ok(/7:42 y 12:11 no estuvo.*serían 5 h/.test(r.cond));assert.strictEqual(run('tipoFila_('+JSON.stringify(rows=sim(F({8:['19:15'],9:['6:52','7:42','12:11','19:00']}),ag({hab:{9:'12/19'},ext:{9:'7/12'}})))+'[0])'),3);assert.strictEqual(r.fich,'[6:52 · 7:42 · 12:11 · 19:00]');
-// 11) 3 fichadas (impar) => no se paga solo, se muestra cuánto sería
+assert.deepStrictEqual([r.est,r.h50,r.fr],['AUTORIZADA',4,'13:00 a 17:00']);assert.ok(/intermedia/.test(r.cond));
+// 10) RABINOVICH: 12/19 + extra 7/12, fichó 6:52 7:42 12:11 19:00 => intermedias no cuentan => 5h
+r=R(sim(F({8:['19:15'],9:['6:52:52','7:42:41','12:11:37','19:00:10']}),ag({hab:{9:'12/19'},ext:{9:'7/12'}}))[0]);
+assert.deepStrictEqual([r.est,r.h50,r.fr,r.ent,r.sal],['AUTORIZADA',5,'07:00 a 12:00','6:52:52','19:00:10']);assert.strictEqual(r.fich,'[6:52:52 · 7:42:41 · 12:11:37 · 19:00:10]');
+// 11) 3 fichadas (una en el medio) => se paga igual
 r=R(sim(F({5:['6:00','13:00','17:10']}),ag({hab:{5:'6/13'},ext:{5:'13/17'}}))[0]);
-assert.deepStrictEqual([r.est,r.h50],['A REVISAR',0]);assert.ok(/3 fichadas/.test(r.cond));
+assert.deepStrictEqual([r.est,r.h50],['AUTORIZADA',4]);
 // 12) SARBA: extra dentro del propio turno => no es extra
 r=R(sim(F({1:['11:57','22:12']}),ag({hab:{1:'17/24'},ext:{1:'19/22'}}))[0]);assert.ok(/dentro del turno/.test(r.cond));
 // 13) PAY/NIETO: 0/6 que es la cola de un 23/6 del día anterior => no es extra; si el día anterior era franco, se paga una vez
 r=R(sim(F({9:['23:53'],10:['6:05']}),ag({hab:{9:'23/6'},ext:{10:'0/6'}}))[0]);assert.ok(/dentro del turno/.test(r.cond));
 r=R(sim(F({9:['23:53'],10:['6:05']}),ag({hab:{9:'F'},ext:{10:'0/6'}}))[0]);assert.deepStrictEqual([r.est,r.h100,r.ent,r.sal],['AUTORIZADA',6,'23:53(-1)','6:05']);
-// 14) NARVAEZ: 0/6 sin presencia (13:05 23:59 del día anterior y 13:10) => no se paga
-r=R(sim(F({13:['13:05','23:59'],14:['13:10']}),ag({hab:{13:'13/24',14:'6/13'},ext:{14:'0/6'}}))[0]);assert.deepStrictEqual([r.est,r.h50,r.h100],['A REVISAR',0,0]);
+// 14) NARVAEZ: 13/24 + extra 0/6 + 6/13, fichó 13:05(-1) 23:59(-1) 13:10 => jornada completa, 23:59 es intermedia => 6h al 100
+r=R(sim(F({13:['13:05','23:59'],14:['13:10']}),ag({hab:{13:'13/24',14:'6/13'},ext:{14:'0/6'}}))[0]);assert.deepStrictEqual([r.est,r.h100,r.ent,r.sal],['AUTORIZADA',6,'13:05(-1)','13:10']);
 // 15) Nieva: 6/13 sin extra declarada, 5:51:03-17:10:47 => entrada y salida como en la tarjeta
 r=R(sim(F({13:['5:51:03','17:10:47']}),ag({hab:{13:'6/13'}}))[0]);assert.deepStrictEqual([r.ent,r.sal,r.fich,r.h50],['5:51:03','17:10:47','[5:51:03 · 17:10:47]',4]);
 // 17) CANALES: 23/6 con extra 19/23 y licencia vieja "13 LAO al 11/09/2026" en la planilla; la salida está en la pestaña del día siguiente
