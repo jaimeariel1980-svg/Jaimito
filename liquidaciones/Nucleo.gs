@@ -114,3 +114,19 @@ function horaAbs_(m) {
   if (m === null || m === undefined || m === '') return '';
   return minToHora(m) + (m < 0 ? '(-1)' : m >= 1440 ? '(+1)' : '');
 }
+
+var TIPOS_FILA = [
+  ['AUTORIZADA (se paga)', '#ffffff', function (e) { return e === 'AUTORIZADA'; }],
+  ['Extra NO autorizada (fichó de más sin franja cargada)', '#ffe8c7', function (e, c) { return /NO autorizada/.test(c); }],
+  ['Omisión / no fichó la extra', '#fbd9d9', function (e, c) { return /omisión|no fichó|no cubren|ilegible/.test(c); }],
+  ['Fichadas impares: revisar a mano', '#fff3b8', function (e, c) { return /impar/.test(c); }],
+  ['Franja dentro del turno (no es extra)', '#e9e0f7', function (e, c) { return /dentro del turno/.test(c); }],
+  ['Menos de 1 h (no se paga)', '#ececec', function (e, c) { return /menos de 1 h/.test(c); }],
+  ['Revisar identidad', '#d7e6fb', function (e) { return e === 'REVISAR IDENTIDAD'; }],
+  ['Otro: revisar', '#f4f4f4', function () { return true; }]
+];
+
+function tipoFila_(r) {
+  for (var i = 0; i < TIPOS_FILA.length; i++) if (TIPOS_FILA[i][2](r[11], String(r[12] || ''))) return i;
+  return TIPOS_FILA.length - 1;
+}

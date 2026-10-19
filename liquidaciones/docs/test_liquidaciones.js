@@ -87,4 +87,8 @@ r=R(sim(F({5:['18:55','23:05'],6:['5:50','13:02']}),ag({hab:{5:'F',6:'6/13'},ext
 // 16) identidad
 const f2=F({5:['6:58','19:10']});f2[5]['1'].nombre='ALONSO Cecilia';
 assert.strictEqual(R(sim(f2,ag({hab:{5:'7/14'},ext:{5:'14/19'}}))[0]).est,'REVISAR IDENTIDAD');
+// 18) orden y colores: autorizada primero (blanco), luego cada tipo
+assert.strictEqual(run("tipoFila_(['','','','','','','','','',1,0,'AUTORIZADA',''])"),0);
+assert.strictEqual(run("tipoFila_(['','','','','','','','','',0,0,'A REVISAR','omisión: una sola fichada'])"),2);
+assert.strictEqual(run("tipoFila_(['','','','','','','','','',4,0,'A REVISAR','extra NO autorizada (no hay franja declarada)'])"),1);
 console.log('OK todos los tests');
