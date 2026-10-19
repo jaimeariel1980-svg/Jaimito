@@ -1,0 +1,631 @@
+/*******************************************************************
+ *  LIQUIDACIÓN DE HORAS EXTRAS - ENFERMERÍA
+ *  Archivo completo. Borrá TODO tu Codigo.gs y pegá esto.
+ *  Para correr: elegí  liquidarMes  y dale Ejecutar.
+ *******************************************************************/
+
+var FERIADOS       = ["7-9", "8-17"];   // "mes-dia"
+var NO_LABORABLES  = ["7-10"];          // "mes-dia"
+var _cacheHorario = {}, _cacheFich = {}, _ssFich = null;
+
+function liquidarMes() {
+  var ID_FICHADAS = "1caGLHLl1faw6X61Cs3BQh4-i97qizmLX2Gpf1tkTliY";
+  var ID_BASE     = "1dL4DgJTfYbHA7Ra-BulukXHbWFUUxUGPkqVvemOhrsQ";
+  var ID_GRH      = "1DFt_hweW5ahkaMIh454rEG0UuBwOO_yOUhBksZxOtfU";
+  var MES = 8, ANIO = 2026;
+  _cacheHorario = {}; _cacheFich = {}; _ssFich = null;
+
+  var SERVICIOS = [
+    { nombre: "GUARDIA", id: "1MhWVXYYoQp2Emk80oPV3zxL35xQhjQDOHBACqCdBF7E" },
+    { nombre: "UTI",     id: "1mOGXPznXM2LeG6nSZD1VkZUtZ6CX5CetCMsh4Z8wvMo" },
+    { nombre: "2 PISO",  id: "1rw52e_e60A8qkDPCrbx1sacJ7MhSblJqZjOEnrL4s7I" },
+    { nombre: "3 PISO",  id: "1BetkVTw-2uSzPwn_SewJIFpItp6NGr5tsFAUW95DcAA" },
+    { nombre: "4 PISO",  id: "1XGqMDNAWHn91YgSyXigC9JjUN6hvuGnXYR0Fbyz0zlY" },
+    { nombre: "CONSULTORIOS", id: "14LtIqcWS_d-Pvd6B_zw3a1Fj2r_NxqXx8jIUAHcOqNk" }
+  ];
+
+  var filas = [];
+  SERVICIOS.forEach(function(s) {
+    for (var dia = 1; dia <= 31; dia++)
+      procesarDia(s.id, ID_FICHADAS, dia, MES, ANIO, s.nombre, filas);
+  });
+
+  var grh = leerAutorizadoGRH(ID_GRH);
+  var mens = {};
+  filas.forEach(function(f) {
+    if (f[11] !== "AUTORIZADA") return;
+    var leg = f[1];
+    if (!mens[leg]) mens[leg] = { r50: 0, r100: 0 };
+    mens[leg].r50  += (parseFloat(f[9])  || 0);
+    mens[leg].r100 += (parseFloat(f[10]) || 0);
+  });
+  for (var leg in mens) {
+    var m = mens[leg], g = grh[leg] || { aut50: 0, aut100: 0 };
+    m.r50 = Math.round(m.r50*10)/10; m.r100 = Math.round(m.r100*10)/10;
+    m.total = Math.round((m.r50 + m.r100)*10)/10;
+    var totalAut = g.aut50 + g.aut100;
+    var reconv = Math.round(Math.min(Math.max(0, m.r50 - g.aut50), Math.max(0, g.aut100 - m.r100))*10)/10;
+    m.pagar = Math.min(m.total, 30);
+    var endoso = Math.max(0, Math.round((m.pagar - totalAut)*10)/10);
+    var recorte = Math.max(0, Math.round((m.total - 30)*10)/10);
+    m.aut50 = g.aut50; m.aut100 = g.aut100;
+    var al = [];
+    if (!grh[leg]) al.push("SIN aut GRH");
+    if (reconv > 0) al.push("reconversión " + reconv + "h");
+    if (endoso > 0) al.push("endoso " + endoso + "h");
+    if (recorte > 0) al.push("EXCEDE 30 (-" + recorte + "h)");
+    m.alerta = al.length ? al.join(" + ") : "OK";
+  }
+
+  var out = filas.map(function(f) {
+    var col = f.slice(), m = mens[f[1]], g = grh[f[1]];
+    if (m) col.push(m.aut50, m.aut100, m.total, m.pagar, m.alerta);
+    else   col.push(g?g.aut50:"", g?g.aut100:"", "", "", "");
+    return col;
+  });
+  out.sort(function(a,b){ return String(a[2]).localeCompare(String(b[2])) || (a[3]-b[3]); });
+
+  var cab = ["Servicio","Legajo","Apellido","Día","Turno","Entrada","Salida","Aut. Jefatura",
+             "Franja realizada","Hs 50%","Hs 100%","Estado","Condición",
+             "Aut GRH 50%","Aut GRH 100%","Total real mes","A pagar (tope 30)","Alerta mensual"];
+  escribir(SpreadsheetApp.openById(ID_BASE), "LIQUIDACION", cab, out);
+  Logger.log("LIQUIDACION: " + out.length + " filas");
+}
+function escribir(ss, nombre, cab, filas) {
+  var hoja = ss.getSheetByName(nombre);
+  if (!hoja) hoja = ss.insertSheet(nombre); else hoja.clear();
+  hoja.getRange(1,1,1,cab.length).setValues([cab])
+      .setFontWeight("bold").setBackground("#434343").setFontColor("white");
+  if (filas.length) hoja.getRange(2,1,filas.length,cab.length).setValues(filas);
+  hoja.setFrozenRows(1);
+  hoja.autoResizeColumns(1, cab.length);
+}
+
+function leerAutorizadoGRH(id) {
+  var datos = SpreadsheetApp.openById(id).getSheetByName("Planillas Sectores").getDataRange().getValues();
+  var out = {};
+  for (var r = 0; r < datos.length; r++) {
+    var leg = String(datos[r][0]).trim();
+    if (!/^\d+$/.test(leg)) continue;
+    if (String(datos[r][2]).toUpperCase().indexOf("ENFERMER") < 0) continue;
+    out[leg] = { aut50: parseFloat(datos[r][7]) || 0, aut100: parseFloat(datos[r][8]) || 0, apellido: String(datos[r][1]).trim() };
+  }
+  return out;
+}
+
+function _leerHorarioCrudo(id) {
+  if (_cacheHorario[id]) return _cacheHorario[id];
+  var rango = SpreadsheetApp.openById(id).getSheets()[0].getDataRange();
+  var datos = rango.getValues(), bg = rango.getBackgrounds();
+  var fh = -1, mejor = 0;
+  for (var r = 0; r < Math.min(datos.length, 15); r++) {
+    var cant = 0;
+    for (var c = 0; c < datos[r].length; c++) {
+      var d = parseInt(datos[r][c], 10);
+      if (d >= 1 && d <= 31 && String(datos[r][c]).trim() === String(d)) cant++;
+    }
+    if (cant > mejor) { mejor = cant; fh = r; }
+  }
+  var colsDia = [];
+  for (var c = 0; c < datos[fh].length; c++) {
+    var d = parseInt(datos[fh][c], 10);
+    if (d >= 1 && d <= 31) colsDia.push({ col: c, dia: d });
+  }
+  _cacheHorario[id] = { datos: datos, bg: bg, fh: fh, colsDia: colsDia };
+  return _cacheHorario[id];
+}
+
+function procesarDia(ID_HORARIO, ID_FICHADAS, DIA, MES, ANIO, SERVICIO, filas) {
+  var turnos  = leerTurnosServicio(ID_HORARIO, DIA, MES, ANIO);
+  var fichHoy = leerFichadasDia(ID_FICHADAS, String(DIA));
+  var fichMan = leerFichadasDiaSeguro(ID_FICHADAS, String(DIA + 1));
+
+  var dow = new Date(ANIO, MES - 1, DIA).getDay();
+  var finde = (dow === 0 || dow === 6);
+  var feriado = esFeriado(DIA, MES);
+  var noLab = esNoLaborable(DIA, MES);
+
+  for (var leg in turnos) {
+    var t = turnos[leg];
+    var f = fichHoy[leg];
+    var aut = t.declarada || "";
+    var cond = t.esSADOFE ? "SADOFE" : "";
+
+    if (t.esSupervisor) continue;
+
+    if (f && f.nombre && !apellidoCoincide(t.apellido, f.nombre)) {
+      filas.push([SERVICIO, leg, t.apellido, DIA, (t.turno||"-"), "", "", aut, "", "", "",
+                  "REVISAR IDENTIDAD", "fichada: " + f.nombre]);
+      continue;
+    }
+
+    if (aut) {
+      var wA = parseTurno(aut);
+      if (wA) {
+        var mk = f ? f.marcas : [];
+        if (mk.length < 2) continue;
+        var ent = mk[0], sal = mk[mk.length - 1];
+        var aIni = wA.ini, aFin = wA.fin;
+        if (wA.cruza) {
+          aFin = wA.finNext + 1440;
+          var fmN = fichMan[leg];
+          if (fmN && fmN.marcas.length) sal = fmN.marcas[fmN.marcas.length - 1] + 1440;
+        }
+        var realIni = Math.max(aIni, ent), realFin = Math.min(aFin, sal);
+        var r = calcularExtra(Math.max(0, realFin - realIni), realIni, DIA, MES, ANIO);
+        if (r.h50 + r.h100 <= 0) continue;
+        var c = cond;
+        if (realFin < aFin) c = (c ? c + " + " : "") + "realizó menos que lo autorizado";
+        filas.push([SERVICIO, leg, t.apellido, DIA, (t.turno||"-"), minToHora(ent), minToHora(sal%1440),
+                    aut, horaRango(realIni%1440, realFin%1440), r.h50, r.h100, "AUTORIZADA", c]);
+        continue;
+      }
+    }
+
+    if (noLab) {
+      var mkn = f ? f.marcas : [];
+      if (mkn.length < 2) continue;
+      var r2 = calcularExtra(mkn[mkn.length-1] - mkn[0], mkn[0], DIA, MES, ANIO);
+      if (r2.h50 + r2.h100 <= 0) continue;
+      filas.push([SERVICIO, leg, t.apellido, DIA, (t.turno||"-"), minToHora(mkn[0]), minToHora(mkn[mkn.length-1]),
+                  aut, horaRango(mkn[0], mkn[mkn.length-1]), r2.h50, r2.h100, "A REVISAR", (cond?cond+" + ":"")+"no laborable"]);
+      continue;
+    }
+
+    if (t.esSADOFE) {
+      if (finde || feriado) continue;
+      var mks = f ? f.marcas : [];
+      if (mks.length < 2) continue;
+      var r3 = calcularExtra(mks[mks.length-1] - mks[0], mks[0], DIA, MES, ANIO);
+      if (r3.h50 + r3.h100 <= 0) continue;
+      filas.push([SERVICIO, leg, t.apellido, DIA, (t.turno||"-"), minToHora(mks[0]), minToHora(mks[mks.length-1]),
+                  aut, horaRango(mks[0], mks[mks.length-1]), r3.h50, r3.h100, "A REVISAR", "SADOFE"]);
+      continue;
+    }
+
+    if (feriado) continue;
+
+    var win = parseTurno(t.turno);
+    if (!win) continue;
+
+    if (!win.cruza) {
+      var marcas = f ? f.marcas : [];
+      if (marcas.length < 2) continue;
+      var sal2 = marcas[marcas.length-1];
+      var rc = calcularExtra(Math.max(0, sal2 - win.fin), win.fin, DIA, MES, ANIO);
+      if (rc.h50 + rc.h100 <= 0) continue;
+      filas.push([SERVICIO, leg, t.apellido, DIA, (t.turno||"-"), minToHora(marcas[0]), minToHora(sal2),
+                  aut, horaRango(win.fin, sal2), rc.h50, rc.h100, "A REVISAR", cond]);
+      continue;
+    } else {
+      var entN = f ? marcaCerca(f.marcas, win.ini, 180) : null;
+      var fMan = fichMan[leg];
+      var salN = fMan ? marcaEnVentana(fMan.marcas, (win.finNext >= 240 ? win.finNext-180 : 0), win.finNext+240) : null;
+      if (entN === null || salN === null) continue;
+      var rN = calcularExtra(Math.max(0, salN - win.finNext), win.finNext, DIA+1, MES, ANIO);
+      if (rN.h50 + rN.h100 <= 0) continue;
+      filas.push([SERVICIO, leg, t.apellido, DIA, (t.turno||"-"), minToHora(entN), minToHora(salN),
+                  aut, horaRango(win.finNext, salN), rN.h50, rN.h100, "A REVISAR", (cond?cond+" + ":"")+"noche"]);
+      continue;
+    }
+  }
+}
+function horaRango(ini, fin) { return minToHora(ini) + " a " + minToHora(fin); }
+
+function leerTurnosServicio(id, dia, mes, anio) {
+  var H = _leerHorarioCrudo(id);
+  var datos = H.datos, bg = H.bg, fh = H.fh, colsDia = H.colsDia;
+
+  var cd = -1, cdAyer = -1;
+  for (var i = 0; i < colsDia.length; i++) {
+    if (colsDia[i].dia === dia) cd = colsDia[i].col;
+    if (colsDia[i].dia === dia - 1) cdAyer = colsDia[i].col;
+  }
+
+  var out = {};
+  for (var r = fh + 1; r < datos.length; r++) {
+    var leg = String(datos[r][0]).trim();
+    if (!/^\d+$/.test(leg)) continue;
+
+    var filaFin = r + 1;
+    while (filaFin < datos.length && !/^\d+$/.test(String(datos[filaFin][0]).trim())) filaFin++;
+
+    var tieneSemana = false, tieneFinde = false;
+    for (var i = 0; i < colsDia.length; i++) {
+      var wt = parseTurno(String(datos[r][colsDia[i].col]).trim());
+      if (!wt) continue;
+      var wd = new Date(anio, mes - 1, colsDia[i].dia).getDay();
+      var propio = (wd === 0 || wd === 6 || esFeriado(colsDia[i].dia, mes) || esNoLaborable(colsDia[i].dia, mes) || wt.ini === 0);
+      if (propio) tieneFinde = true; else tieneSemana = true;
+    }
+
+    var cargo = "";
+    for (var rr = r + 1; rr < filaFin; rr++)
+      if (String(datos[rr][1]).trim().toUpperCase().indexOf("SUP") >= 0) { cargo = String(datos[rr][1]).trim(); break; }
+
+    var turno = "", declarada = "", cambio = "";
+    if (cd >= 0) {
+      var lista = [];
+      for (var rr = r; rr < filaFin; rr++) {
+        var cel = String(datos[rr][cd]).trim();
+        var w = parseTurno(cel);
+        if (!w) continue;
+        lista.push({ cel: cel, w: w, rojo: esRojo(bg[rr][cd]), amar: esAmarillo(bg[rr][cd]) });
+      }
+      for (var li = 0; li < lista.length; li++) {
+        if (lista[li].amar) declarada = lista[li].cel;
+        if (lista[li].rojo) cambio = lista[li].cel;
+      }
+      if (cambio) turno = cambio;
+      else {
+        var part = null;
+        for (var li = 0; li < lista.length; li++)
+          if (!lista[li].amar && lista[li].w.fin === 1440) { part = lista[li]; break; }
+        if (part) turno = (part.w.ini / 60) + "/6";
+        else {
+          var prin = String(datos[r][cd]).trim();
+          if (parseTurno(prin) && !esAmarillo(bg[r][cd])) turno = prin;
+          else for (var li = 0; li < lista.length; li++) if (!lista[li].amar) { turno = lista[li].cel; break; }
+        }
+        var wt2 = parseTurno(turno);
+        if (wt2 && wt2.ini === 0 && wt2.fin === 360 && cdAyer >= 0) {
+          for (var rr = r; rr < filaFin; rr++) {
+            var way = parseTurno(String(datos[rr][cdAyer]).trim());
+            if (way && way.fin === 1440) { turno = ""; break; }
+          }
+        }
+      }
+    }
+
+    out[leg] = {
+      apellido: String(datos[r][1]).trim(),
+      turno: turno,
+      cambiado: cambio !== "",
+      declarada: declarada,
+      esSupervisor: cargo.toUpperCase().indexOf("SUP") >= 0,
+      esSADOFE: (tieneFinde && !tieneSemana)
+    };
+  }
+  return out;
+}
+
+function leerFichadasDia(id, dia) {
+  if (_cacheFich[dia]) return _cacheFich[dia];
+  if (!_ssFich) _ssFich = SpreadsheetApp.openById(id);
+  var hoja = _ssFich.getSheetByName(dia);
+  if (!hoja) { _cacheFich[dia] = {}; return {}; }
+  var disp = hoja.getDataRange().getDisplayValues();
+  var out = {};
+  for (var r = 1; r < disp.length; r++) {
+    var leg = String(disp[r][0]).trim();
+    if (!/^\d+$/.test(leg)) continue;
+    var marcas = [];
+    for (var c = 7; c <= 12; c++) {
+      var m = horaToMin(disp[r][c]);
+      if (m !== null) marcas.push(m);
+    }
+    marcas.sort(function(a, b){ return a - b; });
+    if (!out[leg] || (marcas.length > out[leg].marcas.length))
+      out[leg] = { marcas: marcas, loc: String(disp[r][2]).trim(), nombre: String(disp[r][1]).trim() };
+  }
+  _cacheFich[dia] = out;
+  return out;
+}
+
+function leerFichadasDiaSeguro(id, dia) { return leerFichadasDia(id, dia); }
+
+function parseTurno(s) {
+  if (!s) return null;
+  var m = String(s).trim().match(/^(\d{1,2})\/(\d{1,2})$/);
+  if (!m) return null;
+  var ini = parseInt(m[1],10) * 60, fin = parseInt(m[2],10) * 60;
+  var cruza = (fin <= ini) || (fin === 1440);
+  return { ini: ini, fin: fin, cruza: cruza, finNext: (fin === 1440 ? 0 : fin) };
+}
+
+function marcaCerca(marcas, objetivo, tol) {
+  var mejor = null, mejorDist = tol + 1;
+  for (var i = 0; i < marcas.length; i++) {
+    var d = Math.abs(marcas[i] - objetivo);
+    d = Math.min(d, 1440 - d);
+    if (d < mejorDist) { mejorDist = d; mejor = marcas[i]; }
+  }
+  return mejor;
+}
+
+function marcaEnVentana(marcas, desde, hasta) {
+  for (var i = 0; i < marcas.length; i++)
+    if (marcas[i] >= desde && marcas[i] <= hasta) return marcas[i];
+  return null;
+}
+
+function horaToMin(s) {
+  if (!s || s === "-") return null;
+  var m = String(s).trim().match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return null;
+  return parseInt(m[1],10) * 60 + parseInt(m[2],10);
+}
+
+function minToHora(m) {
+  if (m === null || m === "") return "";
+  var h = Math.floor(m / 60) % 24, mm = m % 60;
+  return (h<10?"0":"")+h+":"+(mm<10?"0":"")+mm;
+}
+
+function esFeriado(dia, mes)      { return FERIADOS.indexOf(mes + "-" + dia) >= 0; }
+function esNoLaborable(dia, mes)  { return NO_LABORABLES.indexOf(mes + "-" + dia) >= 0; }
+
+function esHoraAl100(dia, hora, mes, anio) {
+  if (esFeriado(dia, mes)) return true;
+  var dow = new Date(anio, mes - 1, dia).getDay();
+  if (esNoLaborable(dia, mes)) dow = 6;
+  if (dow === 0) return true;
+  if (hora >= 22 || hora < 6) return true;
+  if (dow === 6 && hora >= 13) return true;
+  return false;
+}
+
+function calcularExtra(exc, inicioAbs, dia, mes, anio) {
+  var liquidar = Math.floor(exc / 30) * 30;
+  if (liquidar < 60) return { h50: 0, h100: 0, descartados: exc };  // piso 1 hora
+  var min50 = 0, min100 = 0;
+  for (var m = 0; m < liquidar; m++) {
+    var abs = inicioAbs + m;
+    var hora = Math.floor((abs % 1440) / 60);
+    var diaEff = dia + Math.floor(abs / 1440);
+    if (esHoraAl100(diaEff, hora, mes, anio)) min100++; else min50++;
+  }
+  var b50 = Math.round(min50 / 30) * 30;
+  var b100 = liquidar - b50;
+  return { h50: b50 / 60, h100: b100 / 60, descartados: exc - liquidar };
+}
+
+function esRojo(c) {
+  var m = String(c).toLowerCase().match(/^#(..)(..)(..)$/);
+  if (!m) return false;
+  var R = parseInt(m[1],16), G = parseInt(m[2],16), B = parseInt(m[3],16);
+  return (R - G > 60) && (R - B > 60) && Math.abs(G - B) < 50;
+}
+
+function esAmarillo(c) {
+  var m = String(c).toLowerCase().match(/^#(..)(..)(..)$/);
+  if (!m) return false;
+  var R = parseInt(m[1],16), G = parseInt(m[2],16), B = parseInt(m[3],16);
+  return R > 150 && G > 150 && Math.abs(R - G) < 45 && (G - B > 40);
+}
+
+function normaliza(s) {
+  return String(s || "").toUpperCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Z ]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function apellidoCoincide(apeGrilla, nomFichada) {
+  var nf = normaliza(nomFichada);
+  var toks = normaliza(apeGrilla).split(" ");
+  for (var i = 0; i < toks.length; i++)
+    if (toks[i].length >= 3 && nf.indexOf(toks[i]) >= 0) return true;
+  return false;
+}
+
+
+function nocturnidad() {
+  var ID_FICHADAS = "1caGLHLl1faw6X61Cs3BQh4-i97qizmLX2Gpf1tkTliY";
+  var ID_BASE     = "1dL4DgJTfYbHA7Ra-BulukXHbWFUUxUGPkqVvemOhrsQ";
+  var MES = 8, ANIO = 2026;
+  _cacheHorario = {}; _cacheFich = {}; _ssFich = null;
+
+  var SERVICIOS = [
+    { nombre: "GUARDIA", id: "1MhWVXYYoQp2Emk80oPV3zxL35xQhjQDOHBACqCdBF7E" },
+    { nombre: "UTI",     id: "1mOGXPznXM2LeG6nSZD1VkZUtZ6CX5CetCMsh4Z8wvMo" },
+    { nombre: "2 PISO",  id: "1rw52e_e60A8qkDPCrbx1sacJ7MhSblJqZjOEnrL4s7I" },
+    { nombre: "3 PISO",  id: "1BetkVTw-2uSzPwn_SewJIFpItp6NGr5tsFAUW95DcAA" },
+    { nombre: "4 PISO",  id: "1XGqMDNAWHn91YgSyXigC9JjUN6hvuGnXYR0Fbyz0zlY" },
+    { nombre: "CONSULTORIOS", id: "14LtIqcWS_d-Pvd6B_zw3a1Fj2r_NxqXx8jIUAHcOqNk" }
+  ];
+
+  var acum = {};
+  SERVICIOS.forEach(function(s) {
+    for (var dia = 1; dia <= 31; dia++) {
+      var turnos = leerTurnosServicio(s.id, dia, MES, ANIO);
+      var fichHoy = leerFichadasDia(ID_FICHADAS, String(dia));
+      var fichMan = leerFichadasDiaSeguro(ID_FICHADAS, String(dia + 1));
+      for (var leg in turnos) {
+        var t = turnos[leg];
+        var win = parseTurno(t.turno);
+        if (!win) continue;
+        var teoIni = dia * 1440 + win.ini;
+        var teoFin = dia * 1440 + (win.cruza ? win.finNext + 1440 : win.fin);
+        if (minEnFranjaNoche(teoIni, teoFin) <= 0) continue;
+        var f = fichHoy[leg];
+        var entAbs = null, salAbs = null;
+        if (!win.cruza) {
+          var mk = f ? f.marcas : [];
+          if (mk.length === 0) continue;
+          if (mk.length >= 2) { entAbs = dia*1440 + mk[0]; salAbs = dia*1440 + mk[mk.length-1]; }
+        } else {
+          var e = f ? marcaCerca(f.marcas, win.ini, 180) : null;
+          if (e === null) continue;
+          var fm = fichMan[leg];
+          var sm = fm ? marcaEnVentana(fm.marcas, (win.finNext >= 240 ? win.finNext-180 : 0), win.finNext+240) : null;
+          if (sm !== null) { entAbs = dia*1440 + e; salAbs = (dia+1)*1440 + sm; }
+        }
+        if (!acum[leg]) acum[leg] = { nom: (f && f.nombre) ? f.nombre : t.apellido, min: 0, omis: 0 };
+        if (entAbs === null || salAbs === null) { acum[leg].omis++; continue; }
+        acum[leg].min += minEnFranjaNoche(entAbs, salAbs);
+      }
+    }
+  });
+
+  var out = [];
+  for (var leg in acum) {
+    var a = acum[leg];
+    var hs = Math.round(a.min / 60 * 10) / 10;
+    if (hs > 0 || a.omis > 0)
+      out.push([leg, a.nom, hs, a.omis > 0 ? "omision en " + a.omis + " jornada(s)" : ""]);
+  }
+  out.sort(function(x, y){ return String(x[1]).localeCompare(String(y[1])); });
+
+  escribir(SpreadsheetApp.openById(ID_BASE), "NOCTURNIDAD",
+           ["Legajo","Apellido y Nombre","Hs nocturnas","Alerta"], out);
+  Logger.log("NOCTURNIDAD: " + out.length + " agentes");
+}
+
+function minEnFranjaNoche(ent, sal) {
+  var n = 0;
+  for (var m = ent; m < sal; m++) {
+    var h = Math.floor((m % 1440) / 60);
+    if (h >= 21 || h < 6) n++;
+  }
+  return n;
+}
+
+function unificarHorarios() {
+  var SERVICIOS = [
+    { nombre: "GUARDIA", id: "1MhWVXYYoQp2Emk80oPV3zxL35xQhjQDOHBACqCdBF7E" },
+    { nombre: "UTI",     id: "1mOGXPznXM2LeG6nSZD1VkZUtZ6CX5CetCMsh4Z8wvMo" },
+    { nombre: "2 PISO",  id: "1rw52e_e60A8qkDPCrbx1sacJ7MhSblJqZjOEnrL4s7I" },
+    { nombre: "3 PISO",  id: "1BetkVTw-2uSzPwn_SewJIFpItp6NGr5tsFAUW95DcAA" },
+    { nombre: "4 PISO",  id: "1XGqMDNAWHn91YgSyXigC9JjUN6hvuGnXYR0Fbyz0zlY" },
+    { nombre: "CONSULTORIOS", id: "14LtIqcWS_d-Pvd6B_zw3a1Fj2r_NxqXx8jIUAHcOqNk" }
+  ];
+
+  var props = PropertiesService.getScriptProperties();
+  var ss = null, idU = props.getProperty("ID_UNIFICADA");
+  if (idU) { try { ss = SpreadsheetApp.openById(idU); } catch (e) { ss = null; } }
+  if (!ss) { ss = SpreadsheetApp.create("HORARIOS UNIFICADO — RRHH"); props.setProperty("ID_UNIFICADA", ss.getId()); }
+
+  SERVICIOS.forEach(function(s) {
+    var src = SpreadsheetApp.openById(s.id).getSheets()[0];
+    var rng = src.getDataRange();
+    var vals = rng.getDisplayValues();
+    var bgs = rng.getBackgrounds();
+    var nR = vals.length, nC = vals[0].length;
+
+    var fh = 0;
+    for (var r = 0; r < Math.min(nR, 15); r++) {
+      var cant = 0;
+      for (var c = 0; c < nC; c++) { var d = parseInt(vals[r][c], 10); if (d >= 1 && d <= 31 && String(vals[r][c]).trim() === String(d)) cant++; }
+      if (cant >= 20) { fh = r; break; }
+    }
+
+    var h = ss.getSheetByName(s.nombre);
+    if (h) ss.deleteSheet(h);
+    h = ss.insertSheet(s.nombre);
+
+    h.getRange(1, 1, 1, 2).merge()
+      .setValue("HORARIOS  ·  " + s.nombre + "  ·  AGOSTO 2026")
+      .setFontSize(14).setFontWeight("bold").setFontColor("#ffffff")
+      .setBackground("#1f3864").setHorizontalAlignment("center").setVerticalAlignment("middle");
+    h.setRowHeight(1, 30);
+
+    h.getRange(2, 1).setValue("Referencias:").setFontWeight("bold");
+    h.getRange(2, 2).setBackground("#ff0000");
+    h.getRange(2, 3, 1, 2).merge().setValue("Cambio de turno");
+    h.getRange(2, 5).setBackground("#ffff00");
+    h.getRange(2, 6, 1, 2).merge().setValue("Extra autorizada");
+
+    var top = 4;
+    h.getRange(top, 1, nR, nC).setValues(vals).setBackgrounds(bgs).setFontSize(9)
+      .setBorder(true, true, true, true, true, true, "#d9d9d9", SpreadsheetApp.BorderStyle.SOLID);
+    h.getRange(top + fh, 1, 1, nC).setFontWeight("bold");
+    h.setFrozenRows(top + fh);
+    h.setFrozenColumns(2);
+    for (var c = 3; c <= nC; c++) h.setColumnWidth(c, 34);
+    h.setColumnWidth(1, 60);
+    h.setColumnWidth(2, 130);
+  });
+
+  var def = ss.getSheetByName("Hoja 1") || ss.getSheetByName("Sheet1") || ss.getSheetByName("Hoja1");
+  if (def && ss.getSheets().length > 1) ss.deleteSheet(def);
+
+  Logger.log("Unificada lista: " + ss.getUrl());
+}
+
+var TURNOS_VALIDOS = ["6/13","7/14","12/19","6/12","12/18","18/24","0/6","23/6","17/24","18/6","6/18","13/17","19/23","7/12","14/19","13/18"];
+var LICENCIAS = ["FRANCO","COMPENSATORIO","MATERNIDAD","EXAMEN","ART","DUELO","PARTE MEDICO","LAO"];
+
+function crearPlantilla() {
+  var ID_ORIGEN = "1MhWVXYYoQp2Emk80oPV3zxL35xQhjQDOHBACqCdBF7E";
+  var NOMBRE = "GUARDIA", MES = 8, ANIO = 2026;
+
+  var H = _leerHorarioCrudo(ID_ORIGEN);
+  var datos = H.datos, bg = H.bg, fh = H.fh, colsDia = H.colsDia;
+  var nDias = 31;
+
+  var agentes = [];
+  for (var r = fh + 1; r < datos.length; r++) {
+    var leg = String(datos[r][0]).trim();
+    if (!/^\d+$/.test(leg)) continue;
+    var filaFin = r + 1;
+    while (filaFin < datos.length && !/^\d+$/.test(String(datos[filaFin][0]).trim())) filaFin++;
+    var hab = {}, cam = {}, ext = {};
+    for (var i = 0; i < colsDia.length; i++) {
+      var dia = colsDia[i].dia, col = colsDia[i].col;
+      for (var rr = r; rr < filaFin; rr++) {
+        var val = String(datos[rr][col]).trim();
+        if (!val) continue;
+        if (esRojo(bg[rr][col])) cam[dia] = val;
+        else if (esAmarillo(bg[rr][col])) ext[dia] = val;
+        else if (!hab[dia]) hab[dia] = val;
+      }
+    }
+    agentes.push({ leg: leg, ape: String(datos[r][1]).trim(), hab: hab, cam: cam, ext: ext });
+  }
+
+  var props = PropertiesService.getScriptProperties();
+  var ss, idP = props.getProperty("ID_PLANTILLA");
+  if (idP) { try { ss = SpreadsheetApp.openById(idP); } catch (e) { ss = null; } }
+  if (!ss) { ss = SpreadsheetApp.create("PLANILLA MODELO \u2014 HORARIOS"); props.setProperty("ID_PLANTILLA", ss.getId()); }
+  var h = ss.insertSheet(NOMBRE + "_" + Date.now(), 0);
+  var vieja = ss.getSheetByName(NOMBRE); if (vieja) ss.deleteSheet(vieja);
+  h.setName(NOMBRE);
+
+  var totCol = 3 + nDias, diaCol0 = 4, top = 3;
+
+  h.getRange(1,1,1,3).merge().setValue("HORARIOS \u00b7 " + NOMBRE + " \u00b7 " + MES + "/" + ANIO)
+    .setBackground("#1f3864").setFontColor("white").setFontWeight("bold").setFontSize(13).setHorizontalAlignment("center");
+  var lg = [["#ff0000","Cambio"],["#ffff00","Extra"],["#d9d9d9","Licencia"]];
+  for (var i=0;i<lg.length;i++){ h.getRange(1,5+i*2).setBackground(lg[i][0]).setBorder(true,true,true,true,false,false,"#999",SpreadsheetApp.BorderStyle.SOLID); h.getRange(1,6+i*2).setValue(lg[i][1]).setFontSize(9); }
+
+  var cab = ["Legajo","Apellido","Tipo"];
+  for (var d=1; d<=nDias; d++) cab.push(d);
+  h.getRange(2,1,1,totCol).setValues([cab]).setFontWeight("bold").setBackground("#d9e1f2").setHorizontalAlignment("center");
+
+  var filas = [], tipos = ["Habitual","Cambio","Extra"];
+  agentes.forEach(function(a){
+    [a.hab, a.cam, a.ext].forEach(function(mapa, ti){
+      var fila = [ti===0?a.leg:"", ti===0?a.ape:"", tipos[ti]];
+      for (var d=1; d<=nDias; d++) fila.push(mapa[d] || "");
+      filas.push(fila);
+    });
+  });
+  if (filas.length) h.getRange(top,1,filas.length,totCol).setValues(filas);
+
+  var opciones = TURNOS_VALIDOS.concat(LICENCIAS);
+  h.getRange(top,diaCol0,filas.length,nDias).setDataValidation(
+    SpreadsheetApp.newDataValidation().requireValueInList(opciones, true).setAllowInvalid(true).build());
+
+  var rango = h.getRange(top,diaCol0,filas.length,nDias);
+  var d1 = "D" + top;
+  var orLic = '=OR(' + LICENCIAS.map(function(l){return d1+'="'+l+'"';}).join(",") + ')';
+  h.setConditionalFormatRules([
+    SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied(orLic).setBackground("#d9d9d9").setRanges([rango]).build(),
+    SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=AND($C'+top+'="Cambio", '+d1+'<>"")').setBackground("#ff0000").setRanges([rango]).build(),
+    SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied('=AND($C'+top+'="Extra", '+d1+'<>"")').setBackground("#ffff00").setRanges([rango]).build()
+  ]);
+
+  h.getRange(top,1,filas.length,totCol).setBorder(true,true,true,true,true,true,"#dddddd",SpreadsheetApp.BorderStyle.SOLID).setFontSize(9).setHorizontalAlignment("center");
+  h.getRange(top,2,filas.length,1).setHorizontalAlignment("left");
+  h.setFrozenRows(2); h.setFrozenColumns(3);
+  h.setColumnWidth(1,60); h.setColumnWidth(2,140); h.setColumnWidth(3,75);
+  for (var c=diaCol0;c<=totCol;c++) h.setColumnWidth(c,32);
+  for (var b=0;b<agentes.length;b++)
+    h.getRange(top+b*3,1,1,totCol).setBorder(true,null,null,null,null,null,"#000000",SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+
+  var def = ss.getSheetByName("Hoja 1")||ss.getSheetByName("Sheet1")||ss.getSheetByName("Hoja1");
+  if (def && ss.getSheets().length>1) ss.deleteSheet(def);
+
+  Logger.log("Plantilla precargada: " + ss.getUrl());
+}
+
