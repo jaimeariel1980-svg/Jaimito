@@ -63,7 +63,7 @@ r=R(sim(F({5:['6:00','13:00','13:30','17:30']}),ag({hab:{5:'6/13'},ext:{5:'13/17
 assert.deepStrictEqual([r.est,r.h50,r.fr],['AUTORIZADA',3.5,'13:30 a 17:00']);
 // 10) RABINOVICH: 12/19 + extra 7/12, fichó 6:52 7:42 12:11 19:00 => solo estuvo 7:00-7:42 => <1h, no se paga
 r=R(sim(F({8:['19:15'],9:['6:52','7:42','12:11','19:00']}),ag({hab:{9:'12/19'},ext:{9:'7/12'}}))[0]);
-assert.deepStrictEqual([r.est,r.h50,r.fr],['A REVISAR',0,'07:00 a 07:42']);assert.strictEqual(r.fich,'[6:52 · 7:42 · 12:11 · 19:00]');
+assert.deepStrictEqual([r.est,r.h50,r.fr],['A REVISAR',0,'07:00 a 07:42']);assert.ok(/7:42 y 12:11 no estuvo.*serían 5 h/.test(r.cond));assert.strictEqual(run('tipoFila_('+JSON.stringify(rows=sim(F({8:['19:15'],9:['6:52','7:42','12:11','19:00']}),ag({hab:{9:'12/19'},ext:{9:'7/12'}})))+'[0])'),3);assert.strictEqual(r.fich,'[6:52 · 7:42 · 12:11 · 19:00]');
 // 11) 3 fichadas (impar) => no se paga solo, se muestra cuánto sería
 r=R(sim(F({5:['6:00','13:00','17:10']}),ag({hab:{5:'6/13'},ext:{5:'13/17'}}))[0]);
 assert.deepStrictEqual([r.est,r.h50],['A REVISAR',0]);assert.ok(/3 fichadas/.test(r.cond));
@@ -91,4 +91,9 @@ assert.strictEqual(R(sim(f2,ag({hab:{5:'7/14'},ext:{5:'14/19'}}))[0]).est,'REVIS
 assert.strictEqual(run("tipoFila_(['','','','','','','','','',1,0,'AUTORIZADA',''])"),0);
 assert.strictEqual(run("tipoFila_(['','','','','','','','','',0,0,'A REVISAR','omisión: una sola fichada'])"),2);
 assert.strictEqual(run("tipoFila_(['','','','','','','','','',4,0,'A REVISAR','extra NO autorizada (no hay franja declarada)'])"),1);
+// 19) horario de la tarjeta vs turno de la planilla
+const fh=F({1:['11:57:56','22:12:41']});fh[1]['1'].horario='12:00 a 19:00';
+r=sim(fh,ag({hab:{1:'17/24'},ext:{1:'19/22'}}))[0];assert.strictEqual(r[14],'12:00 a 19:00 ≠ planilla 17/24');
+const fh2=F({5:['6:58','19:10']});fh2[5]['1'].horario='07:00 a 14:00';
+assert.strictEqual(sim(fh2,ag({hab:{5:'7/14'},ext:{5:'14/19'}}))[0][14],'07:00 a 14:00');
 console.log('OK todos los tests');
