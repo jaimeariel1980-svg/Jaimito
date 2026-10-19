@@ -265,7 +265,7 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '44';
+const ESQUEMA = '45';
 
 function actualizarEsquema_() {
   try { asegurarColumnas_(); } catch (e) { registrarError_('asegurar columnas', e); }
@@ -494,6 +494,20 @@ function actualizarEsquema_() {
       const i = d.findIndex(r => String(r[0]).trim() === 'link_agenda_tecnica');
       if (i > 0) aj.getRange(i + 1, 2).setValue('https://calendar.app.google/8gfyHfYYWLwrRHBU8');
       props.setProperty('LINK_TEC_1', '1');
+    },
+    () => {
+      // Dirección de la entrevista técnica en el mensaje de WhatsApp (una sola vez).
+      if (props.getProperty('DIR_TEC')) return;
+      asegurarAjustes_([['direccion_tecnica', ''], ['direccion_tecnica_poli2', '']]);
+      const aj = hoja_('Ajustes'), d = aj.getDataRange().getValues();
+      const i = d.findIndex(r => String(r[0]).trim() === 'direccion_tecnica');
+      if (i > 0 && !String(d[i][1]).trim()) aj.getRange(i + 1, 2).setValue('Sarmiento 373, planta baja, División de Enfermería');
+      const pl = hoja_('Plantillas'), filas = pl.getDataRange().getValues(), j = filas.findIndex(f => f[0] === 'contacto-tecnica');
+      if (j > 0 && !/\[DIRECCION\]/.test(String(filas[j][2]))) {
+        const t = String(filas[j][2]);
+        pl.getRange(j + 1, 3).setValue(/Si te interesa[^\n]*/.test(t) ? t.replace(/(Si te interesa[^\n]*)/, 'La entrevista es presencial en [DIRECCION].\n$1') : t + '\nLa entrevista es presencial en [DIRECCION].');
+      }
+      props.setProperty('DIR_TEC', '1');
     }
   ];
   let ok = true;
