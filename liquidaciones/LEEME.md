@@ -10,7 +10,7 @@ Reglas completas: `docs/CONTEXTO.md`, `docs/TRASPASO.md`. Motor viejo de agosto 
 ## Qué hace `liquidarExtras`
 - Lee cada pestaña de la planilla de horarios (4 filas por agente: Habitual/Cambio/Extra/Licencias). Excluye las de `hojas_excluidas` (SUP, SUP SADOFE, LISTAS).
 - Extra declarada (fila Extra) = techo. Se paga el solapamiento con lo fichado, hachazo (piso 1 h, bloques de 30 min) y recargos (L-V 50%, 22–06 100%, sáb desde 13 h 100%, dom y feriado 100%).
-- Fichadas: se muestran tal cual la tarjeta reloj (con segundos); columna "Fichadas del día" con todas las marcas. Horas trabajadas = pares de fichadas (entrada/salida); con 4 fichadas cuentan los dos tramos. Una sola fichada = omisión, nunca hay extra. Cantidad impar (3, 5) = A REVISAR con las horas que serían.
+- Fichadas: se muestran tal cual la tarjeta reloj (con segundos); columna "Fichadas del día" con todas las marcas. Jornada = de la primera a la última fichada (las intermedias no cuentan: nunca se trabaja cortado). Una sola fichada = omisión, nunca hay extra.
 - Extra declarada que cae dentro del turno (o en la cola de una noche del día anterior) se descuenta.
 - Feriado = día con `FDO` en la planilla o en CONFIG `feriados_extra`.
 - Fichó de más sin extra declarada → fila `A REVISAR` (no se paga). Declarada sin fichada → `A REVISAR`. Apellido que no coincide con la fichada → `REVISAR IDENTIDAD`.

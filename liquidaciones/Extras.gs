@@ -166,14 +166,8 @@ function presencia_(a, d, w, cfg) {
   if (!M.length || M[0].m > eHasta) return { estado: 'sin' };
   var res = { ent: M[0].t, sal: M.length > 1 ? M[M.length - 1].t : '', n: M.length };
   if (M.length === 1) { res.estado = 'omision'; return res; }
-  if (M.length % 2) { res.estado = 'impar'; res.tramos = tramosPares_([M[0], M[M.length - 1]], w.ini, w.fin); return res; }
-  res.estado = 'ok'; res.tramos = tramosPares_(M, w.ini, w.fin);
-  for (var k = 1; k + 1 < M.length; k += 2) {
-    if (Math.min(w.fin, M[k + 1].m) - Math.max(w.ini, M[k].m) > 30) {
-      res.estado = 'hueco';
-      res.nota = M.length + ' fichadas: entre ' + M[k].t + ' y ' + M[k + 1].t + ' no estuvo. Por pares cuenta ' + horas_(res.tramos) + ' h; si esa salida/entrada fue un error de marcación serían ' + horas_(tramosPares_([M[0], M[M.length - 1]], w.ini, w.fin)) + ' h. Revisar a mano';
-    }
-  }
+  res.estado = 'ok'; res.intermedias = M.length - 2;
+  res.tramos = tramosPares_([M[0], M[M.length - 1]], w.ini, w.fin);
   return res;
 }
 
@@ -214,10 +208,9 @@ function procesarAgente_(a, serv, cfg, ctx, filas) {
           if (w.ini !== w0.ini || w.fin !== w0.fin) cond += (cond ? ' + ' : '') + 'se descontó lo que cae dentro del turno';
           if (pr.estado === 'sin') { filas.push(base.concat([hE, hS, txt, '', 0, 0, 'A REVISAR', 'no fichó la extra (no se paga)' + (cond ? ' · ' + cond : '')])); return; }
           if (pr.estado === 'omision') { filas.push(base.concat([pr.ent, '', txt, '', 0, 0, 'A REVISAR', 'omisión: una sola fichada, no corresponde extra'])); return; }
-          if (pr.estado === 'impar') { filas.push(base.concat([pr.ent, pr.sal, txt, '', 0, 0, 'A REVISAR', pr.n + ' fichadas (impar): falta una. Entre la primera y la última serían ' + horas_(pr.tramos) + ' h, revisar a mano'])); return; }
-          if (pr.estado === 'hueco') { filas.push(base.concat([pr.ent, pr.sal, txt, textoTramos_(pr.tramos), 0, 0, 'A REVISAR', pr.nota])); return; }
           if (!pr.tramos.length) { filas.push(base.concat([pr.ent, pr.sal, txt, '', 0, 0, 'A REVISAR', 'las fichadas no cubren la franja (no se paga)'])); return; }
           var r = calcularExtraTramos(pr.tramos, cd), fz = textoTramos_(pr.tramos);
+          if (pr.intermedias > 0) cond += (cond ? ' + ' : '') + pr.intermedias + ' fichada(s) intermedia(s), no cuentan: jornada completa';
           if (r.total < w.fin - w.ini) cond += (cond ? ' + ' : '') + 'realizó menos que lo autorizado';
           if (r.h50 + r.h100 <= 0) { filas.push(base.concat([pr.ent, pr.sal, txt, fz, 0, 0, 'A REVISAR', 'menos de 1 h (no se paga)'])); return; }
           filas.push(base.concat([pr.ent, pr.sal, txt, fz, r.h50, r.h100, 'AUTORIZADA', cond]));
@@ -231,16 +224,16 @@ function procesarAgente_(a, serv, cfg, ctx, filas) {
     if (!t) continue;
     var M = marcasAbs_(a.leg, d, t.ini - 240, t.fin + 480, cfg);
     if (M.length < 2 || M[0].m > t.ini + 180) continue;
-    var ult = M[M.length - 1].m, impar = M.length % 2 === 1;
-    var tr = tramosPares_(impar ? [M[0], M[M.length - 1]] : M, t.fin, Infinity);
+    var ult = M[M.length - 1].m;
+    var tr = tramosPares_([M[0], M[M.length - 1]], t.fin, Infinity);
     if (!tr.length || ult - t.fin < 60) continue;
     var decl = parseFranjas(a.ext[d + 1]).map(function (w) { return { ini: w.ini + 1440, fin: w.fin + 1440 }; });
     if (decl.some(function (w) { return w.ini < ult && w.fin > t.fin; })) continue;
     if (ident()) { filas.push(base.concat(['', '', '', '', '', '', 'REVISAR IDENTIDAD', 'fichada: ' + nf])); continue; }
     var rn = calcularExtraTramos(tr, cd);
     if (rn.h50 + rn.h100 <= 0) continue;
-    filas.push(base.concat([M[0].t, M[M.length - 1].t, '', textoTramos_(tr), impar ? 0 : rn.h50, impar ? 0 : rn.h100, 'A REVISAR',
-      'extra NO autorizada (no hay franja declarada)' + (impar ? ' · ' + M.length + ' fichadas (impar): serían ' + horas_(tr) + ' h' : '')]));
+    filas.push(base.concat([M[0].t, M[M.length - 1].t, '', textoTramos_(tr), rn.h50, rn.h100, 'A REVISAR',
+      'extra NO autorizada (no hay franja declarada)']));
   }
   agregarFichas_(filas, n0, a.leg, _diasMes, cfg);
 }
