@@ -128,6 +128,40 @@ function agregarFichas_(filas, desde, leg, d, cfg) {
   }
 }
 
+function marcasAbs_(leg, d, desde, hasta, cfg) {
+  var out = [];
+  [-1, 0, 1].forEach(function (o) {
+    marcasDia_(leg, d + o, cfg).forEach(function (m) { var abs = m + o * 1440; if (abs >= desde && abs <= hasta) out.push(abs); });
+  });
+  return out.sort(function (x, y) { return x - y; });
+}
+
+function bloquesTurno_(a, d) {
+  return [[0, d], [-1440, d - 1], [1440, d + 1]].map(function (x) {
+    var t = turnoCompleto_(a, x[1]);
+    return t && { ini: t.ini + x[0], fin: t.fin + x[0] };
+  }).filter(Boolean);
+}
+
+function presencia_(a, d, w, cfg) {
+  var bIni = w.ini, bFin = w.fin, contiguo = false;
+  bloquesTurno_(a, d).forEach(function (t) {
+    if (Math.abs(t.fin - w.ini) <= 30) { bIni = Math.min(bIni, t.ini); contiguo = true; }
+    if (Math.abs(t.ini - w.fin) <= 30) { bFin = Math.max(bFin, t.fin); contiguo = true; }
+  });
+  var eDesde = contiguo ? bIni - 240 : w.ini - 180, eHasta = contiguo ? bIni + 180 : w.ini + 180;
+  var M = marcasAbs_(a.leg, d, eDesde, (contiguo ? bFin : w.fin) + 240, cfg);
+  if (!M.length || M[0] > eHasta) return { estado: 'sin' };
+  var res = { ent: M[0], sal: M.length > 1 ? M[M.length - 1] : null };
+  if (M.length % 2) { res.estado = 'irregular'; res.nota = 'cantidad impar de fichadas (' + M.length + '): falta una'; return res; }
+  for (var k = 1; k + 1 < M.length; k += 2) {
+    if (Math.min(w.fin, M[k + 1]) - Math.max(w.ini, M[k]) > 30) { res.estado = 'irregular'; res.nota = 'según fichadas estuvo ausente de ' + horaAbs_(M[k]) + ' a ' + horaAbs_(M[k + 1]); return res; }
+  }
+  res.ri = Math.max(w.ini, M[0]); res.rf = Math.min(w.fin, M[M.length - 1]);
+  res.dur = Math.max(0, res.rf - res.ri); res.estado = 'ok';
+  return res;
+}
+
 function procesarAgente_(a, serv, cfg, ctx, filas) {
   var n0 = filas.length;
   for (var d = 1; d <= _diasMes; d++) {
@@ -143,21 +177,31 @@ function procesarAgente_(a, serv, cfg, ctx, filas) {
       var fr = parseFranjas(ext);
       if (ident()) { filas.push(base.concat(['', '', ext, '', '', '', 'REVISAR IDENTIDAD', 'fichada: ' + nf])); continue; }
       if (!fr.length) { filas.push(base.concat(['', '', ext, '', '', '', 'A REVISAR', 'franja ilegible'])); continue; }
-      fr.forEach(function (w) {
-        var mejor = null;
-        corridas_(a.leg, d, w.ini - 720, w.fin + 480, cfg).forEach(function (c) {
-          var s = solape_(w.ini, w.fin, c);
-          if (s && (!mejor || s.dur > mejor.dur)) mejor = s;
-        });
-        var txt = minToHora(w.ini) + ' a ' + minToHora(w.fin), cond = fer ? 'feriado' : '';
-        if (!mejor || !mejor.dur) {
-          var hoy = marcasDia_(a.leg, d, cfg), e0 = mejor ? mejor.ent : (hoy.length ? hoy[0] : null), s0 = mejor ? mejor.sal : (hoy.length > 1 ? hoy[hoy.length - 1] : null);
-          filas.push(base.concat([minToHora(e0), minToHora(s0), txt, '', 0, 0, 'A REVISAR', 'no fichó la extra (no se paga)'])); return;
+      var bloques = bloquesTurno_(a, d).concat(parseFranjas(a.ext[d - 1]).map(function (w) { return { ini: w.ini - 1440, fin: w.fin - 1440 }; }));
+      var hoy = marcasDia_(a.leg, d, cfg);
+      fr.forEach(function (w0) {
+        var txt = minToHora(w0.ini) + ' a ' + minToHora(w0.fin), piezas = restar_(w0, bloques);
+        if (!piezas.length) {
+          filas.push(base.concat([hoy.length ? minToHora(hoy[0]) : '', hoy.length > 1 ? minToHora(hoy[hoy.length - 1]) : '', txt, '', 0, 0, 'A REVISAR', 'la franja declarada cae dentro del turno o de otra extra (no es extra)']));
+          return;
         }
-        var r = calcularExtra(mejor.dur, mejor.ri, cd);
-        if (mejor.ri > w.ini || mejor.rf < w.fin) cond += (cond ? ' + ' : '') + 'realizó menos que lo autorizado';
-        if (r.h50 + r.h100 <= 0) { filas.push(base.concat([minToHora(mejor.ent), minToHora(mejor.sal), txt, minToHora(mejor.ri) + ' a ' + minToHora(mejor.rf), 0, 0, 'A REVISAR', 'menos de 1 h (no se paga)'])); return; }
-        filas.push(base.concat([minToHora(mejor.ent), minToHora(mejor.sal), txt, minToHora(mejor.ri) + ' a ' + minToHora(mejor.rf), r.h50, r.h100, 'AUTORIZADA', cond]));
+        piezas.forEach(function (w) {
+          var cond = fer ? 'feriado' : '', pr = presencia_(a, d, w, cfg);
+          if (w.ini !== w0.ini || w.fin !== w0.fin) cond += (cond ? ' + ' : '') + 'se descontó lo que cae dentro del turno';
+          if (pr.estado === 'sin') {
+            filas.push(base.concat([hoy.length ? minToHora(hoy[0]) : '', hoy.length > 1 ? minToHora(hoy[hoy.length - 1]) : '', txt, '', 0, 0, 'A REVISAR', 'no fichó la extra (no se paga)' + (cond ? ' · ' + cond : '')]));
+            return;
+          }
+          if (pr.estado === 'irregular') {
+            filas.push(base.concat([horaAbs_(pr.ent), horaAbs_(pr.sal), txt, '', 0, 0, 'A REVISAR', 'fichadas irregulares, revisar a mano: ' + pr.nota]));
+            return;
+          }
+          if (!pr.dur) { filas.push(base.concat([horaAbs_(pr.ent), horaAbs_(pr.sal), txt, '', 0, 0, 'A REVISAR', 'las fichadas no cubren la franja (no se paga)'])); return; }
+          var r = calcularExtra(pr.dur, pr.ri, cd), fz = horaAbs_(pr.ri) + ' a ' + horaAbs_(pr.rf);
+          if (pr.ri > w.ini || pr.rf < w.fin) cond += (cond ? ' + ' : '') + 'realizó menos que lo autorizado';
+          if (r.h50 + r.h100 <= 0) { filas.push(base.concat([horaAbs_(pr.ent), horaAbs_(pr.sal), txt, fz, 0, 0, 'A REVISAR', 'menos de 1 h (no se paga)'])); return; }
+          filas.push(base.concat([horaAbs_(pr.ent), horaAbs_(pr.sal), txt, fz, r.h50, r.h100, 'AUTORIZADA', cond]));
+        });
       });
       continue;
     }
@@ -175,7 +219,7 @@ function procesarAgente_(a, serv, cfg, ctx, filas) {
     if (ident()) { filas.push(base.concat(['', '', '', '', '', '', 'REVISAR IDENTIDAD', 'fichada: ' + nf])); continue; }
     var rn = calcularExtra(salida - t.fin, t.fin, cd);
     if (rn.h50 + rn.h100 <= 0) continue;
-    filas.push(base.concat([minToHora(entrada), minToHora(salida), '', minToHora(t.fin) + ' a ' + minToHora(salida), rn.h50, rn.h100, 'A REVISAR', 'extra NO autorizada (no hay franja declarada)']));
+    filas.push(base.concat([horaAbs_(entrada), horaAbs_(salida), '', horaAbs_(t.fin) + ' a ' + horaAbs_(salida), rn.h50, rn.h100, 'A REVISAR', 'extra NO autorizada (no hay franja declarada)']));
   }
   agregarFichas_(filas, n0, a.leg, _diasMes, cfg);
 }
