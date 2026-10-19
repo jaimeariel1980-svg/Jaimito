@@ -4,7 +4,7 @@ Reglas completas: `docs/CONTEXTO.md`, `docs/TRASPASO.md`. Motor viejo de agosto 
 
 ## Uso (cada mes)
 1. Abrir el Sheet → menú **Liquidaciones → Preparar CONFIG** (crea la hoja CONFIG; no pisa lo ya cargado).
-2. Completar en CONFIG: mes, año, `id_horarios` (planilla del mes), `id_fichadas` (fichadas del mes), `id_grh` (Excel GRH, opcional), feriados/no laborables si hace falta.
+2. Completar en CONFIG: mes, año, `id_horarios` (planilla del mes); `id_fichadas` puede quedar vacío (busca solo "Tarjeta Reloj por persona - <Mes> <Año>" en el Drive), `id_grh` (Excel GRH, opcional), feriados/no laborables si hace falta.
 3. **Liquidaciones → Liquidar horas extra** → hoja `LIQUIDACION`.
 
 ## Qué hace `liquidarExtras`
