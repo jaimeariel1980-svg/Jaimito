@@ -265,7 +265,7 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '43';
+const ESQUEMA = '44';
 
 function actualizarEsquema_() {
   try { asegurarColumnas_(); } catch (e) { registrarError_('asegurar columnas', e); }
@@ -485,6 +485,15 @@ function actualizarEsquema_() {
       if (i > 0) aj.getRange(i + 1, 2).setValue('marcostejo01@gmail.com');
       try { calendarioPor_('marcostejo01@gmail.com'); } catch (e) { }
       props.setProperty('AGENDA_TEC_1', '1');
+    },
+    () => {
+      // Link de reserva de la entrevista técnica de PAMI 1 (una sola vez).
+      if (props.getProperty('LINK_TEC_1')) return;
+      asegurarAjustes_([['link_agenda_tecnica', '']]);
+      const aj = hoja_('Ajustes'), d = aj.getDataRange().getValues();
+      const i = d.findIndex(r => String(r[0]).trim() === 'link_agenda_tecnica');
+      if (i > 0) aj.getRange(i + 1, 2).setValue('https://calendar.app.google/8gfyHfYYWLwrRHBU8');
+      props.setProperty('LINK_TEC_1', '1');
     }
   ];
   let ok = true;
