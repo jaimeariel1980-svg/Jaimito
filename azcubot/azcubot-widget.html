@@ -960,7 +960,7 @@ if(!window.festejar) window.festejar = function(msg){
     function enviar(fl){
     call('azcuEjecutar', [Object.assign({quien:st.nombre||'', files:fl}, a2)], function(r){
       a.resultado = r.mensaje; delete st.fz[a.id];
-      if(a.tipo==='etapa' && a.datos && a.datos.etapa==='Vendida' && typeof window.festejar==='function') window.festejar();
+      if(a.tipo==='etapa' && a.datos && typeof window.festejar==='function'){ if(a.datos.etapa==='Vendida') window.festejar('🎉 ¡Vendida! '+(a.datos.dir||'')); else if(a.datos.etapa==='Reserva') window.festejar(null,'reserva'); }
       if(r.enlaces && r.enlaces.length) st.msgs.push({role:'assistant', content:'', adj:r.enlaces});
       save(); render();
       if(typeof window.recargar==='function'){ try{ window.recargar(AZ.ctx||undefined); }catch(e){} }
