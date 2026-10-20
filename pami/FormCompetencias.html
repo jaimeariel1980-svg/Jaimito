@@ -68,7 +68,7 @@ var FC=(function(){
     var fail=function(e){CONT.innerHTML='<div class="loading" style="color:#D9534F">Error: '+esc(e.message)+'</div>';};
     google.script.run.withSuccessHandler(function(d){D=d;
       if(!o.editar){render();return;}
-      google.script.run.withSuccessHandler(function(p){if(!p){fail({message:'No encontré una evaluación guardada para editar'});return;}PRE=p;render();previa();}).withFailureHandler(fail).getEvalPrevia(K,CID,'competencias');
+      google.script.run.withSuccessHandler(function(p){if(!p){fail({message:'No encontré una evaluación guardada para editar'});return;}PRE=p;render();previa();}).withFailureHandler(fail).getEvalPrevia(K,CID,ETAPA==='tecnica'?'pami2':'competencias');
     }).withFailureHandler(fail).getDatosForm(K,CID,ETAPA);
   }
   function setV(id,v){var e=$('#'+id);if(!e||v==null||v==='')return;if(e.tagName==='SELECT'&&![].some.call(e.options,function(o){return o.value===v||o.text===v;})){var o=document.createElement('option');o.textContent=v;e.appendChild(o);}e.value=v;}
@@ -150,7 +150,7 @@ var FC=(function(){
       d.innerHTML='<h2 style="color:#1E8E5A">¡Evaluación '+(O.editar?'actualizada':'guardada')+'!</h2><p style="margin:10px 0">Ajuste: <b>'+esc(r.nota)+'</b>'+(r.score!=null?' · Score '+r.score.toFixed(1):'')+'<br>Estado del candidato: <b>'+esc(r.estado||'')+'</b></p><p><button class="btn" onclick="FC.volver()">Volver</button> <a class="btn ghost" target="_blank" href="'+esc(r.url)+'">Ver informe</a></p>'+(O.onFicha&&(r.nota==='A'||r.nota==='B+')?'<div style="margin-top:14px;padding:12px;background:#FFF1D6;border-left:4px solid #F2B705;text-align:left"><b>Siguiente paso:</b> preparar el resumen del proceso para la entrevista técnica. Los jefes no ven nada hasta que lo revises y lo guardes.<br><button class="btn" style="margin-top:8px;background:#F2B705;color:#4A3A00" onclick="FC.ficha()">🧾 Preparar Resumen ET</button></div>':'');
       CONT.scrollIntoView();if(O.onDone)O.onDone(r);
     }).withFailureHandler(function(e){b.disabled=false;b.textContent=O.editar?'Guardar cambios':'Guardar evaluación';alert('No se pudo guardar: '+e.message);})
-    [ETAPA==='tecnica'?'guardarTecnica':'guardarCompetencias'](K,ETAPA==='tecnica'?{id:CID,fecha:v('m-fecha'),comps:comps,fortalezas:$('#fort').value,areas:$('#area').value,recomendacion:$('#rec').value,resultado:letra,motivoDescarte:mf}:{id:CID,entrevistador:v('m-ent'),fecha:v('m-fecha'),comps:comps,fortalezas:$('#fort').value,areas:$('#area').value,recomendacion:$('#rec').value,resultado:letra,motivoDescarte:mf,editar:!!O.editar,
+    [ETAPA==='tecnica'?'guardarTecnica':'guardarCompetencias'](K,ETAPA==='tecnica'?{id:CID,fecha:v('m-fecha'),comps:comps,fortalezas:$('#fort').value,areas:$('#area').value,recomendacion:$('#rec').value,resultado:letra,motivoDescarte:mf,editar:!!O.editar}:{id:CID,entrevistador:v('m-ent'),fecha:v('m-fecha'),comps:comps,fortalezas:$('#fort').value,areas:$('#area').value,recomendacion:$('#rec').value,resultado:letra,motivoDescarte:mf,editar:!!O.editar,
       meta:{edad:v('m-edad'),localidad:v('m-loc'),familia:v('m-fam'),formacion:v('m-form'),empresaAct:v('m-emp'),puestoAct:v('m-pue'),antig:v('m-ant'),remAct:v('m-ra'),remPret:v('m-rp'),disp:v('m-disp'),motivo:v('m-mot'),movilidad:v('m-mov'),referencias:v('m-ref')}});
   }
   function setSi(sel,v){var e=$(sel);if(e&&v&&!String(e.value||'').trim())e.value=v;}

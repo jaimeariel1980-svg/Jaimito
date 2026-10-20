@@ -64,3 +64,6 @@ Ejecutar `verificarInstalacion()`. Las páginas muestran el error real. Si la UR
 ## Contactos de WhatsApp (Google Contactos de dotacionpp1)
 - `agendarCandidatos()` guarda a todos los candidatos con teléfono como «Postu Enfe 2026 Nombre Apellido» en la etiqueta «Postulantes Enfermería 2026» (sin duplicar por teléfono; si cambió el nombre lo actualiza). El celular con WhatsApp sincroniza esos contactos.
 - La primera vez se ejecuta a mano desde el editor (pide permiso de Contactos). Desde ahí corre solo en el `ciclo` cada 10 min para los nuevos.
+
+## Jefes de Enfermería (rol Técnica): evaluaciones ya cargadas
+- En su vista, abajo, «✅ Ya evaluados»: los candidatos de su policlínico con entrevista técnica cargada (Contratado, Reserva o Descartado en entrevista técnica). Pueden **ver** la evaluación y **editarla** (si cambia la nota, se recalcula el estado y queda en el Historial como «Entrevista técnica editada»).
