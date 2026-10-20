@@ -673,6 +673,7 @@ function agregarCandidato_(o) {
     for (let i = 1; i < datos.length; i++) {
       const dniE = String(datos[i][COL.dni - 1] || '').replace(/\D/g, '');
       const mailE = String(datos[i][COL.email - 1] || '').trim().toLowerCase();
+      if (datos[i][COL.busq - 1] !== (o.busq || '')) continue;
       if ((dni && dniE === dni) || (email && mailE === email)) return 'DUPLICADO';
       if (kn && kt && claveDup_('', '', datos[i][COL.tel - 1], datos[i][COL.nombre - 1]).t === kt && claveDup_('', '', '', datos[i][COL.nombre - 1]).n === kn) return 'DUPLICADO';
       if (kn && datos[i][COL.busq - 1] === (o.busq || '') && claveDup_('', '', '', datos[i][COL.nombre - 1]).n === kn && !(dni && dniE && dni !== dniE)) return 'DUPLICADO';

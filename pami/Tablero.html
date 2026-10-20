@@ -134,7 +134,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v137</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v138</small></div>
   <nav>
     <button class="ni" id="rf" onclick="actualizar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -422,6 +422,7 @@ function contactoTxt(t){
   var f=m[2]+'/'+m[3];
   return /^(screening|competencias|entrevista técnica)$/i.test(m[1])?'Contactado para '+m[1]+' · '+f+' · sin agendar':m[1]+' · '+f;
 }
+function prevTxt(p){return 'Búsqueda «'+tit(p.busq)+'» (postuló el '+p.fecha+'): '+p.estado+(p.motivo?' · '+p.motivo:'')+' · '+[['CV',p.cv],['Screening',p.scr],['Competencias',p.comp],['Técnica',p.tec]].filter(function(x){return x[1];}).map(function(x){return x[0]+' '+x[1];}).join(', ');}
 function sugN(c){var x=String(c.polSug||'').split(' · ')[0];return D.policlinicos.indexOf(x)>-1?x:'';}
 function sugD(c){var m=String(c.polSug||'').split(' · ')[1];return m?m.replace(/\s*\(.*$/,''):'';}
 function card(c){
@@ -444,6 +445,7 @@ function card(c){
   if(c.docs)pr+='<span class="tag g">📁 Documentación recibida</span>';else if(c.docPed)pr+='<span class="tag gr cx">📄 Documentación pedida · '+esc(c.docPed)+(RO?'':'<button class="tdel" title="Borrar la marca de documentación pedida" onclick="event.stopPropagation();borrarDocs('+c.fila+')">✕</button>')+'</span>';
   if(!terminal(c.estado)&&dd>=D.cfg.diasAlerta)pr+='<span class="tag r">🕒 '+dd+' d sin movimiento</span>';
   var mk='';
+  (c.previos||[]).slice(0,1).forEach(function(p){var d=/^Descartad/i.test(p.estado);mk+='<span class="tag '+(d?'r':'w')+'" title="'+esc(prevTxt(p))+'">↩ Ya se postuló antes · '+esc(tit(p.busq))+': '+esc(p.estado)+(p.motivo?' · '+esc(p.motivo):'')+'</span>';});
   if(/^Descartad/i.test(c.estado))mk+=c.motivo?'<span class="tag r">✖ '+esc(c.motivo.replace(/;\s*/g,' · '))+'</span>':'<span class="tag">Sin motivo cargado</span>';
   var ef=etapasFaltan(c);
   if(ef.length)mk+='<span class="tag r">⚠ Falta '+ef.join(' y ')+'</span>';
@@ -574,6 +576,7 @@ function avisoResumen(f){
 function abrir(f){
   var yaVista=document.getElementById('modal').classList.contains('show')&&CUR===f;CUR=f;var c=byFila(f);if(!c)return;
   var rec=defRec(c.busq),n=ind(c),ct=citaTxt(c),dd=dias(c),al='';
+  (c.previos||[]).forEach(function(p){al+='<div class="alerta a3">↩ <b>Ya se postuló antes.</b> '+esc(prevTxt(p))+'</div>';});
   if(c.motivo&&/^Descartad/i.test(c.estado))al+='<div class="alerta a3">✖ Motivos de descarte: '+esc(c.motivo.replace(/;\s*/g,' · '))+'</div>';
   if(recom(c))al+='<div class="alerta rec">★ '+(c.recTipo?'Recomendado por: ':'')+esc(recom(c))+'</div>';
   if(ct)al+='<div class="alerta '+(ct.hoy?'a3':'a1')+'">📅 '+esc(ct.tipo)+': '+esc(ct.txt)+'</div>';
