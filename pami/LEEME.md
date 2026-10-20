@@ -67,3 +67,7 @@ Ejecutar `verificarInstalacion()`. Las páginas muestran el error real. Si la UR
 
 ## Jefes de Enfermería (rol Técnica): evaluaciones ya cargadas
 - En su vista, abajo, «✅ Ya evaluados»: los candidatos de su policlínico con entrevista técnica cargada (Contratado, Reserva o Descartado en entrevista técnica). Pueden **ver** la evaluación y **editarla** (si cambia la nota, se recalcula el estado y queda en el Historial como «Entrevista técnica editada»).
+
+## Anular una etapa
+- Ficha del candidato → "↺ Anular etapa" (solo administradores): screening, competencias o técnica, con confirmación "¿Estás seguro…? Sí / No".
+- No borra nada: la evaluación queda en la pestaña Evaluaciones como `<etapa> (anulada)`, el PDF sigue en Drive y su link queda en el Historial ("Etapa anulada"). Se saca la nota de la ficha y, si el estado venía de esa etapa, vuelve a "Avanza a …".

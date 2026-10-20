@@ -694,6 +694,45 @@ function limpiarDuplicados_() {
   } finally { lock.releaseLock(); }
 }
 
+// Anula una etapa ya evaluada (screening, competencias o técnica) sin borrar nada: la evaluación queda en la pestaña
+// Evaluaciones marcada "(anulada)", el PDF sigue en Drive y su link queda en el Historial. Solo administradores.
+function anularEtapa(k, fila, etapa) {
+  soloAdmin_(k);
+  const NOM = { screening: 'Screening', competencias: 'Competencias', pami2: 'Entrevista técnica' };
+  const VUELVE = { screening: 'Avanza a screening', competencias: 'Avanza a competencias', pami2: 'Avanza a entrevista técnica' };
+  if (!NOM[etapa]) throw new Error('Etapa inválida');
+  const sh = hoja_('Candidatos');
+  fila = Number(fila);
+  if (!(fila >= 2 && fila <= sh.getLastRow())) throw new Error('Fila inválida');
+  const r = sh.getRange(fila, 1, 1, HEAD_CAND.length).getValues()[0];
+  const id = String(r[COL.id - 1]), nota = String(r[NOTA_COL[etapa] - 1] || '').trim();
+  const ev = hoja_('Evaluaciones'), pdfs = [];
+  let quien = '', n = 0;
+  if (ev && ev.getLastRow() > 1) {
+    const d = ev.getRange(2, 1, ev.getLastRow() - 1, 8).getValues();
+    d.forEach((x, i) => {
+      if (String(x[1]) !== id || String(x[3]) !== etapa) return;
+      ev.getRange(i + 2, 4).setValue(etapa + ' (anulada)');
+      if (x[7]) pdfs.push(String(x[7]));
+      if (x[4]) quien = String(x[4]);
+      n++;
+    });
+  }
+  const infCol = { screening: COL.infScr, competencias: COL.infComp }[etapa];
+  if (infCol && r[infCol - 1] && pdfs.indexOf(String(r[infCol - 1])) === -1) pdfs.push(String(r[infCol - 1]));
+  if (!n && !nota) throw new Error('Este candidato no tiene ' + NOM[etapa].toLowerCase() + ' cargada');
+  sh.getRange(fila, NOTA_COL[etapa]).clearContent().setBackground(null).setFontColor(null).setFontWeight('normal');
+  if (infCol) sh.getRange(fila, infCol).clearContent();
+  const estado = String(r[COL.estado - 1] || '').trim();
+  const deEstaEtapa = [AGENDADO[etapa], estadoPorNota_(etapa, 'A'), estadoPorNota_(etapa, 'B'), estadoPorNota_(etapa, 'C')];
+  let nuevo = estado;
+  if (deEstaEtapa.indexOf(estado) > -1) { setEstado_(sh, fila, VUELVE[etapa], null); nuevo = VUELVE[etapa]; }
+  sh.getRange(fila, COL.mov).setValue(new Date());
+  registrarHistorial_(id, r[COL.nombre - 1], 'Etapa anulada', NOM[etapa] + ' anulada' + (nota ? ' (nota ' + nota + ')' : '') + (quien ? ', entrevistó ' + quien : '') +
+    (nuevo !== estado ? '. Estado: ' + estado + ' → ' + nuevo : '') + (pdfs.length ? '. PDF guardado: ' + pdfs.join(' ') : ''), 'tablero');
+  return { ok: true, estado: nuevo };
+}
+
 function borrarMarcaContacto(k, fila) {
   escritor_(k);
   hoja_('Candidatos').getRange(Number(fila), COL.contactado).clearContent();
