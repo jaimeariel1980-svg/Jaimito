@@ -1,8 +1,8 @@
-# Proyecto Azcu / Empleos PAMI — guía para quien trabaje en el repo
+# Proyecto Azcu / Empleos PAMI / Liquidaciones PAMI — guía para quien trabaje en el repo
 
 Dueño del proyecto: Ariel (no programador). Responder en español rioplatense, corto y directo. Él no aprueba ni mergea: Claude mergea sus propios cambios (ver "Cómo se publica"); nunca pegar código a mano en Apps Script.
 
-## Cómo asesorar (regla pedida por Ariel, vale para todo chat de Claude en este repo, también el de Ever)
+## Cómo asesorar (regla pedida por Ariel, vale para los 3 proyectos del repo —Azcu, Empleos PAMI y Liquidaciones PAMI— y para todo chat de Claude, también el de Ever)
 Ariel y Ever no ven el código: **Claude sabe más de lo técnico y tiene que guiar, no solo obedecer.** Decir que sí a todo hace perder tiempo.
 - Antes de ejecutar un pedido de diseño o de lógica, dar **opinión propia y breve**: qué recomienda, qué riesgos o contradicciones ve (datos duplicados, porcentajes que se distorsionan, cosas que se rompen en otras pantallas) y si hay una alternativa más simple.
 - Si el pedido tiene un problema, **decirlo y contradecir con fundamentos** aunque sea incómodo; proponer un camino recomendado en vez de un listado de opciones.
@@ -17,6 +17,7 @@ Ariel y Ever no ven el código: **Claude sabe más de lo técnico y tiene que gu
 | `appscript/` | **Azcu oficial** (cuenta azcuenaga): `Azcubot.gs` (agente, avisos, usuarios), `Codigo.gs` (planilla Maestra, precarga, documentos) y las pantallas HTML | Apps Script de azcuenaga (clasp + GitHub Actions) |
 | `pami/` | **Empleos PAMI** (cuenta dotacionpp1): reclutamiento, tablero, screening, competencias | Apps Script de dotacionpp1 |
 | `azcubot/` | **Web/PWA** `azcubot.pages.dev` (celulares). Fuentes: `azcubot-widget.html`, `Tablero.html`, `tablero_bridge.js`, `paginas/`. Salida: `azcubot/netlify/` | Cloudflare Pages |
+| `liquidaciones/` | **Liquidaciones PAMI I** (cuenta dotacionpp1): horas extra, nocturnidad, feriados; lee horarios y fichadas, escribe en su Sheet. Ver `liquidaciones/LEEME.md` y `docs/` | Apps Script de dotacionpp1 (workflow, `DEPLOYMENT_LIQ`) |
 | raíz (`*.py`, `bot-azcuenaga.gs`, `job_profiles/`) | Restos de proyectos viejos (Telegram, reclutamiento en Python). **No tocar** | — |
 
 ## Cómo se publica (todo con Merge)
@@ -62,6 +63,9 @@ Ariel y Ever no ven el código: **Claude sabe más de lo técnico y tiene que gu
 ## Empleos PAMI (pami/)
 - Script ID `1-qPLIJcxSKR9Xk3V_EV-mAdOOwHHN-W1b6MUhDygLI7ZM5AHVKQJmgfq`; cuenta `dotacionpp1@gmail.com`. Ver `pami/LEEME.md` (puesta en marcha, estados, agenda de citas). Tras cambios que agreguen columnas/pestañas: ejecutar `setup()` una vez; `verificarInstalacion()` revisa todo.
 - Tablero privado: `<url /exec>?tablero=<ADMIN_KEY>` (la clave no está en el repo; sale de `mostrarLinks()`).
+
+## Liquidaciones PAMI (liquidaciones/)
+- Reglas y contexto: `liquidaciones/LEEME.md`, `docs/CONTEXTO.md`, `docs/TRASPASO.md`. Tests del cálculo: `node liquidaciones/docs/test_liquidaciones.js` (correrlos antes de subir). Mismo circuito de publicación y misma regla de asesorar.
 
 ## Herramientas útiles ya hechas
 - `azcubot/netlify/diag.html` (en la web: `/diag.html`): mide latencia real del transporte desde una compu.
