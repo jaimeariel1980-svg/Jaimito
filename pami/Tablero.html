@@ -1069,13 +1069,15 @@ function avPendientes(){
 function avNovedades(){
   var prev=avLS('snap'),snap={},nov=[],cuando=D.ahora.slice(8,10)+'/'+D.ahora.slice(5,7)+' '+D.ahora.slice(11,16);
   D.cands.forEach(function(c){
-    var s={e:c.estado,t:String(c.notaP2||''),d:c.docs?1:0};snap[c.id]=s;
+    var s={e:c.estado,t:String(c.notaP2||''),d:c.docs?1:0,c:c.cita?c.cita.ts:''};snap[c.id]=s;
     if(!prev)return;
     var a=prev[c.id],p=function(ic,txt){nov.push({ic:ic,txt:txt,f:c.fila,id:c.id,n:c.nombre,h:cuando});};
     if(!a){p('🆕','Nuevo CV recibido'+(c.busq?' · '+tit(c.busq):''));return;}
     if(s.e!==a.e&&s.e==='Contratado')p('🎉','Contratado/a');
     else if(s.e!==a.e&&s.e==='Descartado en entrevista técnica')p('❌','Descartado/a en la entrevista técnica'+(c.motivo?' · '+c.motivo:''));
     else if(s.t&&s.t!==a.t)p('🩺','Entrevista técnica cargada · nota '+s.t);
+    else if(s.e!==a.e)p('🔄','Pasó a «'+s.e+'»'+(a.e?' (antes: '+a.e+')':''));
+    if(s.c&&s.c!==a.c&&c.cita)p('📅','Agendó '+c.cita.tipo+' para el '+avHora(c.cita.ts));
     if(s.d&&!a.d)p('📁','Documentación recibida');
   });
   avLS('snap',snap);
@@ -1093,9 +1095,14 @@ function avRevisar(){
   var nuevas=avNovedades(),hist=avLS('nov')||[];
   if(nuevas.length){hist=nuevas.concat(hist).slice(0,80);avLS('nov',hist);avLS('sinver',(avLS('sinver')||0)+nuevas.length);}
   AV_NOV=hist;
-  var avisados=avLS('urg')||{},hoy=D.ahora.slice(0,10),pop=nuevas.slice();
-  AV_PEND.forEach(function(x){if(x.urg&&avisados[x.k]!==hoy){avisados[x.k]=hoy;pop.push(x);}});
-  avLS('urg',avisados);
+  var avisados=avLS('urg')||{},hoy=D.ahora.slice(0,10),pop=nuevas.slice(),vistos=avLS('pseen'),act={};
+  AV_PEND.forEach(function(x){
+    act[x.k]=1;
+    if(x.urg&&avisados[x.k]!==hoy){avisados[x.k]=hoy;pop.push(x);}
+    else if(vistos&&!vistos[x.k])pop.push(x);
+  });
+  avLS('urg',avisados);avLS('pseen',act);
+  try{if(!sessionStorage.getItem('pami_av_ses')&&AV_PEND.length){sessionStorage.setItem('pami_av_ses','1');var nu=AV_PEND.filter(function(x){return x.urg;}).length;pop.unshift({ic:'🔔',n:'Tenés '+AV_PEND.length+' pendiente'+(AV_PEND.length===1?'':'s'),txt:(nu?nu+' urgente'+(nu===1?'':'s')+' · ':'')+'tocá para ver la lista',panel:1,urg:nu>0});}}catch(e){}
   avPintarCampana();
   if(pop.length)avPopups(pop);
 }
@@ -1111,7 +1118,7 @@ function avPopups(L){
     var d=document.createElement('div');
     d.style.cssText='background:#fff;border-left:6px solid '+(x.urg?'#D9534F':'#034EA2')+';border-radius:8px;box-shadow:0 8px 28px rgba(0,0,0,.25);padding:12px 14px;font-size:14px;cursor:pointer';
     d.innerHTML='<div style="display:flex;gap:8px;align-items:flex-start"><span style="font-size:18px">'+x.ic+'</span><div style="flex:1"><b>'+esc(x.n)+'</b><div style="color:#3F4B66">'+esc(x.txt)+'</div></div><span style="color:#999;font-size:18px" title="Cerrar">×</span></div>';
-    d.onclick=function(ev){d.remove();if(ev.target.title!=='Cerrar'&&x.f)abrir(x.f);};
+    d.onclick=function(ev){d.remove();if(ev.target.title==='Cerrar')return;if(x.panel)verAvisos();else if(x.f)abrir(x.f);};
     cont.appendChild(d);
     setTimeout(function(){if(d.parentNode)d.remove();},x.urg?60000:20000);
   });
