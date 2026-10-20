@@ -17,5 +17,8 @@ Reglas completas: `docs/CONTEXTO.md`, `docs/TRASPASO.md`. Motor viejo de agosto 
 - Consolidado mensual GRH: reconversión, endoso y tope (CONFIG `tope_extra`, 30).
 - Tests del cálculo: `node liquidaciones/docs/test_liquidaciones.js`.
 
+## Cambios en las extras
+Cada corrida guarda una foto de las extras cargadas (pestaña oculta `_FOTO_EXTRAS`) y anota en `CAMBIOS` lo agregado, quitado o modificado desde la corrida anterior del mismo mes; en rojo los cambios sobre días ya pasados.
+
 ## Pendiente
 Nocturnidad, feriados, SADOFE en día de semana.

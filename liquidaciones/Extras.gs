@@ -279,8 +279,9 @@ function liquidarExtras() {
              'Aut GRH 50%', 'Aut GRH 100%', 'Total real mes', 'A pagar (tope ' + cfg.tope + ')', 'Alerta mensual'];
   var h = escribir_(SpreadsheetApp.openById(ID_BASE), 'LIQUIDACION', cab, out, 5, 9);
   pintarLiquidacion_(h, out, cab.length);
+  var cambios = registrarCambios_(hojas, cfg);
   var aut = filas.filter(function (r) { return r[11] === 'AUTORIZADA'; }).length;
-  avisar_('LIQUIDACION lista: ' + out.length + ' filas (' + aut + ' autorizadas) · ' + Object.keys(mens).length + ' agentes' + (cfg.fichadasAuto ? '\nFichadas: ' + cfg.fichadasAuto : '') + (grh ? '' : '\nSin Excel GRH en CONFIG: no hay consolidado de autorizaciones.'));
+  avisar_('LIQUIDACION lista: ' + out.length + ' filas (' + aut + ' autorizadas) · ' + Object.keys(mens).length + ' agentes' + (cfg.fichadasAuto ? '\nFichadas: ' + cfg.fichadasAuto : '') + (grh ? '' : '\nSin Excel GRH en CONFIG: no hay consolidado de autorizaciones.') + (cambios ? '\n' + cambios : ''));
 }
 
 function escribir_(ss, nombre, cab, filas, textoDesde, textoHasta) {
@@ -319,4 +320,46 @@ function pintarLiquidacion_(h, filas, nc) {
   h.getRange(2, col, ley.length, 1).setValues(ley).setBackgrounds(TIPOS_FILA.map(function (x) { return [x[1]]; }))
     .setBorder(true, true, true, true, true, true, '#c8c8c8', SpreadsheetApp.BorderStyle.SOLID);
   h.setColumnWidth(col, 330);
+}
+
+function registrarCambios_(hojas, cfg) {
+  var ss = SpreadsheetApp.openById(ID_BASE), per = cfg.mes + '/' + cfg.anio, ahora = {}, info = {};
+  hojas.forEach(function (h) {
+    h.ags.forEach(function (a) {
+      for (var d in a.ext) { var k = h.nombre + '|' + a.leg + '|' + d; ahora[k] = String(a.ext[d]).trim(); info[k] = a.ape; }
+    });
+  });
+  var foto = ss.getSheetByName('_FOTO_EXTRAS'), antes = null;
+  if (foto && foto.getLastRow() > 1) {
+    var v = foto.getDataRange().getValues();
+    if (String(v[0][1]) === per) { antes = {}; v.slice(1).forEach(function (r) { antes[r[0]] = String(r[1]); info[r[0]] = info[r[0]] || r[2]; }); }
+  }
+  if (!foto) { foto = ss.insertSheet('_FOTO_EXTRAS'); foto.hideSheet(); }
+  foto.clear();
+  var filasFoto = Object.keys(ahora).map(function (k) { return [k, ahora[k], info[k]]; });
+  foto.getRange(1, 1, 1, 3).setValues([['periodo', per, '']]);
+  if (filasFoto.length) foto.getRange(2, 1, filasFoto.length, 3).setNumberFormat('@').setValues(filasFoto);
+  if (!antes) return 'Primera foto de extras de ' + per + ' guardada: los cambios se van a ver desde la próxima corrida.';
+  var dif = compararFotos_(antes, ahora);
+  if (!dif.length) return 'Sin cambios en las extras cargadas desde la corrida anterior.';
+  var hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  var cab = ['Detectado', 'Servicio', 'Legajo', 'Apellido', 'Día', 'Antes', 'Ahora', 'Cambio', '¿Día ya pasado?'];
+  var hc = ss.getSheetByName('CAMBIOS');
+  if (!hc) {
+    hc = ss.insertSheet('CAMBIOS');
+    hc.getRange(1, 1, 1, cab.length).setValues([cab]).setFontWeight('bold').setBackground('#434343').setFontColor('white');
+    hc.setFrozenRows(1);
+  }
+  var pasados = 0, cuando = Utilities.formatDate(new Date(), 'America/Argentina/Buenos_Aires', 'dd/MM/yyyy HH:mm');
+  var filas = dif.map(function (c) {
+    var p = c.k.split('|'), pasado = new Date(cfg.anio, cfg.mes - 1, +p[2]) < hoy;
+    if (pasado) pasados++;
+    return [cuando, p[0], p[1], info[c.k] || '', +p[2], c.antes, c.ahora, c.tipo, pasado ? 'SÍ' : 'no'];
+  });
+  var r0 = hc.getLastRow() + 1, rg = hc.getRange(r0, 1, filas.length, cab.length);
+  hc.getRange(r0, 6, filas.length, 2).setNumberFormat('@');
+  rg.setValues(filas).setBorder(true, true, true, true, true, true, '#c8c8c8', SpreadsheetApp.BorderStyle.SOLID)
+    .setBackgrounds(filas.map(function (f) { return new Array(cab.length).fill(f[8] === 'SÍ' ? '#f8caca' : '#ffffff'); }));
+  hc.autoResizeColumns(1, cab.length);
+  return dif.length + ' cambio(s) en las extras desde la corrida anterior' + (pasados ? ', ' + pasados + ' en días YA PASADOS (ver CAMBIOS, en rojo)' : '') + '.';
 }
