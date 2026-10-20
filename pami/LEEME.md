@@ -71,3 +71,7 @@ Ejecutar `verificarInstalacion()`. Las páginas muestran el error real. Si la UR
 ## Anular una etapa
 - Ficha del candidato → "↺ Anular etapa" (solo administradores): screening, competencias o técnica, con confirmación "¿Estás seguro…? Sí / No".
 - No borra nada: la evaluación queda en la pestaña Evaluaciones como `<etapa> (anulada)`, el PDF sigue en Drive y su link queda en el Historial ("Etapa anulada"). Se saca la nota de la ficha y, si el estado venía de esa etapa, vuelve a "Avanza a …".
+
+## Avisos del tablero (🔔)
+- Botón **🔔 Avisos** con contador. **Pendientes**: falta contactar, contactado hace 2+ días sin agendar, agendado sin fecha, entrevista en las próximas 2 h, entrevista pasada sin formulario cargado, etapa incompleta, falta resumen ET, en reserva hace 15+ días. **Novedades** (desde la última actualización, por navegador): nuevo CV, contratado, descartado en la técnica, técnica cargada por el jefe, documentación recibida.
+- Aparecen como **avisos emergentes** (arriba a la derecha) al actualizar; los urgentes una vez por día. Con «Activar avisos del navegador» también llegan con la pestaña minimizada. El tablero se actualiza solo cada 3 min. Las etiquetas de las tarjetas se mantienen y se suman «⏳ Sin respuesta hace N d» y «📝 Falta cargar …».
