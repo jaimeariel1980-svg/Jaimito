@@ -947,7 +947,7 @@ function ciclo() {
   const lock = LockService.getUserLock();
   if (!lock.tryLock(1000)) return;
   try {
-    [actualizarEsquema_, limpiarDuplicados_, procesarCorreos, procesarCarpeta, procesarPendientes, completarDomicilios_, verificarDomicilios_, sugerirPendientes_, syncCalendario].forEach(fn => { try { fn(); } catch (e) { registrarError_(fn.name, e); } });
+    [actualizarEsquema_, limpiarDuplicados_, procesarCorreos, procesarCarpeta, procesarPendientes, completarDomicilios_, verificarDomicilios_, sugerirPendientes_, syncCalendario, agendarCandidatosAuto_].forEach(fn => { try { fn(); } catch (e) { registrarError_(fn.name, e); } });
   } finally { lock.releaseLock(); }
 }
 
