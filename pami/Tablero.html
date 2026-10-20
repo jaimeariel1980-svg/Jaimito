@@ -1045,11 +1045,13 @@ function avLS(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem('
 function avAhora(){return new Date(D.ahora).getTime();}
 function avTs(ts){return new Date(String(ts).replace(' ','T')).getTime();}
 function avHora(ts){return ts.slice(8,10)+'/'+ts.slice(5,7)+' '+ts.slice(11,16);}
+function avPoli(c){var p=c.policlinico||sugN(c);return p?{t:p.replace('Policlínico ',''),sug:!c.policlinico}:null;}
+function avChip(x){if(x.po===undefined)return '';if(!x.po)return '<span style="display:inline-block;font-size:11px;font-weight:800;padding:2px 7px;border-radius:10px;background:#E4E9F1;color:#5D6B82;margin-left:6px;vertical-align:middle">Sin poli</span>';var p2=/2/.test(x.po.t);return '<span style="display:inline-block;font-size:11px;font-weight:800;padding:2px 7px;border-radius:10px;background:'+(p2?'#00A3E0':'#034EA2')+';color:#fff;margin-left:6px;vertical-align:middle">'+esc(x.po.t)+(x.po.sug?' (sug.)':'')+'</span>';}
 function avPendientes(){
   var out=[],now=avAhora(),E={screening:'notaScr',competencias:'notaComp'};
   D.cands.forEach(function(c){
     if(/^Descartad/i.test(c.estado)||c.estado==='Contratado')return;
-    var ep=etapaPend(c),ct=etqContacto(c),p=function(k,ic,txt,urg){out.push({k:k+'|'+c.id,ic:ic,txt:txt,f:c.fila,n:c.nombre,urg:!!urg});};
+    var ep=etapaPend(c),ct=etqContacto(c),p=function(k,ic,txt,urg){out.push({k:k+'|'+c.id,ic:ic,txt:txt,f:c.fila,n:c.nombre,urg:!!urg,po:avPoli(c)});};
     if(ep&&ct!==ep)p('contactar','➜','Falta contactar para '+ep);
     var md=String(c.contactado||'').match(/(\d{2})\/(\d{2})\/(\d{4})$/);
     if(ep&&ct===ep&&!c.cita&&md){var dd=Math.floor((now-new Date(+md[3],+md[2]-1,+md[1]).getTime())/864e5);if(dd>=2)p('norespondio','⏳','Contactado para '+ep+' hace '+dd+' días y todavía no agendó');}
@@ -1077,7 +1079,7 @@ function avNovedades(){
   D.cands.forEach(function(c){
     var s={e:c.estado,t:String(c.notaP2||''),d:c.docs?1:0,c:c.cita?c.cita.ts:''};snap[c.id]=s;
     if(!prev)return;
-    var a=prev[c.id],p=function(ic,txt){nov.push({ic:ic,txt:txt,f:c.fila,id:c.id,n:c.nombre,h:cuando});};
+    var a=prev[c.id],p=function(ic,txt){nov.push({ic:ic,txt:txt,f:c.fila,id:c.id,n:c.nombre,h:cuando,po:avPoli(c)});};
     if(!a){p('🆕','Nuevo CV recibido'+(c.busq?' · '+tit(c.busq):''));return;}
     if(s.e!==a.e&&s.e==='Contratado')p('🎉','Contratado/a');
     else if(s.e!==a.e&&s.e==='Descartado en entrevista técnica')p('❌','Descartado/a en la entrevista técnica'+(c.motivo?' · '+c.motivo:''));
@@ -1123,18 +1125,18 @@ function avPopups(L){
   L.slice(0,6).forEach(function(x){
     var d=document.createElement('div');
     d.style.cssText='background:#fff;border-left:6px solid '+(x.urg?'#D9534F':'#034EA2')+';border-radius:8px;box-shadow:0 8px 28px rgba(0,0,0,.25);padding:12px 14px;font-size:14px;cursor:pointer';
-    d.innerHTML='<div style="display:flex;gap:8px;align-items:flex-start"><span style="font-size:18px">'+x.ic+'</span><div style="flex:1"><b>'+esc(x.n)+'</b><div style="color:#3F4B66">'+esc(x.txt)+'</div></div><span style="color:#999;font-size:18px" title="Cerrar">×</span></div>';
+    d.innerHTML='<div style="display:flex;gap:8px;align-items:flex-start"><span style="font-size:18px">'+x.ic+'</span><div style="flex:1"><b>'+esc(x.n)+'</b>'+(x.panel?'':avChip(x))+'<div style="color:#3F4B66">'+esc(x.txt)+'</div></div><span style="color:#999;font-size:18px" title="Cerrar">×</span></div>';
     d.onclick=function(ev){d.remove();if(ev.target.title==='Cerrar')return;if(x.panel)verAvisos();else if(x.f)abrir(x.f);};
     cont.appendChild(d);
     setTimeout(function(){if(d.parentNode)d.remove();},x.urg?60000:20000);
   });
   if(L.length>6){var m=document.createElement('div');m.style.cssText='background:#034EA2;color:#fff;border-radius:8px;padding:8px 12px;font-size:13px;cursor:pointer';m.textContent='y '+(L.length-6)+' avisos más · ver todos';m.onclick=function(){m.remove();verAvisos();};cont.appendChild(m);setTimeout(function(){if(m.parentNode)m.remove();},20000);}
-  try{if(window.Notification&&Notification.permission==='granted'&&document.hidden)L.slice(0,3).forEach(function(x){new Notification(x.n,{body:x.ic+' '+x.txt});});}catch(e){}
+  try{if(window.Notification&&Notification.permission==='granted'&&document.hidden)L.slice(0,3).forEach(function(x){new Notification(x.n+(x.po?' · '+x.po.t:''),{body:x.ic+' '+x.txt});});}catch(e){}
   try{if(document.hidden)document.title='('+L.length+') Avisos · Atracción y Elección';}catch(e){}
 }
 function verAvisos(){
   avLS('sinver',0);avPintarCampana();
-  var item=function(x,nov){return '<div onclick="cerrar();abrir('+x.f+')" style="display:flex;gap:10px;padding:9px 6px;border-top:1px solid var(--line);cursor:pointer'+(x.urg?';background:#FDECEC':'')+'"><span style="font-size:17px">'+x.ic+'</span><div style="flex:1"><b>'+esc(x.n)+'</b><div style="font-size:13px;color:#3F4B66">'+esc(x.txt)+'</div></div>'+(nov?'<small style="color:#888;white-space:nowrap">'+esc(x.h)+'</small>':'')+'</div>';};
+  var item=function(x,nov){return '<div onclick="cerrar();abrir('+x.f+')" style="display:flex;gap:10px;padding:9px 6px;border-top:1px solid var(--line);cursor:pointer'+(x.urg?';background:#FDECEC':'')+'"><span style="font-size:17px">'+x.ic+'</span><div style="flex:1"><b>'+esc(x.n)+'</b>'+avChip(x)+'<div style="font-size:13px;color:#3F4B66">'+esc(x.txt)+'</div></div>'+(nov?'<small style="color:#888;white-space:nowrap">'+esc(x.h)+'</small>':'')+'</div>';};
   var perm=window.Notification&&Notification.permission!=='granted'?'<button class="btn ghost" style="margin-bottom:10px" onclick="Notification.requestPermission().then(function(){verAvisos();})">🔔 Activar avisos del navegador (también con la pestaña minimizada)</button>':'';
   document.getElementById('mbox').innerHTML='<div class="hd"><div><h2>🔔 Avisos</h2><small>Se actualiza solo cada 3 minutos</small></div><button class="x" onclick="cerrar()">×</button></div><div class="bd">'+perm+
     '<div style="font-weight:800;color:#B02A25;margin:6px 0">Pendientes ('+AV_PEND.length+')</div>'+(AV_PEND.length?AV_PEND.map(function(x){return item(x,false);}).join(''):'<div class="txt" style="color:#5D6B82">No hay pendientes.</div>')+
