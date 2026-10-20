@@ -4,7 +4,7 @@ var CONFIG_DEF = [
   ['anio', 2026, 'Año'],
   ['id_horarios', '1mxpaPAUGhe-QEtc_asX_xX4bLaq9ujFrgXBlMDmSpOE', 'Planilla de horarios del mes (link o ID)'],
   ['id_fichadas', '', 'Fichadas del reloj del mes (link o ID). Vacío = se busca solo en el Drive el archivo "Tarjeta Reloj por persona - <Mes> <Año>"'],
-  ['id_grh', '', 'Excel GRH con las autorizaciones del mes (link o ID). Vacío = sin consolidado GRH'],
+  ['id_grh', '', 'Expediente del mes (consolidado de horas autorizadas por GRH, link o ID). Vacío = no se controla lo autorizado'],
   ['feriados_extra', '', 'Días feriado que no estén marcados FDO en la planilla, separados por coma (ej: 12, 13)'],
   ['no_laborables', '', 'Días no laborables (se tratan como sábado), separados por coma'],
   ['tope_extra', 30, 'Tope mensual de horas extra por agente (50% + 100%)'],

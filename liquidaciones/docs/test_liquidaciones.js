@@ -29,7 +29,7 @@ assert.ok(!run('apellidoCoincide("LOMBARDO","ALONSO Cecilia")'));
 // consolidado GRH
 let c=run('consolidarGRH_(12,2,10,6,true,30)');assert.strictEqual(c.alerta,'reconversión 2h');
 c=run('consolidarGRH_(20,16,10,6,true,30)');assert.strictEqual(c.pagar,30);assert.ok(/EXCEDE/.test(c.alerta));
-c=run('consolidarGRH_(5,0,0,0,false,30)');assert.strictEqual(c.alerta,'SIN aut GRH');
+c=run('consolidarGRH_(5,0,0,0,false,30)');assert.strictEqual(c.alerta,'NO FIGURA EN EL EXPEDIENTE (5 h sin autorización)');
 // procesarAgente_ con fichadas simuladas
 const base={idFichadas:'x'};
 const sim=(fich,a)=>{for(let i=1;i<=31;i++)fich[i]=fich[i]||{};ctx._f=fich;ctx._a=a;return run(`(function(){_fich=_f;_diasMes=31;var out=[];var c={anio:2026,mes:10,feriados:{"10-12":1},noLab:{}};procesarAgente_(_a,"GUARDIA",{},c,out);return out;})()`)};

@@ -89,7 +89,7 @@ function consolidarGRH_(real50, real100, aut50, aut100, hayGRH, tope) {
   var endoso = Math.max(0, Math.round((pagar - totalAut) * 10) / 10);
   var recorte = Math.max(0, Math.round((total - tope) * 10) / 10);
   var al = [];
-  if (!hayGRH) al.push('SIN aut GRH');
+  if (!hayGRH) al.push('NO FIGURA EN EL EXPEDIENTE (' + total + ' h sin autorización)');
   if (reconv > 0) al.push('reconversión ' + reconv + 'h');
   if (hayGRH && endoso > 0) al.push('endoso ' + endoso + 'h');
   if (recorte > 0) al.push('EXCEDE ' + tope + ' (-' + recorte + 'h)');
@@ -163,7 +163,7 @@ function parsearGRH_(datos) {
 function colorAlerta_(a) {
   a = String(a || '');
   if (/EXCEDE/.test(a)) return '#f8b4b4';
-  if (/SIN aut|Pidió/.test(a)) return '#fbd9d9';
+  if (/NO FIGURA|Figura en el expediente/.test(a)) return '#fbd9d9';
   if (/endoso/.test(a)) return '#ffe8c7';
   if (/reconversión/.test(a)) return '#fff3b8';
   return '#ffffff';
