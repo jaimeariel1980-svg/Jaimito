@@ -265,7 +265,7 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '45';
+const ESQUEMA = '46';
 
 function actualizarEsquema_() {
   try { asegurarColumnas_(); } catch (e) { registrarError_('asegurar columnas', e); }
@@ -508,6 +508,15 @@ function actualizarEsquema_() {
         pl.getRange(j + 1, 3).setValue(/Si te interesa[^\n]*/.test(t) ? t.replace(/(Si te interesa[^\n]*)/, 'La entrevista es presencial en [DIRECCION].\n$1') : t + '\nLa entrevista es presencial en [DIRECCION].');
       }
       props.setProperty('DIR_TEC', '1');
+    },
+    () => {
+      // Link de reserva de la entrevista técnica de PAMI 2 (videollamada), indicado por Ever (una sola vez).
+      if (props.getProperty('LINK_TEC_2B')) return;
+      asegurarAjustes_([['link_agenda_tecnica_poli2', '']]);
+      const aj = hoja_('Ajustes'), d = aj.getDataRange().getValues();
+      const i = d.findIndex(r => String(r[0]).trim() === 'link_agenda_tecnica_poli2');
+      if (i > 0) aj.getRange(i + 1, 2).setValue('https://calendar.app.google/cie6tVxd5hUDzsPQ9');
+      props.setProperty('LINK_TEC_2B', '1');
     }
   ];
   let ok = true;
