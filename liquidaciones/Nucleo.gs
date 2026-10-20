@@ -93,7 +93,7 @@ function consolidarGRH_(real50, real100, aut50, aut100, hayGRH, tope) {
   if (reconv > 0) al.push('reconversión ' + reconv + 'h');
   if (hayGRH && endoso > 0) al.push('endoso ' + endoso + 'h');
   if (recorte > 0) al.push('EXCEDE ' + tope + ' (-' + recorte + 'h)');
-  return { total: total, pagar: pagar, alerta: al.length ? al.join(' + ') : 'OK' };
+  return { total: total, pagar: pagar, reconv: reconv, endoso: hayGRH ? endoso : 0, recorte: recorte, alerta: al.length ? al.join(' + ') : 'OK' };
 }
 
 function restar_(w, bloques) {
@@ -155,7 +155,16 @@ function parsearGRH_(datos) {
   }
   datos.forEach(function (r) {
     var leg = String(r[col.leg]).trim();
-    if (/^\d+$/.test(leg) && normaliza_(r[col.area]).indexOf('ENFERMER') >= 0) out[leg] = { a50: parseFloat(r[col.a50]) || 0, a100: parseFloat(r[col.a100]) || 0 };
+    if (/^\d+$/.test(leg) && normaliza_(r[col.area]).indexOf('ENFERMER') >= 0) out[leg] = { a50: parseFloat(r[col.a50]) || 0, a100: parseFloat(r[col.a100]) || 0, ape: String(r[col.leg + 1] || '').trim() };
   });
   return out;
+}
+
+function colorAlerta_(a) {
+  a = String(a || '');
+  if (/EXCEDE/.test(a)) return '#f8b4b4';
+  if (/SIN aut|Pidió/.test(a)) return '#fbd9d9';
+  if (/endoso/.test(a)) return '#ffe8c7';
+  if (/reconversión/.test(a)) return '#fff3b8';
+  return '#ffffff';
 }
