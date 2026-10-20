@@ -261,6 +261,7 @@ function liquidarExtras() {
   for (var leg in mens) {
     var g = grh && grh[leg];
     var c = consolidarGRH_(mens[leg].r50, mens[leg].r100, g ? g.a50 : 0, g ? g.a100 : 0, !!g, cfg.tope);
+    if (!grh) c.alerta = c.alerta.replace(/NO FIGURA EN EL EXPEDIENTE \([^)]*\)/, 'sin expediente cargado en CONFIG');
     mens[leg].g = g; mens[leg].c = c;
   }
   var out = filas.slice(), visto = {};
@@ -272,13 +273,13 @@ function liquidarExtras() {
   });
 
   var cab = ['Servicio', 'Legajo', 'Apellido', 'Día', 'Turno', 'Entrada', 'Salida', 'Aut. Jefatura', 'Franja realizada', 'Hs 50%', 'Hs 100%', 'Estado', 'Condición', 'Fichadas del día', 'Horario en tarjeta reloj',
-             'Aut GRH 50% (mes)', 'Aut GRH 100% (mes)', 'Total hecho (mes)', 'A pagar mes (tope ' + cfg.tope + ')', 'Alerta del mes'];
+             'Expte 50% (mes)', 'Expte 100% (mes)', 'Total hecho (mes)', 'A pagar mes (tope ' + cfg.tope + ')', 'Alerta del mes'];
   var h = escribir_(SpreadsheetApp.openById(ID_BASE), 'LIQUIDACION', cab, out, 5, 9);
   pintarLiquidacion_(h, out, cab.length);
   escribirResumen_(filas, mens, grh, cfg);
   var cambios = registrarCambios_(hojas, cfg);
   var aut = filas.filter(function (r) { return r[11] === 'AUTORIZADA'; }).length;
-  avisar_('LIQUIDACION lista: ' + out.length + ' filas (' + aut + ' autorizadas) · ' + Object.keys(mens).length + ' agentes' + (cfg.fichadasAuto ? '\nFichadas: ' + cfg.fichadasAuto : '') + (grh ? '\nGRH: ' + Object.keys(grh).length + ' agentes de Enfermería con autorización leídos' : '\nSin Excel GRH en CONFIG: no hay consolidado de autorizaciones.') + (cambios ? '\n' + cambios : ''));
+  avisar_('LIQUIDACION lista: ' + out.length + ' filas (' + aut + ' autorizadas) · ' + Object.keys(mens).length + ' agentes' + (cfg.fichadasAuto ? '\nFichadas: ' + cfg.fichadasAuto : '') + (grh ? '\nExpediente: ' + Object.keys(grh).length + ' agentes de Enfermería con horas autorizadas' : '\nSin expediente (consolidado) en CONFIG: no se controla lo autorizado.') + (cambios ? '\n' + cambios : ''));
 }
 
 function escribir_(ss, nombre, cab, filas, textoDesde, textoHasta) {
@@ -373,11 +374,11 @@ function escribirResumen_(filas, mens, grh, cfg) {
   var rows = legs.map(function (l) {
     var m = mens[l], g = grh && grh[l], i = info[l] || { ape: g ? g.ape : '', serv: {} };
     var c = m ? m.c : consolidarGRH_(0, 0, g ? g.a50 : 0, g ? g.a100 : 0, !!g, cfg.tope);
-    var al = m ? c.alerta : 'Pidió horas en GRH y no tiene extras autorizadas';
+    var al = m ? c.alerta : 'Figura en el expediente y no tiene extras autorizadas';
     return [l, i.ape, Object.keys(i.serv).join(', '), m ? Math.round(m.r50 * 10) / 10 : 0, m ? Math.round(m.r100 * 10) / 10 : 0, c.total,
             g ? g.a50 : '', g ? g.a100 : '', c.reconv || '', c.endoso || '', c.recorte || '', c.pagar, pend[l] || '', al];
   }).sort(function (a, b) { return String(a[1]).localeCompare(String(b[1])); });
-  var cab = ['Legajo', 'Apellido', 'Servicio', 'Hs 50% hechas', 'Hs 100% hechas', 'Total hecho', 'Aut GRH 50%', 'Aut GRH 100%',
+  var cab = ['Legajo', 'Apellido', 'Servicio', 'Hs 50% hechas', 'Hs 100% hechas', 'Total hecho', 'Expte 50%', 'Expte 100%',
              'Reconversión (h)', 'Endoso (h)', 'Excede tope (h)', 'A pagar (tope ' + cfg.tope + ')', 'Filas a revisar', 'Alerta'];
   var h = escribir_(SpreadsheetApp.openById(ID_BASE), 'RESUMEN', cab, rows);
   if (!rows.length) return;
