@@ -134,7 +134,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v138</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v139</small></div>
   <nav>
     <button class="ni" id="rf" onclick="actualizar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
@@ -160,7 +160,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
   <select id="fpo" style="display:none"><option value="">Todos los policlínicos</option><option value="-">Sin policlínico (sin confirmar)</option></select>
   <select id="fsi" style="display:none"><option value="">Todos los sindicatos</option><option value="*">Con sindicato (cualquiera)</option><option value="-">Sin sindicato</option></select>
   <input id="fp" type="number" placeholder="Pretensión hasta $" style="width:150px">
-  <select id="fr"><option value="">Todos</option><option value="1">★ Solo recomendados</option></select>
+  <select id="fr"><option value="">Todos</option><option value="1">★ Solo recomendados</option><option value="2">↩ Ya se postularon antes</option></select>
   <button class="btn ghost" style="padding:6px 12px;font-size:11px" onclick="limpiar()">Limpiar</button>
   <span id="cf" style="font-size:12px;font-weight:700;color:var(--azul)"></span>
 </div>
@@ -388,7 +388,8 @@ function filtra(c){
   if(!SKIPSI&&!sindOk(c))return false;
   var sc=g('fpo');if(sc&&(sc==='-'?c.policlinico:c.policlinico!==sc))return false;
   var p=Number(g('fp'))||0;if(p){var n=pretNum(c.pret);if(!n||n>p)return false;}
-  if(g('fr')&&!recom(c))return false;
+  if(g('fr')==='1'&&!recom(c))return false;
+  if(g('fr')==='2'&&!(c.previos&&c.previos.length))return false;
   if(!coincide(c.nombre+' '+c.dni+' '+c.email,g('fq')))return false;
   if(!coincide(c.zona+' '+c.loc+' '+c.domicilio+' '+c.req,g('fz')))return false;
   if(!coincide(c.formacion+' '+c.req+' '+c.resumen,g('ff')))return false;
