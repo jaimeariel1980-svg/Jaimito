@@ -60,3 +60,7 @@ Ejecutar `verificarInstalacion()`. Las páginas muestran el error real. Si la UR
 - Ese calendario tiene que estar compartido con dotacionpp1 con "Ver todos los detalles del evento".
 - En esos calendarios propios, todo turno cuenta como entrevista técnica aunque el título no lo diga.
 - Entrevista técnica por WhatsApp: PAMI 1 usa la plantilla `contacto-tecnica` (presencial, con `[DIRECCION]`); PAMI 2 usa `contacto-tecnica-poli2` (videollamada, sin dirección) y el link `link_agenda_tecnica_poli2`.
+
+## Contactos de WhatsApp (Google Contactos de dotacionpp1)
+- `agendarCandidatos()` guarda a todos los candidatos con teléfono como «Postu Enfe 2026 Nombre Apellido» en la etiqueta «Postulantes Enfermería 2026» (sin duplicar por teléfono; si cambió el nombre lo actualiza). El celular con WhatsApp sincroniza esos contactos.
+- La primera vez se ejecuta a mano desde el editor (pide permiso de Contactos). Desde ahí corre solo en el `ciclo` cada 10 min para los nuevos.
