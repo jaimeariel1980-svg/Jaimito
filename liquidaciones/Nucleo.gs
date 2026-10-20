@@ -130,3 +130,11 @@ function tipoFila_(r) {
   for (var i = 0; i < TIPOS_FILA.length; i++) if (TIPOS_FILA[i][2](r[11], String(r[12] || ''))) return i;
   return TIPOS_FILA.length - 1;
 }
+
+function compararFotos_(antes, ahora) {
+  var out = [], k;
+  for (k in ahora) if (!(k in antes)) out.push({ k: k, antes: '', ahora: ahora[k], tipo: 'Agregada' });
+  else if (antes[k] !== ahora[k]) out.push({ k: k, antes: antes[k], ahora: ahora[k], tipo: 'Modificada' });
+  for (k in antes) if (!(k in ahora)) out.push({ k: k, antes: antes[k], ahora: '', tipo: 'Quitada' });
+  return out;
+}

@@ -96,4 +96,7 @@ const fh=F({1:['11:57:56','22:12:41']});fh[1]['1'].horario='12:00 a 19:00';
 r=sim(fh,ag({hab:{1:'17/24'},ext:{1:'19/22'}}))[0];assert.strictEqual(r[14],'12:00 a 19:00 ≠ planilla 17/24');
 const fh2=F({5:['6:58','19:10']});fh2[5]['1'].horario='07:00 a 14:00';
 assert.strictEqual(sim(fh2,ag({hab:{5:'7/14'},ext:{5:'14/19'}}))[0][14],'07:00 a 14:00');
+// 20) comparación de fotos de extras
+const dif=run(`compararFotos_({"2 piso|1|5":"13/17","2 piso|1|6":"19/23"},{"2 piso|1|5":"13/19","2 piso|1|7":"7/12"})`);
+assert.deepStrictEqual(dif.map(x=>x.tipo).sort(),['Agregada','Modificada','Quitada']);
 console.log('OK todos los tests');
