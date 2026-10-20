@@ -1067,6 +1067,7 @@ function azcuNotificarEtapa_(id, dir, de, a, quien){
     var q = String(quien||'').trim() || 'Alguien';
     var t = c==='r' ? '🔶 '+q+' pasó a RESERVA' : c==='v' ? '✅ '+q+' marcó como VENDIDA' : '🔁 '+q+' cambió la etapa';
     azcuPush_(t, dir+(c==='r'||c==='v' ? '' : ' → '+a), AZCU_WEB+'?go=novedades');
+    if(c==='v'){ try{ var vd = String(_vendedorDe_(id)||'').trim(); if(vd) azcuPush_('🎉 ¡Felicitaciones, '+vd.split(/\s+/)[0]+'!', 'Se vendió '+dir+'. ¡Gran trabajo!', AZCU_WEB+'?go=novedades', azcuDestinos_(vd, true), true); }catch(e2){} }
   }catch(e){}
 }
 var AZCU_LOGT_ = {elimint:'🗑', etapa:'🔶', campos:'✏️', doc:'📄', borrardoc:'📄', adjuntar:'📎', aviso:'📣', completar:'📝', agendar:'📅', reporte:'✉️', elimprop:'🗑', nueva:'🆕', avisopersona:'📣', cancelvis:'🚫', restaurar:'♻️'};
