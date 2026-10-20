@@ -138,3 +138,24 @@ function compararFotos_(antes, ahora) {
   for (k in antes) if (!(k in ahora)) out.push({ k: k, antes: antes[k], ahora: '', tipo: 'Quitada' });
   return out;
 }
+
+function parsearGRH_(datos) {
+  var col = { leg: 0, area: 2, a50: 7, a100: 8 }, out = {};
+  for (var r = 0; r < Math.min(datos.length, 150); r++) {
+    var fila = datos[r].map(function (x) { return normaliza_(x); });
+    var iL = fila.indexOf('LEGAJO');
+    if (iL < 0) continue;
+    col.leg = iL;
+    fila.forEach(function (x, c) {
+      if (/^AREA|^SECTOR/.test(x)) col.area = c;
+      if (/50/.test(String(datos[r][c]))) col.a50 = c;
+      if (/100/.test(String(datos[r][c]))) col.a100 = c;
+    });
+    break;
+  }
+  datos.forEach(function (r) {
+    var leg = String(r[col.leg]).trim();
+    if (/^\d+$/.test(leg) && normaliza_(r[col.area]).indexOf('ENFERMER') >= 0) out[leg] = { a50: parseFloat(r[col.a50]) || 0, a100: parseFloat(r[col.a100]) || 0 };
+  });
+  return out;
+}

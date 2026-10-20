@@ -99,4 +99,10 @@ assert.strictEqual(sim(fh2,ag({hab:{5:'7/14'},ext:{5:'14/19'}}))[0][14],'07:00 a
 // 20) comparación de fotos de extras
 const dif=run(`compararFotos_({"2 piso|1|5":"13/17","2 piso|1|6":"19/23"},{"2 piso|1|5":"13/19","2 piso|1|7":"7/12"})`);
 assert.deepStrictEqual(dif.map(x=>x.tipo).sort(),['Agregada','Modificada','Quitada']);
+// 21) Excel GRH: por encabezado y con columnas fijas
+let g=run(`parsearGRH_([['LEGAJO','Apellido','AREA','x','x','x','x','HS 50%','HS 100%'],['62319','NIEVA','Enfermería','','','','',10,6],['1','X','Médicos','','','','',5,5]])`);
+assert.deepStrictEqual(g,{'62319':{a50:10,a100:6}});
+g=run(`parsearGRH_([['Planilla'],['NRO','Nombre','Área','HS 100','HS 50'],[]])`);assert.deepStrictEqual(g,{});
+g=run(`parsearGRH_([['División Enfermería'],['Legajo','Agente','Área','','','','','Hs 50 %','Hs 100 %'],[57696,'CANALES','ENFERMERIA','','','','',12,0]])`);
+assert.deepStrictEqual(g,{'57696':{a50:12,a100:0}});
 console.log('OK todos los tests');

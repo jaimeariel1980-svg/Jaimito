@@ -56,14 +56,8 @@ function leerHoja_(hoja) {
 }
 
 function leerGRH_(id) {
-  var h = SpreadsheetApp.openById(id).getSheetByName('Planillas Sectores');
-  if (!h) throw new Error('El Excel GRH no tiene la hoja "Planillas Sectores".');
-  var datos = h.getDataRange().getValues(), out = {};
-  datos.forEach(function (r) {
-    var leg = String(r[0]).trim();
-    if (/^\d+$/.test(leg) && String(r[2]).toUpperCase().indexOf('ENFERMER') >= 0) out[leg] = { a50: parseFloat(r[7]) || 0, a100: parseFloat(r[8]) || 0 };
-  });
-  return out;
+  var ss = SpreadsheetApp.openById(id), h = ss.getSheetByName('Planillas Sectores') || ss.getSheets()[0];
+  return parsearGRH_(h.getDataRange().getValues());
 }
 
 function licVigente_(txt, d) {
@@ -281,7 +275,7 @@ function liquidarExtras() {
   pintarLiquidacion_(h, out, cab.length);
   var cambios = registrarCambios_(hojas, cfg);
   var aut = filas.filter(function (r) { return r[11] === 'AUTORIZADA'; }).length;
-  avisar_('LIQUIDACION lista: ' + out.length + ' filas (' + aut + ' autorizadas) · ' + Object.keys(mens).length + ' agentes' + (cfg.fichadasAuto ? '\nFichadas: ' + cfg.fichadasAuto : '') + (grh ? '' : '\nSin Excel GRH en CONFIG: no hay consolidado de autorizaciones.') + (cambios ? '\n' + cambios : ''));
+  avisar_('LIQUIDACION lista: ' + out.length + ' filas (' + aut + ' autorizadas) · ' + Object.keys(mens).length + ' agentes' + (cfg.fichadasAuto ? '\nFichadas: ' + cfg.fichadasAuto : '') + (grh ? '\nGRH: ' + Object.keys(grh).length + ' agentes de Enfermería con autorización leídos' : '\nSin Excel GRH en CONFIG: no hay consolidado de autorizaciones.') + (cambios ? '\n' + cambios : ''));
 }
 
 function escribir_(ss, nombre, cab, filas, textoDesde, textoHasta) {
