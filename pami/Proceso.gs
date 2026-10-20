@@ -366,9 +366,11 @@ function citaObj_(txt) {
 function poliEf_(r) { return String(r[COL.policlinico - 1] || String(r[COL.polSug - 1] || '').split(' · ')[0]).trim(); }
 
 const ESTADOS_TECNICA = ['Avanza a entrevista técnica', 'Entrevista técnica agendada'];
+const ESTADOS_POST_TECNICA = ['Contratado', 'Descartado en entrevista técnica', 'Reserva entrevista técnica'];
 
 function permiteTecnico_(r) {
-  if (ESTADOS_TECNICA.indexOf(String(r[COL.estado - 1]).trim()) === -1) throw new Error('Ese candidato no está para entrevista técnica');
+  const est = String(r[COL.estado - 1]).trim(), evaluado = String(r[COL.notaP2 - 1] || '').trim() && ESTADOS_POST_TECNICA.indexOf(est) > -1;
+  if (ESTADOS_TECNICA.indexOf(est) === -1 && !evaluado) throw new Error('Ese candidato no está para entrevista técnica');
   if (!POLI_ || poliEf_(r) !== POLI_) throw new Error('Ese candidato es de otro policlínico');
 }
 
@@ -380,7 +382,7 @@ function tableroTecnica_() {
     try { permiteTecnico_(r); } catch (e) { continue; }
     cands.push({
       fila: i + 1, id: String(r[COL.id - 1]), nombre: r[COL.nombre - 1], busq: r[COL.busq - 1], policlinico: poliEf_(r), estado: String(r[COL.estado - 1]).trim(),
-      cita: citaObj_(r[COL.cita - 1]), loc: r[COL.loc - 1], formacion: String(r[COL.formacion - 1] || ''), resumen: r[COL.resumen - 1], tieneCV: !!String(r[COL.cv - 1] || '').trim(), mov: ''
+      cita: citaObj_(r[COL.cita - 1]), loc: r[COL.loc - 1], formacion: String(r[COL.formacion - 1] || ''), resumen: r[COL.resumen - 1], tieneCV: !!String(r[COL.cv - 1] || '').trim(), mov: '', notaTec: String(r[COL.notaP2 - 1] || '').trim()
     });
   }
   cands.sort((a, b) => String(a.cita ? a.cita.ts : '9') < String(b.cita ? b.cita.ts : '9') ? -1 : 1);

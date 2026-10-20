@@ -771,7 +771,7 @@ function infCard(l,v){return v?'<div class="cd"><small>'+esc(l)+'</small><b>'+es
 function infFecha(){var d=D.ahora.slice(0,10).split('-');return d[2]+'/'+d[1]+'/'+d[0];}
 function tecCard(c){
   var cita=c.cita?'📅 '+c.cita.ts.slice(8,10)+'/'+c.cita.ts.slice(5,7)+' '+c.cita.ts.slice(11,16):'Sin agendar';
-  return '<div style="background:#fff;border:1px solid var(--line);border-left:5px solid var(--celeste);border-radius:8px;padding:14px 16px;margin-bottom:12px"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><b style="font-size:17px">'+esc(c.nombre)+'</b><div style="color:#5D6B82;font-size:13px">'+esc(tit(c.busq))+(VP&&c.policlinico?' · '+esc(c.policlinico.replace('Policlínico ','')):'')+'</div></div><div style="font-size:13px;font-weight:700;color:#034EA2">'+cita+'</div></div><div class="btns" style="margin-top:12px"><button class="btn ghost" onclick="verResumen('+c.fila+',this,true)">📄 Ver ficha</button><button class="btn" onclick="abrirFormTec('+c.fila+')">🩺 Evaluar</button>'+((c.cv||c.tieneCV)?'<button class="btn ghost" onclick="verCV('+c.fila+',this)">📎 Ver CV</button>':'')+'</div></div>';
+  return '<div style="background:#fff;border:1px solid var(--line);border-left:5px solid var(--celeste);border-radius:8px;padding:14px 16px;margin-bottom:12px"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><b style="font-size:17px">'+esc(c.nombre)+'</b>'+(c.notaTec?' <span class="tag g">Evaluado · '+esc(c.notaTec)+(c.estado?' · '+esc(c.estado):'')+'</span>':'')+'<div style="color:#5D6B82;font-size:13px">'+esc(tit(c.busq))+(VP&&c.policlinico?' · '+esc(c.policlinico.replace('Policlínico ','')):'')+'</div></div><div style="font-size:13px;font-weight:700;color:#034EA2">'+cita+'</div></div><div class="btns" style="margin-top:12px"><button class="btn ghost" onclick="verResumen('+c.fila+',this,true)">📄 Ver ficha</button>'+(c.notaTec?'<button class="btn ghost" onclick="verTecnica('+c.fila+',this)">👁 Ver evaluación</button><button class="btn" onclick="abrirFormTec('+c.fila+',true)">✏️ Editar evaluación</button>':'<button class="btn" onclick="abrirFormTec('+c.fila+')">🩺 Evaluar</button>')+((c.cv||c.tieneCV)?'<button class="btn ghost" onclick="verCV('+c.fila+',this)">📎 Ver CV</button>':'')+'</div></div>';
 }
 function ordCita(a,b){
   var n=new Date(Date.now()-3600000),pad=function(x){return (x<10?'0':'')+x;},now=n.getFullYear()+'-'+pad(n.getMonth()+1)+'-'+pad(n.getDate())+' '+pad(n.getHours())+':'+pad(n.getMinutes());
@@ -802,7 +802,7 @@ function vistaTecnica(){
   if(document.getElementById('fmodal').classList.contains('show'))return;
   var v=tecOverlay(),L=D.cands.slice().sort(ordCita);
   v.innerHTML='<div class="hdr"><div class="in"><span class="lg w"></span><div class="prod">Entrevista técnica<small class="ver">'+esc(D.poli||'')+'</small></div><span class="sp"></span><button class="cta" onclick="cambiarPinTec()">🔑 PIN</button> <button class="cta" onclick="cerrarSesion()">Salir</button></div></div>'+
-    '<div style="max-width:900px;margin:0 auto;padding:18px 16px 60px"><div style="font-size:14px;color:#5D6B82;margin-bottom:14px">Hola <b>'+esc(D.user)+'</b>. '+(D.poli?(L.length?L.length+' candidato'+(L.length===1?'':'s')+' para entrevista técnica en '+esc(D.poli)+'.':'No hay candidatos para entrevista técnica en '+esc(D.poli)+' por ahora.'):'Todavía no tenés un policlínico asignado. Avisale al administrador.')+'</div>'+tecAgenda(L)+L.map(tecCard).join('')+'</div>';
+    '<div style="max-width:900px;margin:0 auto;padding:18px 16px 60px"><div style="font-size:14px;color:#5D6B82;margin-bottom:14px">Hola <b>'+esc(D.user)+'</b>. '+(D.poli?(L.length?L.length+' candidato'+(L.length===1?'':'s')+' para entrevista técnica en '+esc(D.poli)+'.':'No hay candidatos para entrevista técnica en '+esc(D.poli)+' por ahora.'):'Todavía no tenés un policlínico asignado. Avisale al administrador.')+'</div>'+tecAgenda(L.filter(function(c){return !c.notaTec;}))+L.filter(function(c){return !c.notaTec;}).map(tecCard).join('')+(L.some(function(c){return c.notaTec;})?'<details style="margin-top:18px"><summary style="cursor:pointer;font-weight:800;color:#034EA2;font-size:15px;margin-bottom:10px">✅ Ya evaluados ('+L.filter(function(c){return c.notaTec;}).length+') · ver o editar la evaluación</summary>'+L.filter(function(c){return c.notaTec;}).map(tecCard).join('')+'</details>':'')+'</div>';
 }
 var VP=false,VPP='';
 function vistaPreview(poli){
@@ -867,12 +867,12 @@ function mostrarCV(r,bytes,nombre){
   },function(){msg('No pude cargar el visor de PDF. Usá <b>⬇ Descargar</b>.');});
 }
 function cerrarPreview(){VP=false;var v=document.getElementById('tecv');if(v)v.remove();}
-function abrirFormTec(f){
+function abrirFormTec(f,ed){
   var c=byFila(f);FORM_F=f;
   document.getElementById('ftit').textContent='Entrevista técnica · '+c.nombre;
   var vb=document.querySelector('#fmodal .fbar .btn');if(vb)vb.textContent='← Volver';
   document.getElementById('fmodal').classList.add('show');document.getElementById('fmodal').scrollTop=0;
-  FC.open({K:K,cid:c.id,etapa:'tecnica',container:document.getElementById('fbody'),onDone:function(){},onClose:cerrarFormTec});
+  FC.open({K:K,cid:c.id,etapa:'tecnica',editar:!!ed,container:document.getElementById('fbody'),onDone:function(){},onClose:cerrarFormTec});
 }
 function cerrarFormTec(){document.getElementById('fmodal').classList.remove('show');document.getElementById('fbody').innerHTML='';cargar();if(VP)vistaPreview();}
 function cambiarPinTec(){

@@ -42,9 +42,16 @@ function getDatosForm_(k, id, etapa) {
   };
 }
 
-function getEvalPrevia(k, id, etapa) {
+function getEvalPrevia(k, id, etapa) { return etapa === 'pami2' ? conTec_(() => getEvalPrevia_(k, id, etapa)) : getEvalPrevia_(k, id, etapa); }
+
+function getEvalPrevia_(k, id, etapa) {
   escritor_(k);
   if (['screening', 'competencias', 'pami2'].indexOf(etapa) === -1) throw new Error('Etapa inválida');
+  if (ROL_ === 'Técnica') {
+    const sc0 = hoja_('Candidatos'), f0 = filaPorId_(sc0, id);
+    if (etapa !== 'pami2' || !f0) throw new Error('No autorizado');
+    permiteTecnico_(sc0.getRange(f0, 1, 1, HEAD_CAND.length).getValues()[0]);
+  }
   const sh = hoja_('Evaluaciones'), n = sh.getLastRow();
   if (n < 2) return null;
   const ids = sh.getRange(2, 2, n - 1, 3).getValues();
@@ -225,7 +232,9 @@ function guardarTecnica_(k, p) {
   const fecha = p.fecha || fmt_(new Date(), 'yyyy-MM-dd');
   const quien = QUIEN_ || p.entrevistador || 'formulario';
   guardarEvaluacion_(sh, fila, r, 'pami2', { entrevistador: quien }, score, nota, '', { comps: comps, fortalezas: p.fortalezas, areas: p.areas, recomendacion: p.recomendacion, fecha: fecha });
-  const estado = aplicarNota_(sh, fila, 'pami2', nota, quien);
+  const previa = p.editar ? String(r[COL.notaP2 - 1] || '') : '';
+  const estado = aplicarNota_(sh, fila, 'pami2', nota, quien, previa);
+  if (p.editar) registrarHistorial_(r[COL.id - 1], r[COL.nombre - 1], 'Entrevista técnica editada', (previa || '—') + ' → ' + nota, quien);
   guardarMotivoDescarte_(sh, fila, r, motivoDesc, estado, quien);
   return { ok: true, estado: estado, nota: nota, score: score };
 }
