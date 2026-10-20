@@ -800,20 +800,26 @@ function tecOverlay(){
 }
 function vistaTecnica(){
   if(document.getElementById('fmodal').classList.contains('show'))return;
-  var v=tecOverlay(),L=D.cands.slice().sort(ordCita);
+  var v=tecOverlay(),L=D.cands.slice().sort(ordCita),NP=L.filter(function(c){return !c.notaTec;}).length;
   v.innerHTML='<div class="hdr"><div class="in"><span class="lg w"></span><div class="prod">Entrevista técnica<small class="ver">'+esc(D.poli||'')+'</small></div><span class="sp"></span><button class="cta" onclick="cambiarPinTec()">🔑 PIN</button> <button class="cta" onclick="cerrarSesion()">Salir</button></div></div>'+
-    '<div style="max-width:900px;margin:0 auto;padding:18px 16px 60px"><div style="font-size:14px;color:#5D6B82;margin-bottom:14px">Hola <b>'+esc(D.user)+'</b>. '+(D.poli?(L.length?L.length+' candidato'+(L.length===1?'':'s')+' para entrevista técnica en '+esc(D.poli)+'.':'No hay candidatos para entrevista técnica en '+esc(D.poli)+' por ahora.'):'Todavía no tenés un policlínico asignado. Avisale al administrador.')+'</div>'+tecAgenda(L.filter(function(c){return !c.notaTec;}))+L.filter(function(c){return !c.notaTec;}).map(tecCard).join('')+(L.some(function(c){return c.notaTec;})?'<details style="margin-top:18px"><summary style="cursor:pointer;font-weight:800;color:#034EA2;font-size:15px;margin-bottom:10px">✅ Ya evaluados ('+L.filter(function(c){return c.notaTec;}).length+') · ver o editar la evaluación</summary>'+L.filter(function(c){return c.notaTec;}).map(tecCard).join('')+'</details>':'')+'</div>';
+    '<div style="max-width:900px;margin:0 auto;padding:18px 16px 60px"><div style="font-size:14px;color:#5D6B82;margin-bottom:14px">Hola <b>'+esc(D.user)+'</b>. '+(D.poli?(NP?NP+' candidato'+(NP===1?'':'s')+' para entrevista técnica en '+esc(D.poli)+'.':'No hay candidatos para entrevista técnica en '+esc(D.poli)+' por ahora.'):'Todavía no tenés un policlínico asignado. Avisale al administrador.')+'</div>'+tecListado(L)+'</div>';
 }
-var VP=false,VPP='';
+var VP=false,VPP='',POST_TEC=['Contratado','Descartado en entrevista técnica','Reserva entrevista técnica'];
+function tecListado(L){
+  var pend=L.filter(function(c){return !c.notaTec;}),ev=L.filter(function(c){return c.notaTec;});
+  return tecAgenda(pend)+pend.map(tecCard).join('')+'<div style="margin-top:22px;background:#EEF7F1;border:1px solid #BFE3CC;border-radius:8px;padding:12px 14px"><div style="font-weight:800;color:#1E8E5A;font-size:15px;margin-bottom:'+(ev.length?'10px':'0')+'">✅ Entrevistas técnicas ya cargadas ('+ev.length+')'+(ev.length?' · ver o editar la evaluación':'')+'</div>'+(ev.length?ev.map(tecCard).join(''):'<div style="font-size:13px;color:#5D6B82;margin-top:4px">Todavía no hay entrevistas técnicas cargadas. Cuando cargues una, el candidato aparece acá y la podés ver o editar.</div>')+'</div>';
+}
 function vistaPreview(poli){
   if(typeof poli==='string')VPP=poli;
   if(document.getElementById('fmodal').classList.contains('show'))return;
   VP=true;
   var est=['Avanza a entrevista técnica','Entrevista técnica agendada'];
-  var L=D.cands.filter(function(c){var p=c.policlinico||String(c.polSug||'').split(' · ')[0];return est.indexOf(c.estado)>-1&&(!VPP||p===VPP);}).sort(ordCita);
+  var L=D.cands.filter(function(c){var p=c.policlinico||String(c.polSug||'').split(' · ')[0];return (est.indexOf(c.estado)>-1||(c.notaP2&&POST_TEC.indexOf(c.estado)>-1))&&(!VPP||p===VPP);}).sort(ordCita);
+  L.forEach(function(c){c.notaTec=POST_TEC.indexOf(c.estado)>-1?c.notaP2:'';});
+  var NP=L.filter(function(c){return !c.notaTec;}).length;
   L.forEach(function(c){if(!c.policlinico)c.policlinico=String(c.polSug||'').split(' · ')[0];});
   tecOverlay().innerHTML='<div class="hdr"><div class="in"><span class="lg w"></span><div class="prod">Vista de entrevista técnica<small class="ver">así la ven los jefes</small></div><span class="sp"></span><select style="width:auto;margin-right:8px" onchange="vistaPreview(this.value)"><option value="">Todos los policlínicos</option>'+D.policlinicos.map(function(p){return '<option'+(p===VPP?' selected':'')+'>'+p+'</option>';}).join('')+'</select><button class="cta" onclick="cerrarPreview()">← Volver al tablero</button></div></div>'+
-    '<div style="max-width:900px;margin:0 auto;padding:18px 16px 60px"><div style="font-size:14px;color:#5D6B82;margin-bottom:14px">'+(L.length?L.length+' candidato'+(L.length===1?'':'s')+' para entrevista técnica'+(VPP?' en '+esc(VPP):'')+'. Cada jefe ve solo los de su policlínico.':'No hay candidatos para entrevista técnica'+(VPP?' en '+esc(VPP):'')+' por ahora.')+'</div>'+tecAgenda(L)+L.map(tecCard).join('')+'</div>';
+    '<div style="max-width:900px;margin:0 auto;padding:18px 16px 60px"><div style="font-size:14px;color:#5D6B82;margin-bottom:14px">'+(NP?NP+' candidato'+(NP===1?'':'s')+' para entrevista técnica'+(VPP?' en '+esc(VPP):'')+'. Cada jefe ve solo los de su policlínico.':'No hay candidatos para entrevista técnica'+(VPP?' en '+esc(VPP):'')+' por ahora.')+'</div>'+tecListado(L)+'</div>';
 }
 function editarFicha(f){
   var c=byFila(f),mb=document.getElementById('mbox');
