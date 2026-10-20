@@ -416,6 +416,7 @@ function getTablero_(k) {
       });
     }
   } catch (e) { registrarError_('quién descartó', e); }
+  const previos = previosPorFila_(d);
   for (let i = 1; i < d.length; i++) {
     const r = d[i];
     if (!r[COL.nombre - 1] || String(r[COL.estado - 1]).trim() === ESTADO_DUP_) continue;
@@ -423,6 +424,7 @@ function getTablero_(k) {
     try { resp = JSON.parse(r[COL.resp - 1] || '[]'); } catch (e) { }
     const dt = v => v instanceof Date ? fmt_(v, 'dd/MM/yyyy') : String(v || '');
     cands.push({
+      previos: previos[i] || [],
       fila: i + 1, id: String(r[COL.id - 1]), fecha: dt(r[0]), mov: r[COL.mov - 1] instanceof Date ? fmt_(r[COL.mov - 1], "yyyy-MM-dd'T'HH:mm") : '',
       nombre: r[COL.nombre - 1], tel: String(r[COL.tel - 1] || ''), dni: String(r[COL.dni - 1] || ''), email: r[COL.email - 1], loc: r[COL.loc - 1],
       busq: r[COL.busq - 1], pret: String(r[COL.pret - 1] || ''), ajuste: r[COL.ajuste - 1], just: r[COL.just - 1], resumen: r[COL.resumen - 1], req: r[COL.req - 1],
@@ -639,6 +641,24 @@ function armarComunicacion(k, fila, tipo) {
 
 const ESTADO_DUP_ = 'Duplicado (oculto)';
 
+function previosPorFila_(d) {
+  const ks = d.map(r => (!r[COL.nombre - 1] || String(r[COL.estado - 1]).trim() === ESTADO_DUP_) ? null : claveDup_(r[COL.dni - 1], r[COL.email - 1], r[COL.tel - 1], r[COL.nombre - 1]));
+  const mapa = {};
+  ks.forEach((k, i) => { if (!k) return; [k.d && 'd' + k.d, k.e && 'e' + k.e, k.n && k.t && 'n' + k.n + '|' + k.t].filter(Boolean).forEach(q => (mapa[q] = mapa[q] || []).push(i)); });
+  const out = {};
+  ks.forEach((k, i) => {
+    if (!k) return;
+    const js = [];
+    [k.d && 'd' + k.d, k.e && 'e' + k.e, k.n && k.t && 'n' + k.n + '|' + k.t].filter(Boolean).forEach(q => (mapa[q] || []).forEach(j => { if (j !== i && js.indexOf(j) < 0 && String(d[j][COL.busq - 1]) !== String(d[i][COL.busq - 1])) js.push(j); }));
+    if (!js.length) return;
+    out[i] = js.slice(0, 3).map(j => {
+      const r = d[j], f = r[0];
+      return { busq: String(r[COL.busq - 1] || ''), fecha: f instanceof Date ? fmt_(f, 'dd/MM/yyyy') : String(f || ''), estado: String(r[COL.estado - 1]).trim(), motivo: String(r[COL.motivo - 1] || '').replace(/;\s*/g, ' · '), cv: String(r[COL.ajuste - 1] || ''), scr: String(r[COL.notaScr - 1] || ''), comp: String(r[COL.notaComp - 1] || ''), tec: String(r[COL.notaP2 - 1] || '') };
+    });
+  });
+  return out;
+}
+
 function claveDup_(dni, email, tel, nombre) {
   const d = String(dni || '').replace(/\D/g, ''), t = String(tel || '').replace(/\D/g, '').slice(-8);
   const n = norm_(nombre).replace(/[^a-z ]/g, ' ').split(/\s+/).filter(Boolean).sort().join(' ');
@@ -657,7 +677,7 @@ function limpiarDuplicados_() {
       const r = datos[i];
       if (!r[COL.nombre - 1] || String(r[COL.estado - 1]).trim() === ESTADO_DUP_) continue;
       const k = claveDup_(r[COL.dni - 1], r[COL.email - 1], r[COL.tel - 1], r[COL.nombre - 1]), busq = r[COL.busq - 1];
-      const pos = vistos.findIndex(v => (k.d && k.d === v.k.d) || (k.e && k.e === v.k.e) || (k.n && k.n === v.k.n && ((k.t && k.t === v.k.t) || (busq === v.busq && !(k.d && v.k.d && k.d !== v.k.d)))));
+      const pos = vistos.findIndex(v => v.busq === busq && ((k.d && k.d === v.k.d) || (k.e && k.e === v.k.e) || (k.n && k.n === v.k.n && ((k.t && k.t === v.k.t) || !(k.d && v.k.d && k.d !== v.k.d)))));
       if (pos < 0) { vistos.push({ i: i, k: k, busq: busq }); continue; }
       const p = vistos[pos].i, viejo = avance(datos[p]) > avance(r) ? i : p, quedan = viejo === i ? p : i;
       sh.getRange(viejo + 1, COL.estado).setValue(ESTADO_DUP_);
