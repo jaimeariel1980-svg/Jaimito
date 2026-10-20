@@ -136,6 +136,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
   <span class="lg w"></span>
   <div class="prod">Atracción y Elección<small class="ver">v139</small></div>
   <nav>
+    <button class="ni" onclick="verAvisos()" style="position:relative"><span class="ic o">🔔</span><b>Avisos</b><span id="avCnt" style="display:none;position:absolute;top:2px;right:2px;background:#D9534F;color:#fff;border-radius:10px;font-size:11px;font-weight:800;padding:1px 6px"></span></button>
     <button class="ni" id="rf" onclick="actualizar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
     <button class="ni" onclick="verDireccion()"><span class="ic b">📊</span><b>Informe</b></button>
@@ -316,7 +317,7 @@ function cargar(){
   var rf=document.querySelector('#rf b');rf.textContent='Actualizando…';
   gs().withSuccessHandler(function(j){
     document.getElementById('login').classList.remove('show');guardarCred();var primera=!D;D=JSON.parse(j);if(D.tecnica){rf.textContent='Actualizar';vistaTecnica();return;}RO=(D.rol==='Lectura');ajustarRol();try{if(D.cfg.recordarDias){REM_MS=D.cfg.recordarDias*86400000;localStorage.setItem('pami_rd',String(D.cfg.recordarDias));}if(D.cfg.sesionHoras){IDLE_MS=D.cfg.sesionHoras*3600000;localStorage.setItem('pami_ih',String(D.cfg.sesionHoras));}}catch(e){}try{if(!sessionStorage.getItem('pami_ing')){sessionStorage.setItem('pami_ing','1');gs().withSuccessHandler(function(){}).withFailureHandler(function(){}).registrarAcceso(K,'Ingreso');}}catch(e){}rf.textContent='Actualizar';pintarUsuario();
-    if(primera)init();else render();if(VP)vistaPreview();
+    if(primera)init();else render();if(VP)vistaPreview();try{avRevisar();}catch(e){}
   }).withFailureHandler(function(e){
     rf.textContent='Actualizar';
     if(/LOGIN:/.test((e&&e.message)||'')){mostrarLogin(msgLogin(e));return;}
@@ -324,7 +325,7 @@ function cargar(){
   }).getTablero(K);
 }
 if(U&&P)cargar();else mostrarLogin(mensajeGuardado());
-setInterval(function(){if(D&&!document.hidden&&!document.getElementById('modal').classList.contains('show'))cargar();},180000);
+setInterval(function(){if(D&&!document.getElementById('modal').classList.contains('show'))cargar();},180000);
 
 function init(){
   var fb=document.getElementById('fb');
@@ -451,6 +452,7 @@ function card(c){
   var ef=etapasFaltan(c);
   if(ef.length)mk+='<span class="tag r">⚠ Falta '+ef.join(' y ')+'</span>';
   else if(!RO&&etapaIdx(c)===3&&!c.fichaOk&&!c.notaP2)mk+='<span class="tag r">🩺 Falta resumen ET</span>';
+  avTags(c).forEach(function(t){mk+=t;});
   var rcc=rc?'<span class="rcc" title="'+esc((c.recTipo?'Recomendado por: ':'')+rc)+'">★ '+esc(recCorto(c))+'</span>':'';
   if(c.proc&&c.proc!=='SI')mk+='<span class="tag w">'+(c.proc==='Pendiente'?'Analizando CV…':c.proc==='NoCV'?'¿No es un CV?':'Revisar CV')+'</span>';
   var bt=D.policlinicos.map(function(p,i){return '<button type="button" class="p'+(i+1)+(c.policlinico===p?' on':(!c.policlinico&&sugN(c)===p?' sug':''))+'" onclick="event.stopPropagation();asignarPol('+c.fila+','+i+')">'+esc(p.replace('Policlínico ',''))+(!c.policlinico&&sugN(c)===p?' ★':'')+'</button>';}).join('');
@@ -1038,6 +1040,96 @@ function enviarDesc(btn){
   btn.textContent='Enviando…';btn.disabled=true;
   gs().withSuccessHandler(function(r){alert('Enviados: '+r.enviados+(r.sinMail?' · Sin mail válido: '+r.sinMail:'')+(r.pendientes?' · Quedan '+r.pendientes+' (se envían de a 40 por vez)':''));cerrar();cargar();}).withFailureHandler(function(e){btn.disabled=false;btn.textContent='Enviar descartes';fer(e);}).enviarDescartesMasivo(K,document.getElementById('fb').value,document.getElementById('tS').value,document.getElementById('tP').value);
 }
+/* ===== Avisos: campanita, popups y avisos del navegador ===== */
+var AV_PEND=[],AV_NOV=[];
+function avLS(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem('pami_av_'+k+'_'+U)||'null');localStorage.setItem('pami_av_'+k+'_'+U,JSON.stringify(v));}catch(e){return null;}}
+function avAhora(){return new Date(D.ahora).getTime();}
+function avTs(ts){return new Date(String(ts).replace(' ','T')).getTime();}
+function avHora(ts){return ts.slice(8,10)+'/'+ts.slice(5,7)+' '+ts.slice(11,16);}
+function avPendientes(){
+  var out=[],now=avAhora(),E={screening:'notaScr',competencias:'notaComp'};
+  D.cands.forEach(function(c){
+    if(/^Descartad/i.test(c.estado)||c.estado==='Contratado')return;
+    var ep=etapaPend(c),ct=etqContacto(c),p=function(k,ic,txt,urg){out.push({k:k+'|'+c.id,ic:ic,txt:txt,f:c.fila,n:c.nombre,urg:!!urg});};
+    if(ep&&ct!==ep)p('contactar','➜','Falta contactar para '+ep);
+    var md=String(c.contactado||'').match(/(\d{2})\/(\d{2})\/(\d{4})$/);
+    if(ep&&ct===ep&&!c.cita&&md){var dd=Math.floor((now-new Date(+md[3],+md[2]-1,+md[1]).getTime())/864e5);if(dd>=2)p('norespondio','⏳','Contactado para '+ep+' hace '+dd+' días y todavía no agendó');}
+    if(/agendad/i.test(c.estado)&&!c.cita)p('sinfecha','📅','Figura agendado pero sin fecha de turno');
+    if(c.cita&&!citaHecha(c)){
+      var t=avTs(c.cita.ts);
+      if(t>=now-15*6e4&&t-now<=2*36e5)p('pronto','⏰',c.cita.tipo+' a las '+c.cita.ts.slice(11,16)+(t<now?' (ya empezó)':' (en '+Math.max(1,Math.round((t-now)/6e4))+' min)'),true);
+      else if(t<now-60*6e4)p('sincargar','📝',c.cita.tipo+' del '+avHora(c.cita.ts)+' ya pasó y falta cargar el formulario',true);
+    }
+    etapasFaltan(c).forEach(function(e){p('falta'+e,'⚠','Falta la etapa de '+e+' (no tiene nota cargada)');});
+    if(etapaIdx(c)===3&&!c.fichaOk&&!c.notaP2)p('resumen','🩺','Falta el resumen del proceso para la entrevista técnica');
+    if(/reserva/i.test(c.estado)&&dias(c)>=15)p('reserva','🗂','En reserva hace '+dias(c)+' días');
+  });
+  out.sort(function(a,b){return b.urg-a.urg;});
+  return out;
+}
+function avNovedades(){
+  var prev=avLS('snap'),snap={},nov=[],cuando=D.ahora.slice(8,10)+'/'+D.ahora.slice(5,7)+' '+D.ahora.slice(11,16);
+  D.cands.forEach(function(c){
+    var s={e:c.estado,t:String(c.notaP2||''),d:c.docs?1:0};snap[c.id]=s;
+    if(!prev)return;
+    var a=prev[c.id],p=function(ic,txt){nov.push({ic:ic,txt:txt,f:c.fila,id:c.id,n:c.nombre,h:cuando});};
+    if(!a){p('🆕','Nuevo CV recibido'+(c.busq?' · '+tit(c.busq):''));return;}
+    if(s.e!==a.e&&s.e==='Contratado')p('🎉','Contratado/a');
+    else if(s.e!==a.e&&s.e==='Descartado en entrevista técnica')p('❌','Descartado/a en la entrevista técnica'+(c.motivo?' · '+c.motivo:''));
+    else if(s.t&&s.t!==a.t)p('🩺','Entrevista técnica cargada · nota '+s.t);
+    if(s.d&&!a.d)p('📁','Documentación recibida');
+  });
+  avLS('snap',snap);
+  return nov;
+}
+function avTags(c){
+  var out=[],now=avAhora(),ep=etapaPend(c),md=String(c.contactado||'').match(/(\d{2})\/(\d{2})\/(\d{4})$/);
+  if(ep&&etqContacto(c)===ep&&!c.cita&&md){var dd=Math.floor((now-new Date(+md[3],+md[2]-1,+md[1]).getTime())/864e5);if(dd>=2)out.push('<span class="tag r">⏳ Sin respuesta hace '+dd+' d</span>');}
+  if(c.cita&&!citaHecha(c)&&avTs(c.cita.ts)<now-60*6e4)out.push('<span class="tag r">📝 Falta cargar '+esc(c.cita.tipo)+'</span>');
+  return out;
+}
+function avRevisar(){
+  if(!D||D.tecnica)return;
+  AV_PEND=avPendientes();
+  var nuevas=avNovedades(),hist=avLS('nov')||[];
+  if(nuevas.length){hist=nuevas.concat(hist).slice(0,80);avLS('nov',hist);avLS('sinver',(avLS('sinver')||0)+nuevas.length);}
+  AV_NOV=hist;
+  var avisados=avLS('urg')||{},hoy=D.ahora.slice(0,10),pop=nuevas.slice();
+  AV_PEND.forEach(function(x){if(x.urg&&avisados[x.k]!==hoy){avisados[x.k]=hoy;pop.push(x);}});
+  avLS('urg',avisados);
+  avPintarCampana();
+  if(pop.length)avPopups(pop);
+}
+function avPintarCampana(){
+  var b=document.getElementById('avCnt');if(!b)return;
+  var n=AV_PEND.filter(function(x){return x.urg;}).length+(avLS('sinver')||0);
+  b.textContent=n||'';b.style.display=n?'':'none';
+}
+function avPopups(L){
+  var cont=document.getElementById('avPop');
+  if(!cont){cont=document.createElement('div');cont.id='avPop';cont.style.cssText='position:fixed;top:70px;right:16px;z-index:9998;display:flex;flex-direction:column;gap:8px;max-width:360px;width:calc(100% - 32px)';document.body.appendChild(cont);}
+  L.slice(0,6).forEach(function(x){
+    var d=document.createElement('div');
+    d.style.cssText='background:#fff;border-left:6px solid '+(x.urg?'#D9534F':'#034EA2')+';border-radius:8px;box-shadow:0 8px 28px rgba(0,0,0,.25);padding:12px 14px;font-size:14px;cursor:pointer';
+    d.innerHTML='<div style="display:flex;gap:8px;align-items:flex-start"><span style="font-size:18px">'+x.ic+'</span><div style="flex:1"><b>'+esc(x.n)+'</b><div style="color:#3F4B66">'+esc(x.txt)+'</div></div><span style="color:#999;font-size:18px" title="Cerrar">×</span></div>';
+    d.onclick=function(ev){d.remove();if(ev.target.title!=='Cerrar'&&x.f)abrir(x.f);};
+    cont.appendChild(d);
+    setTimeout(function(){if(d.parentNode)d.remove();},x.urg?60000:20000);
+  });
+  if(L.length>6){var m=document.createElement('div');m.style.cssText='background:#034EA2;color:#fff;border-radius:8px;padding:8px 12px;font-size:13px;cursor:pointer';m.textContent='y '+(L.length-6)+' avisos más · ver todos';m.onclick=function(){m.remove();verAvisos();};cont.appendChild(m);setTimeout(function(){if(m.parentNode)m.remove();},20000);}
+  try{if(window.Notification&&Notification.permission==='granted'&&document.hidden)L.slice(0,3).forEach(function(x){new Notification(x.n,{body:x.ic+' '+x.txt});});}catch(e){}
+  try{if(document.hidden)document.title='('+L.length+') Avisos · Atracción y Elección';}catch(e){}
+}
+function verAvisos(){
+  avLS('sinver',0);avPintarCampana();
+  var item=function(x,nov){return '<div onclick="cerrar();abrir('+x.f+')" style="display:flex;gap:10px;padding:9px 6px;border-top:1px solid var(--line);cursor:pointer'+(x.urg?';background:#FDECEC':'')+'"><span style="font-size:17px">'+x.ic+'</span><div style="flex:1"><b>'+esc(x.n)+'</b><div style="font-size:13px;color:#3F4B66">'+esc(x.txt)+'</div></div>'+(nov?'<small style="color:#888;white-space:nowrap">'+esc(x.h)+'</small>':'')+'</div>';};
+  var perm=window.Notification&&Notification.permission!=='granted'?'<button class="btn ghost" style="margin-bottom:10px" onclick="Notification.requestPermission().then(function(){verAvisos();})">🔔 Activar avisos del navegador (también con la pestaña minimizada)</button>':'';
+  document.getElementById('mbox').innerHTML='<div class="hd"><div><h2>🔔 Avisos</h2><small>Se actualiza solo cada 3 minutos</small></div><button class="x" onclick="cerrar()">×</button></div><div class="bd">'+perm+
+    '<div style="font-weight:800;color:#B02A25;margin:6px 0">Pendientes ('+AV_PEND.length+')</div>'+(AV_PEND.length?AV_PEND.map(function(x){return item(x,false);}).join(''):'<div class="txt" style="color:#5D6B82">No hay pendientes.</div>')+
+    '<div style="font-weight:800;color:#034EA2;margin:16px 0 6px">Novedades</div>'+(AV_NOV.length?AV_NOV.slice(0,40).map(function(x){return item(x,true);}).join(''):'<div class="txt" style="color:#5D6B82">Sin novedades todavía. Aparecen desde la próxima actualización: nuevos CV, contratados, descartados en la técnica, técnicas cargadas y documentación recibida.</div>')+'</div>';
+  document.getElementById('modal').classList.add('show');
+}
+document.addEventListener('visibilitychange',function(){if(!document.hidden)try{document.title='Atracción y Elección';}catch(e){}});
 </script>
 </body>
 </html>
