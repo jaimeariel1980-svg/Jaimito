@@ -263,16 +263,19 @@ function liquidarExtras() {
     var c = consolidarGRH_(mens[leg].r50, mens[leg].r100, g ? g.a50 : 0, g ? g.a100 : 0, !!g, cfg.tope);
     mens[leg].g = g; mens[leg].c = c;
   }
-  var out = filas.map(function (r) {
-    var m = mens[r[1]];
-    return r.concat(m ? [m.g ? m.g.a50 : '', m.g ? m.g.a100 : '', m.c.total, m.c.pagar, m.c.alerta] : ['', '', '', '', '']);
-  });
+  var out = filas.slice(), visto = {};
   out.sort(function (a, b) { return tipoFila_(a) - tipoFila_(b) || String(a[2]).localeCompare(String(b[2])) || a[3] - b[3]; });
+  out = out.map(function (r) {
+    var m = mens[r[1]], primera = m && !visto[r[1]];
+    if (primera) visto[r[1]] = 1;
+    return r.concat(primera ? [m.g ? m.g.a50 : '', m.g ? m.g.a100 : '', m.c.total, m.c.pagar, m.c.alerta] : ['', '', '', '', '']);
+  });
 
   var cab = ['Servicio', 'Legajo', 'Apellido', 'Día', 'Turno', 'Entrada', 'Salida', 'Aut. Jefatura', 'Franja realizada', 'Hs 50%', 'Hs 100%', 'Estado', 'Condición', 'Fichadas del día', 'Horario en tarjeta reloj',
-             'Aut GRH 50%', 'Aut GRH 100%', 'Total real mes', 'A pagar (tope ' + cfg.tope + ')', 'Alerta mensual'];
+             'Aut GRH 50% (mes)', 'Aut GRH 100% (mes)', 'Total hecho (mes)', 'A pagar mes (tope ' + cfg.tope + ')', 'Alerta del mes'];
   var h = escribir_(SpreadsheetApp.openById(ID_BASE), 'LIQUIDACION', cab, out, 5, 9);
   pintarLiquidacion_(h, out, cab.length);
+  escribirResumen_(filas, mens, grh, cfg);
   var cambios = registrarCambios_(hojas, cfg);
   var aut = filas.filter(function (r) { return r[11] === 'AUTORIZADA'; }).length;
   avisar_('LIQUIDACION lista: ' + out.length + ' filas (' + aut + ' autorizadas) · ' + Object.keys(mens).length + ' agentes' + (cfg.fichadasAuto ? '\nFichadas: ' + cfg.fichadasAuto : '') + (grh ? '\nGRH: ' + Object.keys(grh).length + ' agentes de Enfermería con autorización leídos' : '\nSin Excel GRH en CONFIG: no hay consolidado de autorizaciones.') + (cambios ? '\n' + cambios : ''));
@@ -356,4 +359,30 @@ function registrarCambios_(hojas, cfg) {
     .setBackgrounds(filas.map(function (f) { return new Array(cab.length).fill(f[8] === 'SÍ' ? '#f8caca' : '#ffffff'); }));
   hc.autoResizeColumns(1, cab.length);
   return dif.length + ' cambio(s) en las extras desde la corrida anterior' + (pasados ? ', ' + pasados + ' en días YA PASADOS (ver CAMBIOS, en rojo)' : '') + '.';
+}
+
+function escribirResumen_(filas, mens, grh, cfg) {
+  var info = {}, pend = {};
+  filas.forEach(function (r) {
+    var i = info[r[1]] || (info[r[1]] = { ape: r[2], serv: {} });
+    i.serv[r[0]] = 1;
+    if (r[11] !== 'AUTORIZADA') pend[r[1]] = (pend[r[1]] || 0) + 1;
+  });
+  var legs = Object.keys(mens);
+  if (grh) Object.keys(grh).forEach(function (l) { if (!mens[l]) legs.push(l); });
+  var rows = legs.map(function (l) {
+    var m = mens[l], g = grh && grh[l], i = info[l] || { ape: g ? g.ape : '', serv: {} };
+    var c = m ? m.c : consolidarGRH_(0, 0, g ? g.a50 : 0, g ? g.a100 : 0, !!g, cfg.tope);
+    var al = m ? c.alerta : 'Pidió horas en GRH y no tiene extras autorizadas';
+    return [l, i.ape, Object.keys(i.serv).join(', '), m ? Math.round(m.r50 * 10) / 10 : 0, m ? Math.round(m.r100 * 10) / 10 : 0, c.total,
+            g ? g.a50 : '', g ? g.a100 : '', c.reconv || '', c.endoso || '', c.recorte || '', c.pagar, pend[l] || '', al];
+  }).sort(function (a, b) { return String(a[1]).localeCompare(String(b[1])); });
+  var cab = ['Legajo', 'Apellido', 'Servicio', 'Hs 50% hechas', 'Hs 100% hechas', 'Total hecho', 'Aut GRH 50%', 'Aut GRH 100%',
+             'Reconversión (h)', 'Endoso (h)', 'Excede tope (h)', 'A pagar (tope ' + cfg.tope + ')', 'Filas a revisar', 'Alerta'];
+  var h = escribir_(SpreadsheetApp.openById(ID_BASE), 'RESUMEN', cab, rows);
+  if (!rows.length) return;
+  var nc = cab.length;
+  h.getRange(2, 1, rows.length, nc).setBorder(true, true, true, true, true, true, '#c8c8c8', SpreadsheetApp.BorderStyle.SOLID)
+    .setBackgrounds(rows.map(function (r) { return new Array(nc).fill(colorAlerta_(r[13])); }));
+  h.getRange(2, 12, rows.length, 1).setFontWeight('bold');
 }

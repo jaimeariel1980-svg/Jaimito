@@ -101,8 +101,11 @@ const dif=run(`compararFotos_({"2 piso|1|5":"13/17","2 piso|1|6":"19/23"},{"2 pi
 assert.deepStrictEqual(dif.map(x=>x.tipo).sort(),['Agregada','Modificada','Quitada']);
 // 21) Excel GRH: por encabezado y con columnas fijas
 let g=run(`parsearGRH_([['LEGAJO','Apellido','AREA','x','x','x','x','HS 50%','HS 100%'],['62319','NIEVA','Enfermería','','','','',10,6],['1','X','Médicos','','','','',5,5]])`);
-assert.deepStrictEqual(g,{'62319':{a50:10,a100:6}});
+assert.deepStrictEqual(g,{'62319':{a50:10,a100:6,ape:'NIEVA'}});
 g=run(`parsearGRH_([['Planilla'],['NRO','Nombre','Área','HS 100','HS 50'],[]])`);assert.deepStrictEqual(g,{});
 g=run(`parsearGRH_([['División Enfermería'],['Legajo','Agente','Área','','','','','Hs 50 %','Hs 100 %'],[57696,'CANALES','ENFERMERIA','','','','',12,0]])`);
-assert.deepStrictEqual(g,{'57696':{a50:12,a100:0}});
+assert.deepStrictEqual(g,{'57696':{a50:12,a100:0,ape:'CANALES'}});
+// 22) consolidado mensual: Burgos 15,5 al 50 con GRH 10/6 => reconversión 5,5, sin endoso
+c=run('consolidarGRH_(15.5,0,10,6,true,30)');assert.deepStrictEqual([c.total,c.pagar,c.reconv,c.endoso,c.alerta],[15.5,15.5,5.5,0,'reconversión 5.5h']);
+assert.strictEqual(run("colorAlerta_('reconversión 5.5h')"),'#fff3b8');
 console.log('OK todos los tests');
