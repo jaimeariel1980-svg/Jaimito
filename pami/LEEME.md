@@ -59,3 +59,4 @@ Ejecutar `verificarInstalacion()`. Las páginas muestran el error real. Si la UR
 - Los turnos se leen de: el calendario principal de dotacionpp1 y de dotacionpp2, cualquier calendario de la lista de dotacionpp1 cuyo nombre diga "Técnica" o "Enfermería" (o "Competencias"), y los calendarios cargados en Ajustes `calendario_tecnica` (PAMI 1) y `calendario_tecnica_poli2` (PAMI 2): ID del calendario (Calendar → Configuración del calendario → "ID del calendario") o el mail de la cuenta.
 - Ese calendario tiene que estar compartido con dotacionpp1 con "Ver todos los detalles del evento".
 - En esos calendarios propios, todo turno cuenta como entrevista técnica aunque el título no lo diga.
+- Entrevista técnica por WhatsApp: PAMI 1 usa la plantilla `contacto-tecnica` (presencial, con `[DIRECCION]`); PAMI 2 usa `contacto-tecnica-poli2` (videollamada, sin dirección) y el link `link_agenda_tecnica_poli2`.
