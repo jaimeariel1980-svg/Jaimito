@@ -1053,11 +1053,17 @@ function avPendientes(){
     if(ep&&ct!==ep)p('contactar','➜','Falta contactar para '+ep);
     var md=String(c.contactado||'').match(/(\d{2})\/(\d{2})\/(\d{4})$/);
     if(ep&&ct===ep&&!c.cita&&md){var dd=Math.floor((now-new Date(+md[3],+md[2]-1,+md[1]).getTime())/864e5);if(dd>=2)p('norespondio','⏳','Contactado para '+ep+' hace '+dd+' días y todavía no agendó');}
-    if(/agendad/i.test(c.estado)&&!c.cita)p('sinfecha','📅','Figura agendado pero sin fecha de turno');
-    if(c.cita&&!citaHecha(c)){
-      var t=avTs(c.cita.ts);
-      if(t>=now-15*6e4&&t-now<=2*36e5)p('pronto','⏰',c.cita.tipo+' a las '+c.cita.ts.slice(11,16)+(t<now?' (ya empezó)':' (en '+Math.max(1,Math.round((t-now)/6e4))+' min)'),true);
-      else if(t<now-60*6e4)p('sincargar','📝',c.cita.tipo+' del '+avHora(c.cita.ts)+' ya pasó y falta cargar el formulario',true);
+    var ci=c.cita;
+    if(!ci&&/agendad/i.test(c.estado)){
+      var tp=/^Screening/i.test(c.estado)?'Screening':/^Competencias/i.test(c.estado)?'Competencias':'Entrevista técnica',
+          ev=String(c.entrevistas||'').split('\n').filter(function(l){return l.indexOf(tp)===0;})[0],mm=ev&&ev.match(/(\d{2})\/(\d{2})\/(\d{4}) (\d{2}:\d{2})/);
+      if(mm)ci={tipo:tp,ts:mm[3]+'-'+mm[2]+'-'+mm[1]+' '+mm[4]};
+      else p('sinfecha','📅','Figura agendado para '+tp+' pero no está en el calendario (se canceló o no se creó)');
+    }
+    if(ci&&!citaHecha(c,ci.tipo)){
+      var t=avTs(ci.ts);
+      if(t>=now-15*6e4&&t-now<=2*36e5)p('pronto','⏰',ci.tipo+' a las '+ci.ts.slice(11,16)+(t<now?' (ya empezó)':' (en '+Math.max(1,Math.round((t-now)/6e4))+' min)'),true);
+      else if(t<now-60*6e4)p('sincargar','📝',ci.tipo+' del '+avHora(ci.ts)+' ya pasó y falta cargar el formulario',true);
     }
     etapasFaltan(c).forEach(function(e){p('falta'+e,'⚠','Falta la etapa de '+e+' (no tiene nota cargada)');});
     if(etapaIdx(c)===3&&!c.fichaOk&&!c.notaP2)p('resumen','🩺','Falta el resumen del proceso para la entrevista técnica');
