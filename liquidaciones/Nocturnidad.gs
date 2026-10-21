@@ -36,7 +36,15 @@ function nocheAgenteDia_(a, d, cfg) {
   if (!t || minNoche_(t.ini, t.fin) <= 0) return null;
   var r = jornadaFichada_(a, d, cfg);
   r.noche = minNoche_(t.ini, t.fin);
-  if (r.estado === 'ok') r.min = r.rf > r.ri ? minNoche_(r.ri, r.rf) : 0;
+  if (r.estado !== 'ok') return r;
+  var ex = [[-1440, d - 1], [0, d], [1440, d + 1]].reduce(function (s, o) { return s.concat(parseFranjas(a.ext[o[1]]).map(function (w) { return { ini: w.ini + o[0], fin: w.fin + o[0] }; })); }, []);
+  var e0 = t.ini, e1 = t.fin;
+  ex.forEach(function (w) { if (w.ini < e0 && w.fin >= e0 - 30) e0 = w.ini; if (w.fin > e1 && w.ini <= e1 + 30) e1 = w.fin; });
+  r.distinto = r.m0 < e0 - 60 || r.m1 > e1 + 60;
+  if (r.distinto) {
+    r.min = restar_({ ini: r.m0, fin: r.m1 }, ex).reduce(function (s, p) { return s + minNoche_(p.ini, p.fin); }, 0);
+    r.ri = r.m0; r.rf = r.m1;
+  } else r.min = r.rf > r.ri ? minNoche_(r.ri, r.rf) : 0;
   return r;
 }
 
@@ -44,7 +52,7 @@ function procesarNocheAgente_(a, serv, cfg, filas, acum) {
   for (var d = 1; d <= _diasMes; d++) {
     var x = nocheAgenteDia_(a, d, cfg);
     if (!x || x.estado === 'sin') continue;
-    var g = acum[a.leg] || (acum[a.leg] = { ape: a.ape, serv: {}, min: 0, jor: 0, omis: [] });
+    var g = acum[a.leg] || (acum[a.leg] = { ape: a.ape, serv: {}, min: 0, jor: 0, omis: [], dist: [] });
     g.serv[serv] = 1;
     var turno = a.cam[d] || a.hab[d] || '-', franja = minToHora(x.t.ini) + ' a ' + minToHora(x.t.fin);
     if (x.estado === 'omision') {
@@ -52,8 +60,9 @@ function procesarNocheAgente_(a, serv, cfg, filas, acum) {
       filas.push([serv, a.leg, a.ape, d, turno, x.ent || '', x.sal || '', franja, '', 0, 'OMISIÓN: ' + x.nota + ' (no se paga)']);
     } else {
       g.min += x.min; g.jor++;
+      if (x.distinto) g.dist.push(d);
       filas.push([serv, a.leg, a.ape, d, turno, x.ent, x.sal, franja, x.min ? horaAbs_(x.ri) + ' a ' + horaAbs_(x.rf) : '', Math.round(x.min / 6) / 10,
-        x.min < x.noche ? 'OK · cumplió ' + Math.round(x.min / 6) / 10 + ' de ' + Math.round(x.noche / 6) / 10 + ' h nocturnas del turno' : 'OK']);
+        x.distinto ? 'HORARIO DISTINTO AL PROGRAMADO (sin cambio cargado): se pagan ' + Math.round(x.min / 6) / 10 + ' h nocturnas de lo fichado' : x.min < x.noche ? 'OK · cumplió ' + Math.round(x.min / 6) / 10 + ' de ' + Math.round(x.noche / 6) / 10 + ' h nocturnas del turno' : 'OK']);
     }
     agregarFichas_(filas, filas.length - 1, a.leg, d, cfg);
   }
@@ -69,19 +78,22 @@ function liquidarNocturnidad() {
   var hd = escribir_(ss, 'NOCTURNIDAD_DETALLE', cabD, filas, 5, 9);
   if (filas.length) {
     hd.getRange(2, 1, filas.length, cabD.length).setBorder(true, true, true, true, true, true, '#c8c8c8', SpreadsheetApp.BorderStyle.SOLID)
-      .setBackgrounds(filas.map(function (r) { return new Array(cabD.length).fill(/^OMISIÓN/.test(r[10]) ? '#fbd9d9' : '#ffffff'); }));
+      .setBackgrounds(filas.map(function (r) { return new Array(cabD.length).fill(/^OMISIÓN/.test(r[10]) ? '#fbd9d9' : /^HORARIO DISTINTO/.test(r[10]) ? '#fff3b8' : '#ffffff'); }));
     hd.getRange(2, 10, filas.length, 1).setNumberFormat('0.0');
   }
 
   var res = Object.keys(acum).map(function (l) {
     var g = acum[l], hs = Math.round(g.min / 6) / 10;
-    return [l, g.ape, Object.keys(g.serv).join(', '), hs, g.jor, g.omis.length, g.omis.join(', '), g.omis.length ? 'omisión en ' + g.omis.length + ' jornada(s): no se pagan' : 'OK'];
+    var al = [];
+    if (g.omis.length) al.push('omisión en ' + g.omis.length + ' jornada(s): no se pagan');
+    if (g.dist.length) al.push('horario distinto al programado los días ' + g.dist.join(', ') + ' (cargar el cambio en la planilla)');
+    return [l, g.ape, Object.keys(g.serv).join(', '), hs, g.jor, g.omis.length, g.omis.join(', '), al.join(' · ') || 'OK'];
   }).sort(function (a, b) { return String(a[1]).localeCompare(String(b[1])); });
   var cab = ['Legajo', 'Apellido', 'Servicio', 'Hs nocturnas a pagar', 'Jornadas pagadas', 'Omisiones', 'Días con omisión', 'Alerta'];
   var h = escribir_(ss, 'NOCTURNIDAD', cab, res);
   if (res.length) {
     h.getRange(2, 1, res.length, cab.length).setBorder(true, true, true, true, true, true, '#c8c8c8', SpreadsheetApp.BorderStyle.SOLID)
-      .setBackgrounds(res.map(function (r) { return new Array(cab.length).fill(r[5] ? '#fbd9d9' : '#ffffff'); }));
+      .setBackgrounds(res.map(function (r) { return new Array(cab.length).fill(r[5] ? '#fbd9d9' : /horario distinto/.test(r[7]) ? '#fff3b8' : '#ffffff'); }));
     h.getRange(2, 4, res.length, 1).setNumberFormat('0.0').setFontWeight('bold');
   }
   var tot = res.reduce(function (s, r) { return s + r[3]; }, 0), om = res.reduce(function (s, r) { return s + r[5]; }, 0);
