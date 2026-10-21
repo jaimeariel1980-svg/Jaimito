@@ -174,3 +174,9 @@ function minNoche_(a, b) {
   for (var m = a; m < b; m++) { var h = Math.floor((((m % 1440) + 1440) % 1440) / 60); if (h >= 21 || h < 6) n++; }
   return n;
 }
+
+var NO_LAB_FIJOS = { 2026: ['11-13', '12-7'] };
+
+function noLabFijos_(anio, mes) {
+  return (NO_LAB_FIJOS[anio] || []).filter(function (k) { return +k.split('-')[0] === mes; });
+}

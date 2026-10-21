@@ -152,4 +152,11 @@ assert.strictEqual(fer(F({}),ag({hab:{12:'6/13'}})).f.length,0);
 ctx._f=F({5:['5:58','13:03']});for(let i=1;i<=31;i++)ctx._f[i]=ctx._f[i]||{};ctx._a=ag({hab:{5:'6/13'}});
 let nl=run(`(function(){_fich=_f;_diasMes=31;_mes=10;_anio=2026;var out=[];procesarAgente_(_a,"GUARDIA",{},{anio:2026,mes:10,feriados:{},noLab:{"10-5":1}},out);return out;})()`);
 assert.strictEqual(nl.length,1);assert.deepStrictEqual([nl[0][11],nl[0][9],nl[0][10]],['AUTORIZADA',7,0]);assert.ok(/no laborable/.test(nl[0][12]));
+// 26) SADOFE: no cobra feriado; en día de semana lo fichado es extra (a revisar si no está declarada)
+q=fer(F({12:['5:55','18:05']}),ag({hab:{3:'6/18',4:'6/18',10:'6/18',11:'6/18',12:'6/18'}}));assert.strictEqual(q.f.length,0);
+ctx._f=F({7:['6:58','14:05']});for(let i=1;i<=31;i++)ctx._f[i]=ctx._f[i]||{};ctx._a=ag({hab:{3:'6/18',4:'6/18',10:'6/18',11:'6/18'}});
+let sd=run(`(function(){_fich=_f;_diasMes=31;var out=[];procesarAgente_(_a,"GUARDIA",{},{anio:2026,mes:10,feriados:{"10-12":1},noLab:{}},out);return out;})()`);
+assert.strictEqual(sd.length,1);assert.ok(/SADOFE/.test(sd[0][12]));assert.strictEqual(sd[0][9],7);
+// no laborables fijos 2026
+assert.deepStrictEqual(run('noLabFijos_(2026,11)'),['11-13']);assert.deepStrictEqual(run('noLabFijos_(2026,12)'),['12-7']);assert.deepStrictEqual(run('noLabFijos_(2026,10)'),[]);
 console.log('OK todos los tests');
