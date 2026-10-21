@@ -1,6 +1,7 @@
 function esFeriadoDia_(ctx, d) { return !!ctx.feriados[claveFecha_(new Date(ctx.anio, ctx.mes - 1, d))]; }
 
 function feriadoAgente_(a, serv, cfg, ctx, filas, acum) {
+  if (esSadofe_(a, ctx)) return;
   for (var F = 1; F <= _diasMes; F++) {
     if (!esFeriadoDia_(ctx, F)) continue;
     [[F - 1, 1440], [F, 0]].forEach(function (par) {
@@ -30,7 +31,7 @@ function feriadoAgente_(a, serv, cfg, ctx, filas, acum) {
 }
 
 function liquidarFeriados() {
-  var cfg = leerConfig_(), H = cargarHorarios_(cfg, true), ctx = H.ctx, filas = [], acum = {};
+  var cfg = leerConfig_(), H = cargarHorarios_(cfg), ctx = H.ctx, filas = [], acum = {};
   var dias = [];
   for (var F = 1; F <= _diasMes; F++) if (esFeriadoDia_(ctx, F)) dias.push(F);
   if (!dias.length) { avisar_('No hay feriados en ' + cfg.mes + '/' + cfg.anio + ' (ni FDO en la planilla ni en CONFIG feriados_extra).'); return; }

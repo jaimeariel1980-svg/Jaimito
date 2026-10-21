@@ -6,7 +6,7 @@ var CONFIG_DEF = [
   ['id_fichadas', '', 'Fichadas del reloj del mes (link o ID). Vacío = se busca solo en el Drive el archivo "Tarjeta Reloj por persona - <Mes> <Año>"'],
   ['id_grh', '', 'Expediente del mes (consolidado de horas autorizadas por GRH, link o ID). Vacío = no se controla lo autorizado'],
   ['feriados_extra', '', 'Días feriado que no estén marcados FDO en la planilla, separados por coma (ej: 12, 13)'],
-  ['no_laborables', '', 'Días no laborables, separados por coma: la jornada completa se paga como extra (50% hasta las 13, 100% después y de noche)'],
+  ['no_laborables', '', 'Días no laborables extra (ya están fijos 13/11 y 7/12 de 2026), separados por coma: la jornada completa se paga como extra (50% hasta las 13, 100% después y de noche)'],
   ['tope_extra', 30, 'Tope mensual de horas extra por agente (50% + 100%)'],
   ['hojas_excluidas', 'LISTAS, SUP, SUP SADOFE', 'Pestañas de la planilla que NO se liquidan (supervisores y listas)']
 ];

@@ -33,11 +33,15 @@ Cada corrida guarda una foto de las extras cargadas (pestaña oculta `_FOTO_EXTR
 - Feriado = día con FDO en la planilla o en CONFIG `feriados_extra`. Se pagan las **horas trabajadas** dentro del día feriado (0 a 24), monto fijo por hora (sin 50/100).
 - Con turno: horas fichadas dentro del turno (un 23/6 de la víspera suma de 0 a 6; uno del feriado, de 23 a 24). Lo que excede el turno es extra (si está autorizada) y se liquida en horas extra.
 - Con FDO/franco que vino igual: cobra feriado por las horas fichadas. Si además tiene extra cargada ese día → REVISAR (para no pagar dos veces).
-- SADOFE cobran. Supervisores incluidos (nocturnidad y feriados solo excluyen LISTAS).
+- **No cobran feriado**: supervisores (pestañas SUP / SUP SADOFE) ni SADOFE de línea (se detectan solos: todos sus turnos del mes son fin de semana/feriado, al menos 3). Nocturnidad sí incluye supervisores y SADOFE.
+- Las extras hechas en feriado se pagan siempre al 100%.
 - Omisión (falta entrada o salida) = no se paga. Salida: `FERIADOS` y `FERIADOS_DETALLE`.
 
-## Días no laborables (CONFIG `no_laborables`)
+## Días no laborables (fijos 2026: 13/11 y 7/12; se pueden sumar en CONFIG `no_laborables`)
 - En horas extra, la jornada completa fichada se paga como extra: 50% hasta las 13 y 100% después (y de noche).
 
+## SADOFE en día de semana
+- Si un SADOFE ficha un día hábil sin turno: lo fichado es extra. Con franja declarada → AUTORIZADA; sin franja → A REVISAR (extra NO autorizada).
+
 ## Pendiente
-SADOFE en día de semana como extra.
+—

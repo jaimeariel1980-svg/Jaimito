@@ -175,6 +175,7 @@ function horas_(tr) {
 
 function procesarAgente_(a, serv, cfg, ctx, filas) {
   _mes = ctx.mes; _anio = ctx.anio;
+  var sadofe = esSadofe_(a, ctx);
   var n0 = filas.length;
   for (var d = 1; d <= _diasMes; d++) {
     if (d > 1) agregarFichas_(filas, n0, a.leg, d - 1, cfg);
@@ -225,6 +226,14 @@ function procesarAgente_(a, serv, cfg, ctx, filas) {
 
     if (fer || esCola_(a, d)) continue;
     var t = turnoCompleto_(a, d);
+    if (!t && sadofe) {
+      var dw = new Date(ctx.anio, ctx.mes - 1, d).getDay(), js = dw > 0 && dw < 6 ? jornadaFichada_(a, d, cfg) : null;
+      if (!js || js.estado === 'sin') continue;
+      if (js.estado === 'omision') { filas.push(base.concat([js.ent || '', js.sal || '', '', '', 0, 0, 'A REVISAR', 'SADOFE en día de semana · omisión: ' + js.nota + ' (no se paga)'])); continue; }
+      var rs = calcularExtraTramos([[js.ri, js.rf]], cd);
+      if (rs.h50 + rs.h100 > 0) filas.push(base.concat([js.ent, js.sal, '', horaAbs_(js.ri) + ' a ' + horaAbs_(js.rf), rs.h50, rs.h100, 'A REVISAR', 'extra NO autorizada (no hay franja declarada) · SADOFE trabajó un día de semana']));
+      continue;
+    }
     if (!t) continue;
     var M = marcasAbs_(a.leg, d, t.ini - 240, t.fin + 480, cfg);
     if (M.length < 2 || M[0].m > t.ini + 180) continue;
@@ -242,6 +251,16 @@ function procesarAgente_(a, serv, cfg, ctx, filas) {
   agregarFichas_(filas, n0, a.leg, _diasMes, cfg);
 }
 
+function esSadofe_(a, ctx) {
+  var fin = 0, sem = 0;
+  for (var d = 1; d <= _diasMes; d++) {
+    if (!turnoDia_(a, d)) continue;
+    var f = new Date(ctx.anio, ctx.mes - 1, d), dow = f.getDay(), k = claveFecha_(f);
+    if (dow === 0 || dow === 6 || ctx.feriados[k] || ctx.noLab[k]) fin++; else sem++;
+  }
+  return fin >= 3 && sem === 0;
+}
+
 function cargarHorarios_(cfg, todos) {
   _fich = {}; _ssFich = null; _diasMes = new Date(cfg.anio, cfg.mes, 0).getDate();
   var excl = (todos ? ['LISTAS'] : cfg.excluidas).concat(['LIQUIDACION', 'NOCTURNIDAD', 'CONFIG']);
@@ -257,6 +276,7 @@ function cargarHorarios_(cfg, todos) {
   var ctx = { anio: cfg.anio, mes: cfg.mes, feriados: {}, noLab: {} };
   for (var f in fdo) ctx.feriados[cfg.mes + '-' + f] = 1;
   for (var n in cfg.noLab) ctx.noLab[cfg.mes + '-' + n] = 1;
+  noLabFijos_(cfg.anio, cfg.mes).forEach(function (k) { ctx.noLab[k] = 1; });
   _mes = cfg.mes; _anio = cfg.anio;
   return { hojas: hojas, ctx: ctx };
 }
