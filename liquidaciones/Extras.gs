@@ -232,8 +232,7 @@ function procesarAgente_(a, serv, cfg, ctx, filas) {
   agregarFichas_(filas, n0, a.leg, _diasMes, cfg);
 }
 
-function liquidarExtras() {
-  var cfg = leerConfig_();
+function cargarHorarios_(cfg) {
   _fich = {}; _ssFich = null; _diasMes = new Date(cfg.anio, cfg.mes, 0).getDate();
   var excl = cfg.excluidas.concat(['LIQUIDACION', 'NOCTURNIDAD', 'CONFIG']);
   var hojas = [], fdo = {};
@@ -248,6 +247,12 @@ function liquidarExtras() {
   var ctx = { anio: cfg.anio, mes: cfg.mes, feriados: {}, noLab: {} };
   for (var f in fdo) ctx.feriados[cfg.mes + '-' + f] = 1;
   for (var n in cfg.noLab) ctx.noLab[cfg.mes + '-' + n] = 1;
+  _mes = cfg.mes; _anio = cfg.anio;
+  return { hojas: hojas, ctx: ctx };
+}
+
+function liquidarExtras() {
+  var cfg = leerConfig_(), H = cargarHorarios_(cfg), hojas = H.hojas, ctx = H.ctx;
 
   var filas = [];
   hojas.forEach(function (h) { h.ags.forEach(function (a) { procesarAgente_(a, h.nombre, cfg, ctx, filas); }); });

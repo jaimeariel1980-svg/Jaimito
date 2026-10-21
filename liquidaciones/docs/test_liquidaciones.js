@@ -1,7 +1,7 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const dir=__dirname+'/..';
 const ctx={Logger:{log(){}},SpreadsheetApp:{}};vm.createContext(ctx);
-['Nucleo.gs','Config.gs','Extras.gs'].forEach(f=>vm.runInContext(fs.readFileSync(dir+'/'+f,'utf8'),ctx,{filename:f}));
+['Nucleo.gs','Config.gs','Extras.gs','Nocturnidad.gs'].forEach(f=>vm.runInContext(fs.readFileSync(dir+'/'+f,'utf8'),ctx,{filename:f}));
 const run=c=>{const v=vm.runInContext('JSON.stringify('+c+')',ctx);return v===undefined?undefined:JSON.parse(v)};
 const H=(s)=>{const m=s.split(':');return +m[0]*60+(+m[1]||0)};
 // parse
@@ -108,4 +108,30 @@ assert.deepStrictEqual(g,{'57696':{a50:12,a100:0,ape:'CANALES'}});
 // 22) consolidado mensual: Burgos 15,5 al 50 con GRH 10/6 => reconversión 5,5, sin endoso
 c=run('consolidarGRH_(15.5,0,10,6,true,30)');assert.deepStrictEqual([c.total,c.pagar,c.reconv,c.endoso,c.alerta],[15.5,15.5,5.5,0,'reconversión 5.5h']);
 assert.strictEqual(run("colorAlerta_('reconversión 5.5h')"),'#fff3b8');
+// 23) NOCTURNIDAD
+assert.strictEqual(run('minNoche_(1380,1800)'),420);assert.strictEqual(run('minNoche_(1080,1800)'),540);assert.strictEqual(run('minNoche_(360,780)'),0);
+const noc=(fich,a)=>{for(let i=1;i<=31;i++)fich[i]=fich[i]||{};ctx._f=fich;ctx._a=a;return run(`(function(){_fich=_f;_diasMes=31;_mes=10;_anio=2026;var f=[],g={};procesarNocheAgente_(_a,"GUARDIA",{},f,g);return {f:f,g:g};})()`)};
+// 23/6 entró 22:55 salió 6:03(+1) => 7 h (desde las 23)
+let n=noc(F({5:['22:55:10'],6:['6:03:20']}),ag({hab:{5:'23/6'}}));assert.deepStrictEqual([n.f[0][9],n.f[0][5],n.f[0][6]],[7,'22:55:10','6:03:20(+1)']);
+// 18/06 => 9 h nocturnas (21 a 6)
+n=noc(F({5:['17:55'],6:['6:05']}),ag({hab:{5:'18/06'}}));assert.strictEqual(n.f[0][9],9);
+// 17/24 => 3 h (21 a 24)
+n=noc(F({5:['16:58','0:02']}),ag({hab:{5:'17/24'}}));assert.strictEqual(n.f.length,1);
+n=noc(F({5:['16:58'],6:['0:02']}),ag({hab:{5:'17/24'}}));assert.strictEqual(n.f[0][9],3);
+// turno de día => nada
+assert.strictEqual(noc(F({5:['5:55','13:05']}),ag({hab:{5:'6/13'}})).f.length,0);
+// extra 19/23 antes del 23/6: la extra no cuenta, solo 23 a 6 => 7 h
+n=noc(F({5:['18:59'],6:['6:04']}),ag({hab:{5:'23/6'},ext:{5:'19/23'}}));assert.deepStrictEqual([n.f[0][9],n.f[0][5]],[7,'18:59']);
+// llegó tarde 0:30 => 5,5 h
+n=noc(F({6:['0:30','6:02']}),ag({hab:{5:'23/6'}}));assert.strictEqual(n.f[0][9],5.5);
+// omisión: solo entrada => no se paga
+n=noc(F({5:['22:55']}),ag({hab:{5:'23/6'}}));assert.ok(/OMISIÓN/.test(n.f[0][10]));assert.deepStrictEqual(n.g['1'].omis,[5]);assert.strictEqual(n.g['1'].min,0);
+// omisión: solo salida
+n=noc(F({6:['6:03']}),ag({hab:{5:'23/6'}}));assert.ok(/falta la entrada/.test(n.f[0][10]));
+// no vino (sin fichadas) => se ignora
+assert.strictEqual(noc(F({}),ag({hab:{5:'23/6'}})).f.length,0);
+// 18/24 + cola 0/6 => una sola jornada de 9 h
+n=noc(F({5:['17:58'],6:['6:02']}),ag({hab:{5:'18/24',6:'0/6'}}));assert.strictEqual(n.f.length,1);assert.strictEqual(n.f[0][9],9);
+// dos noches seguidas 23/6
+n=noc(F({5:['22:55'],6:['6:03','22:50'],7:['6:01']}),ag({hab:{5:'23/6',6:'23/6'}}));assert.deepStrictEqual(n.f.map(r=>r[9]),[7,7]);assert.strictEqual(n.g['1'].min,840);
 console.log('OK todos los tests');

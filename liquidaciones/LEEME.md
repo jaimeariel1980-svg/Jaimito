@@ -23,5 +23,11 @@ Las columnas del mes (GRH, total, a pagar, alerta) se llenan una sola vez por ag
 ## Cambios en las extras
 Cada corrida guarda una foto de las extras cargadas (pestaña oculta `_FOTO_EXTRAS`) y anota en `CAMBIOS` lo agregado, quitado o modificado desde la corrida anterior del mismo mes; en rojo los cambios sobre días ya pasados.
 
+## Nocturnidad (menú 3)
+- Por agente y día con turno (Habitual/Cambio, licencias vigentes no) que tenga horas entre 21 y 6: se cuentan los minutos **fichados dentro del turno** que caen en 21–06. Las extras no cuentan (se recorta al turno).
+- Hace falta entrada y salida: con una sola marca es **omisión** (no se paga, en rojo). Sin ninguna fichada = no vino (no aparece).
+- 18/24 + 0/6 del día siguiente = una sola jornada. La salida se busca en la pestaña del día siguiente.
+- Salida: `NOCTURNIDAD` (una fila por agente: hs a pagar, jornadas, omisiones) y `NOCTURNIDAD_DETALLE` (una fila por jornada con fichadas tal cual la tarjeta).
+
 ## Pendiente
-Nocturnidad, feriados, SADOFE en día de semana.
+Feriados (definir reglas), SADOFE en día de semana.
