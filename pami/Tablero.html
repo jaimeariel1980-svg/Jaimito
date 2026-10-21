@@ -114,7 +114,8 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 .btns.tb>.btn,.btns.tb .bg>.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:38px;padding:4px 8px;font-size:11.5px;line-height:1.2;text-align:center;box-sizing:border-box}
 .btns.tb .bl{display:flex;flex-direction:column;align-items:center;line-height:1.15}.btns.tb .bl small{font-size:9px;font-weight:600;text-transform:none;letter-spacing:0;opacity:.85}
 .btns.tb>.bg{display:flex}.btns.tb>.bg>.btn:first-child{flex:1;border-radius:4px 0 0 4px}.btns.tb>.bg>.ed{flex:none;width:36px;padding:0;border-radius:0 4px 4px 0;margin-left:1px;background:#D3E2F4}.btns.tb>.bg>.ed:hover{background:#BFD5EE}
-.tag.cx{position:relative;padding-right:22px}.tag .tdel{position:absolute;top:-7px;right:-7px;width:19px;height:19px;border-radius:50%;border:1.5px solid #B58900;background:#fff;color:#7A5200;font-size:11px;font-weight:800;line-height:15px;padding:0;cursor:pointer}.tag .tdel:hover{background:#D9534F;border-color:#D9534F;color:#fff}
+.tag.cx{position:relative;padding-right:22px}.tag .tdel{position:absolute;top:-7px;right:-7px;width:19px;height:19px;border-radius:50%;border:1.5px solid #B58900;background:#fff;color:#7A5200;font-size:11px;font-weight:800;line-height:15px;padding:0;cursor:pointer}.card{position:relative}.celim{position:absolute;top:-8px;right:-8px;width:22px;height:22px;border-radius:50%;border:1.5px solid #9AA7B8;background:#fff;color:#5D6B82;font-size:12px;font-weight:800;line-height:18px;padding:0;cursor:pointer;z-index:2}.celim:hover{background:#D9534F;border-color:#D9534F;color:#fff}
+.tag .tdel:hover{background:#D9534F;border-color:#D9534F;color:#fff}
 .kv .mini{border:0;background:none;color:#8A97AB;cursor:pointer;font-size:11px;padding:0 4px;margin-left:6px;font-weight:400}.kv .mini:hover{color:#D9534F}
 .alerta{margin-top:12px;padding:9px 12px;border-radius:4px;font-size:13px;font-weight:600}
 .alerta.a1{background:var(--tint);color:var(--azul);border-left:4px solid var(--celeste)}.alerta.a2{background:#FFF1D6;color:#7A5200;border-left:4px solid #F2B705}.alerta.a3{background:#FDE3E1;color:#8B2E2B;border-left:4px solid #D9534F}
@@ -134,7 +135,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Reclutamiento y Selección<small class="ver">v145</small></div>
+  <div class="prod">Reclutamiento y Selección<small class="ver">v146</small></div>
   <nav>
     <button class="ni" onclick="verAvisos()" style="position:relative"><span class="ic o">🔔</span><b>Avisos</b><span id="avCnt" style="display:none;position:absolute;top:2px;right:2px;background:#D9534F;color:#fff;border-radius:10px;font-size:11px;font-weight:800;padding:1px 6px"></span></button>
     <button class="ni" id="rf" onclick="actualizar()"><span class="ic g">↻</span><b>Actualizar</b></button>
@@ -424,6 +425,11 @@ function contactoTxt(t){
   return /^(screening|competencias|entrevista técnica)$/i.test(m[1])?'Contactado para '+m[1]+' · '+f+' · sin agendar':m[1]+' · '+f;
 }
 function prevTxt(p){return 'Búsqueda «'+tit(p.busq)+'» (postuló el '+p.fecha+'): '+p.estado+(p.motivo?' · '+p.motivo:'')+' · '+[['CV',p.cv],['Screening',p.scr],['Competencias',p.comp],['Técnica',p.tec]].filter(function(x){return x[1];}).map(function(x){return x[0]+' '+x[1];}).join(', ');}
+function elimCand(f){
+  var c=byFila(f);if(!c)return;
+  if(!confirm('¿Eliminar a '+c.nombre+'?\n\nSale del tablero, de la agenda y de los conteos. Queda una copia oculta en la planilla (se puede recuperar cambiando el Estado).'))return;
+  gs().withSuccessHandler(function(){FICHAS={};toast('Candidato eliminado');cargar();}).withFailureHandler(fer).eliminarCandidato(K,f,c.id);
+}
 function sugN(c){var x=String(c.polSug||'').split(' · ')[0];return D.policlinicos.indexOf(x)>-1?x:'';}
 function sugD(c){var m=String(c.polSug||'').split(' · ')[1];return m?m.replace(/\s*\(.*$/,''):'';}
 function card(c){
@@ -456,7 +462,7 @@ function card(c){
   if(c.proc&&c.proc!=='SI')mk+='<span class="tag w">'+(c.proc==='Pendiente'?'Analizando CV…':c.proc==='NoCV'?'¿No es un CV?':'Revisar CV')+'</span>';
   var bt=D.policlinicos.map(function(p,i){return '<button type="button" class="p'+(i+1)+(c.policlinico===p?' on':(!c.policlinico&&sugN(c)===p?' sug':''))+'" onclick="event.stopPropagation();asignarPol('+c.fila+','+i+')">'+esc(p.replace('Policlínico ',''))+(!c.policlinico&&sugN(c)===p?' ★':'')+'</button>';}).join('');
   return '<div class="card '+cls(n)+'" draggable="'+(RO?'false':'true')+'" data-fila="'+c.fila+'" ondragstart="event.dataTransfer.setData(\'text\',\''+c.fila+'\')" onclick="abrir('+c.fila+')">'+
-    '<div class="top"><b>'+esc(c.nombre)+'</b><div class="bdg" title="'+esc(notasTxt(c)||'Sin nota todavía')+'"><span class="badge '+cls(n)+'">'+(esc(n)||'—')+'</span><small>'+esc(indEt(c))+'</small></div></div>'+
+    (D.admin&&!RO?'<button class="celim" title="Eliminar candidato" onclick="event.stopPropagation();elimCand('+c.fila+')">✕</button>':'')+'<div class="top"><b>'+esc(c.nombre)+'</b><div class="bdg" title="'+esc(notasTxt(c)||'Sin nota todavía')+'"><span class="badge '+cls(n)+'">'+(esc(n)||'—')+'</span><small>'+esc(indEt(c))+'</small></div></div>'+
     (c.formacion||rcc?'<div class="fo2"><span class="fo">'+esc(c.formacion||'')+'</span>'+rcc+'</div>':'')+
     '<div class="ln"><i>📍</i><span>'+ub+' '+zona+'</span></div>'+
     (c.turno?'<div class="ln"><i>⏰</i><div class="tags">'+String(c.turno).split(';').map(function(t){return '<span class="tag tn">'+esc(t.trim())+'</span>';}).join('')+'</div></div>':'')+

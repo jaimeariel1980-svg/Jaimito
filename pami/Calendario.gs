@@ -195,7 +195,7 @@ function recordatoriosCitas_() {
   const ahora = new Date();
   const eventos = eventosCal_(ahora, new Date(ahora.getTime() + 35 * 60000));
   if (!eventos.length) return;
-  const filas = hoja_('Candidatos').getDataRange().getValues().slice(1).filter(r => r[COL.nombre - 1] && String(r[COL.estado - 1]).trim() !== ESTADO_DUP_);
+  const filas = hoja_('Candidatos').getDataRange().getValues().slice(1).filter(r => r[COL.nombre - 1] && !oculto_(r[COL.estado - 1]));
   const cache = CacheService.getScriptCache();
   eventos.forEach(e => {
     const min = Math.round((e.inicio.getTime() - ahora.getTime()) / 60000);
