@@ -210,7 +210,7 @@ function recordatoriosCitas_() {
     const tipo = TIPO_ETAPA[etapaDeTitulo_(e.titulo)] || 'Entrevista', nombre = r ? String(r[COL.nombre - 1]) : e.titulo;
     try {
       MailApp.sendEmail(dest, '⏰ En ' + Math.max(1, min) + ' min · ' + tipo + ' · ' + nombre,
-        'Entrevista en ' + Math.max(1, min) + ' minutos\n\n' + tipo + ': ' + nombre + '\nHorario: ' + fmt_(e.inicio, 'HH:mm') + ' (' + fmt_(e.inicio, 'dd/MM') + ')\nPoliclínico: ' + poli.replace('Policlínico ', 'PAMI ') + (r && r[COL.tel - 1] ? '\nTeléfono: ' + r[COL.tel - 1] : '') + '\n\nTurno de calendario: ' + e.titulo + '\n\nAtracción y Elección');
+        'Entrevista en ' + Math.max(1, min) + ' minutos\n\n' + tipo + ': ' + nombre + '\nHorario: ' + fmt_(e.inicio, 'HH:mm') + ' (' + fmt_(e.inicio, 'dd/MM') + ')\nPoliclínico: ' + poli.replace('Policlínico ', 'PAMI ') + (r && r[COL.tel - 1] ? '\nTeléfono: ' + r[COL.tel - 1] : '') + '\n\nTurno de calendario: ' + e.titulo + '\n\nReclutamiento y Selección');
       cache.put(clave, '1', 21600);
     } catch (err) { registrarError_('recordatorio de entrevista', err); }
   });

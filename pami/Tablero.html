@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <base target="_top">
-<title>Atracción y Elección · <?= sitio ?></title>
+<title>Reclutamiento y Selección · <?= sitio ?></title>
 <?!= incluir_('Estilos') ?>
 <?!= incluir_('FormScreening') ?>
 <?!= incluir_('FormCompetencias') ?>
@@ -134,7 +134,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v143</small></div>
+  <div class="prod">Reclutamiento y Selección<small class="ver">v144</small></div>
   <nav>
     <button class="ni" onclick="verAvisos()" style="position:relative"><span class="ic o">🔔</span><b>Avisos</b><span id="avCnt" style="display:none;position:absolute;top:2px;right:2px;background:#D9534F;color:#fff;border-radius:10px;font-size:11px;font-weight:800;padding:1px 6px"></span></button>
     <button class="ni" id="rf" onclick="actualizar()"><span class="ic g">↻</span><b>Actualizar</b></button>
@@ -167,7 +167,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <div id="kpi"></div>
 <div id="sindBar"></div>
 <div id="board"><div class="loading">Cargando…</div></div>
-<div id="login"><div class="lbox"><span class="lg"></span><h2>Atracción y Elección</h2><p id="lSub">Ingresá con tu nombre y tu PIN</p>
+<div id="login"><div class="lbox"><span class="lg"></span><h2>Reclutamiento y Selección</h2><p id="lSub">Ingresá con tu nombre y tu PIN</p>
   <input id="lU" type="text" maxlength="30" placeholder="Tu nombre y apellido" autocomplete="off">
   <input id="lP" type="password" inputmode="numeric" maxlength="6" placeholder="PIN (4 a 6 números)" autocomplete="off">
   <div id="lP2w" style="display:none"><input id="lP2" type="password" inputmode="numeric" maxlength="6" placeholder="Repetí el PIN" autocomplete="off"></div>
@@ -783,7 +783,7 @@ function pintarAgenda(){
 var NF={A:['#1E8E5A','#fff'],'B+':['#8BD3A8','#0F3A24'],B:['#F2B705','#4A3A00'],C:['#D9534F','#fff']};
 var INF_CSS='<style>*{box-sizing:border-box}body{margin:0;background:#EEF1F6;font-family:Montserrat,Arial,sans-serif;color:#192341}.pg{max-width:900px;margin:0 auto;background:#fff;padding:26px 30px}.bar{max-width:900px;margin:0 auto;padding:10px 30px;text-align:right}.bar button{background:#034EA2;color:#fff;border:0;border-radius:6px;padding:9px 16px;font-weight:700;cursor:pointer}.hd{background:#034EA2;color:#fff;border-radius:10px;padding:18px 22px;display:flex;justify-content:space-between;align-items:center;gap:14px}.hd small{letter-spacing:.14em;text-transform:uppercase;font-size:10px;color:#8FB6D8;font-weight:700}.hd h1{margin:4px 0 2px;font-size:26px}.hd .s{font-size:13px;color:#CFE3F5}.pill{background:#fff;color:#034EA2;border-radius:20px;padding:8px 14px;font-weight:800;font-size:14px;text-align:center;white-space:nowrap}.g{display:grid;gap:10px;margin-top:12px}.g4{grid-template-columns:repeat(4,1fr)}.g3{grid-template-columns:repeat(3,1fr)}.g2{grid-template-columns:repeat(2,1fr)}.cd{border:1.5px solid #DCE3EC;border-radius:10px;padding:12px 14px;break-inside:avoid}.cd small{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#5D6B82;font-weight:700}.cd b{display:block;font-size:15px;margin-top:3px}.nt{text-align:center;border-radius:10px;padding:12px 8px}.nt small{font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:700;opacity:.9}.nt .l{font-size:48px;font-weight:800;line-height:1.05}.nt .q{font-size:11px;font-weight:600;margin-top:2px}.nt.v{background:#EEF1F6;color:#9AA7B8}h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#00A3E0;margin:18px 0 6px}.br{display:flex;align-items:center;gap:10px;margin:5px 0;font-size:13px}.br .n{width:34%;font-weight:600}.br .t{flex:1;background:#EEF1F6;height:14px;border-radius:7px;overflow:hidden}.br .t i{display:block;height:100%;background:#00A3E0}.br .v{width:60px;text-align:right;font-weight:800}.tx{font-size:13px;line-height:1.5;white-space:pre-wrap}.big{font-size:40px;font-weight:800;line-height:1;color:#034EA2}.sm{font-size:12px;color:#5D6B82;margin-top:6px}.ft{margin-top:20px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#9AA7B8}@media print{body{background:#fff}.bar{display:none}.pg{padding:0;max-width:none}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style>';
 function abrirInforme(h){var w=window.open('','_blank');if(!w){alert('Permití las ventanas emergentes para ver el informe.');return;}w.document.open();w.document.write(h);w.document.close();}
-function infDoc(tit,cuerpo){return '<!doctype html><html><head><meta charset="utf-8"><title>'+esc(tit)+'</title><meta name="viewport" content="width=device-width,initial-scale=1">'+INF_CSS+'</head><body><div class="bar"><button onclick="window.print()">🖨 Imprimir / guardar PDF</button></div><div class="pg">'+cuerpo+'<div class="ft">Confidencial · Atracción y Elección</div></div></body></html>';}
+function infDoc(tit,cuerpo){return '<!doctype html><html><head><meta charset="utf-8"><title>'+esc(tit)+'</title><meta name="viewport" content="width=device-width,initial-scale=1">'+INF_CSS+'</head><body><div class="bar"><button onclick="window.print()">🖨 Imprimir / guardar PDF</button></div><div class="pg">'+cuerpo+'<div class="ft">Confidencial · Reclutamiento y Selección</div></div></body></html>';}
 function infLogo(){var e=document.querySelector('.hdr .lg'),bg=e?getComputedStyle(e).backgroundImage:'';return bg&&bg!=='none'?'<span style="display:inline-block;height:54px;aspect-ratio:216/71;flex-shrink:0;background:'+bg.replace(/"/g,"'")+' center/contain no-repeat;filter:brightness(0) invert(1)"></span>':'';}
 function infCard(l,v){return v?'<div class="cd"><small>'+esc(l)+'</small><b>'+esc(v)+'</b></div>':'';}
 function infFecha(){var d=D.ahora.slice(0,10).split('-');return d[2]+'/'+d[1]+'/'+d[0];}
@@ -1132,7 +1132,7 @@ function avPopups(L){
   if(L.length>6){var m=document.createElement('div');m.style.cssText='background:#034EA2;color:#fff;border-radius:8px;padding:8px 12px;font-size:13px;cursor:pointer';m.textContent='y '+(L.length-6)+' avisos más · ver todos';m.onclick=function(){m.remove();verAvisos();};cont.appendChild(m);}
   if(cont.children.length>1&&!document.getElementById('avCerrarTodos')){var ct=document.createElement('button');ct.id='avCerrarTodos';ct.textContent='Cerrar todos los avisos';ct.style.cssText='align-self:flex-end;background:#192341;color:#fff;border:0;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer';ct.onclick=function(){cont.innerHTML='';};cont.insertBefore(ct,cont.firstChild);}
   try{if(window.Notification&&Notification.permission==='granted'&&document.hidden)L.slice(0,3).forEach(function(x){new Notification(x.n+(x.po?' · '+x.po.t:''),{body:x.ic+' '+x.txt});});}catch(e){}
-  try{if(document.hidden)document.title='('+L.length+') Avisos · Atracción y Elección';}catch(e){}
+  try{if(document.hidden)document.title='('+L.length+') Avisos · Reclutamiento y Selección';}catch(e){}
 }
 function avPermiso(){
   var fin=function(){if(window.Notification&&Notification.permission==='granted'){verAvisos();return;}alert(Notification&&Notification.permission==='denied'?'El navegador tiene bloqueados los avisos para esta página. Tocá el candado de la barra de direcciones → Notificaciones → Permitir, y volvé a probar.':'Tu navegador no deja pedir el permiso desde esta pantalla (es una limitación de Google dentro de Apps Script). Los avisos emergentes y la campanita 🔔 siguen funcionando con la pestaña abierta.');};
@@ -1147,7 +1147,7 @@ function verAvisos(){
     '<div style="font-weight:800;color:#034EA2;margin:16px 0 6px">Novedades</div>'+(AV_NOV.length?AV_NOV.slice(0,40).map(function(x){return item(x,true);}).join(''):'<div class="txt" style="color:#5D6B82">Sin novedades todavía. Aparecen desde la próxima actualización: nuevos CV, contratados, descartados en la técnica, técnicas cargadas y documentación recibida.</div>')+'</div>';
   document.getElementById('modal').classList.add('show');
 }
-document.addEventListener('visibilitychange',function(){if(!document.hidden)try{document.title='Atracción y Elección';}catch(e){}});
+document.addEventListener('visibilitychange',function(){if(!document.hidden)try{document.title='Reclutamiento y Selección';}catch(e){}});
 </script>
 </body>
 </html>
