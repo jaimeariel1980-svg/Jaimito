@@ -135,7 +135,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Reclutamiento y Selección<small class="ver">v148</small></div>
+  <div class="prod">Reclutamiento y Selección<small class="ver">v149</small></div>
   <nav>
     <button class="ni" onclick="verAvisos()" style="position:relative"><span class="ic o">🔔</span><b>Avisos</b><span id="avCnt" style="display:none;position:absolute;top:2px;right:2px;background:#D9534F;color:#fff;border-radius:10px;font-size:11px;font-weight:800;padding:1px 6px"></span></button>
     <button class="ni" id="rf" onclick="actualizar()"><span class="ic g">↻</span><b>Actualizar</b></button>
@@ -490,6 +490,7 @@ function render(){
   document.getElementById('cnt').textContent=lista.length+(lista.length!==D.cands.length?' de '+D.cands.length:'')+' candidatos';
   var hay=KF||['fb','fq','fz','ff','fx','fe','fp','fr','fpo','fsi'].some(function(i){return document.getElementById(i).value;});document.getElementById('cf').textContent=hay?lista.length+' resultado'+(lista.length===1?'':'s'):'';
   if(!D.cands.length){document.getElementById('board').innerHTML='<div class="loading">Todavía no hay candidatos. Cuando llegue una postulación, un mail con CV o un archivo en la carpeta, aparece acá.</div>';return;}
+  try{if(!D.tecnica){AV_PEND=avPendientes().filter(avOk);avPintarCampana();}}catch(er){}
   var conocidos=[];D.estadosCol.forEach(function(x){conocidos=conocidos.concat(x[1]);});
   var h='';
   D.estadosCol.forEach(function(col,i){
@@ -1104,13 +1105,14 @@ function avTags(c){
   if(c.cita&&!citaHecha(c)&&avTs(c.cita.ts)<now-60*6e4)out.push('<span class="tag r">📝 Falta cargar '+esc(c.cita.tipo)+'</span>');
   return out;
 }
+function avOk(x){var id=x.id||String(x.k||'').split('|')[1];if(!id)return true;var c=D.cands.find(function(y){return y.id===id;});return !c||filtra(c);}
 function avRevisar(){
   if(!D||D.tecnica)return;
-  AV_PEND=avPendientes();
+  AV_PEND=avPendientes().filter(avOk);
   var nuevas=avNovedades(),hist=avLS('nov')||[];
-  if(nuevas.length){hist=nuevas.concat(hist).slice(0,80);avLS('nov',hist);avLS('sinver',(avLS('sinver')||0)+nuevas.length);}
+  if(nuevas.length){hist=nuevas.concat(hist).slice(0,80);avLS('nov',hist);avLS('sinver',(avLS('sinver')||0)+nuevas.filter(avOk).length);}
   AV_NOV=hist;
-  var avisados=avLS('urg')||{},hoy=D.ahora.slice(0,10),pop=nuevas.slice(),vistos=avLS('pseen'),act={};
+  var avisados=avLS('urg')||{},hoy=D.ahora.slice(0,10),pop=nuevas.filter(avOk),vistos=avLS('pseen'),act={};
   AV_PEND.forEach(function(x){
     act[x.k]=1;
     if(x.urg&&avisados[x.k]!==hoy){avisados[x.k]=hoy;pop.push(x);}
@@ -1148,12 +1150,13 @@ function avPermiso(){
   try{var r=Notification.requestPermission(fin);if(r&&r.then)r.then(fin,fin);}catch(e){fin();}
 }
 function verAvisos(){
+  AV_PEND=avPendientes().filter(avOk);var NOVF=AV_NOV.filter(avOk);
   avLS('sinver',0);avPintarCampana();
   var item=function(x,nov){return '<div onclick="cerrar();abrir('+x.f+')" style="display:flex;gap:10px;padding:9px 6px;border-top:1px solid var(--line);cursor:pointer'+(x.urg?';background:#FDECEC':'')+'"><span style="font-size:17px">'+x.ic+'</span><div style="flex:1"><b>'+esc(x.n)+'</b>'+avChip(x)+'<div style="font-size:13px;color:#3F4B66">'+esc(x.txt)+'</div></div>'+(nov?'<small style="color:#888;white-space:nowrap">'+esc(x.h)+'</small>':'')+'</div>';};
   var perm=window.Notification&&Notification.permission!=='granted'?'<button class="btn ghost" style="margin-bottom:10px" onclick="avPermiso()">🔔 Activar avisos del navegador (también con la pestaña minimizada)</button>':'';
   document.getElementById('mbox').innerHTML='<div class="hd"><div><h2>🔔 Avisos</h2><small>Se actualiza solo cada 3 minutos</small></div><button class="x" onclick="cerrar()">×</button></div><div class="bd">'+perm+
     '<div style="font-weight:800;color:#B02A25;margin:6px 0">Pendientes ('+AV_PEND.length+')</div>'+(AV_PEND.length?AV_PEND.map(function(x){return item(x,false);}).join(''):'<div class="txt" style="color:#5D6B82">No hay pendientes.</div>')+
-    '<div style="font-weight:800;color:#034EA2;margin:16px 0 6px">Novedades</div>'+(AV_NOV.length?AV_NOV.slice(0,40).map(function(x){return item(x,true);}).join(''):'<div class="txt" style="color:#5D6B82">Sin novedades todavía. Aparecen desde la próxima actualización: nuevos CV, contratados, descartados en la técnica, técnicas cargadas y documentación recibida.</div>')+'</div>';
+    '<div style="font-weight:800;color:#034EA2;margin:16px 0 6px">Novedades</div>'+(NOVF.length?NOVF.slice(0,40).map(function(x){return item(x,true);}).join(''):'<div class="txt" style="color:#5D6B82">Sin novedades todavía. Aparecen desde la próxima actualización: nuevos CV, contratados, descartados en la técnica, técnicas cargadas y documentación recibida.</div>')+'</div>';
   document.getElementById('modal').classList.add('show');
 }
 document.addEventListener('visibilitychange',function(){if(!document.hidden)try{document.title='Reclutamiento y Selección';}catch(e){}});
