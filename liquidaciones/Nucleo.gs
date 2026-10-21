@@ -168,3 +168,9 @@ function colorAlerta_(a) {
   if (/reconversión/.test(a)) return '#fff3b8';
   return '#ffffff';
 }
+
+function minNoche_(a, b) {
+  var n = 0;
+  for (var m = a; m < b; m++) { var h = Math.floor((((m % 1440) + 1440) % 1440) / 60); if (h >= 21 || h < 6) n++; }
+  return n;
+}

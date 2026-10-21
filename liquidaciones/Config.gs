@@ -15,6 +15,7 @@ function onOpen() {
   SpreadsheetApp.getUi().createMenu('Liquidaciones')
     .addItem('1) Preparar CONFIG', 'prepararConfig')
     .addItem('2) Liquidar horas extra', 'liquidarExtras')
+    .addItem('3) Liquidar nocturnidad', 'liquidarNocturnidad')
     .addToUi();
 }
 
