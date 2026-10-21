@@ -689,7 +689,7 @@ const RES_OPC=['Solo consulta','Visita','Le interesó','No le interesó','Hizo u
 let DOCLIST=[];
 const ET2EST={"Captación":"En venta","Publicadas":"En venta","Reserva":"Reservada","Vendida":"Vendida","Otras inmobiliarias":"Otra inmobiliaria","Baja":"Baja","Suspendida":"Baja"};
 let ALERT_INACT=[],ALERT_SINVIS=[];
-const DOC_OBLIG=["EPE Luz","Litoral Gas","Aguas Santafesinas","TGI Municipal","API Provincial","Escritura","Autorización de venta","DNI propietario"];
+const DOC_OBLIG=["EPE Luz","Aguas Santafesinas","TGI Municipal","API Provincial","Escritura","Autorización de venta","DNI propietario"];
 function reqDe(p){if(!p||!p.papeles)return[];const ks=Object.keys(p.papeles);if(Array.isArray(p.req))return ks.filter(d=>p.req.indexOf(d)>-1);const ex=p.docExtra||[],dp=/depart|dpto|depto/i.test(p.tipo||'');return ks.filter(d=>DOC_OBLIG.indexOf(d)>-1||(d==='Expensas'&&dp)||ex.indexOf(d)>-1);}
 function papPct(p){const ks=reqDe(p);if(!ks.length)return null;return Math.round(ks.filter(d=>!!p.papeles[d]).length/ks.length*100);}
 function papEstado(p){const x=papPct(p);if(x===null)return null;return x>=100?"ok":x>=50?"med":"no";}

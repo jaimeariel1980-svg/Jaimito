@@ -1758,7 +1758,7 @@ function _dirTexto_(calle,num,piso,depto,pasillo){
   if(/^(si|sí|x|true|1|yes)$/i.test(pa)) s+=' · Pasillo'; else if(pa && !/^(no|n|false|0|-|—|ninguno|ninguna)$/i.test(pa)) s+=' · Pasillo '+pa;
   return s;
 }
-var DOC_OBLIG_ = ['EPE Luz','Litoral Gas','Aguas Santafesinas','TGI Municipal','API Provincial','Escritura','Autorización de venta','DNI propietario'];
+var DOC_OBLIG_ = ['EPE Luz','Aguas Santafesinas','TGI Municipal','API Provincial','Escritura','Autorización de venta','DNI propietario'];
 function _docsReq_(papeles, tipo, extra){
   var dpto = /depart|dpto|depto/i.test(String(tipo||'')), ex = extra||[];
   return Object.keys(papeles||{}).filter(function(d){ return DOC_OBLIG_.indexOf(d)>-1 || (d==='Expensas' && dpto) || ex.indexOf(d)>-1; });
