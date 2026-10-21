@@ -134,6 +134,12 @@ assert.strictEqual(noc(F({}),ag({hab:{5:'23/6'}})).f.length,0);
 n=noc(F({5:['17:58'],6:['6:02']}),ag({hab:{5:'18/24',6:'0/6'}}));assert.strictEqual(n.f.length,1);assert.strictEqual(n.f[0][9],9);
 // dos noches seguidas 23/6
 n=noc(F({5:['22:55'],6:['6:03','22:50'],7:['6:01']}),ag({hab:{5:'23/6',6:'23/6'}}));assert.deepStrictEqual(n.f.map(r=>r[9]),[7,7]);assert.strictEqual(n.g['1'].min,840);
+// Butori: programado 23/6, fichó 17:00-0:00 sin cambio cargado => 3 h nocturnas (21-24) y aviso
+n=noc(F({5:['17:00:12'],6:['0:00:40']}),ag({hab:{5:'23/6'}}));assert.strictEqual(n.f[0][9],3);assert.ok(/HORARIO DISTINTO/.test(n.f[0][10]));assert.deepStrictEqual(n.g['1'].dist,[5]);
+// con el cambio cargado (17/24) no hay aviso
+n=noc(F({5:['17:00'],6:['0:00']}),ag({hab:{5:'23/6'},cam:{5:'17/24'}}));assert.strictEqual(n.f[0][9],3);assert.ok(!/DISTINTO/.test(n.f[0][10]));
+// extra declarada antes del turno: no es horario distinto
+n=noc(F({5:['18:59'],6:['6:04']}),ag({hab:{5:'23/6'},ext:{5:'19/23'}}));assert.ok(!/DISTINTO/.test(n.f[0][10]));
 // 24) FERIADOS (12/10 feriado)
 const fer=(fich,a)=>{for(let i=1;i<=31;i++)fich[i]=fich[i]||{};ctx._f=fich;ctx._a=a;return run(`(function(){_fich=_f;_diasMes=31;_mes=10;_anio=2026;var c={anio:2026,mes:10,feriados:{"10-12":1},noLab:{}},f=[],g={};feriadoAgente_(_a,"GUARDIA",{},c,f,g);return {f:f,g:g};})()`)};
 // 6/13 el feriado, fichó 5:55-13:05 => 7 h (dentro del turno)
