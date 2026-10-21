@@ -88,7 +88,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 .pol button.on{background:var(--azul);border-color:var(--azul);color:#fff}.pol button.on.p2{background:#00A3E0;border-color:#00A3E0}
 .tag.rec{background:#FFF4CC;color:#6B4E00;border:1px solid #F2B705;font-weight:800}.tag.zok{background:#D9F3E4;color:#14502F}.tag.zfu{background:#FDE3E1;color:#9B2C28}#board .card .fo{font-size:13px;color:var(--azul);font-weight:800;margin-top:3px}.alerta.rec{background:#FFF4CC;color:#6B4E00;border-left:4px solid #F2B705;font-size:14px;font-weight:800}
 .fp{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}.fp .pn{border:1px solid var(--line);border-radius:8px;padding:10px 12px;background:#fff}.fp .pn.full{grid-column:1/-1}.fp .pn h4{margin:0 0 8px;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--azul);font-weight:800}.kvg{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px 14px}.kv small{display:block;font-size:10px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px}.kv b{font-size:14px;font-weight:700;color:#1B2B45;word-break:break-word}@media(max-width:700px){.fp{grid-template-columns:1fr}}
-.fo2{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;margin:2px 0 4px}#board .card .fo2 .fo{margin:0}.rcc{flex-shrink:0;background:#FFF6D6;color:#7A5200;border:1px solid #E8C45A;border-radius:10px;padding:1px 9px;font-size:11px;font-weight:800;letter-spacing:.02em;white-space:nowrap}
+.fo2{display:flex;align-items:center;justify-content:space-between;gap:6px;flex-wrap:wrap;margin:2px 0 4px}#board .card .fo2 .fo{margin:0}.rcc.esp{background:#EEF1F6;color:#5D6B82;border-color:#CBD3DF}.rcc{flex-shrink:0;background:#FFF6D6;color:#7A5200;border:1px solid #E8C45A;border-radius:10px;padding:1px 9px;font-size:11px;font-weight:800;letter-spacing:.02em;white-space:nowrap}
 .ecs{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:9px}.ec{display:inline-flex;align-items:center;gap:6px;padding-bottom:3px;border-bottom:2px solid transparent}.ec small{display:inline;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;opacity:.7}.ec.on{border-bottom-color:#fff}.ec.on small{opacity:1}.hd .badge.vac{background:rgba(255,255,255,.2);color:#fff;min-width:26px;text-align:center}.hd .ec .badge{min-width:26px;text-align:center}
 .tag.tn{background:#E8E4FA;color:#3B2E8A;border:1px solid #9B8FE0;font-weight:800}.chk{display:flex;gap:8px;flex-wrap:wrap}.ck{display:flex;align-items:center;gap:7px;border:1.5px solid #AEBBD0;border-radius:6px;padding:7px 12px;font-size:13px;font-weight:700;cursor:pointer;background:#fff;color:#1B2B45}.ck input{width:auto;margin:0}.ck:has(input:checked){background:#EAF3FF;border-color:#034EA2;color:#034EA2}
 .tag.cita{background:#D9F3E4;color:#14502F;border:1px solid #1E8E5A;font-weight:800}.tag.ctc{background:#FFF1D6;color:#7A5200;border:1px solid #F2B705;font-weight:700}.tag.cita.hoy{background:#1E8E5A;color:#fff;border-color:#14764A}.tag.w{background:#FFF1D6;color:#8A5A00}.tag.g{background:#D9F3E4;color:#14502F}.tag.r{background:#FDE3E1;color:#9B2C28}.tag.gr{background:#ECEEF1;color:#4A5563;border:1px solid #AEB6C2;font-weight:700}.tag.gr .tdel{border-color:#7B8794;color:#4A5563}
@@ -135,7 +135,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Reclutamiento y Selección<small class="ver">v147</small></div>
+  <div class="prod">Reclutamiento y Selección<small class="ver">v148</small></div>
   <nav>
     <button class="ni" onclick="verAvisos()" style="position:relative"><span class="ic o">🔔</span><b>Avisos</b><span id="avCnt" style="display:none;position:absolute;top:2px;right:2px;background:#D9534F;color:#fff;border-radius:10px;font-size:11px;font-weight:800;padding:1px 6px"></span></button>
     <button class="ni" id="rf" onclick="actualizar()"><span class="ic g">↻</span><b>Actualizar</b></button>
@@ -161,7 +161,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
   <select id="fpo" style="display:none"><option value="">Todos los policlínicos</option><option value="-">Sin policlínico (sin confirmar)</option></select>
   <select id="fsi" style="display:none"><option value="">Todos los sindicatos</option><option value="*">Con sindicato (cualquiera)</option><option value="-">Sin sindicato</option></select>
   <input id="fp" type="number" placeholder="Pretensión hasta $" style="width:150px">
-  <select id="fr"><option value="">Todos</option><option value="1">★ Solo recomendados</option><option value="2">↩ Ya se postularon antes</option></select>
+  <select id="fr"><option value="">Todos</option><option value="1">★ Solo recomendados</option><option value="2">↩ Ya se postularon antes</option><option value="3">Espontáneos (sin recomendación)</option></select>
   <button class="btn ghost" style="padding:6px 12px;font-size:11px" onclick="limpiar()">Limpiar</button>
   <span id="cf" style="font-size:12px;font-weight:700;color:var(--azul)"></span>
 </div>
@@ -391,6 +391,7 @@ function filtra(c){
   var p=Number(g('fp'))||0;if(p){var n=pretNum(c.pret);if(!n||n>p)return false;}
   if(g('fr')==='1'&&!recom(c))return false;
   if(g('fr')==='2'&&!(c.previos&&c.previos.length))return false;
+  if(g('fr')==='3'&&recom(c))return false;
   if(!coincide(c.nombre+' '+c.dni+' '+c.email,g('fq')))return false;
   if(!coincide(c.zona+' '+c.loc+' '+c.domicilio+' '+c.req,g('fz')))return false;
   if(!coincide(c.formacion+' '+c.req+' '+c.resumen,g('ff')))return false;
@@ -458,7 +459,7 @@ function card(c){
   if(ef.length)mk+='<span class="tag r">⚠ Falta '+ef.join(' y ')+'</span>';
   else if(!RO&&etapaIdx(c)===3&&!c.fichaOk&&!c.notaP2)mk+='<span class="tag r">🩺 Falta resumen ET</span>';
   avTags(c).forEach(function(t){mk+=t;});
-  var rcc=rc?'<span class="rcc" title="'+esc((c.recTipo?'Recomendado por: ':'')+rc)+'">★ '+esc(recCorto(c))+'</span>':'';
+  var rcc=rc?'<span class="rcc" title="'+esc((c.recTipo?'Recomendado por: ':'')+rc)+'">★ '+esc(recCorto(c))+'</span>':'<span class="rcc esp" title="Se postuló solo, sin recomendación">Espontáneo</span>';
   if(c.proc&&c.proc!=='SI')mk+='<span class="tag w">'+(c.proc==='Pendiente'?'Analizando CV…':c.proc==='NoCV'?'¿No es un CV?':'Revisar CV')+'</span>';
   var bt=D.policlinicos.map(function(p,i){return '<button type="button" class="p'+(i+1)+(c.policlinico===p?' on':(!c.policlinico&&sugN(c)===p?' sug':''))+'" onclick="event.stopPropagation();asignarPol('+c.fila+','+i+')">'+esc(p.replace('Policlínico ',''))+(!c.policlinico&&sugN(c)===p?' ★':'')+'</button>';}).join('');
   return '<div class="card '+cls(n)+'" draggable="'+(RO?'false':'true')+'" data-fila="'+c.fila+'" ondragstart="event.dataTransfer.setData(\'text\',\''+c.fila+'\')" onclick="abrir('+c.fila+')">'+
