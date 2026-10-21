@@ -134,7 +134,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v139</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v140</small></div>
   <nav>
     <button class="ni" onclick="verAvisos()" style="position:relative"><span class="ic o">🔔</span><b>Avisos</b><span id="avCnt" style="display:none;position:absolute;top:2px;right:2px;background:#D9534F;color:#fff;border-radius:10px;font-size:11px;font-weight:800;padding:1px 6px"></span></button>
     <button class="ni" id="rf" onclick="actualizar()"><span class="ic g">↻</span><b>Actualizar</b></button>
@@ -1134,10 +1134,14 @@ function avPopups(L){
   try{if(window.Notification&&Notification.permission==='granted'&&document.hidden)L.slice(0,3).forEach(function(x){new Notification(x.n+(x.po?' · '+x.po.t:''),{body:x.ic+' '+x.txt});});}catch(e){}
   try{if(document.hidden)document.title='('+L.length+') Avisos · Atracción y Elección';}catch(e){}
 }
+function avPermiso(){
+  var fin=function(){if(window.Notification&&Notification.permission==='granted'){verAvisos();return;}alert(Notification&&Notification.permission==='denied'?'El navegador tiene bloqueados los avisos para esta página. Tocá el candado de la barra de direcciones → Notificaciones → Permitir, y volvé a probar.':'Tu navegador no deja pedir el permiso desde esta pantalla (es una limitación de Google dentro de Apps Script). Los avisos emergentes y la campanita 🔔 siguen funcionando con la pestaña abierta.');};
+  try{var r=Notification.requestPermission(fin);if(r&&r.then)r.then(fin,fin);}catch(e){fin();}
+}
 function verAvisos(){
   avLS('sinver',0);avPintarCampana();
   var item=function(x,nov){return '<div onclick="cerrar();abrir('+x.f+')" style="display:flex;gap:10px;padding:9px 6px;border-top:1px solid var(--line);cursor:pointer'+(x.urg?';background:#FDECEC':'')+'"><span style="font-size:17px">'+x.ic+'</span><div style="flex:1"><b>'+esc(x.n)+'</b>'+avChip(x)+'<div style="font-size:13px;color:#3F4B66">'+esc(x.txt)+'</div></div>'+(nov?'<small style="color:#888;white-space:nowrap">'+esc(x.h)+'</small>':'')+'</div>';};
-  var perm=window.Notification&&Notification.permission!=='granted'?'<button class="btn ghost" style="margin-bottom:10px" onclick="Notification.requestPermission().then(function(){verAvisos();})">🔔 Activar avisos del navegador (también con la pestaña minimizada)</button>':'';
+  var perm=window.Notification&&Notification.permission!=='granted'?'<button class="btn ghost" style="margin-bottom:10px" onclick="avPermiso()">🔔 Activar avisos del navegador (también con la pestaña minimizada)</button>':'';
   document.getElementById('mbox').innerHTML='<div class="hd"><div><h2>🔔 Avisos</h2><small>Se actualiza solo cada 3 minutos</small></div><button class="x" onclick="cerrar()">×</button></div><div class="bd">'+perm+
     '<div style="font-weight:800;color:#B02A25;margin:6px 0">Pendientes ('+AV_PEND.length+')</div>'+(AV_PEND.length?AV_PEND.map(function(x){return item(x,false);}).join(''):'<div class="txt" style="color:#5D6B82">No hay pendientes.</div>')+
     '<div style="font-weight:800;color:#034EA2;margin:16px 0 6px">Novedades</div>'+(AV_NOV.length?AV_NOV.slice(0,40).map(function(x){return item(x,true);}).join(''):'<div class="txt" style="color:#5D6B82">Sin novedades todavía. Aparecen desde la próxima actualización: nuevos CV, contratados, descartados en la técnica, técnicas cargadas y documentación recibida.</div>')+'</div>';
