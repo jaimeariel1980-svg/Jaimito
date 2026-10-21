@@ -189,6 +189,33 @@ function syncCalendario() {
   }
 }
 
+function recordatoriosCitas_() {
+  const aj = ajustes_();
+  if (!aj.recordatorio_poli1 && !aj.recordatorio_poli2) return;
+  const ahora = new Date();
+  const eventos = eventosCal_(ahora, new Date(ahora.getTime() + 35 * 60000));
+  if (!eventos.length) return;
+  const filas = hoja_('Candidatos').getDataRange().getValues().slice(1).filter(r => r[COL.nombre - 1] && String(r[COL.estado - 1]).trim() !== ESTADO_DUP_);
+  const cache = CacheService.getScriptCache();
+  eventos.forEach(e => {
+    const min = Math.round((e.inicio.getTime() - ahora.getTime()) / 60000);
+    if (min < 0 || min > 30) return;
+    const clave = 'rec_' + fmt_(e.inicio, 'yyyyMMddHHmm') + '_' + norm_(e.titulo).replace(/[^a-z0-9]/g, '').slice(0, 60);
+    if (cache.get(clave)) return;
+    const r = filas.find(x => eventoEsDe_(e, candDe_(x)));
+    const poli = (r && poliEf_(r)) || e.poli || '';
+    const n = /2$/.test(poli) ? '2' : /1$/.test(poli) ? '1' : '';
+    const dest = n ? String(aj['recordatorio_poli' + n] || '').trim() : '';
+    if (!dest) return;
+    const tipo = TIPO_ETAPA[etapaDeTitulo_(e.titulo)] || 'Entrevista', nombre = r ? String(r[COL.nombre - 1]) : e.titulo;
+    try {
+      MailApp.sendEmail(dest, '⏰ En ' + Math.max(1, min) + ' min · ' + tipo + ' · ' + nombre,
+        'Entrevista en ' + Math.max(1, min) + ' minutos\n\n' + tipo + ': ' + nombre + '\nHorario: ' + fmt_(e.inicio, 'HH:mm') + ' (' + fmt_(e.inicio, 'dd/MM') + ')\nPoliclínico: ' + poli.replace('Policlínico ', 'PAMI ') + (r && r[COL.tel - 1] ? '\nTeléfono: ' + r[COL.tel - 1] : '') + '\n\nTurno de calendario: ' + e.titulo + '\n\nAtracción y Elección');
+      cache.put(clave, '1', 21600);
+    } catch (err) { registrarError_('recordatorio de entrevista', err); }
+  });
+}
+
 function citasSinCandidato_(evs) {
   const ahora = new Date();
   const eventos = evs || eventosCal_(ahora, new Date(ahora.getTime() + 60 * 86400000));
