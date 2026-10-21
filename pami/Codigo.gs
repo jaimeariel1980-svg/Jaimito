@@ -120,7 +120,7 @@ function setup() {
   }
   SpreadsheetApp.flush();
   asegurarAjustes_([
-    ['nombre_cliente', 'PAMI'], ['firma', 'Equipo de Atracción y Elección'], ['asunto_mail', 'Proceso de selección · PAMI'],
+    ['nombre_cliente', 'PAMI'], ['firma', 'Equipo de Reclutamiento y Selección'], ['asunto_mail', 'Proceso de selección · PAMI'],
     ['umbral_a', '8.5'], ['umbral_bplus', '8'], ['umbral_b', '6.5'], ['dias_alerta', '7'],
     ['calendario', ''], ['url_web', ''], ['link_agenda', ''], ['link_agenda_screening', ''], ['link_agenda_competencias', ''], ['link_agenda_tecnica', ''], ['carpeta_informes', ''], ['calendario_poli2', 'dotacionpp2@gmail.com'], ['link_agenda_screening_poli2', ''], ['link_agenda_competencias_poli2', ''], ['link_agenda_pami2_poli2', ''],
     ['peso_cv', '10'], ['peso_screening', '15'], ['peso_competencias', '35'], ['peso_tecnica', '40'],
@@ -265,7 +265,7 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '47';
+const ESQUEMA = '48';
 
 function actualizarEsquema_() {
   try { asegurarColumnas_(); } catch (e) { registrarError_('asegurar columnas', e); }
@@ -311,9 +311,9 @@ function actualizarEsquema_() {
       });
       PropertiesService.getScriptProperties().setProperty('PLANT_SCR', '2');
       const todas = pl.getDataRange().getValues();
-      todas.forEach((f, i) => { if (i > 0 && /equipo de Selección/.test(String(f[2]))) pl.getRange(i + 1, 3).setValue(String(f[2]).replace(/equipo de Selección/g, 'equipo de Atracción y Elección')); });
+      todas.forEach((f, i) => { if (i > 0 && /equipo de Selección/.test(String(f[2]))) pl.getRange(i + 1, 3).setValue(String(f[2]).replace(/equipo de Selección/g, 'equipo de Reclutamiento y Selección')); });
       const aj = hoja_('Ajustes'), da = aj.getDataRange().getValues();
-      da.forEach((f, i) => { if (String(f[0]).trim() === 'firma' && String(f[1]).trim() === 'Equipo de Selección') aj.getRange(i + 1, 2).setValue('Equipo de Atracción y Elección'); });
+      da.forEach((f, i) => { if (String(f[0]).trim() === 'firma' && String(f[1]).trim() === 'Equipo de Selección') aj.getRange(i + 1, 2).setValue('Equipo de Reclutamiento y Selección'); });
     },
     () => {
       const n = Math.max(1, Math.min(1000, sh.getMaxRows() - 1));
@@ -523,6 +523,16 @@ function actualizarEsquema_() {
       if (props.getProperty('REC_MAILS')) return;
       asegurarAjustes_([['recordatorio_poli1', 'ajaime@pami.org.ar, matejo@pami.org.ar'], ['recordatorio_poli2', 'ecferrone@pami.org.ar, jmaguilera@pami.org.ar']]);
       props.setProperty('REC_MAILS', '1');
+    },
+    () => {
+      // Cambio de nombre: "Atracción y Elección" pasa a "Reclutamiento y Selección" en plantillas y ajustes (una sola vez).
+      if (props.getProperty('REN_RYS')) return;
+      const viejo = /Atracci[oó]n y Elecci[oó]n/g, nuevo = 'Reclutamiento y Selección';
+      const pl = hoja_('Plantillas');
+      pl.getDataRange().getValues().forEach((f, i) => { if (i > 0 && viejo.test(String(f[2]))) { viejo.lastIndex = 0; pl.getRange(i + 1, 3).setValue(String(f[2]).replace(viejo, nuevo)); } viejo.lastIndex = 0; });
+      const aj = hoja_('Ajustes');
+      aj.getDataRange().getValues().forEach((f, i) => { if (i > 0 && viejo.test(String(f[1]))) { viejo.lastIndex = 0; aj.getRange(i + 1, 2).setValue(String(f[1]).replace(viejo, nuevo)); } viejo.lastIndex = 0; });
+      props.setProperty('REN_RYS', '1');
     }
   ];
   let ok = true;
@@ -617,7 +627,7 @@ function doGet_(e) {
     const archivo = p.tablero ? 'Tablero' : (p.tipo === 'screening' ? 'Screening' : 'Competencias');
     const t = privado(archivo);
     if (!t) return HtmlService.createHtmlOutput('Acceso no autorizado');
-    return salida_(t, (p.tablero ? 'Atracción y Elección' : archivo) + ' · ' + t.sitio);
+    return salida_(t, (p.tablero ? 'Reclutamiento y Selección' : archivo) + ' · ' + t.sitio);
   }
   const t = HtmlService.createTemplateFromFile('Web');
   t.url = url; t.bid = seguro(p.b); t.sitio = aj.nombre_sitio || 'Empleos';
