@@ -422,7 +422,7 @@ function getTablero_(k) {
   const previos = previosPorFila_(d);
   for (let i = 1; i < d.length; i++) {
     const r = d[i];
-    if (!r[COL.nombre - 1] || String(r[COL.estado - 1]).trim() === ESTADO_DUP_) continue;
+    if (!r[COL.nombre - 1] || oculto_(r[COL.estado - 1])) continue;
     let resp = [];
     try { resp = JSON.parse(r[COL.resp - 1] || '[]'); } catch (e) { }
     const dt = v => v instanceof Date ? fmt_(v, 'dd/MM/yyyy') : String(v || '');
@@ -643,10 +643,11 @@ function armarComunicacion(k, fila, tipo) {
   return { ok: true, url: 'https://wa.me/' + telWa_(r[COL.tel - 1]) + '?text=' + encodeURIComponent(texto), texto: texto };
 }
 
-const ESTADO_DUP_ = 'Duplicado (oculto)';
+const ESTADO_DUP_ = 'Duplicado (oculto)', ESTADO_ELIM_ = 'Eliminado (oculto)';
+function oculto_(estado) { const e = String(estado || '').trim(); return e === ESTADO_DUP_ || e === ESTADO_ELIM_; }
 
 function previosPorFila_(d) {
-  const ks = d.map(r => (!r[COL.nombre - 1] || String(r[COL.estado - 1]).trim() === ESTADO_DUP_) ? null : claveDup_(r[COL.dni - 1], r[COL.email - 1], r[COL.tel - 1], r[COL.nombre - 1]));
+  const ks = d.map(r => (!r[COL.nombre - 1] || oculto_(r[COL.estado - 1])) ? null : claveDup_(r[COL.dni - 1], r[COL.email - 1], r[COL.tel - 1], r[COL.nombre - 1]));
   const mapa = {};
   ks.forEach((k, i) => { if (!k) return; [k.d && 'd' + k.d, k.e && 'e' + k.e, k.n && k.t && 'n' + k.n + '|' + k.t].filter(Boolean).forEach(q => (mapa[q] = mapa[q] || []).push(i)); });
   const out = {};
@@ -669,6 +670,24 @@ function claveDup_(dni, email, tel, nombre) {
   return { d: d.length >= 6 ? d : '', e: String(email || '').trim().toLowerCase(), t: t.length >= 8 ? t : '', n: n.length > 5 ? n : '' };
 }
 
+function eliminarCandidato(k, fila, id) {
+  soloAdmin_(k);
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const sh = hoja_('Candidatos');
+    fila = Number(fila);
+    if (!(fila >= 2 && fila <= sh.getLastRow())) throw new Error('Fila inválida');
+    const r = sh.getRange(fila, 1, 1, HEAD_CAND.length).getValues()[0];
+    if (String(r[COL.id - 1]) !== String(id)) throw new Error('La lista cambió: actualizá y probá de nuevo');
+    if (oculto_(r[COL.estado - 1])) return true;
+    sh.getRange(fila, COL.estado).setValue(ESTADO_ELIM_);
+    sh.getRange(fila, COL.mov).setValue(new Date());
+    registrarHistorial_(String(r[COL.id - 1]), String(r[COL.nombre - 1]), 'Candidato eliminado', 'Estaba en "' + r[COL.estado - 1] + '". Queda oculto en la planilla (para recuperarlo, cambiar el Estado).', 'tablero');
+    return true;
+  } finally { lock.releaseLock(); }
+}
+
 function limpiarDuplicados_() {
   const lock = LockService.getScriptLock();
   if (!lock.tryLock(5000)) return;
@@ -679,7 +698,7 @@ function limpiarDuplicados_() {
     let ocultos = 0;
     for (let i = 1; i < datos.length && ocultos < 20; i++) {
       const r = datos[i];
-      if (!r[COL.nombre - 1] || String(r[COL.estado - 1]).trim() === ESTADO_DUP_) continue;
+      if (!r[COL.nombre - 1] || oculto_(r[COL.estado - 1])) continue;
       const k = claveDup_(r[COL.dni - 1], r[COL.email - 1], r[COL.tel - 1], r[COL.nombre - 1]), busq = r[COL.busq - 1];
       const pos = vistos.findIndex(v => v.busq === busq && ((k.d && k.d === v.k.d) || (k.e && k.e === v.k.e) || (k.n && k.n === v.k.n && ((k.t && k.t === v.k.t) || !(k.d && v.k.d && k.d !== v.k.d)))));
       if (pos < 0) { vistos.push({ i: i, k: k, busq: busq }); continue; }
@@ -806,7 +825,7 @@ function getAgenda(k) {
   try { evs = eventosCal_(new Date(), new Date(Date.now() + 60 * 86400000)); } catch (e) { registrarError_('leer calendarios agenda', e); }
   for (let i = 1; i < d.length; i++) {
     const c = citaObj_(d[i][COL.cita - 1]);
-    if (!c || c.ts < desde || !d[i][COL.nombre - 1] || String(d[i][COL.estado - 1]).trim() === ESTADO_DUP_) continue;
+    if (!c || c.ts < desde || !d[i][COL.nombre - 1] || oculto_(d[i][COL.estado - 1])) continue;
     const cand = candDe_(d[i]);
     const ev = evs.find(e => fmt_(e.inicio, 'yyyy-MM-dd HH:mm') === c.ts && eventoEsDe_(e, cand));
     const origen = ev ? ev.poli : '', asignado = String(d[i][COL.policlinico - 1] || '').trim();
