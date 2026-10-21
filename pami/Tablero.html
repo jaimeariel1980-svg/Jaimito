@@ -134,7 +134,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Atracción y Elección<small class="ver">v142</small></div>
+  <div class="prod">Atracción y Elección<small class="ver">v143</small></div>
   <nav>
     <button class="ni" onclick="verAvisos()" style="position:relative"><span class="ic o">🔔</span><b>Avisos</b><span id="avCnt" style="display:none;position:absolute;top:2px;right:2px;background:#D9534F;color:#fff;border-radius:10px;font-size:11px;font-weight:800;padding:1px 6px"></span></button>
     <button class="ni" id="rf" onclick="actualizar()"><span class="ic g">↻</span><b>Actualizar</b></button>
@@ -1126,11 +1126,11 @@ function avPopups(L){
     var d=document.createElement('div');
     d.style.cssText='background:#fff;border-left:6px solid '+(x.urg?'#D9534F':'#034EA2')+';border-radius:8px;box-shadow:0 8px 28px rgba(0,0,0,.25);padding:12px 14px;font-size:14px;cursor:pointer';
     d.innerHTML='<div style="display:flex;gap:8px;align-items:flex-start"><span style="font-size:18px">'+x.ic+'</span><div style="flex:1"><b>'+esc(x.n)+'</b>'+(x.panel?'':avChip(x))+'<div style="color:#3F4B66">'+esc(x.txt)+'</div></div><span style="color:#999;font-size:18px" title="Cerrar">×</span></div>';
-    d.onclick=function(ev){d.remove();if(ev.target.title==='Cerrar')return;if(x.panel)verAvisos();else if(x.f)abrir(x.f);};
+    d.onclick=function(ev){d.remove();var bt=document.getElementById('avCerrarTodos');if(bt&&cont.children.length<=2)bt.remove();if(ev.target.title==='Cerrar')return;if(x.panel)verAvisos();else if(x.f)abrir(x.f);};
     cont.appendChild(d);
-    setTimeout(function(){if(d.parentNode)d.remove();},x.urg?60000:20000);
   });
-  if(L.length>6){var m=document.createElement('div');m.style.cssText='background:#034EA2;color:#fff;border-radius:8px;padding:8px 12px;font-size:13px;cursor:pointer';m.textContent='y '+(L.length-6)+' avisos más · ver todos';m.onclick=function(){m.remove();verAvisos();};cont.appendChild(m);setTimeout(function(){if(m.parentNode)m.remove();},20000);}
+  if(L.length>6){var m=document.createElement('div');m.style.cssText='background:#034EA2;color:#fff;border-radius:8px;padding:8px 12px;font-size:13px;cursor:pointer';m.textContent='y '+(L.length-6)+' avisos más · ver todos';m.onclick=function(){m.remove();verAvisos();};cont.appendChild(m);}
+  if(cont.children.length>1&&!document.getElementById('avCerrarTodos')){var ct=document.createElement('button');ct.id='avCerrarTodos';ct.textContent='Cerrar todos los avisos';ct.style.cssText='align-self:flex-end;background:#192341;color:#fff;border:0;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer';ct.onclick=function(){cont.innerHTML='';};cont.insertBefore(ct,cont.firstChild);}
   try{if(window.Notification&&Notification.permission==='granted'&&document.hidden)L.slice(0,3).forEach(function(x){new Notification(x.n+(x.po?' · '+x.po.t:''),{body:x.ic+' '+x.txt});});}catch(e){}
   try{if(document.hidden)document.title='('+L.length+') Avisos · Atracción y Elección';}catch(e){}
 }
