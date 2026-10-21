@@ -185,6 +185,16 @@ function procesarAgente_(a, serv, cfg, ctx, filas) {
     var nf = nombreFich_(a.leg, d, cfg);
     var ident = function () { return nf && !apellidoCoincide(a.ape, nf); };
 
+    if (ctx.noLab[claveFecha_(new Date(ctx.anio, ctx.mes - 1, d))]) {
+      var jn = jornadaFichada_(a, d, cfg);
+      if (!jn || jn.estado === 'sin') continue;
+      if (ident()) { filas.push(base.concat(['', '', '', '', '', '', 'REVISAR IDENTIDAD', 'fichada: ' + nf])); continue; }
+      if (jn.estado === 'omision') { filas.push(base.concat([jn.ent || '', jn.sal || '', 'día no laborable', '', 0, 0, 'A REVISAR', 'omisión: ' + jn.nota + ' (no se paga)'])); continue; }
+      var a0 = jn.m0 !== undefined ? jn.m0 : jn.ri, a1 = jn.m1 !== undefined ? jn.m1 : jn.rf, rl = calcularExtraTramos([[a0, a1]], cd);
+      filas.push(base.concat([jn.ent, jn.sal, 'día no laborable', horaAbs_(a0) + ' a ' + horaAbs_(a1), rl.h50, rl.h100, rl.h50 + rl.h100 > 0 ? 'AUTORIZADA' : 'A REVISAR', 'día no laborable: la jornada completa se paga como extra' + (rl.h50 + rl.h100 > 0 ? '' : ' · menos de 1 h')]));
+      continue;
+    }
+
     if (ext) {
       var fr = parseFranjas(ext);
       if (ident()) { filas.push(base.concat(['', '', ext, '', '', '', 'REVISAR IDENTIDAD', 'fichada: ' + nf])); continue; }
@@ -232,9 +242,9 @@ function procesarAgente_(a, serv, cfg, ctx, filas) {
   agregarFichas_(filas, n0, a.leg, _diasMes, cfg);
 }
 
-function cargarHorarios_(cfg) {
+function cargarHorarios_(cfg, todos) {
   _fich = {}; _ssFich = null; _diasMes = new Date(cfg.anio, cfg.mes, 0).getDate();
-  var excl = cfg.excluidas.concat(['LIQUIDACION', 'NOCTURNIDAD', 'CONFIG']);
+  var excl = (todos ? ['LISTAS'] : cfg.excluidas).concat(['LIQUIDACION', 'NOCTURNIDAD', 'CONFIG']);
   var hojas = [], fdo = {};
   SpreadsheetApp.openById(cfg.idHorarios).getSheets().forEach(function (h) {
     if (excl.indexOf(h.getName().trim().toUpperCase()) >= 0) return;

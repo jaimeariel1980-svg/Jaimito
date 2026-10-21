@@ -1,7 +1,7 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const dir=__dirname+'/..';
 const ctx={Logger:{log(){}},SpreadsheetApp:{}};vm.createContext(ctx);
-['Nucleo.gs','Config.gs','Extras.gs','Nocturnidad.gs'].forEach(f=>vm.runInContext(fs.readFileSync(dir+'/'+f,'utf8'),ctx,{filename:f}));
+['Nucleo.gs','Config.gs','Extras.gs','Nocturnidad.gs','Feriados.gs'].forEach(f=>vm.runInContext(fs.readFileSync(dir+'/'+f,'utf8'),ctx,{filename:f}));
 const run=c=>{const v=vm.runInContext('JSON.stringify('+c+')',ctx);return v===undefined?undefined:JSON.parse(v)};
 const H=(s)=>{const m=s.split(':');return +m[0]*60+(+m[1]||0)};
 // parse
@@ -134,4 +134,22 @@ assert.strictEqual(noc(F({}),ag({hab:{5:'23/6'}})).f.length,0);
 n=noc(F({5:['17:58'],6:['6:02']}),ag({hab:{5:'18/24',6:'0/6'}}));assert.strictEqual(n.f.length,1);assert.strictEqual(n.f[0][9],9);
 // dos noches seguidas 23/6
 n=noc(F({5:['22:55'],6:['6:03','22:50'],7:['6:01']}),ag({hab:{5:'23/6',6:'23/6'}}));assert.deepStrictEqual(n.f.map(r=>r[9]),[7,7]);assert.strictEqual(n.g['1'].min,840);
+// 24) FERIADOS (12/10 feriado)
+const fer=(fich,a)=>{for(let i=1;i<=31;i++)fich[i]=fich[i]||{};ctx._f=fich;ctx._a=a;return run(`(function(){_fich=_f;_diasMes=31;_mes=10;_anio=2026;var c={anio:2026,mes:10,feriados:{"10-12":1},noLab:{}},f=[],g={};feriadoAgente_(_a,"GUARDIA",{},c,f,g);return {f:f,g:g};})()`)};
+// 6/13 el feriado, fichó 5:55-13:05 => 7 h (dentro del turno)
+let q=fer(F({12:['5:55','13:05']}),ag({hab:{12:'6/13'}}));assert.deepStrictEqual([q.f.length,q.f[0][9]],[1,7]);
+// 6/13 + extra 13/17 el feriado: feriado = 7 h del turno (la extra va por extras)
+q=fer(F({12:['5:55','17:05']}),ag({hab:{12:'6/13'},ext:{12:'13/17'}}));assert.strictEqual(q.f[0][9],7);
+// 23/6 del 11 (víspera): cuenta 0 a 6 del 12 => 6 h; 23/6 del 12: 23 a 24 => 1 h
+q=fer(F({11:['22:55'],12:['6:03','22:50'],13:['6:01']}),ag({hab:{11:'23/6',12:'23/6'}}));assert.deepStrictEqual(q.f.map(r=>r[9]),[6,1]);assert.strictEqual(q.g['1'].min,420);
+// FDO pero vino a trabajar 7-14 => cobra feriado 7 h
+q=fer(F({12:['6:58','14:02']}),ag({hab:{12:'FDO'}}));assert.strictEqual(q.f[0][9],7.1);assert.ok(/franco por feriado/.test(q.f[0][10]));
+// omisión el feriado => no se paga
+q=fer(F({12:['5:55']}),ag({hab:{12:'6/13'}}));assert.ok(/OMISIÓN/.test(q.f[0][10]));assert.strictEqual(q.g['1'].min,0);
+// no vino => nada
+assert.strictEqual(fer(F({}),ag({hab:{12:'6/13'}})).f.length,0);
+// 25) NO LABORABLE (sábado 10/10 no; usamos lunes 5 como no laborable): jornada completa como extra 50/100
+ctx._f=F({5:['5:58','13:03']});for(let i=1;i<=31;i++)ctx._f[i]=ctx._f[i]||{};ctx._a=ag({hab:{5:'6/13'}});
+let nl=run(`(function(){_fich=_f;_diasMes=31;_mes=10;_anio=2026;var out=[];procesarAgente_(_a,"GUARDIA",{},{anio:2026,mes:10,feriados:{},noLab:{"10-5":1}},out);return out;})()`);
+assert.strictEqual(nl.length,1);assert.deepStrictEqual([nl[0][11],nl[0][9],nl[0][10]],['AUTORIZADA',7,0]);assert.ok(/no laborable/.test(nl[0][12]));
 console.log('OK todos los tests');

@@ -29,5 +29,15 @@ Cada corrida guarda una foto de las extras cargadas (pestaña oculta `_FOTO_EXTR
 - 18/24 + 0/6 del día siguiente = una sola jornada. La salida se busca en la pestaña del día siguiente.
 - Salida: `NOCTURNIDAD` (una fila por agente: hs a pagar, jornadas, omisiones) y `NOCTURNIDAD_DETALLE` (una fila por jornada con fichadas tal cual la tarjeta).
 
+## Feriados (menú 4)
+- Feriado = día con FDO en la planilla o en CONFIG `feriados_extra`. Se pagan las **horas trabajadas** dentro del día feriado (0 a 24), monto fijo por hora (sin 50/100).
+- Con turno: horas fichadas dentro del turno (un 23/6 de la víspera suma de 0 a 6; uno del feriado, de 23 a 24). Lo que excede el turno es extra (si está autorizada) y se liquida en horas extra.
+- Con FDO/franco que vino igual: cobra feriado por las horas fichadas. Si además tiene extra cargada ese día → REVISAR (para no pagar dos veces).
+- SADOFE cobran. Supervisores incluidos (nocturnidad y feriados solo excluyen LISTAS).
+- Omisión (falta entrada o salida) = no se paga. Salida: `FERIADOS` y `FERIADOS_DETALLE`.
+
+## Días no laborables (CONFIG `no_laborables`)
+- En horas extra, la jornada completa fichada se paga como extra: 50% hasta las 13 y 100% después (y de noche).
+
 ## Pendiente
-Feriados (definir reglas), SADOFE en día de semana.
+SADOFE en día de semana como extra.

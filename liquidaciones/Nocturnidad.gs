@@ -1,16 +1,21 @@
-function nocheAgenteDia_(a, d, cfg) {
+function jornadaFichada_(a, d, cfg) {
   if (esCola_(a, d)) return null;
-  var t = turnoCompleto_(a, d);
-  if (!t) return null;
-  var noche = minNoche_(t.ini, t.fin);
-  if (noche <= 0) return null;
-  var prevFin = -Infinity, prox = Infinity;
+  var t = turnoCompleto_(a, d), prevFin = -Infinity, prox = Infinity;
   bloquesTurno_(a, d).forEach(function (b) {
-    if (b.fin <= t.ini && b.fin > prevFin) prevFin = b.fin;
-    if (b.ini >= t.fin && b.ini < prox) prox = b.ini;
+    var ini = t ? t.ini : 0, fin = t ? t.fin : 1440;
+    if (b.fin <= ini && b.fin > prevFin) prevFin = b.fin;
+    if (b.ini >= fin && b.ini < prox) prox = b.ini;
   });
+  if (!t) {
+    var S = marcasAbs_(a.leg, d, Math.max(prevFin + 1, 0), Math.min(prox - 240, 2160), cfg).filter(function (x, i, arr) { return i > 0 || x.m < 1440; });
+    if (!S.length || S[0].m >= 1440) return null;
+    var rs = { t: null, ent: S[0].t };
+    if (S.length === 1) { rs.estado = 'omision'; rs.nota = 'falta la salida'; return rs; }
+    rs.estado = 'ok'; rs.sal = S[S.length - 1].t; rs.ri = S[0].m; rs.rf = S[S.length - 1].m;
+    return rs;
+  }
   var M = marcasAbs_(a.leg, d, Math.max(t.ini - 480, prevFin + 1), Math.min(t.fin + 480, prox - 240), cfg);
-  var r = { t: t, noche: noche };
+  var r = { t: t };
   if (!M.length) { r.estado = 'sin'; return r; }
   if (M[0].m > t.ini + 180) {
     var cerca = M.filter(function (x) { return x.m >= t.fin - 180; });
@@ -20,9 +25,18 @@ function nocheAgenteDia_(a, d, cfg) {
   }
   r.ent = M[0].t;
   if (M.length === 1) { r.estado = 'omision'; r.nota = 'falta la salida'; return r; }
-  r.sal = M[M.length - 1].t;
-  var ri = Math.max(t.ini, M[0].m), rf = Math.min(t.fin, M[M.length - 1].m);
-  r.estado = 'ok'; r.ri = ri; r.rf = rf; r.min = rf > ri ? minNoche_(ri, rf) : 0;
+  r.sal = M[M.length - 1].t; r.estado = 'ok'; r.m0 = M[0].m; r.m1 = M[M.length - 1].m;
+  r.ri = Math.max(t.ini, r.m0); r.rf = Math.min(t.fin, r.m1);
+  return r;
+}
+
+function nocheAgenteDia_(a, d, cfg) {
+  if (esCola_(a, d)) return null;
+  var t = turnoCompleto_(a, d);
+  if (!t || minNoche_(t.ini, t.fin) <= 0) return null;
+  var r = jornadaFichada_(a, d, cfg);
+  r.noche = minNoche_(t.ini, t.fin);
+  if (r.estado === 'ok') r.min = r.rf > r.ri ? minNoche_(r.ri, r.rf) : 0;
   return r;
 }
 
@@ -46,7 +60,7 @@ function procesarNocheAgente_(a, serv, cfg, filas, acum) {
 }
 
 function liquidarNocturnidad() {
-  var cfg = leerConfig_(), H = cargarHorarios_(cfg), filas = [], acum = {};
+  var cfg = leerConfig_(), H = cargarHorarios_(cfg, true), filas = [], acum = {};
   H.hojas.forEach(function (h) { h.ags.forEach(function (a) { procesarNocheAgente_(a, h.nombre, cfg, filas, acum); }); });
   filas.sort(function (a, b) { return String(a[2]).localeCompare(String(b[2])) || a[3] - b[3]; });
 
