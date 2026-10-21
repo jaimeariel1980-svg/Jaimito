@@ -265,7 +265,7 @@ NIVEL_AJUSTE:
   Logger.log('✅ Listo. Cuenta: ' + CUENTA + '. Ahora: 1) cargá OPENAI_API_KEY en Propiedades del script  2) Implementar como aplicación web  3) ejecutá mostrarLinks()');
 }
 
-const ESQUEMA = '46';
+const ESQUEMA = '47';
 
 function actualizarEsquema_() {
   try { asegurarColumnas_(); } catch (e) { registrarError_('asegurar columnas', e); }
@@ -517,6 +517,12 @@ function actualizarEsquema_() {
       const i = d.findIndex(r => String(r[0]).trim() === 'link_agenda_tecnica_poli2');
       if (i > 0) aj.getRange(i + 1, 2).setValue('https://calendar.app.google/cie6tVxd5hUDzsPQ9');
       props.setProperty('LINK_TEC_2B', '1');
+    },
+    () => {
+      // Mails de recordatorio 30 min antes de cada entrevista, por policlínico (una sola vez).
+      if (props.getProperty('REC_MAILS')) return;
+      asegurarAjustes_([['recordatorio_poli1', 'ajaime@pami.org.ar, matejo@pami.org.ar'], ['recordatorio_poli2', 'ecferrone@pami.org.ar, jmaguilera@pami.org.ar']]);
+      props.setProperty('REC_MAILS', '1');
     }
   ];
   let ok = true;
@@ -947,7 +953,7 @@ function ciclo() {
   const lock = LockService.getUserLock();
   if (!lock.tryLock(1000)) return;
   try {
-    [actualizarEsquema_, limpiarDuplicados_, procesarCorreos, procesarCarpeta, procesarPendientes, completarDomicilios_, verificarDomicilios_, sugerirPendientes_, syncCalendario, agendarCandidatosAuto_].forEach(fn => { try { fn(); } catch (e) { registrarError_(fn.name, e); } });
+    [actualizarEsquema_, limpiarDuplicados_, procesarCorreos, procesarCarpeta, procesarPendientes, completarDomicilios_, verificarDomicilios_, sugerirPendientes_, syncCalendario, recordatoriosCitas_, agendarCandidatosAuto_].forEach(fn => { try { fn(); } catch (e) { registrarError_(fn.name, e); } });
   } finally { lock.releaseLock(); }
 }
 
