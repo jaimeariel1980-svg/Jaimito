@@ -775,10 +775,21 @@ function textoCV_(url) {
     texto = DocumentApp.openById(tmp.id).getBody().getText();
     Drive.Files.remove(tmp.id);
   } catch (e) { registrarError_('extraer texto CV', e); }
-  if (texto.trim().length < 50) {
+  if (texto.trim().length < 50 || !textoLegible_(texto)) {
     try { texto = textoCvVision_(file) || texto; } catch (e) { registrarError_('leer CV con visión', e); }
   }
   return texto;
+}
+
+const PALABRAS_COMUNES_ = ['de', 'la', 'el', 'en', 'y', 'con', 'para', 'los', 'las', 'del', 'que', 'por', 'un', 'una', 'al', 'se', 'su', 'mi', 'me', 'sus', 'como', 'the', 'and', 'of', 'to', 'in', 'for'];
+
+// Un PDF puede traer una capa de texto rota (por ejemplo al girar un PDF escaneado): hay texto, pero es basura. Se detecta porque casi no tiene palabras comunes.
+function textoLegible_(t) {
+  const w = String(t).toLowerCase().match(/[a-záéíóúüñ]+/g) || [];
+  if (w.length < 20) return false;
+  let n = 0;
+  w.forEach(x => { if (PALABRAS_COMUNES_.indexOf(x) > -1) n++; });
+  return n / w.length >= 0.05;
 }
 
 function textoCvVision_(file) {
@@ -789,7 +800,7 @@ function textoCvVision_(file) {
     method: 'post', contentType: 'application/json', muteHttpExceptions: true,
     headers: { Authorization: 'Bearer ' + prop_('OPENAI_API_KEY') },
     payload: JSON.stringify({ model: 'gpt-4o-mini', messages: [{ role: 'user', content: [
-      { type: 'text', text: 'Transcribí textualmente todo el texto de este currículum, en orden de lectura, sin resumir ni agregar nada.' },
+      { type: 'text', text: 'Transcribí textualmente todo el texto de este currículum, en orden de lectura, sin resumir ni agregar nada. El PDF puede traer una capa de texto dañada o dada vuelta: ignorala y leé lo que se ve en la imagen de cada página.' },
       { type: 'file', file: { filename: 'cv.pdf', file_data: 'data:application/pdf;base64,' + Utilities.base64Encode(bytes) } }
     ] }] })
   });
