@@ -17,7 +17,7 @@ function jornadaFichada_(a, d, cfg) {
   var M = marcasAbs_(a.leg, d, Math.max(t.ini - 480, prevFin + 1), Math.min(t.fin + 480, prox - 240), cfg);
   var r = { t: t };
   if (!M.length) { r.estado = 'sin'; return r; }
-  if (M[0].m > t.ini + 180) {
+  if (M[0].m > t.ini + 180 && !(M.length > 1 && M[M.length - 1].m > t.fin + 60)) {
     var cerca = M.filter(function (x) { return x.m >= t.fin - 180; });
     if (!cerca.length) { r.estado = 'sin'; return r; }
     r.estado = 'omision'; r.sal = cerca[cerca.length - 1].t; r.nota = 'falta la entrada';
@@ -30,6 +30,15 @@ function jornadaFichada_(a, d, cfg) {
   return r;
 }
 
+function horasReales_(a, d, j) {
+  var t = j.t, ex = [[-1440, d - 1], [0, d], [1440, d + 1]].reduce(function (s, o) { return s.concat(parseFranjas(a.ext[o[1]]).map(function (w) { return { ini: w.ini + o[0], fin: w.fin + o[0] }; })); }, []);
+  if (!t) return { distinto: false, pz: [{ ini: j.ri, fin: j.rf }] };
+  var e0 = t.ini, e1 = t.fin;
+  ex.forEach(function (w) { if (w.ini < e0 && w.fin >= e0 - 30) e0 = w.ini; if (w.fin > e1 && w.ini <= e1 + 30) e1 = w.fin; });
+  if (j.m0 < e0 - 60 || j.m1 > e1 + 60) return { distinto: true, pz: restar_({ ini: j.m0, fin: j.m1 }, ex) };
+  return { distinto: false, pz: j.rf > j.ri ? [{ ini: j.ri, fin: j.rf }] : [] };
+}
+
 function nocheAgenteDia_(a, d, cfg) {
   if (esCola_(a, d)) return null;
   var t = turnoCompleto_(a, d);
@@ -37,14 +46,9 @@ function nocheAgenteDia_(a, d, cfg) {
   var r = jornadaFichada_(a, d, cfg);
   r.noche = minNoche_(t.ini, t.fin);
   if (r.estado !== 'ok') return r;
-  var ex = [[-1440, d - 1], [0, d], [1440, d + 1]].reduce(function (s, o) { return s.concat(parseFranjas(a.ext[o[1]]).map(function (w) { return { ini: w.ini + o[0], fin: w.fin + o[0] }; })); }, []);
-  var e0 = t.ini, e1 = t.fin;
-  ex.forEach(function (w) { if (w.ini < e0 && w.fin >= e0 - 30) e0 = w.ini; if (w.fin > e1 && w.ini <= e1 + 30) e1 = w.fin; });
-  r.distinto = r.m0 < e0 - 60 || r.m1 > e1 + 60;
-  if (r.distinto) {
-    r.min = restar_({ ini: r.m0, fin: r.m1 }, ex).reduce(function (s, p) { return s + minNoche_(p.ini, p.fin); }, 0);
-    r.ri = r.m0; r.rf = r.m1;
-  } else r.min = r.rf > r.ri ? minNoche_(r.ri, r.rf) : 0;
+  var hr = horasReales_(a, d, r);
+  r.distinto = hr.distinto; r.min = hr.pz.reduce(function (s, p) { return s + minNoche_(p.ini, p.fin); }, 0);
+  if (r.distinto) { r.ri = r.m0; r.rf = r.m1; }
   return r;
 }
 

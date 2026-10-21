@@ -144,6 +144,10 @@ n=noc(F({5:['18:59'],6:['6:04']}),ag({hab:{5:'23/6'},ext:{5:'19/23'}}));assert.o
 const fer=(fich,a)=>{for(let i=1;i<=31;i++)fich[i]=fich[i]||{};ctx._f=fich;ctx._a=a;return run(`(function(){_fich=_f;_diasMes=31;_mes=10;_anio=2026;var c={anio:2026,mes:10,feriados:{"10-12":1},noLab:{}},f=[],g={};feriadoAgente_(_a,"GUARDIA",{},c,f,g);return {f:f,g:g};})()`)};
 // 6/13 el feriado, fichó 5:55-13:05 => 7 h (dentro del turno)
 let q=fer(F({12:['5:55','13:05']}),ag({hab:{12:'6/13'}}));assert.deepStrictEqual([q.f.length,q.f[0][9]],[1,7]);
+// feriado: programado 6/13, fichó 13:00-20:00 sin cambio => 7 h y aviso amarillo
+q=fer(F({12:['13:00','20:00']}),ag({hab:{12:'6/13'}}));assert.strictEqual(q.f[0][9],7);assert.ok(/HORARIO DISTINTO/.test(q.f[0][10]));assert.deepStrictEqual(q.g['1'].dist,[12]);
+// omisión real de entrada sigue siendo omisión
+q=fer(F({12:['10:00','13:05']}),ag({hab:{12:'6/13'}}));assert.ok(/OMISIÓN/.test(q.f[0][10]));
 // 6/13 + extra 13/17 el feriado: feriado = 7 h del turno (la extra va por extras)
 q=fer(F({12:['5:55','17:05']}),ag({hab:{12:'6/13'},ext:{12:'13/17'}}));assert.strictEqual(q.f[0][9],7);
 // 23/6 del 11 (víspera): cuenta 0 a 6 del 12 => 6 h; 23/6 del 12: 23 a 24 => 1 h
