@@ -1848,7 +1848,7 @@ function visAbrir(per,vend){
   if(asc)l=l.slice().sort(function(a,b){return a.d<b.d?-1:a.d>b.d?1:(a.h<b.h?-1:a.h>b.h?1:0);});
   var hoyD=new Date(h+'T12:00:00'),man=new Date(hoyD);man.setDate(man.getDate()+1);var ayer=new Date(hoyD);ayer.setDate(ayer.getDate()-1);
   var html='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">'+CH.map(function(c){return '<button class="btn '+(c[0]===VIS_F.per?'p':'s')+'" style="padding:6px 11px;font-size:12.5px" onclick="visAbrir(\''+c[0]+'\')">'+c[1]+' <b>'+visFiltrar(c[0],VIS_F.v).length+'</b></button>';}).join('')+'</div>';
-  html+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap"><select onchange="visAbrir(null,this.value)" style="padding:6px 8px;border:1px solid var(--linea);border-radius:8px;font-size:13px"><option value="">Todos los vendedores</option>'+vs.map(function(n){return '<option '+(_vN(n)===_vN(VIS_F.v)?'selected':'')+' value="'+_vE(n)+'">'+_vE(n)+'</option>';}).join('')+'</select><button class="btn g" style="margin-left:auto" onclick="visExtForm()">➕ Visita con otra inmobiliaria</button></div>';
+  html+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap"><select onchange="visAbrir(null,this.value)" style="padding:6px 8px;border:1px solid var(--linea);border-radius:8px;font-size:13px"><option value="">Todos los vendedores</option>'+vs.map(function(n){return '<option '+(_vN(n)===_vN(VIS_F.v)?'selected':'')+' value="'+_vE(n)+'">'+_vE(n)+'</option>';}).join('')+'</select><span style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap"><button class="btn g" onclick="visPropia()">➕ Visita propia</button><button class="btn g" onclick="visExtForm()">➕ Otra inmobiliaria</button></span></div>';
   var last='';
   l.forEach(function(x){
     var d=new Date(x.d+'T12:00:00'),k=x.d===h?'Hoy':x.d===_vIso(man)?'Mañana':x.d===_vIso(ayer)?'Ayer':d.toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'});
@@ -1929,6 +1929,13 @@ function visCancelar(f){
   var m=prompt('Cancelar la visita: queda registrada como cancelada y se saca del Calendar.\nMotivo (opcional):','');
   if(m===null)return;
   google.script.run.withSuccessHandler(function(){VIS=[];VIS_F.per='canc';visLoad(function(){visAbrir();});novLoad();try{recargar();}catch(e){}}).withFailureHandler(function(e){alert('Error: '+(e&&e.message?e.message:e));}).cancelarVisita(+f,m.trim(),_yo());
+}
+function visPropia(q){
+  q=String(q||'').toLowerCase();
+  var l=DATA.filter(function(p){return p.origen!=='Otra inmobiliaria'&&p.etapa!=='Baja'&&p.etapa!=='Vendida'&&(!q||(p.dir+' '+p.id).toLowerCase().indexOf(q)>-1);}).slice(0,40);
+  document.getElementById('dlg').innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">🏠 Visita propia</div><div class="sub">Elegí la propiedad</div></div><div class="fb"><input id="vp_q" class="inp" placeholder="Buscar dirección o código" value="'+_vE(q)+'" oninput="visPropia(this.value)" style="margin-bottom:8px">'+(l.length?l.map(function(p){return '<div onclick="agendarForm(\''+p.id+'\')" style="padding:9px 10px;border-radius:10px;margin-bottom:4px;cursor:pointer;background:#f6f8fc"><b style="font-size:13.5px">'+_vE(p.dir)+'</b> <span style="font-size:12px;color:var(--gris)">· '+_vE(p.etapa||'')+'</span></div>';}).join(''):'<div style="color:var(--gris);padding:14px 0;text-align:center">Sin resultados.</div>')+'<div class="dlbtns"><button class="btn s" onclick="visAbrir()">Volver</button></div></div>';
+  document.getElementById('ov2').classList.add('on');
+  var i=document.getElementById('vp_q');if(i&&q){i.focus();i.setSelectionRange(q.length,q.length);}
 }
 function visExtForm(cod){
   var x=cod?VIS.filter(function(v){return v.id===cod;}).sort(function(a,b){return a.d<b.d?1:-1;})[0]:null,n=new Date(),loc=new Date(n.getTime()-n.getTimezoneOffset()*60000).toISOString().slice(0,16),hoy=_vIso(n),yo=_yo();
