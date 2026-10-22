@@ -404,7 +404,10 @@ function notasTxt(c){return [['CV',c.ajuste],['Screening',c.notaScr],['Competenc
 function dias(c){if(!c.mov)return 0;return Math.floor((new Date(D.ahora)-new Date(c.mov))/86400000);}
 function terminal(e){return /^Descartado|reserva|Contratado/i.test(e);}
 function citaHecha(c,tipo){var t=String(tipo||(c.cita&&c.cita.tipo)||'');return (/screening/i.test(t)&&!!c.notaScr)||(/competencias/i.test(t)&&!!c.notaComp)||(/t[eé]cnica/i.test(t)&&!!(c.notaP2||c.notaP1));}
-function etapaPend(c){var e=String(c.estado||'');return /^Avanza a screening/i.test(e)?'screening':/^Avanza a competencias/i.test(e)?'competencias':/^Avanza a entrevista técnica/i.test(e)?'entrevista técnica':'';}
+function etapaPend(c){var e=String(c.estado||'');if(/^Avanza a screening/i.test(e))return 'screening';if(/^Avanza a competencias/i.test(e))return 'competencias';if(/^Avanza a entrevista técnica/i.test(e))return 'entrevista técnica';
+  // En Análisis de CV, si ya se le mandó el contacto de screening, se muestra «Contactado para screening» (sin pedir que se contacte a todos).
+  var cv=D&&D.estadosCol&&D.estadosCol[0]?D.estadosCol[0][1]:['Nuevo','Contactado','Pendiente','Revisar'];
+  return (cv.indexOf(e.trim()||'Nuevo')>-1&&etqContacto(c)==='screening')?'screening':'';}
 function etqContacto(c){var m=String(c.contactado||'').match(/^(.*?)\s*·\s*\d{2}\/\d{2}\/\d{4}$/);return m?m[1].toLowerCase():'';}
 function citaTxt(c){
   if(!c.cita||citaHecha(c))return null;
