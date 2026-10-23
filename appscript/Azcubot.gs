@@ -2515,7 +2515,7 @@ function azcuOsEstado_(ids){
     if(c===404){ out.push('«'+id+'»: no existe en OneSignal'); return; }
     if(c!==200){ out.push('«'+id+'»: error '+c); return; }
     var subs = []; try{ subs = JSON.parse(r.getContentText()).subscriptions || []; }catch(e){}
-    out.push('«'+id+'»: '+(subs.length ? subs.length+' dispositivo(s): '+subs.map(function(x){ return String(x.type||'?')+(x.enabled===false ? ' DESACTIVADO' : ' activo')+(x.device_model ? ' ('+x.device_model+')' : ''); }).join(', ') : 'existe pero sin dispositivos'));
+    out.push('«'+id+'»: '+(subs.length ? subs.length+' dispositivo(s): '+subs.map(function(x){ return String(x.type||'?')+(x.enabled===false ? ' DESACTIVADO' : ' activo')+' [estado '+x.notification_types+']'+(x.device_model ? ' ('+x.device_model+(x.device_os ? ' '+x.device_os : '')+')' : ''); }).join(', ') : 'existe pero sin dispositivos'));
   });
   return out.join('\n');
 }
@@ -2524,7 +2524,18 @@ function probarAvisoTb(nombre){
   if(!dest.length) return {ok:false, msg:'No encontré a «'+nombre+'» activo en la pestaña Usuarios (o tiene los avisos en «Ninguno»).'};
   try{ est = '\n\nDispositivos en OneSignal:\n'+azcuOsEstado_(dest); }catch(e){ est = '\n\n(No pude consultar OneSignal: '+e.message+')'; }
   var r = String(azcuPush_('⏰ Prueba de aviso', 'Si ves esto, tus avisos funcionan.', AZCU_WEB, dest, true, true));
-  if(/"id"\s*:\s*"[^"]+"/.test(r)) return {ok:true, msg:'Aviso enviado. Debería llegarte en unos segundos.'+est};
+  var mid = /"id"\s*:\s*"([^"]+)"/.exec(r);
+  if(mid){
+    var res = '';
+    try{
+      Utilities.sleep(5000);
+      var k2 = String(PropertiesService.getScriptProperties().getProperty('ONESIGNAL_KEY')||'').replace(/\s/g,''), q = null;
+      ['Key ','Basic '].some(function(esq){ q = UrlFetchApp.fetch('https://api.onesignal.com/notifications/'+mid[1]+'?app_id='+AZCU_OS_APP, {headers:{Authorization:esq+k2}, muteHttpExceptions:true}); return q.getResponseCode()!==401; });
+      var n = JSON.parse(q.getContentText());
+      res = '\n\nEntrega según OneSignal: entregados '+(n.successful||0)+', fallidos '+(n.failed||0)+', con error '+(n.errored||0)+', pendientes '+(n.remaining||0)+(n.errors ? '\nErrores: '+JSON.stringify(n.errors).slice(0,200) : '');
+    }catch(e){ res = '\n\n(No pude leer el resultado de la entrega: '+e.message+')'; }
+    return {ok:true, msg:'Aviso enviado.'+res+est};
+  }
   if(/Nadie suscripto|Sin destinatarios/.test(r)) return {ok:false, msg:'No hay ningún dispositivo suscripto con el nombre «'+nombre+'».'+est};
   return {ok:false, msg:'Respuesta de OneSignal: '+r.slice(0,300)+est};
 }
