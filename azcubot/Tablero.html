@@ -117,6 +117,7 @@ td{padding:7px 8px;border-bottom:1px solid #f1f0ec;vertical-align:top}
 <div class="sep"></div><h1>Tablero de propiedades</h1><div class="dir">Mendoza 4873 · Rosario</div><button class="dlbtn" onclick="descargar()">Descargar</button></div>
 <div class="wrap">
   <div class="nav"><button class="tab on" id="tabR" onclick="ver('resumen')">Resumen</button><button class="tab" id="tabP" onclick="ver('props')">Propiedades</button><button class="tab" id="tabC" onclick="ver('cons')">💬 Consultas WhatsApp <span id="consBadge" style="display:none;background:#d1495b;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px"></span></button><button class="tab" id="tabV" onclick="visAbrir('prox')">🗓 Visitas</button><button class="tab" id="tabBajas" onclick="bajasAbrir()">📉 Bajas</button><button class="tab" id="tabPap" onclick="papAbrir()">🗑 Papelera</button><button class="tab" id="tabN" onclick="novAbrir()">🔔 Novedades <span id="novBadge" style="display:none;background:#d1495b;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px"></span></button><button class="tab" id="tabCfg" onclick="cfgAbrir()" title="Usuario, sonido y avisos">⚙️ Configuración</button><a class="tab" style="text-decoration:none;display:inline-block" href="#" onclick="irApp('');return false" rel="noopener">Ir a Precarga</a><a class="tab" style="text-decoration:none;display:inline-block" href="#" onclick="irApp('?app=procedimiento');return false" rel="noopener">Ir a Procedimiento de Ventas</a></div>
+  <div id="mnav"><button id="mn_resumen" onclick="ver('resumen')"><span class="ic">🏠</span>Resumen</button><button id="mn_props" onclick="ver('props')"><span class="ic">🏘️</span>Propiedades</button><button id="mn_vis" onclick="visAbrir('prox')"><span class="ic">🗓</span>Visitas</button><button id="mn_nov" onclick="novAbrir()"><span class="ic">🔔</span>Novedades<span class="mb" id="mn_novb"></span></button><button id="mn_mas" onclick="mnavMas()"><span class="ic">☰</span>Más</button></div>
   <div id="cons" style="display:none"></div>
   <div id="resumen">
   <div class="dash" id="dash"></div>
@@ -128,7 +129,7 @@ td{padding:7px 8px;border-bottom:1px solid #f1f0ec;vertical-align:top}
   </div>
   <div id="props" style="display:none">
   <div class="toolbar">
-    <input class="search" id="q" placeholder="Buscar dirección, ID, propietario…" oninput="render()">
+    <input class="search" id="q" placeholder="Buscar dirección, ID, propietario…" oninput="render()"><button id="filtbtn" class="btn s" onclick="this.parentNode.classList.toggle('abierta')">⚙ Filtros</button>
     <select id="ftipo" onchange="render()"><option value="">Todos los tipos</option></select>
     <select id="orden" onchange="render()"><option value="urg">Orden: más paradas primero</option><option value="fecha">Orden: + reciente</option><option value="precio">Orden: precio</option></select>
     <button id="editbtn" class="btn s" onclick="toggleEdit()">Modo edición: OFF</button>
@@ -3272,4 +3273,38 @@ if(!window.festejar) window.festejar = function(msg,tipo){
 })();
 </script>
 
+<style id="mobcss">
+#mnav,#filtbtn{display:none}
+@media(max-width:640px){
+  body{padding-bottom:calc(74px + env(safe-area-inset-bottom))}
+  body .nav{display:none}
+  #mnav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:900;background:#fff;border-top:1px solid var(--linea);padding:4px 4px calc(4px + env(safe-area-inset-bottom));box-shadow:0 -4px 16px rgba(15,27,51,.08)}
+  #mnav button{flex:1;border:0;background:none;padding:6px 2px;font:600 11px Inter,system-ui,sans-serif;color:var(--gris);display:flex;flex-direction:column;align-items:center;gap:2px;position:relative;cursor:pointer}
+  #mnav button .ic{font-size:21px;line-height:1}
+  #mnav button.on{color:var(--azul)}
+  #mnav .mb{position:absolute;top:0;left:calc(50% + 6px);background:#d1495b;color:#fff;border-radius:10px;padding:0 6px;font-size:10px;display:none}
+  .toolbar #ftipo,.toolbar #orden,.toolbar #editbtn{display:none}
+  .toolbar.abierta #ftipo,.toolbar.abierta #orden,.toolbar.abierta #editbtn{display:block}
+  .toolbar.abierta #editbtn{display:inline-block}
+  .toolbar .search{flex:1 1 55%;min-width:0}
+  #filtbtn{display:inline-block}
+  body .azb-fab{bottom:calc(84px + env(safe-area-inset-bottom))}
+}
+</style>
+<script>
+function mnavMas(){
+  var dl=document.getElementById('dlg');if(!dl)return;
+  var it=function(ic,tx,fn){return '<button class="btn s" style="width:100%;text-align:left;margin:4px 0;padding:12px 14px;font-size:15px" onclick="closeDL();'+fn+'">'+ic+' '+tx+'</button>';};
+  dl.innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">☰ Más</div></div><div class="fb">'
+   +it('💬','Consultas WhatsApp',"ver('cons')")+it('📉','Bajas','bajasAbrir()')+it('🗑','Papelera','papAbrir()')+it('⚙️','Configuración','cfgAbrir()')
+   +it('📝','Ir a Precarga',"irApp('')")+it('📘','Procedimiento de Ventas',"irApp('?app=procedimiento')")+'</div>';
+  document.getElementById('ov2').classList.add('on');
+}
+(function(){
+  var o=window.ver;
+  window.ver=function(x){var r=o.apply(this,arguments);try{['resumen','props'].forEach(function(k){var b=document.getElementById('mn_'+k);if(b)b.classList.toggle('on',k===x);});}catch(e){}return r;};
+  setTimeout(function(){var b=document.getElementById('mn_resumen');if(b)b.classList.add('on');},0);
+  setInterval(function(){var s=document.getElementById('novBadge'),d=document.getElementById('mn_novb');if(s&&d){d.textContent=s.textContent;d.style.display=(s.style.display==='none'||!s.textContent.trim())?'none':'inline-block';}},1500);
+})();
+</script>
 </body></html>
