@@ -58,7 +58,7 @@ Ariel y Ever no ven el código: **Claude sabe más de lo técnico y tiene que gu
 - Pestaña **Usuarios** (se crea con `azcuCrearUsuarios`; `azcuActualizarListaAvisos` actualiza las opciones): nombre y apellido, rol, activo, avisos (`Todos` / `Solo gerencia` / `Solo mis propiedades` / `Ninguno`) y nombres anteriores.
 - La app llama a `azcuQuien` al abrir y reemplaza el nombre viejo por el oficial; el identificador de OneSignal es el slug del nombre (`azcuSlug_`: minúsculas, sin tildes, `_`).
 - `azcuPush_` aplica la pestaña Usuarios; "Azcu terminó ✅" y los recordatorios ⏰ son personales y no se difunden.
-- Probar avisos: `azcuProbarGerentes` (muestra la respuesta cruda de OneSignal por nombre), `azcuProbarPush`, `azcuDiagnostico`.
+- Probar avisos: `azcuProbarVenta` (simula la venta: manda a una sola persona el aviso al equipo y la felicitación al vendedor, con 🧪 PRUEBA), `azcuProbarGerentes` (muestra la respuesta cruda de OneSignal por nombre), `azcuProbarPush`, `azcuDiagnostico`.
 - Cada persona tiene que instalar la PWA (iPhone: Safari → Compartir → Agregar a pantalla de inicio, iOS ≥ 16.4) y tocar "Activar avisos".
 
 ## Empleos PAMI (pami/)
