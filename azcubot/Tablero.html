@@ -2349,7 +2349,7 @@ google.script.run
   }
   var root = document.createElement('div'); root.className = 'azb'; document.body.appendChild(root);
   function save(){ ls('msgs', JSON.stringify(st.msgs.slice(-40))); }
-  function scroll(){ var b = root.querySelector('.azb-body'); if(b) b.scrollTop = b.scrollHeight; }
+  function scroll(){ var b = root.querySelector('.azb-body'); if(b) b.scrollTop = (st.menu || !st.msgs.length) && st.view==='chat' ? 0 : b.scrollHeight; }
   var TILE = {'Cargar una interacción':['home','Interacción'],'Agendar una visita':['cal','Agendar visita'],'Visita con otra inmobiliaria':['home','Visita externa'],'Registrar una propuesta':['chat','Propuesta'],'Mi agenda y recordatorios':['alarm','Agenda'],'Adjuntar fotos o documentos':['clip','Adjuntar'],'¿Qué alertas tengo hoy?':['bell','Alertas']};
   function icoFor(l){
     var x = [[/resumen|panel|dashboard/i,'chart'],[/documento/i,'doc'],[/encuesta/i,'star'],[/procedimiento/i,'book'],[/formulario|captaci/i,'edit'],[/tokko|ficha/i,'link'],[/buscar|contame/i,'search'],[/estado/i,'swap'],[/reporte/i,'mail'],[/recordatorio/i,'alarm'],[/agendar/i,'cal']], i;
