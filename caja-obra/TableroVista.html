@@ -199,7 +199,7 @@ function proximo(o){
 }
 function boxCerts(o,i){
   const p=o.params;
-  if(!p||!p.mensual)return`<div class="dcard"><h3>Certificados de honorarios</h3><div class="vacio">Falta configurar honorario, plazo y fecha base.</div><button class="cta" onclick="frmCertCfg(${i})">⚙ Configurar certificados</button></div>`;
+  if(!p||!p.mensual)return`<div class="dcard"><h3>Certificados de honorarios</h3><div class="vacio" style="padding:14px 4px">Esta obra todavía no tiene el honorario cargado. Se hace <b>una sola vez</b>: cuánto cobrás por mes, en cuántos meses y desde qué fecha. Si esta obra no cobra honorarios por certificado, no hace falta.</div><button class="cta" onclick="frmCertCfg(${i})">Cargar honorarios</button></div>`;
   return`<div class="dcard" style="${sty(i)}"><h3>Certificados de honorarios</h3>
   <div class="mid">${ring(o.certs.length/p.plazo,'emitidos',84)}<div class="sal"><small>Honorario mensual</small><b style="color:var(--p);font-size:24px">${money(p.mensual)}</b><small>${p.plazo} meses · base ${esc(p.base)}</small></div></div>
   ${dots(o)?`<div style="margin-top:12px">${dots(o)}</div>`:''}
@@ -399,7 +399,7 @@ function ctaCert(o,i){
   const c=proxCert(o);
   if(c.e==='listo')return`<button class="cta urg" onclick="event.stopPropagation();frmCert(${i})">📄 Emitir certificado de ${esc(c.mes)} <small>${c.dias>0?'listo hace '+c.dias+' d':'listo hoy'}</small></button>`;
   if(c.e==='prox')return`<button class="cta" onclick="event.stopPropagation();frmCert(${i})">📄 Emitir certificado de ${esc(c.mes)} <small>disponible desde ${fd(c.due)}</small></button>`;
-  if(c.e==='cfg')return`<button class="cta" onclick="event.stopPropagation();frmCertCfg(${i})">⚙ Configurar certificados</button>`;
+  if(c.e==='cfg')return`<div class="cst" onclick="event.stopPropagation();frmCertCfg(${i})">Sin honorarios cargados · <b style="color:var(--p)">Cargarlos (una sola vez)</b></div>`;
   return'<div class="cst">✔ Certificados completos</div>';
 }
 const pend=()=>D.obras.map((o,i)=>[o,i,proxCert(o)]).filter(x=>x[2].e==='listo');
@@ -472,7 +472,7 @@ function corregirCert(){
 }
 function frmCertCfg(i){
   const o=D.obras[i],p=o.params||{};F={i:i};
-  abrir(`<h2>Certificados · ${esc(o.obra)}</h2><div class="sub">Condiciones del contrato de honorarios.</div>
+  abrir(`<h2>Honorarios · ${esc(o.obra)}</h2><div class="sub">Se carga una sola vez. Después el tablero te avisa cada mes cuándo emitir el certificado.</div>
   <label class="fl">Honorario mensual ($)</label><input class="in big" id="cmen" inputmode="decimal" value="${p.mensual?fmtN(p.mensual):''}">
   <div class="row2"><div><label class="fl">Plazo (meses)</label><input class="in" id="cpla" inputmode="numeric" value="${p.plazo||''}"></div><div><label class="fl">Fecha base</label><input class="in" id="cbas" type="date" value="${p.baseISO||hoyISO()}"></div></div>
   <div class="sub" style="margin-top:8px">El primer certificado corresponde al mes siguiente a la fecha base.</div>
