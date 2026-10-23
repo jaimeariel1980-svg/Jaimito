@@ -6,7 +6,7 @@ function doGet(e){
   var pin=PropertiesService.getScriptProperties().getProperty('TABLERO_PIN');
   if(pin && String((e&&e.parameter&&e.parameter.clave)||'')!==pin)
     return HtmlService.createHtmlOutput('<meta name="viewport" content="width=device-width,initial-scale=1"><p style="font-family:sans-serif;padding:24px;color:#880E4F">Acceso restringido. Entrá con el link que incluye la clave.</p>');
-  var t=HtmlService.createTemplateFromFile('TableroObras');
+  var t=HtmlService.createTemplateFromFile('TableroVista');
   t.datos=JSON.stringify(tableroDatos_()).replace(/</g,'\\u003c');
   return t.evaluate().setTitle('NJ Arquitectura · Obras').addMetaTag('viewport','width=device-width, initial-scale=1');
 }
