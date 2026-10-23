@@ -114,7 +114,7 @@ td{padding:7px 8px;border-bottom:1px solid #f1f0ec;vertical-align:top}
 .inp:focus{outline:none;border-color:var(--acento)}
 </style></head><body>
 <div class="top"><div class="chip"><img id="logoimg" alt="Azcuénaga"></div>
-<div class="sep"></div><h1>Tablero de propiedades</h1><div class="dir">Mendoza 4873 · Rosario</div><button class="dlbtn" onclick="descargar()">Descargar</button></div>
+<div class="sep"></div><h1>Tablero de propiedades</h1><div class="dir">Mendoza 4873 · Rosario</div></div>
 <div class="wrap">
   <div class="nav"><button class="tab on" id="tabR" onclick="ver('resumen')">Resumen</button><button class="tab" id="tabP" onclick="ver('props')">Propiedades</button><button class="tab" id="tabC" onclick="ver('cons')">💬 Consultas WhatsApp <span id="consBadge" style="display:none;background:#d1495b;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px"></span></button><button class="tab" id="tabV" onclick="visAbrir('prox')">🗓 Visitas</button><button class="tab" id="tabBajas" onclick="bajasAbrir()">📉 Bajas</button><button class="tab" id="tabPap" onclick="papAbrir()">🗑 Papelera</button><button class="tab" id="tabN" onclick="novAbrir()">🔔 Novedades <span id="novBadge" style="display:none;background:#d1495b;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px"></span></button><button class="tab" id="tabCfg" onclick="cfgAbrir()" title="Usuario, sonido y avisos">⚙️ Configuración</button><a class="tab" style="text-decoration:none;display:inline-block" href="#" onclick="irApp('');return false" rel="noopener">Ir a Precarga</a><a class="tab" style="text-decoration:none;display:inline-block" href="#" onclick="irApp('?app=procedimiento');return false" rel="noopener">Ir a Procedimiento de Ventas</a></div>
   <div id="mnav"><button id="mn_resumen" onclick="ver('resumen')"><span class="ic">🏠</span>Resumen</button><button id="mn_props" onclick="ver('props')"><span class="ic">🏘️</span>Propiedades</button><button id="mn_vis" onclick="visAbrir('prox')"><span class="ic">🗓</span>Visitas</button><button id="mn_nov" onclick="novAbrir()"><span class="ic">🔔</span>Novedades<span class="mb" id="mn_novb"></span></button><button id="mn_mas" onclick="mnavMas()"><span class="ic">☰</span>Más</button></div>
@@ -1061,6 +1061,8 @@ function cfgAbrir(){
    +'<button id="sndbtn" class="btn s" '+bt+' onclick="toggleSonido()"></button>'
    +'<div style="font-size:12px;color:var(--gris);margin:0 0 6px 2px">Sonido corto al vender o reservar una propiedad.</div>'
    +'<button id="avibtn" class="btn s" '+bt+' style="display:none;width:100%;margin:3px 0;text-align:left" onclick="probarAviso()">🔔 Probar aviso</button>'
+   +sec('Datos','')
+   +'<button class="btn s" '+bt+' onclick="closeDL();descargar()">🖨 Descargar o imprimir el tablero (PDF)</button>'
    +'</div>';
   document.getElementById('ov2').classList.add('on');
   _pintaSnd();_pintaVend();
