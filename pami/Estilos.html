@@ -114,9 +114,12 @@ label.l{display:block;font-size:11px;font-weight:800;letter-spacing:.06em;text-t
   'msg("Grabando… dejá esta ventana abierta.");b.textContent="⏹ Terminar y completar el formulario";b.className="r";});',
   '}).catch(function(e){err("No se pudo empezar ("+(e&&e.name||"error")+"). Si cancelaste la selección, volvé a empezar. Si falla el micrófono, tocá el candado de la barra de direcciones y permitilo.");});};',
   '})();<\/script></body></html>'].join('\n');
-  window.EntrevistaRec={abrir:function(cb){
+  var WREC=null;
+  window.EntrevistaRec={activa:function(){try{return !!(WREC&&!WREC.closed);}catch(e){return false;}},abrir:function(cb){
     var w=window.open('','entrevista_pami','width=500,height=560');
     if(!w){alert('El navegador bloqueó la ventanita de grabación. Permití las ventanas emergentes para esta página y probá de nuevo.');return false;}
+    if(window.EntrevistaRec.activa()&&WREC===w&&!confirm('Ya hay una grabación en curso en esa ventanita. Si seguís, se pierde. ¿Empezar de nuevo igual?')){w.focus();return false;}
+    WREC=w;
     var id=String(Date.now());ENT[id]=cb;w.document.open();w.document.write(POP2.replace('__ID__',id));w.document.close();return true;}};
   window.__entrevistaLista=function(id,partes){var cb=ENT[id];if(!cb)return;delete ENT[id];cb(partes);};
 })();

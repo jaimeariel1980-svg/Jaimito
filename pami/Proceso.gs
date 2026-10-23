@@ -971,7 +971,33 @@ function transcribirAudio_(k, b64, mime) {
   let parsed = JSON.parse(pedir('gpt-4o-mini-transcribe').getContentText());
   if (parsed.error) parsed = JSON.parse(pedir('whisper-1').getContentText());
   if (parsed.error) throw new Error('No pude transcribir: ' + parsed.error.message);
-  return String(parsed.text || '').trim();
+  const texto = String(parsed.text || '').trim();
+  guardarTransParcial_(texto);
+  return texto;
+}
+
+// Respaldo temporal (6 h) de lo transcripto y analizado, por si la pantalla se cierra o se guarda antes de tiempo. No se guarda el audio.
+function claveTransUsuario_() { return 'tr_' + hash_(String(QUIEN_ || 'x')); }
+function guardarTransParcial_(t) {
+  try {
+    const c = CacheService.getUserCache(), k = claveTransUsuario_();
+    let a = [];
+    try { a = JSON.parse(c.get(k) || '[]'); } catch (e) { }
+    a.push(String(t || ''));
+    let j = JSON.stringify(a);
+    while (j.length > 60000 && a.length > 1) { a.shift(); j = JSON.stringify(a); }
+    c.put(k, j, 21600);
+  } catch (e) { registrarError_('respaldo de transcripción', e); }
+}
+
+function recuperarEntrevista(k, id) {
+  escritor_(k);
+  if (ROL_ === 'Técnica') throw new Error('No autorizado');
+  const c = CacheService.getUserCache();
+  let an = null, parcial = [];
+  try { an = JSON.parse(c.get('an_' + String(id)) || 'null'); } catch (e) { }
+  try { parcial = JSON.parse(c.get(claveTransUsuario_()) || '[]'); } catch (e) { }
+  return JSON.stringify({ analisis: an, parcial: parcial.join(' ') });
 }
 
 function hash_(t) { let h = 5381; const x = String(t); for (let i = 0; i < x.length; i++) h = ((h << 5) + h + x.charCodeAt(i)) | 0; return String(h); }
@@ -1088,6 +1114,7 @@ function analizarEntrevista_(k, id, texto) {
   if (ROL_ === 'Técnica') throw new Error('No autorizado');
   texto = String(texto || '').trim();
   if (texto.length < 300) throw new Error('La transcripción es muy corta para analizarla');
+  try { CacheService.getUserCache().put('an_' + String(id), JSON.stringify({ texto: texto.slice(0, 60000), resultado: null }), 21600); } catch (e) { }
   const d = getDatosForm(k, id);
   const comps = d.comps.map(c => ({ id: c.id, nombre: c.nombre, descripcion: c.descripcion }));
   const sistema = 'Sos un analista de selección de personal. Te paso la transcripción de una entrevista por competencias para ' + (d.hero.puesto || 'enfermería') + '. La transcripción no indica quién habla: inferilo por el contexto (las preguntas son del entrevistador, las respuestas del candidato). Evaluá SOLO con lo que dijo el candidato.\n' +
@@ -1107,5 +1134,6 @@ function analizarEntrevista_(k, id, texto) {
   const out = { comps: [], fortalezas: txt(r.fortalezas, 1500), areas: txt(r.areas, 1500), recomendacion: txt(r.recomendacion, 1500), meta: {} };
   (r.comps || []).forEach(c => { if (comps.some(x => x.id === String(c.id))) out.comps.push({ id: String(c.id), nivel: Math.max(0, Math.min(4, Math.round(Number(c.nivel) || 0))), evidencia: txt(c.evidencia, 600) }); });
   ['edad', 'localidad', 'familia', 'formacion', 'empresaAct', 'puestoAct', 'antig', 'remAct', 'remPret', 'disp', 'motivo', 'movilidad', 'referencias'].forEach(f => { out.meta[f] = txt((r.meta || {})[f], 200); });
+  try { CacheService.getUserCache().put('an_' + String(id), JSON.stringify({ texto: texto.slice(0, 60000), resultado: out }), 21600); } catch (e) { }
   return JSON.stringify(out);
 }
