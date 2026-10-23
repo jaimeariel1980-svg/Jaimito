@@ -332,19 +332,8 @@
       <h2>2. Datos de la propiedad a vender</h2>
       <div class="grid">
         <div class="field">
-          <label>Tipo de propiedad <span class="opt">(opcional)</span></label>
-          <select name="tipoPropiedad" onchange="toggleTipoPropiedadOtro(this)">
-            <option value="">— Seleccionar —</option>
-            <option>Terreno</option>
-            <option>Casa</option>
-            <option>Departamento</option>
-            <option>PH</option>
-            <option>Local Comercial</option>
-            <option>Oficina Comercial</option>
-            <option>Garage - Cochera</option>
-            <option>Depósito</option>
-            <option value="Otro">Otros</option>
-          </select>
+          <label>Tipo de propiedad <span class="opt">(opcional — podés marcar más de uno)</span></label>
+          <div class="tk-chk"><label><input type="checkbox" name="tipoPropiedad" value="Terreno" data-lista="1" onchange="toggleTipoPropiedadOtro()"> Terreno</label><label><input type="checkbox" name="tipoPropiedad" value="Casa" data-lista="1" onchange="toggleTipoPropiedadOtro()"> Casa</label><label><input type="checkbox" name="tipoPropiedad" value="Departamento" data-lista="1" onchange="toggleTipoPropiedadOtro()"> Departamento</label><label><input type="checkbox" name="tipoPropiedad" value="PH" data-lista="1" onchange="toggleTipoPropiedadOtro()"> PH</label><label><input type="checkbox" name="tipoPropiedad" value="Local Comercial" data-lista="1" onchange="toggleTipoPropiedadOtro()"> Local Comercial</label><label><input type="checkbox" name="tipoPropiedad" value="Oficina Comercial" data-lista="1" onchange="toggleTipoPropiedadOtro()"> Oficina Comercial</label><label><input type="checkbox" name="tipoPropiedad" value="Garage - Cochera" data-lista="1" onchange="toggleTipoPropiedadOtro()"> Garage - Cochera</label><label><input type="checkbox" name="tipoPropiedad" value="Depósito" data-lista="1" onchange="toggleTipoPropiedadOtro()"> Depósito</label><label><input type="checkbox" name="tipoPropiedad" value="Otro" data-lista="1" onchange="toggleTipoPropiedadOtro()"> Otros</label></div>
         </div>
         <div class="field" id="tipoPropiedadOtroField" style="display:none">
           <label>Especificar tipo <span class="opt">(opcional)</span></label>
@@ -1018,9 +1007,9 @@
     { key: 'certificado_defuncion', label: 'Certificado de defunción', obligatorio: false }
   ];
 
-  function toggleTipoPropiedadOtro(sel) {
-    var campo = document.getElementById('tipoPropiedadOtroField');
-    if (campo) campo.style.display = (sel.value === 'Otro') ? '' : 'none';
+  function toggleTipoPropiedadOtro() {
+    var campo = document.getElementById('tipoPropiedadOtroField'), o = document.querySelector('input[name="tipoPropiedad"][value="Otro"]');
+    if (campo) campo.style.display = (o && o.checked) ? '' : 'none';
   }
 
   let cantidadDueños = 0;
@@ -1253,11 +1242,15 @@
     });
 
     // Si el tipo de propiedad recuperado no está en las opciones del select, usar "Otro"
-    var selTipo = form.querySelector('[name="tipoPropiedad"]');
-    if (selTipo && selTipo.value === '' && registro['Tipo de propiedad']) {
-      selTipo.value = 'Otro';
-      toggleTipoPropiedadOtro(selTipo);
-      _asignarValorCampo(form, 'tipoPropiedadOtro', registro['Tipo de propiedad']);
+    var cbTipo = Array.from(form.querySelectorAll('input[name="tipoPropiedad"]'));
+    if (cbTipo.length && registro['Tipo de propiedad']) {
+      var conocidos = cbTipo.map(function (x) { return x.value.toLowerCase(); });
+      var otros = String(registro['Tipo de propiedad']).split(',').map(function (x) { return x.trim(); }).filter(function (x) { return x && conocidos.indexOf(x.toLowerCase()) === -1; });
+      if (otros.length) {
+        cbTipo.forEach(function (x) { if (x.value === 'Otro') x.checked = true; });
+        _asignarValorCampo(form, 'tipoPropiedadOtro', otros.join(', '));
+      }
+      toggleTipoPropiedadOtro();
     }
 
     // Sección 1: dueños — se recrean tantos bloques como haya datos
@@ -1576,8 +1569,9 @@
     });
 
     // Si eligió "Otro" en tipo de propiedad, usar el texto libre
-    if (datos.tipoPropiedad === 'Otro' && datos.tipoPropiedadOtro) {
-      datos.tipoPropiedad = datos.tipoPropiedadOtro;
+    if (datos.tipoPropiedad !== undefined) {
+      datos.tipoPropiedad = String(datos.tipoPropiedad).split(',').map(function (x) { return x.trim(); }).filter(Boolean)
+        .map(function (x) { return x === 'Otro' ? (datos.tipoPropiedadOtro || '').trim() : x; }).filter(Boolean).join(', ');
     }
     delete datos.tipoPropiedadOtro;
 
