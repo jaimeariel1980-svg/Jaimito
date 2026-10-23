@@ -2437,7 +2437,7 @@ google.script.run
   }
   var root = document.createElement('div'); root.className = 'azb'; document.body.appendChild(root);
   function save(){ ls('msgs', JSON.stringify(st.msgs.slice(-40))); }
-  function scroll(){ var b = root.querySelector('.azb-body'); if(b) b.scrollTop = b.scrollHeight; }
+  function scroll(){ var b = root.querySelector('.azb-body'); if(b) b.scrollTop = st.menu ? 0 : b.scrollHeight; }
   var TILE = {'Cargar una interacción':['home','Interacción'],'Agendar una visita':['cal','Agendar visita'],'Visita con otra inmobiliaria':['home','Visita externa'],'Registrar una propuesta':['chat','Propuesta'],'Mi agenda y recordatorios':['alarm','Agenda'],'Adjuntar fotos o documentos':['clip','Adjuntar'],'¿Qué alertas tengo hoy?':['bell','Alertas']};
   function icoFor(l){
     var x = [[/resumen|panel|dashboard/i,'chart'],[/documento/i,'doc'],[/encuesta/i,'star'],[/procedimiento/i,'book'],[/formulario|captaci/i,'edit'],[/tokko|ficha/i,'link'],[/buscar|contame/i,'search'],[/estado/i,'swap'],[/reporte/i,'mail'],[/recordatorio/i,'alarm'],[/agendar/i,'cal']], i;
@@ -2500,7 +2500,7 @@ if(!window.festejar) window.festejar = function(msg,tipo){
   var COARSE = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
   var DN = ['DOM','LUN','MAR','MIÉ','JUE','VIE','SÁB'], DL = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'], MN = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   function tabsHtml(){
-    var cur = st.view==='agenda' ? 'agenda' : st.view==='mov' ? 'mov' : (st.menu || !st.msgs.length) ? 'home' : 'chat';
+    var cur = st.view==='agenda' ? 'agenda' : st.view==='mov' ? 'mov' : st.menu ? 'home' : 'chat';
     var T = [['home','Inicio','home'],['chat','Chat','chat'],['agenda','Agenda','cal'],['mov','Novedades','hist'],['alert','Alertas','bell']];
     return '<nav class="azb-tabs">'+T.map(function(x){ return '<button type="button" class="azb-tab'+(cur===x[0]?' on':'')+'" data-a="tab" data-t="'+x[0]+'">'+sv(x[2])+(x[0]==='mov' && st.movN ? '<i class="azb-bd">'+(st.movN>9?'9+':st.movN)+'</i>' : '')+'<span>'+x[1]+'</span></button>'; }).join('')+'</nav>';
   }
@@ -2715,7 +2715,7 @@ if(!window.festejar) window.festejar = function(msg,tipo){
     } else {
       h += '<div class="azb-hd"><button type="button" class="azb-lg" data-a="logohome" title="Ir al inicio" aria-label="Ir al inicio">'+mk(46)+'</button><span class="azb-t">Azcu'+(APP?'':' · '+(AZ.ctx?'Ficha '+esc(AZ.ctx):'Asistente interno'))+'</span>'+(APP?'<a class="azb-tbp" href="'+esc(window.AZCU_TABLERO||'#')+'" target="_blank" rel="noopener" title="Abrir el tablero">'+sv('board')+'<span>Tablero</span></a>':'')+(APP?'':'<button class="azb-ib azb-nv" data-a="mov" title="'+(st.view==='mov'?'Volver al chat':'Novedades')+'">'+sv(st.view==='mov'?'chat':'hist')+(st.movN?'<i class="azb-bd">'+(st.movN>9?'9+':st.movN)+'</i>':'')+'</button><button class="azb-ib" data-a="agenda" title="Agenda">'+sv(st.view==='agenda'?'chat':'cal')+'</button>')+'<button class="azb-ib" data-a="clear" title="Borrar charla">'+sv('trash')+'</button>'+(APP?'':'<button class="azb-ib" data-a="close">✕</button>')+'</div>'+(APP && window.OneSignalDeferred && !st.pushOn ? '<div class="azb-pb"><span>🔔 Recibí avisos en este celular</span><button type="button" class="azb-btn" data-a="push">Activar avisos</button></div>' : '')+'<div class="azb-body">';
       if(st.view==='agenda') h += agendaHtml(); else if(st.view==='mov') h += movHtml(); else {
-      if(!st.msgs.length || st.menu){
+      if(st.menu){
         h += '<div class="azb-av">'+mk(60)+'</div><div class="azb-eyb">Tu asistente, siempre disponible</div><h1>Hola'+(st.nombre?', <b>'+esc(st.nombre)+'</b>':'')+'.<br>¿Qué hacemos hoy?</h1><p class="azb-lead">Preguntame lo que quieras del tablero o pedime que cargue visitas, agende, cambie estados o mande reportes. Escribime con confianza.</p>'+(APP && window.OneSignalDeferred && !st.pushOn ? '<button class="azb-row" data-a="push" style="border-color:var(--n);background:#eef3ff">🔔 Activar avisos en este celular<span>→</span></button>' : '')+'<div class="azb-lbl">Atajos</div>';
         var sc = shortcuts(), big = '', small = '', bigs = {};
         sc.forEach(function(s){
@@ -2726,6 +2726,8 @@ if(!window.festejar) window.festejar = function(msg,tipo){
         Object.keys(TILE).forEach(function(k){ if(bigs[k]) big += bigs[k]; });
         if(big) h = h.replace('<div class="azb-lbl">Atajos</div>', '<div class="azb-lbl">Lo de todos los días</div><div class="azb-grid">'+big+'</div>'+(small ? '<div class="azb-lbl">Más cosas</div>' : '')); 
         h += small;
+      } else if(!st.msgs.length){
+        h += '<div class="azb-m a">'+mk(22)+'<div class="azb-b">Hola'+(st.nombre?', <b>'+esc(st.nombre)+'</b>':'')+' 👋 Soy Azcu. Contame qué necesitás, mandame un audio o elegí una opción de abajo.</div></div><div style="text-align:center;margin:4px 0 8px"><button type="button" data-a="home" style="background:none;border:0;color:#0a3d91;font:600 13px inherit;cursor:pointer;padding:6px 10px">Ver todos los atajos ›</button></div>';
       } else st.msgs.forEach(function(m,mi){
         if(!m.ts) m.ts = Date.now();
         if(!mi || dayLbl(st.msgs[mi-1].ts||m.ts)!==dayLbl(m.ts)) h += '<div class="azb-dsep"><span>'+dayLbl(m.ts)+'</span></div>';
