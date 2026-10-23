@@ -121,6 +121,7 @@ button{font:inherit;cursor:pointer}
 .acts a.btnl{flex:1;padding:14px;border-radius:14px;font-weight:800;font-size:15px;text-align:center;text-decoration:none;color:#fff}
 .cc{cursor:pointer}.cc:active{background:#FCE4EC}
 .tap{cursor:pointer}.tap:active{background:#FCE4EC}.wf .r.tap{margin:0 -8px;padding-left:8px;padding-right:8px;border-radius:10px}.wf .r.tap:after{content:'›';color:var(--mu);margin-left:6px}.chip.tap:active{transform:scale(.97)}
+.wf .r.mi{padding:16px 8px;font-size:16px;font-weight:700}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style></head><body>
 <section class="hero">
@@ -131,7 +132,7 @@ button{font:inherit;cursor:pointer}
 <div id="alert"></div>
 <div class="tabs" id="tabs"></div>
 <div id="app"><div class="sk1"></div><div class="sk1"></div></div>
-<button class="fab" id="fab" onclick="frmMov(0)" aria-label="Cargar movimiento">+</button>
+<button class="fab" id="fab" onclick="menuMas()" aria-label="Agregar">+</button>
 <div class="ov" id="ov" onclick="if(event.target===this)cerrar()"><div class="sh" id="sh"></div></div>
 <div class="toast" id="toast"></div>
 <div class="gate" id="gate"><div class="bx" id="gbx"></div></div>
@@ -397,7 +398,7 @@ function proxCert(o){
 function ctaCert(o,i){
   const c=proxCert(o);
   if(c.e==='listo')return`<button class="cta urg" onclick="event.stopPropagation();frmCert(${i})">📄 Emitir certificado de ${esc(c.mes)} <small>${c.dias>0?'listo hace '+c.dias+' d':'listo hoy'}</small></button>`;
-  if(c.e==='prox')return`<div class="cst" onclick="event.stopPropagation();go('certs')">Próximo certificado: <b>${esc(c.mes)}</b> · disponible desde ${fd(c.due)}</div>`;
+  if(c.e==='prox')return`<button class="cta" onclick="event.stopPropagation();frmCert(${i})">📄 Emitir certificado de ${esc(c.mes)} <small>disponible desde ${fd(c.due)}</small></button>`;
   if(c.e==='cfg')return`<button class="cta" onclick="event.stopPropagation();frmCertCfg(${i})">⚙ Configurar certificados</button>`;
   return'<div class="cst">✔ Certificados completos</div>';
 }
@@ -413,6 +414,7 @@ function frmCert(i){
   if(c.e==='fin')return toast('Ya están todos los certificados del plazo');
   F={i:i,n:c.n};
   abrir(`<h2>Certificado N° ${c.n} · ${esc(o.obra)}</h2><div class="sub">Honorario mensual ${money(o.params.mensual)} · ${o.certs.length} emitidos de ${o.params.plazo}</div>
+  ${c.e==='prox'?`<div class="nx" style="margin-top:10px">Ese mes todavía no cerró (el IPC se publica a mediados del mes siguiente, desde ${fd(c.due)}). Podés emitirlo igual si ya tenés el dato.</div>`:''}
   <label class="fl">Mes del certificado</label><input class="in" id="cmes" value="${esc(c.mes)}">
   <label class="fl">IPC del mes (%)</label><input class="in big" id="cipc" inputmode="decimal" placeholder="Ej: 2,3" oninput="prevCert()">
   <div class="wf" id="cprev" style="margin-top:10px"><div class="sub">Escribí el IPC para ver el cálculo.</div></div>
@@ -434,7 +436,8 @@ function emitirCert(){
 }
 function resCert(c,obra){
   abrir(`<div style="text-align:center"><div style="font-size:46px">✅</div><h2>Certificado N° ${c.n} emitido</h2><div class="sub">${esc(obra)} · ${esc(c.mes)}</div><div class="big" style="text-align:center;margin:12px 0">${money(c.total)}</div><div class="sub">Acumulada ${pct4(c.acum)} · reajuste ${money(c.reaj)}<br>Ya se cargó como ingreso de la obra.</div></div>
-  <div class="acts">${c.url?`<a class="pri btnl" href="${esc(c.url)}" target="_blank" rel="noopener">📄 Abrir PDF</a>`:''}<button class="sec" onclick="cerrar()">Listo</button></div>${c.url?'':'<div class="err">El certificado se emitió, pero no se pudo guardar el PDF. Pedilo tocando el certificado.</div>'}`);
+  ${c.url?shareHtml(c.url,c.n,c.mes,obra):'<div class="err">El certificado se emitió, pero no se pudo guardar el PDF. Pedilo tocando el certificado.</div>'}
+  <div class="acts"><button class="sec" onclick="cerrar()">Listo</button></div>`);
 }
 function frmCertAcc(i,n){
   const o=D.obras[i],c=o.certs.find(x=>x.n===n);if(!c)return;
@@ -442,12 +445,12 @@ function frmCertAcc(i,n){
   abrir(`<h2>Certificado N° ${n}</h2><div class="sub">${esc(o.obra)} · ${esc(c.mes)}</div>
   <div class="wf" style="margin-top:10px"><div class="r"><span>IPC del mes</span><b>${pct4(c.pct)}</b></div><div class="r"><span>Acumulada</span><b>${pct4(c.acum)}</b></div><div class="r"><span>Reajuste</span><b>${money(c.reaj)}</b></div><div class="r t"><span>Total</span><b>${money(c.total)}</b></div></div>
   <div id="pdfbox"></div><div class="err" id="ferr"></div>
-  <div class="acts"><button class="sec" onclick="frmCorr()">✏️ Corregir IPC</button><button class="pri" id="fsave" onclick="verPdf()">📄 Ver PDF</button></div>
+  <div class="acts"><button class="sec" onclick="frmCorr()">✏️ Corregir IPC</button><button class="pri" id="fsave" onclick="verPdf()">📲 Enviar PDF</button></div>
   ${n===Math.max(...o.certs.map(x=>x.n))?'<div class="acts" style="margin-top:10px"><button class="dan" id="fdel" onclick="borrarCert()">🗑 Borrar este certificado</button></div><div class="sub" style="margin-top:6px">Borra el certificado y el ingreso que generó. Queda copia en la Papelera.</div>':''}`);
 }
 function verPdf(){
   const o=D.obras[F.i],b=$('fsave');b.disabled=true;b.textContent='Generando…';
-  rpc('tbCertPdf',[CL,o.obra,F.n],r=>{b.style.display='none';$('pdfbox').innerHTML=`<div class="acts"><a class="pri btnl" href="${esc(r.url)}" target="_blank" rel="noopener">📄 Abrir PDF</a></div>`},m=>{b.disabled=false;b.textContent='📄 Ver PDF';$('ferr').textContent=msgErr(m)});
+  rpc('tbCertPdf',[CL,o.obra,F.n],r=>{b.style.display='none';$('pdfbox').innerHTML=shareHtml(r.url,F.n,F.mes,o.obra)},m=>{b.disabled=false;b.textContent='📲 Enviar PDF';$('ferr').textContent=msgErr(m)});
 }
 function borrarCert(){
   const b=$('fdel');
@@ -478,6 +481,26 @@ function frmCertCfg(i){
 function guardarCfg(){
   const b=$('fsave');b.disabled=true;b.textContent='Guardando…';
   rpc('tbCertParams',[CL,D.obras[F.i].obra,num($('cmen').value),num($('cpla').value),$('cbas').value],d=>{D=d;cerrar();paint();toast('✅ Certificados configurados')},m=>{b.disabled=false;b.textContent='Guardar';$('ferr').textContent=msgErr(m)});
+}
+
+function shareHtml(url,n,mes,obra){
+  const t=encodeURIComponent('Hola! Te envío el certificado de honorarios N° '+n+' ('+mes+') de la obra '+obra+': '+url);
+  return`<div class="acts" style="flex-direction:column"><a class="pri btnl" style="background:linear-gradient(135deg,#128C7E,#25D366)" href="https://wa.me/?text=${t}" target="_blank" rel="noopener">📲 Enviar por WhatsApp</a>
+  <div style="display:flex;gap:10px"><a class="sec btnl" style="color:var(--pd)" href="${esc(url)}" target="_blank" rel="noopener">📄 Abrir PDF</a><button class="sec" onclick="copiar('${esc(url)}')">🔗 Copiar link</button></div></div>`;
+}
+function copiar(u){
+  const ok=()=>toast('🔗 Link copiado');
+  try{navigator.clipboard.writeText(u).then(ok,()=>cp2(u,ok))}catch(e){cp2(u,ok)}
+}
+function cp2(u,ok){const a=document.createElement('textarea');a.value=u;document.body.appendChild(a);a.select();try{document.execCommand('copy');ok()}catch(e){toast(u)}a.remove()}
+function menuMas(){
+  abrir(`<h2>¿Qué querés hacer?</h2><div class="wf"><div class="r mi tap" onclick="frmMov(0)"><span>💸 Cargar un movimiento</span></div><div class="r mi tap" onclick="frmCertElegir()"><span>📄 Emitir un certificado</span></div><div class="r mi tap" onclick="frmObra()"><span>🏗 Nueva obra</span></div></div><div class="acts"><button class="sec" onclick="cerrar()">Cancelar</button></div>`);
+}
+function frmCertElegir(){
+  const l=D.obras.map((o,i)=>[o,i,proxCert(o)]);
+  if(l.length===1)return frmCert(0);
+  const et=c=>c.e==='listo'?'listo: '+c.mes:c.e==='prox'?c.mes:c.e==='fin'?'completo':'configurar';
+  abrir(`<h2>Emitir certificado</h2><div class="sub">Elegí la obra</div><div class="wf" style="margin-top:8px">${l.map(x=>`<div class="r mi tap" onclick="frmCert(${x[1]})"><span>${esc(x[0].obra)}</span><b style="font-size:12px;color:${x[2].e==='listo'?'var(--ng)':'var(--mu)'}">${esc(et(x[2]))}</b></div>`).join('')}</div><div class="acts"><button class="sec" onclick="cerrar()">Cancelar</button></div>`);
 }
 try{CL=localStorage.getItem('nj_clave')||''}catch(e){}
 if(CL)cargar();else gate('');
