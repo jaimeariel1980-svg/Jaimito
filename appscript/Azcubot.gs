@@ -474,6 +474,7 @@ function azcuCrearCaptacion_(accion){
   });
   azcuProg_(accion, 'Creando la captación y guardando '+n+' documento(s)… puede tardar un minuto');
   var r = precargarDatos(datos, pk);
+  if(r && r.duplicado) throw new Error('Ya hay una propiedad cargada con esa dirección: '+r.direccion+' ('+r.codigo+(r.etapa ? ', '+r.etapa : '')+'). No creé otra. Si querés cargarla igual, usá el formulario de captación y tocá «Cargar igual».');
   azcuLimpiarCache_();
   return {ok:true, mensaje:'Listo: creé la captación '+r.codigoPrecarga+(datos['dueño1_email'] ? '. Le mandé un mail de confirmación a '+datos['dueño1_email'] : '')+'.',
     enlaces:[{k:'l', label:'📝 Abrir el formulario de '+(datos.calle||'la propiedad')+' '+(datos.numero||''), url:azcuBase_()+'?precarga='+encodeURIComponent(r.codigoPrecarga)}]};
