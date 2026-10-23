@@ -2571,6 +2571,7 @@ function azcuTgEnviar_(titulo, msg, url, dest, estricto){
 }
 function azcuTgUpdate_(secreto, up){
   if(!secreto || secreto!==azcuTgProp_('TELEGRAM_SECRET')) return;
+  if(up && up.update_id && azcuVisto_('tg'+up.update_id)) return;
   var m = up && up.message; if(!m || !m.chat || !m.text) return;
   var chat = m.chat.id, t = String(m.text).trim(), mt = /^\/start\s+([A-Za-z0-9]+)/.exec(t), pr = PropertiesService.getScriptProperties();
   var resp = function(x){ azcuTgApi_('sendMessage', {chat_id:chat, text:x}); };
