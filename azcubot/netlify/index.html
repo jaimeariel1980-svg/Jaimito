@@ -1243,7 +1243,7 @@ if(!window.festejar) window.festejar = function(msg){
     var ci = q.get('ci') || '';
     try{ history.replaceState(null, '', location.pathname); }catch(e){}
     st.entered = true; st.vis = {id:id, interesado:ci};
-    var dir = /^EXT-/.test(id) ? 'una propiedad de otra inmobiliaria' : id, say = function(){ st.msgs.push({role:'assistant', content:'¿Cómo te fue en la visita a **'+dir+'**'+(ci?' con **'+ci+'**':'')+'? Contame en un audio (mantené apretado el 🎤) o escribilo, y armo la tarjeta.', w:1}); save(); render(); };
+    var dir = /^EXT-/.test(id) ? 'una propiedad de otra inmobiliaria' : id, say = function(){ st.msgs.push({role:'assistant', content:'¿Cómo te fue en la visita a **'+dir+'**'+(ci?' con **'+ci+'**':'')+'? Contame cómo te fue y armo la tarjeta.', w:1}); save(); render(); };
     if(st.props){ var f = st.props.filter(function(p){ return p.id===id; })[0]; if(f) dir = f.dir; say(); }
     else call('azcuWarm', [], function(r){ if(Array.isArray(r)){ st.props = r; var f = r.filter(function(p){ return p.id===id; })[0]; if(f) dir = f.dir; } say(); }, function(){ say(); });
   })();
