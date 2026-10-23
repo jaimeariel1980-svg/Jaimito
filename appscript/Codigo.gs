@@ -1277,7 +1277,7 @@ function enviarReportePropietario(codigo, logoDataUri, resumenCustom, ownerCusto
   var ofertas = seg.filter(function(s) { return /propuesta|oferta/i.test(s.res); }).length;
   var hoy = new Date();
   var dias = null;
-  seg.forEach(function(s) { if (s._d) { var dd = Math.floor((hoy - s._d) / 86400000); if (dias === null || dd < dias) dias = dd; } });
+  seg.forEach(function(s) { if (s._d) { var dd = Math.floor((hoy - s._d) / 86400000); if (dd >= 0 && (dias === null || dd < dias)) dias = dd; } });
 
   var frase;
   if (vis >= 3) frase = 'Se mantiene un alto interés de compradores. Seguimos trabajando para concretar una propuesta.';
@@ -1848,7 +1848,7 @@ function getDatosRaw_(){
     var cons=seg.length;
     var vis=seg.filter(function(s){return !/cancelad/i.test(s.res)&&(/visita/i.test(s.tipo)||/visitó|oferta/i.test(s.res));}).length;
     var dias=null;
-    seg.forEach(function(s){ if(s._d){ var dd=Math.floor((hoy-s._d)/86400000); if(dias===null||dd<dias)dias=dd; } });
+    seg.forEach(function(s){ if(s._d){ var dd=Math.floor((hoy-s._d)/86400000); if(dd>=0&&(dias===null||dd<dias))dias=dd; } });
     var segOut=seg.map(function(s){return {_row:s._row,fecha:s.fecha,tipo:s.tipo,cli:s.cli,tel:s.tel,res:s.res,prox:s.prox,obs:s.obs,fechaProx:s.fechaProx,vend:s.vend||'',cargo:s.cargo||''};});
     out.push({
       id:id, dir:_dirTexto_(calle,num,det.piso,det.depto,det.pasillo), det:det, ciudad:row[c('Ciudad')]||'', tipo:row[c('Tipo de propiedad')]||'',
