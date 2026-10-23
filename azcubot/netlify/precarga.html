@@ -1642,6 +1642,7 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
 
     const form = ev.target;
     const datos = { codigoPrecarga: document.getElementById('codigoPrecarga').value || '', tokenEnvio: TOKEN_ENVIO };
+    if (window.CONFIRMAR_DUP) { datos.confirmarDuplicado = true; window.CONFIRMAR_DUP = false; }
 
     Array.from(form.elements).forEach(el => {
       if (!el.name || el.type === 'file' || el.type === 'submit') return;
@@ -1675,6 +1676,14 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
       .withSuccessHandler(function (res) {
         estado.textContent = '';
         ENVIANDO = false;
+        if (res && res.duplicado) {
+          btn.disabled = false;
+          mensajeDiv.innerHTML = '<div class="msg error"><strong>⚠️ Ya existe una propiedad con esta dirección:</strong> ' + String(res.direccion).replace(/</g, '&lt;') + ' (' + String(res.codigo).replace(/</g, '&lt;') + (res.etapa ? ', ' + String(res.etapa).replace(/</g, '&lt;') : '') + ').<br>Si es la misma, no la cargues de nuevo. <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn" id="btn-cargar-igual">Cargar igual</button><button type="button" class="btn" id="btn-cancelar-dup">Cancelar</button></div></div>';
+          document.getElementById('btn-cargar-igual').addEventListener('click', function () { window.CONFIRMAR_DUP = true; mensajeDiv.innerHTML = ''; form.requestSubmit(); });
+          document.getElementById('btn-cancelar-dup').addEventListener('click', function () { mensajeDiv.innerHTML = ''; });
+          window.scrollTo({ top: mensajeDiv.offsetTop - 80, behavior: 'smooth' });
+          return;
+        }
         YA_ENVIADO = true;
         btn.disabled = true;
         btn.textContent = '✓ Precarga enviada';

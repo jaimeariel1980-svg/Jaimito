@@ -194,6 +194,29 @@ function doGet(e) {
  * completo o parcial. Devuelve { ok, codigoPrecarga, mensaje }.
  */
 
+function _dirClave_(calle, numero, piso, depto){
+  var q = function(x){ return _ndir_(x).replace(/\b(av|avda|avenida|calle|bv|bvd|boulevard|pje|pasaje)\b/g,' ').replace(/\s+/g,' ').trim(); };
+  var n = function(x){ return _ndir_(x).replace(/^0+(?=\d)/,''); };
+  return q(calle)+'|'+n(numero)+'|'+n(piso)+'|'+n(depto);
+}
+function _buscarDuplicado_(sheet, datos){
+  try{
+    if(!datos || !String(datos.calle||'').trim() || !String(datos.numero||'').trim()) return null;
+    var clave = _dirClave_(datos.calle, datos.numero, datos.piso, datos.departamento);
+    var lr = sheet.getLastRow(); if(lr < 2) return null;
+    var head = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
+    var ic = head.indexOf('Calle'), inn = head.indexOf('Número'), ip = head.indexOf('Piso'), id = head.indexOf('Departamento'), icod = head.indexOf('Código de Precarga'), ie = head.indexOf('Etapa'), io = head.indexOf('Origen');
+    if(ic<0 || inn<0) return null;
+    var v = sheet.getRange(2,1,lr-1,head.length).getValues();
+    for(var i=0;i<v.length;i++){
+      if(io>=0 && /otra inmobiliaria/i.test(String(v[i][io]||''))) continue;
+      if(_dirClave_(v[i][ic], v[i][inn], ip>=0?v[i][ip]:'', id>=0?v[i][id]:'') !== clave) continue;
+      var cod = String(icod>=0 ? v[i][icod] : v[i][0]).trim();
+      return {codigo:cod, etapa: ie>=0 ? String(v[i][ie]||'').trim() : '', direccion:(String(v[i][ic]||'')+' '+String(v[i][inn]||'')+(ip>=0&&v[i][ip]?' · Piso '+v[i][ip]:'')+(id>=0&&v[i][id]?' · Dpto '+v[i][id]:'')).trim()};
+    }
+  }catch(e){ Logger.log('Duplicados: '+e.message); }
+  return null;
+}
 function precargarDatos(datos, archivosBase64) {
   const sheet = _getSheet();
   let esNuevo = !datos.codigoPrecarga;
@@ -212,6 +235,10 @@ function precargarDatos(datos, archivosBase64) {
         esNuevo = false;
       } else {
         _validarCamposObligatoriosPrimerEnvio(datos, archivos);
+        if (!datos.confirmarDuplicado) {
+          const dup = _buscarDuplicado_(sheet, datos);
+          if (dup) return { duplicado: true, codigo: dup.codigo, direccion: dup.direccion, etapa: dup.etapa };
+        }
         datos.codigoPrecarga = _generarCodigoPrecarga(sheet);
         if (tok) cache.put(tok, datos.codigoPrecarga, 21600);
       }
