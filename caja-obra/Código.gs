@@ -1026,3 +1026,15 @@ function arreglarMeses(){
   }
   SpreadsheetApp.getActive().toast(cambios+' mes(es) normalizados');
 }
+function crearFinca(){
+  var N='Finca';
+  if(!matchObra(N)) agregarObra(N,'');
+  var c=ss().getSheetByName('Certificados');
+  var v=c.getRange(6,1,10,1).getValues(), f=0;
+  for(var i=0;i<v.length;i++){ if(v[i][0]===N){f=6+i;break;} }
+  if(!f){ for(var i=0;i<v.length;i++){ if(!v[i][0]){f=6+i;break;} } }
+  c.getRange(f,1,1,4).setValues([[N,Math.round(31000000/18),18,new Date(2026,9,23)]]);
+  c.getRange(f,2).setNumberFormat('"$"#,##0');
+  c.getRange(f,4).setNumberFormat('dd/mm/yyyy');
+  SpreadsheetApp.getActive().toast('Finca creada ✓');
+}
