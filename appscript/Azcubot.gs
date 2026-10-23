@@ -1745,7 +1745,7 @@ function azcuAvisoPostVisita(){
       try{
         datos = datos || azcuDatos_();
         var p = null; datos.forEach(function(x){ if(String(x.id).trim()===c.id) p = x; });
-        azcuPush_(c.veces ? '⚠️ Falta cargar cómo te fue en la visita' : '¿Cómo te fue en la visita? 🏠', (p ? p.dir : (c.dirx || c.id))+(c.cli ? ' con '+c.cli : '')+' · '+c.hora+'. Contame en un audio cómo estuvo.'+(c.veces ? ' Te lo recuerdo cada 2 días hasta que lo cargues.' : ''),
+        azcuPush_(c.veces ? '⚠️ Falta cargar cómo te fue en la visita' : '¿Cómo te fue en la visita? 🏠', (p ? p.dir : (c.dirx || c.id))+(c.cli ? ' con '+c.cli : '')+' · '+c.hora+'. Abrí Azcu y contame cómo te fue.'+(c.veces ? ' Te lo recuerdo cada 2 días hasta que lo cargues.' : ''),
           AZCU_WEB+'?cv='+encodeURIComponent(c.id)+'&ci='+encodeURIComponent(c.cli), azcuDestinos_(c.quien || (p && p.vendedor)));
       }catch(e){ return; }
     }
