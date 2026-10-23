@@ -1433,7 +1433,7 @@ function azcuPush_(titulo, msg, url, dest, estricto, libre){
     if(dest) dest = dest.filter(function(x){ return off.indexOf(x)<0; });
     if(!/^Azcu terminó/.test(String(titulo||''))){ try{ azcuMailAvisos_(us, dest, titulo, msg, url); }catch(eM){ Logger.log('Mail aviso: '+eM.message); } }
   }
-  var base = {app_id:AZCU_OS_APP, target_channel:'push', headings:{en:titulo, es:titulo}, contents:{en:msg, es:msg}, url:url||AZCU_WEB};
+  var base = {app_id:AZCU_OS_APP, target_channel:'push', headings:{en:titulo, es:titulo}, contents:{en:msg, es:msg}, url:url||AZCU_WEB, priority:10};
   var intentos = [];
   if(estricto && !(dest && dest.length)) return 'Sin destinatarios';
   if(dest && dest.length) intentos.push({include_aliases:{external_id:dest}});
