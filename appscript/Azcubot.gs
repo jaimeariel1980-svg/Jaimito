@@ -1446,7 +1446,7 @@ function azcuPush_(titulo, msg, url, dest, estricto, libre){
       r = azcuFetchRetry_('https://api.onesignal.com/notifications?c=push', {method:'post', contentType:'application/json', headers:{Authorization:esq[j]+k}, muteHttpExceptions:true, payload:JSON.stringify(b)});
       code = r.getResponseCode(); txt = r.getContentText();
       if(code===401){ auth = false; break; }
-      if(code>=200 && code<300){ ult = txt; if(!/errors/.test(txt)) return txt; }
+      if(code>=200 && code<300){ ult = txt; if(!/errors/.test(txt) || /"id"\s*:\s*"[^"]+"/.test(txt)) return txt; }
     }
     if(auth){
       if(ult!==null) return 'Nadie suscripto todavía';
@@ -2506,11 +2506,25 @@ function azcuAvisoCaptacion(forzar){
 
 function azcuApodo_(v){ var n = String(v||'').trim().split(/\s+/)[0]; var k = n.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); return ({analia:'Ani', sebastian:'Seba'})[k] || n; }
 
+function azcuOsEstado_(ids){
+  var k = String(PropertiesService.getScriptProperties().getProperty('ONESIGNAL_KEY')||'').replace(/\s/g,''), out = [];
+  ids.forEach(function(id){
+    var r = null;
+    ['Key ','Basic '].some(function(esq){ r = UrlFetchApp.fetch('https://api.onesignal.com/apps/'+AZCU_OS_APP+'/users/by/external_id/'+encodeURIComponent(id), {headers:{Authorization:esq+k}, muteHttpExceptions:true}); return r.getResponseCode()!==401; });
+    var c = r.getResponseCode();
+    if(c===404){ out.push('«'+id+'»: no existe en OneSignal'); return; }
+    if(c!==200){ out.push('«'+id+'»: error '+c); return; }
+    var subs = []; try{ subs = JSON.parse(r.getContentText()).subscriptions || []; }catch(e){}
+    out.push('«'+id+'»: '+(subs.length ? subs.length+' dispositivo(s): '+subs.map(function(x){ return String(x.type||'?')+(x.enabled===false ? ' DESACTIVADO' : ' activo')+(x.device_model ? ' ('+x.device_model+')' : ''); }).join(', ') : 'existe pero sin dispositivos'));
+  });
+  return out.join('\n');
+}
 function probarAvisoTb(nombre){
-  var dest = azcuDestinos_(nombre, true);
+  var dest = azcuDestinos_(nombre, true), est = '';
   if(!dest.length) return {ok:false, msg:'No encontré a «'+nombre+'» activo en la pestaña Usuarios (o tiene los avisos en «Ninguno»).'};
+  try{ est = '\n\nDispositivos en OneSignal:\n'+azcuOsEstado_(dest); }catch(e){ est = '\n\n(No pude consultar OneSignal: '+e.message+')'; }
   var r = String(azcuPush_('⏰ Prueba de aviso', 'Si ves esto, tus avisos funcionan.', AZCU_WEB, dest, true, true));
-  if(/Nadie suscripto|Sin destinatarios/.test(r)) return {ok:false, msg:'OneSignal no tiene ningún dispositivo tuyo suscripto. Instalá la app y tocá «Activar avisos» en este dispositivo.'};
-  if(/"id"\s*:\s*"[^"]+"/.test(r) && !/errors/.test(r)) return {ok:true, msg:'Aviso enviado a '+dest.join(', ')+'. Debería llegarte en unos segundos; si no, revisá los permisos de notificación del navegador o del celular.'};
-  return {ok:false, msg:'Respuesta de OneSignal: '+r.slice(0,300)};
+  if(/"id"\s*:\s*"[^"]+"/.test(r)) return {ok:true, msg:'Aviso enviado. Debería llegarte en unos segundos.'+est};
+  if(/Nadie suscripto|Sin destinatarios/.test(r)) return {ok:false, msg:'No hay ningún dispositivo suscripto con el nombre «'+nombre+'».'+est};
+  return {ok:false, msg:'Respuesta de OneSignal: '+r.slice(0,300)+est};
 }
