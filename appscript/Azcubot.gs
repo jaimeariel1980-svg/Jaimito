@@ -2523,7 +2523,7 @@ function probarAvisoTb(nombre){
   var dest = azcuDestinos_(nombre, true), est = '';
   if(!dest.length) return {ok:false, msg:'No encontré a «'+nombre+'» activo en la pestaña Usuarios (o tiene los avisos en «Ninguno»).'};
   try{ est = '\n\nDispositivos en OneSignal:\n'+azcuOsEstado_(dest); }catch(e){ est = '\n\n(No pude consultar OneSignal: '+e.message+')'; }
-  var r = String(azcuPush_('⏰ Prueba de aviso', 'Si ves esto, tus avisos funcionan.', AZCU_WEB, dest, true, true));
+  var r = String(azcuPush_('⏰ Prueba de aviso '+Utilities.formatDate(new Date(), 'America/Argentina/Buenos_Aires', 'HH:mm:ss'), 'Si ves esto, tus avisos funcionan.', AZCU_WEB, dest, true, true));
   var mid = /"id"\s*:\s*"([^"]+)"/.exec(r);
   if(mid){
     var res = '';
