@@ -1842,7 +1842,7 @@ function getDatosRaw_(){
     var _pn=parseInt(pctS); var pct=(pctS===''||isNaN(_pn))?null:_pn;
     var calle=row[c('Calle')]||'', num=row[c('Número')]||'';
     var gv=function(n){ var i=c(n); return i>-1&&row[i]!=null?String(row[i]):''; };
-    var det={calle:gv('Calle'),numero:gv('Número'),piso:gv('Piso'),depto:gv('Departamento'),pasillo:gv('Pasillo'),entre1:gv('Entrecalle 1'),entre2:gv('Entrecalle 2'),ciudad:gv('Ciudad'),supTotal:gv('Superficie Total (m2)'),supCub:gv('Superficie Cubierta (m2)'),dorm:gv('Dormitorios'),amb:gv('Ambientes (sin dormitorios)'),banos:gv('Baños'),plantas:gv('Plantas'),cochera:gv('Cochera'),patioD:gv('Patio delantero'),patioT:gv('Patio trasero'),gas:gv('Gas Natural'),cloaca:gv('Cloaca'),antig:gv('Antigüedad (años)'),orient:gv('Orientación'),inscr:gv('Inscripción del dominio')};
+    var det={calle:gv('Calle'),numero:gv('Número'),piso:gv('Piso'),depto:gv('Departamento'),pasillo:gv('Pasillo'),entre1:gv('Entrecalle 1'),entre2:gv('Entrecalle 2'),ciudad:gv('Ciudad'),supTotal:gv('Superficie Total (m2)'),supCub:gv('Superficie Cubierta (m2)'),dorm:gv('Dormitorios'),amb:gv('Ambientes (sin dormitorios)'),banos:gv('Baños'),plantas:gv('Plantas'),cochera:gv('Cochera'),patioD:gv('Patio delantero'),patioT:gv('Patio trasero'),gas:gv('Gas Natural'),cloaca:gv('Cloaca'),antig:gv('Antigüedad (años)'),orient:gv('Orientación'),inscr:gv('Inscripción del dominio'),cred:gv('Crédito')};
     var docExtra=gv('Docs exigidos (extra)').split(';').map(function(x){return x.trim();}).filter(Boolean);
     var seg=segMap[id]||[];
     var cons=seg.length;
@@ -2081,7 +2081,7 @@ var MAP_CAMPOS = {
   boleto:'Plazo de boleto', boletoOk:'Boleto firmado', escritura:'Plazo de escritura', escrituraOk:'Escritura firmada',
   calle:'Calle', numero:'Número', piso:'Piso', depto:'Departamento', pasillo:'Pasillo', entre1:'Entrecalle 1', entre2:'Entrecalle 2', ciudad:'Ciudad',
   supTotal:'Superficie Total (m2)', supCub:'Superficie Cubierta (m2)', dorm:'Dormitorios', amb:'Ambientes (sin dormitorios)', banos:'Baños', plantas:'Plantas',
-  cochera:'Cochera', patioD:'Patio delantero', patioT:'Patio trasero', gas:'Gas Natural', cloaca:'Cloaca', antig:'Antigüedad (años)', orient:'Orientación', inscr:'Inscripción del dominio'
+  cochera:'Cochera', patioD:'Patio delantero', patioT:'Patio trasero', gas:'Gas Natural', cloaca:'Cloaca', antig:'Antigüedad (años)', orient:'Orientación', inscr:'Inscripción del dominio', cred:'Crédito'
 };
 (function(){ for(var k=2;k<=5;k++){ MAP_CAMPOS['d'+k+'_nombre']='Dueño '+k+' - Nombre y Apellido'; MAP_CAMPOS['d'+k+'_dni']='Dueño '+k+' - DNI'; MAP_CAMPOS['d'+k+'_tel']='Dueño '+k+' - Celular'; MAP_CAMPOS['d'+k+'_mail']='Dueño '+k+' - E-mail'; MAP_CAMPOS['d'+k+'_dom']='Dueño '+k+' - Domicilio'; MAP_CAMPOS['d'+k+'_nac']='Dueño '+k+' - Fecha de Nacimiento'; MAP_CAMPOS['d'+k+'_nacionalidad']='Dueño '+k+' - Nacionalidad'; } })();
 var COLS_PLAZOS = ['Plazo de boleto','Boleto firmado','Plazo de escritura','Escritura firmada'];
