@@ -95,7 +95,7 @@ var FC=(function(){
     var scr=(c.notaScr&&ETAPA!=='tecnica')?'<div><small>Screening</small>'+esc(c.notaScr)+(c.infScr?' · <a target="_blank" href="'+esc(c.infScr)+'">📄 Ver screening</a>':'')+'</div>':'';
     CONT.innerHTML=
     '<div class="hero"><div class="in"><div class="brandrow"><span class="lg w"></span><span class="prod">Reclutamiento y Selección</span></div><h1>'+(ETAPA==='tecnica'?'Entrevista técnica de ':'Entrevista de ')+esc(c.nombre)+'</h1><div class="meta"><div><small>Cliente</small>'+esc(h.cliente)+'</div><div><small>Posición</small>'+esc(h.puesto)+'</div>'+(ETAPA==='tecnica'?'':'<div><small>Metodología</small>STAR (A-B-C-D-E)</div>')+scr+'</div></div></div>'+
-    '<div class="wrap"><div id="form">'+(ETAPA==='tecnica'?'':'<div class="sect card" id="iaBox"><div class="sl">Completar con la grabación de la entrevista</div><div style="font-size:13px;color:#3F4B66">Grabá la videollamada de Meet desde acá. Al terminar, la IA transcribe y completa el formulario para que lo revises y lo guardes. El audio no se guarda.</div><div style="margin-top:10px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button class="btn" onclick="FC.grabar()">🎙 Grabar entrevista (Meet)</button><span id="iaSt" style="font-size:13px;color:#5D6B82"></span></div></div>')+
+    '<div class="wrap"><div id="form">'+(ETAPA==='tecnica'?'':'<div class="sect card" id="iaBox"><div class="sl">Completar con la grabación de la entrevista</div><div style="font-size:13px;color:#3F4B66">Grabá la videollamada de Meet desde acá. Al terminar, la IA transcribe y completa el formulario para que lo revises y lo guardes. El audio no se guarda.</div><div style="margin-top:10px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><button class="btn" onclick="FC.grabar()">🎙 Grabar entrevista (Meet)</button><button class="btn ghost" title="Si grabaste y se perdió el resultado (por ejemplo guardaste antes de terminar), recupera lo último que procesó la IA (se conserva 6 horas)" onclick="FC.recuperar()">↺ Recuperar el último análisis</button><span id="iaSt" style="font-size:13px;color:#5D6B82"></span></div></div>')+
     '<div class="sect card"><div class="sl">Datos del candidato</div><div class="meta3">'+
     inp('m-nom','Nombre','',c.nombre).replace('<input','<input disabled')+'<div><label class="l">Fecha</label><input type="date" id="m-fecha" value="'+hoy+'"></div>'+
     (ETAPA==='tecnica'?'':'<div><label class="l">Entrevistador/a</label><select id="m-ent"><option value="">— Elegí —</option>'+D.entrevistadores.map(function(e){return '<option'+(e===ent?' selected':'')+'>'+esc(e)+'</option>';}).join('')+'</select></div>')+
@@ -140,6 +140,7 @@ var FC=(function(){
   function manual(l){S.manual=l;marcar(l);}
   function v(id){return $('#'+id).value.trim();}
   function guardar(){
+    try{if(window.EntrevistaRec&&window.EntrevistaRec.activa&&window.EntrevistaRec.activa()&&!confirm('La ventanita de grabación de la entrevista sigue abierta. Si guardás ahora sin terminarla, la IA no completa el formulario con esa grabación.\n\nTocá Cancelar, terminá la grabación (⏹) y después guardá. ¿Guardar igual?'))return;}catch(e){}
     var letra=S.manual||S.auto;
     if(!letra){alert('Evaluá al menos una competencia o elegí el ajuste al rol.');return;}
     var mf='';if(letra==='C'){var mr=MOT.valor('m-md');if(!mr.ok||!mr.texto){alert(mr.ok?'Con C hay que elegir al menos un motivo de descarte.':mr.msg);return;}mf=mr.texto;}
@@ -174,8 +175,19 @@ var FC=(function(){
     var st=$('#iaSt');st.style.color='#5D6B82';st.textContent='';
     window.EntrevistaRec.abrir(function(partes){transcribir(partes,0,[],st);});
   }
+  function recuperar(){
+    var st=$('#iaSt');if(!st)return;st.style.color='#5D6B82';st.textContent='Buscando el último análisis…';
+    google.script.run.withSuccessHandler(function(r){
+      var x=JSON.parse(r);
+      if(x.analisis&&x.analisis.resultado){aplicar(x.analisis.resultado,x.analisis.texto||'');return;}
+      var t=(x.analisis&&x.analisis.texto)||x.parcial||'';
+      if(!t||t.length<300){st.textContent='';alert('No encontré ninguna grabación reciente procesada (se conservan 6 horas).');return;}
+      st.textContent='Analizando la transcripción recuperada…';
+      google.script.run.withSuccessHandler(function(r2){aplicar(JSON.parse(r2),t);}).withFailureHandler(function(e){st.textContent='';alert('No se pudo analizar: '+((e&&e.message)||e));}).analizarEntrevista(K,CID,t);
+    }).withFailureHandler(function(e){st.textContent='';alert('No se pudo recuperar: '+((e&&e.message)||e));}).recuperarEntrevista(K,CID);
+  }
   function volver(){if(O.onClose)O.onClose();}
   function ficha(){if(O.onFicha)O.onFicha();}
-  return {ficha:ficha,open:open,pesoCh:pesoCh,nivel:nivel,manual:manual,guardar:guardar,volver:volver,motSel:motSel,grabar:grabar};
+  return {recuperar:recuperar,ficha:ficha,open:open,pesoCh:pesoCh,nivel:nivel,manual:manual,guardar:guardar,volver:volver,motSel:motSel,grabar:grabar};
 })();
 </script>
