@@ -1417,10 +1417,10 @@ function azcuPush_(titulo, msg, url, dest, estricto, libre){
   var k = PropertiesService.getScriptProperties().getProperty('ONESIGNAL_KEY');
   if(!k) throw new Error('Falta ONESIGNAL_KEY en las propiedades del script');
   k = String(k).replace(/\s/g,'');
-  if(PropertiesService.getScriptProperties().getProperty('AZCU_TODOS')==='1' && !/^(Azcu terminó|⏰)/.test(String(titulo||''))){ dest = null; estricto = false; }
+  if(PropertiesService.getScriptProperties().getProperty('AZCU_TODOS')==='1' && !/^(Azcu terminó|⏰|🧪)/.test(String(titulo||''))){ dest = null; estricto = false; }
   var us = azcuUsuarios_();
   if(us.length){
-    var personal = /^(Azcu terminó|⏰)/.test(String(titulo||'')), off = [], todos = [], gerencia = [], deGerencia = /RESERVA|VENDIDA|Reserva|Sin movimiento|Atrasos|equipo|eliminó/i.test(String(titulo||''));
+    var personal = /^(Azcu terminó|⏰|🧪)/.test(String(titulo||'')), off = [], todos = [], gerencia = [], deGerencia = /RESERVA|VENDIDA|Reserva|Sin movimiento|Atrasos|equipo|eliminó/i.test(String(titulo||''));
     us.forEach(function(u){
       if(!u.activo || u.avisos==='ninguno'){ off = off.concat(u.ids); return; }
       if(u.avisos==='todos') todos = todos.concat(u.ids);
@@ -2606,4 +2606,10 @@ function azcuTgProbar(){
   var mapa = azcuTgMapa_(), ks = Object.keys(mapa);
   if(!ks.length){ Logger.log('Nadie vinculado todavía.'); return; }
   ks.forEach(function(k){ Logger.log(k+' → '+azcuTgApi_('sendMessage', {chat_id:mapa[k], text:'🔔 Prueba de avisos de Azcu. Si ves esto, Telegram funciona.', reply_markup:{inline_keyboard:[[{text:'👉 Abrir Azcu', url:AZCU_WEB}]]}}).code); });
+}
+
+function azcuProbarVenta(nombre){
+  var n = String(nombre||'Ariel Jaime'), d = azcuDestinos_(n, true), url = AZCU_WEB+'?go=novedades';
+  Logger.log('Para equipo → '+azcuPush_('🧪 PRUEBA · ✅ Analía marcó como VENDIDA', 'Av. Francia 252 (venta simulada)', url, d.slice(), true, true));
+  Logger.log('Al vendedor → '+azcuPush_('🧪 PRUEBA · 🎉 ¡Felicitaciones, Ani!', 'Se vendió Av. Francia 252. ¡Gran trabajo!', url, d.slice(), true, true));
 }
