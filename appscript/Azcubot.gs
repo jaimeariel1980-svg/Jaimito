@@ -1245,9 +1245,10 @@ function azcuGet_(id){
   return s;
 }
 var AZCU_PUB_ = ['obtenerDatosOFallar','extraerDatosDNI','extraerDatosPropiedad','extraerDatosEscritura','clasificarPaginasLegajo','precargarDatos','guardarEncuesta'];
-var AZCU_TB_ = ['obtenerUrlDocumento','obtenerConsultasWS','marcarConsultaWS','marcarReporteEnviado','revisarTextoIA','obtenerPropiedadesDoc','obtenerImagenes','obtenerPropiedades','guardarDocumento','getDatos','guardarPropiedad','registrarInteraccion','editarInteraccion','eliminarInteraccion','eliminarPropiedad','agendarVisita','registrarPropuesta','subirDocumento','bajarDocumento','novedadesTb','visitasTb','registrarVisitaExterna','cancelarVisita','papeleraTb','restaurarPapelera','borrarDocumento','obtenerEncuesta','enviarReportePropietario','generarInformeTokko','getAppUrl','getEncuestaUrl','probarAvisoTb'];
+var AZCU_TB_ = ['obtenerUrlDocumento','obtenerConsultasWS','marcarConsultaWS','marcarReporteEnviado','revisarTextoIA','obtenerPropiedadesDoc','obtenerImagenes','obtenerPropiedades','guardarDocumento','getDatos','guardarPropiedad','registrarInteraccion','editarInteraccion','eliminarInteraccion','eliminarPropiedad','agendarVisita','registrarPropuesta','subirDocumento','bajarDocumento','novedadesTb','visitasTb','registrarVisitaExterna','cancelarVisita','papeleraTb','restaurarPapelera','borrarDocumento','obtenerEncuesta','enviarReportePropietario','generarInformeTokko','getAppUrl','getEncuestaUrl','probarAvisoTb','telegramEnlaceTb'];
 function azcuApi(e){
   var raw = (e && e.parameter && e.parameter.payload) || (e && e.postData && e.postData.contents) || '{}', req = {}, out;
+  if(e && e.parameter && e.parameter.tg && /"update_id"/.test(raw)){ try{ azcuTgUpdate_(e.parameter.tg, JSON.parse(raw)); }catch(eT){ Logger.log('Telegram: '+eT.message); } return ContentService.createTextOutput('{"ok":true}').setMimeType(ContentService.MimeType.JSON); }
   try{
     var pid = String((JSON.parse(raw) || {}).id || '').replace(/[^A-Za-z0-9]/g, '');
     if(pid && !(e && e.__viaGet)){
@@ -1433,6 +1434,7 @@ function azcuPush_(titulo, msg, url, dest, estricto, libre){
     if(dest) dest = dest.filter(function(x){ return off.indexOf(x)<0; });
     if(!/^Azcu terminó/.test(String(titulo||''))){ try{ azcuMailAvisos_(us, dest, titulo, msg, url); }catch(eM){ Logger.log('Mail aviso: '+eM.message); } }
   }
+  try{ azcuTgEnviar_(titulo, msg, url, dest, estricto); }catch(eTg){ Logger.log('Telegram aviso: '+eTg.message); }
   var base = {app_id:AZCU_OS_APP, target_channel:'push', headings:{en:titulo, es:titulo}, contents:{en:msg, es:msg}, url:url||AZCU_WEB, priority:10};
   var intentos = [];
   if(estricto && !(dest && dest.length)) return 'Sin destinatarios';
@@ -2538,4 +2540,70 @@ function probarAvisoTb(nombre){
   }
   if(/Nadie suscripto|Sin destinatarios/.test(r)) return {ok:false, msg:'No hay ningún dispositivo suscripto con el nombre «'+nombre+'».'+est};
   return {ok:false, msg:'Respuesta de OneSignal: '+r.slice(0,300)+est};
+}
+
+function azcuTgProp_(k){ return String(PropertiesService.getScriptProperties().getProperty(k)||'').trim(); }
+function azcuTgApi_(metodo, payload){
+  var tk = azcuTgProp_('TELEGRAM_TOKEN');
+  if(!tk) throw new Error('Falta la propiedad TELEGRAM_TOKEN');
+  var r = azcuFetchRetry_('https://api.telegram.org/bot'+tk+'/'+metodo, {method:'post', contentType:'application/json', payload:JSON.stringify(payload||{}), muteHttpExceptions:true});
+  return {code:r.getResponseCode(), body:r.getContentText()};
+}
+function azcuTgMapa_(){ try{ return JSON.parse(PropertiesService.getScriptProperties().getProperty('AZCU_TG')||'{}') || {}; }catch(e){ return {}; } }
+function azcuTgEsc_(x){ return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function azcuTgEnviar_(titulo, msg, url, dest, estricto){
+  if(!azcuTgProp_('TELEGRAM_TOKEN')) return;
+  var mapa = azcuTgMapa_(), us = azcuUsuarios_(), n = 0;
+  if(!Object.keys(mapa).length) return;
+  us.forEach(function(u){
+    var chat = mapa[u.nombre];
+    if(!chat || !u.activo || u.avisos==='ninguno') return;
+    if(dest && dest.length){ if(!dest.some(function(x){ return u.ids.indexOf(x)>-1; })) return; }
+    else if(estricto) return;
+    var r = azcuTgApi_('sendMessage', {chat_id:chat, parse_mode:'HTML', disable_web_page_preview:true,
+      text:'<b>'+azcuTgEsc_(titulo)+'</b>\n'+azcuTgEsc_(msg),
+      reply_markup:{inline_keyboard:[[{text:'👉 Abrir Azcu', url:String(url||AZCU_WEB)}]]}});
+    if(r.code===403){ delete mapa[u.nombre]; PropertiesService.getScriptProperties().setProperty('AZCU_TG', JSON.stringify(mapa)); }
+    else if(r.code>=400) Logger.log('Telegram '+r.code+': '+r.body.slice(0,200));
+    n++;
+  });
+  return n;
+}
+function azcuTgUpdate_(secreto, up){
+  if(!secreto || secreto!==azcuTgProp_('TELEGRAM_SECRET')) return;
+  var m = up && up.message; if(!m || !m.chat || !m.text) return;
+  var chat = m.chat.id, t = String(m.text).trim(), mt = /^\/start\s+([A-Za-z0-9]+)/.exec(t), pr = PropertiesService.getScriptProperties();
+  var resp = function(x){ azcuTgApi_('sendMessage', {chat_id:chat, text:x}); };
+  if(mt){
+    var c = CacheService.getScriptCache(), nombre = c.get('azt_'+mt[1]);
+    if(!nombre){ resp('Ese link venció. Volvé a tocar «Avisos por Telegram» en Azcu para generar uno nuevo.'); return; }
+    c.remove('azt_'+mt[1]);
+    var mapa = azcuTgMapa_(); mapa[nombre] = chat; pr.setProperty('AZCU_TG', JSON.stringify(mapa));
+    resp('✅ Listo, '+nombre.split(/\s+/)[0]+'. Desde ahora te aviso por acá. Para dejar de recibir avisos escribí /parar.');
+  } else if(/^\/parar/i.test(t)){
+    var mp = azcuTgMapa_(), ks = Object.keys(mp).filter(function(k){ return String(mp[k])===String(chat); });
+    ks.forEach(function(k){ delete mp[k]; }); pr.setProperty('AZCU_TG', JSON.stringify(mp));
+    resp('Listo, no te aviso más por acá. Podés volver a activarlo desde Azcu.');
+  } else resp('Soy el bot de avisos de Azcu. Para activarlo, entrá a Azcu y tocá «Avisos por Telegram».');
+}
+function telegramEnlaceTb(nombre){
+  var bot = azcuTgProp_('TELEGRAM_BOT').replace(/^@/, ''), u = azcuUsuarioDe_(String(nombre||'').trim());
+  if(!azcuTgProp_('TELEGRAM_TOKEN') || !bot) return {ok:false, msg:'Los avisos por Telegram todavía no están configurados.'};
+  if(!u || !u.activo) return {ok:false, msg:'No encontré a «'+nombre+'» activo en la pestaña Usuarios.'};
+  var code = Utilities.getUuid().replace(/-/g,'').slice(0,16);
+  CacheService.getScriptCache().put('azt_'+code, u.nombre, 900);
+  return {ok:true, url:'https://t.me/'+bot+'?start='+code, msg:'Se abre Telegram: tocá «Iniciar» para activar los avisos.'};
+}
+function azcuTgActivar(){
+  var pr = PropertiesService.getScriptProperties(), sec = azcuTgProp_('TELEGRAM_SECRET');
+  if(!sec){ sec = Utilities.getUuid().replace(/-/g,''); pr.setProperty('TELEGRAM_SECRET', sec); }
+  var exec = azcuTgProp_('TELEGRAM_EXEC') || 'https://script.google.com/macros/s/AKfycbwSxs5t-4WBhtqQtyLNhYPjUOo7EwW5dMk7R0AwinIFPG3lYyXtmlvNKShS_sEzcGiR/exec';
+  var r = azcuTgApi_('setWebhook', {url:exec+'?tg='+sec, allowed_updates:['message'], drop_pending_updates:true});
+  Logger.log('setWebhook → '+r.code+' '+r.body);
+  Logger.log('Bot → '+azcuTgApi_('getMe', {}).body);
+}
+function azcuTgProbar(){
+  var mapa = azcuTgMapa_(), ks = Object.keys(mapa);
+  if(!ks.length){ Logger.log('Nadie vinculado todavía.'); return; }
+  ks.forEach(function(k){ Logger.log(k+' → '+azcuTgApi_('sendMessage', {chat_id:mapa[k], text:'🔔 Prueba de avisos de Azcu. Si ves esto, Telegram funciona.', reply_markup:{inline_keyboard:[[{text:'👉 Abrir Azcu', url:AZCU_WEB}]]}}).code); });
 }
