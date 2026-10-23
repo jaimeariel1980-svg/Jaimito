@@ -27,3 +27,4 @@ build/
 !pami/*.json
 !appscript/*.json
 !liquidaciones/*.json
+!caja-obra/*.json
