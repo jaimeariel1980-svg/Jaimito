@@ -1245,7 +1245,7 @@ function azcuGet_(id){
   return s;
 }
 var AZCU_PUB_ = ['obtenerDatosOFallar','extraerDatosDNI','extraerDatosPropiedad','extraerDatosEscritura','clasificarPaginasLegajo','precargarDatos','guardarEncuesta'];
-var AZCU_TB_ = ['obtenerUrlDocumento','obtenerConsultasWS','marcarConsultaWS','marcarReporteEnviado','revisarTextoIA','obtenerPropiedadesDoc','obtenerImagenes','obtenerPropiedades','guardarDocumento','getDatos','guardarPropiedad','registrarInteraccion','editarInteraccion','eliminarInteraccion','eliminarPropiedad','agendarVisita','registrarPropuesta','subirDocumento','bajarDocumento','novedadesTb','visitasTb','registrarVisitaExterna','cancelarVisita','papeleraTb','restaurarPapelera','borrarDocumento','obtenerEncuesta','enviarReportePropietario','generarInformeTokko','getAppUrl','getEncuestaUrl'];
+var AZCU_TB_ = ['obtenerUrlDocumento','obtenerConsultasWS','marcarConsultaWS','marcarReporteEnviado','revisarTextoIA','obtenerPropiedadesDoc','obtenerImagenes','obtenerPropiedades','guardarDocumento','getDatos','guardarPropiedad','registrarInteraccion','editarInteraccion','eliminarInteraccion','eliminarPropiedad','agendarVisita','registrarPropuesta','subirDocumento','bajarDocumento','novedadesTb','visitasTb','registrarVisitaExterna','cancelarVisita','papeleraTb','restaurarPapelera','borrarDocumento','obtenerEncuesta','enviarReportePropietario','generarInformeTokko','getAppUrl','getEncuestaUrl','probarAvisoTb'];
 function azcuApi(e){
   var raw = (e && e.parameter && e.parameter.payload) || (e && e.postData && e.postData.contents) || '{}', req = {}, out;
   try{
@@ -2505,3 +2505,12 @@ function azcuAvisoCaptacion(forzar){
 }
 
 function azcuApodo_(v){ var n = String(v||'').trim().split(/\s+/)[0]; var k = n.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); return ({analia:'Ani', sebastian:'Seba'})[k] || n; }
+
+function probarAvisoTb(nombre){
+  var dest = azcuDestinos_(nombre, true);
+  if(!dest.length) return {ok:false, msg:'No encontré a «'+nombre+'» activo en la pestaña Usuarios (o tiene los avisos en «Ninguno»).'};
+  var r = String(azcuPush_('⏰ Prueba de aviso', 'Si ves esto, tus avisos funcionan.', AZCU_WEB, dest, true, true));
+  if(/Nadie suscripto|Sin destinatarios/.test(r)) return {ok:false, msg:'OneSignal no tiene ningún dispositivo tuyo suscripto. Instalá la app y tocá «Activar avisos» en este dispositivo.'};
+  if(/"id"\s*:\s*"[^"]+"/.test(r) && !/errors/.test(r)) return {ok:true, msg:'Aviso enviado a '+dest.join(', ')+'. Debería llegarte en unos segundos; si no, revisá los permisos de notificación del navegador o del celular.'};
+  return {ok:false, msg:'Respuesta de OneSignal: '+r.slice(0,300)};
+}
