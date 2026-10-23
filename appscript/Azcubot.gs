@@ -2562,7 +2562,7 @@ function azcuTgEnviar_(titulo, msg, url, dest, estricto){
     else if(estricto) return;
     var r = azcuTgApi_('sendMessage', {chat_id:chat, parse_mode:'HTML', disable_web_page_preview:true,
       text:'<b>'+azcuTgEsc_(titulo)+'</b>\n'+azcuTgEsc_(msg),
-      reply_markup:{inline_keyboard:[[{text:'👉 Abrir Azcu', url:String(url||AZCU_WEB)}]]}});
+      reply_markup:{inline_keyboard:[[{text:azcuTgBoton_(url), url:String(url||AZCU_WEB)}]]}});
     if(r.code===403){ delete mapa[u.nombre]; PropertiesService.getScriptProperties().setProperty('AZCU_TG', JSON.stringify(mapa)); }
     else if(r.code>=400) Logger.log('Telegram '+r.code+': '+r.body.slice(0,200));
     n++;
@@ -2613,4 +2613,11 @@ function azcuProbarVenta(nombre){
   var n = String(nombre||'Ariel Jaime'), d = azcuDestinos_(n, true), url = AZCU_WEB+'?go=novedades';
   Logger.log('Para equipo → '+azcuPush_('🧪 PRUEBA · ✅ Analía marcó como VENDIDA', 'Av. Francia 252 (venta simulada)', url, d.slice(), true, true));
   Logger.log('Al vendedor → '+azcuPush_('🧪 PRUEBA · 🎉 ¡Felicitaciones, Ani!', 'Se vendió Av. Francia 252. ¡Gran trabajo!', url, d.slice(), true, true));
+}
+
+function azcuTgBoton_(url){
+  var u = String(url||''), m = {cv:'Cargar cómo te fue', seg:'Escribirle al interesado', rep:'Enviar el informe', res:'Ver la reserva', enc:'Mandar la encuesta', pr:'Responder la propuesta', sm:'Ver propiedades sin movimiento', pl:'Ver el trámite', com:'Contarle al comprador', pa:'Completar los papeles', cap:'Ver la captación', ger:'Ver los atrasos', agenda:'Ver la agenda', rec:'Confirmar el recordatorio', ayuda:'Subir los papeles'}, k;
+  var g = /[?&]go=([a-z]+)/.exec(u); if(g){ return ({novedades:'👉 Ver novedades', agenda:'👉 Ver la agenda', alertas:'👉 Ver mis alertas', chat:'👉 Abrir el chat'})[g[1]] || '👉 Abrir Azcu'; }
+  for(k in m){ if(new RegExp('[?&]'+k+'=').test(u)) return '👉 '+m[k]; }
+  return '👉 Abrir Azcu';
 }
