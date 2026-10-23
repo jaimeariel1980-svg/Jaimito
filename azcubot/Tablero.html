@@ -705,7 +705,7 @@ function normEt(e){e=(e==='Suspendida'?'Baja':e);return e==='Publicada'?'Publica
 function filtered(){
   const q=(document.getElementById('q').value||'').toLowerCase();
   const ft=document.getElementById('ftipo').value;
-  return DATA.filter(p=>p.etapa!=='Baja'&&(!q||[p.dir,p.id,p.prop,p.tipo].join(' ').toLowerCase().includes(q))&&(!ft||p.tipo===ft));
+  return DATA.filter(p=>p.etapa!=='Baja'&&(!q||[p.dir,p.id,p.prop,p.tipo].join(' ').toLowerCase().includes(q))&&(!ft||tiposDe(p.tipo).indexOf(ft)>-1));
 }
 function sortIt(arr){
   const o=document.getElementById('orden').value;
@@ -716,7 +716,7 @@ function sortIt(arr){
 }
 function poblarTipos(){
   var sel=document.getElementById('ftipo'); if(!sel)return;
-  var tipos=Array.from(new Set(DATA.filter(function(p){return p.tipo;}).map(function(p){return p.tipo;}))).sort();
+  var tipos=Array.from(new Set(DATA.reduce(function(a,p){return a.concat(tiposDe(p.tipo));},[]))).sort();
   if(sel.options.length===tipos.length+1)return;
   var actual=sel.value;
   sel.innerHTML='<option value="">Todos los tipos</option>'+tipos.map(function(t){return '<option value="'+t+'">'+t+'</option>';}).join('');
@@ -900,7 +900,7 @@ function ficha(id){
     '<div class="fb"><div class="grid">'+
       '<div class="fi"><div class="k">Estado</div><div class="v"><span class="est" style="background:'+estColor(p.estado)+'">'+p.estado+'</span></div></div>'+
       '<div class="fi"><div class="k">Precio</div><input class="inp" value="'+(p.precio||'')+'" placeholder="—" onchange="setC(\''+p.id+'\',\'precio\',this.value)"></div>'+
-      '<div class="fi"><div class="k">Tipo de propiedad</div><select class="inp" onchange="setC(\''+p.id+'\',\'tipo\',this.value)"><option value="" '+(!p.tipo?'selected':'')+'>— elegir —</option>'+TIPOS.map(t=>'<option '+(p.tipo===t?'selected':'')+'>'+t+'</option>').join('')+'</select></div>'+
+      '<div class="fi"><div class="k">Tipo de propiedad</div><div class="tipochk" id="tc_'+p.id+'" style="display:flex;flex-wrap:wrap;gap:4px 12px">'+tiposOpc(p.tipo).map(t=>'<label style="font-size:13px;white-space:nowrap"><input type="checkbox" value="'+t.replace(/"/g,'&quot;')+'" '+(tiposDe(p.tipo).indexOf(t)>-1?'checked':'')+' onchange="setTipos(\''+p.id+'\')"> '+t+'</label>').join('')+'</div></div>'+
       '<div class="fi"><div class="k">Días sin movimiento</div><div class="v" style="color:'+semC(p.dias)+'">'+(p.dias===null?'sin actividad':p.dias+' días')+'</div></div>'+
       (ext?'':'<div class="fi"><div class="k">Salud del aviso (%)</div><div class="v"><input type="number" min="0" max="100" value="'+(p.pct===null?'':p.pct)+'" onchange="setPct(\''+p.id+'\',this.value)" style="width:72px;padding:5px 8px;border:1px solid var(--linea);border-radius:7px;font-size:14px"> %</div>'+(p.pct===null?'':av)+'</div>')+
     '</div>'+
@@ -1763,6 +1763,10 @@ function otrosPropHtml(p){
   }
   return h;
 }
+const TIPOS_PRE=['Terreno','Casa','Departamento','PH','Local Comercial','Oficina Comercial','Garage - Cochera','Depósito'];
+function tiposDe(s){return String(s||'').split(',').map(x=>x.trim()).filter(Boolean);}
+function tiposOpc(s){const a=TIPOS_PRE.slice();tiposDe(s).forEach(x=>{if(a.indexOf(x)<0)a.push(x);});return a;}
+function setTipos(id){const c=document.getElementById('tc_'+id);if(!c)return;setC(id,'tipo',Array.from(c.querySelectorAll('input:checked')).map(x=>x.value).join(', '));}
 function setDet(id,k,v){const p=DATA.find(x=>x.id===id);if(!p)return;if(!p.detNew)p.detNew={};p.detNew[k]=String(v).trim();}
 function detSecHtml(p,soloDir){
   const d=p.det||{},ea=function(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');};
