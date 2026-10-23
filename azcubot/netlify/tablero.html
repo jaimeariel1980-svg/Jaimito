@@ -220,7 +220,7 @@ td{padding:7px 8px;border-bottom:1px solid #f1f0ec;vertical-align:top}
     <select id="ftipo" onchange="render()"><option value="">Todos los tipos</option></select>
     <select id="orden" onchange="render()"><option value="urg">Orden: más paradas primero</option><option value="fecha">Orden: + reciente</option><option value="precio">Orden: precio</option></select>
     <button id="editbtn" class="btn s" onclick="toggleEdit()">Modo edición: OFF</button>
-    <button id="avibtn" class="btn s" style="display:none" onclick="probarAviso()" title="Manda un aviso de prueba a este usuario">🔔 Probar aviso</button><button id="sndbtn" class="btn s" onclick="toggleSonido()" title="Sonido corto al vender o reservar"></button><button id="vendbtn" class="btn s" onclick="cambiarVend()" title="Con este nombre queda registrado todo lo que hagas: quién cargó, cambió o borró cada cosa"></button>
+    <button id="tgbtn" class="btn s" onclick="avisosTelegram()" title="Recibí los avisos también por Telegram">📲 Avisos por Telegram</button><button id="avibtn" class="btn s" style="display:none" onclick="probarAviso()" title="Manda un aviso de prueba a este usuario">🔔 Probar aviso</button><button id="sndbtn" class="btn s" onclick="toggleSonido()" title="Sonido corto al vender o reservar"></button><button id="vendbtn" class="btn s" onclick="cambiarVend()" title="Con este nombre queda registrado todo lo que hagas: quién cargó, cambió o borró cada cosa"></button>
     <span id="edithint" style="display:none;font-size:12.5px;color:var(--azul);font-weight:600">Arrastrá las tarjetas para cambiar de etapa</span>
   </div>
   <div class="board" id="board"></div>
@@ -1134,6 +1134,7 @@ function cargarForm(id, nombre, tel){
 }
 setTimeout(function(){_pintaVend();var n='';try{n=(localStorage.getItem('azcu_nombre')||'').trim();}catch(e){}if(!n)setTimeout(_yo,1500);},400);
 function _vendNombres(){var s={};try{var n=(localStorage.getItem('azcu_nombre')||'').trim();if(n)s[n]=1;}catch(e){}(DATA||[]).forEach(x=>{if(x.vendedor)s[x.vendedor]=1;});return Object.keys(s);}
+function avisosTelegram(){var n=_yo();if(!n)return;google.script.run.withSuccessHandler(function(r){if(r&&r.ok&&r.url){alert(r.msg);window.open(r.url,'_blank');}else alert((r&&r.msg)||'Sin respuesta');}).withFailureHandler(function(e){alert('Error: '+(e&&e.message?e.message:e));}).telegramEnlaceTb(n);}
 function probarAviso(){var n=_yo();if(!n)return;var b=document.getElementById('avibtn');if(b){b.disabled=true;b.textContent='Enviando…';}function fin(m){if(b){b.disabled=false;b.textContent='🔔 Probar aviso';}alert(m);}google.script.run.withSuccessHandler(function(r){fin((r&&r.msg)||'Sin respuesta');}).withFailureHandler(function(e){fin('Error: '+(e&&e.message?e.message:e));}).probarAvisoTb(n);}
 function _pintaSnd(){const b=document.getElementById('sndbtn');if(!b)return;const _av=document.getElementById('avibtn');if(_av){let n='';try{n=localStorage.getItem('azcu_nombre')||'';}catch(e){}_av.style.display=/ariel|ana[ií]?lia/i.test(n)?'':'none';}let on=true;try{on=localStorage.getItem('azcu_sonido')!=='0';}catch(e){}b.textContent='🔊 Sonido: '+(on?'ON':'OFF');}
 setTimeout(_pintaSnd,300);
