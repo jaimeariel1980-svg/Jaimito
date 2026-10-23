@@ -470,17 +470,24 @@ function nuevoCertificado(chatId,pct,mesTxt,obraForce){
       return;
     }
   }
-  if(!(pct>0&&pct<1)){ responder(chatId,'Ese % no parece un IPC mensual válido (0 a 100%). Probá tipo "IPC 2,5%" o "IPC julio 2,5%".'); return; }
+  var r;
+  try{ r=certEmitir_(obra,pct,mesTxt); }catch(e){ responder(chatId,e.message); return; }
+  tgDoc(chatId,r.pdf,'📄 Certificado N° '+r.n+' de '+obra+'. Reenviáselo al cliente.');
+  responder(chatId,'✅ '+obra+' · Certificado N° '+r.n+' ('+r.etiqueta+') · acumulada '+pctTxt(r.acum)+' · reajuste '+money(r.reaj)+' · total '+money(r.total)+'.\n💵 Cargué el honorario como Ingreso de la obra. Te lo mandé en PDF.');
+}
+function certEmitir_(obra,pct,mesTxt,nEsperado){
+  if(!(pct>0&&pct<1)) throw new Error('Ese % no parece un IPC mensual válido (0 a 100%). Probá tipo "IPC 2,5%" o "IPC julio 2,5%".');
   var c=ss().getSheetByName('Certificados'), p=certParams(obra);
-  if(!p.hon){ responder(chatId,'Falta cargar el honorario mensual de '+obra+' en la pestaña Certificados (Parámetros por obra).'); return; }
+  if(!p.hon) throw new Error('Falta cargar el honorario mensual de '+obra+' en la pestaña Certificados (Parámetros por obra).');
   if(p.huerfana&&p.fila){ c.getRange(p.fila,1).setValue(obra); }
   var factor=1; certPctPrevios(obra).forEach(function(x){ factor*=(1+x); }); factor*=(1+pct);
   var acum=factor-1;
-  if(!isFinite(acum)||acum>50){ responder(chatId,'Los % anteriores de '+obra+' parecen mal cargados (la acumulada dio un número absurdo). Revisá la columna "% IPC del mes" en Certificados, o corré armarCertificados para reiniciar.'); return; }
+  if(!isFinite(acum)||acum>50) throw new Error('Los % anteriores de '+obra+' parecen mal cargados (la acumulada dio un número absurdo). Revisá la columna "% IPC del mes" en Certificados, o corré armarCertificados para reiniciar.');
   var reaj=Math.round(p.hon*acum), total=p.hon+reaj;
   var last=c.getLastRow(), n=0;
   for(var r=18;r<=last;r++){ if(c.getRange(r,1).getValue()===obra) n++; }
   n=n+1;
+  if(nEsperado&&nEsperado!==n) throw new Error('CAMBIO');
   var MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
   var bd=p.base?new Date(p.base):new Date();
   var idx=bd.getMonth()+n;
@@ -493,9 +500,7 @@ function nuevoCertificado(chatId,pct,mesTxt,obraForce){
   c.getRange(row,8).setNumberFormat('dd/mm/yyyy');
   var mv=ss().getSheetByName('Movimientos');
   mv.appendRow([hoy, 'Ingreso', 'Honorarios', 'Honorarios '+etiqueta, 'Cliente', total, 'Sí', '', 'Certificado', 'Por confirmar', obra, '', '']);
-  var pdf=certPDF(p,n,etiqueta,pct,acum,reaj,total,hoy);
-  tgDoc(chatId,pdf,'📄 Certificado N° '+n+' de '+obra+'. Reenviáselo al cliente.');
-  responder(chatId,'✅ '+obra+' · Certificado N° '+n+' ('+etiqueta+') · acumulada '+pctTxt(acum)+' · reajuste '+money(reaj)+' · total '+money(total)+'.\n💵 Cargué el honorario como Ingreso de la obra. Te lo mandé en PDF.');
+  return {obra:obra,n:n,etiqueta:etiqueta,pct:pct,acum:acum,reaj:reaj,total:total,hoy:hoy,p:p,pdf:certPDF(p,n,etiqueta,pct,acum,reaj,total,hoy)};
 }
 function certPDF(p,n,mes,pct,acum,reaj,total,fecha){
   function m(v){ return '$ '+(Number(v)||0).toLocaleString('es-AR'); }
@@ -966,18 +971,22 @@ function repararResumen(){
   SpreadsheetApp.getActive().toast('Resumen reparado ✓');
 }
 function corregirCertificado(chatId,mesTxt,nuevoPct,obraForce){
-  var obra=obraForce||obraActiva(chatId);
+  var obra=obraForce||obraActiva(chatId), r;
+  try{ r=certCorregir_(obra,mesTxt,nuevoPct); }catch(e){ responder(chatId,e.message); return; }
+  responder(chatId,'✅ Corregí '+obra+' · '+r.mes+' → IPC '+pctTxt(nuevoPct)+'.\nRecalculé en cadena '+r.cant+' certificado(s) y sus honorarios. Si querés el PDF actualizado de alguno, decime "PDF certificado '+r.mes+'".');
+}
+function certCorregir_(obra,mesTxt,nuevoPct){
   var c=ss().getSheetByName('Certificados'), last=c.getLastRow(), filas=[];
   for(var r=18;r<=last;r++){
     if(c.getRange(r,1).getValue()===obra){
       filas.push({row:r, n:Number(c.getRange(r,2).getValue())||0, mes:String(c.getRange(r,3).getValue()), pct:Number(c.getRange(r,4).getValue())||0});
     }
   }
-  if(!filas.length){ responder(chatId,'No hay certificados de '+obra+' para corregir.'); return; }
+  if(!filas.length) throw new Error('No hay certificados de '+obra+' para corregir.');
   filas.sort(function(a,b){ return a.n-b.n; });
   var idx=-1;
   for(var i=0;i<filas.length;i++){ if(filas[i].mes.toLowerCase().indexOf(mesTxt.toLowerCase())>=0) idx=i; }
-  if(idx<0){ responder(chatId,'No encontré un certificado de "'+mesTxt+'" en '+obra+'.'); return; }
+  if(idx<0) throw new Error('No encontré un certificado de "'+mesTxt+'" en '+obra+'.');
   filas[idx].pct=nuevoPct;
   var p=certParams(obra), factor=1, mv=ss().getSheetByName('Movimientos'), mvv=mv.getDataRange().getValues();
   filas.forEach(function(f){
@@ -991,8 +1000,7 @@ function corregirCertificado(chatId,mesTxt,nuevoPct,obraForce){
       if(mvv[j][1]==='Ingreso'&&mvv[j][2]==='Honorarios'&&mvv[j][10]===obra&&String(mvv[j][3]).toLowerCase().indexOf(f.mes.toLowerCase())>=0){ mv.getRange(j+1,6).setValue(total); break; }
     }
   });
-  var fx=filas[idx];
-  responder(chatId,'✅ Corregí '+obra+' · '+fx.mes+' → IPC '+pctTxt(nuevoPct)+'.\nRecalculé en cadena '+filas.length+' certificado(s) y sus honorarios. Si querés el PDF actualizado de alguno, decime "PDF certificado '+fx.mes+'".');
+  return {mes:filas[idx].mes,cant:filas.length};
 }
 function menuCorregir(chatId){
   var obra=obraActiva(chatId);

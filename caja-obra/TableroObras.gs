@@ -41,7 +41,7 @@ function tableroDatos_(){
     });
     var hon=certs.reduce(function(a,c){ return a+c.total; },0);
     var p=null;
-    for(var i=0;i<par.length;i++){ if(par[i][0]===n){ p={mensual:Number(par[i][1])||0, plazo:Number(par[i][2])||0, base:f(par[i][3],'dd/MM/yyyy')}; break; } }
+    for(var i=0;i<par.length;i++){ if(par[i][0]===n){ p={mensual:Number(par[i][1])||0, plazo:Number(par[i][2])||0, base:f(par[i][3],'dd/MM/yyyy'), baseISO:f(par[i][3],'yyyy-MM-dd')}; break; } }
     var ahora=new Date(), MS=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'], serie=[];
     for(var q=5;q>=0;q--){ var dm=new Date(ahora.getFullYear(),ahora.getMonth()-q,1); serie.push({k:dm.getFullYear()*12+dm.getMonth(),l:MS[dm.getMonth()],c:0,p:0}); }
     mv.forEach(function(r){
