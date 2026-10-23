@@ -1432,7 +1432,6 @@ function azcuPush_(titulo, msg, url, dest, estricto, libre){
       else { dest = extra; estricto = true; }
     }
     if(dest) dest = dest.filter(function(x){ return off.indexOf(x)<0; });
-    if(!/^Azcu terminó/.test(String(titulo||''))){ try{ azcuMailAvisos_(us, dest, titulo, msg, url); }catch(eM){ Logger.log('Mail aviso: '+eM.message); } }
   }
   try{ azcuTgEnviar_(titulo, msg, url, dest, estricto); }catch(eTg){ Logger.log('Telegram aviso: '+eTg.message); }
   var base = {app_id:AZCU_OS_APP, target_channel:'push', headings:{en:titulo, es:titulo}, contents:{en:msg, es:msg}, url:url||AZCU_WEB, priority:10};
