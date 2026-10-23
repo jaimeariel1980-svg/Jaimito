@@ -2571,13 +2571,23 @@ function azcuTgEnviar_(titulo, msg, url, dest, estricto){
 }
 function azcuTgUpdate_(secreto, up){
   if(!secreto || secreto!==azcuTgProp_('TELEGRAM_SECRET')) return;
-  if(up && up.update_id && azcuVisto_('tg'+up.update_id)) return;
+  if(up && up.update_id){
+    var lk = LockService.getScriptLock(), tl = false, ya = false, pr0 = PropertiesService.getScriptProperties();
+    try{ lk.waitLock(8000); tl = true; }catch(e0){}
+    try{ var ult = +pr0.getProperty('AZCU_TG_ULT') || 0; if(+up.update_id <= ult) ya = true; else pr0.setProperty('AZCU_TG_ULT', String(up.update_id)); } finally { if(tl){ try{ lk.releaseLock(); }catch(e1){} } }
+    if(ya) return;
+  }
   var m = up && up.message; if(!m || !m.chat || !m.text) return;
   var chat = m.chat.id, t = String(m.text).trim(), mt = /^\/start\s+([A-Za-z0-9]+)/.exec(t), pr = PropertiesService.getScriptProperties();
   var resp = function(x){ azcuTgApi_('sendMessage', {chat_id:chat, text:x}); };
   if(mt){
     var c = CacheService.getScriptCache(), nombre = c.get('azt_'+mt[1]);
-    if(!nombre){ resp('Ese link venció. Volvé a tocar «Avisos por Telegram» en Azcu para generar uno nuevo.'); return; }
+    if(!nombre){
+      var vm = azcuTgMapa_();
+      if(Object.keys(vm).some(function(k){ return String(vm[k])===String(chat); })) resp('Ya estás vinculado: te voy a avisar por acá. Para dejar de recibir avisos escribí /parar.');
+      else resp('Ese link venció. Volvé a tocar «Avisos por Telegram» en Azcu para generar uno nuevo.');
+      return;
+    }
     c.remove('azt_'+mt[1]);
     var mapa = azcuTgMapa_(); mapa[nombre] = chat; pr.setProperty('AZCU_TG', JSON.stringify(mapa));
     resp('✅ Listo, '+nombre.split(/\s+/)[0]+'. Desde ahora te aviso por acá. Para dejar de recibir avisos escribí /parar.');
