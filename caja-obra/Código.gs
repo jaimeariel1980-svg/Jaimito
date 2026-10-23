@@ -483,7 +483,7 @@ function certEmitir_(obra,pct,mesTxt,nEsperado){
   var factor=1; certPctPrevios(obra).forEach(function(x){ factor*=(1+x); }); factor*=(1+pct);
   var acum=factor-1;
   if(!isFinite(acum)||acum>50) throw new Error('Los % anteriores de '+obra+' parecen mal cargados (la acumulada dio un número absurdo). Revisá la columna "% IPC del mes" en Certificados, o corré armarCertificados para reiniciar.');
-  var reaj=Math.round(p.hon*acum), total=p.hon+reaj;
+  var reaj=Math.round(p.hon*acum), total=Math.round(p.hon+reaj);
   var last=c.getLastRow(), n=0;
   for(var r=18;r<=last;r++){ if(c.getRange(r,1).getValue()===obra) n++; }
   n=n+1;
@@ -507,7 +507,7 @@ function certPDF(p,n,mes,pct,acum,reaj,total,fecha){
   var mesTit=mesLindo(mes);
   var f=Utilities.formatDate(fecha,'GMT-3','dd/MM/yyyy');
   var baseF=p.base?Utilities.formatDate(new Date(p.base),'GMT-3','dd/MM/yyyy'):'';
-  var plazo=Number(p.plazo)||0, conv=p.hon*plazo;
+  var plazo=Number(p.plazo)||0, conv=Math.round(p.hon*plazo);
   var dir='';
   try{
     var ob=ss().getSheetByName('Obras').getDataRange().getValues();
@@ -991,7 +991,7 @@ function certCorregir_(obra,mesTxt,nuevoPct){
   var p=certParams(obra), factor=1, mv=ss().getSheetByName('Movimientos'), mvv=mv.getDataRange().getValues();
   filas.forEach(function(f){
     factor*=(1+f.pct);
-    var acum=factor-1, reaj=Math.round(p.hon*acum), total=p.hon+reaj;
+    var acum=factor-1, reaj=Math.round(p.hon*acum), total=Math.round(p.hon+reaj);
     c.getRange(f.row,4).setValue(f.pct);
     c.getRange(f.row,5).setValue(acum);
     c.getRange(f.row,6).setValue(reaj);
