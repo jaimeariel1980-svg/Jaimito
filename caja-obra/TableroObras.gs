@@ -1,37 +1,34 @@
-// ===== TABLERO CAJA DE OBRA (reemplaza el doGet viejo) =====
-// Opcional: clave de acceso -> correr ponerClaveTablero() una vez, y entrar con <url /exec>?clave=XXXX
-function ponerClaveTablero(){ PropertiesService.getScriptProperties().setProperty('TABLERO_PIN','CAMBIAR_ESTA_CLAVE'); }
+// ===== TABLERO CAJA DE OBRA: pantalla + lectura de datos =====
+// La clave vive en la propiedad del script TABLERO_PIN (Configuración del proyecto > Propiedades de la secuencia de comandos).
 
-function doGet(e){
-  var pin=PropertiesService.getScriptProperties().getProperty('TABLERO_PIN');
-  if(pin && String((e&&e.parameter&&e.parameter.clave)||'')!==pin)
-    return HtmlService.createHtmlOutput('<meta name="viewport" content="width=device-width,initial-scale=1"><p style="font-family:sans-serif;padding:24px;color:#880E4F">Acceso restringido. Entrá con el link que incluye la clave.</p>');
-  var t=HtmlService.createTemplateFromFile('TableroVista');
-  t.datos=JSON.stringify(tableroDatos_()).replace(/</g,'\\u003c');
-  return t.evaluate().setTitle('NJ Arquitectura · Obras').addMetaTag('viewport','width=device-width, initial-scale=1');
+function doGet(){
+  return HtmlService.createHtmlOutputFromFile('TableroVista').setTitle('NJ Arquitectura · Obras').addMetaTag('viewport','width=device-width, initial-scale=1');
 }
+
+function tbFp_(r){ return (r[0] instanceof Date?r[0].getTime():String(r[0]))+'|'+(Number(r[5])||0)+'|'+r[10]+'|'+r[1]; }
 
 function tableroDatos_(){
   var s=ss(), TZ='GMT-3';
   var TIPOS={'Ingreso':1,'Pago sub':1,'Compra':1,'Gasto':1};
   var EST=['Sueldos','Oficina','Servicios','Contadora','Impuestos'];
-  function vals(name,r,c,minRow,ncol){
+  function vals(name,minRow,ncol){
     var sh=s.getSheetByName(name); if(!sh) return [];
     var last=sh.getLastRow(); if(last<minRow) return [];
     return sh.getRange(minRow,1,last-minRow+1,ncol).getValues();
   }
-  var mv=vals('Movimientos',0,0,1,13).filter(function(r){ return TIPOS[r[1]]; });
-  var ob=vals('Obras',0,0,4,6).filter(function(r){ return r[0]; });
-  var rb=vals('Rubros',0,0,2,3);
-  var ce=vals('Certificados',0,0,18,8).filter(function(r){ return r[0]; });
+  var mv=[];
+  vals('Movimientos',1,13).forEach(function(r,i){ if(TIPOS[r[1]]){ r._row=i+1; mv.push(r); } });
+  var ob=vals('Obras',4,6).filter(function(r){ return r[0]; });
+  var rb=vals('Rubros',2,3);
+  var ce=vals('Certificados',18,8).filter(function(r){ return r[0]; });
   var csh=s.getSheetByName('Certificados');
   var par=csh?csh.getRange(6,1,10,4).getValues():[];
   function f(d,fmt){ return (d instanceof Date)?Utilities.formatDate(d,TZ,fmt):''; }
 
   var obras=ob.map(function(o){
-    var n=o[0], rub={}, orden=[];
+    var n=o[0], rub={}, orden=[], presMap={};
     function R(k){ if(!rub[k]){ rub[k]={rubro:k,pres:0,cobrado:0,ejecutado:0,bonus:0}; orden.push(k); } return rub[k]; }
-    rb.forEach(function(r){ if(r[0]===n&&r[1]) R(r[1]).pres+=Number(r[2])||0; });
+    rb.forEach(function(r){ if(r[0]===n&&r[1]){ var p=Number(r[2])||0; R(r[1]).pres+=p; if(p) presMap[r[1]]=p; } });
     var cob=0,pag=0,bonus=0,est=0;
     mv.forEach(function(r){
       if(r[10]!==n) return;
@@ -56,12 +53,12 @@ function tableroDatos_(){
     orden.forEach(function(k){ if(rub[k].pres>0){ pres+=rub[k].pres; ejeP+=rub[k].ejecutado; } });
     return {
       obra:n, dir:o[1]||'', estado:o[5]||'', cobrado:cob, pagado:pag, saldo:cob-pag, bonus:bonus, honorarios:hon, gastoEstudio:est,
-      neta:bonus+hon-est, serie:serie, pres:pres, avance:pres>0?ejeP/pres:null, certs:certs, params:p,
+      neta:bonus+hon-est, serie:serie, pres:pres, presMap:presMap, avance:pres>0?ejeP/pres:null, certs:certs, params:p,
       rubros:orden.map(function(k){ return rub[k]; }).filter(function(x){ return x.pres||x.cobrado||x.ejecutado||x.bonus; })
     };
   });
   var movs=mv.slice(-400).reverse().map(function(r){
-    return {f:f(r[0],'dd/MM/yy HH:mm'), tipo:r[1], rubro:r[2]||'', det:r[3]||'', prov:r[4]||'', monto:Number(r[5])||0, fac:r[6]||'', link:r[7]||'', obra:r[10]||''};
+    return {row:r._row, fp:tbFp_(r), f:f(r[0],'dd/MM/yy HH:mm'), d:f(r[0],'yyyy-MM-dd'), tipo:r[1], rubro:r[2]||'', det:r[3]||'', prov:r[4]||'', monto:Number(r[5])||0, fac:r[6]||'', link:r[7]||'', obra:r[10]||'', b:Number(r[11])||0};
   });
-  return {obras:obras, movs:movs, hoy:Utilities.formatDate(new Date(),TZ,'dd/MM/yyyy HH:mm')};
+  return {obras:obras, movs:movs, rubros:RUBROS.concat(TB_RUBROS_EXTRA_), hoy:Utilities.formatDate(new Date(),TZ,'dd/MM/yyyy HH:mm')};
 }
