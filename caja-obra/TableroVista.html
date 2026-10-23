@@ -474,13 +474,17 @@ function frmCertCfg(i){
   const o=D.obras[i],p=o.params||{};F={i:i};
   abrir(`<h2>Honorarios · ${esc(o.obra)}</h2><div class="sub">Se carga una sola vez. Después el tablero te avisa cada mes cuándo emitir el certificado.</div>
   <label class="fl">Honorario mensual ($)</label><input class="in big" id="cmen" inputmode="decimal" value="${p.mensual?fmtN(p.mensual):''}">
-  <div class="row2"><div><label class="fl">Plazo (meses)</label><input class="in" id="cpla" inputmode="numeric" value="${p.plazo||''}"></div><div><label class="fl">Fecha base</label><input class="in" id="cbas" type="date" value="${p.baseISO||hoyISO()}"></div></div>
+  <label class="fl">O el total del contrato ($)</label><input class="in" id="ctot" inputmode="decimal" placeholder="Ej: 31.000.000" oninput="calcMen()">
+  <div class="sub" style="margin-top:4px">Si cargás el total, el mensual se calcula exacto (total ÷ plazo) y el certificado muestra el total sin diferencias.</div>
+  <div class="row2"><div><label class="fl">Plazo (meses)</label><input class="in" id="cpla" inputmode="numeric" oninput="calcMen()" value="${p.plazo||''}"></div><div><label class="fl">Fecha base</label><input class="in" id="cbas" type="date" value="${p.baseISO||hoyISO()}"></div></div>
   <div class="sub" style="margin-top:8px">El primer certificado corresponde al mes siguiente a la fecha base.</div>
   <div class="err" id="ferr"></div><div class="acts"><button class="sec" onclick="cerrar()">Cancelar</button><button class="pri" id="fsave" onclick="guardarCfg()">Guardar</button></div>`);
 }
+function calcMen(){const t=num($('ctot').value),pl=num($('cpla').value);if(t>0&&pl>0)$('cmen').value=fmtN(t/pl)}
 function guardarCfg(){
   const b=$('fsave');b.disabled=true;b.textContent='Guardando…';
-  rpc('tbCertParams',[CL,D.obras[F.i].obra,num($('cmen').value),num($('cpla').value),$('cbas').value],d=>{D=d;cerrar();paint();toast('✅ Certificados configurados')},m=>{b.disabled=false;b.textContent='Guardar';$('ferr').textContent=msgErr(m)});
+  const t=num($('ctot').value),pl=num($('cpla').value),men=(t>0&&pl>0)?t/pl:num($('cmen').value);
+  rpc('tbCertParams',[CL,D.obras[F.i].obra,men,pl,$('cbas').value],d=>{D=d;cerrar();paint();toast('✅ Certificados configurados')},m=>{b.disabled=false;b.textContent='Guardar';$('ferr').textContent=msgErr(m)});
 }
 
 function shareHtml(url,n,mes,obra){

@@ -55,7 +55,7 @@ function tbCertPdf(clave,obra,n){
 function tbCertParams(clave,obra,mensual,plazo,baseISO){
   tbAuth_(clave);
   return tbLock_(function(){
-    obra=String(obra||''); mensual=Math.round(Number(mensual)||0); plazo=Math.round(Number(plazo)||0);
+    obra=String(obra||''); mensual=Math.round((Number(mensual)||0)*10000)/10000; plazo=Math.round(Number(plazo)||0);
     if(obrasLista().indexOf(obra)<0) throw new Error('Esa obra no existe.');
     if(!(mensual>0)) throw new Error('El honorario mensual tiene que ser mayor a 0.');
     if(!(plazo>=1&&plazo<=120)) throw new Error('El plazo va de 1 a 120 meses.');
