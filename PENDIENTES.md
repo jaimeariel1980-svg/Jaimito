@@ -28,12 +28,7 @@ Lo mantiene Claude. Prioridad: 🔴 urgente · 🟠 importante · 🟡 cuando se
 - 🟡 Guía corta «qué se hace con Azcu y qué con el Tablero» para el equipo (Azcu = cargar al paso, sobre todo en el celular; Tablero = ver y gestionar, sobre todo en la compu). — *Claude, si Ariel quiere*
 
 ## Auditorías del 24/10 (funcional, diseño/uso, rendimiento) — hallazgos agrupados en tandas
-Tanda 1 — arreglos que casi nadie nota (se pueden hacer juntos):
-- 🟠 **Encuesta al cliente en celular sin `viewport`/`charset`/`title`/`lang`** (se ve como página de compu): `encuesta.html` hospedada.
-- 🟠 **Formularios del Tablero en celular se cortan** (Cargar interacción, Agendar, Visita externa: la 2.ª columna no entra; tapa «Dirección*»): una sola columna en pantallas angostas.
-- 🟠 **Avisos: «memoria» en propiedades del script con tope de 9 KB** (`azcuMapaSet_`: `AZCU_REP`, `AZCU_SEG2`, `AZCU_PV2`…): se rompe cerca de 170–300 propiedades/entradas y los avisos se repiten o no salen sin error visible; igual `AZCU_COLA` (cola de fin de semana). Pasar a chunks o a una pestaña. Antes mirar cuánto pesan hoy.
-- 🟠 **Festejo en el celular (widget) usa la versión vieja:** pasar a Reserva muestra «¡Vendida!». Copiar `festejar` nuevo al widget.
-- 🟡 `azcuTokens_` definida dos veces (la segunda pisa a la primera y rompe búsquedas de direcciones cortas). Texto «no se puede deshacer» al borrar propiedad/visita (hay Papelera). Promedios de encuesta (equipo/tiempos) salen vacíos (`_mapaEncuestas_`). Textos de resultado inconsistentes.
+Tanda 1 — ✅ HECHA el 24/10 (encuesta en celular con viewport/charset/title/lang; formularios del Tablero en una columna en celular; memoria de avisos y cola en trozos `azcuPropGet_/azcuPropSet_`; festejo de Reserva en el widget; `azcuTokens_` duplicada → `azcuTokensNom_`; promedios de encuesta; texto de borrar propiedad). Quedó sin hacer, por riesgo/valor bajo: unificar «Hizo propuesta» / «Hizo una propuesta» (hoy se tolera por regex).
 Tanda 2 — corrigen datos (cambian algunos números o comportamientos, avisar):
 - 🔴 **«Guardar cambios» de la ficha pisa lo que hicieron otros** y puede dejar documentos en «Pendiente» perdiendo el link (`Tablero.html:1500`, `Codigo.gs:2162`); **retomar una precarga** también pisa los `Doc:` subidos desde Tablero/Azcu (`_guardarFila`). Mandar solo lo tocado y no pisar links.
 - 🟠 **Borrar una visita agendada no saca el evento del Calendar**, y el Tablero borra por número de fila sin validar (puede borrar otra); cancelar busca eventos por nombre: guardar `eventId`.

@@ -2541,7 +2541,7 @@ function _mapaEncuestas_(){
   var d=h.getRange(2,1,h.getLastRow()-1,h.getLastColumn()).getValues();
   for(var i=0;i<d.length;i++){
     var cod=(''+d[i][0]).trim();
-    if(cod) m[cod]={cal:d[i][4], nombre:(''+d[i][2]), rec:(''+d[i][8])};
+    if(cod) m[cod]={cal:d[i][4], nombre:(''+d[i][2]), rec:(''+d[i][8]), equipo:d[i][5], tiempos_respuesta:d[i][6], tiempos_operacion:d[i][7]};
   }
   return m;
 }

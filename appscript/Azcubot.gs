@@ -335,9 +335,9 @@ function azcuAnalizarArchivos_(arch){
 }
 function azcuLabelDoc_(key){ var d = CONFIG.DOCUMENTOS.filter(function(x){ return x.key===key; })[0]; return d ? d.label : null; }
 function azcuClaveDueno_(base, n){ return n===1 ? base+'_propietario' : base+'_dueño'+n; }
-function azcuTokens_(x){ return azcuSinAc_(x).split(/[^a-z0-9]+/).filter(function(t){ return t.length>=3; }); }
+function azcuTokensNom_(x){ return azcuSinAc_(x).split(/[^a-z0-9]+/).filter(function(t){ return t.length>=3; }); }
 function azcuMismoNombre_(a, b){
-  var x = azcuTokens_(a), y = azcuTokens_(b);
+  var x = azcuTokensNom_(a), y = azcuTokensNom_(b);
   if(!x.length || !y.length) return false;
   var c = x.length<=y.length ? [x,y] : [y,x];
   return c[0].every(function(t){ return c[1].indexOf(t)>=0; });
@@ -681,7 +681,7 @@ function azcuTools_(){
     t('proponer_borrar_documento','Borrar un documento subido (se saca de Drive). Pendiente de confirmación.',{id:S, documento:S},['id','documento']),
     t('proponer_editar_interaccion','Corregir una interacción del historial (usar la fila de la ficha). Para una visita con OTRA inmobiliaria: id = codigo_externa y fila = fila (ambos de la herramienta visitas); ahí también se puede corregir inmobiliaria, direccion, colega, link y precio. Pendiente de confirmación.',{id:S, fila:{type:'number'}, fecha:F, via:S, interesado:S, telefono:S, resultado:S, proximo_paso:S, observaciones:S, inmobiliaria:S, direccion:S, colega:S, link:S, precio:S},['id','fila']),
     t('proponer_eliminar_interaccion','Borrar una interacción del historial (usar la fila de la ficha). Para una visita con OTRA inmobiliaria: id = codigo_externa y fila = fila de la herramienta visitas. Pendiente de confirmación.',{id:S, fila:{type:'number'}},['id','fila']),
-    t('proponer_eliminar_propiedad','Eliminar una propiedad del maestro. Irreversible. Pendiente de confirmación.',{id:S},['id']),
+    t('proponer_eliminar_propiedad','Eliminar una propiedad del maestro (queda 30 días en la Papelera y se puede restaurar). Pendiente de confirmación.',{id:S},['id']),
     t('proponer_enviar_reporte','Enviar por mail el informe de gestión a los propietarios. Pendiente de confirmación.',{id:S},['id'])
   ];
 }
@@ -1403,17 +1403,17 @@ var AZCU_SIN_SILENCIO_ = false;
 function azcuEnSilencio_(ts){ if(!ts && AZCU_SIN_SILENCIO_) return false; var d = new Date((ts||Date.now())-3*3600000), dw = d.getUTCDay(), h = d.getUTCHours(); return (dw===5 && h>=18) || dw===6 || dw===0 || (dw===1 && h<8); }
 function azcuColaPush_(x){
   try{
-    var pr = PropertiesService.getScriptProperties(), q = []; try{ q = JSON.parse(pr.getProperty('AZCU_COLA')||'[]') || []; }catch(e){}
+    var q = []; try{ q = JSON.parse(azcuPropGet_('AZCU_COLA')||'[]') || []; }catch(e){}
     var k = x.t+'|'+x.m; if(q.some(function(y){ return y.t+'|'+y.m===k; })) return;
     q.push(x); if(q.length>40) q = q.slice(-40);
-    pr.setProperty('AZCU_COLA', JSON.stringify(q));
-  }catch(e){}
+    azcuPropSet_('AZCU_COLA', JSON.stringify(q));
+  }catch(e){ Logger.log('Cola de avisos: '+e.message); }
 }
 function azcuVaciarCola_(){
   if(azcuEnSilencio_() && !AZCU_SIN_SILENCIO_) return 0;
-  var pr = PropertiesService.getScriptProperties(), q = []; try{ q = JSON.parse(pr.getProperty('AZCU_COLA')||'[]') || []; }catch(e){}
+  var q = []; try{ q = JSON.parse(azcuPropGet_('AZCU_COLA')||'[]') || []; }catch(e){}
   if(!q.length) return 0;
-  pr.setProperty('AZCU_COLA', '[]');
+  azcuPropSet_('AZCU_COLA', '[]');
   q.forEach(function(x){ try{ azcuPush_(x.t, x.m, x.u, x.d, x.e, true); }catch(e){} });
   return q.length;
 }
@@ -2157,8 +2157,24 @@ function azcuHerrUltimas_(a, ctx){
 
 /* ===== Recordatorios al vendedor: informe al propietario y reservas sin movimiento ===== */
 function azcuNum2_(k, d){ var v = +PropertiesService.getScriptProperties().getProperty(k); return v>0 ? v : d; }
-function azcuMapaGet_(k){ try{ return JSON.parse(PropertiesService.getScriptProperties().getProperty(k)||'{}') || {}; }catch(e){ return {}; } }
-function azcuMapaSet_(k, m){ PropertiesService.getScriptProperties().setProperty(k, JSON.stringify(m)); }
+function azcuPropGet_(k){
+  var pr = PropertiesService.getScriptProperties(), n = +pr.getProperty(k+'__n') || 0;
+  if(!n) return pr.getProperty(k);
+  var t = '', i, p;
+  for(i=0;i<n;i++){ p = pr.getProperty(k+'__'+i); if(p===null) return null; t += p; }
+  return t;
+}
+function azcuPropSet_(k, str){
+  var pr = PropertiesService.getScriptProperties(), n0 = +pr.getProperty(k+'__n') || 0, T = 8000, n = str.length>T ? Math.ceil(str.length/T) : 0, o = {}, i;
+  if(!n){ pr.setProperty(k, str); for(i=0;i<n0;i++) pr.deleteProperty(k+'__'+i); if(n0) pr.deleteProperty(k+'__n'); return; }
+  for(i=0;i<n;i++) o[k+'__'+i] = str.slice(i*T, (i+1)*T);
+  o[k+'__n'] = String(n);
+  pr.setProperties(o, false);
+  pr.deleteProperty(k);
+  for(i=n;i<n0;i++) pr.deleteProperty(k+'__'+i);
+}
+function azcuMapaGet_(k){ try{ return JSON.parse(azcuPropGet_(k)||'{}') || {}; }catch(e){ return {}; } }
+function azcuMapaSet_(k, m){ azcuPropSet_(k, JSON.stringify(m)); }
 function azcuReservaMarca_(id, c){
   try{
     var m = azcuMapaGet_('AZCU_RESD'), k = String(id).trim();

@@ -40,7 +40,8 @@ def hospedar(src, dst, fn=None):
     if fn: h = fn(h)
     h = re.sub(r'<base target="_top">\s*', '', h)
     m = re.search(r'<head[^>]*>', h, re.I)
-    h = h[:m.end()] + '\n<script>' + BR + '</script>' + h[m.end():]
+    ini = m.end() + re.match(r'(?:\s*<meta[^>]*>|\s*<title>.*?</title>)*', h[m.end():], re.S).end()
+    h = h[:ini] + '\n<script>' + BR + '</script>' + h[ini:]
     open('netlify/'+dst, 'w', encoding='utf8').write(h)
 
 def f_precarga(h):
@@ -62,6 +63,9 @@ def f_precarga(h):
 def f_encuesta(h):
     h = h.replace("'<?= codigo ?>'", "(new URLSearchParams(location.search).get('prop') || '')")
     assert '<?' not in h
+    if '<meta name="viewport"' not in h:
+        h = h.replace('<head>', '<head>\n  <meta charset="utf-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1">\n  <title>Encuesta de satisfacción — Azcuénaga</title>', 1)
+        h = h.replace('<html>', '<html lang="es">', 1)
     return h
 hospedar('Precarga.html', 'precarga.html', f_precarga)
 hospedar('Encuesta.html', 'encuesta.html', f_encuesta)
