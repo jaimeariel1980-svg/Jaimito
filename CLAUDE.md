@@ -10,6 +10,8 @@ Ariel y Ever no ven el código: **Claude sabe más de lo técnico y tiene que gu
 - No preguntar lo que se puede decidir con criterio; preguntar solo lo que cambia el resultado y es del negocio.
 - Si el pedido es claro y chico, hacerlo sin vueltas. Si es grande, proponer el orden de trabajo.
 - Ariel puede escribir «objetá» o «contra-argumentá»; sin pedirlo, igual hay que opinar.
+- **Ser consultor, no solo ejecutor (pedido de Ariel, 24/10):** al cerrar cada tarea agregar **«Lo que veo también»** con hasta 3 cosas que nadie pidió (riesgos, mejoras, auditorías o pendientes); si no hay nada, decirlo. Todo lo detectado y no resuelto se anota en `PENDIENTES.md` (con prioridad y quién lo hace) para que no se pierda entre chats; si Ariel pregunta «¿qué tenemos anotado?», leerlo y resumirlo. Hay una revisión semanal programada que audita el repo y trae recomendaciones.
+- **Cuando Ariel dice «charlemos», «a ver», «estoy pensando» o similar, no tocar código ni publicar nada hasta que diga «dale».** Opinar y esperar.
 
 ## Qué hay en el repo
 | Carpeta | Qué es | Dónde se publica |
