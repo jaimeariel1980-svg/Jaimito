@@ -26,3 +26,27 @@ Lo mantiene Claude. Prioridad: 🔴 urgente · 🟠 importante · 🟡 cuando se
 
 ## Producto (ideas hablando con Ariel)
 - 🟡 Guía corta «qué se hace con Azcu y qué con el Tablero» para el equipo (Azcu = cargar al paso, sobre todo en el celular; Tablero = ver y gestionar, sobre todo en la compu). — *Claude, si Ariel quiere*
+
+## Auditorías del 24/10 (funcional, diseño/uso, rendimiento) — hallazgos agrupados en tandas
+Tanda 1 — arreglos que casi nadie nota (se pueden hacer juntos):
+- 🟠 **Encuesta al cliente en celular sin `viewport`/`charset`/`title`/`lang`** (se ve como página de compu): `encuesta.html` hospedada.
+- 🟠 **Formularios del Tablero en celular se cortan** (Cargar interacción, Agendar, Visita externa: la 2.ª columna no entra; tapa «Dirección*»): una sola columna en pantallas angostas.
+- 🟠 **Avisos: «memoria» en propiedades del script con tope de 9 KB** (`azcuMapaSet_`: `AZCU_REP`, `AZCU_SEG2`, `AZCU_PV2`…): se rompe cerca de 170–300 propiedades/entradas y los avisos se repiten o no salen sin error visible; igual `AZCU_COLA` (cola de fin de semana). Pasar a chunks o a una pestaña. Antes mirar cuánto pesan hoy.
+- 🟠 **Festejo en el celular (widget) usa la versión vieja:** pasar a Reserva muestra «¡Vendida!». Copiar `festejar` nuevo al widget.
+- 🟡 `azcuTokens_` definida dos veces (la segunda pisa a la primera y rompe búsquedas de direcciones cortas). Texto «no se puede deshacer» al borrar propiedad/visita (hay Papelera). Promedios de encuesta (equipo/tiempos) salen vacíos (`_mapaEncuestas_`). Textos de resultado inconsistentes.
+Tanda 2 — corrigen datos (cambian algunos números o comportamientos, avisar):
+- 🔴 **«Guardar cambios» de la ficha pisa lo que hicieron otros** y puede dejar documentos en «Pendiente» perdiendo el link (`Tablero.html:1500`, `Codigo.gs:2162`); **retomar una precarga** también pisa los `Doc:` subidos desde Tablero/Azcu (`_guardarFila`). Mandar solo lo tocado y no pisar links.
+- 🟠 **Borrar una visita agendada no saca el evento del Calendar**, y el Tablero borra por número de fila sin validar (puede borrar otra); cancelar busca eventos por nombre: guardar `eventId`.
+- 🟠 **Visitas infladas** (una agendada + su resultado cuentan 2; el informe al propietario usa ese número).
+- 🟠 «Propuesta aceptada» puede devolver a Reserva una propiedad ya **Vendida**; el chat avisa «marcó como VENDIDA» aunque no cambie la etapa.
+- 🟡 Fichas EXT duplicadas por «Av.»/mayúsculas (`_ndir_` vs `_dirClave_`); visitas huérfanas al borrar una propiedad; fichas EXT «reviven» al borrarlas; moneda del precio no se guarda; casi sin candados en escrituras simultáneas.
+Tanda 3 — cambian cómo se usa (hablar antes):
+- 🟠 **Ficha:** subir «Cargar interacción», «Agendar visita» y «qué falta» arriba; hoy están al final de 2 pantallas.
+- 🟠 **Un solo vocabulario** («Cargar interacción» / «Cargar resultado» / «Visita externa» vs «Otra inmobiliaria») en Tablero y Azcu.
+- 🟡 Contraste/tamaño de letra y botones de 44 px; burbuja de Azcu tapa botones; ✕ de borrar tarjeta chico y pegado; accesibilidad (cerrar con Escape, etiquetas); ocultar barra de documentación en fichas de otras inmobiliarias; «Cambiar etapa» se aplica solo sin confirmar; paso a paso de Azcu rígido; pantalla de inicio de Azcu larga (no se tocó por pedido de Ariel).
+Rendimiento (a medida que crezca la base):
+- 🟠 El paquete de datos crece sin techo (hoy 1–2 MB, ~8 MB con 500 propiedades): mandar solo lo liviano y pedir el detalle al abrir la ficha; leer el caché de una vez (`getAll`); `azcuCalentar` cada 10 min y solo si cambió; candado de «recalculando»; unir pedidos de apertura. Correr `azcuMedir` y ver cuántas propiedades/filas hay hoy.
+Limpieza:
+- 🟡 Borrar copias viejas sin uso: `azcubot/AzcuBot.gs`, `azcubot/Codigo.gs`, `azcubot/nueva_cuenta/`, zips, `LEEME.md` y `DIAGNOSTICO.md` viejos de `azcubot/`, capturas sueltas, ~570 líneas de utilidades de migración en `Codigo.gs`.
+- 🟠 **Funciones peligrosas si se corren a mano desde el editor:** `corregirMigracion` (borra filas `MIG-` sin Papelera), `limpiarInteraccionesYComentarios`, `recalcularEstadosDocumentacion`: renombrarlas con `_` o borrarlas.
+- 🟡 `appscript/Tablero.html` desfasada respecto de `azcubot/Tablero.html` (sin notch iPhone, sin `azcuQuien`…).
