@@ -194,6 +194,15 @@ function doGet(e) {
  * completo o parcial. Devuelve { ok, codigoPrecarga, mensaje }.
  */
 
+function _limpiarTxt_(v){
+  if(typeof v !== 'string') return v;
+  return v.replace(/[<>`]/g, '').replace(/"/g, "'").replace(/^\s*=+/, '');
+}
+function _limpiarObj_(o){
+  var r = {};
+  Object.keys(o || {}).forEach(function(k){ r[k] = _limpiarTxt_(o[k]); });
+  return r;
+}
 function _dirClave_(calle, numero, piso, depto){
   var q = function(x){ return _ndir_(x).replace(/\b(av|avda|avenida|calle|bv|bvd|boulevard|pje|pasaje)\b/g,' ').replace(/\s+/g,' ').trim(); };
   var n = function(x){ return _ndir_(x).replace(/^0+(?=\d)/,''); };
@@ -218,6 +227,7 @@ function _buscarDuplicado_(sheet, datos){
   return null;
 }
 function precargarDatos(datos, archivosBase64) {
+  datos = _limpiarObj_(datos || {});
   const sheet = _getSheet();
   let esNuevo = !datos.codigoPrecarga;
   const archivos = _archivosDesdeBase64(archivosBase64);
@@ -2472,6 +2482,7 @@ function testProps(){
   Logger.log('primera: '+JSON.stringify(p[0]));
 }
 function guardarEncuesta(datos){
+  datos = _limpiarObj_(datos||{});
   var ss=SpreadsheetApp.openById(MAESTRO_ID);
   var h=ss.getSheetByName('Encuestas');
   if(!h){

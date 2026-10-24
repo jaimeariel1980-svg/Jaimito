@@ -8,10 +8,14 @@ var AZCU_D_ = null;
 
 function azcuPin_(pin){
   var p = PropertiesService.getScriptProperties().getProperty('AZCU_PIN');
-  if(!p) return;
+  if(!p) throw new Error('El PIN no está configurado en el servidor. Avisale a Ariel.');
   var c = CacheService.getScriptCache(), n = +(c.get('azcu_fail')||0);
   if(n>=10) throw new Error('Demasiados intentos. Probá de nuevo en 15 minutos.');
-  if(String(pin||'')!==p){ if(pin) c.put('azcu_fail', String(n+1), 900); throw new Error('PIN incorrecto'); }
+  if(String(pin||'')===p) return;
+  var l = LockService.getScriptLock(), tiene = false;
+  try{ l.waitLock(3000); tiene = true; }catch(e){}
+  try{ if(pin){ n = +(c.get('azcu_fail')||0); c.put('azcu_fail', String(n+1), 900); } } finally { if(tiene){ try{ l.releaseLock(); }catch(e2){} } }
+  throw new Error('PIN incorrecto');
 }
 function azcuSinAc_(x){ return String(x||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,' ').trim(); }
 function azcuTokens_(x, todo){
