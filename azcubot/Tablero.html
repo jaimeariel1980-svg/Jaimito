@@ -1625,7 +1625,7 @@ function borrarInteraccion(id,row){
 }
 function eliminarProp(id){
   const p=DATA.find(x=>x.id===id);
-  if(!confirm('¿Eliminar la propiedad '+(p?p.dir:id)+'? Se borra del maestro y no se puede deshacer.'))return;
+  if(!confirm('¿Eliminar la propiedad '+(p?p.dir:id)+'? Va a la Papelera y se puede restaurar durante 30 días.'))return;
   google.script.run.withSuccessHandler(function(){close_();recargar();}).withFailureHandler(function(e){alert('Error: '+(e&&e.message?e.message:e));}).eliminarPropiedad(id,_yo());
 }
 function enviarEncuesta(id){
@@ -3289,6 +3289,7 @@ if(!window.festejar) window.festejar = function(msg,tipo){
   .toolbar #ftipo,.toolbar #orden,.toolbar #editbtn{display:none}
   .toolbar.abierta #ftipo,.toolbar.abierta #orden,.toolbar.abierta #editbtn{display:block}
   .toolbar.abierta #editbtn{display:inline-block}
+  .form{grid-template-columns:minmax(0,1fr)}
   .toolbar .search{flex:1 1 55%;min-width:0}
   #filtbtn{display:inline-block}
   body .azb-fab{bottom:calc(84px + env(safe-area-inset-bottom))}
