@@ -700,7 +700,7 @@ function semC(d){if(d===null)return"var(--neutro)";if(d<=15)return"var(--verde)"
 function healthC(p){if(p===null)return"var(--neutro)";if(p>=90)return"var(--verde)";if(p>=70)return"var(--amarillo)";return"var(--rojo)";}
 function priceNum(s){if(!s)return -1;const n=parseInt((''+s).replace(/[^0-9]/g,''));return isNaN(n)?-1:n;}
 function wa(t){var d=(''+t).replace(/\D/g,'');if(!d)return '';if(d.indexOf('54')===0)return d;return '549'+d.replace(/^0/,'').replace(/^15/,'');}
-function norm(t){t=(''+ (t==null?'':t)).replace(/\s+/g,' ').trim();if(!t)return '';return t.replace(/\w\S*/g,function(w){return w.charAt(0).toUpperCase()+w.slice(1).toLowerCase();});}
+function norm(t){t=(''+ (t==null?'':t)).replace(/[<>"`]/g,'').replace(/\s+/g,' ').trim();if(!t)return '';return t.replace(/\w\S*/g,function(w){return w.charAt(0).toUpperCase()+w.slice(1).toLowerCase();});}
 function estFromEt(e){return {'Publicadas':'En venta','Publicada':'En venta','Reserva':'Reservada','Vendida':'Vendida','Otras inmobiliarias':'Otra inmobiliaria','Baja':'Baja','Suspendida':'Baja','Captación':'Captación'}[e]||'En venta';}
 function normEt(e){e=(e==='Suspendida'?'Baja':e);return e==='Publicada'?'Publicadas':(e||'Publicadas');}
 function filtered(){
@@ -1650,13 +1650,14 @@ function pintarEncuestaFicha(e){
   return '<h3 class="sec">Encuesta de satisfacción del cliente</h3><div style="display:flex;gap:14px;align-items:center;background:var(--beige);border-radius:10px;padding:10px 14px"><div style="font-size:34px;font-weight:800;line-height:1;color:'+col+'">'+(cal||'—')+'<span style="font-size:15px;color:var(--gris)">/10</span></div><div style="font-size:13px">'+(e['Recomendación']?'¿Recomendaría? <b>'+q(e['Recomendación'])+'</b><br>':'')+(e.Comentarios?'<i>'+q(e.Comentarios)+'</i>':'')+'</div></div>';
 }
 function pintarEncuesta(p,e){
-  function row(k,v){return '<tr><td style="color:var(--gris)">'+k+'</td><td style="font-weight:600">'+(v||'—')+'</td></tr>';}
+  function q(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  function row(k,v){return '<tr><td style="color:var(--gris)">'+k+'</td><td style="font-weight:600">'+(v?q(v):'—')+'</td></tr>';}
   var cal=parseInt(e['Calificación']||e.cal)||0; var col=cal>=8?'var(--verde)':(cal>=5?'var(--amarillo)':'var(--rojo)');
   document.getElementById('dlg').innerHTML=
     '<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">Encuesta de satisfacción</div><div class="sub">'+p.id+' · '+p.dir+'</div></div>'+
     '<div class="fb"><div style="text-align:center;margin-bottom:16px"><div style="font-size:46px;font-weight:800;color:'+col+';line-height:1">'+(cal||'—')+'<span style="font-size:20px;color:var(--gris)">/10</span></div><div style="font-size:12px;color:var(--gris)">calificación general</div></div>'+
     '<table>'+row('Fecha',e.Fecha)+row('Nombre',e.Nombre)+row('Operación',e['Operación'])+row('Equipo comercial',e.Equipo)+row('Tiempos de respuesta',e['Tiempos respuesta'])+row('Tiempos de operación',e['Tiempos operación'])+row('¿Recomendaría?',e['Recomendación'])+'</table>'+
-    (e.Comentarios?'<h3 class="sec">Comentarios</h3><div style="background:var(--beige);border-radius:8px;padding:10px 12px;font-size:13px">'+e.Comentarios+'</div>':'')+
+    (e.Comentarios?'<h3 class="sec">Comentarios</h3><div style="background:var(--beige);border-radius:8px;padding:10px 12px;font-size:13px">'+q(e.Comentarios)+'</div>':'')+
     '<div class="dlbtns"><button class="btn s" onclick="closeDL()">Cerrar</button></div></div>';
   document.getElementById('ov2').classList.add('on');
 }
