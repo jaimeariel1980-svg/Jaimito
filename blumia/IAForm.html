@@ -1,0 +1,178 @@
+<style>
+.ia-bar{display:flex;gap:8px;margin:6px 0 12px;flex-wrap:wrap}
+.ia-btn{background:#fff;color:#1A6645;border:1px solid #1A6645;border-radius:6px;padding:6px 12px;font:600 12px/1.2 'PP Pangram Sans','Plus Jakarta Sans',sans-serif;cursor:pointer}
+.ia-btn:hover{background:#E6F2EC}
+.ia-btn:disabled{opacity:.6;cursor:default}
+.ia-btn.prim{background:#1A6645;color:#fff;font-size:13px;padding:9px 16px}
+.ia-btn.prim:hover{background:#238055}
+.ia-box{margin:0 0 24px;padding:18px 22px;background:#E6F2EC;border:1px solid #1A6645;border-radius:10px}
+.ia-box .ia-tit{font:800 12px/1 'PP Pangram Sans','Plus Jakarta Sans',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#1A6645;margin-bottom:8px}
+.ia-box .ia-tx{font-size:13px;color:#333;line-height:1.5}
+.ia-box .ia-acc{margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.ia-box details{margin-top:12px}
+.ia-box summary{cursor:pointer;font-size:13px;font-weight:700;color:#1A6645}
+.ia-box .ia-trans{white-space:pre-wrap;font-size:12px;max-height:240px;overflow:auto;margin-top:6px;color:#444}
+</style>
+<script>
+(function(){
+  var PIN_MEM='';
+  function getPin(){
+    try{var s=sessionStorage.getItem('bl_pin');if(s)return s;}catch(e){}
+    if(PIN_MEM)return PIN_MEM;
+    var p=prompt('PIN para usar la IA (solo selectores):');
+    if(!p)return '';
+    PIN_MEM=p;try{sessionStorage.setItem('bl_pin',p);}catch(e){}
+    return p;
+  }
+  function olvidarPin(){PIN_MEM='';try{sessionStorage.removeItem('bl_pin');}catch(e){}}
+  function errMsg(e){var m=(e&&e.message)||String(e);if(/PIN/.test(m))olvidarPin();return m;}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function ponerTexto(ta,t){t=String(t||'').trim();if(!t)return;ta.value+=(ta.value&&!/\s$/.test(ta.value)?' ':'')+t;ta.dispatchEvent(new Event('input',{bubbles:true}));}
+
+  /* ---------- Dictado por voz en un cuadro de texto ---------- */
+  var DICT={};
+  var POP='<!doctype html><html><head><meta charset="utf-8"><title>Dictado por voz</title><style>body{font-family:Arial,sans-serif;margin:0;padding:22px;text-align:center;color:#1A1A1A;background:#F7F5F1}h3{margin:0 0 6px;color:#1A6645}#st{font-size:14px;color:#555;min-height:40px;margin:8px 0 14px}button{font-size:16px;font-weight:700;border:0;border-radius:8px;padding:14px 22px;cursor:pointer;color:#fff;background:#1A6645;width:100%}button.r{background:#D9534F}#t{font-size:30px;font-weight:700;margin:14px 0;letter-spacing:2px}small{color:#555}</style></head><body><h3>Dictado por voz</h3><div id="st">Tocá el botón, permití el micrófono si te lo pide y hablá.</div><div id="t">0:00</div><button id="b">🎤 Empezar a grabar</button><p><small>Cuando termines, tocá de nuevo para detener. El texto aparece en el cuadro.</small></p><script>(function(){var ID="__ID__",b=document.getElementById("b"),st=document.getElementById("st"),tm=document.getElementById("t"),mr=null,ch=[],iv=null,t0=0;function fmt(n){return Math.floor(n/60)+":"+("0"+(n%60)).slice(-2);}function err(m){st.innerHTML=m;b.textContent="🎤 Probar de nuevo";b.className="";mr=null;}b.onclick=function(){if(mr){mr.stop();return;}if(!navigator.mediaDevices||!window.MediaRecorder){err("Este navegador no permite grabar. Probá con Chrome o Edge.");return;}navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){ch=[];mr=new MediaRecorder(s);mr.ondataavailable=function(e){if(e.data&&e.data.size)ch.push(e.data);};mr.onstop=function(){clearInterval(iv);s.getTracks().forEach(function(x){x.stop();});if(!ch.length){err("No se grabó nada. Probá de nuevo.");return;}st.textContent="Enviando…";b.disabled=true;var bl=new Blob(ch,{type:mr.mimeType||"audio/webm"}),fr=new FileReader();fr.onload=function(){try{window.opener.__dictadoListo(ID,String(fr.result).split(",")[1],bl.type);window.close();}catch(e){err("No pude entregar el audio a la pantalla principal. Cerrá esta ventana y probá de nuevo.");b.disabled=false;}};fr.readAsDataURL(bl);};mr.start(1000);t0=Date.now();iv=setInterval(function(){tm.textContent=fmt(Math.round((Date.now()-t0)/1000));},500);st.textContent="Grabando… hablá tranquilo/a.";b.textContent="⏹ Detener y escribir";b.className="r";}).catch(function(e){err("No se pudo usar el micrófono ("+(e&&e.name||"error")+").<br>Tocá el candado de la barra de direcciones, elegí Micrófono → Permitir y probá de nuevo.");});};})();<\/script></body></html>';
+  window.__dictadoListo=function(id,b64,mime){var o=DICT[id];if(!o)return;delete DICT[id];transcribirDictado(o.ta,o.btn,b64,mime);};
+  function transcribirDictado(ta,btn,b64,mime){
+    var p=getPin();if(!p){btn.textContent='🎤 Dictar';return;}
+    btn.textContent='Transcribiendo…';btn.disabled=true;
+    google.script.run.withSuccessHandler(function(t){btn.disabled=false;btn.textContent='🎤 Dictar';if(!t)alert('No escuché nada');ponerTexto(ta,t);})
+      .withFailureHandler(function(e){btn.disabled=false;btn.textContent='🎤 Dictar';alert('No se pudo transcribir: '+errMsg(e));}).transcribirAudio(p,'','',b64,mime);
+  }
+  function dictar(ta,btn){
+    if(!getPin())return;
+    var w=window.open('','dictado_blumia','width=440,height=400');
+    if(!w){alert('El navegador bloqueó la ventanita del dictado. Permití las ventanas emergentes para esta página y probá de nuevo.');return;}
+    var id=String(Date.now());DICT[id]={ta:ta,btn:btn};
+    w.document.open();w.document.write(POP.replace('__ID__',id));w.document.close();
+    btn.textContent='🎤 Hablando en la ventanita…';
+    var iv=setInterval(function(){if(w.closed){clearInterval(iv);if(DICT[id]){delete DICT[id];btn.textContent='🎤 Dictar';}}},600);
+  }
+
+  /* ---------- Redactar con IA las notas sueltas ---------- */
+  function redactar(ta,btn,und){
+    var t=ta.value.trim();if(t.length<8){alert('Escribí o dictá algo primero');return;}
+    var p=getPin();if(!p)return;
+    var old=btn.textContent;btn.disabled=true;btn.textContent='Redactando…';
+    google.script.run.withSuccessHandler(function(r){btn.disabled=false;btn.textContent=old;ta._prev=ta.value;ta.value=r;ta.dispatchEvent(new Event('input',{bubbles:true}));und.style.display='';})
+      .withFailureHandler(function(e){btn.disabled=false;btn.textContent=old;alert('No se pudo redactar: '+errMsg(e));}).redactarIA(p,ta.value,'');
+  }
+  function attach(ta){
+    if(ta.dataset.ia||ta.closest('.ia-box'))return;ta.dataset.ia='1';
+    var b=document.createElement('div');b.className='ia-ui ia-bar';
+    var mk=function(t){var x=document.createElement('button');x.type='button';x.className='ia-btn';x.textContent=t;return x;};
+    var m=mk('🎤 Dictar'),a=mk('✨ Redactar con IA'),u=mk('↩ Deshacer');u.style.display='none';
+    m.onclick=function(){dictar(ta,m);};a.onclick=function(){redactar(ta,a,u);};
+    u.onclick=function(){if(ta._prev!=null){ta.value=ta._prev;ta._prev=null;ta.dispatchEvent(new Event('input',{bubbles:true}));}u.style.display='none';};
+    b.appendChild(m);b.appendChild(a);b.appendChild(u);ta.parentNode.insertBefore(b,ta.nextSibling);
+  }
+  function scan(){[].forEach.call(document.querySelectorAll('#app textarea'),attach);}
+  function start(){scan();var t;new MutationObserver(function(){clearTimeout(t);t=setTimeout(scan,80);}).observe(document.body,{childList:true,subtree:true});}
+  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
+
+  /* ---------- Grabación de la entrevista (Meet): ventanita que graba pestaña + micrófono ---------- */
+  var ENT={},WREC=null;
+  var POP2=[
+  '<!doctype html><html><head><meta charset="utf-8"><title>Grabar entrevista</title><style>',
+  'body{font-family:Arial,sans-serif;margin:0;padding:20px;text-align:center;color:#1A1A1A;background:#F7F5F1}h3{margin:0 0 8px;color:#1A6645}',
+  'ol{text-align:left;font-size:13.5px;line-height:1.6;color:#444;margin:8px 0 14px;padding-left:22px}#st{font-size:14px;color:#555;min-height:36px;margin:6px 0}',
+  'button{font-size:16px;font-weight:700;border:0;border-radius:8px;padding:14px 22px;cursor:pointer;color:#fff;background:#1A6645;width:100%}button.r{background:#D9534F}#t{font-size:30px;font-weight:700;margin:10px 0;letter-spacing:2px}small{color:#555}',
+  '</style></head><body><h3>Grabar entrevista de Meet</h3>',
+  '<ol><li>Avisá a la persona entrevistada que se graba para completar el formulario.</li><li>Tocá <b>Empezar</b>.</li><li>Elegí la <b>pestaña de la videollamada</b> y marcá <b>Compartir audio de la pestaña</b>.</li><li>Permití el micrófono (se graba tu voz y la de la persona entrevistada).</li><li>No cierres esta ventana durante la entrevista.</li></ol>',
+  '<div id="st"></div><div id="t">0:00</div><button id="b">🎙 Empezar a grabar</button>',
+  '<p><small>Al terminar, tocá de nuevo. La IA transcribe y completa el formulario. El audio no se guarda.</small></p>',
+  '<script>(function(){',
+  'var ID="__ID__",CH=(window.opener&&window.opener.__CHUNK_MS)||600000,MAX=75*60*1000;',
+  'function $(i){return document.getElementById(i);}var b=$("b"),st=$("st"),tm=$("t");',
+  'var ctx=null,dest=null,ss=[],mr=null,parts=[],cur=[],timer=null,ct=null,t0=0,fin=false;',
+  'function fmt(n){return Math.floor(n/60)+":"+("0"+(n%60)).slice(-2);}function msg(h){st.innerHTML=h;}',
+  'function limpiar(){ss.forEach(function(s){s.getTracks().forEach(function(t){t.stop();});});try{if(ctx)ctx.close();}catch(e){}clearInterval(timer);clearTimeout(ct);}',
+  'function chunk(){cur=[];mr=new MediaRecorder(dest.stream,{mimeType:"audio/webm;codecs=opus",audioBitsPerSecond:24000});',
+  'mr.ondataavailable=function(e){if(e.data&&e.data.size)cur.push(e.data);};',
+  'mr.onstop=function(){if(cur.length)parts.push(new Blob(cur,{type:"audio/webm"}));if(fin)entregar();else chunk();};',
+  'mr.start(2000);ct=setTimeout(function(){if(mr&&mr.state!=="inactive")mr.stop();},CH);}',
+  'function terminar(){if(fin||!mr)return;fin=true;b.disabled=true;msg("Cerrando la grabación…");clearTimeout(ct);if(mr.state!=="inactive")mr.stop();else entregar();}',
+  'function entregar(){limpiar();if(!parts.length){msg("No se grabó nada.");b.disabled=false;b.textContent="🎙 Probar de nuevo";b.className="";mr=null;fin=false;return;}msg("Preparando el audio…");var out=[],i=0;(function sig(){if(i>=parts.length){try{window.opener.__entrevistaLista(ID,out);window.close();}catch(e){msg("No pude entregar el audio a la pantalla principal. Cerrá esta ventana y probá de nuevo.");}return;}var fr=new FileReader();fr.onload=function(){out.push({b64:String(fr.result).split(",")[1],mime:"audio/webm"});i++;sig();};fr.readAsDataURL(parts[i]);})();}',
+  'function err(m){msg(m);limpiar();b.disabled=false;b.textContent="🎙 Probar de nuevo";b.className="";mr=null;fin=false;parts=[];}',
+  'b.onclick=function(){if(mr){terminar();return;}',
+  'if(!navigator.mediaDevices||!window.MediaRecorder||!navigator.mediaDevices.getDisplayMedia){err("Este navegador no permite grabar la videollamada. Usá Chrome o Edge en la computadora.");return;}',
+  'navigator.mediaDevices.getDisplayMedia({video:true,audio:true}).then(function(tab){ss.push(tab);if(!tab.getAudioTracks().length){err("No llegó el audio de la pestaña. Volvé a empezar, elegí la pestaña de Meet y marcá <b>Compartir audio de la pestaña</b>.");return;}',
+  'return navigator.mediaDevices.getUserMedia({audio:true}).then(function(mic){ss.push(mic);ctx=new (window.AudioContext||window.webkitAudioContext)();dest=ctx.createMediaStreamDestination();',
+  'ctx.createMediaStreamSource(new MediaStream(tab.getAudioTracks())).connect(dest);ctx.createMediaStreamSource(mic).connect(dest);',
+  'var vt=tab.getVideoTracks()[0];if(vt)vt.onended=terminar;',
+  'parts=[];fin=false;chunk();t0=Date.now();timer=setInterval(function(){var n=Date.now()-t0;tm.textContent=fmt(Math.round(n/1000));if(n>MAX)terminar();},500);',
+  'msg("Grabando… dejá esta ventana abierta.");b.textContent="⏹ Terminar y completar el formulario";b.className="r";});',
+  '}).catch(function(e){err("No se pudo empezar ("+(e&&e.name||"error")+"). Si cancelaste la selección, volvé a empezar. Si falla el micrófono, tocá el candado de la barra de direcciones y permitilo.");});};',
+  '})();<\/script></body></html>'].join('\n');
+  function abrirGrabadora(cb){
+    var w=window.open('','entrevista_blumia','width=500,height=600');
+    if(!w){alert('El navegador bloqueó la ventanita de grabación. Permití las ventanas emergentes para esta página y probá de nuevo.');return false;}
+    if(WREC&&!WREC.closed&&WREC===w&&!confirm('Ya hay una grabación en curso en esa ventanita. Si seguís, se pierde. ¿Empezar de nuevo igual?')){w.focus();return false;}
+    WREC=w;var id=String(Date.now());ENT[id]=cb;w.document.open();w.document.write(POP2.replace('__ID__',id));w.document.close();return true;
+  }
+  window.__entrevistaLista=function(id,partes){var cb=ENT[id];if(!cb)return;delete ENT[id];cb(partes);};
+
+  /* ---------- Completar el formulario de competencias con la entrevista ---------- */
+  function $$(s){return document.querySelector(s);}
+  function contexto(){
+    var comps=[].map.call(document.querySelectorAll('.comp-card'),function(c){
+      return {id:c.getAttribute('data-comp'),nombre:((c.querySelector('.comp-name')||{}).textContent||'').trim(),descripcion:((c.querySelector('.comp-desc')||{}).textContent||'').trim()};});
+    var hero=(typeof DATOS!=='undefined'&&DATOS&&DATOS.hero)?DATOS.hero:{};
+    var cand=(($$('#inp-cand')||{}).value||'').trim();
+    return {comps:comps,hero:{posicion:hero.posicion||'',empresa:hero.empresa||''},cand:cand,perfil:(typeof PERFIL_ID!=='undefined'?PERFIL_ID:'')};
+  }
+  function sumaSi(el,v){
+    v=String(v||'').trim();if(!el||!v)return;var c=String(el.value||'').trim();
+    if(!c)el.value=v;else if(c.toLowerCase().indexOf(v.toLowerCase())<0)el.value=c+'\n\n'+v;
+    el.dispatchEvent(new Event('input',{bubbles:true}));
+  }
+  function setSi(sel,v){var e=$$(sel);if(e&&v&&!String(e.value||'').trim())e.value=v;}
+  function aplicar(r,texto){
+    (r.comps||[]).forEach(function(x){
+      var card=$$('.comp-card[data-comp="'+x.id+'"]');if(!card)return;
+      if(x.nivel>0&&!card.querySelector('.freq-btn.sel')){var fb=card.querySelector('.freq-btn[data-f="'+x.nivel+'"]');if(fb)fb.click();}
+      sumaSi(card.querySelector('textarea.note-area'),x.evidencia);
+    });
+    sumaSi($$('#ta-fort'),r.fortalezas);sumaSi($$('#ta-area'),r.areas);sumaSi($$('#ta-rec'),r.recomendacion);
+    var M={edad:'#inp-edad',localidad:'#inp-localidad',familia:'#inp-familia',formacion:'#inp-formacion',empresaAct:'#inp-empresa-act',puestoAct:'#inp-puesto-act',antig:'#inp-antig',remAct:'#inp-rem-act',remPret:'#inp-rem-pret',disp:'#inp-disp',motivo:'#inp-motivo',movilidad:'#inp-movilidad',referencias:'#inp-referencias'};
+    for(var k in M)setSi(M[k],(r.meta||{})[k]);
+    var st=$$('#iaSt');if(st){st.style.color='#1A6645';st.textContent='✓ Formulario completado por la IA (lo que ya habías escrito se mantuvo y se le sumó). Revisá todo antes de guardar.';}
+    var box=$$('#iaBox');
+    if(box){var old=box.querySelector('details');if(old)old.remove();box.insertAdjacentHTML('beforeend','<details><summary>Ver transcripción</summary><div class="ia-trans">'+esc(texto)+'</div></details>');box.scrollIntoView({behavior:'smooth'});}
+  }
+  function analizar(texto,st,p,ctx){
+    st.textContent='Analizando la entrevista…';
+    google.script.run.withSuccessHandler(function(r){aplicar(JSON.parse(r),texto);}).withFailureHandler(function(e){st.textContent='';alert('No se pudo analizar: '+errMsg(e));})
+      .analizarEntrevista(p,ctx.perfil,ctx.cand,JSON.stringify(ctx.comps),JSON.stringify(ctx.hero),texto);
+  }
+  function transcribir(partes,i,acc,st,p,ctx){
+    if(i>=partes.length){analizar(acc.join(' '),st,p,ctx);return;}
+    st.textContent='Transcribiendo parte '+(i+1)+' de '+partes.length+'…';
+    google.script.run.withSuccessHandler(function(t){acc.push(t);transcribir(partes,i+1,acc,st,p,ctx);}).withFailureHandler(function(e){st.textContent='';alert('No se pudo transcribir: '+errMsg(e));})
+      .transcribirAudio(p,ctx.perfil,ctx.cand,partes[i].b64,partes[i].mime);
+  }
+  function grabar(){
+    var ctx=contexto(),st=$$('#iaSt');
+    if(!ctx.cand){alert('Completá primero el nombre del entrevistado/a.');return;}
+    var p=getPin();if(!p)return;
+    st.style.color='#555';st.textContent='';
+    abrirGrabadora(function(partes){transcribir(partes,0,[],st,p,contexto());});
+  }
+  function recuperar(){
+    var ctx=contexto(),st=$$('#iaSt');if(!st)return;
+    if(!ctx.cand){alert('Completá primero el nombre del entrevistado/a.');return;}
+    var p=getPin();if(!p)return;
+    st.style.color='#555';st.textContent='Buscando el último análisis…';
+    google.script.run.withSuccessHandler(function(r){
+      var x=JSON.parse(r);
+      if(x.analisis&&x.analisis.resultado){st.textContent='';aplicar(x.analisis.resultado,x.analisis.texto||'');return;}
+      var t=(x.analisis&&x.analisis.texto)||x.parcial||'';
+      if(!t||t.length<300){st.textContent='';alert('No encontré ninguna grabación reciente de esta persona (se conservan 6 horas).');return;}
+      analizar(t,st,p,ctx);
+    }).withFailureHandler(function(e){st.textContent='';alert('No se pudo recuperar: '+errMsg(e));}).recuperarEntrevista(p,ctx.perfil,ctx.cand);
+  }
+  window.IAEntrevista={grabar:grabar,recuperar:recuperar,aplicar:aplicar};
+  /* Oculta los botones de IA al guardar el PDF o descargar el HTML (no deben salir en el informe). */
+  window.ocultarIA=function(on){[].forEach.call(document.querySelectorAll('.ia-ui'),function(e){e.style.display=on?'none':'';});};
+})();
+</script>

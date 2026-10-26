@@ -1,17 +1,23 @@
 /* Perfil del puesto protegido con PIN (solo selectores).
    El PIN vive en la propiedad del script BLUMIA_PIN (no está en el repo).
    Un perfil queda protegido con Config.perfil_protegido = SI. */
-function linkPerfilConPin(perfilId, pin) {
+/* Verifica el PIN de los selectores (propiedad BLUMIA_PIN). 5 errores bloquean 10 minutos. Lo usan el perfil del puesto y la IA. */
+function pinValido_(pin) {
   const cache = CacheService.getScriptCache();
   const fallos = Number(cache.get('pin_fallos') || 0);
   if (fallos >= 5) throw new Error('Demasiados intentos. Probá de nuevo en 10 minutos.');
   const real = PropertiesService.getScriptProperties().getProperty('BLUMIA_PIN');
-  if (!real) throw new Error('Falta configurar el PIN del perfil del puesto.');
+  if (!real) throw new Error('Falta configurar el PIN.');
   if (String(pin).trim() !== String(real).trim()) {
     cache.put('pin_fallos', String(fallos + 1), 600);
     throw new Error('PIN incorrecto.');
   }
   cache.remove('pin_fallos');
+}
+
+function linkPerfilConPin(perfilId, pin) {
+  pinValido_(pin);
+  const cache = CacheService.getScriptCache();
   const cfg = getConfig(perfilId);
   if (cfg.perfil_html) {
     const t = Utilities.getUuid();
