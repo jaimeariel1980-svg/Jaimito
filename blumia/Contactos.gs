@@ -33,23 +33,28 @@ function getContactosRegistro(perfilId, fila) {
     .reverse();
 }
 
-function exportarContactosCSV() {
-  const OK = ['Contactado', 'Screening agendado', 'Avanza a competencias', 'Competencias agendada', 'Avanza a empresa', 'Entrevista empresa agendada', 'En cliente', 'Contratado'];
+// CSV para importar en Contactos de Google: solo la búsqueda indicada (o todas si no se indica) y solo quienes ya se contactaron o avanzaron
+function exportarContactosCSV(perfilId) {
+  const OK = ['Contactado', 'Screening agendado', 'Avanza a competencias', 'Competencias agendada', 'Avanza a screening empresa', 'Screening empresa agendado', 'Avanza a presencial empresa', 'Avanza a empresa', 'Entrevista empresa agendada', 'En cliente', 'Contratado'];
   const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
   const filas = [['Name', 'Given Name', 'Phone 1 - Value', 'E-mail 1 - Value', 'Group Membership'].map(q).join(',')];
   let n = 0;
-  listarPerfiles().forEach(p => {
+  listarPerfiles().filter(p => !perfilId || p.id === perfilId).forEach(p => {
     let cfg, sh;
     try { cfg = getConfig(p.id); sh = getSheet(cfg); } catch (e) { return; }
     if (!sh || sh.getLastRow() < 2) return;
-    const grupo = 'Blumia ' + (cfg.empresa ? cfg.empresa + ' - ' : '') + p.nombre;
+    const puesto = String(cfg.nombre_perfil || cfg.nombre || p.nombre || p.id);
+    const grupo = 'Blumia ' + (cfg.empresa ? cfg.empresa + ' - ' : '') + puesto;
     sh.getDataRange().getValues().slice(1).forEach(r => {
       const nombre = String(r[1] || '').trim(), tel = String(r[2] || '').replace(/[^0-9+]/g, ''), mail = String(r[21] || '').trim();
-      if (!nombre || !tel || OK.indexOf(String(r[8] || '').trim()) === -1) return;
-      const nc = p.nombre + ' - ' + nombre;
+      const estado = String(r[8] || '').trim(), marca = String(r[40] || '').trim().toLowerCase();
+      if (!nombre || !tel || /^(descartad|eliminado)/i.test(estado)) return;
+      const contactado = marca && marca.indexOf('descarte') !== 0;
+      if (!contactado && OK.indexOf(estado) === -1) return;
+      const nc = nombre + ' (' + puesto + ')';
       filas.push([nc, nc, tel, mail.indexOf('@') > -1 ? mail : '', grupo].map(q).join(','));
       n++;
     });
   });
-  return { ok: true, n: n, csv: '﻿' + filas.join('\r\n') };
+  return { ok: true, n: n, csv: '\ufeff' + filas.join('\r\n') };
 }
