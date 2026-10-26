@@ -4226,12 +4226,14 @@ navHTML+='<button onclick="window.top.location.href=\\'${URL_WEBAPP}?tipo=kanban
 navHTML+='<button class="proc" onclick="window.open(\\'${URL_WEBAPP}?tipo=procesohtml&perfil=${perfilId}\\',\\'_blank\\')">Informe proceso</button>';
 navHTML+='<button class="proc" onclick="if(confirm(\\'¿Generar PDF cliente de esta búsqueda?\\'))window.open(\\'${URL_WEBAPP}?tipo=pdfcliente&perfil=${perfilId}\\',\\'_blank\\')">PDF cliente</button>';
 navHTML+='<button style="background:#E06666;color:#fff" onclick="descartesMasivo()">✉ Descartes</button>';
+navHTML+='<button id="avBtn" onclick="verAvisos()" style="position:relative">🔔 Avisos<span id="avCnt" style="display:none;position:absolute;top:-6px;right:-6px;background:#B91C1C;color:#fff;border-radius:10px;font-size:11px;font-weight:800;padding:1px 6px"></span></button>';
 navHTML+='<button onclick="abrirPapelera()">🗑 Papelera ('+ELIM.length+')</button>';
 navHTML+='<button style="background:#F5C842;color:#1A1A1A" onclick="window.top.location.href=\\'${URL_WEBAPP}?tipo=banco&desde=${perfilId}\\'">★ Banco</button>';
 navHTML+=${perfilProt?'true':'false'}?'<button onclick="pedirPerfilPin()">🔒 Perfil del puesto</button>':'<button onclick="window.open(\\'${perfilUrl}\\',\\'_blank\\')">📋 Perfil del puesto</button>';
 navHTML+='<button onclick="window.open(\\'${flyerUrl}\\',\\'_blank\\')">📢 Flyer</button>';
 navHTML+='<button onclick="prompt(\\'Link del formulario de postulación (copialo):\\',\\'${URL_WEBAPP}?tipo=postulacion&perfil=${perfilId}\\')">🔗 Link postulación</button>';
 document.getElementById('nav').innerHTML=navHTML;
+avInit();
 const COLS=[['Análisis de CV',['Nuevo','Contactado','Pendiente','']],['Screening',['Avanza a screening','Screening agendado']],['Competencias',['Avanza a competencias','Competencias agendada']],['Screening empresa',['Avanza a screening empresa','Screening empresa agendado']],['Presencial empresa',['Avanza a presencial empresa','Avanza a empresa','Entrevista empresa agendada','En cliente']],['Contratado',['Contratado']]];
 const BASE={'Análisis de CV':'Nuevo','Screening':'Avanza a screening','Competencias':'Avanza a competencias','Screening empresa':'Avanza a screening empresa','Presencial empresa':'Avanza a presencial empresa','Contratado':'Contratado'};
 const DESC_TIPOS=['Descartado sin screening','Descartado post screening','Descartado en competencias','Descartado en screening empresa','Descartado presencial empresa','Descartado Fuera de zona','Descartado NO le interesa'];
@@ -4260,7 +4262,7 @@ COLS.forEach(function(x){
 });
 board.innerHTML+=acordeon('Reservas','res',RES_TIPOS,function(e){return /reserva/i.test(e);},'');
 function toast(){var s=document.getElementById('saved');s.classList.add('show');setTimeout(function(){s.classList.remove('show');},1500);}
-document.querySelectorAll('.col-body,.dbody').forEach(function(col){new Sortable(col,{group:'kb',animation:150,forceFallback:true,fallbackOnBody:true,scroll:true,bubbleScroll:true,scrollSensitivity:80,scrollSpeed:15,onEnd:function(evt){var fila=+evt.item.dataset.fila;var estado=evt.to.dataset.estado;if(estado&&evt.from!==evt.to){google.script.run.withSuccessHandler(toast).withFailureHandler(function(e){alert('Error: '+e.message);window.top.location.reload();}).moverEstado(PERFIL,fila,estado);}}});});
+document.querySelectorAll('.col-body,.dbody').forEach(function(col){new Sortable(col,{group:'kb',animation:150,forceFallback:true,fallbackOnBody:true,scroll:true,bubbleScroll:true,scrollSensitivity:80,scrollSpeed:15,onEnd:function(evt){var fila=+evt.item.dataset.fila;var estado=evt.to.dataset.estado;var cc=DATA_ALL.find(function(x){return x.fila===fila;});if(cc&&estado)cc.estado=estado;if(estado&&evt.from!==evt.to){google.script.run.withSuccessHandler(toast).withFailureHandler(function(e){alert('Error: '+e.message);window.top.location.reload();}).moverEstado(PERFIL,fila,estado);}}});});
 function nrm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'');}
 function raiz(p){p=nrm(p);if(p.length>5)return p.slice(0,-2);if(p.length>3)return p.slice(0,-1);return p;}
 function coincide(texto,consulta){if(!consulta.trim())return true;var t=nrm(texto);var ps=consulta.trim().split(/\\s+/);for(var i=0;i<ps.length;i++){if(t.indexOf(raiz(ps[i]))===-1)return false;}return true;}
@@ -4341,6 +4343,97 @@ function generar(f,btn){btn.textContent='Generando...';btn.disabled=true;google.
 function descartesMasivo(){google.script.run.withSuccessHandler(function(p){if(p.sinScr===0&&p.postScr===0){alert('No hay descartes pendientes de mail en esta búsqueda.');return;}var h='<div style="font-size:13px;margin-bottom:14px">Se van a enviar <b>'+(p.sinScr+p.postScr)+'</b> mails en '+p.puesto+'.<br>Sin screening: <b>'+p.sinScr+'</b> · Post screening: <b>'+p.postScr+'</b><br><span style="color:#888">[NOMBRE] se reemplaza por el nombre de cada persona.</span></div>';h+='<div class="notatit">Texto · Descartado sin screening ('+p.sinScr+')</div><textarea id="txtSin" style="width:100%;height:150px;font-family:inherit;font-size:12px;padding:8px;border:1px solid #DDD;border-radius:6px;margin-bottom:12px">'+p.textoSin+'</textarea>';h+='<div class="notatit">Texto · Descartado post screening ('+p.postScr+')</div><textarea id="txtPost" style="width:100%;height:150px;font-family:inherit;font-size:12px;padding:8px;border:1px solid #DDD;border-radius:6px;margin-bottom:12px">'+p.textoPost+'</textarea>';h+='<div class="mbtns"><button class="mbtn" style="background:#E06666" onclick="enviarDesc(this)">✉ Enviar '+(p.sinScr+p.postScr)+' mails</button></div>';document.getElementById('mtit').textContent='Mails de descarte';document.getElementById('mbody').innerHTML=h;document.getElementById('modal').classList.add('show');}).withFailureHandler(function(e){alert('Error: '+e.message);}).previaDescartes(PERFIL);}
 function enviarDesc(btn){if(!confirm('¿Confirmás el envío? No se puede deshacer.'))return;var s=document.getElementById('txtSin').value;var p=document.getElementById('txtPost').value;btn.textContent='Enviando...';btn.disabled=true;google.script.run.withSuccessHandler(function(r){alert('Enviados: '+r.enviados+(r.sinMail?' · Sin mail válido: '+r.sinMail:''));window.top.location.reload();}).withFailureHandler(function(e){alert('Error: '+e.message);btn.disabled=false;btn.textContent='✉ Enviar';}).enviarDescartesMasivo(PERFIL,s,p);}
 function borrarMarca(f){if(!confirm('¿Borrar la marca de contacto?'))return;google.script.run.withSuccessHandler(function(){toast();cerrar();setTimeout(function(){window.top.location.reload();},800);}).withFailureHandler(function(e){alert('Error: '+e.message);}).borrarMarcaContacto(PERFIL,f);}
+/* ===== Avisos 🔔: pendientes y novedades (igual que PAMI) ===== */
+var AV_PEND,AV_NOV;
+function avLS(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem('blumia_av_'+PERFIL+'_'+k)||'null');localStorage.setItem('blumia_av_'+PERFIL+'_'+k,JSON.stringify(v));}catch(e){return null;}}
+function avEsc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function avFecha(s){var m=String(s||'').match(/(\\d{2})\\/(\\d{2})\\/(\\d{4})(?:[^\\d]+(\\d{2}):(\\d{2}))?/);if(!m)return null;return new Date(+m[3],+m[2]-1,+m[1],+(m[4]||0),+(m[5]||0)).getTime();}
+function avActivo(c){return !/^(Descartad|Eliminado|Contratado|En cliente)/i.test(c.estado)&&!/reserva/i.test(c.estado);}
+function avEtapa(e){
+  if(/^(Avanza a screening empresa|Screening empresa)/i.test(e))return {k:'empresa',n:'el screening con la empresa',h:'Empresa'};
+  if(/^(Avanza a presencial empresa|Avanza a empresa|Entrevista empresa)/i.test(e))return {k:'empresa',n:'la entrevista con la empresa',h:'Empresa'};
+  if(/^(Avanza a competencias|Competencias)/i.test(e))return {k:'competencias',n:'competencias',h:'Competencias'};
+  if(/^(Avanza a screening|Screening)/i.test(e))return {k:'screening',n:'screening',h:'Screening'};
+  return null;
+}
+function avPendientes(L){
+  var out=[],now=Date.now();
+  L.forEach(function(c){
+    if(!avActivo(c))return;
+    var ep=avEtapa(c.estado);if(!ep)return;
+    var p=function(k,ic,txt,urg){out.push({k:k+'|'+c.fila,ic:ic,txt:txt,f:c.fila,n:c.nombre,urg:!!urg});};
+    if(!/agendad/i.test(c.estado)){
+      var ct=String(c.contactado||'').split(' · ')[0].trim().toLowerCase();
+      if(ct!==ep.k){p('contactar','➜','Falta contactar para '+ep.n);return;}
+      var f=avFecha(c.contactado);
+      if(!c.cita&&f){var d=Math.floor((now-f)/864e5);if(d>=2)p('norespondio','⏳','Contactado para '+ep.n+' hace '+d+' días y todavía no agendó');}
+      return;
+    }
+    if(c.cita){
+      var t=avFecha(c.cita);
+      if(t&&t>=now-15*6e4&&t-now<=30*6e4)p('pronto','⏰','Entrevista a las '+String(c.cita).slice(-5)+(t<now?' (ya empezó)':' (en '+Math.max(1,Math.round((t-now)/6e4))+' min)'),true);
+      return;
+    }
+    var lines=String(c.historial||'').split('\\n').filter(function(l){return l.indexOf(ep.h)===0;});
+    var f2=lines.length?avFecha(lines[0]):null;
+    if(f2){if(f2<now-60*6e4)p('sincargar','📝','La entrevista de '+ep.n+' del '+String(lines[0]).split(' — ')[1]+' ya pasó y falta cargar el formulario',true);}
+    else p('sinfecha','📅','Figura agendado para '+ep.n+' pero no está en el calendario');
+  });
+  out.sort(function(a,b){return (b.urg?1:0)-(a.urg?1:0);});
+  return out;
+}
+function avNovedades(L){
+  var prev=avLS('snap'),snap={},nov=[],d=new Date(),dd=function(n){return ('0'+n).slice(-2);},cuando=dd(d.getDate())+'/'+dd(d.getMonth()+1)+' '+dd(d.getHours())+':'+dd(d.getMinutes());
+  L.forEach(function(c){
+    var s={e:c.estado,c:c.cita||''};snap[c.fila]=s;if(!prev)return;
+    var a=prev[c.fila],p=function(ic,txt){nov.push({ic:ic,txt:txt,f:c.fila,n:c.nombre,h:cuando});};
+    if(!a){if(!/^Eliminado/.test(s.e))p('🆕','Nuevo CV recibido');return;}
+    if(s.e!==a.e&&!/^Eliminado/.test(s.e)){
+      if(s.e==='Contratado')p('🎉','Contratado/a');
+      else if(/^Descartad/i.test(s.e))p('❌','Descartado/a: '+s.e.replace(/^Descartado\\s*/i,''));
+      else p('🔄','Pasó a «'+s.e+'»'+(a.e?' (antes: '+a.e+')':''));
+    }
+    if(s.c&&s.c!==a.c)p('📅','Agendó para el '+s.c);
+  });
+  avLS('snap',snap);return nov;
+}
+function avPintar(){var b=document.getElementById('avCnt');if(!b)return;var n=AV_PEND.filter(function(x){return x.urg;}).length+(avLS('sinver')||0);b.textContent=n||'';b.style.display=n?'':'none';}
+function avAbrir(f){if(DATA.some(function(x){return x.fila===f;}))ficha(f);else cerrar();}
+function verAvisos(){
+  avLS('sinver',0);avPintar();
+  var item=function(x,nov){return '<div class="frow" style="cursor:pointer;align-items:flex-start" onclick="avAbrir('+x.f+')"><span class="fv"><b>'+x.ic+' '+avEsc(x.n)+'</b><br><small>'+avEsc(x.txt)+(nov?' · '+x.h:'')+'</small></span></div>';};
+  document.getElementById('mtit').textContent='🔔 Avisos';
+  document.getElementById('mbody').innerHTML='<div style="font-weight:800;color:#B91C1C;margin:2px 0 6px">Pendientes ('+AV_PEND.length+')</div>'+(AV_PEND.length?AV_PEND.map(function(x){return item(x,false);}).join(''):'<div style="color:#777;font-size:14px">No hay pendientes. 👌</div>')+'<div style="font-weight:800;color:#1A6645;margin:16px 0 6px">Novedades</div>'+(AV_NOV.length?AV_NOV.slice(0,40).map(function(x){return item(x,true);}).join(''):'<div style="color:#777;font-size:14px">Sin novedades desde la última visita.</div>');
+  document.getElementById('modal').classList.add('show');
+}
+function avPopups(L){
+  var cont=document.getElementById('avPop');
+  if(!cont){cont=document.createElement('div');cont.id='avPop';cont.style.cssText='position:fixed;top:14px;right:14px;z-index:9999;display:flex;flex-direction:column;gap:8px;max-width:340px';document.body.appendChild(cont);}
+  var mk=function(x){var d=document.createElement('div');d.style.cssText='background:#fff;border-left:4px solid '+(x.urg?'#B91C1C':'#1A6645')+';box-shadow:0 4px 14px rgba(0,0,0,.2);border-radius:6px;padding:10px 12px;font-size:13px;cursor:pointer';d.innerHTML='<b>'+x.ic+' '+avEsc(x.n)+'</b><br>'+avEsc(x.txt);d.onclick=function(){d.remove();if(x.panel)verAvisos();else if(x.f)avAbrir(x.f);};cont.appendChild(d);setTimeout(function(){if(d.parentNode)d.remove();},x.urg?15000:8000);};
+  L.slice(0,5).forEach(mk);
+  if(L.length>5)mk({ic:'🔔',n:'Y '+(L.length-5)+' más',txt:'Tocá para ver la lista',panel:1});
+}
+function avRevisar(L){
+  AV_PEND=avPendientes(L);
+  var nuevas=avNovedades(L),hist=avLS('nov')||[];
+  if(nuevas.length){hist=nuevas.concat(hist).slice(0,80);avLS('nov',hist);avLS('sinver',(avLS('sinver')||0)+nuevas.length);}
+  AV_NOV=hist;
+  var avisados=avLS('urg')||{},hoy=new Date().toISOString().slice(0,10),pop=nuevas.slice(),vistos=avLS('pseen'),act={};
+  AV_PEND.forEach(function(x){act[x.k]=1;if(x.urg&&avisados[x.k]!==hoy){avisados[x.k]=hoy;pop.push(x);}else if(vistos&&!vistos[x.k])pop.push(x);});
+  avLS('urg',avisados);avLS('pseen',act);
+  try{if(!sessionStorage.getItem('blumia_av_ses')&&AV_PEND.length){sessionStorage.setItem('blumia_av_ses','1');var nu=AV_PEND.filter(function(x){return x.urg;}).length;pop.unshift({ic:'🔔',n:'Tenés '+AV_PEND.length+' pendiente'+(AV_PEND.length===1?'':'s'),txt:(nu?nu+' urgente'+(nu===1?'':'s')+' · ':'')+'tocá para ver la lista',panel:1,urg:nu>0});}}catch(e){}
+  avPintar();if(pop.length)avPopups(pop);
+}
+function avRefrescar(){
+  google.script.run.withSuccessHandler(function(r){
+    var nuevo;try{nuevo=JSON.parse(r);}catch(e){return;}
+    var key=function(L){return L.map(function(c){return c.fila+'|'+c.estado;}).sort().join(',');};
+    var cambio=key(nuevo)!==key(DATA_ALL);
+    avRevisar(nuevo);
+    if(cambio&&!document.getElementById('avBanner')){var b=document.createElement('div');b.id='avBanner';b.style.cssText='position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1A6645;color:#fff;padding:10px 18px;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer;z-index:9999;box-shadow:0 4px 14px rgba(0,0,0,.25)';b.textContent='🔄 Hay cambios en el tablero · tocá para actualizar';b.onclick=function(){window.top.location.reload();};document.body.appendChild(b);}
+  }).withFailureHandler(function(){}).doGetKanban(PERFIL);
+}
+function avInit(){avRevisar(DATA_ALL);setInterval(avRefrescar,180000);}
 function eliminar(f){var c=DATA.find(function(x){return x.fila===f;});if(!c)return;if(!confirm('¿Eliminar a '+c.nombre+' del tablero?\\nNo se pierde nada: queda en la 🗑 Papelera y se puede restaurar.'))return;google.script.run.withSuccessHandler(function(){toast();cerrar();setTimeout(function(){window.top.location.reload();},700);}).withFailureHandler(function(e){alert('Error: '+e.message);}).eliminarCandidato(PERFIL,f);}
 function abrirPapelera(){document.getElementById('mtit').textContent='Papelera';var h=ELIM.length?'':'<div style="color:#777;font-size:14px">La papelera está vacía.</div>';ELIM.forEach(function(c){var p=String(c.estado).split('|');h+='<div class="frow" style="align-items:center"><span class="fv"><b>'+c.nombre+'</b><br><small>'+(p[1]||'sin estado')+(p[2]?' · eliminado el '+p[2]:'')+'</small></span><button class="mbtn" onclick="restaurar('+c.fila+')">↩ Restaurar</button></div>';});document.getElementById('mbody').innerHTML=h;document.getElementById('modal').classList.add('show');}
 function restaurar(f){google.script.run.withSuccessHandler(function(){toast();cerrar();setTimeout(function(){window.top.location.reload();},700);}).withFailureHandler(function(e){alert('Error: '+e.message);}).restaurarCandidato(PERFIL,f);}
