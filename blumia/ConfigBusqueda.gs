@@ -71,6 +71,11 @@ function colPerfilPlantillas_(sh) {
   return c;
 }
 
+// «Soy Ariel» y la firma «Ariel» fijos pasan a [ENTREVISTADOR] (así firma quien envía)
+function firmaConPlaceholder_(t) {
+  return String(t || '').replace(/\bSoy Ariel\b/g, 'Soy [ENTREVISTADOR]').replace(/(Saludos,?[ \t]*\r?\n)Ariel\b/g, '$1[ENTREVISTADOR]');
+}
+
 // devuelve {texto, propia}: el texto propio de la búsqueda si existe, si no el general
 function plantillaTexto_(clave, perfilId) {
   const sh = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName('Plantillas');
@@ -96,7 +101,7 @@ function listarPlantillas_(ss, perfilId) {
   data.slice(1).forEach(r => {
     if (!r[0] || (c >= 0 && String(r[c] || '').trim())) return;
     const ef = plantillaTexto_(String(r[0]), perfilId);
-    out.push({ clave: String(r[0]), canal: String(r[1]), texto: String(ef.texto || ''), propia: ef.propia, general: String(r[3] || '') });
+    out.push({ clave: String(r[0]), canal: String(r[1]), texto: firmaConPlaceholder_(ef.texto), propia: ef.propia, general: firmaConPlaceholder_(r[3]) });
   });
   return out;
 }
