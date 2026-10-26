@@ -25,7 +25,7 @@ function getSheet(cfg) {
   return SpreadsheetApp.openById(cfg.sheet_id).getSheetByName(cfg.hoja_nombre);
 }
 
-function getDatosPerfil(perfilId) {
+function getDatosPerfil_(perfilId) {
   const cfg = getConfig(perfilId);
   const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
   const leer = (nombre) => {
@@ -68,7 +68,7 @@ function getDatosPerfil(perfilId) {
   };
 }
 
-function doGet(e) {
+function doGetPagina_(e) {
   const tipo = e?.parameter?.tipo;
   const perfil = e?.parameter?.perfil || 'operaciones';
   let template, titulo;
@@ -103,7 +103,7 @@ function doGet(e) {
       .setSandboxMode(HtmlService.SandboxMode.IFRAME)
       .addMetaTag('viewport', 'width=device-width, initial-scale=1');
   } else if (tipo === 'informe') {
-    const url = generarInformeCandidato(perfil, Number(e.parameter.fila));
+    const url = generarInformeCandidato_(perfil, Number(e.parameter.fila));
     return HtmlService.createHtmlOutput(
       '<html><body style="font-family:sans-serif;padding:40px;text-align:center">' +
       '<h2 style="color:#1A6645">Informe generado ✓</h2>' +
@@ -329,7 +329,7 @@ REGLAS:
   }
 }
 
-function procesarScreening(data) {
+function procesarScreening_(data) {
   QUIEN_ = String(data.entrevistador || '');
   const cfg = getConfig(data.perfil || 'operaciones');
   const sheet = getSheet(cfg);
@@ -384,7 +384,7 @@ function llenarColumnaO(perfilId) {
   }
 }
 
-function guardarEnPlanilla(nombreCandidato, htmlContent, ajustePonderacion, perfilId, quien, estadoJSON, editar) {
+function guardarEnPlanilla_(nombreCandidato, htmlContent, ajustePonderacion, perfilId, quien, estadoJSON, editar) {
   QUIEN_ = quien || '';
   try {
     console.log("Perfil recibido: " + perfilId);
@@ -648,7 +648,7 @@ function fixConfig() {
   console.log('hoja_nombre: Control Busqueda');
 }
 function testDatosPerfil() {
-  const datos = getDatosPerfil('operaciones');
+  const datos = getDatosPerfil_('operaciones');
   console.log('Hero: ' + JSON.stringify(datos.hero));
   console.log('Eval items: ' + datos.eval_items.length);
   console.log('Val items: ' + datos.val_items.length);
@@ -1049,7 +1049,7 @@ function corregirFormulasLinks() {
 }
 function testProcesarScreening() {
   try {
-    const resultado = procesarScreening({
+    const resultado = procesarScreening_({
       perfil: 'operaciones',
       nombre: 'María Elisabet Digiovani',  // Nombre exacto de B2
       resultado: 'TEST_A',
@@ -1074,7 +1074,7 @@ function debugNombre() {
   Logger.log('Chars: ' + [...nombre].map(c => c.codePointAt(0)).join(', '));
 }
 function testPerfilRoto() {
-  const datos = getDatosPerfil('coord-rrhh');
+  const datos = getDatosPerfil_('coord-rrhh');
   Logger.log('Hero: ' + JSON.stringify(datos.hero));
   Logger.log('Eval: ' + datos.eval_items.length);
   Logger.log('Val: ' + datos.val_items.length);
@@ -3038,7 +3038,7 @@ function getNotaScreening(perfilId, nombreCandidato) {
     return '';
   }
 }
-function getLinkScreening(perfilId, nombreCandidato) {
+function getLinkScreening_(perfilId, nombreCandidato) {
   try {
     const cfg = getConfig(perfilId);
     const sh = getSheet(cfg);
@@ -3244,7 +3244,7 @@ function extraerFileId(sheet, fila, col) {
   const m2 = url.match(/[-\w]{25,}/);
   return m2 ? m2[0] : '';
 }
-function generarInformeCandidato(perfilId, fila) {
+function generarInformeCandidato_(perfilId, fila) {
   const cfg = getConfig(perfilId);
   const sh = getSheet(cfg);
   const nombre = String(sh.getRange(fila, 2).getValue() || '');
@@ -3639,7 +3639,7 @@ function probarPDFClientes() {
   Logger.log('Listo: ' + url);
 }
 function verScreeningFacundo() {
-  const info = getLinkScreening('analista-datos', 'Facundo San Martino');
+  const info = getLinkScreening_('analista-datos', 'Facundo San Martino');
   Logger.log('link: ' + info.link);
   Logger.log('nota: ' + info.nota);
 }
@@ -3708,7 +3708,7 @@ function vistaPreviaGuardar() {
   archivo.setContent(htmlBase.replace('__FILEID__', fileId));
   Logger.log('Prueba guardar: ' + URL_WEBAPP + '?tipo=verinforme&id=' + fileId);
 }
-function guardarInformeEditado(fileId, htmlContenido) {
+function guardarInformeEditado_(fileId, htmlContenido) {
   try {
     DriveApp.getFileById(fileId).setContent(htmlContenido);
     return { ok: true };
@@ -3951,7 +3951,7 @@ function menuInformeFilaActiva() {
   if (!perfilId) { ui.alert('Esta hoja no es un perfil.'); return; }
   const fila = SpreadsheetApp.getActiveRange().getRow();
   if (fila < 2) { ui.alert('Seleccioná la fila de un candidato.'); return; }
-  const url = generarInformeCandidato(perfilId, fila);
+  const url = generarInformeCandidato_(perfilId, fila);
   ui.alert('Informe generado:\n\n' + url);
 }
 
@@ -4095,7 +4095,7 @@ function kanbanHTML(perfilId) {
   const cfg = getConfig(perfilId);
   const emp = (typeof cfg.empresa === 'string') ? cfg.empresa : 'MACS';
   const titulo = ((typeof cfg.nombre === 'string' && cfg.nombre) ? cfg.nombre : (typeof cfg.nombre_perfil === 'string' && cfg.nombre_perfil) ? cfg.nombre_perfil : perfilId) + ' · ' + emp;
-  const data = doGetKanban(perfilId);
+  const data = doGetKanban_(perfilId);
   const empresas = JSON.stringify(empresasYPerfiles());
   const empresaActual = (typeof cfg.empresa === 'string') ? cfg.empresa : 'MACS';
   const flyer = (typeof cfg.link_flyer === 'string') ? cfg.link_flyer : '';
@@ -4110,7 +4110,7 @@ function kanbanHTML(perfilId) {
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 
-function doGetKanban(perfilId) {
+function doGetKanban_(perfilId) {
   const sh = getSheet(getConfig(perfilId));
   const d = sh.getDataRange().getValues();
 const link = (r, col) => {
@@ -4142,7 +4142,7 @@ const link = (r, col) => {
   return JSON.stringify(out);
 }
 
-function moverEstado(perfilId, fila, estado, quien) {
+function moverEstado_(perfilId, fila, estado, quien) {
   QUIEN_ = quien || '';
   const sh = getSheet(getConfig(perfilId));
   const c = sh.getRange(fila, 9);
@@ -4254,7 +4254,7 @@ const ELIM=DATA_ALL.filter(function(c){return /^Eliminado\\|/.test(c.estado);});
 const EMPRESAS=${empresasJSON};
 const EMPRESA_ACTUAL='${empresaActual}';
 const PERFIL='${perfilId}';
-function pedirPerfilPin(){var p=prompt('PIN para ver el perfil del puesto (solo selectores):');if(!p)return;google.script.run.withSuccessHandler(function(u){abrirPerfilLink(u);}).withFailureHandler(function(e){alert((e&&e.message)||e);}).linkPerfilConPin(PERFIL,p);}
+function pedirPerfilPin(){google.script.run.withSuccessHandler(function(u){abrirPerfilLink(u);}).withFailureHandler(function(e){alert((e&&e.message)||e);}).linkPerfilConPin(PERFIL,'sesion');}
 function abrirPerfilLink(u){var d=document.createElement('div');d.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:99999;display:flex;align-items:center;justify-content:center';d.innerHTML='<div style="background:#fff;border-radius:10px;padding:26px 30px;text-align:center;font-family:sans-serif;max-width:340px"><p style="margin:0 0 16px;font-size:15px">PIN correcto ✓</p><a id="pplk" target="_blank" rel="noopener" style="display:inline-block;background:#1A6645;color:#fff;padding:11px 22px;border-radius:6px;text-decoration:none;font-weight:700">Abrir perfil del puesto</a><div style="margin-top:14px"><a href="#" id="ppcl" style="color:#777;font-size:13px">Cerrar</a></div></div>';document.body.appendChild(d);var l=document.getElementById('pplk');l.href=u;l.onclick=function(){setTimeout(function(){d.remove();},400);};document.getElementById('ppcl').onclick=function(ev){ev.preventDefault();d.remove();};}
 let navHTML='<button id="avBtn" title="Avisos pendientes" onclick="verAvisos()" style="font-size:17px;padding:6px 12px">🔔<span id="avCnt" style="display:none;margin-left:6px;background:#fff;color:#B91C1C;border-radius:12px;font-size:13px;font-weight:800;padding:1px 9px"></span></button><select onchange="window.top.location.href=\\'${URL_WEBAPP}?tipo=kanban&perfil=\\'+this.value">';
 Object.keys(EMPRESAS).forEach(function(emp){
@@ -4264,7 +4264,7 @@ Object.keys(EMPRESAS).forEach(function(emp){
 });
 navHTML+='</select>';
 navHTML+='<button onclick="window.top.location.href=\\'${URL_WEBAPP}?tipo=kanban&perfil=${perfilId}\\'">↻ Actualizar</button>';
-navHTML+='<button id="quienBtn" onclick="quienSoy(true)">👤 ¿Quién sos?</button>';
+navHTML+='<button id="quienBtn" title="Cambiar mi PIN o salir" onclick="blMenuUsuario()">👤 Usuario</button>';
 navHTML+='<div class="dd"><button onclick="ddToggle(this)">📄 Informes ▾</button><div class="ddm"><a onclick="window.open(\\'${URL_WEBAPP}?tipo=procesohtml&perfil=${perfilId}\\',\\'_blank\\')">Informe de proceso (para la empresa)</a><a onclick="if(confirm(\\'¿Generar PDF cliente de esta búsqueda?\\'))window.open(\\'${URL_WEBAPP}?tipo=pdfcliente&perfil=${perfilId}\\',\\'_blank\\')">PDF para el cliente</a></div></div>';
 navHTML+='<div class="dd"><button onclick="ddToggle(this)">📚 Búsqueda ▾</button><div class="ddm">'+(${perfilProt?'true':'false'}?'<a onclick="pedirPerfilPin()">🔒 Perfil del puesto</a>':'<a onclick="window.open(\\'${perfilUrl}\\',\\'_blank\\')">📋 Perfil del puesto</a>')+'<a onclick="window.open(\\'${flyerUrl}\\',\\'_blank\\')">📢 Flyer</a><a onclick="prompt(\\'Link del formulario de postulación (copialo):\\',\\'${URL_WEBAPP}?tipo=postulacion&perfil=${perfilId}\\')">🔗 Link de postulación</a></div></div>';
 navHTML+='<div class="dd"><button onclick="ddToggle(this)">🧰 Candidatos ▾</button><div class="ddm"><a onclick="descartesMasivo()">✉ Mails de descarte</a><a title="Baja un archivo para importar a los contactos de Google" onclick="bajarContactos(this)">📇 Contactos al celular</a><a onclick="window.top.location.href=\\'${URL_WEBAPP}?tipo=banco&desde=${perfilId}\\'">★ Banco de talento</a><a onclick="verHistorial()">📜 Historial de la búsqueda</a><a onclick="copiaAhora()">💾 Copia de seguridad ahora</a><a onclick="abrirPapelera()">🗑 Papelera ('+ELIM.length+')</a></div></div>';
@@ -4376,7 +4376,7 @@ function menuWA(f){
   document.getElementById('mtit').textContent='WhatsApp · '+c.nombre;
   document.getElementById('mbody').innerHTML=h;
 }
-function quienSoy(cambiar){var q='';try{q=localStorage.getItem('blumia_quien')||'';}catch(e){}if(!q||cambiar){var n=prompt('¿Quién sos? Escribí tu nombre (por ejemplo Ariel, Analía o Flavia). Se usa en los mensajes y en el registro de contactos.',q);if(n&&n.trim()){q=n.trim();try{localStorage.setItem('blumia_quien',q);sessionStorage.setItem('bl_quien',q);}catch(e){}}}var b=document.getElementById('quienBtn');if(b)b.textContent='👤 '+(q||'¿Quién sos?');return q;}
+function quienSoy(){var q='';try{q=localStorage.getItem('blumia_quien')||'';}catch(e){}var b=document.getElementById('quienBtn');if(b)b.textContent='👤 '+(q||'Usuario');return q;}
 function enviarWA(f,tipo,btn){
   btn.textContent='Preparando...';
   google.script.run.withSuccessHandler(function(r){
@@ -4529,7 +4529,7 @@ function verLinkPDF() {
     }
   }
 }
-function notaManual(perfilId, fila, etapa, nota, quien) {
+function notaManual_(perfilId, fila, etapa, nota, quien) {
   QUIEN_ = quien || '';
   const sh = getSheet(getConfig(perfilId));
   const col = {cv:5, screening:12, competencias:16}[etapa];
@@ -4796,7 +4796,7 @@ function reponerDesplegableEstados() {
   return true;
 }
 
-function notaEmpresa(perfilId, fila, etapa, nota, quien) {
+function notaEmpresa_(perfilId, fila, etapa, nota, quien) {
   QUIEN_ = quien || '';
   const sh = getSheet(getConfig(perfilId));
   const mapa = {
@@ -4889,12 +4889,12 @@ function verWhatsApp(){
   }
 }
 function verWhatsAppKanban(){
-  const j=JSON.parse(doGetKanban('coord-rrhh'));
+  const j=JSON.parse(doGetKanban_('coord-rrhh'));
   const c=j.find(x=>x.whatsapp);
   Logger.log('WhatsApp link: '+(c?c.whatsapp:'ninguno'));
 }
 function verConversion(){
-  const j=JSON.parse(doGetKanban('coord-rrhh'));
+  const j=JSON.parse(doGetKanban_('coord-rrhh'));
   const c=j.find(x=>x.whatsapp);
   const original=c.whatsapp;
   const convertido=original.replace('https://api.whatsapp.com/send?phone=','https://wa.me/').replace('&text=','?text=');
@@ -4964,7 +4964,7 @@ function probarMailDescarte(){
   GmailApp.sendEmail(mail, asunto+' (POST screening)', postScr);
   Logger.log('Enviados a '+mail);
 }
-function enviarDescartesMasivo(perfilId, textoSin, textoPost, quien) {
+function enviarDescartesMasivo_(perfilId, textoSin, textoPost, quien) {
   QUIEN_ = quien || '';
   const cfg = getConfig(perfilId);
   const sh = getSheet(cfg);
@@ -5050,7 +5050,7 @@ function probarMasivoSeguro(){
     'Se enviarían '+cuenta+' mails de descarte en '+puesto+':\n\n'+lista.join('\n'));
   Logger.log('Prueba enviada. Cantidad: '+cuenta);
 }
-function previaDescartes(perfilId) {
+function previaDescartes_(perfilId) {
   const cfg = getConfig(perfilId);
   const sh = getSheet(cfg);
   const d = sh.getDataRange().getValues();
@@ -5102,7 +5102,7 @@ function verTodosEntrevistadores(){
   });
 }
 function verLinkScreening(){
-  const j=JSON.parse(doGetKanban('analista-sgi'));
+  const j=JSON.parse(doGetKanban_('analista-sgi'));
   const c=j.find(x=>x.scrLink);
   Logger.log('Link screening: '+(c?c.scrLink:'ninguno'));
 }
@@ -5252,7 +5252,7 @@ function verLinks(){
     Logger.log(id + ' → scr: ' + c.link_screening + ' | comp: ' + c.link_competencias + ' | emp: ' + c.link_empresa_virtual);
   });
 }
-function armarComunicacion(perfilId, fila, tipo, quien){
+function armarComunicacion_(perfilId, fila, tipo, quien){
   const cfg = getConfig(perfilId);
   const sh = getSheet(cfg);
   const nombre = String(sh.getRange(fila, 2).getValue() || '').split(' ')[0];
@@ -5303,7 +5303,7 @@ function crearPestanaBanco(){
   sh.setColumnWidth(15, 300);
   Logger.log('Pestaña Banco creada con ' + H.length + ' columnas');
 }
-function enviarABanco(perfilId, fila, categoria, seniority, notaBanco, quien){
+function enviarABanco_(perfilId, fila, categoria, seniority, notaBanco, quien){
   QUIEN_ = quien || '';
   const cfg = getConfig(perfilId);
   const sh = getSheet(cfg);
@@ -5642,7 +5642,7 @@ function verLinksBanco(){
     Logger.log(d[i][1] + ' → scr:"' + b.getRange(i+1, H.indexOf('screening_pdf')+1).getFormula() + '" comp:"' + b.getRange(i+1, H.indexOf('competencias_pdf')+1).getFormula() + '" inf:"' + b.getRange(i+1, H.indexOf('informe')+1).getFormula() + '"');
   }
 }
-function borrarDelBanco(fila, nombre){
+function borrarDelBanco_(fila, nombre){
   const b = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName('Banco');
   const v = String(b.getRange(fila, 2).getValue() || '').trim();
   if(v.toLowerCase() !== String(nombre||'').toLowerCase().trim()){
@@ -5651,7 +5651,7 @@ function borrarDelBanco(fila, nombre){
   b.deleteRow(fila);
   return {ok:true};
 }
-function enviarABusqueda(filaBanco, perfilDestino){
+function enviarABusqueda_(filaBanco, perfilDestino){
   const banco = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName('Banco');
   const d = banco.getDataRange().getValues();
   const H = d[0];
@@ -5758,7 +5758,7 @@ function cargarPerfilesPuesto(){
   }
   Logger.log('Perfiles de puesto cargados en columna ' + (c+1));
 }
-function borrarMarcaContacto(perfilId, fila, quien){
+function borrarMarcaContacto_(perfilId, fila, quien){
   QUIEN_ = quien || '';
   const sh = getSheet(getConfig(perfilId));
   registrarHistorial_(sh.getName(), sh.getRange(fila, 2).getValue(), 'Contacto', 'Marca de contacto borrada (' + sh.getRange(fila, 41).getValue() + ')');
@@ -5810,7 +5810,7 @@ function verPatricio(){
   }
 }
 function chequearSistema(){
-  const fns = ['notaEmpresa','enviarABanco','armarComunicacion','borrarMarcaContacto','doGetKanban','KANBAN_TPL'];
+  const fns = ['notaEmpresa_','enviarABanco_','armarComunicacion_','borrarMarcaContacto_','doGetKanban_','KANBAN_TPL'];
   fns.forEach(function(f){
     Logger.log(f + ': ' + (typeof this[f] === 'function' ? 'OK' : 'FALTA'));
   });

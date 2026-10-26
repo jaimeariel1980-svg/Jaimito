@@ -167,4 +167,4 @@ Para pedir algo: «hacé la etapa 1», o por código («hacé V1, V2 y T3»).
 - ✅ Etapa 1 hecha: V1, V2, V3, V4 (píldora de candidatos y botón de postulación), V6, T6.
 - ✅ Etapa 2 hecha: T3 (último movimiento desde el Historial), I2 (etiquetas de análisis), I3 (ya se postuló antes), F3 (observaciones), F5/F6/V5 (ficha ordenada), A3 (sin movimiento y reservas viejas).
 - ✅ S3 hecho: copia de seguridad diaria + botón «Copia de seguridad ahora».
-- ✅ Etapa 3 hecha: F1 (editar datos), F2 (pasar de búsqueda), F4 (anular etapa), C3 (agendar desde el tablero) y C4 (pestaña Agenda). Sin hacer C6 (recordatorios automáticos). 🚫 Sin hacer: S1/S2/S4 (login y roles) porque cambian el uso y hay que hablarlos antes.
+- ✅ Etapa 3 hecha: F1 (editar datos), F2 (pasar de búsqueda), F4 (anular etapa), C3 (agendar desde el tablero) y C4 (pestaña Agenda). Sin hacer C6 (recordatorios automáticos). ✅ S1/S2/S4 hechos el 27/10 (login con nombre y PIN, roles Administrador/Usuario, pestaña Accesos).

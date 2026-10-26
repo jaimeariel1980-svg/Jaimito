@@ -26,8 +26,8 @@
 <script>
 var ED=null;
 function edEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
-function edPin(){var p='';try{p=sessionStorage.getItem('bl_pin')||'';}catch(e){}if(!p){p=prompt('PIN para editar el formulario (solo selectores):')||'';if(p){try{sessionStorage.setItem('bl_pin',p);}catch(e){}}}return p;}
-function edQuien(){var q='';try{q=localStorage.getItem('blumia_quien')||sessionStorage.getItem('bl_quien')||'';}catch(e){}if(!q){q=prompt('¿Quién edita? (nombre, para el historial de cambios)')||'';if(q){try{sessionStorage.setItem('bl_quien',q);}catch(e){}}}return q;}
+function edPin(){return 'sesion';}
+function edQuien(){var q='';try{q=localStorage.getItem('blumia_quien')||'';}catch(e){}return q;}
 function edAbrir(){
   if(typeof DATOS==='undefined'||!DATOS){alert('El formulario todavía está cargando.');return;}
   if(!edPin())return;

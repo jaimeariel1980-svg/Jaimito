@@ -27,8 +27,8 @@
   var CF=null;
   var ETQ={nombre:'Nombre en el tablero',nombre_perfil:'Nombre del puesto (se usa en los mensajes)',empresa:'Empresa (agrupa las búsquedas en el tablero)',empresa_candidatos:'Cómo se nombra la empresa a los candidatos (vacío = «una empresa cliente del sector…»)',banda_salarial:'Banda salarial de referencia en $ (la usan el Informe de proceso y el Resumen), ej: 13000000',link_screening:'Link de agenda · screening',link_competencias:'Link de agenda · competencias',link_empresa_virtual:'Link de agenda · entrevista con la empresa (virtual / presencial)',link_empresa_presencial:'Link de agenda · empresa presencial (si es otro)',link_flyer:'Link del flyer',link_perfil:'Link del perfil del puesto en PDF (si no está protegido)'};
   function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
-  function pin(){var p='';try{p=sessionStorage.getItem('bl_pin')||'';}catch(e){}if(!p){p=prompt('PIN para configurar la búsqueda (solo selectores):')||'';if(p){try{sessionStorage.setItem('bl_pin',p);}catch(e){}}}return p;}
-  function quien(){var q='';try{q=localStorage.getItem('blumia_quien')||sessionStorage.getItem('bl_quien')||'';}catch(e){}if(!q){q=prompt('¿Quién edita? (nombre, para el historial de cambios)')||'';if(q){try{sessionStorage.setItem('bl_quien',q);}catch(e){}}}return q;}
+  function pin(){return 'sesion';}
+  function quien(){var q='';try{q=localStorage.getItem('blumia_quien')||'';}catch(e){}return q;}
   function badPin(e){var m=(e&&e.message)||String(e);if(/PIN/.test(m)){try{sessionStorage.removeItem('bl_pin');}catch(x){}}return m;}
   window.cfAbrir=function(){
     var p=pin();if(!p)return;
@@ -45,7 +45,7 @@
     CF.plantillas.forEach(function(t,i){if((v=g('cfp_'+i))!==null){t.texto=v;t.alcance=g('cfa_'+i);}});
   }
   function render(tab){
-    var T=[['ia','Requisitos para la IA'],['post','Preguntas de postulación'],['msg','Mensajes'],['dat','Datos de la búsqueda']];
+    var T=[['ia','Requisitos para la IA'],['post','Preguntas de postulación'],['msg','Mensajes'],['dat','Datos de la búsqueda'],['usr','Usuarios']];
     var x='<h2>⚙ Configurar búsqueda · '+esc(CF.datos.nombre||PERFIL)+'</h2><div class="cf-tabs">'+T.map(function(t){return '<button class="cf-tab'+(t[0]===tab?' on':'')+'" onclick="cfTab(\''+t[0]+'\')">'+t[1]+'</button>';}).join('')+'</div>';
     x+='<div class="cf-sec'+(tab==='ia'?' on':'')+'"><div class="cf-help">Es el texto que la IA usa para <b>puntuar los CVs</b> de esta búsqueda (perfil, experiencia excluyente, deseable, zona, pretensión…). Si cambia el perfil del puesto, actualizalo acá. Vale para los CVs que entren desde ahora; los ya analizados no se recalculan.</div><textarea id="cf_ia" style="min-height:340px">'+esc(CF.prompt_extra)+'</textarea>'+foot('ia')+'</div>';
     x+='<div class="cf-sec'+(tab==='post'?' on':'')+'"><div class="cf-help">Preguntas que se agregan al formulario de postulación de esta búsqueda (además de los datos básicos y el CV). En «Opciones» separá con | (por ejemplo: Básico|Intermedio|Avanzado).</div>';
@@ -57,7 +57,9 @@
     x+='<div class="cf-sec'+(tab==='dat'?' on':'')+'"><div class="cf-help">Datos de la búsqueda. Los links tienen que empezar con https://. Al guardar se recarga el tablero.</div>';
     Object.keys(ETQ).forEach(function(k){x+='<label>'+ETQ[k]+'</label><input id="cfd_'+k+'" value="'+esc(CF.datos[k])+'">';});
     x+=foot('dat')+'</div>';
+    x+='<div class="cf-sec'+(tab==='usr'?' on':'')+'"><div class="cf-help">Quién puede entrar al tablero. Los <b>administradores</b> configuran las búsquedas y manejan los usuarios; los <b>usuarios</b> trabajan con los candidatos. Al crear a alguien o reiniciar un PIN se muestra un PIN temporal: pasáselo y cada persona elige el suyo al entrar.</div><div id="cfUsr">Cargando…</div><div class="cf-foot"><button class="cf-close" onclick="cfCerrar()">Cerrar</button></div></div>';
     document.getElementById('cfBox').innerHTML=x;
+    if(tab==='usr')cfUsuarios();
   }
   function foot(t){return '<div class="cf-foot"><button class="cf-close" onclick="cfCerrar()">Cerrar</button><button class="cf-save" onclick="cfGuardar(\''+t+'\',this)">Guardar</button></div>';}
   window.cfQuitar=function(i){sync();if(!confirm('¿Sacar esta pregunta? (queda copia en Historial_Formularios)'))return;CF.preguntas.splice(i,1);render('post');};
@@ -74,7 +76,32 @@
      .withFailureHandler(function(e){btn.disabled=false;btn.textContent='Guardar';alert('No se guardó: '+badPin(e));})
      .guardarConfigBusqueda(p,PERFIL,d,q);
   };
+  function uErr(e){alert((e&&e.message)||e);}
+  window.cfUsuarios=function(){
+    var d=document.getElementById('cfUsr');if(!d)return;
+    google.script.run.withSuccessHandler(function(L){
+      var x='<table style="width:100%;border-collapse:collapse;font-size:13px">';
+      L.forEach(function(u,i){
+        x+='<tr style="border-bottom:1px solid #eee"><td style="padding:8px 4px"><b>'+esc(u.nombre)+'</b><br><small style="color:'+(u.activo==='SI'?(u.pendiente?'#9A7500':'#1E6B47'):'#B91C1C')+'">'+(u.activo==='SI'?(u.pendiente?'PIN temporal sin cambiar':'Activo'):'Bloqueado')+'</small></td>'
+         +'<td><select onchange="cfRolU('+i+',this.value)"><option'+(u.rol==='Administrador'?' selected':'')+'>Administrador</option><option'+(u.rol==='Usuario'?' selected':'')+'>Usuario</option></select></td>'
+         +'<td style="text-align:right;white-space:nowrap"><button class="cf-mini" onclick="cfPinU('+i+')">Reiniciar PIN</button> <button class="cf-mini'+(u.activo==='SI'?' x':'')+'" onclick="cfActU('+i+','+(u.activo==='SI'?'false':'true')+')">'+(u.activo==='SI'?'Bloquear':'Habilitar')+'</button></td></tr>';
+      });
+      x+='</table><div class="cf-pl" style="margin-top:14px"><b>Agregar usuario</b><label>Nombre y apellido</label><input id="cfuN" placeholder="Ej: Analía Pérez"><label>Rol</label><select id="cfuR"><option>Usuario</option><option>Administrador</option></select><div class="cf-foot"><button class="cf-save" onclick="cfCrearU(this)">Crear usuario</button></div></div>';
+      d.innerHTML=x;d._L=L;
+    }).withFailureHandler(function(e){d.innerHTML='<div style="color:#B91C1C">'+esc((e&&e.message)||e)+'</div>';}).listarUsuarios();
+  };
+  function uL(i){var d=document.getElementById('cfUsr');return d&&d._L&&d._L[i];}
+  window.cfCrearU=function(b){
+    var n=document.getElementById('cfuN').value,r=document.getElementById('cfuR').value;b.disabled=true;
+    google.script.run.withSuccessHandler(function(x){b.disabled=false;alert('Usuario creado: '+x.nombre+'\nPIN temporal: '+x.pin+'\n\nPasale este PIN. Al entrar elige el suyo.');cfUsuarios();}).withFailureHandler(function(e){b.disabled=false;uErr(e);}).crearUsuario(n,r);
+  };
+  window.cfPinU=function(i){var u=uL(i);if(!u||!confirm('¿Reiniciar el PIN de '+u.nombre+'? Se cierra su sesión y recibe un PIN temporal.'))return;
+    google.script.run.withSuccessHandler(function(x){alert('PIN temporal de '+x.nombre+': '+x.pin+'\n\nPasáselo: al entrar elige el suyo.');cfUsuarios();}).withFailureHandler(uErr).reiniciarPinUsuario(u.nombre);};
+  window.cfActU=function(i,a){var u=uL(i);if(!u||(!a&&!confirm('¿Bloquear a '+u.nombre+'? No va a poder entrar.')))return;
+    google.script.run.withSuccessHandler(function(){cfUsuarios();}).withFailureHandler(function(e){uErr(e);cfUsuarios();}).activarUsuario(u.nombre,a);};
+  window.cfRolU=function(i,r){var u=uL(i);if(!u)return;
+    google.script.run.withSuccessHandler(function(){cfUsuarios();}).withFailureHandler(function(e){uErr(e);cfUsuarios();}).cambiarRolUsuario(u.nombre,r);};
   var nav=document.getElementById('nav');
-  if(nav)nav.insertAdjacentHTML('beforeend','<button onclick="cfAbrir()">⚙ Configurar</button>');
+  if(nav&&(typeof blRol!=='function'||blRol()==='Administrador'))nav.insertAdjacentHTML('beforeend','<button onclick="cfAbrir()">⚙ Configurar</button>');
 })();
 </script>

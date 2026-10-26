@@ -3,6 +3,7 @@
    Un perfil queda protegido con Config.perfil_protegido = SI. */
 /* Verifica el PIN de los selectores (propiedad BLUMIA_PIN). 5 errores bloquean 10 minutos. Lo usan el perfil del puesto y la IA. */
 function pinValido_(pin) {
+  if (typeof SES_ !== 'undefined' && SES_) return; // ya ingresó con su usuario (el rol se controla en api)
   const cache = CacheService.getScriptCache();
   const fallos = Number(cache.get('pin_fallos') || 0);
   if (fallos >= 5) throw new Error('Demasiados intentos. Probá de nuevo en 10 minutos.');
@@ -15,7 +16,7 @@ function pinValido_(pin) {
   cache.remove('pin_fallos');
 }
 
-function linkPerfilConPin(perfilId, pin) {
+function linkPerfilConPin_(perfilId, pin) {
   pinValido_(pin);
   const cache = CacheService.getScriptCache();
   const cfg = getConfig(perfilId);
@@ -58,7 +59,7 @@ function ultimoPerfilDatos_(cfg) {
 }
 
 /* Guarda una versión con fecha y hora del perfil del puesto (los valores del formulario) en la carpeta del perfil en Drive.
-   Solo se puede con el acceso temporal que da linkPerfilConPin (o sea, después del PIN). */
+   Solo se puede con el acceso temporal que da linkPerfilConPin_ (o sea, después del PIN). */
 function guardarPerfilDatos(perfilId, tok, datosJson) {
   if (!tok || CacheService.getScriptCache().get('pp_' + tok) !== String(perfilId)) throw new Error('Acceso vencido. Volvé a abrir el perfil desde el kanban con el PIN.');
   const txt = String(datosJson || '');

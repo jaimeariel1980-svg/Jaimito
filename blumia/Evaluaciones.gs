@@ -60,7 +60,7 @@ function guardarEstadoEval_(cfg, perfilId, nombre, etapa, estadoJSON, nota, quie
   } catch (e) { console.error('No pude guardar las respuestas de la evaluación: ' + e); }
 }
 
-function getEvaluacionPrevia(perfilId, nombre, etapa) {
+function getEvaluacionPrevia_(perfilId, nombre, etapa) {
   if (['screening', 'competencias'].indexOf(etapa) === -1) throw new Error('Etapa inválida');
   const sh = evalHoja_();
   const fila = evalFila_(sh, perfilId, nombre, etapa);

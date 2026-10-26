@@ -17,14 +17,14 @@ function registrarContacto_(perfilId, fila, nombre, tel, tipo, quien) {
   try { hojaRegCont_().appendRow([new Date(), perfilId, fila, nombre, String(tel || ''), tipo, quien]); } catch (e) { }
 }
 
-function registrarContactoManual(perfilId, fila, tipo, quien) {
+function registrarContactoManual_(perfilId, fila, tipo, quien) {
   const sh = getSheet(getConfig(perfilId));
   registrarContacto_(perfilId, fila, sh.getRange(fila, 2).getValue(), sh.getRange(fila, 3).getValue(), tipo, quien);
   registrarHistorial_(sh.getName(), sh.getRange(fila, 2).getValue(), 'Contacto', tipo, quien);
   return { ok: true };
 }
 
-function borrarContactoRegistro(perfilId, fila, fechaTxt) {
+function borrarContactoRegistro_(perfilId, fila, fechaTxt) {
   const nombre = String(getSheet(getConfig(perfilId)).getRange(fila, 2).getValue() || '').trim();
   const sh = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName(HOJA_REG_CONT_);
   if (!sh || sh.getLastRow() < 2) return { ok: false };
@@ -35,7 +35,7 @@ function borrarContactoRegistro(perfilId, fila, fechaTxt) {
   return { ok: false };
 }
 
-function getContactosRegistro(perfilId, fila) {
+function getContactosRegistro_(perfilId, fila) {
   const nombre = String(getSheet(getConfig(perfilId)).getRange(fila, 2).getValue() || '').trim();
   const sh = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName(HOJA_REG_CONT_);
   if (!sh || sh.getLastRow() < 2) return [];
@@ -46,7 +46,7 @@ function getContactosRegistro(perfilId, fila) {
 }
 
 // CSV para importar en Contactos de Google: solo la búsqueda indicada (o todas si no se indica) y solo quienes ya se contactaron o avanzaron
-function exportarContactosCSV(perfilId) {
+function exportarContactosCSV_(perfilId) {
   const OK = ['Contactado', 'Screening agendado', 'Avanza a competencias', 'Competencias agendada', 'Avanza a screening empresa', 'Screening empresa agendado', 'Avanza a presencial empresa', 'Avanza a empresa', 'Entrevista empresa agendada', 'En cliente', 'Contratado'];
   const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
   const filas = [['Name', 'Given Name', 'Phone 1 - Value', 'E-mail 1 - Value', 'Group Membership'].map(q).join(',')];

@@ -39,7 +39,7 @@ function reemplazarFilasPerfil_(ss, hoja, perfilId, filas, quien) {
   if (filas.length) sh.getRange(sh.getLastRow() + 1, 1, filas.length, filas[0].length).setNumberFormat('@').setValues(filas);
 }
 
-function guardarFormularioPerfil(pin, perfilId, p, quien) {
+function guardarFormularioPerfil_(pin, perfilId, p, quien) {
   pinValido_(pin);
   getConfig(perfilId);
   quien = limpiarTxt_(quien) || 'sin nombre';
