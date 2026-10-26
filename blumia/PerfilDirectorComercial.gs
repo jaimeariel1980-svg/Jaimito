@@ -124,9 +124,22 @@ NIVEL_AJUSTE:
   ];
   pp.getRange(pp.getLastRow() + 1, 1, preguntas.length, 6).setValues(preguntas);
 
-  // 9) Formato y links de la pestaña (igual que los otros perfiles)
+  formatearHojaDirectorComercial();
+
+  Logger.log('✅ Perfil ' + p.id + ' creado (empresa: ' + p.empresa + ').');
+  Logger.log('Kanban: ' + URL_DEPLOY + '?tipo=kanban&perfil=' + p.id);
+  Logger.log('Postulación: ' + URL_DEPLOY + '?tipo=postulacion&perfil=' + p.id);
+}
+
+/* Formato, desplegables y links de la pestaña "Director Comercial".
+   Se llama sola desde crearPerfilDirectorComercial; se puede correr aparte. */
+function formatearHojaDirectorComercial() {
+  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+  const p = { id: 'director-comercial', hoja: 'Director Comercial' };
+  const hoja = ss.getSheetByName(p.hoja);
+  if (!hoja) { Logger.log('No existe la pestaña ' + p.hoja); return; }
   const modelo = ss.getSheetByName('Supervisor de Operaciones');
-  if (modelo) for (let c = 1; c <= modelo.getLastColumn(); c++) hoja.setColumnWidth(c, modelo.getColumnWidth(c));
+  if (modelo) for (let c = 1; c <= Math.min(modelo.getLastColumn(), hoja.getMaxColumns()); c++) hoja.setColumnWidth(c, modelo.getColumnWidth(c));
   const lista = l => SpreadsheetApp.newDataValidation().requireValueInList(l, true).setAllowInvalid(true).build();
   const entrevistadores = ['Ariel', 'Marcos', 'Ever', 'Analía', 'Flavia'];
   hoja.getRange(2, 9, 250, 1).setDataValidation(lista([
@@ -138,12 +151,12 @@ NIVEL_AJUSTE:
   hoja.getRange(2, 16, 250, 1).setDataValidation(lista(['A', 'B', 'C']));
   hoja.getRange(2, 14, 250, 1).setDataValidation(lista(entrevistadores));
   hoja.getRange(2, 18, 250, 1).setDataValidation(lista(entrevistadores));
+  const fScr = [], fComp = [];
   for (let i = 2; i <= 250; i++) {
-    hoja.getRange(i, 11).setFormula('=IF(B' + i + '<>"",HYPERLINK("' + URL_DEPLOY + '?perfil=' + p.id + '&nombre="&ENCODEURL(B' + i + ')&"&entrevistador="&ENCODEURL(N' + i + '),"Iniciar Screening"),"")');
-    hoja.getRange(i, 15).setFormula('=IF(B' + i + '<>"",HYPERLINK("' + URL_DEPLOY + '?tipo=competencias&perfil=' + p.id + '&nombre="&ENCODEURL(B' + i + ')&"&entrevistador="&ENCODEURL(R' + i + '),"Evaluar competencias"),"")');
+    fScr.push(['=IF(B' + i + '<>"",HYPERLINK("' + URL_DEPLOY + '?perfil=' + p.id + '&nombre="&ENCODEURL(B' + i + ')&"&entrevistador="&ENCODEURL(N' + i + '),"Iniciar Screening"),"")']);
+    fComp.push(['=IF(B' + i + '<>"",HYPERLINK("' + URL_DEPLOY + '?tipo=competencias&perfil=' + p.id + '&nombre="&ENCODEURL(B' + i + ')&"&entrevistador="&ENCODEURL(R' + i + '),"Evaluar competencias"),"")']);
   }
-
-  Logger.log('✅ Perfil ' + p.id + ' creado (empresa: ' + p.empresa + ').');
-  Logger.log('Kanban: ' + URL_DEPLOY + '?tipo=kanban&perfil=' + p.id);
-  Logger.log('Postulación: ' + URL_DEPLOY + '?tipo=postulacion&perfil=' + p.id);
+  hoja.getRange(2, 11, fScr.length, 1).setFormulas(fScr);
+  hoja.getRange(2, 15, fComp.length, 1).setFormulas(fComp);
+  Logger.log('✅ Formato y links de ' + p.hoja + ' listos.');
 }
