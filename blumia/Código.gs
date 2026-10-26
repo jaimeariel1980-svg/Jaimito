@@ -4064,8 +4064,9 @@ function kanbanHTML(perfilId) {
   const empresas = JSON.stringify(empresasYPerfiles());
   const empresaActual = (typeof cfg.empresa === 'string') ? cfg.empresa : 'MACS';
   const flyer = (typeof cfg.link_flyer === 'string') ? cfg.link_flyer : '';
-  const perfilPdf = (typeof cfg.link_perfil === 'string') ? cfg.link_perfil : '';
-  return HtmlService.createHtmlOutput(KANBAN_TPL(perfilId, titulo, data, empresas, empresaActual, flyer, perfilPdf))
+  const perfilProt = String(cfg.perfil_protegido || '').toUpperCase() === 'SI';
+  const perfilPdf = (!perfilProt && typeof cfg.link_perfil === 'string') ? cfg.link_perfil : '';
+  return HtmlService.createHtmlOutput(KANBAN_TPL(perfilId, titulo, data, empresas, empresaActual, flyer, perfilPdf, perfilProt))
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
@@ -4107,7 +4108,7 @@ function moverEstado(perfilId, fila, estado) {
   return true;
 }
 
-function KANBAN_TPL(perfilId, titulo, dataJSON, empresasJSON, empresaActual, flyerUrl, perfilUrl) {
+function KANBAN_TPL(perfilId, titulo, dataJSON, empresasJSON, empresaActual, flyerUrl, perfilUrl, perfilProt) {
   const LOGO='https://lh3.googleusercontent.com/d/1WdoIWop2mZ_KnSa9raQM1Xb5TFP2JvGO';
   return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kanban · ${titulo}</title>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"><\/script>
@@ -4199,6 +4200,7 @@ const DATA=${dataJSON};
 const EMPRESAS=${empresasJSON};
 const EMPRESA_ACTUAL='${empresaActual}';
 const PERFIL='${perfilId}';
+function pedirPerfilPin(){var p=prompt('PIN para ver el perfil del puesto (solo selectores):');if(!p)return;var w=window.open('','_blank');google.script.run.withSuccessHandler(function(u){if(w)w.location.href=u;else window.open(u,'_blank');}).withFailureHandler(function(e){if(w)w.close();alert((e&&e.message)||e);}).linkPerfilConPin(PERFIL,p);}
 let navHTML='<select onchange="window.top.location.href=\\'${URL_WEBAPP}?tipo=kanban&perfil=\\'+this.value">';
 Object.keys(EMPRESAS).forEach(function(emp){
   navHTML+='<optgroup label="'+emp+'">';
@@ -4211,7 +4213,7 @@ navHTML+='<button class="proc" onclick="window.open(\\'${URL_WEBAPP}?tipo=proces
 navHTML+='<button class="proc" onclick="if(confirm(\\'¿Generar PDF cliente de esta búsqueda?\\'))window.open(\\'${URL_WEBAPP}?tipo=pdfcliente&perfil=${perfilId}\\',\\'_blank\\')">PDF cliente</button>';
 navHTML+='<button style="background:#E06666;color:#fff" onclick="descartesMasivo()">✉ Descartes</button>';
 navHTML+='<button style="background:#F5C842;color:#1A1A1A" onclick="window.top.location.href=\\'${URL_WEBAPP}?tipo=banco&desde=${perfilId}\\'">★ Banco</button>';
-navHTML+='<button onclick="window.open(\\'${perfilUrl}\\',\\'_blank\\')">📋 Perfil del puesto</button>';
+navHTML+=${perfilProt?'true':'false'}?'<button onclick="pedirPerfilPin()">🔒 Perfil del puesto</button>':'<button onclick="window.open(\\'${perfilUrl}\\',\\'_blank\\')">📋 Perfil del puesto</button>';
 navHTML+='<button onclick="window.open(\\'${flyerUrl}\\',\\'_blank\\')">📢 Flyer</button>';
 navHTML+='<button onclick="prompt(\\'Link del formulario de postulación (copialo):\\',\\'${URL_WEBAPP}?tipo=postulacion&perfil=${perfilId}\\')">🔗 Link postulación</button>';
 document.getElementById('nav').innerHTML=navHTML;
