@@ -74,6 +74,7 @@
     else if(k==='dcv'){t='Descartados en análisis de CV';lista=r(function(x){return x.d==='cv';});}
     else if(k==='dpost'){t='Descartados post screening';lista=r(function(x){return x.d==='post';});}
     else if(k==='dcomp'){t='Descartados en competencias / empresa';lista=r(function(x){return x.d==='comp'||x.d==='emp';});}
+    else if(k.indexOf('mot:')===0){var mo=k.slice(4);t=mo?'Descartados por: '+mo:'Descartados sin motivo cargado';lista=r(function(x){return x.t==='desc'&&(mo?String(x.c.motivo||'').split(/;\s*/).map(function(m){return m.replace(/^Otro: .*/,'Otro');}).indexOf(mo)>-1:!String(x.c.motivo||'').trim());});}
     else if(k==='act'){t='En proceso';lista=r(function(x){return x.t==='act';});}
     else if(k==='sinc'){t='Sin contactar';lista=r(function(x){return x.t==='act'&&x.lv===0&&/^(nuevo|pendiente|revisar|)$/i.test(String(x.c.estado||'').trim())&&!x.c.contactado;});}
     else if(k==='prox'){t='Entrevistas de los próximos 7 días';lista=r(function(x){return citaEn(x,h0,h0+7*864e5);}).sort(function(a,b){return avFecha(a.c.cita)-avFecha(b.c.cita);});}
@@ -104,6 +105,14 @@
     return '<div class="rs-dw"><svg viewBox="0 0 140 140"><g>'+paths+'</g><circle cx="70" cy="70" r="'+(r-1)+'" fill="#fff"></circle><text x="70" y="74" text-anchor="middle" style="font-size:27px;font-weight:800;fill:#1A6645">'+centro+'</text><text x="70" y="89" text-anchor="middle" style="font-size:8.5px;fill:#666;font-weight:700">'+sub+'</text></svg><div class="rs-leg">'+leg+'</div></div>';
   }
   function kpi(n,l,c,k){return '<div class="rs-kpi '+c+'" data-k="'+k+'"><div class="n">'+n+'</div><div class="l">'+l+'</div><div class="h">ver detalle ›</div></div>';}
+  function motivosHtml(){
+    var cn={},sin=0;L.forEach(function(x){if(x.t!=='desc')return;var m=String(x.c.motivo||'').trim();if(!m){sin++;return;}m.split(/;\s*/).forEach(function(z){z=z.replace(/^Otro: .*/,'Otro');cn[z]=(cn[z]||0)+1;});});
+    var ks=Object.keys(cn).sort(function(a,b){return cn[b]-cn[a];});
+    if(!ks.length&&!sin)return '';
+    return '<div style="margin-top:14px"><div style="font-size:12px;font-weight:800;color:#1A6645;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Motivos de descarte</div><div class="rs-leg" style="justify-content:flex-start">'
+      +ks.map(function(k){return '<div class="rs-lb" data-k="mot:'+esc(k)+'"><div class="t">'+esc(k)+'</div><div class="p">'+cn[k]+'</div></div>';}).join('')
+      +(sin?'<div class="rs-lb" data-k="mot:" style="border-color:#E0A800"><div class="t">Sin motivo cargado</div><div class="p">'+sin+'</div></div>':'')+'</div></div>';
+  }
   function kpiMini(n,l,k){return '<div class="rs-kpi" data-k="'+k+'"><div class="n" style="font-size:30px">'+n+'</div><div class="l">'+l+'</div></div>';}
   function pintar(){
     prep();
@@ -114,7 +123,7 @@
     x+='<div class="rs-dash">'+kpi(pend.length,'Avisos pendientes'+(urg?' ('+urg+' urgentes)':''),pend.length?'r':'g','avisos')+kpi(g('sinc'),'Sin contactar','y','sinc')+kpi(pr,'Entrevistas próx. 7 días'+(hoy?' ('+hoy+' hoy)':''),'','prox')+'</div>';
     var FUN=[['CVs recibidos',cv,'all','base del proceso'],['Screenings',scr,'scr','entrevistas telefónicas'],['Competencias',comp,'comp','evaluación profunda'],['Avanzan a empresa',emp,'emp','finalistas presentados']];
     x+='<div class="rs-panel"><h3>01 · Embudo</h3>'+FUN.map(function(f,i){return '<div class="rs-fun" data-k="'+f[2]+'"><span><b>'+f[0]+'</b><br><small style="color:#888">'+f[3]+'</small></span><div class="rs-bar"><i style="width:'+(cv?Math.round(f[1]*100/cv):0)+'%"></i></div><span><b>'+f[1]+'</b> · '+pct(f[1],cv)+(i?' de los CVs':'')+'</span></div>';}).join('')+(res?'<div class="rs-fun" data-k="res" style="font-weight:700;color:#8e7cc3">+ '+res+' candidato'+(res===1?'':'s')+' en reserva activa</div>':'')+'</div>';
-    x+='<div class="rs-panel"><h3>02 · Descartes <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#888">· filtro por etapa</span></h3><div class="rs-dash" style="margin:0">'+kpiMini(dcv,'En análisis de CV','dcv')+kpiMini(dpost,'Post screening','dpost')+kpiMini(dcomp,'En competencias y empresa','dcomp')+'</div></div>';
+    x+='<div class="rs-panel"><h3>02 · Descartes <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#888">· filtro por etapa</span></h3><div class="rs-dash" style="margin:0">'+kpiMini(dcv,'En análisis de CV','dcv')+kpiMini(dpost,'Post screening','dpost')+kpiMini(dcomp,'En competencias y empresa','dcomp')+'</div>'+motivosHtml()+'</div>';
     x+='<div class="rs-panel" id="rsSal"><h3>03 · Realidad salarial</h3><span style="color:#888">Cargando…</span></div>';
     var ES=[0,1,2,3,4].map(function(i){return {l:['Análisis de CV','Screening','Competencias','Screening empresa','Entrevista final'][i],v:g('et:'+i),c:[COLS.cv,COLS.scr,COLS.comp,COLS.semp,COLS.fin][i],k:'et:'+i};});
     ES.push({l:'En reserva',v:res,c:COLS.res,k:'res'});ES.push({l:'Descartados',v:desc,c:COLS.desc,k:'desc'});
