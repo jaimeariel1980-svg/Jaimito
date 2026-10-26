@@ -33,6 +33,12 @@ Lo mantiene Claude. Prioridad: 🔴 urgente · 🟠 importante · 🟡 cuando se
 - 🟡 `Postulacion.html` pesa 650 KB (tipografías incrustadas): revisar si la página carga lento. — *Claude*
 - 🟡 Cada `bajar` crea `sync-blumia`: si vuelve a haber claves en el código, quedan en esa rama. — *Claude*
 
+## Empleos PAMI (27/10)
+- 🟠 **Bloquear a los candidatos con C para la técnica**: hoy solo se avisa en rojo («no corresponde a técnica») pero los jefes igual los ven si los piden por policlínico. Propuesta: no mostrarlos al jefe hasta que un administrador lo habilite. — *Claude, con OK de Ariel*
+- 🟠 **Revisión de segunda pasada del resumen para la técnica**: la IA (gpt-4o-mini/gpt-4o) no siempre cumple todas las reglas de tono (caso Manuel, C). Ya se garantiza por código la primera oración para una C; si sigue fallando, pasar el texto por un segundo control contra las reglas (o probar un modelo más fuerte). — *Claude*
+- 🟡 **Cruzar ausencias/reprogramaciones con el historial**: hoy solo aparecen en el resumen si el entrevistador las escribió; el sistema podría leer solo los «no se presentó» y reprogramaciones. — *Claude*
+- 🟡 **Respaldo de la grabación**: el audio de la entrevista solo vive en la ventanita; si se cierra antes de terminar se pierde. Evaluar guardar el audio en Drive de forma temporal (decisión de Ariel por privacidad). — *Ariel + Claude*
+
 ## Operativo
 - 🔴 **Apagar el bot viejo de Telegram (piloto)**: revocar su token en BotFather, borrar los activadores y archivar el proyecto de Apps Script, revocar su clave de OpenAI. Después, sacar del repo `bot-azcuenaga.gs` y los `.py` de la raíz. — *Ariel (cuentas) + Claude (repo)*
 - 🟠 **Sin pruebas antes de publicar**: cualquiera con escritura en la rama principal publica a producción y el workflow no revisa sintaxis. Proponer chequeo automático de sintaxis y proteger la rama. — *Claude + Ariel (GitHub)*
