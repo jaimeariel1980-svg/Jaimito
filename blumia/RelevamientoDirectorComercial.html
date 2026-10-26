@@ -369,7 +369,7 @@ footer{
   </div>
   <div class="tb-right">
     <div class="tb-badge">Confidencial</div>
-    <button class="btn-save" onclick="saveHTML()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar HTML</button><button class="btn-pdf" onclick="window.print()">
+    <span id="sis-fecha" style="font-size:11px;color:#555;margin-right:8px"></span><button class="btn-save" id="btn-sis" onclick="guardarSistema()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar en el sistema</button><button class="btn-pdf" onclick="window.print()">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Exportar PDF
     </button>
@@ -810,6 +810,37 @@ window.addEventListener('beforeprint',toPrint);
 window.addEventListener('afterprint',fromPrint);
 if(window.matchMedia){var mq=window.matchMedia('print');var fn=function(e){e.matches?toPrint():fromPrint();};mq.addEventListener?mq.addEventListener('change',fn):mq.addListener(fn);}
 sync();
+
+var PERFIL_ID=<?!= JSON.stringify(perfilId) ?>;
+var PERFIL_TOKEN=<?!= JSON.stringify(token) ?>;
+var DATOS_GUARDADOS=<?!= datos ?>;
+var FECHA_GUARDADO=<?!= JSON.stringify(fecha) ?>;
+function controles(){return [].slice.call(document.querySelectorAll('input,textarea,select')).filter(function(e){return ['radio','checkbox','button'].indexOf(e.type)<0&&!e.closest('.pv');});}
+function datosForm(){
+  var pills={};
+  [].forEach.call(document.querySelectorAll('.pills'),function(g){var l=[].slice.call(g.querySelectorAll('.pill'));pills[g.id]=l.findIndex(function(x){return x.classList.contains('on');});});
+  var cs=controles();
+  return {v:cs.map(function(e){return e.tagName==='SELECT'?e.selectedIndex:e.value;}),p:pills,n:cs.length,pasos:document.querySelectorAll('#step-list li').length};
+}
+function aplicarDatos(d){
+  try{
+    while(document.querySelectorAll('#step-list li').length<(d.pasos||0)&&sc<10)addStep();
+    controles().forEach(function(e,i){if(i>=d.v.length)return;if(e.tagName==='SELECT')e.selectedIndex=d.v[i];else e.value=d.v[i];});
+    Object.keys(d.p||{}).forEach(function(id){var g=document.getElementById(id);if(!g)return;[].forEach.call(g.querySelectorAll('.pill'),function(x,k){x.classList.toggle('on',k===d.p[id]);var r=x.querySelector('input');if(r)r.checked=(k===d.p[id]);});});
+  }catch(e){}
+}
+function avisoSistema(t,ok){
+  var d=document.createElement('div');d.textContent=t;
+  d.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:'+(ok?'#1A6645':'#E8501A')+';color:#fff;padding:12px 22px;border-radius:8px;font:600 13px sans-serif;z-index:99999;box-shadow:0 4px 14px rgba(0,0,0,.25)';
+  document.body.appendChild(d);setTimeout(function(){d.remove();},3500);
+}
+function guardarSistema(){
+  var b=document.getElementById('btn-sis');b.disabled=true;
+  google.script.run.withSuccessHandler(function(f){b.disabled=false;document.getElementById('sis-fecha').textContent='Guardado: '+f;avisoSistema('Guardado en el sistema ✓',true);})
+    .withFailureHandler(function(e){b.disabled=false;avisoSistema((e&&e.message)||'No se pudo guardar',false);})
+    .guardarPerfilDatos(PERFIL_ID,PERFIL_TOKEN,JSON.stringify(datosForm()));
+}
+if(DATOS_GUARDADOS){aplicarDatos(DATOS_GUARDADOS);if(FECHA_GUARDADO)document.getElementById('sis-fecha').textContent='Última versión guardada: '+FECHA_GUARDADO;}
 </script>
 </body>
 </html>
