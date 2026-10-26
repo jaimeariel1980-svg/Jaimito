@@ -135,7 +135,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Reclutamiento y Selección<small class="ver">v160</small></div>
+  <div class="prod">Reclutamiento y Selección<small class="ver">v161</small></div>
   <nav>
     <button class="ni" onclick="verAvisos()" style="position:relative"><span class="ic o">🔔</span><b>Avisos</b><span id="avCnt" style="display:none;position:absolute;top:2px;right:2px;background:#D9534F;color:#fff;border-radius:10px;font-size:11px;font-weight:800;padding:1px 6px"></span></button>
     <button class="ni" id="rf" onclick="actualizar()"><span class="ic g">↻</span><b>Actualizar</b></button>
@@ -854,6 +854,7 @@ function vistaPreview(poli){
     '<div style="max-width:900px;margin:0 auto;padding:18px 16px 60px"><div style="font-size:14px;color:#5D6B82;margin-bottom:14px">'+(NP?NP+' candidato'+(NP===1?'':'s')+' para entrevista técnica'+(VPP?' en '+esc(VPP):'')+'. Cada jefe ve solo los de su policlínico.':'No hay candidatos para entrevista técnica'+(VPP?' en '+esc(VPP):'')+' por ahora.')+'</div>'+tecListado(L)+'</div>';
 }
 function editarFicha(f){
+  window.FICHA_F=f;
   var c=byFila(f),mb=document.getElementById('mbox');
   mb.innerHTML='<div class="hd"><div><h2>Resumen del proceso para la entrevista técnica</h2><small>'+esc(c.nombre)+' · es el texto que leen los jefes</small></div><button class="x" onclick="cerrar()">×</button></div><div class="bd" id="fcb"><div class="loading">Cargando…</div></div>';
   document.getElementById('modal').classList.add('show');
