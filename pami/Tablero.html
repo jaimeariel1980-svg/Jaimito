@@ -135,7 +135,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Reclutamiento y Selección<small class="ver">v161</small></div>
+  <div class="prod">Reclutamiento y Selección<small class="ver">v162</small></div>
   <nav>
     <button class="ni" onclick="verAvisos()" style="position:relative"><span class="ic o">🔔</span><b>Avisos</b><span id="avCnt" style="display:none;position:absolute;top:2px;right:2px;background:#D9534F;color:#fff;border-radius:10px;font-size:11px;font-weight:800;padding:1px 6px"></span></button>
     <button class="ni" id="rf" onclick="actualizar()"><span class="ic g">↻</span><b>Actualizar</b></button>
@@ -461,7 +461,7 @@ function card(c){
   var ef=etapasFaltan(c);
   if(ef.length)mk+='<span class="tag r">⚠ Falta '+ef.join(' y ')+'</span>';
   else if(!RO&&etapaIdx(c)===3&&!c.fichaOk&&!c.notaP2)mk+='<span class="tag r">🩺 Falta resumen ET</span>';
-  if(etapaIdx(c)===3&&!c.notaP2&&(String(c.notaComp||'').trim()==='C'||String(c.notaScr||'').trim()==='C'))mk+='<span class="tag r" title="Tiene C: no corresponde a entrevista técnica">⚠ C · no corresponde a técnica</span>';
+  if(etapaIdx(c)===3&&!c.notaP2&&(String(c.notaComp||'').trim()==='C'||String(c.notaScr||'').trim()==='C'))mk+=c.habTec?'<span class="tag w" title="Tiene C: un administrador lo habilitó para que los jefes lo vean">⚠ C · habilitado para técnica</span>':'<span class="tag r" title="Tiene C: los jefes no lo ven hasta que un administrador lo habilite">⚠ C · oculto para jefes</span>';
   avTags(c).forEach(function(t){mk+=t;});
   var rcc=rc?'<span class="rcc" title="'+esc((c.recTipo?'Recomendado por: ':'')+rc)+'">★ '+esc(recCorto(c))+'</span>':'<span class="rcc esp" title="Se postuló solo, sin recomendación">Espontáneo</span>';
   if(c.proc&&c.proc!=='SI')mk+='<span class="tag w">'+(c.proc==='Pendiente'?'Analizando CV…':c.proc==='NoCV'?'¿No es un CV?':'Revisar CV')+'</span>';
@@ -598,7 +598,7 @@ function abrir(f){
   else if(c.proc==='Revisar')al+='<div class="alerta a2">'+esc(c.just||'Revisar a mano')+'</div>';
   else if(c.proc==='Pendiente')al+='<div class="alerta a2">El CV todavía se está analizando.</div>';
   if(!terminal(c.estado)&&dd>=D.cfg.diasAlerta)al+='<div class="alerta a3">🕒 '+dd+' días sin movimiento en "'+esc(c.estado)+'".</div>';
-  if(etapaIdx(c)===3&&!c.notaP2&&(String(c.notaComp||'').trim()==='C'||String(c.notaScr||'').trim()==='C'))al+='<div class="alerta a3">⚠ Tiene C en competencias o screening: no corresponde a entrevista técnica. Si se la pidieron igual, el resumen tiene que dejar claro que el perfil no es adecuado.</div>';
+  if(etapaIdx(c)===3&&!c.notaP2&&(String(c.notaComp||'').trim()==='C'||String(c.notaScr||'').trim()==='C'))al+='<div class="alerta a3">⚠ Tiene C en competencias o screening: no corresponde a entrevista técnica. '+(c.habTec?'Un administrador lo habilitó, así que los jefes lo ven. El resumen tiene que dejar claro que el perfil no es adecuado.':'Los jefes NO lo ven.')+(D.admin&&!RO?' <button class="btn ghost" style="margin-left:8px" onclick="habTecnica('+f+','+(c.habTec?'false':'true')+')">'+(c.habTec?'Quitar habilitación':'Habilitar para técnica')+'</button>':'')+'</div>';
   var ef=etapasFaltan(c);
   if(ef.length)al+='<div class="alerta a3">⚠ Falta la etapa de '+ef.join(' y ')+': todavía no hay nota cargada'+(ef.indexOf('competencias')>-1?', así que no se puede armar el resumen para la entrevista técnica':'')+'.</div>';
   else if(!RO&&etapaIdx(c)===3&&!c.fichaOk&&!c.notaP2)al+='<div class="alerta a3">🩺 Falta el resumen del proceso para la entrevista técnica. Los jefes no ven nada hasta que lo prepares y lo guardes: tocá el botón rojo "Resumen ET".</div>';
@@ -841,12 +841,17 @@ function tecListado(L){
   var pend=L.filter(function(c){return !c.notaTec;}),ev=L.filter(function(c){return c.notaTec;});
   return tecAgenda(pend)+pend.map(tecCard).join('')+'<div style="margin-top:22px;background:#EEF7F1;border:1px solid #BFE3CC;border-radius:8px;padding:12px 14px"><div style="font-weight:800;color:#1E8E5A;font-size:15px;margin-bottom:'+(ev.length?'10px':'0')+'">✅ Entrevistas técnicas ya cargadas ('+ev.length+')'+(ev.length?' · ver o editar la evaluación':'')+'</div>'+(ev.length?ev.map(tecCard).join(''):'<div style="font-size:13px;color:#5D6B82;margin-top:4px">Todavía no hay entrevistas técnicas cargadas. Cuando cargues una, el candidato aparece acá y la podés ver o editar.</div>')+'</div>';
 }
+function habTecnica(f,hab){
+  var c=byFila(f);if(!c)return;
+  if(hab&&!confirm('¿Habilitar a '+c.nombre+' para entrevista técnica?\n\nTiene C: los jefes de su policlínico van a verlo y podrán evaluarlo. Hacelo solo si corresponde.'))return;
+  gs().withSuccessHandler(function(){toast(hab?'Habilitado para técnica':'Habilitación quitada');cargar();cerrar();}).withFailureHandler(fer).habilitarTecnica(K,f,c.id,hab);
+}
 function vistaPreview(poli){
   if(typeof poli==='string')VPP=poli;
   if(document.getElementById('fmodal').classList.contains('show'))return;
   VP=true;
   var est=['Avanza a entrevista técnica','Entrevista técnica agendada'];
-  var L=D.cands.filter(function(c){var p=c.policlinico||String(c.polSug||'').split(' · ')[0];return (est.indexOf(c.estado)>-1||(c.notaP2&&POST_TEC.indexOf(c.estado)>-1))&&(!VPP||p===VPP);}).sort(ordCita);
+  var L=D.cands.filter(function(c){var p=c.policlinico||String(c.polSug||'').split(' · ')[0];return (est.indexOf(c.estado)>-1||(c.notaP2&&POST_TEC.indexOf(c.estado)>-1))&&(!VPP||p===VPP)&&(c.notaP2||c.habTec||!(String(c.notaComp||'').trim()==='C'||String(c.notaScr||'').trim()==='C'));}).sort(ordCita);
   L.forEach(function(c){c.notaTec=POST_TEC.indexOf(c.estado)>-1?c.notaP2:'';});
   var NP=L.filter(function(c){return !c.notaTec;}).length;
   L.forEach(function(c){if(!c.policlinico)c.policlinico=String(c.polSug||'').split(' · ')[0];});
