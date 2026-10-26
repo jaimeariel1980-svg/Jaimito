@@ -2220,10 +2220,13 @@ function registrarInteraccion(codigo, datos){
       fechaProx=Utilities.formatDate(rec,'GMT-3','dd/MM/yyyy');
     }catch(e){ Logger.log('Error Calendar recordatorio: '+e.message); }
   }
-  seg.appendRow([
+  var filaSeg=[
     codigo, fecha, datos.via||'', datos.interesado||'', datos.tel||'',
     datos.resultado||'', datos.prox||'', fechaProx, datos.obs||'', datos.vendedor||'', datos.cargo||''
-  ]);
+  ];
+  // visita a una propiedad nuestra que trae otra inmobiliaria: cols 12 (Inmobiliaria) y 16 (Colega)
+  if(datos.inmob || datos.colega) filaSeg = filaSeg.concat([_limpiarTxt_(String(datos.inmob||'')).trim(), '', '', '', _limpiarTxt_(String(datos.colega||'')).trim()]);
+  seg.appendRow(filaSeg);
   try{ if(!String(seg.getRange(1,11).getValue()).trim()) seg.getRange(1,11).setValue('Cargó'); }catch(e){}
   if(/Propuesta aceptada/i.test(String(datos.resultado||''))) _extAReserva_(codigo, datos.cargo);
   _invalidaNovedades_();
@@ -2567,7 +2570,7 @@ function agendarVisita(codigo, datos){
   var fin=new Date(ini.getTime()+60*60*1000);
   var titulo='Visita: '+(datos.dir||codigo)+(datos.interesado?(' - '+datos.interesado):'');
   var opts={
-    description:'Propiedad: '+codigo+'\nInteresado: '+(datos.interesado||'')+'\nTel: '+(datos.tel||''),
+    description:'Propiedad: '+codigo+'\nInteresado: '+(datos.interesado||'')+'\nTel: '+(datos.tel||'')+((datos.inmob||datos.colega) ? '\nViene por otra inmobiliaria: '+_limpiarTxt_(String(datos.inmob||''))+(datos.colega ? ' · Colega: '+_limpiarTxt_(String(datos.colega)) : '') : ''),
     location:datos.dir||''
   };
   var invitados=[];
@@ -2589,7 +2592,9 @@ function agendarVisita(codigo, datos){
     prox: 'Visita '+Utilities.formatDate(ini,'GMT-3','dd/MM/yyyy HH:mm'),
     obs: datos.obs||'',
     vendedor: datos.vendedor||'',
-    cargo: datos.quien||datos.cargo||''
+    cargo: datos.quien||datos.cargo||'',
+    inmob: datos.inmob||'',
+    colega: datos.colega||''
   });
   return {ok:true, eventId:ev.getId()};
 }
