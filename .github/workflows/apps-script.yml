@@ -89,4 +89,4 @@ jobs:
         run: |
           clasp push -f
           DEP="${{ vars[matrix.depvar] || matrix.depid }}"
-          [ -n "$DEP" ] && clasp deploy -i "$DEP" -d "GitHub ${{ github.sha }}" || echo "sin deployment (proyecto con menú)"
+          if [ -n "$DEP" ]; then clasp deploy -i "$DEP" -d "GitHub ${{ github.sha }}"; else echo "sin deployment (proyecto con menú)"; fi
