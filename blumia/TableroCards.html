@@ -241,14 +241,11 @@ header{min-height:86px}
   };
   function inp(id,l,v,t){return '<label class="gl">'+l+'<input id="'+id+'" type="'+(t||'text')+'" value="'+esc(v||'')+'"></label>';}
   function gestionHtml(c){
-    var f=c.fila,perfs='';
-    var sel=document.querySelector('#nav select');
-    if(sel)Array.prototype.forEach.call(sel.options,function(o){if(o.value!==PERFIL)perfs+='<option value="'+esc(o.value)+'">'+esc(o.textContent)+'</option>';});
+    var f=c.fila;
     var an=[['screening',c.notaScr,'Screening'],['competencias',c.notaComp,'Competencias'],['screening-empresa',c.notaScrEmp,'Emp. screening'],['presencial-empresa',c.notaPresEmp,'Emp. final']].filter(function(e){return String(e[1]||'').trim();}).map(function(e){return '<button class="mbtn alt" onclick="anularEt('+f+',\''+e[0]+'\',\''+e[2]+'\')">↺ Anular '+e[2]+'</button>';}).join('');
     var hoy=new Date(Date.now()+864e5).toISOString().slice(0,10);
     return '<details class="gdet"><summary>✏️ Editar datos del candidato</summary><div class="ggrid">'+inp('gdNom','Nombre',c.nombre)+inp('gdTel','Teléfono',c.tel)+inp('gdDni','DNI',c.dni)+inp('gdMail','Mail',c.mail==='Sin dato'?'':c.mail)+inp('gdFor','Formación',c.formacion)+inp('gdZon','Zona',c.zona)+inp('gdPre','Pretensión ($)',c.pretension)+'</div><div class="mbtns"><button class="mbtn" onclick="guardarDatosC('+f+',this)">Guardar datos</button></div></details>'
       +'<details class="gdet"><summary>📅 Agendar entrevista</summary><div class="ggrid"><label class="gl">Tipo<select id="gaTipo"><option value="screening">Screening</option><option value="competencias">Competencias</option><option value="empresa-virtual">Empresa (virtual)</option><option value="empresa-presencial">Empresa (presencial)</option></select></label>'+inp('gaFec','Día',hoy,'date')+inp('gaHor','Hora','10:00','time')+'<label class="gl">Duración<select id="gaDur"><option>30</option><option>45</option><option>60</option><option>90</option></select></label>'+inp('gaLug','Lugar / link (opcional)','')+'</div><div class="mbtns"><button class="mbtn" onclick="agendarC('+f+',this)">Agendar y avisar al candidato</button></div><div style="font-size:11px;color:#777;margin-top:4px">Se crea en el calendario de Blumia y se invita por mail al candidato (si tiene).</div></details>'
-      +(perfs?'<details class="gdet"><summary>🔀 Pasar a otra búsqueda</summary><div class="ggrid"><label class="gl">Búsqueda de destino<select id="grDest">'+perfs+'</select></label></div><div class="mbtns"><button class="mbtn" onclick="reasignarC('+f+',this)">Pasar candidato</button></div></details>':'')
       +(an?'<div class="mbtns" style="margin:8px 0">'+an+'</div>':'');
   }
   function val(id){var e=document.getElementById(id);return e?e.value:'';}
@@ -258,12 +255,6 @@ header{min-height:86px}
     var d={nombre:val('gdNom'),tel:val('gdTel'),dni:val('gdDni'),mail:val('gdMail'),formacion:val('gdFor'),zona:val('gdZon'),pretension:val('gdPre')},t=b.textContent;
     b.disabled=true;b.textContent='Guardando…';
     google.script.run.withSuccessHandler(function(r){toast();refrescar();}).withFailureHandler(fail(b,t)).guardarDatosCandidato(PERFIL,f,d,quienSoy());
-  };
-  window.reasignarC=function(f,b){
-    var s=document.getElementById('grDest'),t=b.textContent;if(!s||!s.value)return;
-    if(!confirm('¿Pasar este candidato a «'+s.options[s.selectedIndex].textContent+'»? Se mantiene todo lo cargado y acá queda en la papelera.'))return;
-    b.disabled=true;b.textContent='Pasando…';
-    google.script.run.withSuccessHandler(function(r){alert('Listo: pasó a «'+r.destino+'».');refrescar();}).withFailureHandler(fail(b,t)).reasignarCandidato(PERFIL,f,s.value,quienSoy());
   };
   window.anularEt=function(f,et,nom){
     if(!confirm('¿Anular la nota de '+nom+'? Se borra la nota y el candidato vuelve a la etapa anterior. El PDF queda en Drive.'))return;

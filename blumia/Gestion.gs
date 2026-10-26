@@ -1,4 +1,4 @@
-/* Gestión del candidato desde la ficha: observaciones (y, más adelante, edición de datos, reasignar y anular etapa). */
+/* Gestión del candidato desde la ficha: observaciones (edición de datos, anular etapa y agendar entrevista). */
 function colPorNombre_(sh, nombre, crear) {
   const h = sh.getRange(1, 1, 1, Math.max(sh.getLastColumn(), 1)).getValues()[0];
   let c = h.indexOf(nombre) + 1;
@@ -58,35 +58,6 @@ function guardarDatosCandidato(perfilId, fila, d, quien) {
   }
   if (cambios.length) registrarHistorial_(sh.getName(), nombre, 'Datos editados', cambios.join(' · '));
   return { ok: true, cambios: cambios.length };
-}
-
-/* ---- Reasignar a otra búsqueda (F2): copia la fila completa (con links y fórmulas) y manda la original a la papelera ---- */
-function reasignarCandidato(perfilId, fila, destinoId, quien) {
-  QUIEN_ = quien || '';
-  if (!destinoId || destinoId === perfilId) throw new Error('Elegí otra búsqueda.');
-  const cfgO = getConfig(perfilId), cfgD = getConfig(destinoId);
-  const sh = getSheet(cfgO), dest = getSheet(cfgD);
-  fila = filaCandidato_(sh, fila);
-  const estado = String(sh.getRange(fila, 9).getValue() || '').trim();
-  const nombre = String(sh.getRange(fila, 2).getValue() || '').trim();
-  const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
-  const yaEsta = dest.getRange(1, 2, Math.max(dest.getLastRow(), 1), 1).getValues().some((r, i) => i > 0 && norm(r[0]) === norm(nombre));
-  if (yaEsta) throw new Error('«' + nombre + '» ya figura en la búsqueda de destino.');
-  const lastCol = Math.max(sh.getLastColumn(), 46);
-  if (dest.getMaxColumns() < lastCol) dest.insertColumnsAfter(dest.getMaxColumns(), lastCol - dest.getMaxColumns());
-  const colB = dest.getRange(1, 2, Math.max(dest.getLastRow(), 1), 1).getValues();
-  let nueva = -1;
-  for (let i = 1; i < colB.length; i++) if (!String(colB[i][0]).trim()) { nueva = i + 1; break; }
-  if (nueva === -1) nueva = dest.getLastRow() + 1;
-  sh.getRange(fila, 1, 1, lastCol).copyTo(dest.getRange(nueva, 1, 1, lastCol));
-  // la columna de motivo y los datos propios de la etapa se mantienen; lo que depende de la búsqueda de origen se rearma
-  try { ponerFormulaWhatsApp(dest, nueva); } catch (e) { }
-  const hoy = Utilities.formatDate(new Date(), 'America/Argentina/Buenos_Aires', 'dd/MM/yyyy');
-  sh.getRange(fila, 9).setValue('Eliminado|' + estado + '|' + hoy);
-  const nomO = String(cfgO.nombre || cfgO.nombre_perfil || perfilId), nomD = String(cfgD.nombre || cfgD.nombre_perfil || destinoId);
-  registrarHistorial_(sh.getName(), nombre, 'Reasignado', 'Pasó a la búsqueda «' + nomD + '»');
-  registrarHistorial_(dest.getName(), nombre, 'Reasignado', 'Llegó desde la búsqueda «' + nomO + '» (estado «' + estado + '»)');
-  return { ok: true, destino: nomD };
 }
 
 /* ---- Anular una etapa (F4): saca la nota, deja el PDF y el estado vuelve a «Avanza a …» ---- */
