@@ -100,6 +100,46 @@ function azcuReq_(p){ return Array.isArray(p.req) ? p.req : Object.keys(p.papele
 function azcuFalta_(p){ return azcuReq_(p).filter(function(k){ return !p.papeles[k]; }); }
 function azcuCorta_(p){ return {id:p.id, direccion:p.dir, tipo:p.tipo, etapa:p.etapa, precio:p.precio, propietario:p.prop}; }
 
+var AZCU_NOCALLE_ = {las:1,la:1,los:1,hs:1,hora:1,horas:1,dia:1,mes:1,piso:1,dpto:1,depto:1,departamento:1,ano:1,anos:1,usd:1,pesos:1,precio:1,monto:1,valor:1,dolares:1,m2:1,metros:1,mts:1,ambientes:1,dormitorios:1,visitas:1,consultas:1,calle:1,casa:1,propiedad:1,ficha:1,de:1,del:1,por:1,con:1,al:1,en:1,el:1,un:1,una:1,que:1,para:1,mas:1,ver:1,datos:1,dato:1,info:1,informacion:1,contame:1,conta:1,decime:1,dame:1,pasame:1,mandame:1,mostrame:1,cuanto:1,sale:1,cuesta:1,quiero:1,necesito:1,saber:1,tenes:1,busca:1,buscame:1,mail:1,telefono:1,propietario:1,dueno:1,vendedor:1,etapa:1,estado:1,historial:1,documentos:1,papeles:1,podes:1,decir:1,favor:1,hola:1};
+function azcuPedidas_(texto){
+  var t = azcuSinAc_(texto).replace(/\b\d{1,2}\s*[:.]\s*\d{2}\b/g,' ').replace(/\b\d{6,}\b/g,' ').replace(/[,;¿?¡!()"]/g,' ').split(/\s+/).filter(Boolean), out = [], i, j, w, x, pos, prev, TR = {nro:1,numero:1,num:1,n:1};
+  for(i=1;i<t.length;i++){
+    if(!/^\d{2,5}$/.test(t[i])) continue;
+    pos = i-1; prev = t[pos].replace(/\.$/,'');
+    if(TR[prev] && pos>0){ pos--; prev = t[pos].replace(/\.$/,''); }
+    if(AZCU_NOCALLE_[prev] || prev==='a') continue;
+    w = []; j = pos;
+    while(j>=0 && w.length<2){ x = t[j].replace(/\.$/,''); if(/^\d+$/.test(x)) break; if(x.length>=3 && !AZCU_NOCALLE_[x] && !TR[x]) w.unshift(x); j--; }
+    if(w.length) out.push({n:String(+t[i]), w:w, raw:w.join(' ')+' '+t[i]});
+  }
+  return out;
+}
+function azcuPedidaCoincide_(ped, p){
+  if(!ped || !ped.length || !p) return true;
+  var tk = azcuTokens_(p.dir||'', true), nums = tk.filter(function(x){ return /^\d+$/.test(x); }).map(function(x){ return String(+x); }), pal = tk.filter(function(x){ return !/^\d+$/.test(x); });
+  return ped.some(function(q){
+    return nums.indexOf(q.n)>-1 && q.w.some(function(a){ return pal.some(function(d){ return d===a || (a.length>=4 && d.length>=4 && (d.indexOf(a)===0 || a.indexOf(d)===0)); }); });
+  });
+}
+function azcuAtajoOk_(texto, id){ try{ var p = azcuProp_(id); return !p || azcuPedidaCoincide_(azcuPedidas_(texto), p); }catch(e){ return true; } }
+function azcuParecidasPed_(ped, ds){
+  var out = [];
+  ds.forEach(function(p){
+    var tk = azcuTokens_(p.dir||'', true), nums = tk.filter(function(x){ return /^\d+$/.test(x); }).map(function(x){ return String(+x); }), pal = tk.filter(function(x){ return !/^\d+$/.test(x); }), sc = 0;
+    ped.forEach(function(q){ if(q.w.some(function(a){ return pal.some(function(d){ return d===a || (a.length>=4 && d.length>=4 && (d.indexOf(a)===0 || a.indexOf(d)===0)); }); })) sc += 2; if(nums.indexOf(q.n)>-1) sc += 1; });
+    if(sc) out.push({p:p, sc:sc});
+  });
+  out.sort(function(a,b){ return b.sc-a.sc; });
+  return out.slice(0,5).map(function(x){ return x.p; });
+}
+function azcuSinCoincidencia_(texto){
+  if(!/cu[aá]nto|monto|precio|valor|contame|cont[aá] |info|datos|ficha|tel[eé]fono|mail|due[nñ]o|propietario|vendedor|etapa|estado|document|papeles|historial|interacci/i.test(texto) || /inmobiliaria|colega|externa|captaci[oó]n nueva|nueva captaci/i.test(texto)) return null;
+  var ped = azcuPedidas_(texto); if(!ped.length) return null;
+  var ds = azcuDatos_();
+  if(ds.some(function(p){ return azcuPedidaCoincide_(ped, p); })) return null;
+  var par = azcuParecidasPed_(ped, ds); if(!par.length) return null;
+  return {texto:'No encuentro **'+ped[0].raw+'** entre las propiedades. ¿Querías decir alguna de estas? 👇', acciones:[], adjuntos:par.map(function(p){ return {k:'b', label:p.dir, act:'ask', id:'Contame de '+p.dir}; }), panel:null};
+}
 function azcuParecidas_(texto){
   var tk = azcuTokens_(texto||''), nums = tk.filter(function(t){ return /^\d+$/.test(t); }), pal = tk.filter(function(t){ return !/^\d+$/.test(t) && t.length>=3; });
   if(!tk.length) return [];
@@ -958,17 +998,19 @@ function azcuChat(pin, mensajes, ctx){
   azcuPin_(pin);
   ctx = ctx || {};
   try{ var lm = (mensajes||[]).length ? mensajes[mensajes.length-1] : null, cr = lm && lm.role==='user' ? azcuCalc_(lm.content) : null; if(cr) return {texto:cr.texto, acciones:[], adjuntos:[], panel:null}; }catch(e){}
+  var pedUlt = [];
+  try{ var txP = (mensajes||[]).length && mensajes[mensajes.length-1].role==='user' ? String(mensajes[mensajes.length-1].content||'') : ''; if(txP){ var scx = azcuSinCoincidencia_(txP); if(scx) return scx; pedUlt = azcuPedidas_(txP); } }catch(eP){}
   try{
     var txT = (mensajes||[]).length && mensajes[mensajes.length-1].role==='user' ? String(mensajes[mensajes.length-1].content||'') : '';
     if(txT && /datos t[eé]cnicos|detalles t[eé]cnicos|m[aá]s detalles|m[aá]s datos|ver detalles/i.test(txT)){
-      var cdT = azcuDirEnTexto_(txT), idT = cdT.length===1 ? cdT[0].id : (ctx.fichaId || ''), ttT = idT ? azcuFmtFicha_(idT, 'tec') : null;
+      var cdT = azcuDirEnTexto_(txT), idT = cdT.length===1 ? cdT[0].id : ((ctx.fichaId && azcuAtajoOk_(txT, ctx.fichaId)) ? ctx.fichaId : ''), ttT = idT ? azcuFmtFicha_(idT, 'tec') : null;
       if(ttT){ var pT = azcuProp_(idT); return {texto:ttT, acciones:[], adjuntos:[{k:'b', label:'📋 Ver la ficha resumida', act:'ask', id:'Contame de '+(pT ? pT.dir : idT)}], panel:null}; }
     }
   }catch(e){}
-  try{ var tx2 = (mensajes||[]).length && mensajes[mensajes.length-1].role==='user' ? String(mensajes[mensajes.length-1].content||'') : ''; if(ctx.fichaId && tx2 && /contame|cont[aá] de|info|datos|ficha|completo|detalle|todo/i.test(tx2) && !/cu[aá]nto|cu[aá]ndo|qui[eé]n|d[oó]nde|precio|tel[eé]fono|mail|historial|interacci|papeles|falta|document|\bmand|\benvi|compart|pdf/i.test(tx2)){ var dd = azcuFmtFicha_(ctx.fichaId); if(dd) return {texto:dd, acciones:[], adjuntos:azcuBtnsFicha_(ctx.fichaId), panel:null}; } }catch(e){}
+  try{ var tx2 = (mensajes||[]).length && mensajes[mensajes.length-1].role==='user' ? String(mensajes[mensajes.length-1].content||'') : ''; if(ctx.fichaId && azcuAtajoOk_(tx2, ctx.fichaId) && tx2 && /contame|cont[aá] de|info|datos|ficha|completo|detalle|todo/i.test(tx2) && !/cu[aá]nto|cu[aá]ndo|qui[eé]n|d[oó]nde|precio|tel[eé]fono|mail|historial|interacci|papeles|falta|document|\bmand|\benvi|compart|pdf/i.test(tx2)){ var dd = azcuFmtFicha_(ctx.fichaId); if(dd) return {texto:dd, acciones:[], adjuntos:azcuBtnsFicha_(ctx.fichaId), panel:null}; } }catch(e){}
   try{
     var tx3 = (mensajes||[]).length && mensajes[mensajes.length-1].role==='user' ? String(mensajes[mensajes.length-1].content||'') : '';
-    if(ctx.fichaId && tx3 && /\b(mand|envi|pas[aá]me|compart|dame)/i.test(tx3)){
+    if(ctx.fichaId && azcuAtajoOk_(tx3, ctx.fichaId) && tx3 && /\b(mand|envi|pas[aá]me|compart|dame)/i.test(tx3)){
       var cual3 = /ubicaci[oó]n|mapa|direcci[oó]n/i.test(tx3) ? 'ubicacion' : /encuesta/i.test(tx3) ? 'encuesta' : /ficha|link|enlace|propiedad/i.test(tx3) && !/pdf|document|papeles/i.test(tx3) ? 'link_tokko' : '';
       if(cual3){ var adj3 = [], r3 = azcuHerrEnlace_({cual:cual3, id:ctx.fichaId}, adj3), p3 = azcuProp_(ctx.fichaId);
         if(r3.error) return {texto:r3.error, acciones:[], adjuntos:[], panel:null};
@@ -979,6 +1021,7 @@ function azcuChat(pin, mensajes, ctx){
   try{
     var ut = (mensajes||[]).length && mensajes[mensajes.length-1].role==='user' ? String(mensajes[mensajes.length-1].content||'') : '', cd = ut ? azcuDirEnTexto_(ut) : [];
     if(!cd.length && /\d{2,5}/.test(ut) && /[a-zñáéíóú]{3,}/i.test(ut)){ azcuDatos_(true); cd = azcuDirEnTexto_(ut); }
+    if(!pedUlt.length || !cd.every(function(p){ return azcuPedidaCoincide_(pedUlt, p); })) cd = [];
     if(cd.length===1) pista = 'DATO VERIFICADO POR EL SISTEMA: el usuario nombra la propiedad '+cd[0].id+' ('+cd[0].dir+'). Usá ese id directamente; NO digas que no la encontrás.';
     else if(cd.length>1) pista = 'DATO VERIFICADO POR EL SISTEMA: en esa dirección hay '+cd.length+' unidades: '+cd.slice(0,12).map(function(p){ return p.id+' ('+p.dir+')'; }).join('; ')+'. Si falta saber cuál, preguntá piso/dpto; NO digas que no la encontrás.';
   }catch(ePista){}
@@ -997,7 +1040,10 @@ function azcuChat(pin, mensajes, ctx){
       var args = {}, res, n = tc.function.name; azcuProg_(ctx, AZCU_NOMBRES_[n] || 'Preparando la tarjeta…');
       try{ args = JSON.parse(tc.function.arguments||'{}'); }catch(e){}
       try{
-        if(n==='buscar_propiedades'){ res = azcuHerrBuscar_(args); if(res.length===1 && !directo && !esAcc && !args.puntual){ directo = azcuFmtFicha_(res[0].id); adj.push.apply(adj, azcuBtnsFicha_(res[0].id)); } if(!res.length){ var vxe = azcuBuscarVisExt_(args.texto); if(vxe.length) res = {propiedades_del_sistema:[], posibles_visitas_con_otra_inmobiliaria:vxe, nota:'No es una propiedad de Azcuénaga: son visitas con otra inmobiliaria. Para cargar el resultado usá proponer_visita_externa con el codigo_externa; para corregir o borrar usá proponer_editar_interaccion o proponer_eliminar_interaccion (id = codigo_externa, con su fila); para cancelar, proponer_cancelar_visita.'}; else { var par = azcuParecidas_(args.texto); if(par.length) res = {propiedades_del_sistema:[], sin_coincidencia_exacta:true, parecidas:par, nota:'NO hay ninguna propiedad con esa calle y ese número a la vez. No des precio ni ningún otro dato de las parecidas como si fueran la que pidió el usuario: decile que no encontrás esa dirección y preguntale si se refería a alguna de las parecidas, nombrándolas con su dirección completa.'}; } } }
+        var pgd = null;
+        if(pedUlt.length && args.id && n!=='buscar_propiedades' && !/^EXT-/i.test(String(args.id)) && /^(ficha_propiedad|datos_tecnicos|captacion_formulario|abrir_enlace|enviar_whatsapp|generar_pdf|proponer_)/.test(n)){ pgd = azcuProp_(args.id); if(pgd && azcuPedidaCoincide_(pedUlt, pgd)) pgd = null; }
+        if(pgd){ res = {error:'La propiedad '+pgd.id+' ('+pgd.dir+') NO coincide con la dirección que pidió el usuario ('+pedUlt.map(function(q){ return q.raw; }).join(' / ')+'). No des datos de esa propiedad ni armes tarjeta: decile que no encontraste esa dirección exacta y preguntale cuál quiso decir.'}; }
+        else if(n==='buscar_propiedades'){ res = azcuHerrBuscar_(args); if(res.length===1 && !directo && !esAcc && !args.puntual){ directo = azcuFmtFicha_(res[0].id); adj.push.apply(adj, azcuBtnsFicha_(res[0].id)); } if(!res.length){ var vxe = azcuBuscarVisExt_(args.texto); if(vxe.length) res = {propiedades_del_sistema:[], posibles_visitas_con_otra_inmobiliaria:vxe, nota:'No es una propiedad de Azcuénaga: son visitas con otra inmobiliaria. Para cargar el resultado usá proponer_visita_externa con el codigo_externa; para corregir o borrar usá proponer_editar_interaccion o proponer_eliminar_interaccion (id = codigo_externa, con su fila); para cancelar, proponer_cancelar_visita.'}; else { var par = azcuParecidas_(args.texto); if(par.length) res = {propiedades_del_sistema:[], sin_coincidencia_exacta:true, parecidas:par, nota:'NO hay ninguna propiedad con esa calle y ese número a la vez. No des precio ni ningún otro dato de las parecidas como si fueran la que pidió el usuario: decile que no encontrás esa dirección y preguntale si se refería a alguna de las parecidas, nombrándolas con su dirección completa.'}; } } }
         else if(n==='consultas_whatsapp') res = azcuHerrConsWS_(args);
         else if(n==='ficha_propiedad'){ res = azcuHerrFicha_(args); if(!args.puntual && !res.error && !directo && !esAcc){ directo = azcuFmtFicha_(args.id); adj.push.apply(adj, azcuBtnsFicha_(args.id)); } }
         else if(n==='datos_tecnicos'){ res = azcuHerrFicha_({id:args.id}); if(!res.error){ directo = azcuFmtFicha_(args.id, 'tec'); } }
