@@ -52,20 +52,11 @@
   var COLS={cv:'#9aa5b1',scr:'#5aa9e6',comp:'#1A6645',semp:'#e0a800',fin:'#e07b39',cont:'#2e9e5b',res:'#8e7cc3',desc:'#d9534f'};
   var NC={'A':'#1A6645','B+':'#7bc47f','B':'#f0c24b','C':'#d9534f','Sin nota':'#b0b7c0'};
   var PAL=['#1A6645','#5aa9e6','#e0a800','#8e7cc3','#e07b39','#d9534f','#2e9e5b','#9aa5b1'];
-  function est(e){
-    var l=String(e||'').trim().toLowerCase(),lv;
-    if(/^eliminado/.test(l))return null;
-    if(l==='contratado')return {lv:5,t:'cont'};
-    if(/^descartad/.test(l)){lv=/post screening/.test(l)?1:/en competencias/.test(l)?2:/screening empresa/.test(l)?3:/presencial empresa|en empresa/.test(l)?4:0;return {lv:lv,t:'desc'};}
-    if(/reserva/.test(l))return {lv:/competencias/.test(l)?2:/screening empresa/.test(l)?3:/presencial empresa/.test(l)?4:1,t:'res'};
-    lv=/competencias/.test(l)?2:/screening empresa/.test(l)?3:/presencial empresa|avanza a empresa|entrevista empresa|en cliente/.test(l)?4:/screening/.test(l)?1:0;
-    return {lv:lv,t:'act'};
-  }
+  function est(e){return metEstado(e);}
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   function pct(a,b){return b?Math.round(a*100/b)+'%':'—';}
   function fm(n){return n?'$'+(Math.round(n/1e5)/10)+' M':'—';}
-  var L=[],ETAPAS=['Análisis de CV','Screening','Competencias','Screening empresa','Final empresa'];
-  var STEPS=['Recibidos','Llegaron a screening','Llegaron a competencias','Screening con la empresa','Entrevista final con la empresa','Contratados'];
+  var L=[],BANDA=0,INDUS='';
   function prep(){
     L=[];DATA.forEach(function(c){var e=est(c.estado);if(e){e.c=c;L.push(e);}});
   }
@@ -74,28 +65,32 @@
   // grupos clickeables
   function grupo(k){
     var h0=inicioDia(),n=Date.now(),r=function(f){return L.filter(f);},t,lista;
-    if(k==='all'){t='Todos los recibidos';lista=L;}
+    if(k==='all'){t='CVs recibidos';lista=L;}
+    else if(k==='scr'){t='Screenings (llegaron a screening o más)';lista=r(function(x){return x.scr;});}
+    else if(k==='comp'){t='Competencias (llegaron a competencias o más)';lista=r(function(x){return x.comp;});}
+    else if(k==='emp'){t='Avanzan a empresa';lista=r(function(x){return x.emp;});}
+    else if(k==='res'){t='En reserva';lista=r(function(x){return x.res;});}
+    else if(k==='desc'){t='Descartados';lista=r(function(x){return x.t==='desc';});}
+    else if(k==='dcv'){t='Descartados en análisis de CV';lista=r(function(x){return x.d==='cv';});}
+    else if(k==='dpost'){t='Descartados post screening';lista=r(function(x){return x.d==='post';});}
+    else if(k==='dcomp'){t='Descartados en competencias / empresa';lista=r(function(x){return x.d==='comp'||x.d==='emp';});}
     else if(k==='act'){t='En proceso';lista=r(function(x){return x.t==='act';});}
     else if(k==='sinc'){t='Sin contactar';lista=r(function(x){return x.t==='act'&&x.lv===0&&/^(nuevo|pendiente|revisar|)$/i.test(String(x.c.estado||'').trim())&&!x.c.contactado;});}
     else if(k==='prox'){t='Entrevistas de los próximos 7 días';lista=r(function(x){return citaEn(x,h0,h0+7*864e5);}).sort(function(a,b){return avFecha(a.c.cita)-avFecha(b.c.cita);});}
-    else if(k==='cont'){t='Contratados';lista=r(function(x){return x.t==='cont';});}
-    else if(k==='res'){t='En reserva';lista=r(function(x){return x.t==='res';});}
-    else if(k==='desc'){t='Descartados';lista=r(function(x){return x.t==='desc';});}
-    else if(k==='ult7'){t='Recibidos en los últimos 7 días';lista=r(function(x){var f=avFecha(x.c.recibido);return f&&n-f<=7*864e5;});}
-    else if(k.indexOf('et:')===0){var i=+k.slice(3);t='Etapa: '+['Análisis de CV','Screening','Competencias','Screening empresa','Final empresa','Contratados','Reserva','Descartados'][i];
-      lista=r(function(x){return i<5?(x.t==='act'&&x.lv===i):i===5?x.t==='cont':i===6?x.t==='res':x.t==='desc';});}
+    else if(k.indexOf('et:')===0){var i=+k.slice(3);t='Etapa actual: '+['Análisis de CV','Screening','Competencias','Screening empresa','Entrevista final'][i];
+      lista=r(function(x){return x.t==='act'?Math.min(x.lv,4)===i:x.t==='cont'?i===4:false;});}
     else if(k.indexOf('nota:')===0){var nt=k.slice(5);t='CVs con nota '+nt;lista=r(function(x){return (String(x.c.nota||'').trim()||'Sin nota')===nt;});}
     else if(k.indexOf('fu:')===0){var fu=k.slice(3);t='Llegaron por: '+fu;lista=r(function(x){return (String(x.c.fuente||'').trim()||'Sin dato')===fu;});}
-    else if(k.indexOf('emb:')===0){var s=+k.slice(4);t=STEPS[s];lista=r(function(x){return x.lv>=s;});}
-    else if(k.indexOf('pret:')===0){t='Pretensión salarial (de menor a mayor)';lista=r(function(x){return x.t==='act'&&x.c.pretNum>0;}).sort(function(a,b){return a.c.pretNum-b.c.pretNum;});}
+    else if(k.indexOf('sal:')===0){var q=k.slice(4);t='Pretensión '+(q==='deb'?'por debajo':q==='lin'?'en línea':'por encima')+' de la banda';lista=r(function(x){return salBucket(x)===q;});}
     else {t='';lista=[];}
     return {t:t,l:lista};
   }
+  function salBucket(x){if(!BANDA||!x.scr||!(x.c.pretNum>0))return '';return x.c.pretNum<BANDA*0.95?'deb':x.c.pretNum>BANDA*1.05?'enc':'lin';}
   var LAST='';
   window.rsDrill=function(k){
     LAST=k;var g=grupo(k);
     var h='<div style="font-size:12px;color:#666;margin-bottom:8px">'+g.l.length+' candidato'+(g.l.length===1?'':'s')+' · tocá uno para abrir su ficha</div>';
-    h+=g.l.length?g.l.map(function(x){var c=x.c;var nt=c.nota?'<span class="nota n'+String(c.nota).replace('+','')+'">'+esc(c.nota)+'</span>':'';var extra=k==='prox'?(' · '+esc(c.cita)):(k.indexOf('pret:')===0?' · '+fm(c.pretNum):'');
+    h+=g.l.length?g.l.map(function(x){var c=x.c;var nt=c.nota?'<span class="nota n'+String(c.nota).replace('+','')+'">'+esc(c.nota)+'</span>':'';var extra=k==='prox'?(' · '+esc(c.cita)):(k.indexOf('sal:')===0?' · '+fm(c.pretNum):'');
       return '<div class="rs-dl" onclick="rsFicha('+c.fila+')"><span class="nt">'+nt+'</span><span class="nm">'+esc(c.nombre)+'</span><span class="es">'+esc(c.estado)+extra+'</span></div>';}).join(''):'<div style="color:#888;padding:14px 0">No hay candidatos en este grupo.</div>';
     document.getElementById('mtit').textContent=g.t;document.getElementById('mbody').innerHTML=h;document.getElementById('modal').classList.add('show');
   };
@@ -109,34 +104,53 @@
     return '<div class="rs-dw"><svg viewBox="0 0 140 140"><g>'+paths+'</g><circle cx="70" cy="70" r="'+(r-1)+'" fill="#fff"></circle><text x="70" y="74" text-anchor="middle" style="font-size:27px;font-weight:800;fill:#1A6645">'+centro+'</text><text x="70" y="89" text-anchor="middle" style="font-size:8.5px;fill:#666;font-weight:700">'+sub+'</text></svg><div class="rs-leg">'+leg+'</div></div>';
   }
   function kpi(n,l,c,k){return '<div class="rs-kpi '+c+'" data-k="'+k+'"><div class="n">'+n+'</div><div class="l">'+l+'</div><div class="h">ver detalle ›</div></div>';}
+  function kpiMini(n,l,k){return '<div class="rs-kpi" data-k="'+k+'"><div class="n" style="font-size:30px">'+n+'</div><div class="l">'+l+'</div></div>';}
   function pintar(){
     prep();
     var n=L.length,g=function(k){return grupo(k).l.length;},h0=inicioDia(),pr=g('prox'),hoy=L.filter(function(x){return citaEn(x,h0,h0+864e5);}).length;
-    var reached=[0,1,2,3,4,5].map(function(k){return L.filter(function(x){return x.lv>=k;}).length;});
+    var cv=n,scr=g('scr'),comp=g('comp'),emp=g('emp'),res=g('res'),desc=g('desc'),dcv=g('dcv'),dpost=g('dpost'),dcomp=g('dcomp');
     var pend=(typeof AV_PEND!=='undefined'&&AV_PEND)||[],nov=(typeof AV_NOV!=='undefined'&&AV_NOV)||[],urg=pend.filter(function(a){return a.urg;}).length;
-    var x='<div class="rs-dash">'+kpi(pend.length,'Avisos pendientes'+(urg?' ('+urg+' urgentes)':''),pend.length?'r':'g','avisos')+kpi(n,'Recibidos','','all')+kpi(g('act'),'En proceso','','act')+kpi(g('sinc'),'Sin contactar','y','sinc')+kpi(pr,'Entrevistas próx. 7 días'+(hoy?' ('+hoy+' hoy)':''),'','prox')+kpi(g('cont'),'Contratados','','cont')+kpi(g('res'),'En reserva','g','res')+kpi(g('desc'),'Descartados','r','desc')+kpi(g('ult7'),'Recibidos en 7 días','g','ult7')+'</div>';
-    var fil=function(a,nv){return '<div class="rs-ent" onclick="avAbrir('+a.f+')" style="cursor:pointer"><b style="min-width:0;color:'+(a.urg?'#B91C1C':'#1A6645')+'">'+a.ic+' '+esc(a.n)+'</b><span style="font-size:13px">'+esc(a.txt)+(nv?' <span style="color:#999">· '+esc(a.h)+'</span>':'')+'</span></div>';};
-    x+='<div class="rs-panel"><h3>🔔 Avisos <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#888">· lo que hay que hacer · tocá uno para abrir al candidato</span></h3>'
-      +(pend.length?pend.slice(0,8).map(function(a){return fil(a,false);}).join('')+(pend.length>8?'<div class="rs-note">y '+(pend.length-8)+' más…</div>':''):'<div style="color:#777;padding:6px 0">No hay pendientes. 👌</div>')
-      +(nov.length?'<div style="font-weight:800;color:#1A6645;margin:14px 0 4px;font-size:13px">Novedades desde tu última visita</div>'+nov.slice(0,5).map(function(a){return fil(a,true);}).join(''):'')
-      +'<div style="margin-top:10px"><button class="mbtn alt" data-k="avisos">Ver todos los avisos</button></div></div>';
-    var ES=[0,1,2,3,4,5,6,7].map(function(i){return {l:['Análisis de CV','Screening','Competencias','Screening empresa','Final empresa','Contratados','En reserva','Descartados'][i],v:g('et:'+i),c:[COLS.cv,COLS.scr,COLS.comp,COLS.semp,COLS.fin,COLS.cont,COLS.res,COLS.desc][i],k:'et:'+i};});
+    var x='<div class="rs-note" style="margin:0 0 8px">Mismos números y definiciones que el Informe de proceso para la empresa.</div><div class="rs-dash">'+kpi(cv,'CVs recibidos','','all')+kpi(scr,'Screenings','','scr')+kpi(comp,'Competencias','','comp')+kpi(emp,'Avanzan a empresa','','emp')+kpi(res,'En reserva','g','res')+kpi(desc,'Descartados','r','desc')+'</div>';
+    x+='<div class="rs-dash">'+kpi(pend.length,'Avisos pendientes'+(urg?' ('+urg+' urgentes)':''),pend.length?'r':'g','avisos')+kpi(g('sinc'),'Sin contactar','y','sinc')+kpi(pr,'Entrevistas próx. 7 días'+(hoy?' ('+hoy+' hoy)':''),'','prox')+'</div>';
+    var FUN=[['CVs recibidos',cv,'all','base del proceso'],['Screenings',scr,'scr','entrevistas telefónicas'],['Competencias',comp,'comp','evaluación profunda'],['Avanzan a empresa',emp,'emp','finalistas presentados']];
+    x+='<div class="rs-panel"><h3>01 · Embudo</h3>'+FUN.map(function(f,i){return '<div class="rs-fun" data-k="'+f[2]+'"><span><b>'+f[0]+'</b><br><small style="color:#888">'+f[3]+'</small></span><div class="rs-bar"><i style="width:'+(cv?Math.round(f[1]*100/cv):0)+'%"></i></div><span><b>'+f[1]+'</b> · '+pct(f[1],cv)+(i?' de los CVs':'')+'</span></div>';}).join('')+(res?'<div class="rs-fun" data-k="res" style="font-weight:700;color:#8e7cc3">+ '+res+' candidato'+(res===1?'':'s')+' en reserva activa</div>':'')+'</div>';
+    x+='<div class="rs-panel"><h3>02 · Descartes <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#888">· filtro por etapa</span></h3><div class="rs-dash" style="margin:0">'+kpiMini(dcv,'En análisis de CV','dcv')+kpiMini(dpost,'Post screening','dpost')+kpiMini(dcomp,'En competencias y empresa','dcomp')+'</div></div>';
+    x+='<div class="rs-panel" id="rsSal"><h3>03 · Realidad salarial</h3><span style="color:#888">Cargando…</span></div>';
+    var ES=[0,1,2,3,4].map(function(i){return {l:['Análisis de CV','Screening','Competencias','Screening empresa','Entrevista final'][i],v:g('et:'+i),c:[COLS.cv,COLS.scr,COLS.comp,COLS.semp,COLS.fin][i],k:'et:'+i};});
+    ES.push({l:'En reserva',v:res,c:COLS.res,k:'res'});ES.push({l:'Descartados',v:desc,c:COLS.desc,k:'desc'});
     var notas={},fuentes={};L.forEach(function(y){var nt=String(y.c.nota||'').trim()||'Sin nota';notas[nt]=(notas[nt]||0)+1;var fu=String(y.c.fuente||'').trim()||'Sin dato';fuentes[fu]=(fuentes[fu]||0)+1;});
     var NS=['A','B+','B','C','Sin nota'].filter(function(k){return notas[k];}).map(function(k){return {l:k==='Sin nota'?k:'Nota '+k,v:notas[k],c:NC[k],k:'nota:'+k};});
     var FS=Object.keys(fuentes).sort(function(a,b){return fuentes[b]-fuentes[a];}).map(function(k,i){return {l:k,v:fuentes[k],c:PAL[i%PAL.length],k:'fu:'+k};});
-    x+='<div class="rs-panel"><div class="rs-row3"><div><h3>Candidatos por etapa</h3>'+dona(ES,n,n,'candidatos')+'</div><div><h3>Calidad de los CVs</h3>'+dona(NS,n,pct(notas['A']||0,n),'con nota A')+'</div><div><h3>De dónde llegan</h3>'+dona(FS,n,FS.length,FS.length===1?'canal':'canales')+'</div></div></div>';
-    x+='<div class="rs-panel"><h3>Embudo de la búsqueda</h3>'+STEPS.map(function(t,k){return '<div class="rs-fun" data-k="emb:'+k+'"><span><b>'+t+'</b></span><div class="rs-bar"><i style="width:'+(n?Math.round(reached[k]*100/n):0)+'%"></i></div><span><b>'+reached[k]+'</b> · '+(k?pct(reached[k],reached[k-1])+' del paso anterior':'100%')+'</span></div>';}).join('')+'<div class="rs-note">Según el estado actual de cada candidato: «llegó» a una etapa si está en ella o ya la pasó (los descartados cuentan hasta donde llegaron).</div></div>';
+    x+='<div class="rs-panel"><div class="rs-row3"><div><h3>Dónde está cada candidato</h3>'+dona(ES,n,n,'candidatos')+'</div><div><h3>Calidad de los CVs</h3>'+dona(NS,n,pct(notas['A']||0,n),'con nota A')+'</div><div><h3>De dónde llegan</h3>'+dona(FS,n,FS.length,FS.length===1?'canal':'canales')+'</div></div></div>';
     var ent=L.filter(function(y){return citaEn(y,h0,h0+7*864e5);}).sort(function(a,b){return avFecha(a.c.cita)-avFecha(b.c.cita);}).slice(0,8);
-    var pret=L.filter(function(y){return y.t==='act'&&y.c.pretNum>0;}).map(function(y){return y.c.pretNum;}).sort(function(a,b){return a-b;});
-    x+='<div class="rs-two"><div class="rs-panel"><h3>Agenda de la semana</h3>'+(ent.length?ent.map(function(y){return '<div class="rs-ent" onclick="rsFicha('+y.c.fila+')" style="cursor:pointer"><b>'+esc(y.c.cita)+'</b><span>'+esc(y.c.nombre)+'</span><span style="margin-left:auto;font-size:12px;color:#666">'+esc(y.c.estado)+'</span></div>';}).join(''):'<span style="color:#888">No hay entrevistas agendadas en los próximos 7 días.</span>')+'</div>'
-     +'<div class="rs-panel"><h3>Pretensión salarial (en proceso)</h3>'+(pret.length?'<div class="rs-dash" style="margin:0"><div class="rs-kpi" data-k="pret:"><div class="n" style="font-size:30px">'+fm(pret[0])+'</div><div class="l">Mínima</div></div><div class="rs-kpi" data-k="pret:"><div class="n" style="font-size:30px">'+fm(pret[Math.floor(pret.length/2)])+'</div><div class="l">Mediana</div></div><div class="rs-kpi" data-k="pret:"><div class="n" style="font-size:30px">'+fm(pret[pret.length-1])+'</div><div class="l">Máxima</div></div></div>':'<span style="color:#888">Todavía no hay pretensiones cargadas.</span>')+'</div></div>';
+    x+='<div class="rs-panel"><h3>Agenda de la semana</h3>'+(ent.length?ent.map(function(y){return '<div class="rs-ent" onclick="rsFicha('+y.c.fila+')" style="cursor:pointer"><b>'+esc(y.c.cita)+'</b><span>'+esc(y.c.nombre)+'</span><span style="margin-left:auto;font-size:12px;color:#666">'+esc(y.c.estado)+'</span></div>';}).join(''):'<span style="color:#888">No hay entrevistas agendadas en los próximos 7 días.</span>')+'</div>';
     x+='<div class="rs-panel" id="rsEmp"><h3>Todas las búsquedas de la empresa</h3><span style="color:#888">Cargando…</span></div>';
     document.getElementById('resumenPage').innerHTML=x;
-    google.script.run.withSuccessHandler(function(r){var e=document.getElementById('rsEmp');if(!e)return;var T={total:0,activos:0,l1:0,l2:0,l3:0,l4:0,contratados:0,descartados:0};
-      var rows=r.map(function(b){Object.keys(T).forEach(function(k){T[k]+=b[k];});return '<tr data-p="'+esc(b.id)+'"><td>'+esc(b.nombre)+(b.id===PERFIL?' ◂':'')+'</td><td>'+b.total+'</td><td>'+b.activos+'</td><td>'+b.l1+'</td><td>'+b.l2+'</td><td>'+b.l3+'</td><td>'+b.l4+'</td><td>'+b.contratados+'</td><td>'+b.descartados+'</td></tr>';}).join('');
-      e.innerHTML='<h3>Todas las búsquedas de la empresa <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#888">· tocá una para abrirla</span></h3><table class="rs-t"><tr><th>Búsqueda</th><th>Recibidos</th><th>En proceso</th><th>Screening</th><th>Competencias</th><th>Scr. empresa</th><th>Final empresa</th><th>Contratados</th><th>Descartados</th></tr>'+rows+(r.length>1?'<tr><td><b>Total</b></td>'+['total','activos','l1','l2','l3','l4','contratados','descartados'].map(function(k){return '<td><b>'+T[k]+'</b></td>';}).join('')+'</tr>':'')+'</table>';
+    pintarSal();
+    google.script.run.withSuccessHandler(function(d){BANDA=Number(String(d&&d.banda||'').replace(/\D/g,''))||0;INDUS=(d&&d.industrias)||'';pintarSal();}).withFailureHandler(function(){pintarSal();}).datosInformeBusqueda(PERFIL);
+    google.script.run.withSuccessHandler(function(r){var e=document.getElementById('rsEmp');if(!e)return;var T={cv:0,scr:0,comp:0,emp:0,res:0,desc:0};
+      var rows=r.map(function(b){Object.keys(T).forEach(function(k){T[k]+=b[k];});return '<tr data-p="'+esc(b.id)+'"><td>'+esc(b.nombre)+(b.id===PERFIL?' ◂':'')+'</td><td>'+b.cv+'</td><td>'+b.scr+'</td><td>'+b.comp+'</td><td>'+b.emp+'</td><td>'+b.res+'</td><td>'+b.desc+'</td></tr>';}).join('');
+      e.innerHTML='<h3>Todas las búsquedas de la empresa <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#888">· tocá una para abrirla</span></h3><table class="rs-t"><tr><th>Búsqueda</th><th>CVs recibidos</th><th>Screenings</th><th>Competencias</th><th>Avanzan a empresa</th><th>En reserva</th><th>Descartados</th></tr>'+rows+(r.length>1?'<tr><td><b>Consolidado</b></td>'+['cv','scr','comp','emp','res','desc'].map(function(k){return '<td><b>'+T[k]+'</b></td>';}).join('')+'</tr>':'')+'</table>';
     }).withFailureHandler(function(){var e=document.getElementById('rsEmp');if(e)e.innerHTML='<h3>Todas las búsquedas de la empresa</h3><span style="color:#888">No se pudo cargar.</span>';}).resumenBusquedas(PERFIL);
   }
+  function pintarSal(){
+    var e=document.getElementById('rsSal');if(!e)return;
+    var c={deb:0,lin:0,enc:0},tot=0,pr=[];
+    L.forEach(function(x){var b=salBucket(x);if(b){c[b]++;tot++;}if(x.scr&&x.c.pretNum>0)pr.push(x.c.pretNum);});pr.sort(function(a,b){return a-b;});
+    var h='<h3>03 · Realidad salarial <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#888">· lo que pretende el mercado (candidatos que llegaron a screening)</span></h3>';
+    h+='<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px"><span style="font-size:13px"><b>Banda de referencia:</b> '+(BANDA?'$'+BANDA.toLocaleString('es-AR'):'sin cargar')+'</span><input id="rsBanda" placeholder="Ej: 13000000" style="padding:7px 10px;border:1px solid #ccc;border-radius:6px;width:150px" value="'+(BANDA||'')+'"><button class="mbtn alt" onclick="rsGuardarBanda(this)">'+(BANDA?'Cambiar':'Guardar')+' banda</button></div>';
+    if(!BANDA)h+='<div class="rs-note">Cargá la banda salarial de la búsqueda (la misma del Informe de proceso) y se calcula cuántos pretenden por debajo, en línea o por encima.</div>';
+    else h+='<div class="rs-dash" style="margin:0"><div class="rs-kpi g" data-k="sal:deb"><div class="n">'+pct(c.deb,tot)+'</div><div class="l">Por debajo</div><div class="h">'+c.deb+' · de la banda</div></div><div class="rs-kpi" data-k="sal:lin"><div class="n">'+pct(c.lin,tot)+'</div><div class="l">En línea</div><div class="h">'+c.lin+' · con la banda (±5%)</div></div><div class="rs-kpi y" data-k="sal:enc"><div class="n">'+pct(c.enc,tot)+'</div><div class="l">Por encima</div><div class="h">'+c.enc+' · de la banda</div></div></div>';
+    if(pr.length)h+='<div class="rs-note">Pretensión mínima '+fm(pr[0])+' · mediana '+fm(pr[Math.floor(pr.length/2)])+' · máxima '+fm(pr[pr.length-1])+' ('+pr.length+' con dato)</div>';
+    if(INDUS)h+='<div style="margin-top:12px"><b style="font-size:12px;color:#1A6645;text-transform:uppercase;letter-spacing:.8px">Industrias de origen</b><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">'+INDUS.split(',').map(function(i){return '<span style="background:#E6F2EC;border-radius:14px;padding:4px 12px;font-size:12px">'+esc(i.trim())+'</span>';}).join('')+'</div></div>';
+    e.innerHTML=h;
+  }
+  window.rsGuardarBanda=function(b){
+    var v=document.getElementById('rsBanda').value,p='';try{p=sessionStorage.getItem('bl_pin')||'';}catch(e){}
+    if(!p){p=prompt('PIN para guardar la banda (solo selectores):')||'';if(!p)return;try{sessionStorage.setItem('bl_pin',p);}catch(e){}}
+    b.disabled=true;
+    google.script.run.withSuccessHandler(function(r){BANDA=Number(r.banda)||0;pintarSal();}).withFailureHandler(function(e){b.disabled=false;var m=(e&&e.message)||String(e);if(/PIN/.test(m)){try{sessionStorage.removeItem('bl_pin');}catch(x){}}alert(m);}).guardarBandaSalarial(p,PERFIL,v);
+  };
   function ver(v){
     var R=v==='resumen';
     document.getElementById('resumenPage').style.display=R?'block':'none';
