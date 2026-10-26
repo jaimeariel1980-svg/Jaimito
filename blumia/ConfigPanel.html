@@ -2,10 +2,10 @@
 .cf-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9100;display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 10px}
 .cf-bg.show{display:flex}
 .cf-box{background:#fff;border-radius:12px;max-width:900px;width:100%;padding:20px 24px;color:#222;font-size:14px}
-.cf-box h2{margin:0 0 12px;font-size:20px;color:#1A6645}
+.cf-box h2{margin:0 0 12px;font-size:20px;color:#243D2C}
 .cf-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
 .cf-tab{background:#F7F5F1;border:1px solid #ddd;border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:700;font-size:13px}
-.cf-tab.on{background:#1A6645;color:#fff;border-color:#1A6645}
+.cf-tab.on{background:#243D2C;color:#fff;border-color:#243D2C}
 .cf-sec{display:none}.cf-sec.on{display:block}
 .cf-help{font-size:12px;color:#666;margin-bottom:10px;line-height:1.45}
 .cf-box input,.cf-box textarea,.cf-box select{border:1px solid #ccc;border-radius:6px;padding:7px 9px;font:13px/1.35 inherit;font-family:inherit;box-sizing:border-box;width:100%}
@@ -15,9 +15,9 @@
 .cf-pl{background:#F7F5F1;border-radius:8px;padding:10px;margin-bottom:10px}
 .cf-mini{background:#fff;border:1px solid #bbb;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:12px}
 .cf-mini.x{color:#B91C1C;border-color:#B91C1C}
-.cf-add{background:#E6F2EC;color:#1A6645;border:1px dashed #1A6645;border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:700;font-size:12px}
+.cf-add{background:#E6F2EC;color:#243D2C;border:1px dashed #243D2C;border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:700;font-size:12px}
 .cf-foot{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
-.cf-save{background:#1A6645;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-weight:800;cursor:pointer}
+.cf-save{background:#243D2C;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-weight:800;cursor:pointer}
 .cf-close{background:#fff;border:1px solid #999;border-radius:8px;padding:10px 20px;cursor:pointer}
 @media(max-width:640px){.cf-row{grid-template-columns:1fr}}
 </style>
@@ -52,7 +52,7 @@
     CF.preguntas.forEach(function(q,i){x+='<div class="cf-row"><div><label>Pregunta</label><input id="cfq_e'+i+'" value="'+esc(q.etiqueta)+'"></div><div><label>Tipo</label><select id="cfq_t'+i+'"><option value="texto"'+(q.tipo==='texto'?' selected':'')+'>Texto libre</option><option value="select"'+(q.tipo==='select'?' selected':'')+'>Elegir opción</option></select></div><div><label>Opciones (si elige)</label><input id="cfq_o'+i+'" value="'+esc(q.opciones)+'"></div><div><label>Obligatoria</label><select id="cfq_r'+i+'"><option value="SI"'+(q.requerido!=='NO'?' selected':'')+'>Sí</option><option value="NO"'+(q.requerido==='NO'?' selected':'')+'>No</option></select></div><button class="cf-mini x" onclick="cfQuitar('+i+')">✕</button></div>';});
     x+='<button class="cf-add" onclick="cfAgregar()">+ Agregar pregunta</button>'+foot('post')+'</div>';
     x+='<div class="cf-sec'+(tab==='msg'?' on':'')+'"><div class="cf-help">Textos de los WhatsApp y mails. Por defecto cada cambio vale <b>solo para esta búsqueda</b>; si elegís «Todas las búsquedas» cambia el texto general. Se completan solos: [NOMBRE] [PUESTO] [EMPRESA] [ENTREVISTADOR] (quien envía) y [LINK] (agenda).</div>';
-    CF.plantillas.forEach(function(t,i){x+='<div class="cf-pl"><b>'+esc(t.clave)+'</b> <span style="color:#888;font-size:12px">· '+esc(t.canal)+'</span> <span style="font-size:11px;font-weight:700;color:'+(t.propia?'#1A6645':'#888')+'">'+(t.propia?'· texto propio de esta búsqueda':'· texto general')+'</span><textarea id="cfp_'+i+'" style="min-height:120px;margin-top:6px">'+esc(t.texto)+'</textarea><div style="display:flex;gap:10px;align-items:center;margin-top:6px"><label style="margin:0">Guardar para:</label><select id="cfa_'+i+'" style="width:auto"><option value="esta">Solo esta búsqueda</option><option value="todas">Todas las búsquedas</option></select>'+(t.propia?'<button class="cf-mini" onclick="cfVolver('+i+')">↺ Volver al texto general</button>':'')+'</div></div>';});
+    CF.plantillas.forEach(function(t,i){x+='<div class="cf-pl"><b>'+esc(t.clave)+'</b> <span style="color:#888;font-size:12px">· '+esc(t.canal)+'</span> <span style="font-size:11px;font-weight:700;color:'+(t.propia?'#243D2C':'#888')+'">'+(t.propia?'· texto propio de esta búsqueda':'· texto general')+'</span><textarea id="cfp_'+i+'" style="min-height:120px;margin-top:6px">'+esc(t.texto)+'</textarea><div style="display:flex;gap:10px;align-items:center;margin-top:6px"><label style="margin:0">Guardar para:</label><select id="cfa_'+i+'" style="width:auto"><option value="esta">Solo esta búsqueda</option><option value="todas">Todas las búsquedas</option></select>'+(t.propia?'<button class="cf-mini" onclick="cfVolver('+i+')">↺ Volver al texto general</button>':'')+'</div></div>';});
     x+=foot('msg')+'</div>';
     x+='<div class="cf-sec'+(tab==='dat'?' on':'')+'"><div class="cf-help">Datos de la búsqueda. Los links tienen que empezar con https://. Al guardar se recarga el tablero.</div>';
     Object.keys(ETQ).forEach(function(k){x+='<label>'+ETQ[k]+'</label><input id="cfd_'+k+'" value="'+esc(CF.datos[k])+'">';});

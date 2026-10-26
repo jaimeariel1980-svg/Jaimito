@@ -4154,7 +4154,7 @@ function KANBAN_TPL(perfilId, titulo, dataJSON, empresasJSON, empresaActual, fly
   return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kanban · ${titulo}</title>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"><\/script>
 <style>
-:root{--green:#1A6645;--glight:#E6F2EC;--amber:#F5C842;--bg:#F7F5F1;--line:#DDDBD7;--mid:#555;--red:#E06666;--font:'PP Pangram Sans','Plus Jakarta Sans',sans-serif}
+:root{--green:#243D2C;--glight:#E3EEDC;--amber:#F9E7A0;--bg:#F3F8F1;--line:#D5E0CE;--mid:#555;--red:#E06666;--font:'Poppins','Plus Jakarta Sans',sans-serif;--cream:#F9E7A0;--mint:#DCE8D3;--teal:#5BB5A5}
 *{box-sizing:border-box;margin:0;padding:0}body{font-family:var(--font);background:var(--bg);color:#1A1A1A;font-size:14px}
 header{background:var(--green);color:#fff;padding:16px 20px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:10;flex-wrap:wrap}
 header img{height:34px}header h1{font-size:18px;font-weight:800}

@@ -58,7 +58,7 @@ header{min-height:86px}
 .fal{padding:10px 22px 0}
 .fal div{border-radius:6px;padding:8px 12px;font-size:13px;margin-bottom:6px;background:#FFF3CD;color:#7a5500}
 .fal div.r{background:#FDE2E2;color:#9B1C1C}.fal div.v{background:#D9F3E4;color:#14502F}.fal div.a{background:#E6EBF2;color:#3F4B66}
-.fwrap{width:calc(100% + 48px)}
+#mbody .fwrap{width:calc(100% + 48px)}
 .fb{padding:6px 22px 20px}
 .fb .sec{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--green);margin:18px 0 8px;border-bottom:2px solid var(--glight);padding-bottom:4px}
 .fp{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:12px 0}
@@ -290,6 +290,31 @@ header{min-height:86px}
   };
 })();
 </script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
+<style id="skin">
+/* Identidad de la web de Blumia: verde bosque, menta, crema, Poppins, botones tipo píldora */
+body,button,input,select,textarea{font-family:'Poppins','Plus Jakarta Sans',sans-serif}
+header{background:var(--green)}
+.nav button,.nav .dd>button,.nav select{border-radius:99px}
+.nav select{padding:8px 14px}
+.hdr-cta{background:var(--cream);color:var(--green);border-radius:99px;font-weight:700;text-transform:none;letter-spacing:0;padding:9px 18px}
+.hdr-cta:hover{background:#F4DC7E}
+.hdr-pill{background:rgba(249,231,160,.18);color:var(--cream)}
+.rs-tab{border-radius:99px;font-family:inherit}
+.rs-tab.on{background:var(--green);border-color:var(--green)}
+.kpT,.rs-kpi,.rs-panel,.card,.gdet{border-radius:16px}
+.kpT{border-left-color:var(--teal)}.kpT b{color:var(--green)}
+.col{border-radius:18px;background:#E8F0E3}
+.col-h{background:var(--green);border-bottom:3px solid var(--cream);border-radius:18px 18px 0 0}
+.col.ok .col-h{background:#2F5E41}
+.col-h b{background:var(--cream);color:var(--green)}
+.card{border-left-color:#C9D6C1}
+.mbtn,.filtros button,#fTog{border-radius:99px}
+.mbtn{background:var(--green);color:#fff}
+.mbtn.alt{background:#fff;color:var(--green);border:1.5px solid var(--green)}
+.rs-kpi:before{background:var(--teal)}
+.fh{background:var(--mint)}
+</style>
 <style id="mobcss">
 @media(max-width:640px){
 header{position:static;padding:10px 12px;gap:6px 10px;min-height:0}
