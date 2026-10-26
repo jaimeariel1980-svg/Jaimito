@@ -28,7 +28,19 @@ function perfilPuestoHTML(perfilId, t) {
   if (!t || CacheService.getScriptCache().get('pp_' + t) !== String(perfilId)) return msg('Acceso vencido. Abrí el botón «Perfil del puesto» desde el kanban e ingresá el PIN.');
   const cfg = getConfig(perfilId);
   if (!cfg.perfil_html) return msg('Este perfil no tiene documento vinculado.');
-  return HtmlService.createHtmlOutputFromFile(String(cfg.perfil_html))
+  return HtmlService.createTemplateFromFile(String(cfg.perfil_html)).evaluate()
     .setTitle('Perfil del puesto | Blumia Consulting')
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+}
+
+/* Diagnóstico: muestra cómo está configurado el perfil del puesto y si el HTML se puede cargar. */
+function diagnosticoPerfilPuesto() {
+  const cfg = getConfig('director-comercial');
+  Logger.log('perfil_protegido: ' + cfg.perfil_protegido + ' | perfil_html: ' + cfg.perfil_html + ' | link_perfil: ' + String(cfg.link_perfil || '').slice(0, 60));
+  Logger.log('BLUMIA_PIN cargado: ' + (PropertiesService.getScriptProperties().getProperty('BLUMIA_PIN') ? 'sí' : 'NO'));
+  if (cfg.perfil_html) {
+    const c = HtmlService.createTemplateFromFile(String(cfg.perfil_html)).evaluate().getContent();
+    Logger.log('HTML cargado: ' + c.length + ' caracteres, contiene formulario: ' + (c.indexOf('Perfil del puesto') > -1 ? 'sí' : 'NO'));
+  }
 }
