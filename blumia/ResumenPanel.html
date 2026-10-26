@@ -163,8 +163,9 @@
   function ver(v){
     var R=v==='resumen';
     document.getElementById('resumenPage').style.display=R?'block':'none';
-    var f=document.querySelector('.filtros'),b=document.getElementById('board');
-    if(f)f.style.display=R?'none':'';if(b)b.style.display=R?'none':'';
+    var f=document.querySelector('.filtros'),b=document.getElementById('board'),k=document.getElementById('kpiT');
+    if(f)f.style.display=R?'none':'';if(b)b.style.display=R?'none':'';if(k)k.style.display=R?'none':'';
+    if(!R&&window.ajustarBoard)setTimeout(ajustarBoard,50);
     document.getElementById('rsTabR').className='rs-tab'+(R?' on':'');document.getElementById('rsTabT').className='rs-tab'+(R?'':' on');
     try{sessionStorage.setItem('bl_vista',v);}catch(e){}
     if(R)pintar();

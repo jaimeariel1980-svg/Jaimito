@@ -2554,6 +2554,7 @@ function procesarMailsRouter() {
   Logger.log(`✅ Router: ${ok} ruteados y procesados · ${sin} a "Sin clasificar".`);
 }
 function procesarTodo_v2() {
+  asegurarCopiaDiaria_();
   // 1) MAIL — barrido único con router (decide perfil solo)
   try {
     procesarMailsRouter();
@@ -4095,7 +4096,9 @@ function kanbanHTML(perfilId) {
   const perfilProt = String(cfg.perfil_protegido || '').toUpperCase() === 'SI';
   const perfilPdf = (!perfilProt && typeof cfg.link_perfil === 'string') ? cfg.link_perfil : '';
   let html = KANBAN_TPL(perfilId, titulo, data, empresas, empresaActual, flyer, perfilPdf, perfilProt);
-  try { const extra = '<script>var metEstado = ' + metEstado_.toString() + ';</script>' + ['ConfigPanel', 'ResumenPanel'].map(f => HtmlService.createHtmlOutputFromFile(f).getContent()).join(''); html = html.replace(/<\/html>\s*$/, () => extra + '</html>'); } catch (e) { }
+  let bandaRef = 0;
+  try { bandaRef = Number(datosInformeBusqueda(perfilId).banda) || 0; } catch (e) { }
+  try { const extra = '<script>var metEstado = ' + metEstado_.toString() + '; var BANDA_REF = ' + bandaRef + ';</script>' + ['ConfigPanel', 'ResumenPanel', 'TableroCards'].map(f => HtmlService.createHtmlOutputFromFile(f).getContent()).join(''); html = html.replace(/<\/html>\s*$/, () => extra + '</html>'); } catch (e) { }
   return HtmlService.createHtmlOutput(html)
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
@@ -4113,11 +4116,14 @@ const link = (r, col) => {
   };
   const out = [];
   const cMot = d[0].indexOf('Motivo de descarte');
+  const cObs = d[0].indexOf('Observaciones');
+  const movs = ultimosMovimientos_(sh.getName());
+  const prev = previosDeFilas_(perfilId, d.slice(1));
   for (let i = 1; i < d.length; i++) {
     if (!d[i][1]) continue;
     const m = String(d[i][5] || '').match(/Remuneraci[oó]n pretendida:\s*\$?\s*([\d.\s]+)/i);
     out.push({
-      fila: i + 1, nombre: d[i][1], estado: String(d[i][8] || '').trim(), motivo: cMot >= 0 ? String(d[i][cMot] || '') : '',
+      fila: i + 1, nombre: d[i][1], estado: String(d[i][8] || '').trim(), motivo: cMot >= 0 ? String(d[i][cMot] || '') : '', obs: cObs >= 0 ? String(d[i][cObs] || '') : '', movMs: movs[String(d[i][1]).trim()] || 0, recMs: d[i][0] ? new Date(d[i][0]).getTime() : 0, previos: prev[i - 1] || [],
       recibido: d[i][0] ? Utilities.formatDate(new Date(d[i][0]), 'GMT-3', 'dd/MM/yyyy') : '',
       nota: d[i][4] || '', notaScr: d[i][11] || '', notaComp: d[i][15] || '',
       pretension: m ? m[1].trim() : '', zona: d[i][23] || '',
@@ -4255,7 +4261,7 @@ navHTML+='<button onclick="window.top.location.href=\\'${URL_WEBAPP}?tipo=kanban
 navHTML+='<button id="quienBtn" onclick="quienSoy(true)">👤 ¿Quién sos?</button>';
 navHTML+='<div class="dd"><button onclick="ddToggle(this)">📄 Informes ▾</button><div class="ddm"><a onclick="window.open(\\'${URL_WEBAPP}?tipo=procesohtml&perfil=${perfilId}\\',\\'_blank\\')">Informe de proceso (para la empresa)</a><a onclick="if(confirm(\\'¿Generar PDF cliente de esta búsqueda?\\'))window.open(\\'${URL_WEBAPP}?tipo=pdfcliente&perfil=${perfilId}\\',\\'_blank\\')">PDF para el cliente</a></div></div>';
 navHTML+='<div class="dd"><button onclick="ddToggle(this)">📚 Búsqueda ▾</button><div class="ddm">'+(${perfilProt?'true':'false'}?'<a onclick="pedirPerfilPin()">🔒 Perfil del puesto</a>':'<a onclick="window.open(\\'${perfilUrl}\\',\\'_blank\\')">📋 Perfil del puesto</a>')+'<a onclick="window.open(\\'${flyerUrl}\\',\\'_blank\\')">📢 Flyer</a><a onclick="prompt(\\'Link del formulario de postulación (copialo):\\',\\'${URL_WEBAPP}?tipo=postulacion&perfil=${perfilId}\\')">🔗 Link de postulación</a></div></div>';
-navHTML+='<div class="dd"><button onclick="ddToggle(this)">🧰 Candidatos ▾</button><div class="ddm"><a onclick="descartesMasivo()">✉ Mails de descarte</a><a title="Baja un archivo para importar a los contactos de Google" onclick="bajarContactos(this)">📇 Contactos al celular</a><a onclick="window.top.location.href=\\'${URL_WEBAPP}?tipo=banco&desde=${perfilId}\\'">★ Banco de talento</a><a onclick="verHistorial()">📜 Historial de la búsqueda</a><a onclick="abrirPapelera()">🗑 Papelera ('+ELIM.length+')</a></div></div>';
+navHTML+='<div class="dd"><button onclick="ddToggle(this)">🧰 Candidatos ▾</button><div class="ddm"><a onclick="descartesMasivo()">✉ Mails de descarte</a><a title="Baja un archivo para importar a los contactos de Google" onclick="bajarContactos(this)">📇 Contactos al celular</a><a onclick="window.top.location.href=\\'${URL_WEBAPP}?tipo=banco&desde=${perfilId}\\'">★ Banco de talento</a><a onclick="verHistorial()">📜 Historial de la búsqueda</a><a onclick="copiaAhora()">💾 Copia de seguridad ahora</a><a onclick="abrirPapelera()">🗑 Papelera ('+ELIM.length+')</a></div></div>';
 document.addEventListener('click',function(e){if(!e.target.closest('.dd'))document.querySelectorAll('.ddm.show').forEach(function(m){m.classList.remove('show');});});
 function ddToggle(b){var m=b.nextElementSibling,ab=m.classList.contains('show');document.querySelectorAll('.ddm.show').forEach(function(x){x.classList.remove('show');});if(!ab)m.classList.add('show');}
 document.getElementById('nav').innerHTML=navHTML;
@@ -4327,10 +4333,10 @@ function limpiarFiltros(){['fNombre','fZona','fForm','fExp','fPret'].forEach(fun
 (function(){var est=[];DATA.forEach(function(c){if(c.estado&&est.indexOf(c.estado)===-1)est.push(c.estado);});est.sort();var s=document.getElementById('fEstado');est.forEach(function(e){var o=document.createElement('option');o.value=e;o.text=e;s.appendChild(o);});})();
 const MOTIVOS=${JSON.stringify(MOTIVOS_DESCARTE_)};
 function tagsTarjeta(c){
-  var h='',T={contactar:'Falta contactar',norespondio:'Sin respuesta',pronto:'Entrevista pronto',sincargar:'Falta cargar formulario',sinfecha:'No está en el calendario'};
+  var h='',T={contactar:'Falta contactar',norespondio:'Sin respuesta',pronto:'Entrevista pronto',sincargar:'Falta cargar formulario',sinfecha:'No está en el calendario',reserva:'En reserva hace tiempo'};
   if(/^Descartad/i.test(c.estado)){h+=c.motivo?'<span class="tag" style="background:#FDE2E2;color:#9B1C1C" title="Motivo de descarte">✖ '+String(c.motivo).replace(/;\\s*/g,' · ')+'</span>':'<span class="tag" style="background:#FFF3CD;color:#7a5500;cursor:pointer" onclick="event.stopPropagation();pedirMotivo('+c.fila+')">Sin motivo · cargar</span>';}
   if(c.mailDescarte)h+='<span class="tag">✉ Descarte enviado</span>';
-  try{avPendientes([c]).forEach(function(x){h+='<span class="tag" style="background:'+(x.urg?'#FDE2E2':'#FFF3CD')+';color:'+(x.urg?'#9B1C1C':'#7a5500')+'">'+x.ic+' '+(T[x.k.split('|')[0]]||x.txt)+'</span>';});}catch(e){}
+  try{avPendientes([c]).filter(function(x){return x.k.indexOf('sinmov')!==0;}).forEach(function(x){h+='<span class="tag" style="background:'+(x.urg?'#FDE2E2':'#FFF3CD')+';color:'+(x.urg?'#9B1C1C':'#7a5500')+'">'+x.ic+' '+(T[x.k.split('|')[0]]||x.txt)+'</span>';});}catch(e){}
   return h;
 }
 function pedirMotivo(f,recargar){
@@ -4423,7 +4429,9 @@ function avPendientes(L){
       var ct=String(c.contactado||'').split(' · ')[0].trim().toLowerCase();
       if(ct!==ep.k){p('contactar','➜','Falta contactar para '+ep.n);return;}
       var f=avFecha(c.contactado);
-      if(!c.cita&&f){var d=Math.floor((now-f)/864e5);if(d>=2)p('norespondio','⏳','Contactado para '+ep.n+' hace '+d+' días y todavía no agendó');}
+      if(!c.cita&&f){var d=Math.floor((now-f)/864e5);if(d>=2){p('norespondio','⏳','Contactado para '+ep.n+' hace '+d+' días y todavía no agendó');return;}}
+      var mv=c.movMs,dm=mv?Math.floor((now-mv)/864e5):0;
+      if(dm>=7)p('sinmov','🕒',dm+' días sin movimiento en «'+c.estado+'»');
       return;
     }
     if(c.cita){
@@ -4436,6 +4444,7 @@ function avPendientes(L){
     if(f2){if(f2<now-60*6e4)p('sincargar','📝','La entrevista de '+ep.n+' del '+String(lines[0]).split(' — ')[1]+' ya pasó y falta cargar el formulario',true);}
     else p('sinfecha','📅','Figura agendado para '+ep.n+' pero no está en el calendario');
   });
+  L.forEach(function(c){if(!/reserva/i.test(c.estado)||/^Descartad|^Eliminado/i.test(c.estado))return;var mv=c.movMs,dm=mv?Math.floor((now-mv)/864e5):0;if(dm>=14)out.push({k:'reserva|'+c.fila,ic:'📌',txt:'En reserva hace '+dm+' días: ¿se retoma o se descarta?',f:c.fila,n:c.nombre,urg:false});});
   out.sort(function(a,b){return (b.urg?1:0)-(a.urg?1:0);});
   return out;
 }
