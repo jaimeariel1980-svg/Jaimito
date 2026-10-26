@@ -39,7 +39,7 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             [ "${{ inputs.proyecto }}" = "${{ matrix.id }}" ] && echo "go=1" >> $GITHUB_OUTPUT || echo "go=0" >> $GITHUB_OUTPUT
           else
-            [ -f "${{ matrix.dir }}/appsscript.json" ] && git diff --name-only HEAD~1 HEAD | grep -q "^${{ matrix.dir }}/" && echo "go=1" >> $GITHUB_OUTPUT || echo "go=0" >> $GITHUB_OUTPUT
+            [ -f "${{ matrix.dir }}/appsscript.json" ] && git -c core.quotepath=false diff --name-only HEAD~1 HEAD | grep -q "^${{ matrix.dir }}/" && echo "go=1" >> $GITHUB_OUTPUT || echo "go=0" >> $GITHUB_OUTPUT
           fi
       - if: steps.dec.outputs.go == '1'
         uses: actions/setup-node@v4
