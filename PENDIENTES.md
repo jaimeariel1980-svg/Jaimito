@@ -16,6 +16,8 @@ Lo mantiene Claude. Prioridad: 🔴 urgente · 🟠 importante · 🟡 cuando se
 - 🔴 **Rotar las claves de OpenAI y Anthropic de Blumia**: estaban escritas en `Código.gs` y quedaron en la rama `sync-blumia` y en el historial. Crear nuevas, cargarlas en las propiedades `OPENAI_API_KEY` y `ANTHROPIC_API_KEY` y revocar las viejas. — *Ariel*
 - 🟠 **Borrar la rama `sync-blumia`** (tiene las claves viejas) una vez integrado el código. — *Claude, con OK de Ariel*
 - 🟠 **Web `/exec` pública** (kanban e internas sin clave): dejar abierto solo el formulario de postulación y proteger el resto con clave o login. Cambia el uso: hablarlo antes. — *Claude + Ariel*
+- 🟠 **Perfil `director-comercial` incompleto**: faltan las agendas de Google Calendar (screening, competencias, empresa), `link_flyer` y `link_perfil`, y sumarlo a las listas de perfiles escritas a mano en `Código.gs` (sincronización de calendario, estados, links). Después, unificar esas listas en una sola leída de Config para que cada búsqueda nueva sea una sola función. — *Claude + Ariel*
+- 🟡 Revisar con Ariel las competencias, criterios de screening y preguntas de postulación que se redactaron para `director-comercial`. — *Ariel*
 - 🟡 `Postulacion.html` pesa 650 KB (tipografías incrustadas): revisar si la página carga lento. — *Claude*
 - 🟡 Cada `bajar` crea `sync-blumia`: si vuelve a haber claves en el código, quedan en esa rama. — *Claude*
 
