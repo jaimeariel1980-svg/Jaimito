@@ -3375,7 +3375,7 @@ function generarInformeCandidato(perfilId, fila) {
   return url;
 }
 function generarPDFClientes(perfilId) {
-  const PDFSHIFT_KEY = 'sk_4366f0b749b4c4b988c1f105551592471d475ec0';
+  const PDFSHIFT_KEY = pdfshiftKey_();
   const cfg = getConfig(perfilId);
   const sh = getSheet(cfg);
   const posicion = (typeof cfg.nombre === 'string') ? cfg.nombre : perfilId;
@@ -3601,7 +3601,7 @@ function ponerBotonPDFCliente() {
   Logger.log('Botón PDF cliente puesto en col 34.');
 }
 function probarPDFvistaPrevia() {
-  const PDFSHIFT_KEY = 'sk_4366f0b749b4c4b988c1f105551592471d475ec0';
+  const PDFSHIFT_KEY = pdfshiftKey_();
   // genera el HTML de vista previa y agarra su contenido
   vistaPreviaInforme();
   // busca el archivo de vista previa recién creado
