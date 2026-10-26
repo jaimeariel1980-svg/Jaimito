@@ -4267,8 +4267,8 @@ function ddToggle(b){var m=b.nextElementSibling,ab=m.classList.contains('show');
 document.getElementById('nav').innerHTML=navHTML;
 avInit();
 try{var _q=localStorage.getItem('blumia_quien');if(_q&&document.getElementById('quienBtn'))document.getElementById('quienBtn').textContent='👤 '+_q;}catch(e){}
-const COLS=[['Análisis de CV',['Nuevo','Contactado','Pendiente','']],['Screening',['Avanza a screening','Screening agendado']],['Competencias',['Avanza a competencias','Competencias agendada']],['Screening empresa',['Avanza a screening empresa','Screening empresa agendado']],['Presencial empresa',['Avanza a presencial empresa','Avanza a empresa','Entrevista empresa agendada','En cliente']],['Contratado',['Contratado']]];
-const BASE={'Análisis de CV':'Nuevo','Screening':'Avanza a screening','Competencias':'Avanza a competencias','Screening empresa':'Avanza a screening empresa','Presencial empresa':'Avanza a presencial empresa','Contratado':'Contratado'};
+const COLS=[['Análisis de CV',['Nuevo','Contactado','Pendiente','']],['Screening',['Avanza a screening','Screening agendado']],['Competencias',['Avanza a competencias','Competencias agendada']],['Empresa',['Avanza a screening empresa','Screening empresa agendado','Avanza a presencial empresa','Avanza a empresa','Entrevista empresa agendada','En cliente']],['Contratado',['Contratado']]];
+const BASE={'Análisis de CV':'Nuevo','Screening':'Avanza a screening','Competencias':'Avanza a competencias','Empresa':'Avanza a presencial empresa','Contratado':'Contratado'};
 const DESC_TIPOS=['Descartado sin screening','Descartado post screening','Descartado en competencias','Descartado en screening empresa','Descartado presencial empresa','Descartado Fuera de zona','Descartado NO le interesa'];
 const RES_TIPOS=['En reserva','Reserva competencias','Reserva screening empresa','Reserva presencial empresa'];
 const nota=n=>n?'<span class="nota n'+String(n).replace('+','')+'">'+n+'</span>':'';
