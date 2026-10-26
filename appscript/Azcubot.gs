@@ -1628,7 +1628,7 @@ function azcuVisitasData_(atras, adelante){
       e = new Date(azcuIsoN_(n)+'T'+(hh||'23:59')+':00-03:00').getTime() >= ahora ? 'a' : 'p';
     }
     if(can) e = 'c';
-    out.push({f:i+1, id:id, x:ext?1:0, dir:ext ? (String(r[12]||'').trim()||dirs[id]||'') : (dirs[id]||id), fi:(ext && (id in dirs)) ? 1 : 0, im:ext ? String(r[11]||'').trim() : '', lk:ext ? String(r[13]||'').trim() : '', pr:ext ? String(r[14]||'').trim() : '', co:ext ? String(r[15]||'').trim() : '', cli:String(r[3]||'').trim(), tel:String(r[4]||'').trim(), v:String(r[9]||'').trim(), c:String(r[10]||'').trim(), e:e, res:(ag || can) ? '' : res, obs:String(r[8]||'').trim().slice(0,2000), d:azcuIsoN_(n), h:hh});
+    out.push({f:i+1, id:id, x:ext?1:0, dir:ext ? (String(r[12]||'').trim()||dirs[id]||'') : (dirs[id]||id), fi:(ext && (id in dirs)) ? 1 : 0, im:String(r[11]||'').trim(), lk:ext ? String(r[13]||'').trim() : '', pr:ext ? String(r[14]||'').trim() : '', co:String(r[15]||'').trim(), cli:String(r[3]||'').trim(), tel:String(r[4]||'').trim(), v:String(r[9]||'').trim(), c:String(r[10]||'').trim(), e:e, res:(ag || can) ? '' : res, obs:String(r[8]||'').trim().slice(0,2000), d:azcuIsoN_(n), h:hh});
   }
   out.sort(function(a,b){ return a.d<b.d ? 1 : a.d>b.d ? -1 : (a.h<b.h ? 1 : a.h>b.h ? -1 : 0); });
   var us = []; try{ azcuUsuarios_().forEach(function(u){ if(u.activo) us.push(u.nombre); }); }catch(e){}
