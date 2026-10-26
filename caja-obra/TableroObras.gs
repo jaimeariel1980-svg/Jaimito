@@ -58,7 +58,7 @@ function tableroDatos_(){
     };
   });
   var movs=mv.slice(-400).reverse().map(function(r){
-    return {row:r._row, fp:tbFp_(r), f:f(r[0],'dd/MM/yy HH:mm'), d:f(r[0],'yyyy-MM-dd'), tipo:r[1], rubro:r[2]||'', det:r[3]||'', prov:r[4]||'', monto:Number(r[5])||0, fac:r[6]||'', link:r[7]||'', obra:r[10]||'', b:Number(r[11])||0};
+    return {row:r._row, fp:tbFp_(r), f:f(r[0],'dd/MM/yy HH:mm'), d:f(r[0],'yyyy-MM-dd'), tipo:r[1], rubro:r[2]||'', det:r[3]||'', prov:r[4]||'', monto:Number(r[5])||0, fac:r[6]||'', link:r[7]||'', obra:r[10]||'', b:Number(r[11])||0, o:r[8]||''};
   });
   return {obras:obras, movs:movs, rubros:RUBROS.concat(TB_RUBROS_EXTRA_), hoy:Utilities.formatDate(new Date(),TZ,'dd/MM/yyyy HH:mm')};
 }
