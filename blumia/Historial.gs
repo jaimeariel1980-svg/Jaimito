@@ -44,3 +44,19 @@ function getHistorialCandidato(perfilId, fila) {
 function getHistorialBusqueda(perfilId) {
   return leerHistorial_(getSheet(getConfig(perfilId)).getName(), '', 150);
 }
+
+// último movimiento de cada candidato de una hoja: {nombre: milisegundos}
+function ultimosMovimientos_(hoja) {
+  const out = {};
+  try {
+    const sh = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName(HOJA_HIST_);
+    if (!sh || sh.getLastRow() < 2) return out;
+    const n = Math.min(sh.getLastRow() - 1, 6000);
+    sh.getRange(sh.getLastRow() - n + 1, 1, n, 4).getValues().forEach(r => {
+      if (r[1] !== hoja || !r[2]) return;
+      const t = new Date(r[0]).getTime();
+      if (t > (out[String(r[2]).trim()] || 0)) out[String(r[2]).trim()] = t;
+    });
+  } catch (e) { }
+  return out;
+}

@@ -160,3 +160,11 @@ Sindicatos y cupos · policlínicos y su domicilio sugerido · turno preferido �
 Mi recomendación: arrancar por la **Etapa 1** y, en paralelo, hacer **S3 (copia de seguridad)** porque es chico y protege todo lo demás.
 
 Para pedir algo: «hacé la etapa 1», o por código («hacé V1, V2 y T3»).
+
+
+---
+## Estado de avance (27/10)
+- ✅ Etapa 1 hecha: V1, V2, V3, V4 (píldora de candidatos y botón de postulación), V6, T6.
+- ✅ Etapa 2 hecha: T3 (último movimiento desde el Historial), I2 (etiquetas de análisis), I3 (ya se postuló antes), F3 (observaciones), F5/F6/V5 (ficha ordenada), A3 (sin movimiento y reservas viejas).
+- ✅ S3 hecho: copia de seguridad diaria + botón «Copia de seguridad ahora».
+- ⏳ Etapa 3 (F1, F2, F4, C3, C4) en curso. 🚫 Sin hacer: S1/S2/S4 (login y roles) porque cambian el uso y hay que hablarlos antes.
