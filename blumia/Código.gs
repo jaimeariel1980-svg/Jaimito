@@ -4078,7 +4078,7 @@ function completarProcesoIA(empresa) {
 function kanbanHTML(perfilId) {
   const cfg = getConfig(perfilId);
   const emp = (typeof cfg.empresa === 'string') ? cfg.empresa : 'MACS';
-  const titulo = ((typeof cfg.nombre === 'string') ? cfg.nombre : perfilId) + ' · ' + emp;
+  const titulo = ((typeof cfg.nombre === 'string' && cfg.nombre) ? cfg.nombre : (typeof cfg.nombre_perfil === 'string' && cfg.nombre_perfil) ? cfg.nombre_perfil : perfilId) + ' · ' + emp;
   const data = doGetKanban(perfilId);
   const empresas = JSON.stringify(empresasYPerfiles());
   const empresaActual = (typeof cfg.empresa === 'string') ? cfg.empresa : 'MACS';
@@ -4141,9 +4141,14 @@ function KANBAN_TPL(perfilId, titulo, dataJSON, empresasJSON, empresaActual, fly
 header{background:var(--green);color:#fff;padding:16px 20px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:10;flex-wrap:wrap}
 header img{height:34px}header h1{font-size:18px;font-weight:800}
 .nav{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap;align-items:center}
-.nav button{padding:7px 14px;border-radius:6px;font-size:12px;font-weight:800;color:#fff;background:rgba(255,255,255,.15);border:none;cursor:pointer;font-family:var(--font)}
-.nav .proc{background:var(--amber);color:#1A1A1A}
-.nav select{padding:7px 10px;border-radius:6px;border:none;font-family:var(--font);font-weight:800;font-size:12px;cursor:pointer}
+.nav button,.nav .dd>button{padding:8px 14px;border-radius:8px;font-size:13px;font-weight:700;color:#fff;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.22);cursor:pointer;font-family:var(--font);white-space:nowrap}
+.nav button:hover,.nav .dd>button:hover{background:rgba(255,255,255,.28)}
+.nav select{padding:8px 10px;border-radius:8px;border:none;font-family:var(--font);font-weight:700;font-size:13px;cursor:pointer;max-width:260px}
+.nav .dd{position:relative}
+.nav .ddm{display:none;position:absolute;right:0;top:calc(100% + 6px);background:#fff;color:#1A1A1A;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.25);min-width:230px;padding:6px;z-index:60}
+.nav .ddm.show{display:block}
+.nav .ddm a{display:block;padding:10px 12px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;color:#1A1A1A}
+.nav .ddm a:hover{background:var(--glight)}
 .filtros{padding:12px 16px 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .fwrap{position:relative;display:inline-block}
 .fwrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);opacity:.4;pointer-events:none}
@@ -4227,7 +4232,7 @@ const EMPRESA_ACTUAL='${empresaActual}';
 const PERFIL='${perfilId}';
 function pedirPerfilPin(){var p=prompt('PIN para ver el perfil del puesto (solo selectores):');if(!p)return;google.script.run.withSuccessHandler(function(u){abrirPerfilLink(u);}).withFailureHandler(function(e){alert((e&&e.message)||e);}).linkPerfilConPin(PERFIL,p);}
 function abrirPerfilLink(u){var d=document.createElement('div');d.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:99999;display:flex;align-items:center;justify-content:center';d.innerHTML='<div style="background:#fff;border-radius:10px;padding:26px 30px;text-align:center;font-family:sans-serif;max-width:340px"><p style="margin:0 0 16px;font-size:15px">PIN correcto ✓</p><a id="pplk" target="_blank" rel="noopener" style="display:inline-block;background:#1A6645;color:#fff;padding:11px 22px;border-radius:6px;text-decoration:none;font-weight:700">Abrir perfil del puesto</a><div style="margin-top:14px"><a href="#" id="ppcl" style="color:#777;font-size:13px">Cerrar</a></div></div>';document.body.appendChild(d);var l=document.getElementById('pplk');l.href=u;l.onclick=function(){setTimeout(function(){d.remove();},400);};document.getElementById('ppcl').onclick=function(ev){ev.preventDefault();d.remove();};}
-let navHTML='<select onchange="window.top.location.href=\\'${URL_WEBAPP}?tipo=kanban&perfil=\\'+this.value">';
+let navHTML='<button id="avBtn" title="Avisos pendientes" onclick="verAvisos()" style="font-size:17px;padding:6px 12px">🔔<span id="avCnt" style="display:none;margin-left:6px;background:#fff;color:#B91C1C;border-radius:12px;font-size:13px;font-weight:800;padding:1px 9px"></span></button><select onchange="window.top.location.href=\\'${URL_WEBAPP}?tipo=kanban&perfil=\\'+this.value">';
 Object.keys(EMPRESAS).forEach(function(emp){
   navHTML+='<optgroup label="'+emp+'">';
   EMPRESAS[emp].forEach(function(p){navHTML+='<option value="'+p[0]+'"'+(p[0]===PERFIL?' selected':'')+'>'+p[1]+'</option>';});
@@ -4235,17 +4240,12 @@ Object.keys(EMPRESAS).forEach(function(emp){
 });
 navHTML+='</select>';
 navHTML+='<button onclick="window.top.location.href=\\'${URL_WEBAPP}?tipo=kanban&perfil=${perfilId}\\'">↻ Actualizar</button>';
-navHTML+='<button class="proc" onclick="window.open(\\'${URL_WEBAPP}?tipo=procesohtml&perfil=${perfilId}\\',\\'_blank\\')">Informe proceso</button>';
-navHTML+='<button class="proc" onclick="if(confirm(\\'¿Generar PDF cliente de esta búsqueda?\\'))window.open(\\'${URL_WEBAPP}?tipo=pdfcliente&perfil=${perfilId}\\',\\'_blank\\')">PDF cliente</button>';
-navHTML+='<button style="background:#E06666;color:#fff" onclick="descartesMasivo()">✉ Descartes</button>';
 navHTML+='<button id="quienBtn" onclick="quienSoy(true)">👤 ¿Quién sos?</button>';
-navHTML+='<button title="Baja un archivo para importar a los contactos de Google (así los candidatos aparecen con nombre en el WhatsApp del celular)" onclick="bajarContactos(this)">📇 Contactos al celular</button>';
-navHTML+='<button id="avBtn" onclick="verAvisos()" style="position:relative">🔔 Avisos<span id="avCnt" style="display:none;position:absolute;top:-6px;right:-6px;background:#B91C1C;color:#fff;border-radius:10px;font-size:11px;font-weight:800;padding:1px 6px"></span></button>';
-navHTML+='<button onclick="abrirPapelera()">🗑 Papelera ('+ELIM.length+')</button>';
-navHTML+='<button style="background:#F5C842;color:#1A1A1A" onclick="window.top.location.href=\\'${URL_WEBAPP}?tipo=banco&desde=${perfilId}\\'">★ Banco</button>';
-navHTML+=${perfilProt?'true':'false'}?'<button onclick="pedirPerfilPin()">🔒 Perfil del puesto</button>':'<button onclick="window.open(\\'${perfilUrl}\\',\\'_blank\\')">📋 Perfil del puesto</button>';
-navHTML+='<button onclick="window.open(\\'${flyerUrl}\\',\\'_blank\\')">📢 Flyer</button>';
-navHTML+='<button onclick="prompt(\\'Link del formulario de postulación (copialo):\\',\\'${URL_WEBAPP}?tipo=postulacion&perfil=${perfilId}\\')">🔗 Link postulación</button>';
+navHTML+='<div class="dd"><button onclick="ddToggle(this)">📄 Informes ▾</button><div class="ddm"><a onclick="window.open(\\'${URL_WEBAPP}?tipo=procesohtml&perfil=${perfilId}\\',\\'_blank\\')">Informe de proceso (para la empresa)</a><a onclick="if(confirm(\\'¿Generar PDF cliente de esta búsqueda?\\'))window.open(\\'${URL_WEBAPP}?tipo=pdfcliente&perfil=${perfilId}\\',\\'_blank\\')">PDF para el cliente</a></div></div>';
+navHTML+='<div class="dd"><button onclick="ddToggle(this)">📚 Búsqueda ▾</button><div class="ddm">'+(${perfilProt?'true':'false'}?'<a onclick="pedirPerfilPin()">🔒 Perfil del puesto</a>':'<a onclick="window.open(\\'${perfilUrl}\\',\\'_blank\\')">📋 Perfil del puesto</a>')+'<a onclick="window.open(\\'${flyerUrl}\\',\\'_blank\\')">📢 Flyer</a><a onclick="prompt(\\'Link del formulario de postulación (copialo):\\',\\'${URL_WEBAPP}?tipo=postulacion&perfil=${perfilId}\\')">🔗 Link de postulación</a></div></div>';
+navHTML+='<div class="dd"><button onclick="ddToggle(this)">🧰 Candidatos ▾</button><div class="ddm"><a onclick="descartesMasivo()">✉ Mails de descarte</a><a title="Baja un archivo para importar a los contactos de Google" onclick="bajarContactos(this)">📇 Contactos al celular</a><a onclick="window.top.location.href=\\'${URL_WEBAPP}?tipo=banco&desde=${perfilId}\\'">★ Banco de talento</a><a onclick="abrirPapelera()">🗑 Papelera ('+ELIM.length+')</a></div></div>';
+document.addEventListener('click',function(e){if(!e.target.closest('.dd'))document.querySelectorAll('.ddm.show').forEach(function(m){m.classList.remove('show');});});
+function ddToggle(b){var m=b.nextElementSibling,ab=m.classList.contains('show');document.querySelectorAll('.ddm.show').forEach(function(x){x.classList.remove('show');});if(!ab)m.classList.add('show');}
 document.getElementById('nav').innerHTML=navHTML;
 avInit();
 try{var _q=localStorage.getItem('blumia_quien');if(_q&&document.getElementById('quienBtn'))document.getElementById('quienBtn').textContent='👤 '+_q;}catch(e){}
@@ -4439,7 +4439,7 @@ function avNovedades(L){
   });
   avLS('snap',snap);return nov;
 }
-function avPintar(){var b=document.getElementById('avCnt');if(!b)return;var n=AV_PEND.filter(function(x){return x.urg;}).length+(avLS('sinver')||0);b.textContent=n||'';b.style.display=n?'':'none';}
+function avPintar(){var b=document.getElementById('avCnt');if(!b)return;var n=AV_PEND.length+(avLS('sinver')||0),u=AV_PEND.filter(function(x){return x.urg;}).length;b.textContent=n||'';b.style.display=n?'':'none';var bt=document.getElementById('avBtn');if(bt)bt.style.background=u?'#B91C1C':'';}
 function avAbrir(f){if(DATA.some(function(x){return x.fila===f;}))ficha(f);else cerrar();}
 function verAvisos(){
   avLS('sinver',0);avPintar();
