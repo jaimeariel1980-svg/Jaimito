@@ -98,10 +98,33 @@ body{font-family:var(--font);background:var(--bg);color:var(--text)}
 .toast.show{opacity:1;transform:translateY(0)}
 .loading{padding:60px;text-align:center;color:var(--mid);font-size:14px}
 @media print{
-  .topbar,.toast,script,.veredicto-manual{display:none!important}
+  .topbar,.toast,script,.veredicto-manual,.ia-ui{display:none!important}
   .wrap{padding:20px 32px}body{background:#fff}
   .hero,.pill.active-alto,.pill.active-si,.pill.active-medio,.pill.active-revisar,.pill.active-bajo,.pill.active-no,
   .sd-verde.on,.sd-amarillo.on,.sd-rojo.on,.res-verde,.res-amarillo,.res-rojo{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+<style id="mobcss">
+@media (max-width:640px){
+  .topbar{padding:8px 14px;height:auto;flex-wrap:wrap;gap:8px}
+  .tb-left{gap:10px}.tb-sep,.tb-doc{display:none}
+  .topbar-actions{width:100%}
+  .topbar-actions .btn{flex:1;padding:12px 8px}
+  .hero{padding:28px 18px 24px}.hero h1{font-size:28px}.hero-sub{margin-bottom:18px}.hero-meta{gap:16px}
+  .wrap{padding:22px 16px 48px}
+  .grid-2,.grid-4{grid-template-columns:1fr}
+  .field input,.field select,.field textarea{font-size:16px}
+  .field textarea{min-height:140px}
+  .eval-row{flex-direction:column;align-items:stretch;gap:8px}
+  .eval-select{width:100%;padding:12px}
+  .val-row{grid-template-columns:1fr;gap:8px}
+  .pill{padding:10px 16px}
+  .resultado-card{flex-direction:column;padding:20px;gap:16px}
+  .score-aside{border-left:0;border-top:1px solid var(--line);padding:14px 0 0}
+  .vd-opts{flex-wrap:wrap}
+  .criterio-box{gap:10px}
+  .ia-btn{padding:10px 14px;font-size:13px}
+  .toast{left:16px;right:16px;bottom:16px}
 }
 </style>
 </head>
@@ -124,6 +147,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text)}
 <div id="app"><div class="loading">Cargando perfil...</div></div>
 <div class="toast" id="toast"></div>
 
+<?!= HtmlService.createHtmlOutputFromFile('IAForm').getContent() ?>
 <script>
 const PERFIL_ID = '<?= perfil ?>';
 const CAND_INICIAL = '<?= candidato ?>';
@@ -450,7 +474,7 @@ function enviarALaPlanilla() {
   });
 
   clone.querySelectorAll('script').forEach(s => s.remove());
-  clone.querySelectorAll('.topbar,.toast,.veredicto-manual').forEach(el => el.remove());
+  clone.querySelectorAll('.topbar,.toast,.veredicto-manual,.ia-ui').forEach(el => el.remove());
 
   google.script.run
     .withSuccessHandler(() => {

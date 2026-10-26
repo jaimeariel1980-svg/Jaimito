@@ -3163,25 +3163,54 @@ function ponerBotonesInforme() {
 }
 const ANTHROPIC_API_KEY = PropertiesService.getScriptProperties().getProperty('ANTHROPIC_API_KEY');
 
-function procesarConClaude(promptSistema, contenidoUsuario) {
+/* Modelos de Claude por tarea (precio/calidad). Se pueden cambiar sin publicar con las propiedades del script
+   MODELO_ANALISIS / MODELO_INFORME / MODELO_REDACTAR (ej.: claude-opus-5-5). */
+const IA_TAREAS_ = {
+  analisis: { modelo: 'claude-sonnet-5-5', effort: 'medium', maxTokens: 12000 },
+  informe:  { modelo: 'claude-opus-5-5',   effort: 'medium', maxTokens: 12000 },
+  redactar: { modelo: 'claude-sonnet-5-5', effort: 'low',    maxTokens: 4000 }
+};
+
+function procesarConClaude(promptSistema, contenidoUsuario, tarea) {
+  tarea = IA_TAREAS_[tarea] ? tarea : 'informe';
+  const base = IA_TAREAS_[tarea];
+  const prop = PropertiesService.getScriptProperties().getProperty('MODELO_' + tarea.toUpperCase());
+  const cfg = { modelo: prop || base.modelo, effort: base.effort, maxTokens: base.maxTokens };
+  try {
+    return llamarClaude_(promptSistema, contenidoUsuario, cfg);
+  } catch (e) {
+    // Si el modelo más grande tarda demasiado (Apps Script corta las esperas largas), reintenta con uno más rápido.
+    if (/timeout|timed out|deadline/i.test(String(e && e.message)) && cfg.modelo !== 'claude-sonnet-5-5') {
+      Logger.log('Claude tardó demasiado con ' + cfg.modelo + ': reintento con claude-sonnet-5-5');
+      return llamarClaude_(promptSistema, contenidoUsuario, { modelo: 'claude-sonnet-5-5', effort: 'low', maxTokens: cfg.maxTokens });
+    }
+    throw e;
+  }
+}
+
+function llamarClaude_(promptSistema, contenidoUsuario, cfg) {
   const response = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', {
     method: 'post',
-    headers: {
-      'x-api-key': ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01'
-    },
+    headers: { 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
     contentType: 'application/json',
     payload: JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 8000,
+      model: cfg.modelo,
+      max_tokens: cfg.maxTokens,
+      output_config: { effort: cfg.effort },
       system: promptSistema,
       messages: [{ role: 'user', content: contenidoUsuario }]
     }),
     muteHttpExceptions: true
   });
-  const parsed = JSON.parse(response.getContentText());
+  let parsed;
+  try { parsed = JSON.parse(response.getContentText()); }
+  catch (e) { throw new Error('Anthropic respondió algo ilegible (código ' + response.getResponseCode() + ')'); }
   if (parsed.error) throw new Error('Anthropic: ' + parsed.error.message);
-  return parsed.content[0].text;
+  if (parsed.stop_reason === 'refusal') throw new Error('Anthropic rechazó procesar este contenido.');
+  if (parsed.stop_reason === 'max_tokens') throw new Error('La respuesta de la IA se cortó por largo. Probá de nuevo.');
+  const texto = (parsed.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+  if (!texto) throw new Error('Anthropic no devolvió texto.');
+  return texto;
 }
 function extraerFileId(sheet, fila, col) {
   let url = '';
@@ -3226,7 +3255,7 @@ function generarInformeCandidato(perfilId, fila) {
   try { const idS  = extraerFileId(sh, fila, 13); if (idS)  textoScr = textoDeCV(idS); } catch(e){}
   try { const idC  = extraerFileId(sh, fila, 17); if (idC)  textoComp = textoDeCV(idC); } catch(e){}
 
-  const promptSistema = 'Sos consultor senior de Blumia Consulting. Analizá las fuentes del candidato "' + nombre + '" (posición: ' + posicion + ', cliente MACS S.A.) y devolvé SOLO un JSON válido, sin texto adicional ni markdown, con esta estructura exacta:\n' +
+  const promptSistema = 'Sos consultor senior de Blumia Consulting. Analizá las fuentes del candidato "' + nombre + '" (posición: ' + posicion + ', cliente ' + empresaInforme_(cfg) + ') y devolvé SOLO un JSON válido, sin texto adicional ni markdown, con esta estructura exacta:\n' +
 '{\n' +
 '  "edad": "", "localidad": "", "formacion": "", "ultimo_empleo": "",\n' +
 '  "pretension": "", "familia": "", "telefono": "", "email": "",\n' +
@@ -3314,7 +3343,7 @@ function generarInformeCandidato(perfilId, fila) {
 '</style></head><body contenteditable="true">'+
 '<div id="barra-guardar" contenteditable="false"><button onclick="guardarCambios()">💾 Guardar cambios</button></div>'+
 '<div class="page"><div class="body-cell">'+
-'<div class="hero"><img src="'+LOGO_URL+'" alt="Blumia"><div class="tag">Informe de Candidato · MACS S.A.</div>'+
+'<div class="hero"><img src="'+LOGO_URL+'" alt="Blumia"><div class="tag">Informe de Candidato · '+empresaInforme_(cfg)+'</div>'+
 '<div class="herorow"><div><h1>'+nombre+'</h1><div class="sub">'+posicion+'</div></div>'+cvBtn+'</div></div>'+
 '<div class="ficha-data">'+datosHTML+'</div>'+
 '<h3>Trayectoria y perfil</h3><p class="perfil-text">'+(d.perfil||'')+'</p>'+
@@ -3391,7 +3420,7 @@ function generarPDFClientes(perfilId) {
 
   const LOGO_URL = 'https://lh3.googleusercontent.com/d/1WdoIWop2mZ_KnSa9raQM1Xb5TFP2JvGO';
   const portada =
-    '<div class="cuadro-page"><div class="cuadro-hero"><img src="'+LOGO_URL+'"><div class="ctag">Informe de Candidatos · MACS S.A.</div>'+
+    '<div class="cuadro-page"><div class="cuadro-hero"><img src="'+LOGO_URL+'"><div class="ctag">Informe de Candidatos · '+empresaInforme_(cfg)+'</div>'+
     '<div class="ctitle">'+posicion+'</div></div>'+
     '<h3 class="cuadro-h3">Cuadro comparativo</h3>'+
     '<table class="cuadro"><thead><tr><th>Candidato</th><th>Localidad</th><th>Último empleo</th><th>Remuneración</th><th>Valoración</th></tr></thead>'+
@@ -4717,7 +4746,7 @@ function enviarMailDescarte(perfilId, fila) {
   const mail = String(sh.getRange(fila, 22).getValue() || '').trim();
   const estado = String(sh.getRange(fila, 9).getValue() || '').trim();
   const puesto = (typeof cfg.nombre === 'string') ? cfg.nombre : perfilId;
-  const empresa = 'MACS';
+  const empresa = empresaParaCandidatos_(cfg);
 
   if (!mail || mail === 'Sin dato' || mail.indexOf('@') === -1) return { ok:false, error:'Sin mail válido' };
 
@@ -4779,7 +4808,7 @@ function enviarDescartesMasivo(perfilId, textoSin, textoPost) {
   const sh = getSheet(cfg);
   const d = sh.getDataRange().getValues();
   const puesto = (typeof cfg.nombre === 'string') ? cfg.nombre : perfilId;
-  const empresa = 'MACS';
+  const empresa = empresaParaCandidatos_(cfg);
   const asunto = 'Blumia Consulting · Proceso de selección';
   let enviados = 0, sinMail = 0;
 
@@ -4875,7 +4904,7 @@ function previaDescartes(perfilId) {
   }
   return {
     sinScr: sinScr, postScr: postScr, puesto: puesto,
-    textoSin: 'Hola [NOMBRE], ¿cómo estás?\n\nAntes que nada, gracias por postularte a la búsqueda de ' + puesto + ' para MACS.\n\nEn esta oportunidad avanzamos con otros perfiles que se ajustaban más a lo que el cliente estaba buscando, así que no vamos a seguir adelante con tu candidatura en este proceso puntual.\n\nQueremos que sepas que tu CV queda en nuestra base, y que ante futuras búsquedas que encajen con tu perfil, vamos a tenerte en cuenta.\n\nTe deseamos mucho éxito en lo que venga. ¡Gracias por tu interés en trabajar con nosotros!\n\nSaludos,\nEquipo de Blumia Consulting',
+    textoSin: 'Hola [NOMBRE], ¿cómo estás?\n\nAntes que nada, gracias por postularte a la búsqueda de ' + puesto + ' para ' + empresaParaCandidatos_(cfg) + '.\n\nEn esta oportunidad avanzamos con otros perfiles que se ajustaban más a lo que el cliente estaba buscando, así que no vamos a seguir adelante con tu candidatura en este proceso puntual.\n\nQueremos que sepas que tu CV queda en nuestra base, y que ante futuras búsquedas que encajen con tu perfil, vamos a tenerte en cuenta.\n\nTe deseamos mucho éxito en lo que venga. ¡Gracias por tu interés en trabajar con nosotros!\n\nSaludos,\nEquipo de Blumia Consulting',
     textoPost: 'Hola [NOMBRE], ¿cómo estás?\n\nAnte todo, gracias por el tiempo que compartimos durante la entrevista y por tu buena predisposición a lo largo del proceso.\n\nDespués de evaluar a todos los candidatos, en esta ocasión decidimos avanzar con otros perfiles que se ajustaban más a los requerimientos específicos de la búsqueda de ' + puesto + '. Así que no vamos a continuar con tu candidatura en este proceso.\n\nFue un gusto conocerte. Tu perfil queda en nuestra base y te vamos a tener presente para futuras búsquedas que puedan encajar mejor con tu experiencia.\n\nTe deseamos mucho éxito en tus próximos pasos profesionales.\n\nSaludos,\nEquipo de Blumia Consulting'
   };
 }
@@ -5067,7 +5096,7 @@ function armarComunicacion(perfilId, fila, tipo){
   const tel = String(sh.getRange(fila, 3).getValue() || '').replace(/\D/g,'');
   const entrevistador = String(sh.getRange(fila, 14).getValue() || 'Ariel');
   const puesto = (typeof cfg.nombre_perfil === 'string') ? cfg.nombre_perfil : perfilId;
-  const empresa = (typeof cfg.empresa === 'string') ? cfg.empresa : 'MACS';
+  const empresa = empresaParaCandidatos_(cfg);
 
   const linkPorTipo = {
     'contacto-screening': cfg.link_screening,
@@ -5086,6 +5115,7 @@ function armarComunicacion(perfilId, fila, tipo){
 
   texto = texto.replace(/\[NOMBRE\]/g, nombre)
                .replace(/\[PUESTO\]/g, puesto)
+               .replace(/la empresa \[EMPRESA\]/g, empresa === 'MACS' ? 'la empresa MACS' : empresa)
                .replace(/\[EMPRESA\]/g, empresa)
                .replace(/\[ENTREVISTADOR\]/g, entrevistador)
                .replace(/\[LINK\]/g, link);

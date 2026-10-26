@@ -85,7 +85,7 @@ function analizarEntrevista(pin, perfilId, cand, compsJson, heroJson, texto) {
   const cache = CacheService.getScriptCache(), kA = iaCacheKey_('an_', perfilId, cand);
   try { cache.put(kA, JSON.stringify({ texto: texto.slice(0, 40000), resultado: null }), 21600); } catch (e) { }
 
-  const r = extraerJSON_(procesarConClaude(promptAnalisisEntrevista_(hero, cand, comps), texto.slice(0, 60000)));
+  const r = extraerJSON_(procesarConClaude(promptAnalisisEntrevista_(hero, cand, comps), texto.slice(0, 60000), 'analisis'));
   const out = { comps: [], fortalezas: cortar(r.fortalezas, 2000), areas: cortar(r.areas, 2000), recomendacion: cortar(r.recomendacion, 2000), meta: {} };
   (r.comps || []).forEach(c => {
     if (comps.some(x => x.id === String(c.id))) out.comps.push({ id: String(c.id), nivel: Math.max(0, Math.min(4, Math.round(Number(c.nivel) || 0))), evidencia: cortar(c.evidencia, 1800) });
@@ -100,14 +100,7 @@ function redactarIA(pin, texto, indic) {
   pinValido_(pin);
   texto = String(texto || '').trim();
   if (texto.length < 8) throw new Error('Escribí o dictá algo primero');
-  const resp = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'post', contentType: 'application/json', muteHttpExceptions: true,
-    headers: { Authorization: 'Bearer ' + OPENAI_API_KEY },
-    payload: JSON.stringify({ model: 'gpt-4o-mini', temperature: 0.3, max_tokens: 1500, messages: [
-      { role: 'system', content: 'Te paso las notas sueltas de quien entrevista en un proceso de selección de personal. Redactalas como un texto bien escrito, completo y fluido, en oraciones y párrafos (no en viñetas ni frases sueltas), en español rioplatense profesional; corregí ortografía y puntuación. NO resumas ni acortes: conservá todos los datos, ejemplos, nombres, cifras y matices y conectalos para que se lea como una descripción de lo que contó la persona. Atribuí lo que contó a su relato («contó que», «mencionó que»). No inventes nada ni agregues adjetivos elogiosos. Devolvé solo el texto, sin comillas ni explicaciones.' },
-      { role: 'user', content: texto.slice(0, 4000) + (String(indic || '').trim() ? '\n\nINDICACIONES (aplicalas sin inventar datos): ' + String(indic).trim().slice(0, 300) : '') }] })
-  });
-  const parsed = JSON.parse(resp.getContentText());
-  if (parsed.error) throw new Error('No pude redactar: ' + parsed.error.message);
-  return String(parsed.choices[0].message.content || '').trim();
+  const sistema = 'Te paso las notas sueltas de quien entrevista en un proceso de selección de personal. Redactalas como un texto bien escrito, completo y fluido, en oraciones y párrafos (no en viñetas ni frases sueltas), en español rioplatense profesional; corregí ortografía y puntuación. NO resumas ni acortes: conservá todos los datos, ejemplos, nombres, cifras y matices y conectalos para que se lea como una descripción de lo que contó la persona. Atribuí lo que contó a su relato («contó que», «mencionó que»). No inventes nada ni agregues adjetivos elogiosos. Devolvé solo el texto, sin comillas ni explicaciones.';
+  const usuario = texto.slice(0, 4000) + (String(indic || '').trim() ? '\n\nINDICACIONES (aplicalas sin inventar datos): ' + String(indic).trim().slice(0, 300) : '');
+  return procesarConClaude(sistema, usuario, 'redactar').trim();
 }
