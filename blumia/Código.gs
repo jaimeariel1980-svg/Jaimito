@@ -105,6 +105,8 @@ function doGet(e) {
       '<p style="color:#888;margin-top:20px">También quedó el link "Ver informe" en la planilla.</p>' +
       '</body></html>'
     ).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  } else if (tipo === 'perfilpuesto') {
+    return perfilPuestoHTML(perfil, e.parameter.t);
   } else if (tipo === 'kanban') {
     return kanbanHTML(perfil);
   } else if (tipo === 'banco') {

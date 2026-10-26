@@ -13,6 +13,22 @@ function linkPerfilConPin(perfilId, pin) {
   }
   cache.remove('pin_fallos');
   const cfg = getConfig(perfilId);
+  if (cfg.perfil_html) {
+    const t = Utilities.getUuid();
+    cache.put('pp_' + t, String(perfilId), 21600);
+    return URL_DEPLOY + '?tipo=perfilpuesto&perfil=' + encodeURIComponent(perfilId) + '&t=' + t;
+  }
   if (!cfg.link_perfil) throw new Error('Este perfil todavía no tiene el documento vinculado.');
   return String(cfg.link_perfil);
+}
+
+/* Sirve el HTML editable del perfil del puesto (Config.perfil_html) solo con el acceso temporal que da linkPerfilConPin. */
+function perfilPuestoHTML(perfilId, t) {
+  const msg = txt => HtmlService.createHtmlOutput('<p style="font-family:sans-serif;padding:40px;text-align:center">' + txt + '</p>');
+  if (!t || CacheService.getScriptCache().get('pp_' + t) !== String(perfilId)) return msg('Acceso vencido. Abrí el botón «Perfil del puesto» desde el kanban e ingresá el PIN.');
+  const cfg = getConfig(perfilId);
+  if (!cfg.perfil_html) return msg('Este perfil no tiene documento vinculado.');
+  return HtmlService.createHtmlOutputFromFile(String(cfg.perfil_html))
+    .setTitle('Perfil del puesto | Blumia Consulting')
+    .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
