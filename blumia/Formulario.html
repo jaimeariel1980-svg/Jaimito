@@ -168,7 +168,8 @@ const VEREDICTOS = {
   C: { titulo: 'C · No avanza', desc: 'No cumple lo crítico o presenta red flags importantes.', cls: 'res-rojo', color: 'rojo' }
 };
 
-google.script.run.withSuccessHandler(d => { DATOS = d; render(); }).withFailureHandler(e => {
+setTimeout(() => { if (!DATOS) document.getElementById('app').innerHTML = '<div class="loading" style="color:red;font-weight:bold;">No se pudo cargar el perfil «' + PERFIL_ID + '». Recargá la página; si sigue igual, avisá.</div>'; }, 20000);
+google.script.run.withSuccessHandler(d => { if (!d) { document.getElementById('app').innerHTML = '<div class="loading" style="color:red;font-weight:bold;">El servidor devolvió el perfil vacío (' + PERFIL_ID + '). Avisá a Claude.</div>'; return; } DATOS = d; render(); }).withFailureHandler(e => {
   document.getElementById('app').innerHTML = '<div class="loading" style="color:red;font-weight:bold;">Error: ' + e.message + '</div>';
 }).getDatosPerfil(PERFIL_ID);
 

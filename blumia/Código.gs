@@ -36,7 +36,13 @@ function getDatosPerfil(perfilId) {
     const headers = rows[0];
     return rows.slice(1).filter(r => r[0] === perfilId).map(r => {
       const o = {};
-      headers.forEach((h, i) => o[h] = r[i]);
+      // google.script.run no devuelve fechas: si Sheets tomó "8.5" como 8 de mayo, se recupera el número
+      headers.forEach((h, i) => {
+        const v = r[i];
+        o[h] = v instanceof Date
+          ? (/^criterio_/.test(h) ? parseFloat(v.getDate() + '.' + (v.getMonth() + 1)) : Utilities.formatDate(v, 'GMT-3', 'dd/MM/yyyy'))
+          : v;
+      });
       return o;
     });
   };
