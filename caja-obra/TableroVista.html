@@ -287,6 +287,7 @@ function rpc(fn,args,ok,fail){
 function msgErr(m){
   if(m.indexOf('CLAVE')>=0&&m.indexOf('SIN_CLAVE')<0)return'Clave incorrecta.';
   if(m.indexOf('BLOQUEADO')>=0)return'Demasiados intentos. Esperá 10 minutos.';
+  if(m.indexOf('CERT')>=0&&m.indexOf('SIN_')<0)return'Ese ingreso lo generó un certificado. Se cambia o se borra desde Certificados.';
   if(m.indexOf('CAMBIO')>=0)return'Ese movimiento cambió en la planilla. Recargá y probá de nuevo.';
   return m.replace(/^Error:\s*/,'');
 }
@@ -328,6 +329,12 @@ function sg(n,v){
 function frmMov(row){
   const m=row?D.movs.find(x=>x.row===row):null;
   if(row&&!m)return;
+  if(m&&m.o==='Certificado'){
+    const oi=D.obras.findIndex(x=>x.obra===m.obra);
+    return abrir(`<h2>Ingreso de un certificado</h2><div class="sub" style="margin-top:6px">${esc(m.det)} · ${money(m.monto)}</div>
+    <div class="nx" style="margin-top:12px">Este ingreso lo generó un certificado, así que se maneja desde ahí: para corregirlo o borrarlo, entrá a <b>Certificados</b>, tocá el certificado y usá <b>Corregir IPC</b> o <b>Borrar</b>. Así el certificado y el ingreso quedan siempre iguales.</div>
+    <div class="acts"><button class="sec" onclick="cerrar()">Cerrar</button><button class="pri" onclick="cerrar();go('certs')">📄 Ir a Certificados</button></div>`);
+  }
   const ob=m?m.obra:(SEL>=0&&T==='obras'?D.obras[SEL].obra:(D.obras[0]||{}).obra);
   F={tipo:m?m.tipo:'Compra',fac:m?(m.fac==='Sí'?'Sí':'No'):'No',row:row||0,fp:m?m.fp:'',link:m?m.link:''};
   abrir(`<h2>${m?'Editar movimiento':'Nuevo movimiento'}</h2>
@@ -446,7 +453,7 @@ function frmCertAcc(i,n){
   <div class="wf" style="margin-top:10px"><div class="r"><span>IPC del mes</span><b>${pct4(c.pct)}</b></div><div class="r"><span>Acumulada</span><b>${pct4(c.acum)}</b></div><div class="r"><span>Reajuste</span><b>${money(c.reaj)}</b></div><div class="r t"><span>Total</span><b>${money(c.total)}</b></div></div>
   <div id="pdfbox"></div><div class="err" id="ferr"></div>
   <div class="acts"><button class="sec" onclick="frmCorr()">✏️ Corregir IPC</button><button class="pri" id="fsave" onclick="verPdf()">📲 Enviar PDF</button></div>
-  ${n===Math.max(...o.certs.map(x=>x.n))?'<div class="acts" style="margin-top:10px"><button class="dan" id="fdel" onclick="borrarCert()">🗑 Borrar este certificado</button></div><div class="sub" style="margin-top:6px">Borra el certificado y el ingreso que generó. Queda copia en la Papelera.</div>':''}`);
+  ${n===Math.max(...o.certs.map(x=>x.n))?'<div class="acts" style="margin-top:10px"><button class="dan" id="fdel" onclick="borrarCert()">🗑 Borrar este certificado</button></div><div class="sub" style="margin-top:6px">Borra el certificado y el ingreso que generó. Queda copia en la Papelera.</div>':`<div class="nx" style="margin-top:12px">Para borrar este certificado, primero borrá el <b>N° ${Math.max(...o.certs.map(x=>x.n))}</b>. Se borran de a uno, empezando por el último, para no desarmar el cálculo del IPC.</div>`}`);
 }
 function verPdf(){
   const o=D.obras[F.i],b=$('fsave');b.disabled=true;b.textContent='Generando…';

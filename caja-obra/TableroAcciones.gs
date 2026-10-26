@@ -24,6 +24,16 @@ function tbFecha_(s){
   return new Date();
 }
 
+function tbPapelera_(){
+  var s=ss(), pp=s.getSheetByName('Papelera');
+  if(!pp){
+    pp=s.insertSheet('Papelera');
+    pp.getRange(1,1,1,15).setValues([['Borrado','Por','Fecha','Tipo','Rubro','Detalle','Proveedor','Monto','Factura','Comprobante','Origen','Estado','Obra','Bonus %','Ganancia bonus']]).setFontWeight('bold');
+    pp.setFrozenRows(1);
+  }
+  return pp;
+}
+
 function tbDatos(clave){ tbAuth_(clave); return tableroDatos_(); }
 
 function tbGuardarMov(clave,m){
@@ -44,6 +54,7 @@ function tbGuardarMov(clave,m){
       if(!(row>=2&&row<=mv.getLastRow())) throw new Error('CAMBIO');
       var r=mv.getRange(row,1,1,13).getValues()[0];
       if(tbFp_(r)!==m.fp) throw new Error('CAMBIO');
+      if(r[8]==='Certificado') throw new Error('CERT');
       var fecha=(r[0] instanceof Date&&Utilities.formatDate(r[0],'GMT-3','yyyy-MM-dd')===m.fecha)?r[0]:tbFecha_(m.fecha);
       mv.getRange(row,1,1,7).setValues([[fecha,tipo,rubro,det,prov,monto,fac]]);
       mv.getRange(row,11,1,3).setValues([[obra,bonus>0?bonus:'',bonus>0?gb:'']]);
@@ -63,13 +74,8 @@ function tbBorrarMov(clave,row,fp){
     if(!(row>=2&&row<=mv.getLastRow())) throw new Error('CAMBIO');
     var r=mv.getRange(row,1,1,13).getValues()[0];
     if(tbFp_(r)!==fp) throw new Error('CAMBIO');
-    var pp=s.getSheetByName('Papelera');
-    if(!pp){
-      pp=s.insertSheet('Papelera');
-      pp.getRange(1,1,1,15).setValues([['Borrado','Por','Fecha','Tipo','Rubro','Detalle','Proveedor','Monto','Factura','Comprobante','Origen','Estado','Obra','Bonus %','Ganancia bonus']]).setFontWeight('bold');
-      pp.setFrozenRows(1);
-    }
-    pp.appendRow([new Date(),'Tablero'].concat(r));
+    if(r[8]==='Certificado') throw new Error('CERT');
+    tbPapelera_().appendRow([new Date(),'Tablero'].concat(r));
     mv.deleteRow(row);
     SpreadsheetApp.flush();
     return {datos:tableroDatos_(),borrado:{obra:r[10],tipo:r[1],rubro:r[2],concepto:r[3],proveedor:r[4],monto:Number(r[5])||0,factura:r[6],link:r[7],bonus:Number(r[11])||0,fecha:(r[0] instanceof Date)?Utilities.formatDate(r[0],'GMT-3','yyyy-MM-dd'):''}};

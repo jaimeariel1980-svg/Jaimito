@@ -206,6 +206,8 @@ function manejarTexto(chatId,texto){
   var cache=CacheService.getScriptCache();
   var MENU={keyboard:[[{text:'☰ Menú'}]],resize_keyboard:true,is_persistent:true};
   if(/☰|^\s*(hola|menu|menú|ayuda|opciones|inicio|start|\/start)\b/i.test(texto)){ menuPrincipal(chatId); return; }
+  if(/🗑\s*Borrar el último certificado/i.test(texto)){ pedirBorrarCert(chatId); return; }
+  if(/^✅\s*Sí, borrar certificado/i.test(texto)){ confirmarBorrarCert(chatId); return; }
   if(/corregir.*certificad|✏️\s*corregir/i.test(texto)){ menuCorregir(chatId); return; }
   var mCC=texto.match(/^✏️\s*(.+)/);
   if(mCC){ cache.put('cc_'+chatId, JSON.stringify({obra:obraActiva(chatId),mes:mCC[1].trim()}),600); tgApi('sendMessage',{chat_id:chatId,text:'¿Cuál es el IPC correcto de '+mCC[1].trim()+'? Escribí el % (ej: 2,3).',reply_markup:MENU}); return; }
@@ -1002,11 +1004,63 @@ function certCorregir_(obra,mesTxt,nuevoPct){
   });
   return {mes:filas[idx].mes,cant:filas.length};
 }
+function certUltimo_(obra){
+  var c=ss().getSheetByName('Certificados'), last=c.getLastRow(), best=null;
+  for(var r=18;r<=last;r++){
+    if(c.getRange(r,1).getValue()===obra){
+      var n=Number(c.getRange(r,2).getValue())||0;
+      if(!best||n>best.n) best={n:n,fila:r,mes:mesLindo(c.getRange(r,3).getValue()),total:Number(c.getRange(r,7).getValue())||0};
+    }
+  }
+  return best;
+}
+function certBorrar_(obra,n){
+  var s=ss(), u=certUltimo_(obra);
+  if(!u||u.n!==n){
+    if(!u||!Number(n)) throw new Error('No encontré ese certificado.');
+    var c0=s.getSheetByName('Certificados'), last0=c0.getLastRow(), existe=false;
+    for(var r0=18;r0<=last0;r0++){ if(c0.getRange(r0,1).getValue()===obra&&(Number(c0.getRange(r0,2).getValue())||0)===n) existe=true; }
+    if(!existe) throw new Error('No encontré ese certificado.');
+    throw new Error('Solo se puede borrar el último certificado de la obra.');
+  }
+  var c=s.getSheetByName('Certificados'), v=c.getRange(u.fila,1,1,8).getValues()[0];
+  var pp=s.getSheetByName('Papelera certificados');
+  if(!pp){
+    pp=s.insertSheet('Papelera certificados');
+    pp.getRange(1,1,1,10).setValues([['Borrado','Por','Obra','N°','Mes','% IPC','Inflación acumulada','Reajuste','Honorarios del mes','Fecha']]).setFontWeight('bold');
+    pp.setFrozenRows(1);
+  }
+  pp.appendRow([new Date(),'Tablero'].concat(v));
+  c.deleteRow(u.fila);
+  var mv=s.getSheetByName('Movimientos'), vv=mv.getDataRange().getValues(), etiqueta=String(u.mes).toLowerCase();
+  for(var j=vv.length-1;j>=1;j--){
+    if(vv[j][1]==='Ingreso'&&vv[j][2]==='Honorarios'&&vv[j][10]===obra&&String(vv[j][3]).toLowerCase().indexOf(etiqueta)>=0&&Math.round(Number(vv[j][5])||0)===Math.round(Number(v[6])||0)){
+      tbPapelera_().appendRow([new Date(),'Tablero'].concat(vv[j].slice(0,13)));
+      mv.deleteRow(j+1); break;
+    }
+  }
+  return u;
+}
+function pedirBorrarCert(chatId){
+  var obra=obraActiva(chatId), u=certUltimo_(obra);
+  if(!u){ responder(chatId,'No hay certificados en '+obra+' para borrar.'); return; }
+  CacheService.getScriptCache().put('bc_'+chatId,JSON.stringify({obra:obra,n:u.n}),300);
+  tgApi('sendMessage',{chat_id:chatId,text:'¿Borro el certificado N° '+u.n+' ('+u.mes+') de '+obra+' por '+money(u.total)+'?\nSe borra también el ingreso que generó. Queda copia en la planilla (hojas Papelera).',reply_markup:{keyboard:[[{text:'✅ Sí, borrar certificado'}],[{text:'⬅️ Volver'},{text:'☰ Menú'}]],resize_keyboard:true,is_persistent:true}});
+}
+function confirmarBorrarCert(chatId){
+  var cache=CacheService.getScriptCache(), v=cache.get('bc_'+chatId);
+  if(!v){ responder(chatId,'Pasó mucho tiempo. Volvé a elegir ✏️ Corregir certificado → 🗑 Borrar el último.'); return; }
+  cache.remove('bc_'+chatId);
+  var d=JSON.parse(v), u;
+  try{ u=certBorrar_(d.obra,d.n); }catch(e){ responder(chatId,e.message); return; }
+  responder(chatId,'🗑 Borré el certificado N° '+u.n+' ('+u.mes+') de '+d.obra+' y el ingreso que generó. Ahora podés emitir de nuevo con "IPC 2,5%".');
+}
 function menuCorregir(chatId){
   var obra=obraActiva(chatId);
   var c=ss().getSheetByName('Certificados'), last=c.getLastRow(), kb=[];
   for(var r=18;r<=last;r++){ if(c.getRange(r,1).getValue()===obra){ kb.push([{text:'✏️ '+mesLindo(c.getRange(r,3).getValue())}]); } }
   if(!kb.length){ tgApi('sendMessage',{chat_id:chatId,text:'No hay certificados en '+obra+' para corregir. Si querés otra obra, tocá 🏗 y elegila.',reply_markup:{keyboard:[[{text:'☰ Menú'}]],resize_keyboard:true,is_persistent:true}}); return; }
+  kb.push([{text:'🗑 Borrar el último certificado'}]);
   kb.push([{text:'⬅️ Volver'},{text:'☰ Menú'}]);
   tgApi('sendMessage',{chat_id:chatId,text:'Corrigiendo certificados de '+obra+'. ¿Qué mes querés corregir?',reply_markup:{keyboard:kb,resize_keyboard:true,is_persistent:true}});
 }
