@@ -241,6 +241,7 @@ function insertarFilaLibre(sheet, datos, url, fecha, fuente) {
   if (datos.justificacion) sheet.getRange(fila, 5).setNote(datos.justificacion); // comentario nota
   sheet.getRange(fila, 22).setValue(datos.email || 'Sin dato');       // Correo
   ponerFormulaWhatsApp(sheet, fila);                                  // Contactar (21)
+  registrarHistorial_(sheet.getName(), datos.nombre, 'Ingreso', 'Llegó por ' + (fuente || 'CV directo'), 'sistema');
   sheet.getRange(fila, 23).setValue(datos.formacion || 'Sin dato');   // Formación
   sheet.getRange(fila, 24).setValue(datos.zona || 'Sin dato');        // Zona
   sheet.getRange(fila, 27).setValue('Sin dato');                      // Posgrado
@@ -327,6 +328,7 @@ REGLAS:
 }
 
 function procesarScreening(data) {
+  QUIEN_ = String(data.entrevistador || '');
   const cfg = getConfig(data.perfil || 'operaciones');
   const sheet = getSheet(cfg);
   const rows = sheet.getDataRange().getValues();
@@ -351,6 +353,7 @@ function procesarScreening(data) {
 
   if (data.entrevistador) sheet.getRange(fila, 14).setValue(data.entrevistador);
   sheet.getRange(fila, 26).setValue('DEBUG resultado=' + data.resultado);
+  registrarHistorial_(sheet.getName(), sheet.getRange(fila, 2).getValue(), 'Screening', 'Formulario guardado · resultado ' + data.resultado + (data.entrevistador ? ' · entrevistó ' + data.entrevistador : ''));
   aplicarEstadoNota(sheet, fila, 'screening', data.resultado);
   try {
     const folder = DriveApp.getFolderById(cfg.folder_pdf_screening);
@@ -377,7 +380,8 @@ function llenarColumnaO(perfilId) {
   }
 }
 
-function guardarEnPlanilla(nombreCandidato, htmlContent, ajustePonderacion, perfilId) {
+function guardarEnPlanilla(nombreCandidato, htmlContent, ajustePonderacion, perfilId, quien) {
+  QUIEN_ = quien || '';
   try {
     console.log("Perfil recibido: " + perfilId);
     const cfg = getConfig(perfilId || 'operaciones');
@@ -417,6 +421,7 @@ function guardarEnPlanilla(nombreCandidato, htmlContent, ajustePonderacion, perf
     const pdf = folder.createFile(blob.getAs(MimeType.PDF).setName('Competencias_' + nombreCandidato + '.pdf'));
     
     if (ajustePonderacion) sheet.getRange(fila, 16).setValue(ajustePonderacion);
+    registrarHistorial_(sheet.getName(), sheet.getRange(fila, 2).getValue(), 'Competencias', 'Formulario guardado' + (ajustePonderacion ? ' · resultado ' + ajustePonderacion : ''));
     if (ajustePonderacion) aplicarEstadoNota(sheet, fila, 'competencias', ajustePonderacion);
     sheet.getRange(fila, 17).setFormula('=HYPERLINK("' + pdf.getUrl() + '"; "Ver PDF")');
     
@@ -447,6 +452,7 @@ function onEditDescartado(e) {
   // Si se edita el ESTADO (col 9) a mano y se pone "Avanza a empresa", poner botón informe
   if (col === 9) {
     const estado = String(e.range.getValue() || '').trim();
+    try { if (String(e.oldValue || '') !== estado) registrarHistorial_(sh.getName(), sh.getRange(row, 2).getValue(), 'Estado', (e.oldValue || '—') + ' → ' + estado + ' (editado en la planilla)', (e.user && e.user.getEmail && e.user.getEmail()) || ''); } catch (err) { }
     if (estado === 'Avanza a empresa') {
       try {
         const yaTiene = sh.getRange(row, 32).getRichTextValue();
@@ -492,7 +498,9 @@ function aplicarEstadoNota(sheet, fila, etapa, nota) {
 
   const celda = sheet.getRange(fila, 9);
   const regla = celda.getDataValidation();
+  const estadoAntes = String(celda.getValue() || '').trim();
   celda.setDataValidation(null).setValue(estado);
+  registrarHistorial_(sheet.getName(), sheet.getRange(fila, 2).getValue(), 'Nota ' + etapa, v + ' · ' + (estadoAntes || '—') + ' → ' + estado);
   if (regla) celda.setDataValidation(regla);
   celda.setBackground(bg).setFontColor(fc).setFontWeight('bold').setHorizontalAlignment('center');
 
@@ -1169,6 +1177,7 @@ function recibirPostulacion(payload) {
       posgrado, d.excel || '', d.powerbi || '', ia
     ]]);
     ponerFormulaWhatsApp(sheet, fila);
+    registrarHistorial_(sheet.getName(), d.nombre || '', 'Ingreso', 'Llegó por Postulación (formulario)', 'sistema');
 
     return 'OK';
 
@@ -4121,13 +4130,16 @@ const link = (r, col) => {
   return JSON.stringify(out);
 }
 
-function moverEstado(perfilId, fila, estado) {
+function moverEstado(perfilId, fila, estado, quien) {
+  QUIEN_ = quien || '';
   const sh = getSheet(getConfig(perfilId));
   const c = sh.getRange(fila, 9);
+  const antes = String(c.getValue() || '').trim();
   const r = c.getDataValidation();
   c.setDataValidation(null).setValue(estado);
   if (r) c.setDataValidation(r);
   limpiarMotivoSiNoDescartado_(sh, fila, estado);
+  if (antes !== estado) registrarHistorial_(sh.getName(), sh.getRange(fila, 2).getValue(), 'Estado', (antes || '—') + ' → ' + estado + ' (arrastre en el tablero)');
   return true;
 }
 
@@ -4243,7 +4255,7 @@ navHTML+='<button onclick="window.top.location.href=\\'${URL_WEBAPP}?tipo=kanban
 navHTML+='<button id="quienBtn" onclick="quienSoy(true)">👤 ¿Quién sos?</button>';
 navHTML+='<div class="dd"><button onclick="ddToggle(this)">📄 Informes ▾</button><div class="ddm"><a onclick="window.open(\\'${URL_WEBAPP}?tipo=procesohtml&perfil=${perfilId}\\',\\'_blank\\')">Informe de proceso (para la empresa)</a><a onclick="if(confirm(\\'¿Generar PDF cliente de esta búsqueda?\\'))window.open(\\'${URL_WEBAPP}?tipo=pdfcliente&perfil=${perfilId}\\',\\'_blank\\')">PDF para el cliente</a></div></div>';
 navHTML+='<div class="dd"><button onclick="ddToggle(this)">📚 Búsqueda ▾</button><div class="ddm">'+(${perfilProt?'true':'false'}?'<a onclick="pedirPerfilPin()">🔒 Perfil del puesto</a>':'<a onclick="window.open(\\'${perfilUrl}\\',\\'_blank\\')">📋 Perfil del puesto</a>')+'<a onclick="window.open(\\'${flyerUrl}\\',\\'_blank\\')">📢 Flyer</a><a onclick="prompt(\\'Link del formulario de postulación (copialo):\\',\\'${URL_WEBAPP}?tipo=postulacion&perfil=${perfilId}\\')">🔗 Link de postulación</a></div></div>';
-navHTML+='<div class="dd"><button onclick="ddToggle(this)">🧰 Candidatos ▾</button><div class="ddm"><a onclick="descartesMasivo()">✉ Mails de descarte</a><a title="Baja un archivo para importar a los contactos de Google" onclick="bajarContactos(this)">📇 Contactos al celular</a><a onclick="window.top.location.href=\\'${URL_WEBAPP}?tipo=banco&desde=${perfilId}\\'">★ Banco de talento</a><a onclick="abrirPapelera()">🗑 Papelera ('+ELIM.length+')</a></div></div>';
+navHTML+='<div class="dd"><button onclick="ddToggle(this)">🧰 Candidatos ▾</button><div class="ddm"><a onclick="descartesMasivo()">✉ Mails de descarte</a><a title="Baja un archivo para importar a los contactos de Google" onclick="bajarContactos(this)">📇 Contactos al celular</a><a onclick="window.top.location.href=\\'${URL_WEBAPP}?tipo=banco&desde=${perfilId}\\'">★ Banco de talento</a><a onclick="verHistorial()">📜 Historial de la búsqueda</a><a onclick="abrirPapelera()">🗑 Papelera ('+ELIM.length+')</a></div></div>';
 document.addEventListener('click',function(e){if(!e.target.closest('.dd'))document.querySelectorAll('.ddm.show').forEach(function(m){m.classList.remove('show');});});
 function ddToggle(b){var m=b.nextElementSibling,ab=m.classList.contains('show');document.querySelectorAll('.ddm.show').forEach(function(x){x.classList.remove('show');});if(!ab)m.classList.add('show');}
 document.getElementById('nav').innerHTML=navHTML;
@@ -4277,7 +4289,7 @@ COLS.forEach(function(x){
 });
 board.innerHTML+=acordeon('Reservas','res',RES_TIPOS,function(e){return /reserva/i.test(e);},'');
 function toast(){var s=document.getElementById('saved');s.classList.add('show');setTimeout(function(){s.classList.remove('show');},1500);}
-document.querySelectorAll('.col-body,.dbody').forEach(function(col){new Sortable(col,{group:'kb',animation:150,forceFallback:true,fallbackOnBody:true,scroll:true,bubbleScroll:true,scrollSensitivity:80,scrollSpeed:15,onEnd:function(evt){var fila=+evt.item.dataset.fila;var estado=evt.to.dataset.estado;var cc=DATA_ALL.find(function(x){return x.fila===fila;});if(cc&&estado)cc.estado=estado;if(estado&&evt.from!==evt.to){google.script.run.withSuccessHandler(function(){toast();if(/^Descartad/i.test(estado))pedirMotivo(fila,true);}).withFailureHandler(function(e){alert('Error: '+e.message);window.top.location.reload();}).moverEstado(PERFIL,fila,estado);}}});});
+document.querySelectorAll('.col-body,.dbody').forEach(function(col){new Sortable(col,{group:'kb',animation:150,forceFallback:true,fallbackOnBody:true,scroll:true,bubbleScroll:true,scrollSensitivity:80,scrollSpeed:15,onEnd:function(evt){var fila=+evt.item.dataset.fila;var estado=evt.to.dataset.estado;var cc=DATA_ALL.find(function(x){return x.fila===fila;});if(cc&&estado)cc.estado=estado;if(estado&&evt.from!==evt.to){google.script.run.withSuccessHandler(function(){toast();if(/^Descartad/i.test(estado))pedirMotivo(fila,true);}).withFailureHandler(function(e){alert('Error: '+e.message);window.top.location.reload();}).moverEstado(PERFIL,fila,estado,quienSoy());}}});});
 function nrm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'');}
 function raiz(p){p=nrm(p);if(p.length>5)return p.slice(0,-2);if(p.length>3)return p.slice(0,-1);return p;}
 function coincide(texto,consulta){if(!consulta.trim())return true;var t=nrm(texto);var ps=consulta.trim().split(/\\s+/);for(var i=0;i<ps.length;i++){if(t.indexOf(raiz(ps[i]))===-1)return false;}return true;}
@@ -4333,9 +4345,12 @@ function pedirMotivo(f,recargar){
 function guardarMotivo(f,rec,btn){
   var sel=[].slice.call(document.querySelectorAll('.mot:checked')).map(function(x){return x.value;});var o=document.getElementById('motOtro').value;
   btn.disabled=true;btn.textContent='Guardando...';
-  google.script.run.withSuccessHandler(function(){toast();cerrar();window.top.location.reload();}).withFailureHandler(function(e){btn.disabled=false;btn.textContent='Guardar motivo';alert(e.message);}).guardarMotivoDescarte(PERFIL,f,sel,o);
+  google.script.run.withSuccessHandler(function(){toast();cerrar();window.top.location.reload();}).withFailureHandler(function(e){btn.disabled=false;btn.textContent='Guardar motivo';alert(e.message);}).guardarMotivoDescarte(PERFIL,f,sel,o,quienSoy());
 }
-function ficha(f){var c=DATA.find(function(x){return x.fila===f;});var row=function(l,v){return v?'<div class="frow"><span class="fl">'+l+'</span><span class="fv">'+v+'</span></div>':'';};var btn=function(u,t){return u?'<a href="'+u+'" target="_blank" class="mbtn">'+t+'</a>':'';};var waBtn='<button class="mbtn wa" onclick="menuWA('+c.fila+')">💬 WhatsApp ▾</button>';var mailBtn=(c.mail&&c.mail!=='Sin dato'&&c.mail.indexOf('@')>-1)?'<a href="https://mail.google.com/mail/?view=cm&to='+c.mail+'" target="_blank" class="mbtn" style="background:#EA4335;color:#fff">✉ Mail</a>':'';var cvBtn=c.cv?'<a href="https://drive.google.com/file/d/'+c.cv+'/view" target="_blank" class="mbtn alt">Ver CV</a>':'';var genBtn=c.informe?'':'<button class="mbtn gen" onclick="if(confirm(\\'Generar informe con IA. Puede tener costo. ¿Continuar?\\'))generar('+c.fila+',this)">Generar informe</button>';var delBtn='<button class="mbtn" style="background:#B91C1C;color:#fff" onclick="eliminar('+c.fila+')">🗑 Eliminar</button>';var bancoBtn='<button class="mbtn" style="background:#7C3AED" onclick="menuBanco('+c.fila+')">★ Banco de talento</button>';var notasEmp=/screening empresa|presencial empresa|avanza a empresa|entrevista empresa|reserva screening empresa|reserva presencial empresa/i.test(c.estado)?['screening-empresa','presencial-empresa'].map(function(ep){return '<div class="notarow"><span>'+(ep==='screening-empresa'?'Emp. screening':'Emp. presencial')+'</span>'+['A','B','C'].map(function(n){return '<button class="nb" onclick="setNotaEmp('+c.fila+',\\''+ep+'\\',\\''+n+'\\',this)">'+n+'</button>';}).join('')+'</div>';}).join(''):'';document.getElementById('mbody').innerHTML=row('Recibido',c.recibido)+row('Estado',c.estado)+(/^Descartad/i.test(c.estado)?'<div class="frow"><span class="fl">Motivo de descarte</span><span class="fv">'+(c.motivo?String(c.motivo).replace(/;\\s*/g,' · '):'sin cargar')+' <a href="#" onclick="pedirMotivo('+c.fila+');return false" style="font-size:12px">'+(c.motivo?'editar':'cargar')+'</a></span></div>':'')+row('Cita agendada',c.cita)+(c.historial?'<div class="frow"><span class="fl">Historial entrevistas</span><span class="fv" style="white-space:pre-line">'+c.historial+'</span></div>':'')+(c.contactado?'<div class="frow"><span class="fl">Último contacto</span><span class="fv">'+c.contactado+' <a href="#" onclick="borrarMarca('+c.fila+');return false" style="color:#aaa;font-size:11px;text-decoration:none;margin-left:6px">✕ borrar</a></span></div>':'')+'<div class="frow"><span class="fl">Registro de contactos</span><span class="fv" id="regCont" style="white-space:pre-line">cargando…</span></div>'+row('Teléfono',c.tel)+row('Email',c.mail)+row('Zona',c.zona)+row('Formación',c.formacion)+row('Pretensión',c.pretension?'$'+c.pretension:'')+row('Nota screening',c.notaScr)+row('Nota competencias',c.notaComp)+row('Nota screening empresa',c.notaScrEmp)+row('Nota presencial empresa',c.notaPresEmp)+'<div class="fres">'+(c.resumen||'Sin resumen')+'</div><div class="notabox"><div class="notatit">Poner nota manual</div>'+['cv','screening','competencias'].map(function(et){return '<div class="notarow"><span>'+({cv:'CV',screening:'Screening',competencias:'Competencias'}[et])+'</span>'+['A','B+','B','C'].map(function(n){return '<button class="nb" onclick="setNota('+c.fila+',\\''+et+'\\',\\''+n+'\\',this)">'+n+'</button>';}).join('')+'</div>';}).join('')+notasEmp+'</div><div class="mbtns">'+waBtn+mailBtn+cvBtn+btn(c.scrPDF,'Ver screening')+btn(c.compPDF,'Ver competencias')+btn(c.postulacion,'Ver postulación')+btn(c.scrLink,'Screening')+btn(c.compLink,'Competencias')+btn(c.informe,'Ver informe')+genBtn+bancoBtn+delBtn+'</div>';document.getElementById('mtit').textContent=c.nombre;document.getElementById('modal').classList.add('show');cargarRegCont(f);}
+function ficha(f){var c=DATA.find(function(x){return x.fila===f;});var row=function(l,v){return v?'<div class="frow"><span class="fl">'+l+'</span><span class="fv">'+v+'</span></div>':'';};var btn=function(u,t){return u?'<a href="'+u+'" target="_blank" class="mbtn">'+t+'</a>':'';};var waBtn='<button class="mbtn wa" onclick="menuWA('+c.fila+')">💬 WhatsApp ▾</button>';var mailBtn=(c.mail&&c.mail!=='Sin dato'&&c.mail.indexOf('@')>-1)?'<a href="https://mail.google.com/mail/?view=cm&to='+c.mail+'" target="_blank" class="mbtn" style="background:#EA4335;color:#fff">✉ Mail</a>':'';var cvBtn=c.cv?'<a href="https://drive.google.com/file/d/'+c.cv+'/view" target="_blank" class="mbtn alt">Ver CV</a>':'';var genBtn=c.informe?'':'<button class="mbtn gen" onclick="if(confirm(\\'Generar informe con IA. Puede tener costo. ¿Continuar?\\'))generar('+c.fila+',this)">Generar informe</button>';var delBtn='<button class="mbtn" style="background:#B91C1C;color:#fff" onclick="eliminar('+c.fila+')">🗑 Eliminar</button>';var bancoBtn='<button class="mbtn" style="background:#7C3AED" onclick="menuBanco('+c.fila+')">★ Banco de talento</button>';var notasEmp=/screening empresa|presencial empresa|avanza a empresa|entrevista empresa|reserva screening empresa|reserva presencial empresa/i.test(c.estado)?['screening-empresa','presencial-empresa'].map(function(ep){return '<div class="notarow"><span>'+(ep==='screening-empresa'?'Emp. screening':'Emp. presencial')+'</span>'+['A','B','C'].map(function(n){return '<button class="nb" onclick="setNotaEmp('+c.fila+',\\''+ep+'\\',\\''+n+'\\',this)">'+n+'</button>';}).join('')+'</div>';}).join(''):'';document.getElementById('mbody').innerHTML=row('Recibido',c.recibido)+row('Estado',c.estado)+(/^Descartad/i.test(c.estado)?'<div class="frow"><span class="fl">Motivo de descarte</span><span class="fv">'+(c.motivo?String(c.motivo).replace(/;\\s*/g,' · '):'sin cargar')+' <a href="#" onclick="pedirMotivo('+c.fila+');return false" style="font-size:12px">'+(c.motivo?'editar':'cargar')+'</a></span></div>':'')+row('Cita agendada',c.cita)+(c.historial?'<div class="frow"><span class="fl">Historial entrevistas</span><span class="fv" style="white-space:pre-line">'+c.historial+'</span></div>':'')+(c.contactado?'<div class="frow"><span class="fl">Último contacto</span><span class="fv">'+c.contactado+' <a href="#" onclick="borrarMarca('+c.fila+');return false" style="color:#aaa;font-size:11px;text-decoration:none;margin-left:6px">✕ borrar</a></span></div>':'')+'<div class="frow"><span class="fl">Registro de contactos</span><span class="fv" id="regCont" style="white-space:pre-line">cargando…</span></div><div class="frow"><span class="fl">Historial</span><span class="fv" id="histCand">cargando…</span></div>'+row('Teléfono',c.tel)+row('Email',c.mail)+row('Zona',c.zona)+row('Formación',c.formacion)+row('Pretensión',c.pretension?'$'+c.pretension:'')+row('Nota screening',c.notaScr)+row('Nota competencias',c.notaComp)+row('Nota screening empresa',c.notaScrEmp)+row('Nota presencial empresa',c.notaPresEmp)+'<div class="fres">'+(c.resumen||'Sin resumen')+'</div><div class="notabox"><div class="notatit">Poner nota manual</div>'+['cv','screening','competencias'].map(function(et){return '<div class="notarow"><span>'+({cv:'CV',screening:'Screening',competencias:'Competencias'}[et])+'</span>'+['A','B+','B','C'].map(function(n){return '<button class="nb" onclick="setNota('+c.fila+',\\''+et+'\\',\\''+n+'\\',this)">'+n+'</button>';}).join('')+'</div>';}).join('')+notasEmp+'</div><div class="mbtns">'+waBtn+mailBtn+cvBtn+btn(c.scrPDF,'Ver screening')+btn(c.compPDF,'Ver competencias')+btn(c.postulacion,'Ver postulación')+btn(c.scrLink,'Screening')+btn(c.compLink,'Competencias')+btn(c.informe,'Ver informe')+genBtn+bancoBtn+delBtn+'</div>';document.getElementById('mtit').textContent=c.nombre;document.getElementById('modal').classList.add('show');cargarRegCont(f);cargarHist(f);}
+function histLin(x,conNombre){return '<div style="font-size:12px;line-height:1.4;padding:3px 0;border-bottom:1px solid #f0eee9"><b>'+x.fecha+'</b> · '+(conNombre?'<b>'+avEsc(x.candidato)+'</b> · ':'')+avEsc(x.tipo)+': '+avEsc(x.detalle)+' <span style="color:#1A6645;font-weight:700">· '+avEsc(x.quien)+'</span></div>';}
+function cargarHist(f){google.script.run.withSuccessHandler(function(l){var e=document.getElementById('histCand');if(!e)return;e.innerHTML=l.length?'<details><summary style="cursor:pointer;font-weight:700">'+l.length+' movimiento'+(l.length===1?'':'s')+'</summary><div style="max-height:260px;overflow:auto;margin-top:6px">'+l.map(function(x){return histLin(x,false);}).join('')+'</div></details>':'Sin movimientos registrados todavía';}).withFailureHandler(function(){var e=document.getElementById('histCand');if(e)e.textContent='—';}).getHistorialCandidato(PERFIL,f);}
+function verHistorial(){document.getElementById('mtit').textContent='📜 Historial de la búsqueda';document.getElementById('mbody').innerHTML='Cargando…';document.getElementById('modal').classList.add('show');google.script.run.withSuccessHandler(function(l){document.getElementById('mbody').innerHTML='<div style="font-size:12px;color:#666;margin-bottom:8px">Últimos '+l.length+' movimientos: quién tocó qué y cuándo.</div>'+(l.length?l.map(function(x){return histLin(x,true);}).join(''):'Todavía no hay movimientos registrados.');}).withFailureHandler(function(e){document.getElementById('mbody').textContent='No se pudo cargar: '+e.message;}).getHistorialBusqueda(PERFIL);}
 function cargarRegCont(f){google.script.run.withSuccessHandler(function(l){var e=document.getElementById('regCont');if(!e)return;e.innerHTML=(l.length?l.map(function(x){return avEsc(x.fecha+' · '+x.tipo+(x.quien?' · '+x.quien:''))+' <a href="#" title="Borrar este contacto" onclick="borrarRegCont('+f+',\\''+x.fecha+'\\');return false" style="color:#aaa;font-size:11px;text-decoration:none">✕</a>';}).join('<br>'):'Sin contactos registrados')+' <a href="#" onclick="regContacto('+f+');return false" style="font-size:12px">+ registrar</a>';}).withFailureHandler(function(){var e=document.getElementById('regCont');if(e)e.textContent='—';}).getContactosRegistro(PERFIL,f);}
 function borrarRegCont(f,fe){if(!confirm('¿Borrar este contacto del registro?'))return;google.script.run.withSuccessHandler(function(){cargarRegCont(f);}).withFailureHandler(function(e){alert('Error: '+e.message);}).borrarContactoRegistro(PERFIL,f,fe);}
 function regContacto(f){var t=prompt('¿Qué contacto hiciste? (ej: Llamé, Dejé mensaje, Respondió por mail)');if(!t||!t.trim())return;var qs=quienSoy();google.script.run.withSuccessHandler(function(){cargarRegCont(f);}).withFailureHandler(function(e){alert('Error: '+e.message);}).registrarContactoManual(PERFIL,f,t.trim(),qs);}
@@ -4377,14 +4392,14 @@ function guardarBanco(f,btn){
   google.script.run.withSuccessHandler(function(r){
     if(r&&r.ok){btn.textContent='✓ Guardado en banco';btn.style.background='#999';}
     else{alert(r?r.error:'Error');btn.textContent='★ Guardar en banco';btn.disabled=false;}
-  }).withFailureHandler(function(e){alert('Error: '+e.message);btn.textContent='★ Guardar en banco';btn.disabled=false;}).enviarABanco(PERFIL,f,cat,sen,nota);
+  }).withFailureHandler(function(e){alert('Error: '+e.message);btn.textContent='★ Guardar en banco';btn.disabled=false;}).enviarABanco(PERFIL,f,cat,sen,nota,quienSoy());
 }
-function setNota(f,et,n,btn){btn.textContent='...';google.script.run.withSuccessHandler(function(r){toast();cerrar();if(r&&r.estado&&/^Descartad/i.test(r.estado)){pedirMotivo(f,true);}else setTimeout(function(){window.top.location.reload();},800);}).withFailureHandler(function(e){alert('Error: '+e.message);}).notaManual(PERFIL,f,et,n);}
-function setNotaEmp(f,et,n,btn){btn.textContent='...';google.script.run.withSuccessHandler(function(r){toast();cerrar();if(r&&r.estado&&/^Descartad/i.test(r.estado)){pedirMotivo(f,true);}else setTimeout(function(){window.top.location.reload();},800);}).withFailureHandler(function(e){alert('Error: '+e.message);}).notaEmpresa(PERFIL,f,et,n);}
+function setNota(f,et,n,btn){btn.textContent='...';google.script.run.withSuccessHandler(function(r){toast();cerrar();if(r&&r.estado&&/^Descartad/i.test(r.estado)){pedirMotivo(f,true);}else setTimeout(function(){window.top.location.reload();},800);}).withFailureHandler(function(e){alert('Error: '+e.message);}).notaManual(PERFIL,f,et,n,quienSoy());}
+function setNotaEmp(f,et,n,btn){btn.textContent='...';google.script.run.withSuccessHandler(function(r){toast();cerrar();if(r&&r.estado&&/^Descartad/i.test(r.estado)){pedirMotivo(f,true);}else setTimeout(function(){window.top.location.reload();},800);}).withFailureHandler(function(e){alert('Error: '+e.message);}).notaEmpresa(PERFIL,f,et,n,quienSoy());}
 function generar(f,btn){btn.textContent='Generando...';btn.disabled=true;google.script.run.withSuccessHandler(function(url){window.open(url,'_blank');btn.textContent='✓ Listo';}).withFailureHandler(function(e){alert('Error: '+e.message);btn.textContent='Generar informe';btn.disabled=false;}).generarInformeCandidato(PERFIL,f);}
 function descartesMasivo(){google.script.run.withSuccessHandler(function(p){if(p.sinScr===0&&p.postScr===0){alert('No hay descartes pendientes de mail en esta búsqueda.');return;}var h='<div style="font-size:13px;margin-bottom:14px">Se van a enviar <b>'+(p.sinScr+p.postScr)+'</b> mails en '+p.puesto+'.<br>Sin screening: <b>'+p.sinScr+'</b> · Post screening: <b>'+p.postScr+'</b><br><span style="color:#888">[NOMBRE] se reemplaza por el nombre de cada persona.</span></div>';h+='<div class="notatit">Texto · Descartado sin screening ('+p.sinScr+')</div><textarea id="txtSin" style="width:100%;height:150px;font-family:inherit;font-size:12px;padding:8px;border:1px solid #DDD;border-radius:6px;margin-bottom:12px">'+p.textoSin+'</textarea>';h+='<div class="notatit">Texto · Descartado post screening ('+p.postScr+')</div><textarea id="txtPost" style="width:100%;height:150px;font-family:inherit;font-size:12px;padding:8px;border:1px solid #DDD;border-radius:6px;margin-bottom:12px">'+p.textoPost+'</textarea>';h+='<div class="mbtns"><button class="mbtn" style="background:#E06666" onclick="enviarDesc(this)">✉ Enviar '+(p.sinScr+p.postScr)+' mails</button></div>';document.getElementById('mtit').textContent='Mails de descarte';document.getElementById('mbody').innerHTML=h;document.getElementById('modal').classList.add('show');}).withFailureHandler(function(e){alert('Error: '+e.message);}).previaDescartes(PERFIL);}
-function enviarDesc(btn){if(!confirm('¿Confirmás el envío? No se puede deshacer.'))return;var s=document.getElementById('txtSin').value;var p=document.getElementById('txtPost').value;btn.textContent='Enviando...';btn.disabled=true;google.script.run.withSuccessHandler(function(r){alert('Enviados: '+r.enviados+(r.sinMail?' · Sin mail válido: '+r.sinMail:''));window.top.location.reload();}).withFailureHandler(function(e){alert('Error: '+e.message);btn.disabled=false;btn.textContent='✉ Enviar';}).enviarDescartesMasivo(PERFIL,s,p);}
-function borrarMarca(f){if(!confirm('¿Borrar la marca de contacto?'))return;google.script.run.withSuccessHandler(function(){toast();cerrar();setTimeout(function(){window.top.location.reload();},800);}).withFailureHandler(function(e){alert('Error: '+e.message);}).borrarMarcaContacto(PERFIL,f);}
+function enviarDesc(btn){if(!confirm('¿Confirmás el envío? No se puede deshacer.'))return;var s=document.getElementById('txtSin').value;var p=document.getElementById('txtPost').value;btn.textContent='Enviando...';btn.disabled=true;google.script.run.withSuccessHandler(function(r){alert('Enviados: '+r.enviados+(r.sinMail?' · Sin mail válido: '+r.sinMail:''));window.top.location.reload();}).withFailureHandler(function(e){alert('Error: '+e.message);btn.disabled=false;btn.textContent='✉ Enviar';}).enviarDescartesMasivo(PERFIL,s,p,quienSoy());}
+function borrarMarca(f){if(!confirm('¿Borrar la marca de contacto?'))return;google.script.run.withSuccessHandler(function(){toast();cerrar();setTimeout(function(){window.top.location.reload();},800);}).withFailureHandler(function(e){alert('Error: '+e.message);}).borrarMarcaContacto(PERFIL,f,quienSoy());}
 /* ===== Avisos 🔔: pendientes y novedades (igual que PAMI) ===== */
 var AV_PEND,AV_NOV;
 function avLS(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem('blumia_av_'+PERFIL+'_'+k)||'null');localStorage.setItem('blumia_av_'+PERFIL+'_'+k,JSON.stringify(v));}catch(e){return null;}}
@@ -4476,9 +4491,9 @@ function avRefrescar(){
   }).withFailureHandler(function(){}).doGetKanban(PERFIL);
 }
 function avInit(){avRevisar(DATA_ALL);setInterval(avRefrescar,180000);}
-function eliminar(f){var c=DATA.find(function(x){return x.fila===f;});if(!c)return;if(!confirm('¿Eliminar a '+c.nombre+' del tablero?\\nNo se pierde nada: queda en la 🗑 Papelera y se puede restaurar.'))return;google.script.run.withSuccessHandler(function(){toast();cerrar();setTimeout(function(){window.top.location.reload();},700);}).withFailureHandler(function(e){alert('Error: '+e.message);}).eliminarCandidato(PERFIL,f);}
+function eliminar(f){var c=DATA.find(function(x){return x.fila===f;});if(!c)return;if(!confirm('¿Eliminar a '+c.nombre+' del tablero?\\nNo se pierde nada: queda en la 🗑 Papelera y se puede restaurar.'))return;google.script.run.withSuccessHandler(function(){toast();cerrar();setTimeout(function(){window.top.location.reload();},700);}).withFailureHandler(function(e){alert('Error: '+e.message);}).eliminarCandidato(PERFIL,f,quienSoy());}
 function abrirPapelera(){document.getElementById('mtit').textContent='Papelera';var h=ELIM.length?'':'<div style="color:#777;font-size:14px">La papelera está vacía.</div>';ELIM.forEach(function(c){var p=String(c.estado).split('|');h+='<div class="frow" style="align-items:center"><span class="fv"><b>'+c.nombre+'</b><br><small>'+(p[1]||'sin estado')+(p[2]?' · eliminado el '+p[2]:'')+'</small></span><button class="mbtn" onclick="restaurar('+c.fila+')">↩ Restaurar</button></div>';});document.getElementById('mbody').innerHTML=h;document.getElementById('modal').classList.add('show');}
-function restaurar(f){google.script.run.withSuccessHandler(function(){toast();cerrar();setTimeout(function(){window.top.location.reload();},700);}).withFailureHandler(function(e){alert('Error: '+e.message);}).restaurarCandidato(PERFIL,f);}
+function restaurar(f){google.script.run.withSuccessHandler(function(){toast();cerrar();setTimeout(function(){window.top.location.reload();},700);}).withFailureHandler(function(e){alert('Error: '+e.message);}).restaurarCandidato(PERFIL,f,quienSoy());}
 function cerrar(){document.getElementById('modal').classList.remove('show');}
 </script></body></html>`;
 }
@@ -4496,7 +4511,8 @@ function verLinkPDF() {
     }
   }
 }
-function notaManual(perfilId, fila, etapa, nota) {
+function notaManual(perfilId, fila, etapa, nota, quien) {
+  QUIEN_ = quien || '';
   const sh = getSheet(getConfig(perfilId));
   const col = {cv:5, screening:12, competencias:16}[etapa];
   sh.getRange(fila, col).setValue(nota);
@@ -4762,7 +4778,8 @@ function reponerDesplegableEstados() {
   return true;
 }
 
-function notaEmpresa(perfilId, fila, etapa, nota) {
+function notaEmpresa(perfilId, fila, etapa, nota, quien) {
+  QUIEN_ = quien || '';
   const sh = getSheet(getConfig(perfilId));
   const mapa = {
     'screening-empresa': { A:'Avanza a presencial empresa', B:'Reserva screening empresa', C:'Descartado en screening empresa' },
@@ -4772,8 +4789,10 @@ function notaEmpresa(perfilId, fila, etapa, nota) {
   if (!estado) return false;
   const celda = sh.getRange(fila, 9);
   const r = celda.getDataValidation();
+  const estadoAntes = String(celda.getValue() || '').trim();
   celda.setDataValidation(null).setValue(estado);
   if (r) celda.setDataValidation(r);
+  registrarHistorial_(sh.getName(), sh.getRange(fila, 2).getValue(), 'Nota ' + etapa, nota + ' · ' + (estadoAntes || '—') + ' → ' + estado);
   const colNota = (etapa === 'screening-empresa') ? 44 : 45;
   if (sh.getMaxColumns() < colNota) sh.insertColumnsAfter(sh.getMaxColumns(), colNota - sh.getMaxColumns());
   sh.getRange(fila, colNota).clearDataValidations().setValue(nota);
@@ -4927,7 +4946,8 @@ function probarMailDescarte(){
   GmailApp.sendEmail(mail, asunto+' (POST screening)', postScr);
   Logger.log('Enviados a '+mail);
 }
-function enviarDescartesMasivo(perfilId, textoSin, textoPost) {
+function enviarDescartesMasivo(perfilId, textoSin, textoPost, quien) {
+  QUIEN_ = quien || '';
   const cfg = getConfig(perfilId);
   const sh = getSheet(cfg);
   const d = sh.getDataRange().getValues();
@@ -4969,6 +4989,7 @@ function enviarDescartesMasivo(perfilId, textoSin, textoPost) {
     try {
       GmailApp.sendEmail(mail, asunto, cuerpo, {from:'empleos@blumiaconsulting.com', name:'Blumia Consulting'});
       sh.getRange(i + 1, 40).setValue('Enviado ' + Utilities.formatDate(new Date(), 'GMT-3', 'dd/MM/yyyy'));
+      registrarHistorial_(sh.getName(), d[i][1], 'Mail de descarte', 'Enviado (' + (esSin ? 'sin screening' : 'post screening') + ')');
       enviados++;
     } catch(e) {}
   }
@@ -5246,6 +5267,7 @@ function armarComunicacion(perfilId, fila, tipo, quien){
   if(etiqueta){
     sh.getRange(fila, 41).setValue(etiqueta + ' · ' + Utilities.formatDate(new Date(), 'GMT-3', 'dd/MM/yyyy'));
     registrarContacto_(perfilId, fila, sh.getRange(fila, 2).getValue(), tel, 'WhatsApp: ' + etiqueta, entrevistador);
+    registrarHistorial_(sh.getName(), sh.getRange(fila, 2).getValue(), 'Contacto', 'WhatsApp: ' + etiqueta, entrevistador);
   }
   const url = 'https://wa.me/' + telWa + '?text=' + encodeURIComponent(texto);
   return {ok:true, url:url, texto:texto};
@@ -5263,7 +5285,8 @@ function crearPestanaBanco(){
   sh.setColumnWidth(15, 300);
   Logger.log('Pestaña Banco creada con ' + H.length + ' columnas');
 }
-function enviarABanco(perfilId, fila, categoria, seniority, notaBanco){
+function enviarABanco(perfilId, fila, categoria, seniority, notaBanco, quien){
+  QUIEN_ = quien || '';
   const cfg = getConfig(perfilId);
   const sh = getSheet(cfg);
   const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
@@ -5332,6 +5355,7 @@ function enviarABanco(perfilId, fila, categoria, seniority, notaBanco){
   put('competencias_pdf', linkDe(17), 'Ver competencias');
   put('informe', linkDe(33), 'Ver informe');
   put('postulacion', linkDe(31), 'Ver postulación');
+  registrarHistorial_(sh.getName(), nombre, 'Banco de talento', 'Pasó al banco' + (categoria ? ' · ' + categoria : '') + (seniority ? ' · ' + seniority : ''));
 
   return {ok:true};
 }
@@ -5712,8 +5736,10 @@ function cargarPerfilesPuesto(){
   }
   Logger.log('Perfiles de puesto cargados en columna ' + (c+1));
 }
-function borrarMarcaContacto(perfilId, fila){
+function borrarMarcaContacto(perfilId, fila, quien){
+  QUIEN_ = quien || '';
   const sh = getSheet(getConfig(perfilId));
+  registrarHistorial_(sh.getName(), sh.getRange(fila, 2).getValue(), 'Contacto', 'Marca de contacto borrada (' + sh.getRange(fila, 41).getValue() + ')');
   sh.getRange(fila, 41).clearContent();
   return {ok:true};
 }

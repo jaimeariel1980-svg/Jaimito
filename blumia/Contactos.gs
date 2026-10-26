@@ -20,6 +20,7 @@ function registrarContacto_(perfilId, fila, nombre, tel, tipo, quien) {
 function registrarContactoManual(perfilId, fila, tipo, quien) {
   const sh = getSheet(getConfig(perfilId));
   registrarContacto_(perfilId, fila, sh.getRange(fila, 2).getValue(), sh.getRange(fila, 3).getValue(), tipo, quien);
+  registrarHistorial_(sh.getName(), sh.getRange(fila, 2).getValue(), 'Contacto', tipo, quien);
   return { ok: true };
 }
 

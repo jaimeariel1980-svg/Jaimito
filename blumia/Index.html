@@ -539,7 +539,7 @@ document.getElementById('btnGuardar').addEventListener('click', function() {
       btn.textContent = 'Guardar PDF';
       alert('Error al guardar: ' + err.message);
     })
-    .guardarEnPlanilla(cand, htmlSnap, ponderacion, PERFIL_ID);
+    .guardarEnPlanilla(cand, htmlSnap, ponderacion, PERFIL_ID, (function(){try{return localStorage.getItem('blumia_quien')||ENTR_INICIAL||'';}catch(e){return ENTR_INICIAL||'';}})());
 });
 </script>
 </body>

@@ -28,11 +28,13 @@ function motivoNormBl_(lista, otro) {
   return out.join('; ');
 }
 
-function guardarMotivoDescarte(perfilId, fila, motivos, otro) {
+function guardarMotivoDescarte(perfilId, fila, motivos, otro, quien) {
+  QUIEN_ = quien || '';
   const sh = getSheet(getConfig(perfilId));
   if (!/^Descartad/i.test(String(sh.getRange(fila, 9).getValue() || '').trim())) throw new Error('El candidato no está descartado.');
   const texto = motivoNormBl_(motivos, otro);
   sh.getRange(fila, colMotivo_(sh, true)).setNumberFormat('@').setValue(texto);
+  registrarHistorial_(sh.getName(), sh.getRange(fila, 2).getValue(), 'Motivo de descarte', texto);
   return { ok: true, motivo: texto };
 }
 
