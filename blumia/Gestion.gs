@@ -10,7 +10,7 @@ function colPorNombre_(sh, nombre, crear) {
   return c;
 }
 
-function guardarObservaciones(perfilId, fila, texto, quien) {
+function guardarObservaciones_(perfilId, fila, texto, quien) {
   QUIEN_ = quien || '';
   const sh = getSheet(getConfig(perfilId));
   fila = filaCandidato_(sh, fila);
@@ -24,7 +24,7 @@ function guardarObservaciones(perfilId, fila, texto, quien) {
 }
 
 // copia de seguridad a demanda (el botón de la ficha / menú pide el PIN)
-function copiaAhoraBlumia(pin) {
+function copiaAhoraBlumia_(pin) {
   pinValido_(pin);
   return { ok: true, fecha: hacerCopiaBlumia_() };
 }
@@ -32,7 +32,7 @@ function copiaAhoraBlumia(pin) {
 function miles_(n) { return String(Number(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
 
 /* ---- Editar los datos del candidato (F1) ---- */
-function guardarDatosCandidato(perfilId, fila, d, quien) {
+function guardarDatosCandidato_(perfilId, fila, d, quien) {
   QUIEN_ = quien || '';
   const sh = getSheet(getConfig(perfilId));
   fila = filaCandidato_(sh, fila);
@@ -61,7 +61,7 @@ function guardarDatosCandidato(perfilId, fila, d, quien) {
 }
 
 /* ---- Anular una etapa (F4): saca la nota, deja el PDF y el estado vuelve a «Avanza a …» ---- */
-function anularEtapa(perfilId, fila, etapa, quien) {
+function anularEtapa_(perfilId, fila, etapa, quien) {
   QUIEN_ = quien || '';
   const sh = getSheet(getConfig(perfilId));
   fila = filaCandidato_(sh, fila);
@@ -97,7 +97,7 @@ const AGENDA_TIPOS_ = {
   'empresa-presencial': { titulo: 'Entrevista con la empresa (presencial)', estado: 'Entrevista empresa agendada' }
 };
 
-function agendarCitaTablero(perfilId, fila, tipo, fecha, hora, duracion, lugar, forzar, quien) {
+function agendarCitaTablero_(perfilId, fila, tipo, fecha, hora, duracion, lugar, forzar, quien) {
   QUIEN_ = quien || '';
   const T = AGENDA_TIPOS_[tipo];
   if (!T) throw new Error('Tipo de entrevista inválido.');

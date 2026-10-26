@@ -28,7 +28,7 @@ function motivoNormBl_(lista, otro) {
   return out.join('; ');
 }
 
-function guardarMotivoDescarte(perfilId, fila, motivos, otro, quien) {
+function guardarMotivoDescarte_(perfilId, fila, motivos, otro, quien) {
   QUIEN_ = quien || '';
   const sh = getSheet(getConfig(perfilId));
   if (!/^Descartad/i.test(String(sh.getRange(fila, 9).getValue() || '').trim())) throw new Error('El candidato no está descartado.');

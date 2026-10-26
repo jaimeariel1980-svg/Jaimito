@@ -1,6 +1,6 @@
 const CFG_CAMPOS_ = ['nombre', 'nombre_perfil', 'empresa', 'empresa_candidatos', 'banda_salarial', 'link_screening', 'link_competencias', 'link_empresa_virtual', 'link_empresa_presencial', 'link_flyer', 'link_perfil'];
 
-function getConfigBusqueda(pin, perfilId) {
+function getConfigBusqueda_(pin, perfilId) {
   pinValido_(pin);
   const cfg = getConfig(perfilId);
   const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
@@ -9,7 +9,7 @@ function getConfigBusqueda(pin, perfilId) {
   return { datos: datos, prompt_extra: String(cfg.prompt_extra || ''), preguntas: getPreguntasPostulacion(perfilId), plantillas: listarPlantillas_(ss, perfilId) };
 }
 
-function guardarConfigBusqueda(pin, perfilId, p, quien) {
+function guardarConfigBusqueda_(pin, perfilId, p, quien) {
   pinValido_(pin);
   getConfig(perfilId);
   quien = limpiarTxt_(quien) || 'sin nombre';

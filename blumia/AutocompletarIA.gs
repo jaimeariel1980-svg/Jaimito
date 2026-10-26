@@ -8,7 +8,7 @@ function iaCacheKey_(pref, perfilId, cand) {
   return pref + h;
 }
 
-function transcribirAudio(pin, perfilId, cand, b64, mime) {
+function transcribirAudio_(pin, perfilId, cand, b64, mime) {
   pinValido_(pin);
   if (!b64 || String(b64).length > 33000000) throw new Error('El audio está vacío o es demasiado largo');
   const tipo = String(mime || 'audio/webm').split(';')[0];
@@ -39,7 +39,7 @@ function guardarTransParcial_(perfilId, cand, t) {
   } catch (e) { Logger.log('respaldo de transcripción: ' + e); }
 }
 
-function recuperarEntrevista(pin, perfilId, cand) {
+function recuperarEntrevista_(pin, perfilId, cand) {
   pinValido_(pin);
   const c = CacheService.getScriptCache();
   let an = null, parcial = [];
@@ -73,7 +73,7 @@ function extraerJSON_(txt) {
   return JSON.parse(t.slice(i, j + 1));
 }
 
-function analizarEntrevista(pin, perfilId, cand, compsJson, heroJson, texto) {
+function analizarEntrevista_(pin, perfilId, cand, compsJson, heroJson, texto) {
   pinValido_(pin);
   texto = String(texto || '').trim();
   if (texto.length < 300) throw new Error('La transcripción es muy corta para analizarla');
@@ -96,7 +96,7 @@ function analizarEntrevista(pin, perfilId, cand, compsJson, heroJson, texto) {
 }
 
 // Reescribe notas sueltas como texto bien redactado (botón «Redactar con IA» de los cuadros de notas). No resume ni inventa.
-function redactarIA(pin, texto, indic) {
+function redactarIA_(pin, texto, indic) {
   pinValido_(pin);
   texto = String(texto || '').trim();
   if (texto.length < 8) throw new Error('Escribí o dictá algo primero');

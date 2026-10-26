@@ -4,6 +4,7 @@ const HOJA_HIST_ = 'Historial';
 var QUIEN_ = ''; // quién dispara la acción en esta ejecución (lo setea cada función pública)
 
 function quienHist_(q) {
+  if (typeof SES_ !== 'undefined' && SES_ && SES_.nombre) return SES_.nombre; // el usuario que ingresó (no se puede falsear desde la página)
   q = String(q || '').trim() || String(QUIEN_ || '').trim();
   if (!q) { try { q = Session.getActiveUser().getEmail() || ''; } catch (e) { } }
   return q || 'sistema';
@@ -36,12 +37,12 @@ function leerHistorial_(hoja, candidato, limite) {
   return out;
 }
 
-function getHistorialCandidato(perfilId, fila) {
+function getHistorialCandidato_(perfilId, fila) {
   const sh = getSheet(getConfig(perfilId));
   return leerHistorial_(sh.getName(), String(sh.getRange(fila, 2).getValue() || '').trim(), 100);
 }
 
-function getHistorialBusqueda(perfilId) {
+function getHistorialBusqueda_(perfilId) {
   return leerHistorial_(getSheet(getConfig(perfilId)).getName(), '', 150);
 }
 

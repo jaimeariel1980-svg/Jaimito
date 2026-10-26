@@ -7,7 +7,7 @@ function filaCandidato_(sh, fila) {
   return fila;
 }
 
-function eliminarCandidato(perfilId, fila, quien) {
+function eliminarCandidato_(perfilId, fila, quien) {
   QUIEN_ = quien || '';
   const sh = getSheet(getConfig(perfilId));
   fila = filaCandidato_(sh, fila);
@@ -19,7 +19,7 @@ function eliminarCandidato(perfilId, fila, quien) {
   return { ok: true };
 }
 
-function restaurarCandidato(perfilId, fila, quien) {
+function restaurarCandidato_(perfilId, fila, quien) {
   QUIEN_ = quien || '';
   const sh = getSheet(getConfig(perfilId));
   fila = filaCandidato_(sh, fila);

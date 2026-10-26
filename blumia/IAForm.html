@@ -17,15 +17,8 @@
 <script>
 (function(){
   var PIN_MEM='';
-  function getPin(){
-    try{var s=sessionStorage.getItem('bl_pin');if(s)return s;}catch(e){}
-    if(PIN_MEM)return PIN_MEM;
-    var p=prompt('PIN para usar la IA (solo selectores):');
-    if(!p)return '';
-    PIN_MEM=p;try{sessionStorage.setItem('bl_pin',p);}catch(e){}
-    return p;
-  }
-  function olvidarPin(){PIN_MEM='';try{sessionStorage.removeItem('bl_pin');}catch(e){}}
+  function getPin(){return 'sesion';}
+  function olvidarPin(){}
   function errMsg(e){var m=(e&&e.message)||String(e);if(/PIN/.test(m))olvidarPin();return m;}
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   function ponerTexto(ta,t){t=String(t||'').trim();if(!t)return;ta.value+=(ta.value&&!/\s$/.test(ta.value)?' ':'')+t;ta.dispatchEvent(new Event('input',{bubbles:true}));}

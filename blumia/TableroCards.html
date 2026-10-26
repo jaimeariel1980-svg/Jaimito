@@ -282,7 +282,7 @@ header{min-height:86px}
     document.getElementById('mbody').innerHTML=h||'<div style="padding:20px;color:#777">No hay entrevistas agendadas por delante.</div>';
     document.getElementById('modal').classList.add('show');
   };
-  window.copiaAhora=function(){var p='';try{p=sessionStorage.getItem('bl_pin')||'';}catch(e){}if(!p){p=prompt('PIN para hacer la copia de seguridad (solo selectores):')||'';if(!p)return;try{sessionStorage.setItem('bl_pin',p);}catch(e){}}google.script.run.withSuccessHandler(function(r){alert('Copia hecha ('+r.fecha+'). Está en Drive, carpeta «Copias de seguridad Blumia». También se hace sola todos los días.');}).withFailureHandler(function(e){var m=(e&&e.message)||String(e);if(/PIN/.test(m)){try{sessionStorage.removeItem('bl_pin');}catch(x){}}alert('No se pudo: '+m);}).copiaAhoraBlumia(p);};
+  window.copiaAhora=function(){google.script.run.withSuccessHandler(function(r){alert('Copia hecha ('+r.fecha+'). Está en Drive, carpeta «Copias de seguridad Blumia». También se hace sola todos los días.');}).withFailureHandler(function(e){alert('No se pudo: '+((e&&e.message)||e));}).copiaAhoraBlumia('sesion');};
   window.guardarObs=function(f,b){
     var t=document.getElementById('gObs').value;b.disabled=true;b.textContent='Guardando…';
     google.script.run.withSuccessHandler(function(r){b.disabled=false;b.textContent='Guardar observaciones';var c=DATA_ALL.find(function(x){return x.fila===f;});if(c)c.obs=r.obs;toast();}).withFailureHandler(function(e){b.disabled=false;b.textContent='Guardar observaciones';alert('Error: '+e.message);}).guardarObservaciones(PERFIL,f,t,quienSoy());
