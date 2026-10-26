@@ -4098,7 +4098,9 @@ function kanbanHTML(perfilId) {
   const flyer = (typeof cfg.link_flyer === 'string') ? cfg.link_flyer : '';
   const perfilProt = String(cfg.perfil_protegido || '').toUpperCase() === 'SI';
   const perfilPdf = (!perfilProt && typeof cfg.link_perfil === 'string') ? cfg.link_perfil : '';
-  return HtmlService.createHtmlOutput(KANBAN_TPL(perfilId, titulo, data, empresas, empresaActual, flyer, perfilPdf, perfilProt))
+  let html = KANBAN_TPL(perfilId, titulo, data, empresas, empresaActual, flyer, perfilPdf, perfilProt);
+  try { html = html.replace(/<\/html>\s*$/, () => HtmlService.createHtmlOutputFromFile('ConfigPanel').getContent() + '</html>'); } catch (e) { }
+  return HtmlService.createHtmlOutput(html)
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }

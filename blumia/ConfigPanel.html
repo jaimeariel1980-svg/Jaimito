@@ -1,0 +1,79 @@
+<style>
+.cf-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9100;display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 10px}
+.cf-bg.show{display:flex}
+.cf-box{background:#fff;border-radius:12px;max-width:900px;width:100%;padding:20px 24px;color:#222;font-size:14px}
+.cf-box h2{margin:0 0 12px;font-size:20px;color:#1A6645}
+.cf-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.cf-tab{background:#F7F5F1;border:1px solid #ddd;border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:700;font-size:13px}
+.cf-tab.on{background:#1A6645;color:#fff;border-color:#1A6645}
+.cf-sec{display:none}.cf-sec.on{display:block}
+.cf-help{font-size:12px;color:#666;margin-bottom:10px;line-height:1.45}
+.cf-box input,.cf-box textarea,.cf-box select{border:1px solid #ccc;border-radius:6px;padding:7px 9px;font:13px/1.35 inherit;font-family:inherit;box-sizing:border-box;width:100%}
+.cf-box textarea{min-height:90px}
+.cf-box label{font-size:11px;color:#666;display:block;margin:8px 0 2px}
+.cf-row{background:#F7F5F1;border-radius:8px;padding:8px 10px;margin-bottom:8px;display:grid;grid-template-columns:1fr 110px 1fr 80px auto;gap:8px;align-items:end}
+.cf-pl{background:#F7F5F1;border-radius:8px;padding:10px;margin-bottom:10px}
+.cf-mini{background:#fff;border:1px solid #bbb;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:12px}
+.cf-mini.x{color:#B91C1C;border-color:#B91C1C}
+.cf-add{background:#E6F2EC;color:#1A6645;border:1px dashed #1A6645;border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:700;font-size:12px}
+.cf-foot{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+.cf-save{background:#1A6645;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-weight:800;cursor:pointer}
+.cf-close{background:#fff;border:1px solid #999;border-radius:8px;padding:10px 20px;cursor:pointer}
+@media(max-width:640px){.cf-row{grid-template-columns:1fr}}
+</style>
+<div class="cf-bg" id="cfBg"><div class="cf-box" id="cfBox"></div></div>
+<script>
+(function(){
+  var CF=null;
+  var ETQ={nombre:'Nombre en el tablero',nombre_perfil:'Nombre del puesto (se usa en los mensajes)',empresa:'Empresa (agrupa las búsquedas en el tablero)',empresa_candidatos:'Cómo se nombra la empresa a los candidatos (vacío = «una empresa cliente del sector…»)',link_screening:'Link de agenda · screening',link_competencias:'Link de agenda · competencias',link_empresa_virtual:'Link de agenda · entrevista con la empresa (virtual / presencial)',link_empresa_presencial:'Link de agenda · empresa presencial (si es otro)',link_flyer:'Link del flyer',link_perfil:'Link del perfil del puesto en PDF (si no está protegido)'};
+  function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+  function pin(){var p='';try{p=sessionStorage.getItem('bl_pin')||'';}catch(e){}if(!p){p=prompt('PIN para configurar la búsqueda (solo selectores):')||'';if(p){try{sessionStorage.setItem('bl_pin',p);}catch(e){}}}return p;}
+  function quien(){var q='';try{q=sessionStorage.getItem('bl_quien')||'';}catch(e){}if(!q){q=prompt('¿Quién edita? (nombre, para el historial de cambios)')||'';if(q){try{sessionStorage.setItem('bl_quien',q);}catch(e){}}}return q;}
+  function badPin(e){var m=(e&&e.message)||String(e);if(/PIN/.test(m)){try{sessionStorage.removeItem('bl_pin');}catch(x){}}return m;}
+  window.cfAbrir=function(){
+    var p=pin();if(!p)return;
+    var bg=document.getElementById('cfBg');bg.classList.add('show');document.getElementById('cfBox').innerHTML='<h2>⚙ Configurar búsqueda</h2><div class="cf-help">Cargando…</div>';
+    google.script.run.withSuccessHandler(function(d){CF=d;render('ia');}).withFailureHandler(function(e){alert(badPin(e));bg.classList.remove('show');}).getConfigBusqueda(p,PERFIL);
+  };
+  window.cfCerrar=function(){document.getElementById('cfBg').classList.remove('show');};
+  window.cfTab=function(t){sync();render(t);};
+  function sync(){
+    if(!CF)return;var g=function(id){var e=document.getElementById(id);return e?e.value:null;},v;
+    if((v=g('cf_ia'))!==null)CF.prompt_extra=v;
+    Object.keys(CF.datos).forEach(function(k){if((v=g('cfd_'+k))!==null)CF.datos[k]=v;});
+    CF.preguntas.forEach(function(q,i){if((v=g('cfq_e'+i))!==null){q.etiqueta=v;q.tipo=g('cfq_t'+i);q.opciones=g('cfq_o'+i);q.requerido=g('cfq_r'+i);}});
+    CF.plantillas.forEach(function(t,i){if((v=g('cfp_'+i))!==null)t.texto=v;});
+  }
+  function render(tab){
+    var T=[['ia','Requisitos para la IA'],['post','Preguntas de postulación'],['msg','Mensajes'],['dat','Datos de la búsqueda']];
+    var x='<h2>⚙ Configurar búsqueda · '+esc(CF.datos.nombre||PERFIL)+'</h2><div class="cf-tabs">'+T.map(function(t){return '<button class="cf-tab'+(t[0]===tab?' on':'')+'" onclick="cfTab(\''+t[0]+'\')">'+t[1]+'</button>';}).join('')+'</div>';
+    x+='<div class="cf-sec'+(tab==='ia'?' on':'')+'"><div class="cf-help">Es el texto que la IA usa para <b>puntuar los CVs</b> de esta búsqueda (perfil, experiencia excluyente, deseable, zona, pretensión…). Si cambia el perfil del puesto, actualizalo acá. Vale para los CVs que entren desde ahora; los ya analizados no se recalculan.</div><textarea id="cf_ia" style="min-height:340px">'+esc(CF.prompt_extra)+'</textarea>'+foot('ia')+'</div>';
+    x+='<div class="cf-sec'+(tab==='post'?' on':'')+'"><div class="cf-help">Preguntas que se agregan al formulario de postulación de esta búsqueda (además de los datos básicos y el CV). En «Opciones» separá con | (por ejemplo: Básico|Intermedio|Avanzado).</div>';
+    CF.preguntas.forEach(function(q,i){x+='<div class="cf-row"><div><label>Pregunta</label><input id="cfq_e'+i+'" value="'+esc(q.etiqueta)+'"></div><div><label>Tipo</label><select id="cfq_t'+i+'"><option value="texto"'+(q.tipo==='texto'?' selected':'')+'>Texto libre</option><option value="select"'+(q.tipo==='select'?' selected':'')+'>Elegir opción</option></select></div><div><label>Opciones (si elige)</label><input id="cfq_o'+i+'" value="'+esc(q.opciones)+'"></div><div><label>Obligatoria</label><select id="cfq_r'+i+'"><option value="SI"'+(q.requerido!=='NO'?' selected':'')+'>Sí</option><option value="NO"'+(q.requerido==='NO'?' selected':'')+'>No</option></select></div><button class="cf-mini x" onclick="cfQuitar('+i+')">✕</button></div>';});
+    x+='<button class="cf-add" onclick="cfAgregar()">+ Agregar pregunta</button>'+foot('post')+'</div>';
+    x+='<div class="cf-sec'+(tab==='msg'?' on':'')+'"><div class="cf-help">Textos de los WhatsApp y mails. <b>Son los mismos para todas las búsquedas</b>. Se completan solos: [NOMBRE] [PUESTO] [EMPRESA] [ENTREVISTADOR] [LINK].</div>';
+    CF.plantillas.forEach(function(t,i){x+='<div class="cf-pl"><b>'+esc(t.clave)+'</b> <span style="color:#888;font-size:12px">· '+esc(t.canal)+'</span><textarea id="cfp_'+i+'" style="min-height:120px;margin-top:6px">'+esc(t.texto)+'</textarea></div>';});
+    x+=foot('msg')+'</div>';
+    x+='<div class="cf-sec'+(tab==='dat'?' on':'')+'"><div class="cf-help">Datos de la búsqueda. Los links tienen que empezar con https://. Al guardar se recarga el tablero.</div>';
+    Object.keys(ETQ).forEach(function(k){x+='<label>'+ETQ[k]+'</label><input id="cfd_'+k+'" value="'+esc(CF.datos[k])+'">';});
+    x+=foot('dat')+'</div>';
+    document.getElementById('cfBox').innerHTML=x;
+  }
+  function foot(t){return '<div class="cf-foot"><button class="cf-close" onclick="cfCerrar()">Cerrar</button><button class="cf-save" onclick="cfGuardar(\''+t+'\',this)">Guardar</button></div>';}
+  window.cfQuitar=function(i){sync();if(!confirm('¿Sacar esta pregunta? (queda copia en Historial_Formularios)'))return;CF.preguntas.splice(i,1);render('post');};
+  window.cfAgregar=function(){sync();CF.preguntas.push({id:'',etiqueta:'',tipo:'texto',opciones:'',requerido:'SI'});render('post');};
+  window.cfGuardar=function(t,btn){
+    sync();var q=quien();if(!q)return;var p=pin();if(!p)return;var d={};
+    if(t==='ia')d.prompt_extra=CF.prompt_extra;
+    if(t==='post')d.preguntas=CF.preguntas;
+    if(t==='msg')d.plantillas=CF.plantillas.map(function(x){return {clave:x.clave,texto:x.texto};});
+    if(t==='dat')d.datos=CF.datos;
+    btn.disabled=true;btn.textContent='Guardando...';
+    google.script.run.withSuccessHandler(function(){btn.disabled=false;btn.textContent='Guardar';alert('Guardado ✓');if(t==='dat')location.reload();})
+     .withFailureHandler(function(e){btn.disabled=false;btn.textContent='Guardar';alert('No se guardó: '+badPin(e));})
+     .guardarConfigBusqueda(p,PERFIL,d,q);
+  };
+  var nav=document.getElementById('nav');
+  if(nav)nav.insertAdjacentHTML('beforeend','<button onclick="cfAbrir()">⚙ Configurar</button>');
+})();
+</script>
