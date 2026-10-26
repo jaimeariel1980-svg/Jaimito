@@ -1,4 +1,7 @@
 <style>
+.gdet{border:1px solid #e3dfd3;border-radius:10px;padding:8px 12px;margin:8px 0;background:#fff}.gdet summary{cursor:pointer;font-weight:700;font-size:13px}
+.ggrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin:10px 0}.gl{display:flex;flex-direction:column;font-size:11px;font-weight:800;color:#555;text-transform:uppercase;gap:3px}.gl input,.gl select{font-size:14px;padding:7px;border:1px solid #ccc;border-radius:7px;text-transform:none;font-weight:400}
+
 /* Tablero estilo PAMI con la paleta de Blumia: columnas de ancho fijo con encabezado de color, tarjetas en capas */
 header{min-height:86px}
 .hdr-pill{background:rgba(255,255,255,.16);border-radius:99px;padding:7px 16px;font-weight:700;font-size:14px;white-space:nowrap}
@@ -221,10 +224,62 @@ header{min-height:86px}
       +'<div class="sec">Calificaciones</div>'+notas
       +((c.cita||c.historial)?'<div class="sec">Entrevistas (calendario)</div>'+row('Cita agendada',esc(c.cita))+(c.historial?'<div style="white-space:pre-line;font-size:13px">'+esc(c.historial)+'</div>':''):'')
       +'<div class="sec">Contacto con el candidato</div>'+contacto
-      +'<div class="sec">Gestión</div><label style="font-size:11px;font-weight:800;color:#555;text-transform:uppercase">Observaciones (ampliá cualquier dato)</label><textarea id="gObs" rows="3">'+esc(c.obs||'')+'</textarea><div class="mbtns"><button class="mbtn" id="gObsB" onclick="guardarObs('+c.fila+',this)">Guardar observaciones</button>'+bancoBtn+delBtn+'</div>'
+      +'<div class="sec">Gestión</div>'+gestionHtml(c)+'<label style="font-size:11px;font-weight:800;color:#555;text-transform:uppercase">Observaciones (ampliá cualquier dato)</label><textarea id="gObs" rows="3">'+esc(c.obs||'')+'</textarea><div class="mbtns"><button class="mbtn" id="gObsB" onclick="guardarObs('+c.fila+',this)">Guardar observaciones</button>'+bancoBtn+delBtn+'</div>'
       +'<div class="sec">Historial</div><div id="histCand" style="font-size:13px">cargando…</div></div></div>';
     document.getElementById('mtit').textContent=c.nombre;document.getElementById('mbody').innerHTML=h;document.getElementById('modal').classList.add('show');
     cargarRegCont(f);cargarHist(f);
+  };
+  function inp(id,l,v,t){return '<label class="gl">'+l+'<input id="'+id+'" type="'+(t||'text')+'" value="'+esc(v||'')+'"></label>';}
+  function gestionHtml(c){
+    var f=c.fila,perfs='';
+    var sel=document.querySelector('#nav select');
+    if(sel)Array.prototype.forEach.call(sel.options,function(o){if(o.value!==PERFIL)perfs+='<option value="'+esc(o.value)+'">'+esc(o.textContent)+'</option>';});
+    var an=[['screening',c.notaScr,'Screening'],['competencias',c.notaComp,'Competencias'],['screening-empresa',c.notaScrEmp,'Emp. screening'],['presencial-empresa',c.notaPresEmp,'Emp. final']].filter(function(e){return String(e[1]||'').trim();}).map(function(e){return '<button class="mbtn alt" onclick="anularEt('+f+',\''+e[0]+'\',\''+e[2]+'\')">↺ Anular '+e[2]+'</button>';}).join('');
+    var hoy=new Date(Date.now()+864e5).toISOString().slice(0,10);
+    return '<details class="gdet"><summary>✏️ Editar datos del candidato</summary><div class="ggrid">'+inp('gdNom','Nombre',c.nombre)+inp('gdTel','Teléfono',c.tel)+inp('gdDni','DNI',c.dni)+inp('gdMail','Mail',c.mail==='Sin dato'?'':c.mail)+inp('gdFor','Formación',c.formacion)+inp('gdZon','Zona',c.zona)+inp('gdPre','Pretensión ($)',c.pretension)+'</div><div class="mbtns"><button class="mbtn" onclick="guardarDatosC('+f+',this)">Guardar datos</button></div></details>'
+      +'<details class="gdet"><summary>📅 Agendar entrevista</summary><div class="ggrid"><label class="gl">Tipo<select id="gaTipo"><option value="screening">Screening</option><option value="competencias">Competencias</option><option value="empresa-virtual">Empresa (virtual)</option><option value="empresa-presencial">Empresa (presencial)</option></select></label>'+inp('gaFec','Día',hoy,'date')+inp('gaHor','Hora','10:00','time')+'<label class="gl">Duración<select id="gaDur"><option>30</option><option>45</option><option>60</option><option>90</option></select></label>'+inp('gaLug','Lugar / link (opcional)','')+'</div><div class="mbtns"><button class="mbtn" onclick="agendarC('+f+',this)">Agendar y avisar al candidato</button></div><div style="font-size:11px;color:#777;margin-top:4px">Se crea en el calendario de Blumia y se invita por mail al candidato (si tiene).</div></details>'
+      +(perfs?'<details class="gdet"><summary>🔀 Pasar a otra búsqueda</summary><div class="ggrid"><label class="gl">Búsqueda de destino<select id="grDest">'+perfs+'</select></label></div><div class="mbtns"><button class="mbtn" onclick="reasignarC('+f+',this)">Pasar candidato</button></div></details>':'')
+      +(an?'<div class="mbtns" style="margin:8px 0">'+an+'</div>':'');
+  }
+  function val(id){var e=document.getElementById(id);return e?e.value:'';}
+  function fail(b,t){return function(e){b.disabled=false;b.textContent=t;alert('No se pudo: '+((e&&e.message)||e));};}
+  function refrescar(){setTimeout(function(){window.top.location.reload();},300);}
+  window.guardarDatosC=function(f,b){
+    var d={nombre:val('gdNom'),tel:val('gdTel'),dni:val('gdDni'),mail:val('gdMail'),formacion:val('gdFor'),zona:val('gdZon'),pretension:val('gdPre')},t=b.textContent;
+    b.disabled=true;b.textContent='Guardando…';
+    google.script.run.withSuccessHandler(function(r){toast();refrescar();}).withFailureHandler(fail(b,t)).guardarDatosCandidato(PERFIL,f,d,quienSoy());
+  };
+  window.reasignarC=function(f,b){
+    var s=document.getElementById('grDest'),t=b.textContent;if(!s||!s.value)return;
+    if(!confirm('¿Pasar este candidato a «'+s.options[s.selectedIndex].textContent+'»? Se mantiene todo lo cargado y acá queda en la papelera.'))return;
+    b.disabled=true;b.textContent='Pasando…';
+    google.script.run.withSuccessHandler(function(r){alert('Listo: pasó a «'+r.destino+'».');refrescar();}).withFailureHandler(fail(b,t)).reasignarCandidato(PERFIL,f,s.value,quienSoy());
+  };
+  window.anularEt=function(f,et,nom){
+    if(!confirm('¿Anular la nota de '+nom+'? Se borra la nota y el candidato vuelve a la etapa anterior. El PDF queda en Drive.'))return;
+    google.script.run.withSuccessHandler(function(r){toast();refrescar();}).withFailureHandler(function(e){alert('No se pudo: '+((e&&e.message)||e));}).anularEtapa(PERFIL,f,et,quienSoy());
+  };
+  window.agendarC=function(f,b,forzar){
+    var t=b.textContent;b.disabled=true;b.textContent='Agendando…';
+    google.script.run.withSuccessHandler(function(r){
+      if(r&&r.conflicto){b.disabled=false;b.textContent=t;if(confirm('Ya hay algo en el calendario a esa hora:\n- '+r.eventos.join('\n- ')+'\n\n¿Agendar igual?'))agendarC(f,b,true);return;}
+      alert('Agendado: '+r.cita+(r.invitado?'\nSe envió la invitación por mail.':'\nEl candidato no tiene mail: avisale por WhatsApp.'));refrescar();
+    }).withFailureHandler(fail(b,t)).agendarCitaTablero(PERFIL,f,val('gaTipo'),val('gaFec'),val('gaHor'),val('gaDur'),val('gaLug'),!!forzar,quienSoy());
+  };
+  function parseCita(t){var m=/(\d{2})\/(\d{2})\/(\d{4}).*?(\d{2}):(\d{2})/.exec(String(t||''));return m?new Date(+m[3],+m[2]-1,+m[1],+m[4],+m[5]):null;}
+  window.abrirAgenda=function(){
+    var ahora=Date.now()-36e5,L=[];
+    DATA.forEach(function(c){var d=parseCita(c.cita);if(d&&d.getTime()>=ahora)L.push({d:d,c:c});});
+    L.sort(function(a,b){return a.d-b.d;});
+    var dias=['dom','lun','mar','mié','jue','vie','sáb'],h='',ult='';
+    L.forEach(function(x){
+      var k=x.d.toDateString();
+      if(k!==ult){ult=k;h+='<div class="sec" style="margin-top:12px">'+dias[x.d.getDay()]+' '+String(x.d.getDate()).padStart(2,'0')+'/'+String(x.d.getMonth()+1).padStart(2,'0')+'</div>';}
+      h+='<div class="frow" style="cursor:pointer" onclick="ficha('+x.c.fila+')"><span class="fl">'+String(x.d.getHours()).padStart(2,'0')+':'+String(x.d.getMinutes()).padStart(2,'0')+'</span><span class="fv"><b>'+esc(x.c.nombre)+'</b> · '+esc(x.c.estado)+'</span></div>';
+    });
+    document.getElementById('mtit').textContent='📅 Agenda de entrevistas';
+    document.getElementById('mbody').innerHTML=h||'<div style="padding:20px;color:#777">No hay entrevistas agendadas por delante.</div>';
+    document.getElementById('modal').classList.add('show');
   };
   window.copiaAhora=function(){var p='';try{p=sessionStorage.getItem('bl_pin')||'';}catch(e){}if(!p){p=prompt('PIN para hacer la copia de seguridad (solo selectores):')||'';if(!p)return;try{sessionStorage.setItem('bl_pin',p);}catch(e){}}google.script.run.withSuccessHandler(function(r){alert('Copia hecha ('+r.fecha+'). Está en Drive, carpeta «Copias de seguridad Blumia». También se hace sola todos los días.');}).withFailureHandler(function(e){var m=(e&&e.message)||String(e);if(/PIN/.test(m)){try{sessionStorage.removeItem('bl_pin');}catch(x){}}alert('No se pudo: '+m);}).copiaAhoraBlumia(p);};
   window.guardarObs=function(f,b){

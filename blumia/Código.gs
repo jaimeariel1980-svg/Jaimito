@@ -4127,7 +4127,7 @@ const link = (r, col) => {
       recibido: d[i][0] ? Utilities.formatDate(new Date(d[i][0]), 'GMT-3', 'dd/MM/yyyy') : '',
       nota: d[i][4] || '', notaScr: d[i][11] || '', notaComp: d[i][15] || '',
       pretension: m ? m[1].trim() : '', zona: d[i][23] || '',
-      tel: d[i][2] || '', mail: d[i][21] || '',
+      tel: d[i][2] || '', dni: String(d[i][3] || ''), mail: d[i][21] || '',
       resumen: d[i][6] || '', cv: extraerFileId(sh, i + 1, 8) || '',
       scrLink: link(i + 1, 11), compLink: link(i + 1, 15), informe: link(i + 1, 33),
       scrPDF: link(i + 1, 13), compPDF: link(i + 1, 17), postulacion: link(i + 1, 31), cita: d[i][36] || '', historial: d[i][37] || '', whatsapp: link(i + 1, 21), mailDescarte: d[i][39] || '', fuente: String(d[i][9] || ''), contactado: d[i][40] || '', notaScrEmp: d[i][43] || '', notaPresEmp: d[i][44] || '', notaScrEmp: d[i][43] || '', notaPresEmp: d[i][44] || '', formacion: d[i][22] || '', requisitos: d[i][5] || '', pretNum: (function(){var m=String(d[i][5]||'').match(/Remuneraci[oó]n pretendida:\s*\$?\s*([\d.\s]+)/i);return m?Number(m[1].replace(/[.\s]/g,'')):0;})()
