@@ -12,6 +12,9 @@ Lo mantiene Claude. Prioridad: 🔴 urgente · 🟠 importante · 🟡 cuando se
 - 🟡 CSP y `X-Frame-Options` (`_headers` en Cloudflare, sacar `ALLOWALL`), escapar mails HTML, mensajes de error genéricos, `drive.file` en vez de `drive`. — *Claude*
 - 🟡 Auditar también `pami/`, `pami-real/`, `liquidaciones/`, `caja-obra/` (NJ Arquitectura: `TABLERO_PIN`, bot Anita). — *Claude*
 
+## PAMI
+- 🔴 **PAMI llegó al tope de 200 versiones de Apps Script** (27/10): el código del ⚙ Configurar se subió pero la web (`/exec`) sigue con la versión anterior (el botón no aparece). Hay que borrar versiones viejas desde el editor de Apps Script de PAMI (cuenta dotacionpp1: Historial del proyecto → borrar las viejas) y volver a publicar (Actions → Apps Script → `pami` → `publicar`). Después, agrupar los cambios: cada merge a `pami/` gasta una versión. — *Ariel (borrar) + Claude (publicar)*
+
 ## Blumia (alta 26/10)
 - 🔴 **Rotar las claves de OpenAI y Anthropic de Blumia**: estaban escritas en `Código.gs` y quedaron en la rama `sync-blumia` y en el historial. Crear nuevas, cargarlas en las propiedades `OPENAI_API_KEY` y `ANTHROPIC_API_KEY` y revocar las viejas. — *Ariel*
 - 🟠 **Borrar la rama `sync-blumia`** (tiene las claves viejas) una vez integrado el código. — *Claude, con OK de Ariel*
