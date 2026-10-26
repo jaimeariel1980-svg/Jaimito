@@ -161,7 +161,7 @@ function formatearHojaDirectorComercial() {
   Logger.log('✅ Formato y links de ' + p.hoja + ' listos.');
 }
 
-/* Vincula el relevamiento HTML editable (PerfilDirectorComercial.html) al botón "Perfil del puesto" del kanban.
+/* Vincula el relevamiento HTML editable (RelevamientoDirectorComercial.html) al botón "Perfil del puesto" del kanban.
    El botón pide el PIN (propiedad del script BLUMIA_PIN) y abre el HTML con un acceso temporal.
    Si había un PDF o Doc vinculado antes, lo manda a la papelera.
    Correr: vincularPerfilHtmlDirectorComercial() */
@@ -176,7 +176,7 @@ function vincularPerfilHtmlDirectorComercial() {
   const viejo = String(rows[f][cLink - 1] || '').match(/[-\w]{25,}/);
   if (viejo) { try { DriveApp.getFileById(viejo[0]).setTrashed(true); } catch (e) { } }
   config.getRange(f + 1, cLink).setValue('');
-  config.getRange(f + 1, col('perfil_html')).setValue('PerfilDirectorComercial');
+  config.getRange(f + 1, col('perfil_html')).setValue('RelevamientoDirectorComercial');
   config.getRange(f + 1, col('perfil_protegido')).setValue('SI');
   Logger.log('✅ Perfil del puesto (HTML editable) vinculado al kanban, protegido con PIN.');
   if (!PropertiesService.getScriptProperties().getProperty('BLUMIA_PIN')) Logger.log('⚠️ Falta cargar la propiedad del script BLUMIA_PIN (el PIN).');
