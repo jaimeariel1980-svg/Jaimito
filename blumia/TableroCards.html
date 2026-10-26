@@ -198,6 +198,12 @@ header{min-height:86px}
   window.ficha=function(f){
     var c=DATA.find(function(x){return x.fila===f;});if(!c)return;
     var m=metEstado(c.estado)||{t:'act'};
+    var linkForm=function(tipo){return (typeof URL_APP==='string'&&URL_APP?URL_APP:'')+'?tipo='+tipo+'&perfil='+encodeURIComponent(PERFIL)+'&nombre='+encodeURIComponent(c.nombre)+'&entrevistador='+encodeURIComponent(quienSoy());};
+    var etapaBtn=function(tipo,pdf,nom,nuevo){
+      var link=linkForm(tipo);
+      if(!pdf)return '<a href="'+esc(link)+'" target="_blank" class="mbtn">'+nuevo+'</a>';
+      return '<span class="bgp"><a href="'+esc(pdf)+'" target="_blank" class="mbtn alt">📄 Ver '+nom+'</a><a href="'+esc(link+'&editar=1')+'" target="_blank" class="mbtn alt ed" title="Editar el formulario de '+nom+' ya cargado">✏️</a></span>';
+    };
     var btn=function(u,t){return u?'<a href="'+esc(u)+'" target="_blank" class="mbtn">'+t+'</a>':'';};
     var al='';
     (c.previos||[]).forEach(function(p){al+='<div class="'+(/^Descartad/i.test(p.estado)?'r':'')+'">↩ <b>Ya se postuló antes.</b> '+esc(p.busq)+': '+esc(p.estado)+'</div>';});
@@ -221,7 +227,7 @@ header{min-height:86px}
       +'<div class="frow"><span class="fl">Registro de contactos</span><span class="fv" id="regCont" style="white-space:pre-line">cargando…</span></div>';
     var h='<div class="fwrap" style="margin:-24px"><div class="fh"><div style="font-size:13px;color:#444"><b>'+esc(c.estado)+'</b></div><div class="ecs">'+ecs+'</div></div>'
       +(al?'<div class="fal">'+al+'</div>':'')
-      +'<div class="fb"><div class="mbtns" style="margin-top:10px">'+waBtn+mailBtn+cvBtn+btn(c.scrLink,'📝 Formulario screening')+btn(c.compLink,'💼 Formulario competencias')+btn(c.scrPDF,'Ver screening')+btn(c.compPDF,'Ver competencias')+btn(c.postulacion,'Ver postulación')+btn(c.informe,'Ver informe')+genBtn+'</div>'
+      +'<div class="fb"><div class="mbtns" style="margin-top:10px">'+waBtn+mailBtn+cvBtn+etapaBtn('screening',c.scrPDF,'screening','📝 Formulario screening')+etapaBtn('competencias',c.compPDF,'competencias','💼 Formulario competencias')+btn(c.postulacion,'Ver postulación')+btn(c.informe,'Ver informe')+genBtn+'</div>'
       +'<div class="fp"><div class="pn"><h4>Contacto</h4>'+row('Teléfono',esc(c.tel))+row('Email',esc(c.mail))+row('Zona',esc(c.zona))+'</div>'
       +'<div class="pn"><h4>Postulación</h4>'+row('Recibido',esc(c.recibido))+row('Llegó por',esc(c.fuente))+row('Formación',esc(c.formacion))+row('Pretensión',c.pretension?'$'+esc(c.pretension):'')+'</div></div>'
       +(c.resumen?'<div class="sec">Análisis del CV</div><div class="fres" style="margin:0">'+esc(c.resumen)+'</div>':'')
@@ -320,6 +326,9 @@ header{background:var(--green)}
 /* botones de la ficha: todos del mismo tamaño y estilo */
 #mbody .mbtns{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
 #mbody .mbtns .mbtn{display:flex;align-items:center;justify-content:center;width:100%;min-height:42px;margin:0;padding:10px 12px;box-sizing:border-box;text-align:center;font-size:13px;font-weight:700;border-radius:99px;background:var(--green)!important;color:#fff!important;border:1.5px solid var(--green)!important}
+#mbody .mbtns .bgp{display:flex;gap:6px;grid-column:1/-1;min-width:0}
+#mbody .mbtns .bgp .mbtn{width:auto;flex:1;min-width:0}
+#mbody .mbtns .bgp .mbtn.ed{flex:0 0 46px;padding:10px 0}
 #mbody .mbtns .mbtn:last-child:nth-child(odd){grid-column:1/-1}
 #mbody .mbtns .mbtn.alt,#mbody .mbtns .mbtn[onclick*="menuBanco"]{background:#fff!important;color:var(--green)!important}
 #mbody .mbtns .mbtn.gen{background:var(--cream)!important;color:var(--green)!important;border-color:var(--cream)!important}

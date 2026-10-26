@@ -151,10 +151,12 @@ body{font-family:var(--font);background:var(--bg);color:var(--text)}
 <div class="toast" id="toast"></div>
 
 <?!= HtmlService.createHtmlOutputFromFile('IAForm').getContent() ?>
+<?!= HtmlService.createHtmlOutputFromFile('EstadoForm').getContent() ?>
 <script>window.EDIT_TIPO='screening';</script>
 <?!= HtmlService.createHtmlOutputFromFile('EditorForm').getContent() ?>
 <script>
 const PERFIL_ID = '<?= perfil ?>';
+const EDITAR = '<?= editar ?>' === 'true'; window.EDITAR = EDITAR; window.EF_TIPO = 'screening';
 const CAND_INICIAL = '<?= candidato ?>';
 const ENTR_INICIAL = '<?= entrevistador ?>';
 
@@ -424,6 +426,7 @@ function enviarALaPlanilla() {
   const tituloRaw = document.getElementById('res-titulo').textContent;
   const notas = document.getElementById('comentario').value;
   if (!nombre) { alert('Falta el nombre del candidato.'); return; }
+  const ESTADO_EF = efCapturar();
 
   let cat = state.veredictoManual || state.letraAuto || 'C';
 
@@ -495,6 +498,8 @@ function enviarALaPlanilla() {
     })
     .procesarScreening({
       perfil: PERFIL_ID,
+      editar: EDITAR,
+      estado: ESTADO_EF,
       nombre: nombre,
       entrevistador: entrevistador,
       resultado: cat,
