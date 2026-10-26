@@ -139,9 +139,7 @@ function procesarTodo(perfilId) {
 }
 
 function procesarTodosLosPerfiles() {
-  listarPerfiles().forEach(p => {
-    try { procesarTodo(p.id); } catch (e) { console.log('Error perfil ' + p.id + ': ' + e); }
-  });
+  procesarTodo_v2();
 }
 
 function configurarEstiloPlanilla(perfilId) {
