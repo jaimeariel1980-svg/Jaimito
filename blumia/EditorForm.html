@@ -1,0 +1,103 @@
+<style>
+.ed-fab{position:fixed;right:18px;bottom:18px;z-index:9000;background:#1A6645;color:#fff;border:none;border-radius:24px;padding:11px 18px;font:700 13px/1 'PP Pangram Sans','Plus Jakarta Sans',sans-serif;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.ed-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9100;display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 10px}
+.ed-bg.show{display:flex}
+.ed-box{background:#fff;border-radius:12px;max-width:860px;width:100%;padding:22px 24px;font-family:'PP Pangram Sans','Plus Jakarta Sans',sans-serif;color:#222}
+.ed-box h2{margin:0 0 4px;font-size:20px;color:#1A6645}
+.ed-box .ed-sub{font-size:12px;color:#666;margin-bottom:14px}
+.ed-box h3{margin:20px 0 8px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#1A6645}
+.ed-row{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap;padding:8px;background:#F7F5F1;border-radius:8px}
+.ed-box input,.ed-box textarea{border:1px solid #ccc;border-radius:6px;padding:7px 9px;font:13px/1.3 inherit;font-family:inherit;box-sizing:border-box}
+.ed-box textarea{width:100%;min-height:64px}
+.ed-box .grow{flex:1;min-width:180px}
+.ed-box .w{width:70px}
+.ed-box label{font-size:11px;color:#666;display:block;margin-bottom:2px}
+.ed-mini{background:#fff;border:1px solid #bbb;border-radius:6px;padding:5px 9px;cursor:pointer;font-size:12px}
+.ed-mini.x{color:#B91C1C;border-color:#B91C1C}
+.ed-add{background:#E6F2EC;color:#1A6645;border:1px dashed #1A6645;border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:700;font-size:12px}
+.ed-foot{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;flex-wrap:wrap}
+.ed-save{background:#1A6645;color:#fff;border:none;border-radius:8px;padding:11px 20px;font-weight:800;cursor:pointer}
+.ed-cancel{background:#fff;border:1px solid #999;border-radius:8px;padding:11px 20px;cursor:pointer}
+.ed-aviso{background:#FEF3D8;border-radius:8px;padding:9px 12px;font-size:12px;color:#7a5500;margin-bottom:10px}
+@media print{.ed-fab,.ed-bg{display:none!important}}
+</style>
+<button class="ed-fab ia-ui" id="edFab" onclick="edAbrir()">✏️ Editar este formulario</button>
+<div class="ed-bg ia-ui" id="edBg"><div class="ed-box" id="edBox"></div></div>
+<script>
+var ED=null;
+function edEsc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+function edPin(){var p='';try{p=sessionStorage.getItem('bl_pin')||'';}catch(e){}if(!p){p=prompt('PIN para editar el formulario (solo selectores):')||'';if(p){try{sessionStorage.setItem('bl_pin',p);}catch(e){}}}return p;}
+function edQuien(){var q='';try{q=sessionStorage.getItem('bl_quien')||'';}catch(e){}if(!q){q=prompt('¿Quién edita? (nombre, para el historial de cambios)')||'';if(q){try{sessionStorage.setItem('bl_quien',q);}catch(e){}}}return q;}
+function edAbrir(){
+  if(typeof DATOS==='undefined'||!DATOS){alert('El formulario todavía está cargando.');return;}
+  if(!edPin())return;
+  var h=DATOS.hero||{};
+  ED={tipo:window.EDIT_TIPO,
+    hero:{empresa:h.empresa||'',posicion:h.posicion||'',ubicacion:h.ubicacion||'',instancia:h.instancia||'',entrevistadoras:(DATOS.entrevistadoras||[]).join(', '),
+      criterio_avanza:Number(h.criterio_avanza)||8.5,criterio_bplus:Number(h.criterio_bplus)||8,criterio_reserva:Number(h.criterio_reserva)||6.5},
+    eval:(DATOS.eval_items||[]).map(function(e){return {id:e.id,label:e.label,peso:e.peso};}),
+    val:(DATOS.val_items||[]).map(function(v){return {id:v.id,label:v.label,opts:(v.opts||[]).join(' | ')};}),
+    comps:(DATOS.competencias||[]).map(function(c){return {id:c.id,nombre:c.nombre,descripcion:c.descripcion,peso:c.peso,preguntas:(c.preguntas||[]).join('\n')};})};
+  edRender();document.getElementById('edBg').classList.add('show');
+}
+function edCerrar(){document.getElementById('edBg').classList.remove('show');}
+function edSync(){
+  var g=function(id){var e=document.getElementById(id);return e?e.value:'';};
+  if(!ED)return;
+  ['empresa','posicion','ubicacion','instancia','entrevistadoras'].forEach(function(k){if(document.getElementById('edh_'+k))ED.hero[k]=g('edh_'+k);});
+  ['criterio_avanza','criterio_bplus','criterio_reserva'].forEach(function(k){if(document.getElementById('edh_'+k))ED.hero[k]=g('edh_'+k);});
+  ED.eval.forEach(function(e,i){e.label=g('ede_l'+i);e.peso=g('ede_p'+i);});
+  ED.val.forEach(function(v,i){v.label=g('edv_l'+i);v.opts=g('edv_o'+i);});
+  ED.comps.forEach(function(c,i){c.nombre=g('edc_n'+i);c.descripcion=g('edc_d'+i);c.peso=g('edc_p'+i);c.preguntas=g('edc_q'+i);});
+}
+function edMover(k,i,d){edSync();var a=ED[k],j=i+d;if(j<0||j>=a.length)return;var t=a[i];a[i]=a[j];a[j]=t;edRender();}
+function edBorrar(k,i){edSync();if(!confirm('¿Sacar este elemento? (queda copia en la pestaña Historial_Formularios)'))return;ED[k].splice(i,1);edRender();}
+function edAgregar(k){edSync();ED[k].push(k==='eval'?{id:'',label:'',peso:1}:k==='val'?{id:'',label:'',opts:'Sí | No'}:{id:'',nombre:'',descripcion:'',peso:1,preguntas:''});edRender();}
+function edBtns(k,i){return '<div style="display:flex;gap:4px"><button class="ed-mini" onclick="edMover(\''+k+'\','+i+',-1)">↑</button><button class="ed-mini" onclick="edMover(\''+k+'\','+i+',1)">↓</button><button class="ed-mini x" onclick="edBorrar(\''+k+'\','+i+')">✕</button></div>';}
+function edRender(){
+  var h=ED.hero,s=ED.tipo==='screening',x='<h2>✏️ Editar '+(s?'screening':'competencias')+'</h2><div class="ed-sub">Perfil: <b>'+edEsc(PERFIL_ID)+'</b>. Los cambios valen para todas las evaluaciones nuevas de esta búsqueda. Las ya guardadas no se modifican.</div>'
+   +'<div class="ed-aviso">Al guardar se recarga el formulario: lo que hayas cargado de un candidato se pierde. Guardá o imprimí antes si hace falta.</div>';
+  if(s){
+    x+='<h3>Datos del puesto</h3><div class="ed-row">'
+     +'<div class="grow"><label>Empresa</label><input id="edh_empresa" style="width:100%" value="'+edEsc(h.empresa)+'"></div>'
+     +'<div class="grow"><label>Posición</label><input id="edh_posicion" style="width:100%" value="'+edEsc(h.posicion)+'"></div>'
+     +'<div class="grow"><label>Ubicación</label><input id="edh_ubicacion" style="width:100%" value="'+edEsc(h.ubicacion)+'"></div>'
+     +'<div class="grow"><label>Instancia</label><input id="edh_instancia" style="width:100%" value="'+edEsc(h.instancia)+'"></div></div>';
+  }
+  x+='<h3>Entrevistadoras</h3><div class="ed-row"><div class="grow"><label>Nombres separados por coma</label><input id="edh_entrevistadoras" style="width:100%" value="'+edEsc(h.entrevistadoras)+'"></div></div>';
+  if(s){
+    x+='<h3>Criterios de ajuste al perfil (peso: cuánto pesa en el puntaje)</h3>';
+    ED.eval.forEach(function(e,i){x+='<div class="ed-row"><div class="grow"><label>Criterio</label><input id="ede_l'+i+'" style="width:100%" value="'+edEsc(e.label)+'"></div><div><label>Peso</label><input class="w" id="ede_p'+i+'" value="'+edEsc(e.peso)+'"></div>'+edBtns('eval',i)+'</div>';});
+    x+='<button class="ed-add" onclick="edAgregar(\'eval\')">+ Agregar criterio</button>';
+    x+='<h3>Validación de condiciones (opciones separadas por |)</h3>';
+    ED.val.forEach(function(v,i){x+='<div class="ed-row"><div class="grow"><label>Condición</label><input id="edv_l'+i+'" style="width:100%" value="'+edEsc(v.label)+'"></div><div class="grow"><label>Opciones</label><input id="edv_o'+i+'" style="width:100%" value="'+edEsc(v.opts)+'"></div>'+edBtns('val',i)+'</div>';});
+    x+='<button class="ed-add" onclick="edAgregar(\'val\')">+ Agregar condición</button>';
+    x+='<h3>Umbrales automáticos del puntaje (sobre 10)</h3><div class="ed-row">'
+     +'<div><label>A desde</label><input class="w" id="edh_criterio_avanza" value="'+edEsc(h.criterio_avanza)+'"></div>'
+     +'<div><label>B+ desde</label><input class="w" id="edh_criterio_bplus" value="'+edEsc(h.criterio_bplus)+'"></div>'
+     +'<div><label>B desde (debajo es C)</label><input class="w" id="edh_criterio_reserva" value="'+edEsc(h.criterio_reserva)+'"></div></div>';
+  }else{
+    x+='<h3>Competencias (una pregunta por línea)</h3>';
+    ED.comps.forEach(function(c,i){x+='<div class="ed-row" style="display:block"><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px"><div class="grow"><label>Competencia</label><input id="edc_n'+i+'" style="width:100%" value="'+edEsc(c.nombre)+'"></div><div><label>Peso</label><input class="w" id="edc_p'+i+'" value="'+edEsc(c.peso)+'"></div>'+edBtns('comps',i)+'</div><label>Descripción</label><textarea id="edc_d'+i+'">'+edEsc(c.descripcion)+'</textarea><label style="margin-top:6px">Preguntas</label><textarea id="edc_q'+i+'" style="min-height:90px">'+edEsc(c.preguntas)+'</textarea></div>';});
+    x+='<button class="ed-add" onclick="edAgregar(\'comps\')">+ Agregar competencia</button>';
+  }
+  x+='<div class="ed-foot"><button class="ed-cancel" onclick="edCerrar()">Cancelar</button><button class="ed-save" id="edSave" onclick="edGuardar()">Guardar cambios</button></div>';
+  document.getElementById('edBox').innerHTML=x;
+}
+function edGuardar(){
+  edSync();var q=edQuien();if(!q)return;var pin=edPin();if(!pin)return;
+  var h=ED.hero,p={};
+  if(ED.tipo==='screening'){
+    p.hero={empresa:h.empresa,posicion:h.posicion,ubicacion:h.ubicacion,instancia:h.instancia,entrevistadoras:h.entrevistadoras,criterio_avanza:h.criterio_avanza,criterio_bplus:h.criterio_bplus,criterio_reserva:h.criterio_reserva};
+    p.eval=ED.eval.map(function(e){return {id:e.id,label:e.label,peso:e.peso};});
+    p.val=ED.val.map(function(v){return {id:v.id,label:v.label,opts:String(v.opts).split('|')};});
+  }else{
+    p.hero={entrevistadoras:h.entrevistadoras};
+    p.comps=ED.comps.map(function(c){return {id:c.id,nombre:c.nombre,descripcion:c.descripcion,peso:c.peso,preguntas:String(c.preguntas).split('\n')};});
+  }
+  var b=document.getElementById('edSave');b.disabled=true;b.textContent='Guardando...';
+  google.script.run.withSuccessHandler(function(){alert('Guardado ✓. Se recarga el formulario.');location.reload();})
+   .withFailureHandler(function(e){b.disabled=false;b.textContent='Guardar cambios';var m=(e&&e.message)||String(e);if(/PIN/.test(m)){try{sessionStorage.removeItem('bl_pin');}catch(x){}}alert('No se guardó: '+m);})
+   .guardarFormularioPerfil(pin,PERFIL_ID,p,q);
+}
+</script>
