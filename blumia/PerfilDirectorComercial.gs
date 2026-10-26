@@ -161,9 +161,11 @@ function formatearHojaDirectorComercial() {
   Logger.log('✅ Formato y links de ' + p.hoja + ' listos.');
 }
 
-/* Genera el PDF "Perfil del puesto" (sin remuneración), lo guarda en la carpeta
-   del perfil, lo comparte por link y lo vincula al botón del kanban (Config.link_perfil).
-   Correr UNA vez: vincularPerfilPuestoDirectorComercial() */
+/* Genera el PDF "Perfil del puesto" (con remuneración y beneficios, SOLO para selectores),
+   lo guarda en la carpeta del perfil y lo vincula al botón del kanban (Config.link_perfil).
+   Marca el perfil como protegido (Config.perfil_protegido = SI): el botón pide el PIN (propiedad BLUMIA_PIN).
+   Si ya había un PDF vinculado, lo manda a la papelera y genera uno nuevo.
+   Correr: vincularPerfilPuestoDirectorComercial() */
 function vincularPerfilPuestoDirectorComercial() {
   const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
   const cfg = getConfig('director-comercial');
@@ -171,8 +173,9 @@ function vincularPerfilPuestoDirectorComercial() {
   const html = '<html><head><meta charset="utf-8"><style>' +
     'body{font-family:Arial,sans-serif;color:#1a1a1a;font-size:12px;line-height:1.5;margin:32px}' +
     'h1{color:#1A6645;font-size:20px;margin:0 0 4px}h2{color:#1A6645;font-size:14px;border-bottom:2px solid #1A6645;padding-bottom:3px;margin:20px 0 8px}' +
-    '.sub{color:#555;margin-bottom:6px}li{margin-bottom:4px}.pie{margin-top:28px;color:#888;font-size:10px}' +
+    '.sub{color:#555;margin-bottom:6px}.conf{color:#E8501A;font-size:10px;font-weight:bold;letter-spacing:.05em}li{margin-bottom:4px}.pie{margin-top:28px;color:#888;font-size:10px}' +
     '</style></head><body>' +
+    '<div class="conf">CONFIDENCIAL · SOLO PARA SELECTORES</div>' +
     '<h1>Director/a Comercial de Proyectos de Consultoría – Energía &amp; Minería</h1>' +
     '<div class="sub">Reporta a: CEO · Ubicación: CABA, con posibilidad de viajes comerciales locales · Tiempo completo</div>' +
     '<h2>Misión del rol</h2><p>Liderar la estrategia de desarrollo de negocios y captación de clientes para las líneas de consultoría de la firma, enfocándose principalmente en los sectores de Energía (Oil &amp; Gas, Energías Renovables, Generación/Distribución Eléctrica) y Minería. Será el responsable de abrir nuevas cuentas, gestionar relaciones a largo plazo a nivel C-Level y estructurar propuestas comerciales complejas a medida.</p>' +
@@ -188,14 +191,17 @@ function vincularPerfilPuestoDirectorComercial() {
       '<b>Conocimiento técnico-comercial:</b> sólido entendimiento de los procesos operativos, desafíos de sustentabilidad (ESG), normativas regulatorias y ciclos de inversión de ambos sectores.',
       '<b>Network:</b> red de contactos activa y comprobable con tomadores de decisiones (CEOs, COOs, VPs de Operaciones, Directores de Abastecimiento).',
       '<b>Idiomas:</b> inglés avanzado (bilingüe); portugués deseable.']) +
-    '<h2>Condiciones y beneficios</h2>' + li([
-      'Gastos de traslados y viáticos 100% cubiertos.',
-      'Seguro médico de alta gama (plan ejecutivo familiar).',
+    '<h2>Remuneración</h2>' + li([
+      '<b>Salario base (fijo):</b> $15.000.000 (15MM). Representa entre el 50% y el 60% de la compensación total estimada (On-Target Earnings, OTE).',
+      '<b>Comisiones (variable):</b> porcentaje a determinar sobre el margen del proyecto de consultoría cerrado.',
+      '<b>Gastos de traslados y viáticos:</b> 100% cubiertos.']) +
+    '<h2>Beneficios</h2>' + li([
+      'Seguro médico de alta gama: cobertura médica internacional o plan ejecutivo familiar (OSDE 410).',
       'Herramientas de trabajo premium: laptop de alta capacidad y smartphone corporativo.',
-      'Clases de portugués u otro idioma complementario.',
+      'Idioma complementario (clases de portugués u otro).',
       'Tres semanas de vacaciones por año.',
       'Esquema de trabajo híbrido 3x2.']) +
-    '<div class="pie">Búsqueda gestionada por Blumia Consulting</div></body></html>';
+    '<div class="pie">Blumia Consulting · Documento confidencial</div></body></html>';
 
   const blob = Utilities.newBlob(html, 'text/html', 'perfil.html').getAs('application/pdf').setName('Perfil del puesto – Director Comercial.pdf');
   const carpeta = DriveApp.getFolderById(cfg.folder_madre).getParents().next();
@@ -207,9 +213,13 @@ function vincularPerfilPuestoDirectorComercial() {
   const config = ss.getSheetByName('Config');
   const rows = config.getDataRange().getValues();
   const H = rows[0];
-  let c = H.indexOf('link_perfil');
-  if (c === -1) { c = H.length; config.getRange(1, c + 1).setValue('link_perfil'); }
   const f = rows.findIndex(r => r[0] === 'director-comercial');
-  config.getRange(f + 1, c + 1).setValue(url);
-  Logger.log('✅ Perfil del puesto vinculado: ' + url);
+  const col = n => { let c = H.indexOf(n); if (c === -1) { c = H.length; H.push(n); config.getRange(1, c + 1).setValue(n); } return c + 1; };
+  const cLink = col('link_perfil');
+  const viejo = String(rows[f][cLink - 1] || '').match(/[-\w]{25,}/);
+  if (viejo && viejo[0] !== pdf.getId()) { try { DriveApp.getFileById(viejo[0]).setTrashed(true); } catch (e) { } }
+  config.getRange(f + 1, cLink).setValue(url);
+  config.getRange(f + 1, col('perfil_protegido')).setValue('SI');
+  Logger.log('✅ Perfil del puesto vinculado y protegido con PIN: ' + url);
+  if (!PropertiesService.getScriptProperties().getProperty('BLUMIA_PIN')) Logger.log('⚠️ Falta cargar la propiedad del script BLUMIA_PIN (el PIN).');
 }
