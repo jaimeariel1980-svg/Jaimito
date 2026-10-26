@@ -21,14 +21,14 @@
 .cf-close{background:#fff;border:1px solid #999;border-radius:8px;padding:10px 20px;cursor:pointer}
 @media(max-width:640px){.cf-row{grid-template-columns:1fr}}
 </style>
-<div class="cf-bg" id="cfBg"><div class="cf-box" id="cfBox"></div></div>
+<div class="cf-bg" id="cfBg" onclick="if(event.target===this)cfCerrar()"><div class="cf-box" id="cfBox"></div></div>
 <script>
 (function(){
   var CF=null;
   var ETQ={nombre:'Nombre en el tablero',nombre_perfil:'Nombre del puesto (se usa en los mensajes)',empresa:'Empresa (agrupa las búsquedas en el tablero)',empresa_candidatos:'Cómo se nombra la empresa a los candidatos (vacío = «una empresa cliente del sector…»)',link_screening:'Link de agenda · screening',link_competencias:'Link de agenda · competencias',link_empresa_virtual:'Link de agenda · entrevista con la empresa (virtual / presencial)',link_empresa_presencial:'Link de agenda · empresa presencial (si es otro)',link_flyer:'Link del flyer',link_perfil:'Link del perfil del puesto en PDF (si no está protegido)'};
   function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
   function pin(){var p='';try{p=sessionStorage.getItem('bl_pin')||'';}catch(e){}if(!p){p=prompt('PIN para configurar la búsqueda (solo selectores):')||'';if(p){try{sessionStorage.setItem('bl_pin',p);}catch(e){}}}return p;}
-  function quien(){var q='';try{q=sessionStorage.getItem('bl_quien')||'';}catch(e){}if(!q){q=prompt('¿Quién edita? (nombre, para el historial de cambios)')||'';if(q){try{sessionStorage.setItem('bl_quien',q);}catch(e){}}}return q;}
+  function quien(){var q='';try{q=localStorage.getItem('blumia_quien')||sessionStorage.getItem('bl_quien')||'';}catch(e){}if(!q){q=prompt('¿Quién edita? (nombre, para el historial de cambios)')||'';if(q){try{sessionStorage.setItem('bl_quien',q);}catch(e){}}}return q;}
   function badPin(e){var m=(e&&e.message)||String(e);if(/PIN/.test(m)){try{sessionStorage.removeItem('bl_pin');}catch(x){}}return m;}
   window.cfAbrir=function(){
     var p=pin();if(!p)return;
@@ -42,7 +42,7 @@
     if((v=g('cf_ia'))!==null)CF.prompt_extra=v;
     Object.keys(CF.datos).forEach(function(k){if((v=g('cfd_'+k))!==null)CF.datos[k]=v;});
     CF.preguntas.forEach(function(q,i){if((v=g('cfq_e'+i))!==null){q.etiqueta=v;q.tipo=g('cfq_t'+i);q.opciones=g('cfq_o'+i);q.requerido=g('cfq_r'+i);}});
-    CF.plantillas.forEach(function(t,i){if((v=g('cfp_'+i))!==null)t.texto=v;});
+    CF.plantillas.forEach(function(t,i){if((v=g('cfp_'+i))!==null){t.texto=v;t.alcance=g('cfa_'+i);}});
   }
   function render(tab){
     var T=[['ia','Requisitos para la IA'],['post','Preguntas de postulación'],['msg','Mensajes'],['dat','Datos de la búsqueda']];
@@ -51,8 +51,8 @@
     x+='<div class="cf-sec'+(tab==='post'?' on':'')+'"><div class="cf-help">Preguntas que se agregan al formulario de postulación de esta búsqueda (además de los datos básicos y el CV). En «Opciones» separá con | (por ejemplo: Básico|Intermedio|Avanzado).</div>';
     CF.preguntas.forEach(function(q,i){x+='<div class="cf-row"><div><label>Pregunta</label><input id="cfq_e'+i+'" value="'+esc(q.etiqueta)+'"></div><div><label>Tipo</label><select id="cfq_t'+i+'"><option value="texto"'+(q.tipo==='texto'?' selected':'')+'>Texto libre</option><option value="select"'+(q.tipo==='select'?' selected':'')+'>Elegir opción</option></select></div><div><label>Opciones (si elige)</label><input id="cfq_o'+i+'" value="'+esc(q.opciones)+'"></div><div><label>Obligatoria</label><select id="cfq_r'+i+'"><option value="SI"'+(q.requerido!=='NO'?' selected':'')+'>Sí</option><option value="NO"'+(q.requerido==='NO'?' selected':'')+'>No</option></select></div><button class="cf-mini x" onclick="cfQuitar('+i+')">✕</button></div>';});
     x+='<button class="cf-add" onclick="cfAgregar()">+ Agregar pregunta</button>'+foot('post')+'</div>';
-    x+='<div class="cf-sec'+(tab==='msg'?' on':'')+'"><div class="cf-help">Textos de los WhatsApp y mails. <b>Son los mismos para todas las búsquedas</b>. Se completan solos: [NOMBRE] [PUESTO] [EMPRESA] [ENTREVISTADOR] [LINK].</div>';
-    CF.plantillas.forEach(function(t,i){x+='<div class="cf-pl"><b>'+esc(t.clave)+'</b> <span style="color:#888;font-size:12px">· '+esc(t.canal)+'</span><textarea id="cfp_'+i+'" style="min-height:120px;margin-top:6px">'+esc(t.texto)+'</textarea></div>';});
+    x+='<div class="cf-sec'+(tab==='msg'?' on':'')+'"><div class="cf-help">Textos de los WhatsApp y mails. Por defecto cada cambio vale <b>solo para esta búsqueda</b>; si elegís «Todas las búsquedas» cambia el texto general. Se completan solos: [NOMBRE] [PUESTO] [EMPRESA] [ENTREVISTADOR] (quien envía) y [LINK] (agenda).</div>';
+    CF.plantillas.forEach(function(t,i){x+='<div class="cf-pl"><b>'+esc(t.clave)+'</b> <span style="color:#888;font-size:12px">· '+esc(t.canal)+'</span> <span style="font-size:11px;font-weight:700;color:'+(t.propia?'#1A6645':'#888')+'">'+(t.propia?'· texto propio de esta búsqueda':'· texto general')+'</span><textarea id="cfp_'+i+'" style="min-height:120px;margin-top:6px">'+esc(t.texto)+'</textarea><div style="display:flex;gap:10px;align-items:center;margin-top:6px"><label style="margin:0">Guardar para:</label><select id="cfa_'+i+'" style="width:auto"><option value="esta">Solo esta búsqueda</option><option value="todas">Todas las búsquedas</option></select>'+(t.propia?'<button class="cf-mini" onclick="cfVolver('+i+')">↺ Volver al texto general</button>':'')+'</div></div>';});
     x+=foot('msg')+'</div>';
     x+='<div class="cf-sec'+(tab==='dat'?' on':'')+'"><div class="cf-help">Datos de la búsqueda. Los links tienen que empezar con https://. Al guardar se recarga el tablero.</div>';
     Object.keys(ETQ).forEach(function(k){x+='<label>'+ETQ[k]+'</label><input id="cfd_'+k+'" value="'+esc(CF.datos[k])+'">';});
@@ -61,12 +61,13 @@
   }
   function foot(t){return '<div class="cf-foot"><button class="cf-close" onclick="cfCerrar()">Cerrar</button><button class="cf-save" onclick="cfGuardar(\''+t+'\',this)">Guardar</button></div>';}
   window.cfQuitar=function(i){sync();if(!confirm('¿Sacar esta pregunta? (queda copia en Historial_Formularios)'))return;CF.preguntas.splice(i,1);render('post');};
+  window.cfVolver=function(i){sync();if(!confirm('¿Volver al texto general para esta búsqueda?'))return;var t=CF.plantillas[i];google.script.run.withSuccessHandler(function(){t.texto=t.general;t.propia=false;render('msg');alert('Listo: esta búsqueda usa el texto general.');}).withFailureHandler(function(e){alert(badPin(e));}).guardarConfigBusqueda(pin(),PERFIL,{plantillas:[{clave:t.clave,volver:true}]},quien());};
   window.cfAgregar=function(){sync();CF.preguntas.push({id:'',etiqueta:'',tipo:'texto',opciones:'',requerido:'SI'});render('post');};
   window.cfGuardar=function(t,btn){
     sync();var q=quien();if(!q)return;var p=pin();if(!p)return;var d={};
     if(t==='ia')d.prompt_extra=CF.prompt_extra;
     if(t==='post')d.preguntas=CF.preguntas;
-    if(t==='msg')d.plantillas=CF.plantillas.map(function(x){return {clave:x.clave,texto:x.texto};});
+    if(t==='msg')d.plantillas=CF.plantillas.map(function(x){return {clave:x.clave,texto:x.texto,alcance:x.alcance||'esta'};});
     if(t==='dat')d.datos=CF.datos;
     btn.disabled=true;btn.textContent='Guardando...';
     google.script.run.withSuccessHandler(function(){btn.disabled=false;btn.textContent='Guardar';alert('Guardado ✓');if(t==='dat')location.reload();})

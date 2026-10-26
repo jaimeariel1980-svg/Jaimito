@@ -1,0 +1,70 @@
+<style>
+.rs-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9100;display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 10px}
+.rs-bg.show{display:flex}
+.rs-box{background:#F7F5F1;border-radius:12px;max-width:1000px;width:100%;padding:20px 24px;color:#222;font-size:14px}
+.rs-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.rs-top h2{margin:0;font-size:20px;color:#1A6645}
+.rs-x{background:#fff;border:1px solid #999;border-radius:8px;padding:7px 14px;cursor:pointer}
+.rs-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px}
+.rs-c{background:#fff;border-radius:10px;padding:12px 14px;border-left:4px solid #1A6645}
+.rs-c b{display:block;font-size:26px;line-height:1.1;color:#1A6645}
+.rs-c span{font-size:12px;color:#666}
+.rs-c.r{border-color:#E06666}.rs-c.r b{color:#B91C1C}.rs-c.y{border-color:#E0A800}.rs-c.y b{color:#8a6500}.rs-c.g{border-color:#888}.rs-c.g b{color:#444}
+.rs-sec{background:#fff;border-radius:10px;padding:14px 16px;margin-bottom:12px}
+.rs-sec h3{margin:0 0 10px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#1A6645}
+.rs-f{display:grid;grid-template-columns:200px 1fr 120px;gap:10px;align-items:center;margin-bottom:6px;font-size:13px}
+.rs-bar{background:#EEE;border-radius:6px;height:18px;overflow:hidden}
+.rs-bar i{display:block;height:100%;background:#1A6645;border-radius:6px}
+.rs-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.rs-t{width:100%;border-collapse:collapse;font-size:13px}
+.rs-t th,.rs-t td{padding:6px 8px;text-align:right;border-bottom:1px solid #eee}.rs-t th:first-child,.rs-t td:first-child{text-align:left}
+.rs-t th{font-size:11px;color:#666;text-transform:uppercase}
+.rs-n{font-size:11px;color:#888;margin-top:8px}
+@media(max-width:700px){.rs-f{grid-template-columns:110px 1fr 90px}.rs-2{grid-template-columns:1fr}}
+</style>
+<div class="rs-bg" id="rsBg" onclick="if(event.target===this)rsCerrar()"><div class="rs-box" id="rsBox"></div></div>
+<script>
+(function(){
+  function est(e){
+    var l=String(e||'').trim().toLowerCase(),lv;
+    if(/^eliminado/.test(l))return null;
+    if(l==='contratado')return {lv:5,t:'cont'};
+    if(/^descartad/.test(l)){lv=/post screening/.test(l)?1:/en competencias/.test(l)?2:/screening empresa/.test(l)?3:/presencial empresa|en empresa/.test(l)?4:0;return {lv:lv,t:'desc'};}
+    if(/reserva/.test(l))return {lv:/competencias/.test(l)?2:/screening empresa/.test(l)?3:/presencial empresa/.test(l)?4:1,t:'res'};
+    lv=/competencias/.test(l)?2:/screening empresa/.test(l)?3:/presencial empresa|avanza a empresa|entrevista empresa|en cliente/.test(l)?4:/screening/.test(l)?1:0;
+    return {lv:lv,t:'act'};
+  }
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+  function pct(a,b){return b?Math.round(a*100/b)+'%':'—';}
+  function fm(n){return n?'$'+Math.round(n/1000000*10)/10+' M':'—';}
+  function bars(obj,total){var k=Object.keys(obj).sort(function(a,b){return obj[b]-obj[a];});return k.length?k.map(function(x){return '<div class="rs-f"><span>'+esc(x)+'</span><div class="rs-bar"><i style="width:'+(total?Math.round(obj[x]*100/total):0)+'%"></i></div><span>'+obj[x]+' · '+pct(obj[x],total)+'</span></div>';}).join(''):'<span style="color:#888">Sin datos</span>';}
+  window.rsAbrir=function(){
+    var L=[],now=Date.now(),hoy=new Date();hoy.setHours(0,0,0,0);var h0=hoy.getTime(),h7=h0+7*864e5;
+    DATA.forEach(function(c){var e=est(c.estado);if(e){e.c=c;L.push(e);}});
+    var n=L.length,act=L.filter(function(x){return x.t==='act';}),
+      sinc=act.filter(function(x){return x.lv===0&&/^(nuevo|pendiente|revisar|)$/i.test(String(x.c.estado||'').trim())&&!x.c.contactado;}).length,
+      cont=L.filter(function(x){return x.t==='cont';}).length,desc=L.filter(function(x){return x.t==='desc';}).length,res=L.filter(function(x){return x.t==='res';}).length,
+      reached=[0,1,2,3,4,5].map(function(k){return L.filter(function(x){return x.lv>=k;}).length;});
+    var sem=0,hoyC=0,prox=0,ult7=0;
+    L.forEach(function(x){var f=avFecha(x.c.cita);if(f&&x.t==='act'){if(f>=h0&&f<h0+864e5)hoyC++;if(f>=h0&&f<h7)prox++;}var r=avFecha(x.c.recibido);if(r&&now-r<=7*864e5)ult7++;});
+    var notas={},fuentes={},pret=[];
+    L.forEach(function(x){var nt=String(x.c.nota||'').trim()||'Sin nota';notas[nt]=(notas[nt]||0)+1;var fu=String(x.c.fuente||'').trim()||'Sin dato';fuentes[fu]=(fuentes[fu]||0)+1;if(x.t==='act'&&x.c.pretNum>0)pret.push(x.c.pretNum);});
+    pret.sort(function(a,b){return a-b;});var med=pret.length?pret[Math.floor(pret.length/2)]:0;
+    var ST=['Recibidos','Llegaron a screening','Llegaron a competencias','Screening con la empresa','Entrevista final con la empresa','Contratados'];
+    var x='<div class="rs-top"><h2>📊 Resumen · '+esc(document.querySelector('header h1')?document.querySelector('header h1').textContent:PERFIL)+'</h2><button class="rs-x" onclick="rsCerrar()">Cerrar</button></div>';
+    x+='<div class="rs-cards"><div class="rs-c"><b>'+n+'</b><span>Recibidos</span></div><div class="rs-c"><b>'+act.length+'</b><span>En proceso</span></div><div class="rs-c y"><b>'+sinc+'</b><span>Sin contactar</span></div><div class="rs-c"><b>'+prox+'</b><span>Entrevistas próximos 7 días ('+hoyC+' hoy)</span></div><div class="rs-c"><b>'+cont+'</b><span>Contratados</span></div><div class="rs-c g"><b>'+res+'</b><span>En reserva</span></div><div class="rs-c r"><b>'+desc+'</b><span>Descartados</span></div><div class="rs-c g"><b>'+ult7+'</b><span>Recibidos en 7 días</span></div></div>';
+    x+='<div class="rs-sec"><h3>Embudo de la búsqueda</h3>'+ST.map(function(t,k){return '<div class="rs-f"><span>'+t+'</span><div class="rs-bar"><i style="width:'+(n?Math.round(reached[k]*100/n):0)+'%"></i></div><span><b>'+reached[k]+'</b> · '+(k?pct(reached[k],reached[k-1])+' del paso anterior':pct(reached[k],n))+'</span></div>';}).join('')+'<div class="rs-n">Se calcula con el estado actual de cada candidato: «llegó» a una etapa si está en ella o la pasó (los descartados cuentan hasta donde llegaron).</div></div>';
+    x+='<div class="rs-2"><div class="rs-sec"><h3>Calidad de los CVs (nota)</h3>'+bars(notas,n)+'</div><div class="rs-sec"><h3>De dónde llegan</h3>'+bars(fuentes,n)+'</div></div>';
+    x+='<div class="rs-sec"><h3>Pretensión salarial (candidatos en proceso)</h3>'+(pret.length?'<div class="rs-cards" style="margin:0"><div class="rs-c"><b>'+fm(pret[0])+'</b><span>Mínima</span></div><div class="rs-c"><b>'+fm(med)+'</b><span>Mediana</span></div><div class="rs-c"><b>'+fm(pret[pret.length-1])+'</b><span>Máxima</span></div><div class="rs-c g"><b>'+pret.length+'</b><span>con dato</span></div></div>':'<span style="color:#888">Todavía no hay pretensiones cargadas.</span>')+'</div>';
+    x+='<div class="rs-sec" id="rsEmp"><h3>Todas las búsquedas de la empresa</h3><span style="color:#888">Cargando…</span></div>';
+    document.getElementById('rsBox').innerHTML=x;document.getElementById('rsBg').classList.add('show');
+    google.script.run.withSuccessHandler(function(r){var e=document.getElementById('rsEmp');if(!e)return;var T={total:0,activos:0,l1:0,l2:0,l3:0,l4:0,contratados:0,descartados:0};
+      var rows=r.map(function(b){Object.keys(T).forEach(function(k){T[k]+=b[k];});return '<tr><td>'+esc(b.nombre)+(b.id===PERFIL?' ◂':'')+'</td><td>'+b.total+'</td><td>'+b.activos+'</td><td>'+b.l1+'</td><td>'+b.l2+'</td><td>'+b.l3+'</td><td>'+b.l4+'</td><td>'+b.contratados+'</td><td>'+b.descartados+'</td></tr>';}).join('');
+      e.innerHTML='<h3>Todas las búsquedas de la empresa</h3><table class="rs-t"><tr><th>Búsqueda</th><th>Recibidos</th><th>En proceso</th><th>Screening</th><th>Competencias</th><th>Scr. empresa</th><th>Final empresa</th><th>Contratados</th><th>Descartados</th></tr>'+rows+(r.length>1?'<tr><td><b>Total</b></td>'+['total','activos','l1','l2','l3','l4','contratados','descartados'].map(function(k){return '<td><b>'+T[k]+'</b></td>';}).join('')+'</tr>':'')+'</table>';
+    }).withFailureHandler(function(){var e=document.getElementById('rsEmp');if(e)e.innerHTML='<h3>Todas las búsquedas de la empresa</h3><span style="color:#888">No se pudo cargar.</span>';}).resumenBusquedas(PERFIL);
+  };
+  window.rsCerrar=function(){document.getElementById('rsBg').classList.remove('show');};
+  var nav=document.getElementById('nav');
+  if(nav)nav.insertAdjacentHTML('beforeend','<button onclick="rsAbrir()">📊 Resumen</button>');
+})();
+</script>

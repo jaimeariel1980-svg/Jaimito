@@ -11,15 +11,15 @@ function hojaRegCont_() {
   return sh;
 }
 
-function registrarContacto_(perfilId, fila, nombre, tel, tipo) {
-  let quien = '';
-  try { quien = Session.getActiveUser().getEmail() || ''; } catch (e) { }
+function registrarContacto_(perfilId, fila, nombre, tel, tipo, quien) {
+  quien = String(quien || '').trim();
+  if (!quien) { try { quien = Session.getActiveUser().getEmail() || ''; } catch (e) { } }
   try { hojaRegCont_().appendRow([new Date(), perfilId, fila, nombre, String(tel || ''), tipo, quien]); } catch (e) { }
 }
 
-function registrarContactoManual(perfilId, fila, tipo) {
+function registrarContactoManual(perfilId, fila, tipo, quien) {
   const sh = getSheet(getConfig(perfilId));
-  registrarContacto_(perfilId, fila, sh.getRange(fila, 2).getValue(), sh.getRange(fila, 3).getValue(), tipo);
+  registrarContacto_(perfilId, fila, sh.getRange(fila, 2).getValue(), sh.getRange(fila, 3).getValue(), tipo, quien);
   return { ok: true };
 }
 
