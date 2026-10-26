@@ -317,6 +317,13 @@ header{background:var(--green)}
 .rs-kpi:before{background:var(--teal)}
 .sortable-chosen{box-shadow:0 10px 24px rgba(0,0,0,.28)!important;outline:2px solid var(--cream)}
 .fh{background:var(--mint)}
+/* botones de la ficha: todos del mismo tamaño y estilo */
+#mbody .mbtns{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+#mbody .mbtns .mbtn{display:flex;align-items:center;justify-content:center;width:100%;min-height:42px;margin:0;padding:10px 12px;box-sizing:border-box;text-align:center;font-size:13px;font-weight:700;border-radius:99px;background:var(--green)!important;color:#fff!important;border:1.5px solid var(--green)!important}
+#mbody .mbtns .mbtn:last-child:nth-child(odd){grid-column:1/-1}
+#mbody .mbtns .mbtn.alt,#mbody .mbtns .mbtn[onclick*="menuBanco"]{background:#fff!important;color:var(--green)!important}
+#mbody .mbtns .mbtn.gen{background:var(--cream)!important;color:var(--green)!important;border-color:var(--cream)!important}
+#mbody .mbtns .mbtn[onclick*="eliminar"]{background:#fff!important;color:#B91C1C!important;border-color:#B91C1C!important}
 </style>
 <style id="mobcss">
 @media(max-width:640px){
