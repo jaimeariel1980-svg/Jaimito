@@ -48,6 +48,10 @@ jobs:
         run: npm i -g @google/clasp@2
       - if: steps.dec.outputs.go == '1'
         run: echo '${{ secrets[matrix.secret] }}' > ~/.clasprc.json
+      - name: Adaptar credenciales al formato de clasp 2
+        if: steps.dec.outputs.go == '1'
+        run: |
+          node -e "const fs=require('fs'),f=process.env.HOME+'/.clasprc.json',j=JSON.parse(fs.readFileSync(f)),t=j.tokens&&j.tokens.default;if(t&&!j.token)fs.writeFileSync(f,JSON.stringify({token:{access_token:t.access_token,refresh_token:t.refresh_token,token_type:'Bearer'},oauth2ClientSettings:{clientId:t.client_id,clientSecret:t.client_secret,redirectUri:'http://localhost'},isLocalCreds:false}))"
       - name: Bajar proyecto real
         if: steps.dec.outputs.go == '1' && github.event_name == 'workflow_dispatch' && inputs.accion == 'bajar'
         working-directory: ${{ matrix.dir }}
