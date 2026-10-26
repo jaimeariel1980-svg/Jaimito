@@ -23,6 +23,17 @@ function registrarContactoManual(perfilId, fila, tipo, quien) {
   return { ok: true };
 }
 
+function borrarContactoRegistro(perfilId, fila, fechaTxt) {
+  const nombre = String(getSheet(getConfig(perfilId)).getRange(fila, 2).getValue() || '').trim();
+  const sh = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName(HOJA_REG_CONT_);
+  if (!sh || sh.getLastRow() < 2) return { ok: false };
+  const d = sh.getRange(2, 1, sh.getLastRow() - 1, 7).getValues();
+  for (let i = d.length - 1; i >= 0; i--) {
+    if (d[i][1] === perfilId && String(d[i][3]).trim() === nombre && Utilities.formatDate(new Date(d[i][0]), 'GMT-3', 'dd/MM/yyyy HH:mm') === fechaTxt) { sh.deleteRow(i + 2); return { ok: true }; }
+  }
+  return { ok: false };
+}
+
 function getContactosRegistro(perfilId, fila) {
   const nombre = String(getSheet(getConfig(perfilId)).getRange(fila, 2).getValue() || '').trim();
   const sh = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName(HOJA_REG_CONT_);

@@ -52,29 +52,45 @@ function resumenBusquedas(perfilId) {
   return out;
 }
 
+// escribe un campo de la fila de la búsqueda en Config (crea la columna si falta)
+function setConfigCampo_(perfilId, campo, valor) {
+  const sh = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName('Config');
+  const data = sh.getDataRange().getValues();
+  const fila = data.findIndex((r, i) => i > 0 && r[0] === perfilId) + 1;
+  if (!fila) throw new Error('Perfil no encontrado: ' + perfilId);
+  let col = data[0].indexOf(campo) + 1;
+  if (!col) { col = sh.getLastColumn() + 1; sh.getRange(1, col).setValue(campo); }
+  sh.getRange(fila, col).setNumberFormat('@').setValue(String(valor));
+}
+
 // banda salarial, industrias y fuentes que ya están cargadas en el Informe de proceso de esta búsqueda
 function datosInformeBusqueda(perfilId) {
   const cfg = getConfig(perfilId);
+  let banda = String(cfg.banda_salarial || '').replace(/\D/g, '');
+  // Director Comercial (Energía y Minería): búsqueda de $ 13.000.000 mensuales; se carga sola la primera vez (cuando todavía no existe la columna) y se cambia desde ⚙ Configurar
+  if (!banda && perfilId === 'director-comercial' && cfg.banda_salarial === undefined) { banda = '13000000'; try { setConfigCampo_(perfilId, 'banda_salarial', banda); } catch (e) { } }
   const sh = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName(hojaProceso_(empresaKey_(cfg)));
   const nombre = (listarPerfiles().filter(p => p.id === perfilId)[0] || {}).nombre;
-  if (!sh || sh.getLastRow() < 2) return { banda: '', industrias: '' };
-  const f = sh.getDataRange().getValues().filter(r => r[0] === nombre)[0];
-  return f ? { banda: String(f[9] || ''), industrias: String(f[13] || '') } : { banda: '', industrias: '' };
+  let industrias = '';
+  if (sh && sh.getLastRow() > 1) {
+    const f = sh.getDataRange().getValues().filter(r => r[0] === nombre)[0];
+    if (f) { industrias = String(f[13] || ''); if (!banda) banda = String(f[9] || '').replace(/\D/g, ''); }
+  }
+  return { banda: banda, industrias: industrias };
 }
 
-// guarda la banda salarial de referencia en el Informe de proceso (lo crea si hace falta)
+// guarda la banda salarial de referencia (Config y, si ya existe, el Informe de proceso)
 function guardarBandaSalarial(pin, perfilId, texto) {
   pinValido_(pin);
   const cfg = getConfig(perfilId);
-  const emp = empresaKey_(cfg);
-  const nombre = (listarPerfiles().filter(p => p.id === perfilId)[0] || {}).nombre;
   const num = Number(String(texto).replace(/\D/g, ''));
   if (!num || num < 1000) throw new Error('Escribí la banda en pesos, por ejemplo 13000000.');
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
-  const buscar = () => { const sh = ss.getSheetByName(hojaProceso_(emp)); if (!sh) return null; const d = sh.getDataRange().getValues(); const i = d.findIndex(r => r[0] === nombre); return i > 0 ? { sh: sh, fila: i + 1 } : null; };
-  let u = buscar();
-  if (!u) { generarInformeProceso(emp); u = buscar(); }
-  if (!u) throw new Error('No pude ubicar la búsqueda en el Informe de proceso.');
-  u.sh.getRange(u.fila, 10).setNumberFormat('@').setValue(String(num));
+  setConfigCampo_(perfilId, 'banda_salarial', num);
+  const sh = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName(hojaProceso_(empresaKey_(cfg)));
+  const nombre = (listarPerfiles().filter(p => p.id === perfilId)[0] || {}).nombre;
+  if (sh && sh.getLastRow() > 1) {
+    const i = sh.getDataRange().getValues().findIndex(r => r[0] === nombre);
+    if (i > 0) sh.getRange(i + 1, 10).setNumberFormat('@').setValue(String(num));
+  }
   return { ok: true, banda: String(num) };
 }
