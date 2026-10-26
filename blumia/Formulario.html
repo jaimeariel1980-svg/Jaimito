@@ -148,6 +148,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text)}
 <div class="toast" id="toast"></div>
 
 <?!= HtmlService.createHtmlOutputFromFile('IAForm').getContent() ?>
+<script>window.EDIT_TIPO='screening';</script>
+<?!= HtmlService.createHtmlOutputFromFile('EditorForm').getContent() ?>
 <script>
 const PERFIL_ID = '<?= perfil ?>';
 const CAND_INICIAL = '<?= candidato ?>';

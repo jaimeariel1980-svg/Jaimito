@@ -165,6 +165,8 @@ html,body{background:var(--bg);font-family:var(--font);color:var(--text);}
 <div id="app"><div class="loading">Cargando perfil...</div></div>
 
 <?!= HtmlService.createHtmlOutputFromFile('IAForm').getContent() ?>
+<script>window.EDIT_TIPO='competencias';</script>
+<?!= HtmlService.createHtmlOutputFromFile('EditorForm').getContent() ?>
 <script>
 const PERFIL_ID = '<?= perfil ?>';
 const CAND_INICIAL = '<?= candidato ?>';
