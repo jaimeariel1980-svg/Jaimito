@@ -1,4 +1,4 @@
-const CFG_CAMPOS_ = ['nombre', 'nombre_perfil', 'empresa', 'empresa_candidatos', 'link_screening', 'link_competencias', 'link_empresa_virtual', 'link_empresa_presencial', 'link_flyer', 'link_perfil'];
+const CFG_CAMPOS_ = ['nombre', 'nombre_perfil', 'empresa', 'empresa_candidatos', 'banda_salarial', 'link_screening', 'link_competencias', 'link_empresa_virtual', 'link_empresa_presencial', 'link_flyer', 'link_perfil'];
 
 function getConfigBusqueda(pin, perfilId) {
   pinValido_(pin);
@@ -35,6 +35,7 @@ function guardarConfigBusqueda(pin, perfilId, p, quien) {
         const v = String(p.datos[k]).replace(/[<>]/g, '').trim();
         if ((k === 'nombre' || k === 'nombre_perfil' || k === 'empresa') && !v) throw new Error('«' + k + '» no puede quedar vacío.');
         if (/^link_/.test(k) && v && !/^https?:\/\//i.test(v)) throw new Error('El link «' + k + '» tiene que empezar con https://');
+        if (k === 'banda_salarial') { const num = String(v).replace(/\D/g, ''); if (v && Number(num) < 1000) throw new Error('La banda salarial va en pesos, por ejemplo 13000000.'); poner(k, num); return; }
         poner(k, v);
       });
       if (p.prompt_extra !== undefined) {
