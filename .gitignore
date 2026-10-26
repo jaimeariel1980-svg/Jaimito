@@ -28,3 +28,4 @@ build/
 !appscript/*.json
 !liquidaciones/*.json
 !caja-obra/*.json
+!blumia/*.json

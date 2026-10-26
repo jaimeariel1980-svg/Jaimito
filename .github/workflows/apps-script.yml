@@ -5,7 +5,7 @@ on:
       proyecto:
         description: Qué proyecto
         type: choice
-        options: [pami, azcu, liq, nj]
+        options: [pami, azcu, liq, nj, blumia]
         default: pami
       accion:
         description: bajar = copia el proyecto real al repo; publicar = sube el repo al proyecto
@@ -14,7 +14,7 @@ on:
         default: bajar
   push:
     branches: [main, claude/recruitment-automation-google-b1Ric]
-    paths: ['pami/**', 'appscript/**', 'liquidaciones/**', 'caja-obra/**']
+    paths: ['pami/**', 'appscript/**', 'liquidaciones/**', 'caja-obra/**', 'blumia/**']
 permissions:
   contents: write
 concurrency: apps-script
@@ -28,6 +28,7 @@ jobs:
           - {id: pami, dir: pami, secret: CLASPRC_PAMI, depvar: DEPLOYMENT_PAMI}
           - {id: azcu, dir: appscript, secret: CLASPRC_AZCU, depvar: DEPLOYMENT_AZCU}
           - {id: liq, dir: liquidaciones, secret: CLASPRC_PAMI, depvar: DEPLOYMENT_LIQ}
+          - {id: blumia, dir: blumia, secret: CLASPRC_BLUMIA, depvar: DEPLOYMENT_BLUMIA, depid: AKfycbytekPKN31bZLxczDVknMr433K9KflzmrR-dCWsC1hLlx2MO7tbw6SrMjFXa1PnucQo}
           - {id: nj, dir: caja-obra, secret: CLASPRC_NJ, depvar: DEPLOYMENT_NJ, depid: AKfycbzSA249ZvCJvbUKpllHIpJwBfq7uTl6Lt6CDP8Vh3BjejJ6N7JuASWIP4mN81l96a899g}
     steps:
       - uses: actions/checkout@v4
@@ -38,7 +39,7 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             [ "${{ inputs.proyecto }}" = "${{ matrix.id }}" ] && echo "go=1" >> $GITHUB_OUTPUT || echo "go=0" >> $GITHUB_OUTPUT
           else
-            git diff --name-only HEAD~1 HEAD | grep -q "^${{ matrix.dir }}/" && echo "go=1" >> $GITHUB_OUTPUT || echo "go=0" >> $GITHUB_OUTPUT
+            [ -f "${{ matrix.dir }}/appsscript.json" ] && git diff --name-only HEAD~1 HEAD | grep -q "^${{ matrix.dir }}/" && echo "go=1" >> $GITHUB_OUTPUT || echo "go=0" >> $GITHUB_OUTPUT
           fi
       - if: steps.dec.outputs.go == '1'
         uses: actions/setup-node@v4
