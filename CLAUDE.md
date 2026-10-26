@@ -20,6 +20,7 @@ Ariel y Ever no ven el código: **Claude sabe más de lo técnico y tiene que gu
 | `pami/` | **Empleos PAMI** (cuenta dotacionpp1): reclutamiento, tablero, screening, competencias | Apps Script de dotacionpp1 |
 | `azcubot/` | **Web/PWA** `azcubot.pages.dev` (celulares). Fuentes: `azcubot-widget.html`, `Tablero.html`, `tablero_bridge.js`, `paginas/`. Salida: `azcubot/netlify/` | Cloudflare Pages |
 | `liquidaciones/` | **Liquidaciones PAMI I** (cuenta dotacionpp1): horas extra, nocturnidad, feriados; lee horarios y fichadas, escribe en su Sheet. Ver `liquidaciones/LEEME.md` y `docs/` | Apps Script de dotacionpp1 (workflow, `DEPLOYMENT_LIQ`) |
+| `blumia/` | **Empleos Blumia** (cuenta jaimeariel1980): web/kanban de búsquedas laborales de la consultora de Ariel; multiempresa y multiperfil (URL `/exec?tipo=kanban&perfil=<perfil>`) | Apps Script de jaimeariel1980 (workflow `blumia`, `DEPLOYMENT_BLUMIA`) |
 | raíz (`*.py`, `bot-azcuenaga.gs`, `job_profiles/`) | Restos de proyectos viejos (Telegram, reclutamiento en Python). **No tocar** | — |
 
 ## Cómo se publica (todo con Merge)
@@ -72,6 +73,9 @@ Ariel y Ever no ven el código: **Claude sabe más de lo técnico y tiene que gu
 ## Empleos PAMI (pami/)
 - Script ID `1-qPLIJcxSKR9Xk3V_EV-mAdOOwHHN-W1b6MUhDygLI7ZM5AHVKQJmgfq`; cuenta `dotacionpp1@gmail.com`. Ver `pami/LEEME.md` (puesta en marcha, estados, agenda de citas). Tras cambios que agreguen columnas/pestañas: ejecutar `setup()` una vez; `verificarInstalacion()` revisa todo.
 - Tablero privado: `<url /exec>?tablero=<ADMIN_KEY>` (la clave no está en el repo; sale de `mostrarLinks()`).
+
+## Empleos Blumia (blumia/)
+- Script ID `1z3dv71qZtbnVYCjtotKcT63Lrc4TwwCoU4Y7L9tfAUqBOQz07dT3PVax`; cuenta `jaimeariel1980@gmail.com`. Parecido a Empleos PAMI pero para un privado: multiempresa y multiperfil. Secreto de GitHub `CLASPRC_BLUMIA` (a cargar), deployment fijo en el workflow. Primera vez: Actions → Apps Script → proyecto `blumia`, acción `bajar` (copia el real a la rama `sync-blumia`) e integrar al repo.
 
 ## Liquidaciones PAMI (liquidaciones/)
 - Reglas y contexto: `liquidaciones/LEEME.md`, `docs/CONTEXTO.md`, `docs/TRASPASO.md`. Tests del cálculo: `node liquidaciones/docs/test_liquidaciones.js` (correrlos antes de subir). Mismo circuito de publicación y misma regla de asesorar.
