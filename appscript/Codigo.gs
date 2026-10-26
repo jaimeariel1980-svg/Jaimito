@@ -2570,7 +2570,7 @@ function agendarVisita(codigo, datos){
   var fin=new Date(ini.getTime()+60*60*1000);
   var titulo='Visita: '+(datos.dir||codigo)+(datos.interesado?(' - '+datos.interesado):'');
   var opts={
-    description:'Propiedad: '+codigo+'\nInteresado: '+(datos.interesado||'')+'\nTel: '+(datos.tel||'')+((datos.inmob||datos.colega) ? '\nViene por otra inmobiliaria: '+(datos.inmob||'')+(datos.colega ? ' · Colega: '+datos.colega : '') : ''),
+    description:'Propiedad: '+codigo+'\nInteresado: '+(datos.interesado||'')+'\nTel: '+(datos.tel||'')+((datos.inmob||datos.colega) ? '\nViene por otra inmobiliaria: '+_limpiarTxt_(String(datos.inmob||''))+(datos.colega ? ' · Colega: '+_limpiarTxt_(String(datos.colega)) : '') : ''),
     location:datos.dir||''
   };
   var invitados=[];
