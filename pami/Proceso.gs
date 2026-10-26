@@ -374,6 +374,8 @@ function permiteTecnico_(r) {
   if (!POLI_ || poliEf_(r) !== POLI_) throw new Error('Ese candidato es de otro policlínico');
 }
 
+function noApto_(r) { return /^C$/i.test(String(r[COL.notaComp - 1] || '').trim()) || /^C$/i.test(String(r[COL.notaScr - 1] || '').trim()); }
+
 function tableroTecnica_() {
   const d = hoja_('Candidatos').getDataRange().getValues(), cands = [];
   for (let i = 1; i < d.length; i++) {
@@ -382,7 +384,7 @@ function tableroTecnica_() {
     try { permiteTecnico_(r); } catch (e) { continue; }
     cands.push({
       fila: i + 1, id: String(r[COL.id - 1]), nombre: r[COL.nombre - 1], busq: r[COL.busq - 1], policlinico: poliEf_(r), estado: String(r[COL.estado - 1]).trim(),
-      cita: citaObj_(r[COL.cita - 1]), loc: r[COL.loc - 1], formacion: String(r[COL.formacion - 1] || ''), resumen: r[COL.resumen - 1], tieneCV: !!String(r[COL.cv - 1] || '').trim(), mov: '', notaTec: String(r[COL.notaP2 - 1] || '').trim()
+      cita: citaObj_(r[COL.cita - 1]), loc: r[COL.loc - 1], formacion: String(r[COL.formacion - 1] || ''), resumen: r[COL.resumen - 1], tieneCV: !!String(r[COL.cv - 1] || '').trim(), mov: '', noApto: noApto_(r), notaTec: String(r[COL.notaP2 - 1] || '').trim()
     });
   }
   cands.sort((a, b) => String(a.cita ? a.cita.ts : '9') < String(b.cita ? b.cita.ts : '9') ? -1 : 1);
@@ -1043,6 +1045,7 @@ function getFichaEnfermeria_(k, fila, forzar, indic, crear) {
   });
   const S = ev.screening || {}, sd = S.datos || {}, C = ev.competencias || {}, cm = C.meta || {};
   const ficha = {
+    noApto: noApto_(r),
     nombre: r[COL.nombre - 1], busq: r[COL.busq - 1], policlinico: poliEf_(r),
     edad: sd.edad || cm.edad || '', localidad: cm.localidad || r[COL.loc - 1] || '', formacion: String(r[COL.formacion - 1] || sd.formacion || cm.formacion || ''),
     experiencia: [sd.posAct || cm.puestoAct, sd.empresaAct || cm.empresaAct].filter(Boolean).join(' · '), antig: cm.antig || '', turno: String(r[COL.turno - 1] || '').replace(/;\s*/g, ' · ')

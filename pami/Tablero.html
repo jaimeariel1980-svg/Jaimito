@@ -135,7 +135,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Reclutamiento y Selección<small class="ver">v158</small></div>
+  <div class="prod">Reclutamiento y Selección<small class="ver">v159</small></div>
   <nav>
     <button class="ni" onclick="verAvisos()" style="position:relative"><span class="ic o">🔔</span><b>Avisos</b><span id="avCnt" style="display:none;position:absolute;top:2px;right:2px;background:#D9534F;color:#fff;border-radius:10px;font-size:11px;font-weight:800;padding:1px 6px"></span></button>
     <button class="ni" id="rf" onclick="actualizar()"><span class="ic g">↻</span><b>Actualizar</b></button>
@@ -461,6 +461,7 @@ function card(c){
   var ef=etapasFaltan(c);
   if(ef.length)mk+='<span class="tag r">⚠ Falta '+ef.join(' y ')+'</span>';
   else if(!RO&&etapaIdx(c)===3&&!c.fichaOk&&!c.notaP2)mk+='<span class="tag r">🩺 Falta resumen ET</span>';
+  if(etapaIdx(c)===3&&!c.notaP2&&(String(c.notaComp||'').trim()==='C'||String(c.notaScr||'').trim()==='C'))mk+='<span class="tag r" title="Tiene C: no corresponde a entrevista técnica">⚠ C · no corresponde a técnica</span>';
   avTags(c).forEach(function(t){mk+=t;});
   var rcc=rc?'<span class="rcc" title="'+esc((c.recTipo?'Recomendado por: ':'')+rc)+'">★ '+esc(recCorto(c))+'</span>':'<span class="rcc esp" title="Se postuló solo, sin recomendación">Espontáneo</span>';
   if(c.proc&&c.proc!=='SI')mk+='<span class="tag w">'+(c.proc==='Pendiente'?'Analizando CV…':c.proc==='NoCV'?'¿No es un CV?':'Revisar CV')+'</span>';
@@ -597,6 +598,7 @@ function abrir(f){
   else if(c.proc==='Revisar')al+='<div class="alerta a2">'+esc(c.just||'Revisar a mano')+'</div>';
   else if(c.proc==='Pendiente')al+='<div class="alerta a2">El CV todavía se está analizando.</div>';
   if(!terminal(c.estado)&&dd>=D.cfg.diasAlerta)al+='<div class="alerta a3">🕒 '+dd+' días sin movimiento en "'+esc(c.estado)+'".</div>';
+  if(etapaIdx(c)===3&&!c.notaP2&&(String(c.notaComp||'').trim()==='C'||String(c.notaScr||'').trim()==='C'))al+='<div class="alerta a3">⚠ Tiene C en competencias o screening: no corresponde a entrevista técnica. Si se la pidieron igual, el resumen tiene que dejar claro que el perfil no es adecuado.</div>';
   var ef=etapasFaltan(c);
   if(ef.length)al+='<div class="alerta a3">⚠ Falta la etapa de '+ef.join(' y ')+': todavía no hay nota cargada'+(ef.indexOf('competencias')>-1?', así que no se puede armar el resumen para la entrevista técnica':'')+'.</div>';
   else if(!RO&&etapaIdx(c)===3&&!c.fichaOk&&!c.notaP2)al+='<div class="alerta a3">🩺 Falta el resumen del proceso para la entrevista técnica. Los jefes no ven nada hasta que lo prepares y lo guardes: tocá el botón rojo "Resumen ET".</div>';
@@ -799,8 +801,9 @@ function infLogo(){var e=document.querySelector('.hdr .lg'),bg=e?getComputedStyl
 function infCard(l,v){return v?'<div class="cd"><small>'+esc(l)+'</small><b>'+esc(v)+'</b></div>':'';}
 function infFecha(){var d=D.ahora.slice(0,10).split('-');return d[2]+'/'+d[1]+'/'+d[0];}
 function tecCard(c){
+  var warn=c.noApto?'<div style="margin-top:8px;background:#FDE3E1;color:#9B2C28;border-radius:6px;padding:6px 10px;font-size:13px;font-weight:700">⚠ No pasó la etapa de competencias: no corresponde a entrevista técnica</div>':'';
   var cita=c.cita?'📅 '+c.cita.ts.slice(8,10)+'/'+c.cita.ts.slice(5,7)+' '+c.cita.ts.slice(11,16):'Sin agendar';
-  return '<div style="background:#fff;border:1px solid var(--line);border-left:5px solid var(--celeste);border-radius:8px;padding:14px 16px;margin-bottom:12px"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><b style="font-size:17px">'+esc(c.nombre)+'</b>'+(c.notaTec?' <span class="tag g">Evaluado · '+esc(c.notaTec)+(c.estado?' · '+esc(c.estado):'')+'</span>':'')+'<div style="color:#5D6B82;font-size:13px">'+esc(tit(c.busq))+(VP&&c.policlinico?' · '+esc(c.policlinico.replace('Policlínico ','')):'')+'</div></div><div style="font-size:13px;font-weight:700;color:#034EA2">'+cita+'</div></div><div class="btns" style="margin-top:12px"><button class="btn ghost" onclick="verResumen('+c.fila+',this,true)">📄 Ver ficha</button>'+(c.notaTec?'<button class="btn ghost" onclick="verTecnica('+c.fila+',this)">👁 Ver evaluación</button><button class="btn" onclick="abrirFormTec('+c.fila+',true)">✏️ Editar evaluación</button>':'<button class="btn" onclick="abrirFormTec('+c.fila+')">🩺 Evaluar</button>')+((c.cv||c.tieneCV)?'<button class="btn ghost" onclick="verCV('+c.fila+',this)">📎 Ver CV</button>':'')+'</div></div>';
+  return '<div style="background:#fff;border:1px solid var(--line);border-left:5px solid var(--celeste);border-radius:8px;padding:14px 16px;margin-bottom:12px"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><b style="font-size:17px">'+esc(c.nombre)+'</b>'+(c.notaTec?' <span class="tag g">Evaluado · '+esc(c.notaTec)+(c.estado?' · '+esc(c.estado):'')+'</span>':'')+'<div style="color:#5D6B82;font-size:13px">'+esc(tit(c.busq))+(VP&&c.policlinico?' · '+esc(c.policlinico.replace('Policlínico ','')):'')+'</div></div><div style="font-size:13px;font-weight:700;color:#034EA2">'+cita+'</div></div>'+warn+'<div class="btns" style="margin-top:12px"><button class="btn ghost" onclick="verResumen('+c.fila+',this,true)">📄 Ver ficha</button>'+(c.notaTec?'<button class="btn ghost" onclick="verTecnica('+c.fila+',this)">👁 Ver evaluación</button><button class="btn" onclick="abrirFormTec('+c.fila+',true)">✏️ Editar evaluación</button>':'<button class="btn" onclick="abrirFormTec('+c.fila+')">🩺 Evaluar</button>')+((c.cv||c.tieneCV)?'<button class="btn ghost" onclick="verCV('+c.fila+',this)">📎 Ver CV</button>':'')+'</div></div>';
 }
 function ordCita(a,b){
   var n=new Date(Date.now()-3600000),pad=function(x){return (x<10?'0':'')+x;},now=n.getFullYear()+'-'+pad(n.getMonth()+1)+'-'+pad(n.getDate())+' '+pad(n.getHours())+':'+pad(n.getMinutes());
@@ -856,7 +859,7 @@ function editarFicha(f){
   document.getElementById('modal').classList.add('show');
   gs().withSuccessHandler(function(r){
     delete FICHAS[f];var x=JSON.parse(r),b=document.getElementById('fcb');if(!b)return;
-    b.innerHTML='<div class="txt" style="font-size:13px;color:#5D6B82;margin-bottom:8px">'+(x.pendiente?'Todavía no hay entrevista de competencias: la IA arma el texto cuando se carga. Si querés, podés escribirlo a mano.':x.editado?'Editado por vos.':x.conInd?'Armado por la IA con tus indicaciones.':'Armado por la IA con el CV y las observaciones del entrevistador.')+' Revisalo y tocá Guardar: '+(x.revisada?'los jefes leen exactamente este texto.':'hasta entonces los jefes no lo ven.')+'</div><textarea id="fichaTxt" rows="8" style="width:100%">'+esc(x.resumen)+'</textarea><label class="l" style="margin-top:10px">Indicaciones para la IA (opcional)</label><input type="text" id="fichaInd" maxlength="300" placeholder="Ej: más corto · resaltá la experiencia en geriatría · mencioná la disponibilidad" style="width:100%"><div class="txt" style="font-size:12px;color:#5D6B82;margin:4px 0 0">Las usan ✨ Corregir con IA (ajusta este texto) y 🔄 Rehacer desde cero (lo arma de nuevo con el CV y las observaciones).</div><div class="btns" style="margin-top:10px"><button class="btn ok" onclick="guardarFicha('+f+',this)">Guardar</button>'+(x.pendiente?'':'<button class="btn ghost" onclick="regenerarFicha('+f+',this)">🔄 Rehacer desde cero</button>')+'<button class="btn sec" onclick="cerrar()">Cancelar</button></div>';
+    b.innerHTML=(x.noApto?'<div class="alerta a3" style="margin-bottom:10px">⚠ Esta persona tiene C en competencias o screening: no corresponde a entrevista técnica. Si igual vas a publicar el resumen, tiene que quedar claro que el perfil no es adecuado.</div>':'')+'<div class="txt" style="font-size:13px;color:#5D6B82;margin-bottom:8px">'+(x.pendiente?'Todavía no hay entrevista de competencias: la IA arma el texto cuando se carga. Si querés, podés escribirlo a mano.':x.editado?'Editado por vos.':x.conInd?'Armado por la IA con tus indicaciones.':'Armado por la IA con el CV y las observaciones del entrevistador.')+' Revisalo y tocá Guardar: '+(x.revisada?'los jefes leen exactamente este texto.':'hasta entonces los jefes no lo ven.')+'</div><textarea id="fichaTxt" rows="8" style="width:100%">'+esc(x.resumen)+'</textarea><label class="l" style="margin-top:10px">Indicaciones para la IA (opcional)</label><input type="text" id="fichaInd" maxlength="300" placeholder="Ej: más corto · resaltá la experiencia en geriatría · mencioná la disponibilidad" style="width:100%"><div class="txt" style="font-size:12px;color:#5D6B82;margin:4px 0 0">Las usan ✨ Corregir con IA (ajusta este texto) y 🔄 Rehacer desde cero (lo arma de nuevo con el CV y las observaciones).</div><div class="btns" style="margin-top:10px"><button class="btn ok" onclick="guardarFicha('+f+',this)">Guardar</button>'+(x.pendiente?'':'<button class="btn ghost" onclick="regenerarFicha('+f+',this)">🔄 Rehacer desde cero</button>')+'<button class="btn sec" onclick="cerrar()">Cancelar</button></div>';
   }).withFailureHandler(fer).getFichaEnfermeria(K,f,false,'',true);
 }
 function guardarFicha(f,btn){
@@ -952,6 +955,7 @@ function htmlTecnica(c,p){
 function htmlEnfermeria(x){
   var h='<div class="hd"><div style="display:flex;align-items:center;gap:16px">'+infLogo()+'<div><small>Resumen del proceso para entrevista técnica · '+infFecha()+'</small><h1>'+esc(x.nombre)+'</h1><div class="s">'+esc(tit(x.busq))+(x.policlinico?' · '+esc(x.policlinico):'')+'</div></div></div></div>';
   h+='<div class="g g3">'+infCard('Edad',x.edad)+infCard('Localidad',x.localidad)+infCard('Formación',x.formacion)+infCard('Experiencia actual',x.experiencia)+infCard('Antigüedad',x.antig)+infCard('Turno preferido',x.turno)+'</div>';
+  if(x.noApto)h+='<div class="cd" style="border-color:#D9534F;background:#FDE3E1"><div class="tx" style="color:#9B2C28;font-weight:700">⚠ Atención: este perfil no pasó la etapa de competencias o de screening. No corresponde a entrevista técnica.</div></div>';
   if(x.aviso)h+='<div class="cd"><div class="tx" style="color:#5D6B82">'+esc(x.aviso)+'</div></div>';
   if(x.resumen&&x.revisada===false)h+='<div class="cd"><div class="tx" style="color:#7A5200;background:#FFF1D6">Borrador sin revisar: los jefes todavía no lo ven. Se publica desde el botón "Resumen ET".</div></div>';
   if(x.resumen)h+='<h2>Resumen</h2><div class="cd"><div class="tx" style="font-size:15px;line-height:1.6">'+esc(x.resumen)+'</div></div>';
