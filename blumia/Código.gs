@@ -78,6 +78,7 @@ function doGet(e) {
     template.candidato = e.parameter.nombre || '';
     template.entrevistador = e.parameter.entrevistador || '';
     template.perfil = perfil;
+    template.editar = e.parameter.editar === '1';
     titulo = 'Evaluación de Competencias | Blumia';
   } else if (tipo === 'postulacion') {
     template = HtmlService.createTemplateFromFile('Postulacion');
@@ -129,6 +130,7 @@ function doGet(e) {
     template.candidato = e.parameter.nombre || '';
     template.entrevistador = e.parameter.entrevistador || '';
     template.perfil = perfil;
+    template.editar = e.parameter.editar === '1';
     titulo = 'Screening Blumia';
   }
 
@@ -345,6 +347,7 @@ function procesarScreening(data) {
     throw new Error("No encontré a '" + data.nombre + "' en la pestaña '" + cfg.hoja_nombre + "'. Primeros: [" + (primeros || 'ninguno') + "]. Verificá perfil/pestaña.");
   }
 
+  const notaAntesScr = String(sheet.getRange(fila, 12).getValue() || '').trim();
   sheet.getRange(fila, 26).setValue('LLEGUE resultado=' + data.resultado);
   const celdaL = sheet.getRange(fila, 12);
   celdaL.setDataValidation(null).setValue(data.resultado);
@@ -353,8 +356,9 @@ function procesarScreening(data) {
 
   if (data.entrevistador) sheet.getRange(fila, 14).setValue(data.entrevistador);
   sheet.getRange(fila, 26).setValue('DEBUG resultado=' + data.resultado);
-  registrarHistorial_(sheet.getName(), sheet.getRange(fila, 2).getValue(), 'Screening', 'Formulario guardado · resultado ' + data.resultado + (data.entrevistador ? ' · entrevistó ' + data.entrevistador : ''));
-  aplicarEstadoNota(sheet, fila, 'screening', data.resultado);
+  registrarHistorial_(sheet.getName(), sheet.getRange(fila, 2).getValue(), data.editar ? 'Screening editado' : 'Screening', (data.editar ? (notaAntesScr || '—') + ' → ' + data.resultado : 'Formulario guardado · resultado ' + data.resultado) + (data.entrevistador ? ' · entrevistó ' + data.entrevistador : ''));
+  if (!data.editar || aplicarEdicion_(sheet, fila, 'screening', notaAntesScr, data.resultado)) aplicarEstadoNota(sheet, fila, 'screening', data.resultado);
+  guardarEstadoEval_(cfg, data.perfil || 'operaciones', data.nombre, 'screening', data.estado, data.resultado, data.entrevistador);
   try {
     const folder = DriveApp.getFolderById(cfg.folder_pdf_screening);
     const blob = Utilities.newBlob(data.htmlFull, 'text/html', 'Screening_' + data.nombre.replace(/\s+/g, '_') + '.html');
@@ -380,7 +384,7 @@ function llenarColumnaO(perfilId) {
   }
 }
 
-function guardarEnPlanilla(nombreCandidato, htmlContent, ajustePonderacion, perfilId, quien) {
+function guardarEnPlanilla(nombreCandidato, htmlContent, ajustePonderacion, perfilId, quien, estadoJSON, editar) {
   QUIEN_ = quien || '';
   try {
     console.log("Perfil recibido: " + perfilId);
@@ -420,9 +424,11 @@ function guardarEnPlanilla(nombreCandidato, htmlContent, ajustePonderacion, perf
     const blob = Utilities.newBlob(htmlContent, MimeType.HTML, 'temp.html');
     const pdf = folder.createFile(blob.getAs(MimeType.PDF).setName('Competencias_' + nombreCandidato + '.pdf'));
     
+    const notaAntesComp = String(sheet.getRange(fila, 16).getValue() || '').trim();
     if (ajustePonderacion) sheet.getRange(fila, 16).setValue(ajustePonderacion);
-    registrarHistorial_(sheet.getName(), sheet.getRange(fila, 2).getValue(), 'Competencias', 'Formulario guardado' + (ajustePonderacion ? ' · resultado ' + ajustePonderacion : ''));
-    if (ajustePonderacion) aplicarEstadoNota(sheet, fila, 'competencias', ajustePonderacion);
+    registrarHistorial_(sheet.getName(), sheet.getRange(fila, 2).getValue(), editar ? 'Competencias editado' : 'Competencias', editar ? (notaAntesComp || '—') + ' → ' + (ajustePonderacion || '—') : 'Formulario guardado' + (ajustePonderacion ? ' · resultado ' + ajustePonderacion : ''));
+    if (ajustePonderacion && (!editar || aplicarEdicion_(sheet, fila, 'competencias', notaAntesComp, ajustePonderacion))) aplicarEstadoNota(sheet, fila, 'competencias', ajustePonderacion);
+    guardarEstadoEval_(cfg, perfilId || 'operaciones', nombreCandidato, 'competencias', estadoJSON, ajustePonderacion, quien);
     sheet.getRange(fila, 17).setFormula('=HYPERLINK("' + pdf.getUrl() + '"; "Ver PDF")');
     
     return 'OK';
@@ -4098,7 +4104,7 @@ function kanbanHTML(perfilId) {
   let html = KANBAN_TPL(perfilId, titulo, data, empresas, empresaActual, flyer, perfilPdf, perfilProt);
   let bandaRef = 0;
   try { bandaRef = Number(datosInformeBusqueda(perfilId).banda) || 0; } catch (e) { }
-  try { const extra = '<script>var metEstado = ' + metEstado_.toString() + '; var BANDA_REF = ' + bandaRef + ';</script>' + ['ConfigPanel', 'ResumenPanel', 'TableroCards'].map(f => HtmlService.createHtmlOutputFromFile(f).getContent()).join(''); html = html.replace(/<\/html>\s*$/, () => extra + '</html>'); } catch (e) { }
+  try { const extra = '<script>var metEstado = ' + metEstado_.toString() + '; var BANDA_REF = ' + bandaRef + '; var URL_APP = ' + JSON.stringify(URL_BASE()) + ';</script>' + ['ConfigPanel', 'ResumenPanel', 'TableroCards'].map(f => HtmlService.createHtmlOutputFromFile(f).getContent()).join(''); html = html.replace(/<\/html>\s*$/, () => extra + '</html>'); } catch (e) { }
   return HtmlService.createHtmlOutput(html)
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');

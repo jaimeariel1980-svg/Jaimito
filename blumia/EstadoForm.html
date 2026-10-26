@@ -1,0 +1,46 @@
+<script>
+/* Guardar y reabrir las respuestas de un formulario (editar una evaluación ya cargada). Lo usan Formulario.html (screening) e Index.html (competencias). */
+(function(){
+  window.efCapturar=function(){
+    var app=document.getElementById('app');if(!app)return '';
+    app.querySelectorAll('input').forEach(function(i){if(i.type==='checkbox'||i.type==='radio'){if(i.checked)i.setAttribute('checked','');else i.removeAttribute('checked');}else i.setAttribute('value',i.value);});
+    app.querySelectorAll('textarea').forEach(function(t){t.textContent=t.value;});
+    app.querySelectorAll('select').forEach(function(s){[].forEach.call(s.options,function(o){if(o.selected)o.setAttribute('selected','selected');else o.removeAttribute('selected');});});
+    var c=app.cloneNode(true);
+    [].forEach.call(c.querySelectorAll('.ia-bar'),function(e){e.remove();});
+    [].forEach.call(c.querySelectorAll('[data-ia]'),function(e){e.removeAttribute('data-ia');});
+    var st=null;try{if(typeof state!=='undefined')st=JSON.parse(JSON.stringify(state));}catch(e){}
+    return JSON.stringify({v:1,html:c.innerHTML,state:st});
+  };
+  window.efRestaurar=function(txt){
+    var o=JSON.parse(txt),app=document.getElementById('app');
+    app.innerHTML=o.html;
+    if(o.state&&typeof state!=='undefined')Object.keys(o.state).forEach(function(k){state[k]=o.state[k];});
+    try{if(typeof calcular==='function')calcular();}catch(e){}
+    try{if(typeof actualizarScore==='function')actualizarScore();}catch(e){}
+  };
+  function cartel(t,c){
+    var d=document.createElement('div');d.id='efBanner';d.className='ia-ui';
+    d.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:9998;background:'+c+';color:#fff;padding:10px 18px;border-radius:99px;font:700 13px Poppins,Arial,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.25);max-width:92vw;text-align:center';
+    d.textContent=t;document.body.appendChild(d);setTimeout(function(){if(d.parentNode)d.style.opacity='.85';},100);
+  }
+  function listo(){return typeof DATOS!=='undefined'&&DATOS&&(document.getElementById('d-nombre')||document.getElementById('inp-cand'));}
+  function nombreCand(){var e=document.getElementById('d-nombre')||document.getElementById('inp-cand');return e?String(e.value||'').trim():'';}
+  function botonGuardar(){var b=document.getElementById('btn-save-sheet')||document.getElementById('btnGuardar');if(b)b.textContent='Guardar cambios';return b;}
+  function iniciar(){
+    if(!window.EDITAR)return;
+    var TIPO=window.EF_TIPO||'screening';
+    var n=0,t=setInterval(function(){
+      if(++n>100){clearInterval(t);return;}
+      if(!listo())return;clearInterval(t);
+      var nom=nombreCand();
+      google.script.run.withSuccessHandler(function(r){
+        if(!r||!r.estado){cartel('Esta evaluación se cargó antes de poder editarla: no hay respuestas guardadas. Cargala de nuevo.','#B91C1C');return;}
+        try{efRestaurar(r.estado);botonGuardar();cartel('✏️ Editando la evaluación guardada el '+r.fecha+(r.nota?' · nota '+r.nota:''),'#243D2C');}
+        catch(e){cartel('No se pudieron recuperar las respuestas: '+e.message,'#B91C1C');}
+      }).withFailureHandler(function(e){cartel('No se pudo abrir la evaluación: '+((e&&e.message)||e),'#B91C1C');}).getEvaluacionPrevia(PERFIL_ID,nom,TIPO);
+    },300);
+  }
+  window.addEventListener('load',iniciar);
+})();
+</script>

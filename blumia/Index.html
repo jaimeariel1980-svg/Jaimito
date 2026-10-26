@@ -168,10 +168,12 @@ html,body{background:var(--bg);font-family:var(--font);color:var(--text);}
 <div id="app"><div class="loading">Cargando perfil...</div></div>
 
 <?!= HtmlService.createHtmlOutputFromFile('IAForm').getContent() ?>
+<?!= HtmlService.createHtmlOutputFromFile('EstadoForm').getContent() ?>
 <script>window.EDIT_TIPO='competencias';</script>
 <?!= HtmlService.createHtmlOutputFromFile('EditorForm').getContent() ?>
 <script>
 const PERFIL_ID = '<?= perfil ?>';
+const EDITAR = '<?= editar ?>' === 'true'; window.EDITAR = EDITAR; window.EF_TIPO = 'competencias';
 const CAND_INICIAL = '<?= candidato ?>';
 const ENTR_INICIAL = '<?= entrevistador ?>';
 let DATOS = null;
@@ -515,6 +517,7 @@ document.getElementById('btnDescargar').addEventListener('click', function() {
 document.getElementById('btnGuardar').addEventListener('click', function() {
   const cand = (document.getElementById('inp-cand')?.value || '').trim();
   if (!cand) { alert('Falta nombre del entrevistado'); return; }
+  const ESTADO_EF = efCapturar();
   congelarValores();
   expandirTextareas();
   ocultarIA(true);
@@ -542,7 +545,7 @@ document.getElementById('btnGuardar').addEventListener('click', function() {
       btn.textContent = 'Guardar PDF';
       alert('Error al guardar: ' + err.message);
     })
-    .guardarEnPlanilla(cand, htmlSnap, ponderacion, PERFIL_ID, (function(){try{return localStorage.getItem('blumia_quien')||ENTR_INICIAL||'';}catch(e){return ENTR_INICIAL||'';}})());
+    .guardarEnPlanilla(cand, htmlSnap, ponderacion, PERFIL_ID, (function(){try{return localStorage.getItem('blumia_quien')||ENTR_INICIAL||'';}catch(e){return ENTR_INICIAL||'';}})(), ESTADO_EF, EDITAR);
 });
 </script>
 </body>
