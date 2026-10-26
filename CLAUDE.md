@@ -75,7 +75,7 @@ Ariel y Ever no ven el código: **Claude sabe más de lo técnico y tiene que gu
 - Tablero privado: `<url /exec>?tablero=<ADMIN_KEY>` (la clave no está en el repo; sale de `mostrarLinks()`).
 
 ## Empleos Blumia (blumia/)
-- Script ID `1z3dv71qZtbnVYCjtotKcT63Lrc4TwwCoU4Y7L9tfAUqBOQz07dT3PVax`; cuenta `jaimeariel1980@gmail.com`. Parecido a Empleos PAMI pero para un privado: multiempresa y multiperfil. Secreto de GitHub `CLASPRC_BLUMIA` (a cargar), deployment fijo en el workflow. Primera vez: Actions → Apps Script → proyecto `blumia`, acción `bajar` (copia el real a la rama `sync-blumia`) e integrar al repo.
+- Script ID `1z3dv71qZtbnVYCjtotKcT63Lrc4TwwCoU4Y7L9tfAUqBOQz07dT3PVax`; cuenta `jaimeariel1980@gmail.com`. Parecido a Empleos PAMI pero para un privado: multiempresa y multiperfil. Secreto de GitHub `CLASPRC_BLUMIA` (cargado; viene en formato de clasp 3 y el workflow lo adapta), deployment fijo en el workflow. Archivos: `Código.gs` (todo el backend), `Calendarsync.gs`, `Competencias.gs`, `Screening.gs`, `Index.html`, `Formulario.html`, `Postulacion.html`. Propiedades del script (no están en el repo): `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`. Nunca poner claves en el código.
 
 ## Liquidaciones PAMI (liquidaciones/)
 - Reglas y contexto: `liquidaciones/LEEME.md`, `docs/CONTEXTO.md`, `docs/TRASPASO.md`. Tests del cálculo: `node liquidaciones/docs/test_liquidaciones.js` (correrlos antes de subir). Mismo circuito de publicación y misma regla de asesorar.
