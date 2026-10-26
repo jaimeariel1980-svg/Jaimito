@@ -1,0 +1,108 @@
+<style>
+.cfp-bg{position:fixed;inset:0;background:rgba(25,35,65,.55);z-index:9100;display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 10px}
+.cfp-bg.show{display:flex}
+.cfp-box{background:#fff;border-radius:10px;max-width:940px;width:100%;padding:20px 24px;color:var(--txt);font-size:14px}
+.cfp-box h2{margin:0 0 4px;font-size:20px;color:var(--azul)}
+.cfp-sub{font-size:12px;color:var(--mut);margin-bottom:12px}
+.cfp-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.cfp-tab{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 12px;cursor:pointer;font-weight:700;font-size:12px;font-family:inherit;color:var(--navy)}
+.cfp-tab.on{background:var(--azul);color:#fff;border-color:var(--azul)}
+.cfp-sec{display:none}.cfp-sec.on{display:block}
+.cfp-help{font-size:12px;color:var(--mut);margin-bottom:10px;line-height:1.45}
+.cfp-box input,.cfp-box textarea,.cfp-box select{border:1px solid var(--line);border-radius:6px;padding:7px 9px;font:13px/1.35 inherit;font-family:inherit;box-sizing:border-box;width:100%;background:#fff}
+.cfp-box textarea{min-height:80px}
+.cfp-box label{font-size:11px;color:var(--mut);display:block;margin:8px 0 2px;font-weight:700}
+.cfp-row{background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:8px;display:grid;gap:8px;align-items:end}
+.cfp-row.q{grid-template-columns:1fr 110px 1fr 80px auto}
+.cfp-row.e{grid-template-columns:1fr 90px auto}
+.cfp-row.v{grid-template-columns:1fr 1fr auto}
+.cfp-row.c{grid-template-columns:1fr 90px auto}
+.cfp-row .full{grid-column:1/-1}
+.cfp-pl{background:var(--bg);border-radius:8px;padding:10px;margin-bottom:10px}
+.cfp-mini{background:#fff;border:1px solid #bbb;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:12px;font-family:inherit}
+.cfp-mini.x{color:var(--err);border-color:var(--err)}
+.cfp-add{background:var(--tint);color:var(--azul);border:1px dashed var(--azul);border-radius:6px;padding:8px 14px;cursor:pointer;font-weight:700;font-size:12px;font-family:inherit}
+.cfp-foot{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+.cfp-save{background:var(--azul);color:#fff;border:none;border-radius:6px;padding:10px 20px;font-weight:800;cursor:pointer;font-family:inherit}
+.cfp-close{background:#fff;border:1px solid #999;border-radius:6px;padding:10px 20px;cursor:pointer;font-family:inherit}
+.cfp-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+@media(max-width:700px){.cfp-row.q,.cfp-row.e,.cfp-row.v,.cfp-row.c,.cfp-grid{grid-template-columns:1fr}}
+</style>
+<div class="cfp-bg" id="cfpBg" onclick="if(event.target===this)cfpCerrar()"><div class="cfp-box" id="cfpBox"></div></div>
+<script>
+(function(){
+  var CF=null,BID='';
+  var BUS=[['titulo','Título del puesto'],['ubicacion','Ubicación'],['modalidad','Modalidad'],['estado','Estado (ABIERTA recibe postulaciones, CERRADA no)'],['link_perfil','Link del perfil del puesto (https://…)'],['link_flyer','Link del flyer (https://…)'],['palabras_clave','Palabras para reconocer los CVs por mail (separadas con |)']];
+  function E(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+  function G(id){var e=document.getElementById(id);return e?e.value:null;}
+  window.cfpAbrir=function(){
+    BID=document.getElementById('fb').value||(D&&D.busquedas&&D.busquedas.length===1?D.busquedas[0].id:'');
+    if(!BID){alert('Elegí una búsqueda en el selector de arriba y volvé a tocar Configurar.');return;}
+    var bg=document.getElementById('cfpBg');bg.classList.add('show');
+    document.getElementById('cfpBox').innerHTML='<h2>⚙ Configurar búsqueda</h2><div class="cfp-sub">Cargando…</div>';
+    gs().withSuccessHandler(function(d){CF=d;render('bus');}).withFailureHandler(function(e){bg.classList.remove('show');fer(e);}).getConfigBusqueda(K,BID);
+  };
+  window.cfpCerrar=function(){document.getElementById('cfpBg').classList.remove('show');};
+  window.cfpTab=function(t){sync();render(t);};
+  function sync(){
+    if(!CF)return;var v;
+    BUS.forEach(function(b){if((v=G('cb_'+b[0]))!==null)CF.busqueda[b[0]]=v;});
+    ['descripcion','requisitos','recomendacion'].forEach(function(k){if((v=G('cb_'+k))!==null)CF.busqueda[k]=v;});
+    if((v=G('cf_ia'))!==null)CF.busqueda.prompt_ia=v;
+    CF.preguntas.forEach(function(q,i){if((v=G('cq_e'+i))!==null){q.etiqueta=v;q.tipo=G('cq_t'+i);q.opciones=G('cq_o'+i);q.requerido=G('cq_r'+i);}});
+    CF.eval.forEach(function(x,i){if((v=G('ce_l'+i))!==null){x.etiqueta=v;x.peso=G('ce_p'+i);}});
+    CF.val.forEach(function(x,i){if((v=G('cv_l'+i))!==null){x.etiqueta=v;x.opciones=G('cv_o'+i);}});
+    ['comps','tecnica'].forEach(function(L){var p=L==='comps'?'cc':'ct';CF[L].forEach(function(x,i){if((v=G(p+'_n'+i))!==null){x.nombre=v;x.peso=G(p+'_p'+i);x.descripcion=G(p+'_d'+i);x.preguntas=G(p+'_q'+i);}});});
+    CF.plantillas.forEach(function(t,i){if((v=G('cp_'+i))!==null)t.texto=v;});
+    CF.ajustes.forEach(function(a,i){if((v=G('ca_'+i))!==null)a.v=v;});
+  }
+  function foot(t){return '<div class="cfp-foot"><button class="cfp-close" onclick="cfpCerrar()">Cerrar</button><button class="cfp-save" onclick="cfpGuardar(\''+t+'\',this)">Guardar</button></div>';}
+  function compRows(L,p){return CF[L].map(function(x,i){return '<div class="cfp-row c"><div><label>Competencia</label><input id="'+p+'_n'+i+'" value="'+E(x.nombre)+'"></div><div><label>Peso</label><input id="'+p+'_p'+i+'" value="'+E(x.peso)+'"></div><button class="cfp-mini x" onclick="cfpQuitar(\''+L+'\','+i+')">Quitar</button><div class="full"><label>Descripción</label><textarea id="'+p+'_d'+i+'" style="min-height:50px">'+E(x.descripcion)+'</textarea></div><div class="full"><label>Preguntas (una por línea)</label><textarea id="'+p+'_q'+i+'">'+E(String(x.preguntas||'').split('|').join('\n'))+'</textarea></div></div>';}).join('');}
+  function render(tab){
+    var T=[['bus','Datos y links'],['ia','Requisitos para la IA'],['post','Postulación'],['scr','Screening'],['comp','Competencias']];
+    if(CF.hayTecnica)T.push(['tec','Entrevista técnica']);
+    T.push(['msg','Mensajes'],['aj','Ajustes generales']);
+    var b=CF.busqueda,x='<h2>⚙ Configurar · '+E(b.titulo||BID)+'</h2><div class="cfp-sub">Todo lo que cambies se guarda en la planilla y queda el valor anterior en «Historial_Config». Solo lo ves vos (administrador).</div>';
+    x+='<div class="cfp-tabs">'+T.map(function(t){return '<button class="cfp-tab'+(t[0]===tab?' on':'')+'" onclick="cfpTab(\''+t[0]+'\')">'+t[1]+'</button>';}).join('')+'</div>';
+    x+='<div class="cfp-sec'+(tab==='bus'?' on':'')+'"><div class="cfp-help">Datos de la búsqueda y de la página donde se postulan los candidatos. Al guardar se recarga el tablero.</div><div class="cfp-grid">';
+    BUS.forEach(function(f){x+='<div><label>'+f[1]+'</label><input id="cb_'+f[0]+'" value="'+E(b[f[0]])+'"></div>';});
+    x+='</div><label>Descripción (se muestra al candidato)</label><textarea id="cb_descripcion" style="min-height:110px">'+E(b.descripcion)+'</textarea><label>Requisitos (se muestran al candidato)</label><textarea id="cb_requisitos" style="min-height:110px">'+E(b.requisitos)+'</textarea><label>Recomendación (opciones del campo «recomendado por», separadas con |)</label><textarea id="cb_recomendacion" style="min-height:60px">'+E(b.recomendacion)+'</textarea>'+foot('bus')+'</div>';
+    x+='<div class="cfp-sec'+(tab==='ia'?' on':'')+'"><div class="cfp-help">Es el texto que la IA usa para <b>puntuar los CVs</b> de esta búsqueda (título excluyente, experiencia, zona, cómo se asigna Alto / Medio / Bajo…). Si cambia el perfil del puesto, actualizalo acá. Los CVs ya analizados no se vuelven a puntuar.</div><textarea id="cf_ia" style="min-height:340px">'+E(b.prompt_ia)+'</textarea>'+foot('ia')+'</div>';
+    x+='<div class="cfp-sec'+(tab==='post'?' on':'')+'"><div class="cfp-help">Preguntas del formulario de postulación de esta búsqueda (además de los datos básicos y el CV). En «Opciones» separá con | (por ejemplo: Sí|No|A confirmar). Quitar una pregunta no borra las respuestas ya recibidas.</div>';
+    CF.preguntas.forEach(function(q,i){x+='<div class="cfp-row q"><div><label>Pregunta</label><input id="cq_e'+i+'" value="'+E(q.etiqueta)+'"></div><div><label>Tipo</label><select id="cq_t'+i+'"><option value="texto"'+(q.tipo==='texto'?' selected':'')+'>Texto</option><option value="select"'+(q.tipo==='select'?' selected':'')+'>Opciones</option></select></div><div><label>Opciones</label><input id="cq_o'+i+'" value="'+E(q.opciones)+'"></div><div><label>Obligatoria</label><select id="cq_r'+i+'"><option value="SI"'+(q.requerido!=='NO'?' selected':'')+'>Sí</option><option value="NO"'+(q.requerido==='NO'?' selected':'')+'>No</option></select></div><button class="cfp-mini x" onclick="cfpQuitar(\'preguntas\','+i+')">Quitar</button></div>';});
+    x+='<button class="cfp-add" onclick="cfpAgregar(\'preguntas\')">+ Agregar pregunta</button>'+foot('post')+'</div>';
+    x+='<div class="cfp-sec'+(tab==='scr'?' on':'')+'"><div class="cfp-help"><b>Criterios</b>: lo que se evalúa en el screening (Bajo / Medio / Alto) y cuánto pesa cada uno en el puntaje. <b>Condiciones</b>: preguntas de sí / no / a revisar. Las evaluaciones ya cargadas no cambian. Ojo: el criterio que dice «título terciario» tiene opciones propias (Enfermero/a, Lic., Post Grado); si le cambiás ese texto pasa a Bajo / Medio / Alto.</div><h3 style="font-size:13px;margin:6px 0">Criterios</h3>';
+    CF.eval.forEach(function(it,i){x+='<div class="cfp-row e"><div><label>Criterio</label><input id="ce_l'+i+'" value="'+E(it.etiqueta)+'"></div><div><label>Peso</label><input id="ce_p'+i+'" value="'+E(it.peso)+'"></div><button class="cfp-mini x" onclick="cfpQuitar(\'eval\','+i+')">Quitar</button></div>';});
+    x+='<button class="cfp-add" onclick="cfpAgregar(\'eval\')">+ Agregar criterio</button><h3 style="font-size:13px;margin:16px 0 6px">Condiciones</h3>';
+    CF.val.forEach(function(it,i){x+='<div class="cfp-row v"><div><label>Condición</label><input id="cv_l'+i+'" value="'+E(it.etiqueta)+'"></div><div><label>Opciones (separadas con |)</label><input id="cv_o'+i+'" value="'+E(it.opciones)+'"></div><button class="cfp-mini x" onclick="cfpQuitar(\'val\','+i+')">Quitar</button></div>';});
+    x+='<button class="cfp-add" onclick="cfpAgregar(\'val\')">+ Agregar condición</button>'+foot('scr')+'</div>';
+    x+='<div class="cfp-sec'+(tab==='comp'?' on':'')+'"><div class="cfp-help">Competencias que se evalúan en la entrevista, con su descripción, su peso y las preguntas guía (una por línea).</div>'+compRows('comps','cc')+'<button class="cfp-add" onclick="cfpAgregar(\'comps\')">+ Agregar competencia</button>'+foot('comp')+'</div>';
+    if(CF.hayTecnica)x+='<div class="cfp-sec'+(tab==='tec'?' on':'')+'"><div class="cfp-help">Competencias de la entrevista técnica de esta búsqueda.</div>'+compRows('tecnica','ct')+'<button class="cfp-add" onclick="cfpAgregar(\'tecnica\')">+ Agregar competencia</button>'+foot('tec')+'</div>';
+    x+='<div class="cfp-sec'+(tab==='msg'?' on':'')+'"><div class="cfp-help">Textos de los WhatsApp y mails. Valen para <b>todas las búsquedas</b>. Se completan solos: [NOMBRE] [PUESTO] [ENTREVISTADOR] [EMPRESA] [POLI] [FECHA] [HORA] [LUGAR] [TIPO] (según el mensaje).</div>';
+    CF.plantillas.forEach(function(t,i){x+='<div class="cfp-pl"><b>'+E(t.clave)+'</b> <span style="color:var(--mut);font-size:12px">· '+E(t.canal)+'</span><textarea id="cp_'+i+'" style="min-height:110px;margin-top:6px">'+E(t.texto)+'</textarea></div>';});
+    x+=foot('msg')+'</div>';
+    x+='<div class="cfp-sec'+(tab==='aj'?' on':'')+'"><div class="cfp-help">Ajustes de todo el sistema (no de una sola búsqueda). Los links tienen que empezar con https://</div><div class="cfp-grid">';
+    CF.ajustes.forEach(function(a,i){x+='<div><label>'+E(a.l)+'</label><input id="ca_'+i+'" value="'+E(a.v)+'"></div>';});
+    x+='</div>'+foot('aj')+'</div>';
+    document.getElementById('cfpBox').innerHTML=x;
+  }
+  var NUEVO={preguntas:{id:'',etiqueta:'',tipo:'texto',opciones:'',requerido:'SI'},eval:{id:'',etiqueta:'',peso:'1'},val:{id:'',etiqueta:'',opciones:'Sí|No|A revisar'},comps:{id:'',nombre:'',descripcion:'',peso:'1',preguntas:''},tecnica:{id:'',nombre:'',descripcion:'',peso:'1',preguntas:''}};
+  var TABDE={preguntas:'post',eval:'scr',val:'scr',comps:'comp',tecnica:'tec'};
+  window.cfpAgregar=function(L){sync();CF[L].push(JSON.parse(JSON.stringify(NUEVO[L])));render(TABDE[L]);};
+  window.cfpQuitar=function(L,i){sync();if(!confirm('¿Sacar este elemento? (queda copia en Historial_Config)'))return;CF[L].splice(i,1);render(TABDE[L]);};
+  window.cfpGuardar=function(t,btn){
+    sync();var d={};
+    if(t==='bus'){d.busqueda=CF.busqueda;}
+    if(t==='ia')d.prompt_ia=CF.busqueda.prompt_ia;
+    if(t==='post')d.preguntas=CF.preguntas;
+    if(t==='scr'){d.eval=CF.eval;d.val=CF.val;}
+    if(t==='comp')d.comps=CF.comps;
+    if(t==='tec')d.tecnica=CF.tecnica;
+    if(t==='msg')d.plantillas=CF.plantillas;
+    if(t==='aj'){d.ajustes={};CF.ajustes.forEach(function(a){d.ajustes[a.k]=a.v;});}
+    btn.disabled=true;btn.textContent='Guardando…';
+    gs().withSuccessHandler(function(){btn.disabled=false;btn.textContent='Guardar';toast('Guardado ✓');if(t==='bus'||t==='aj'){cfpCerrar();cargar();}})
+     .withFailureHandler(function(e){btn.disabled=false;btn.textContent='Guardar';fer(e);}).guardarConfigBusqueda(K,BID,d);
+  };
+})();
+</script>

@@ -145,6 +145,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
     <button class="ni" id="bPerfil" style="display:none" onclick="verPerfil()"><span class="ic b">📋</span><b>Perfil del puesto</b></button>
     <button class="ni" id="bEnl" style="display:none" onclick="misEnlaces()"><span class="ic g">🔗</span><b>Enlaces</b></button>
     <button class="ni" id="bCtl" style="display:none" onclick="panelControl()"><span class="ic b">📜</span><b>Control</b></button>
+    <button class="ni" id="bCfg" style="display:none" onclick="cfpAbrir()"><span class="ic o">⚙</span><b>Configurar</b></button>
     <button class="ni" id="bFlyer" style="display:none" onclick="verFlyer()"><span class="ic o">📢</span><b>Flyer</b></button>
   </nav>
   <span class="sp" id="cnt"></span>
@@ -177,6 +178,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <div id="modal"><div class="box" id="mbox"></div></div>
 <div id="fmodal"><div class="fbar"><button class="btn sec" onclick="volverFicha()">← Volver a la ficha</button><span class="ttl" id="ftit"></span></div><div id="fbody"></div></div>
 <div class="toast" id="toast">Guardado</div>
+<?!= incluir_('ConfigPanel') ?>
 <script>
 var K = <?!= JSON.stringify(clave) ?>;
 var BASE = <?!= JSON.stringify(url) ?>;
@@ -417,7 +419,7 @@ function citaTxt(c){
 function ajustarRol(){
   var d=document.querySelector('[onclick="descartes()"]');if(d)d.style.display=RO?'none':'';
   var c=document.getElementById('bCtl');if(c)c.style.display=D&&D.admin?'':'none';
-  var e=document.getElementById('bEnl');if(e)e.style.display=D&&D.admin?'':'none';
+  var e=document.getElementById('bEnl');if(e)e.style.display=D&&D.admin?'':'none';var g=document.getElementById('bCfg');if(g)g.style.display=D&&D.admin?'':'none';
 }
 function bloquearRO(){
   [].forEach.call(document.querySelectorAll('#mbox button.btn,#mbox .nb,#mbox select,#mbox textarea'),function(e){if(/verPost/.test(e.getAttribute('onclick')||''))return;e.disabled=true;e.style.opacity=.5;});
