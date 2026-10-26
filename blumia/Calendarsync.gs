@@ -32,7 +32,7 @@ function syncCalendarConfirmados() {
        if (matchMail || matchNombre) {
           const celda = sh.getRange(i + 1, 9);
           const actual = String(celda.getValue()||'').toLowerCase();
-          const noTocar = actual.includes('descartado') || actual.includes('avanza a empresa') || actual.includes('en cliente') || actual.includes('contratado') || actual.includes('reserva') || actual.includes('entrevista empresa');
+          const noTocar = actual.includes('eliminado') || actual.includes('descartado') || actual.includes('avanza a empresa') || actual.includes('en cliente') || actual.includes('contratado') || actual.includes('reserva') || actual.includes('entrevista empresa');
           if (celda.getValue() !== estado && !noTocar) {
             celda.setValue(estado).setBackground('#D1E9FF').setHorizontalAlignment('center').setFontWeight('bold');
           }

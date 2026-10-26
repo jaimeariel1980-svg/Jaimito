@@ -14,3 +14,13 @@ function empresaParaCandidatos_(cfg) {
   const e = (cfg && typeof cfg.empresa === 'string') ? cfg.empresa.trim() : '';
   return (!e || e === 'MACS') ? 'MACS' : 'una empresa cliente del sector ' + e;
 }
+
+/* Clave de la empresa de un perfil (Config.empresa; sin dato = MACS) y nombre de la hoja de su informe de proceso. */
+function empresaKey_(cfg) {
+  const e = (cfg && typeof cfg.empresa === 'string') ? cfg.empresa.trim() : '';
+  return e || 'MACS';
+}
+
+function hojaProceso_(empresa) {
+  return (!empresa || empresa === 'MACS') ? 'Informe_Proceso' : 'Informe_Proceso_' + empresa;
+}
