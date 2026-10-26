@@ -1759,6 +1759,7 @@ function agendarForm(id){
     '<label>Interesado<input id="ag_cli" placeholder="Nombre"></label>'+
     '<label>Teléfono<input id="ag_tel" placeholder="+54 341 ..."></label>'+
     '<label>Email (opc.)<input id="ag_mail" type="email" placeholder="email del cliente"></label>'+
+    '<details style="grid-column:1/-1;border:1px solid var(--linea);border-radius:10px;padding:8px 12px"><summary style="cursor:pointer;font-weight:600;font-size:13.5px">🤝 Viene por otra inmobiliaria</summary><div class="form" style="margin-top:10px"><label>Inmobiliaria<input id="ag_inmob" placeholder="Nombre de la inmobiliaria"></label><label>Colega<input id="ag_colega" placeholder="Nombre del colega"></label></div></details>'+
 
     '<label style="grid-column:1/-1">Observaciones<textarea id="ag_obs" rows="2" placeholder="Comentarios..."></textarea></label>'+
   '</div>'+
@@ -1768,7 +1769,7 @@ function agendarForm(id){
 function guardarAgenda(id,dirEnc){
   var g=x=>document.getElementById(x)?document.getElementById(x).value:'';
   var cuando=g('ag_fecha'); if(!cuando){alert('Poné la fecha y hora');return;}
-  var datos={cuando:new Date(cuando).toISOString(),interesado:g('ag_cli'),tel:g('ag_tel'),mail:g('ag_mail')||'',obs:g('ag_obs'),dir:decodeURIComponent(dirEnc),vendedor:_vend(id),quien:_yo()};
+  var datos={cuando:new Date(cuando).toISOString(),interesado:g('ag_cli'),tel:g('ag_tel'),mail:g('ag_mail')||'',inmob:g('ag_inmob').trim(),colega:g('ag_colega').trim(),obs:g('ag_obs'),dir:decodeURIComponent(dirEnc),vendedor:_vend(id),quien:_yo()};
   var btn=document.getElementById('ag_btn'); if(btn){btn.textContent='Agendando…';btn.disabled=true;}
   google.script.run
     .withSuccessHandler(function(){closeDL();recargar(id);})
@@ -1970,7 +1971,7 @@ function visAbrir(per,vend){
     var d=new Date(x.d+'T12:00:00'),k=x.d===h?'Hoy':x.d===_vIso(man)?'Mañana':x.d===_vIso(ayer)?'Ayer':d.toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'});
     if(k!==last){html+='<div style="margin:12px 0 5px;font-size:12px;font-weight:700;color:var(--gris);text-transform:uppercase;letter-spacing:.04em">'+_vE(k)+'</div>';last=k;}
     var bd=x.e==='a'?['Agendada','#eaf1ff','#2b4a8b']:x.e==='p'?['Falta resultado','#fff1e0','#b4620a']:x.e==='c'?['Cancelada','#eee','#666']:[x.res||'Realizada','#e9f6ee','#2e7d4f'];
-    html+='<div onclick="visDet('+x.f+')" style="display:flex;gap:10px;padding:9px 10px;border-radius:10px;margin-bottom:4px;cursor:pointer;background:#f6f8fc'+(x.e==='c'?';opacity:.65':'')+'"><div style="min-width:44px;font-weight:700;color:#2b4a8b;font-size:13px">'+(x.h||'—')+'</div><div style="min-width:0;flex:1"><div style="font-size:13.5px;font-weight:700">'+(x.x?'🏢 ':'🏠 ')+_vE(x.dir)+(x.x?' <span style="background:#fff1e0;color:#b4620a;border-radius:6px;padding:1px 6px;font-size:10px;font-weight:700;vertical-align:middle;white-space:nowrap">OTRA INMOBILIARIA</span>':'')+'</div><div style="font-size:12px;color:var(--gris)">'+(x.x&&(x.im||x.co)?_vE(x.im||'')+(x.co?(x.im?' · ':'')+'colega '+_vE(x.co):'')+' · ':'')+_vE(x.cli||'—')+(x.v||x.c?' · 👤 '+_vE(x.v||x.c):'')+'</div></div><span style="align-self:center;background:'+bd[1]+';color:'+bd[2]+';border-radius:8px;padding:2px 8px;font-size:11px;font-weight:700;white-space:nowrap">'+_vE(bd[0])+'</span></div>';
+    html+='<div onclick="visDet('+x.f+')" style="display:flex;gap:10px;padding:9px 10px;border-radius:10px;margin-bottom:4px;cursor:pointer;background:#f6f8fc'+(x.e==='c'?';opacity:.65':'')+'"><div style="min-width:44px;font-weight:700;color:#2b4a8b;font-size:13px">'+(x.h||'—')+'</div><div style="min-width:0;flex:1"><div style="font-size:13.5px;font-weight:700">'+(x.x?'🏢 ':'🏠 ')+_vE(x.dir)+(x.x?' <span style="background:#fff1e0;color:#b4620a;border-radius:6px;padding:1px 6px;font-size:10px;font-weight:700;vertical-align:middle;white-space:nowrap">OTRA INMOBILIARIA</span>':(x.im||x.co?' <span style="background:#e8f0ff;color:#2b4a8b;border-radius:6px;padding:1px 6px;font-size:10px;font-weight:700;vertical-align:middle;white-space:nowrap">🤝 POR OTRA INMOBILIARIA</span>':''))+'</div><div style="font-size:12px;color:var(--gris)">'+((x.im||x.co)?_vE(x.im||'')+(x.co?(x.im?' · ':'')+'colega '+_vE(x.co):'')+' · ':'')+_vE(x.cli||'—')+(x.v||x.c?' · 👤 '+_vE(x.v||x.c):'')+'</div></div><span style="align-self:center;background:'+bd[1]+';color:'+bd[2]+';border-radius:8px;padding:2px 8px;font-size:11px;font-weight:700;white-space:nowrap">'+_vE(bd[0])+'</span></div>';
   });
   if(!l.length)html+='<div style="color:var(--gris);padding:18px 0;text-align:center">No hay visitas en esta vista.</div>';
   dl.innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">🗓 Visitas</div><div class="sub">Propias y a propiedades de otras inmobiliarias · tocá una para ver el detalle</div></div><div class="fb">'+html+'</div>';
