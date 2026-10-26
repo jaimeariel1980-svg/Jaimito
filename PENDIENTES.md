@@ -12,6 +12,13 @@ Lo mantiene Claude. Prioridad: 🔴 urgente · 🟠 importante · 🟡 cuando se
 - 🟡 CSP y `X-Frame-Options` (`_headers` en Cloudflare, sacar `ALLOWALL`), escapar mails HTML, mensajes de error genéricos, `drive.file` en vez de `drive`. — *Claude*
 - 🟡 Auditar también `pami/`, `pami-real/`, `liquidaciones/`, `caja-obra/` (NJ Arquitectura: `TABLERO_PIN`, bot Anita). — *Claude*
 
+## Blumia (alta 26/10)
+- 🔴 **Rotar las claves de OpenAI y Anthropic de Blumia**: estaban escritas en `Código.gs` y quedaron en la rama `sync-blumia` y en el historial. Crear nuevas, cargarlas en las propiedades `OPENAI_API_KEY` y `ANTHROPIC_API_KEY` y revocar las viejas. — *Ariel*
+- 🟠 **Borrar la rama `sync-blumia`** (tiene las claves viejas) una vez integrado el código. — *Claude, con OK de Ariel*
+- 🟠 **Web `/exec` pública** (kanban e internas sin clave): dejar abierto solo el formulario de postulación y proteger el resto con clave o login. Cambia el uso: hablarlo antes. — *Claude + Ariel*
+- 🟡 `Postulacion.html` pesa 650 KB (tipografías incrustadas): revisar si la página carga lento. — *Claude*
+- 🟡 Cada `bajar` crea `sync-blumia`: si vuelve a haber claves en el código, quedan en esa rama. — *Claude*
+
 ## Operativo
 - 🔴 **Apagar el bot viejo de Telegram (piloto)**: revocar su token en BotFather, borrar los activadores y archivar el proyecto de Apps Script, revocar su clave de OpenAI. Después, sacar del repo `bot-azcuenaga.gs` y los `.py` de la raíz. — *Ariel (cuentas) + Claude (repo)*
 - 🟠 **Sin pruebas antes de publicar**: cualquiera con escritura en la rama principal publica a producción y el workflow no revisa sintaxis. Proponer chequeo automático de sintaxis y proteger la rama. — *Claude + Ariel (GitHub)*

@@ -67,7 +67,7 @@ jobs:
         run: |
           rm -rf /tmp/real /tmp/prev; mkdir -p /tmp/real /tmp/prev
           if ! git archive "${{ github.event.before }}" "${{ matrix.dir }}" 2>/dev/null | tar -x -C /tmp/prev; then echo "Sin versión anterior: no se compara."; exit 0; fi
-          [ -d "/tmp/prev/${{ matrix.dir }}" ] || exit 0
+          [ -f "/tmp/prev/${{ matrix.dir }}/appsscript.json" ] || { echo "Primera publicación del proyecto: no se compara."; exit 0; }
           cp "${{ matrix.dir }}/.clasp.json" /tmp/real/
           (cd /tmp/real && clasp pull > /dev/null)
           DIF=$(python3 .github/scripts/guardia.py "/tmp/prev/${{ matrix.dir }}" /tmp/real) || true
