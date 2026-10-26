@@ -4202,7 +4202,8 @@ const DATA=${dataJSON};
 const EMPRESAS=${empresasJSON};
 const EMPRESA_ACTUAL='${empresaActual}';
 const PERFIL='${perfilId}';
-function pedirPerfilPin(){var p=prompt('PIN para ver el perfil del puesto (solo selectores):');if(!p)return;var w=window.open('','_blank');google.script.run.withSuccessHandler(function(u){if(w)w.location.href=u;else window.open(u,'_blank');}).withFailureHandler(function(e){if(w)w.close();alert((e&&e.message)||e);}).linkPerfilConPin(PERFIL,p);}
+function pedirPerfilPin(){var p=prompt('PIN para ver el perfil del puesto (solo selectores):');if(!p)return;google.script.run.withSuccessHandler(function(u){abrirPerfilLink(u);}).withFailureHandler(function(e){alert((e&&e.message)||e);}).linkPerfilConPin(PERFIL,p);}
+function abrirPerfilLink(u){var d=document.createElement('div');d.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:99999;display:flex;align-items:center;justify-content:center';d.innerHTML='<div style="background:#fff;border-radius:10px;padding:26px 30px;text-align:center;font-family:sans-serif;max-width:340px"><p style="margin:0 0 16px;font-size:15px">PIN correcto ✓</p><a id="pplk" target="_blank" rel="noopener" style="display:inline-block;background:#1A6645;color:#fff;padding:11px 22px;border-radius:6px;text-decoration:none;font-weight:700">Abrir perfil del puesto</a><div style="margin-top:14px"><a href="#" id="ppcl" style="color:#777;font-size:13px">Cerrar</a></div></div>';document.body.appendChild(d);var l=document.getElementById('pplk');l.href=u;l.onclick=function(){setTimeout(function(){d.remove();},400);};document.getElementById('ppcl').onclick=function(ev){ev.preventDefault();d.remove();};}
 let navHTML='<select onchange="window.top.location.href=\\'${URL_WEBAPP}?tipo=kanban&perfil=\\'+this.value">';
 Object.keys(EMPRESAS).forEach(function(emp){
   navHTML+='<optgroup label="'+emp+'">';
