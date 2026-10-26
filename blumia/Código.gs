@@ -4333,10 +4333,10 @@ function limpiarFiltros(){['fNombre','fZona','fForm','fExp','fPret'].forEach(fun
 (function(){var est=[];DATA.forEach(function(c){if(c.estado&&est.indexOf(c.estado)===-1)est.push(c.estado);});est.sort();var s=document.getElementById('fEstado');est.forEach(function(e){var o=document.createElement('option');o.value=e;o.text=e;s.appendChild(o);});})();
 const MOTIVOS=${JSON.stringify(MOTIVOS_DESCARTE_)};
 function tagsTarjeta(c){
-  var h='',T={contactar:'Falta contactar',norespondio:'Sin respuesta',pronto:'Entrevista pronto',sincargar:'Falta cargar formulario',sinfecha:'No está en el calendario',reserva:'En reserva hace tiempo'};
+  var h='',T={contactar:'Falta contactar',norespondio:'Sin respuesta',pronto:'Entrevista pronto',sincargar:'Falta cargar formulario',sinfecha:'No está en el calendario',reserva:'En reserva hace tiempo',faltascreening:'Falta screening',faltacompetencias:'Falta competencias'};
   if(/^Descartad/i.test(c.estado)){h+=c.motivo?'<span class="tag" style="background:#FDE2E2;color:#9B1C1C" title="Motivo de descarte">✖ '+String(c.motivo).replace(/;\\s*/g,' · ')+'</span>':'<span class="tag" style="background:#FFF3CD;color:#7a5500;cursor:pointer" onclick="event.stopPropagation();pedirMotivo('+c.fila+')">Sin motivo · cargar</span>';}
   if(c.mailDescarte)h+='<span class="tag">✉ Descarte enviado</span>';
-  try{avPendientes([c]).filter(function(x){return x.k.indexOf('sinmov')!==0;}).forEach(function(x){h+='<span class="tag" style="background:'+(x.urg?'#FDE2E2':'#FFF3CD')+';color:'+(x.urg?'#9B1C1C':'#7a5500')+'">'+x.ic+' '+(T[x.k.split('|')[0]]||x.txt)+'</span>';});}catch(e){}
+  try{avPendientes([c]).filter(function(x){return x.k.indexOf('sinmov')!==0;}).forEach(function(x){var kk=x.k.split('|')[0],rj=x.urg||kk.indexOf('falta')===0&&kk!=='falta',dn=kk==='norespondio'?(String(x.txt).match(/hace (\\d+) d/)||[])[1]:'';h+='<span class="tag" style="background:'+(rj?'#FDE2E2':'#FFF3CD')+';color:'+(rj?'#9B1C1C':'#7a5500')+'">'+x.ic+' '+(dn?'Sin respuesta hace '+dn+' d':(T[kk]||x.txt))+'</span>';});}catch(e){}
   return h;
 }
 function pedirMotivo(f,recargar){
@@ -4419,12 +4419,14 @@ function avEtapa(e){
   if(/^(Avanza a screening|Screening)/i.test(e))return {k:'screening',n:'screening',h:'Screening'};
   return null;
 }
+function avEtapasFaltan(c){var m=typeof metEstado==='function'?metEstado(c.estado):null,f=[];if(!m||m.t!=='act')return f;if(m.lv>=2&&!String(c.notaScr||'').trim())f.push('screening');if(m.lv>=3&&!String(c.notaComp||'').trim())f.push('competencias');return f;}
 function avPendientes(L){
   var out=[],now=Date.now();
   L.forEach(function(c){
     if(!avActivo(c))return;
-    var ep=avEtapa(c.estado);if(!ep)return;
     var p=function(k,ic,txt,urg){out.push({k:k+'|'+c.fila,ic:ic,txt:txt,f:c.fila,n:c.nombre,urg:!!urg});};
+    avEtapasFaltan(c).forEach(function(e){p('falta'+e,'⚠','Falta la etapa de '+e+' (no tiene nota cargada)');});
+    var ep=avEtapa(c.estado);if(!ep)return;
     if(!/agendad/i.test(c.estado)){
       var ct=String(c.contactado||'').split(' · ')[0].trim().toLowerCase();
       if(ct!==ep.k){p('contactar','➜','Falta contactar para '+ep.n);return;}
@@ -4451,7 +4453,7 @@ function avPendientes(L){
 function avNovedades(L){
   var prev=avLS('snap'),snap={},nov=[],d=new Date(),dd=function(n){return ('0'+n).slice(-2);},cuando=dd(d.getDate())+'/'+dd(d.getMonth()+1)+' '+dd(d.getHours())+':'+dd(d.getMinutes());
   L.forEach(function(c){
-    var s={e:c.estado,c:c.cita||''};snap[c.fila]=s;if(!prev)return;
+    var s={e:c.estado,c:c.cita||'',n:(c.notaScr||'')+'|'+(c.notaComp||'')};snap[c.fila]=s;if(!prev)return;
     var a=prev[c.fila],p=function(ic,txt){nov.push({ic:ic,txt:txt,f:c.fila,n:c.nombre,h:cuando});};
     if(!a){if(!/^Eliminado/.test(s.e))p('🆕','Nuevo CV recibido');return;}
     if(s.e!==a.e&&!/^Eliminado/.test(s.e)){
@@ -4460,6 +4462,7 @@ function avNovedades(L){
       else p('🔄','Pasó a «'+s.e+'»'+(a.e?' (antes: '+a.e+')':''));
     }
     if(s.c&&s.c!==a.c)p('📅','Agendó para el '+s.c);
+    if(a.n!==undefined&&s.n!==a.n&&s.n!=='|')p('📝','Nota cargada · screening '+(c.notaScr||'—')+' · competencias '+(c.notaComp||'—'));
   });
   avLS('snap',snap);return nov;
 }
