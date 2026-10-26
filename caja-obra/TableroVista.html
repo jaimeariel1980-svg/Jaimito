@@ -453,7 +453,7 @@ function frmCertAcc(i,n){
   <div class="wf" style="margin-top:10px"><div class="r"><span>IPC del mes</span><b>${pct4(c.pct)}</b></div><div class="r"><span>Acumulada</span><b>${pct4(c.acum)}</b></div><div class="r"><span>Reajuste</span><b>${money(c.reaj)}</b></div><div class="r t"><span>Total</span><b>${money(c.total)}</b></div></div>
   <div id="pdfbox"></div><div class="err" id="ferr"></div>
   <div class="acts"><button class="sec" onclick="frmCorr()">✏️ Corregir IPC</button><button class="pri" id="fsave" onclick="verPdf()">📲 Enviar PDF</button></div>
-  ${n===Math.max(...o.certs.map(x=>x.n))?'<div class="acts" style="margin-top:10px"><button class="dan" id="fdel" onclick="borrarCert()">🗑 Borrar este certificado</button></div><div class="sub" style="margin-top:6px">Borra el certificado y el ingreso que generó. Queda copia en la Papelera.</div>':''}`);
+  ${n===Math.max(...o.certs.map(x=>x.n))?'<div class="acts" style="margin-top:10px"><button class="dan" id="fdel" onclick="borrarCert()">🗑 Borrar este certificado</button></div><div class="sub" style="margin-top:6px">Borra el certificado y el ingreso que generó. Queda copia en la Papelera.</div>':`<div class="nx" style="margin-top:12px">Para borrar este certificado, primero borrá el <b>N° ${Math.max(...o.certs.map(x=>x.n))}</b>. Se borran de a uno, empezando por el último, para no desarmar el cálculo del IPC.</div>`}`);
 }
 function verPdf(){
   const o=D.obras[F.i],b=$('fsave');b.disabled=true;b.textContent='Generando…';
