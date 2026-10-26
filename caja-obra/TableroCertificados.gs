@@ -75,30 +75,7 @@ function tbCertParams(clave,obra,mensual,plazo,baseISO){
 function tbCertBorrar(clave,obra,n){
   tbAuth_(clave);
   return tbLock_(function(){
-    obra=String(obra||''); n=Number(n)||0;
-    var s=ss(), c=s.getSheetByName('Certificados'), last=c.getLastRow(), fila=0, maxN=0;
-    for(var r=18;r<=last;r++){
-      if(c.getRange(r,1).getValue()===obra){ var k=Number(c.getRange(r,2).getValue())||0; if(k>maxN) maxN=k; if(k===n) fila=r; }
-    }
-    if(!fila) throw new Error('No encontré ese certificado.');
-    if(n!==maxN) throw new Error('Solo se puede borrar el último certificado de la obra.');
-    var v=c.getRange(fila,1,1,8).getValues()[0];
-    var pp=s.getSheetByName('Papelera certificados');
-    if(!pp){
-      pp=s.insertSheet('Papelera certificados');
-      pp.getRange(1,1,1,10).setValues([['Borrado','Por','Obra','N°','Mes','% IPC','Inflación acumulada','Reajuste','Honorarios del mes','Fecha']]).setFontWeight('bold');
-      pp.setFrozenRows(1);
-    }
-    pp.appendRow([new Date(),'Tablero'].concat(v));
-    c.deleteRow(fila);
-    var mv=s.getSheetByName('Movimientos'), vv=mv.getDataRange().getValues(), etiqueta=String(mesLindo(v[2])).toLowerCase();
-    for(var j=vv.length-1;j>=1;j--){
-      if(vv[j][1]==='Ingreso'&&vv[j][2]==='Honorarios'&&vv[j][10]===obra&&String(vv[j][3]).toLowerCase().indexOf(etiqueta)>=0&&Math.round(Number(vv[j][5])||0)===Math.round(Number(v[6])||0)){
-        var pm=s.getSheetByName('Papelera');
-        if(pm) pm.appendRow([new Date(),'Tablero'].concat(vv[j].slice(0,13)));
-        mv.deleteRow(j+1); break;
-      }
-    }
+    certBorrar_(String(obra||''),Number(n)||0);
     SpreadsheetApp.flush();
     return tableroDatos_();
   });
