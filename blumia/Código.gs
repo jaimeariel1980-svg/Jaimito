@@ -2386,7 +2386,23 @@ function rutearPorAsunto_(asunto) {
     const claves = String(data[i][1] || '').toLowerCase().split('|').map(s => s.trim()).filter(Boolean);
     if (claves.some(k => a.indexOf(k) !== -1)) return pid;
   }
-  return null;
+  // sin fila en Mail_Routing: si el asunto nombra el puesto (o su id), alcanza
+  const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+  const an = ' ' + norm(asunto) + ' ';
+  const hit = perfilesActivos_().filter(p => {
+    const n = norm(p.nombre), i = norm(p.id);
+    return (n.length > 3 && an.indexOf(' ' + n + ' ') !== -1) || (i.length > 3 && an.indexOf(' ' + i + ' ') !== -1);
+  });
+  return hit.length === 1 ? hit[0].id : null;
+}
+
+// --- etiqueta de Gmail por búsqueda: "Blumia/<puesto>" (o "Blumia/Sin clasificar") ---
+function etiquetarHilo_(thread, perfilId) {
+  try {
+    const nombre = perfilId ? ((perfilesActivos_().filter(p => p.id === perfilId)[0] || {}).nombre || perfilId) : 'Sin clasificar';
+    const nom = 'Blumia/' + String(nombre).replace(/\//g, '-');
+    thread.addLabel(GmailApp.getUserLabelByName(nom) || GmailApp.createLabel(nom));
+  } catch (e) { }
 }
 
 // --- extrae texto del CV (PDF / Google Doc / Word) ---
@@ -2502,6 +2518,7 @@ function procesarMailsRouter() {
         }
 
         // 3) sin clasificar → hoja aparte
+        etiquetarHilo_(thread, perfil);
         if (!perfil) {
           hojaSinClasificar_().appendRow([msg.getDate(), asunto, att.getName(), file.getUrl(), 'GPT no pudo clasificar / asunto sin pista']);
           sin++;
