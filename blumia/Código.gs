@@ -4078,7 +4078,7 @@ function completarProcesoIA(empresa) {
 function kanbanHTML(perfilId) {
   const cfg = getConfig(perfilId);
   const emp = (typeof cfg.empresa === 'string') ? cfg.empresa : 'MACS';
-  const titulo = ((typeof cfg.nombre === 'string') ? cfg.nombre : perfilId) + ' · ' + emp;
+  const titulo = ((typeof cfg.nombre === 'string' && cfg.nombre) ? cfg.nombre : (typeof cfg.nombre_perfil === 'string' && cfg.nombre_perfil) ? cfg.nombre_perfil : perfilId) + ' · ' + emp;
   const data = doGetKanban(perfilId);
   const empresas = JSON.stringify(empresasYPerfiles());
   const empresaActual = (typeof cfg.empresa === 'string') ? cfg.empresa : 'MACS';
@@ -4103,11 +4103,12 @@ const link = (r, col) => {
     return m ? m[1] : '';
   };
   const out = [];
+  const cMot = d[0].indexOf('Motivo de descarte');
   for (let i = 1; i < d.length; i++) {
     if (!d[i][1]) continue;
     const m = String(d[i][5] || '').match(/Remuneraci[oó]n pretendida:\s*\$?\s*([\d.\s]+)/i);
     out.push({
-      fila: i + 1, nombre: d[i][1], estado: String(d[i][8] || '').trim(),
+      fila: i + 1, nombre: d[i][1], estado: String(d[i][8] || '').trim(), motivo: cMot >= 0 ? String(d[i][cMot] || '') : '',
       recibido: d[i][0] ? Utilities.formatDate(new Date(d[i][0]), 'GMT-3', 'dd/MM/yyyy') : '',
       nota: d[i][4] || '', notaScr: d[i][11] || '', notaComp: d[i][15] || '',
       pretension: m ? m[1].trim() : '', zona: d[i][23] || '',
@@ -4126,6 +4127,7 @@ function moverEstado(perfilId, fila, estado) {
   const r = c.getDataValidation();
   c.setDataValidation(null).setValue(estado);
   if (r) c.setDataValidation(r);
+  limpiarMotivoSiNoDescartado_(sh, fila, estado);
   return true;
 }
 
@@ -4139,9 +4141,14 @@ function KANBAN_TPL(perfilId, titulo, dataJSON, empresasJSON, empresaActual, fly
 header{background:var(--green);color:#fff;padding:16px 20px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:10;flex-wrap:wrap}
 header img{height:34px}header h1{font-size:18px;font-weight:800}
 .nav{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap;align-items:center}
-.nav button{padding:7px 14px;border-radius:6px;font-size:12px;font-weight:800;color:#fff;background:rgba(255,255,255,.15);border:none;cursor:pointer;font-family:var(--font)}
-.nav .proc{background:var(--amber);color:#1A1A1A}
-.nav select{padding:7px 10px;border-radius:6px;border:none;font-family:var(--font);font-weight:800;font-size:12px;cursor:pointer}
+.nav button,.nav .dd>button{padding:8px 14px;border-radius:8px;font-size:13px;font-weight:700;color:#fff;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.22);cursor:pointer;font-family:var(--font);white-space:nowrap}
+.nav button:hover,.nav .dd>button:hover{background:rgba(255,255,255,.28)}
+.nav select{padding:8px 10px;border-radius:8px;border:none;font-family:var(--font);font-weight:700;font-size:13px;cursor:pointer;max-width:260px}
+.nav .dd{position:relative}
+.nav .ddm{display:none;position:absolute;right:0;top:calc(100% + 6px);background:#fff;color:#1A1A1A;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.25);min-width:230px;padding:6px;z-index:60}
+.nav .ddm.show{display:block}
+.nav .ddm a{display:block;padding:10px 12px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;color:#1A1A1A}
+.nav .ddm a:hover{background:var(--glight)}
 .filtros{padding:12px 16px 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .fwrap{position:relative;display:inline-block}
 .fwrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);opacity:.4;pointer-events:none}
@@ -4225,7 +4232,7 @@ const EMPRESA_ACTUAL='${empresaActual}';
 const PERFIL='${perfilId}';
 function pedirPerfilPin(){var p=prompt('PIN para ver el perfil del puesto (solo selectores):');if(!p)return;google.script.run.withSuccessHandler(function(u){abrirPerfilLink(u);}).withFailureHandler(function(e){alert((e&&e.message)||e);}).linkPerfilConPin(PERFIL,p);}
 function abrirPerfilLink(u){var d=document.createElement('div');d.style.cssText='position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:99999;display:flex;align-items:center;justify-content:center';d.innerHTML='<div style="background:#fff;border-radius:10px;padding:26px 30px;text-align:center;font-family:sans-serif;max-width:340px"><p style="margin:0 0 16px;font-size:15px">PIN correcto ✓</p><a id="pplk" target="_blank" rel="noopener" style="display:inline-block;background:#1A6645;color:#fff;padding:11px 22px;border-radius:6px;text-decoration:none;font-weight:700">Abrir perfil del puesto</a><div style="margin-top:14px"><a href="#" id="ppcl" style="color:#777;font-size:13px">Cerrar</a></div></div>';document.body.appendChild(d);var l=document.getElementById('pplk');l.href=u;l.onclick=function(){setTimeout(function(){d.remove();},400);};document.getElementById('ppcl').onclick=function(ev){ev.preventDefault();d.remove();};}
-let navHTML='<select onchange="window.top.location.href=\\'${URL_WEBAPP}?tipo=kanban&perfil=\\'+this.value">';
+let navHTML='<button id="avBtn" title="Avisos pendientes" onclick="verAvisos()" style="font-size:17px;padding:6px 12px">🔔<span id="avCnt" style="display:none;margin-left:6px;background:#fff;color:#B91C1C;border-radius:12px;font-size:13px;font-weight:800;padding:1px 9px"></span></button><select onchange="window.top.location.href=\\'${URL_WEBAPP}?tipo=kanban&perfil=\\'+this.value">';
 Object.keys(EMPRESAS).forEach(function(emp){
   navHTML+='<optgroup label="'+emp+'">';
   EMPRESAS[emp].forEach(function(p){navHTML+='<option value="'+p[0]+'"'+(p[0]===PERFIL?' selected':'')+'>'+p[1]+'</option>';});
@@ -4233,17 +4240,12 @@ Object.keys(EMPRESAS).forEach(function(emp){
 });
 navHTML+='</select>';
 navHTML+='<button onclick="window.top.location.href=\\'${URL_WEBAPP}?tipo=kanban&perfil=${perfilId}\\'">↻ Actualizar</button>';
-navHTML+='<button class="proc" onclick="window.open(\\'${URL_WEBAPP}?tipo=procesohtml&perfil=${perfilId}\\',\\'_blank\\')">Informe proceso</button>';
-navHTML+='<button class="proc" onclick="if(confirm(\\'¿Generar PDF cliente de esta búsqueda?\\'))window.open(\\'${URL_WEBAPP}?tipo=pdfcliente&perfil=${perfilId}\\',\\'_blank\\')">PDF cliente</button>';
-navHTML+='<button style="background:#E06666;color:#fff" onclick="descartesMasivo()">✉ Descartes</button>';
 navHTML+='<button id="quienBtn" onclick="quienSoy(true)">👤 ¿Quién sos?</button>';
-navHTML+='<button title="Baja un archivo para importar a los contactos de Google (así los candidatos aparecen con nombre en el WhatsApp del celular)" onclick="bajarContactos(this)">📇 Contactos al celular</button>';
-navHTML+='<button id="avBtn" onclick="verAvisos()" style="position:relative">🔔 Avisos<span id="avCnt" style="display:none;position:absolute;top:-6px;right:-6px;background:#B91C1C;color:#fff;border-radius:10px;font-size:11px;font-weight:800;padding:1px 6px"></span></button>';
-navHTML+='<button onclick="abrirPapelera()">🗑 Papelera ('+ELIM.length+')</button>';
-navHTML+='<button style="background:#F5C842;color:#1A1A1A" onclick="window.top.location.href=\\'${URL_WEBAPP}?tipo=banco&desde=${perfilId}\\'">★ Banco</button>';
-navHTML+=${perfilProt?'true':'false'}?'<button onclick="pedirPerfilPin()">🔒 Perfil del puesto</button>':'<button onclick="window.open(\\'${perfilUrl}\\',\\'_blank\\')">📋 Perfil del puesto</button>';
-navHTML+='<button onclick="window.open(\\'${flyerUrl}\\',\\'_blank\\')">📢 Flyer</button>';
-navHTML+='<button onclick="prompt(\\'Link del formulario de postulación (copialo):\\',\\'${URL_WEBAPP}?tipo=postulacion&perfil=${perfilId}\\')">🔗 Link postulación</button>';
+navHTML+='<div class="dd"><button onclick="ddToggle(this)">📄 Informes ▾</button><div class="ddm"><a onclick="window.open(\\'${URL_WEBAPP}?tipo=procesohtml&perfil=${perfilId}\\',\\'_blank\\')">Informe de proceso (para la empresa)</a><a onclick="if(confirm(\\'¿Generar PDF cliente de esta búsqueda?\\'))window.open(\\'${URL_WEBAPP}?tipo=pdfcliente&perfil=${perfilId}\\',\\'_blank\\')">PDF para el cliente</a></div></div>';
+navHTML+='<div class="dd"><button onclick="ddToggle(this)">📚 Búsqueda ▾</button><div class="ddm">'+(${perfilProt?'true':'false'}?'<a onclick="pedirPerfilPin()">🔒 Perfil del puesto</a>':'<a onclick="window.open(\\'${perfilUrl}\\',\\'_blank\\')">📋 Perfil del puesto</a>')+'<a onclick="window.open(\\'${flyerUrl}\\',\\'_blank\\')">📢 Flyer</a><a onclick="prompt(\\'Link del formulario de postulación (copialo):\\',\\'${URL_WEBAPP}?tipo=postulacion&perfil=${perfilId}\\')">🔗 Link de postulación</a></div></div>';
+navHTML+='<div class="dd"><button onclick="ddToggle(this)">🧰 Candidatos ▾</button><div class="ddm"><a onclick="descartesMasivo()">✉ Mails de descarte</a><a title="Baja un archivo para importar a los contactos de Google" onclick="bajarContactos(this)">📇 Contactos al celular</a><a onclick="window.top.location.href=\\'${URL_WEBAPP}?tipo=banco&desde=${perfilId}\\'">★ Banco de talento</a><a onclick="abrirPapelera()">🗑 Papelera ('+ELIM.length+')</a></div></div>';
+document.addEventListener('click',function(e){if(!e.target.closest('.dd'))document.querySelectorAll('.ddm.show').forEach(function(m){m.classList.remove('show');});});
+function ddToggle(b){var m=b.nextElementSibling,ab=m.classList.contains('show');document.querySelectorAll('.ddm.show').forEach(function(x){x.classList.remove('show');});if(!ab)m.classList.add('show');}
 document.getElementById('nav').innerHTML=navHTML;
 avInit();
 try{var _q=localStorage.getItem('blumia_quien');if(_q&&document.getElementById('quienBtn'))document.getElementById('quienBtn').textContent='👤 '+_q;}catch(e){}
@@ -4253,7 +4255,7 @@ const DESC_TIPOS=['Descartado sin screening','Descartado post screening','Descar
 const RES_TIPOS=['En reserva','Reserva competencias','Reserva screening empresa','Reserva presencial empresa'];
 const nota=n=>n?'<span class="nota n'+String(n).replace('+','')+'">'+n+'</span>':'';
 const tag=e=>/agendad/i.test(e)?'<span class="tag ag">Agendado</span>':'';
-const card=c=>'<div class="card" data-fila="'+c.fila+'" onclick="ficha('+c.fila+')"><button class="cx" title="Eliminar" onclick="event.stopPropagation();eliminar('+c.fila+')">✕</button>'+nota(c.notaPresEmp||c.notaScrEmp||c.notaComp||c.notaScr||c.nota)+'<div class="n">'+c.nombre+'</div><div class="meta">'+(c.zona||'—')+(c.pretension?' · $'+c.pretension:'')+'</div>'+(c.cita?'<div class="cita-tag">📅 '+c.cita+'</div>':'')+(c.contactado?'<span class="tag" style="background:#D1FAE5;color:#065F46">✓ Contact. '+c.contactado+' <button title="Borrar la marca de contacto" style="border:none;background:none;color:#065F46;cursor:pointer;font-weight:800;padding:0 0 0 4px" onclick="event.stopPropagation();borrarMarca('+c.fila+')">✕</button></span>':'')+tag(c.estado)+'</div>';
+const card=c=>'<div class="card" data-fila="'+c.fila+'" onclick="ficha('+c.fila+')"><button class="cx" title="Eliminar" onclick="event.stopPropagation();eliminar('+c.fila+')">✕</button>'+nota(c.notaPresEmp||c.notaScrEmp||c.notaComp||c.notaScr||c.nota)+'<div class="n">'+c.nombre+'</div><div class="meta">'+(c.zona||'—')+(c.pretension?' · $'+c.pretension:'')+'</div>'+(c.formacion&&c.formacion!=='Sin dato'?'<div class="meta" title="'+String(c.formacion).replace(/"/g,'')+'">🎓 '+String(c.formacion).slice(0,70)+'</div>':'')+(c.cita?'<div class="cita-tag">📅 '+c.cita+'</div>':'')+tagsTarjeta(c)+(c.contactado?'<span class="tag" style="background:#D1FAE5;color:#065F46">✓ Contact. '+c.contactado+' <button title="Borrar la marca de contacto" style="border:none;background:none;color:#065F46;cursor:pointer;font-weight:800;padding:0 0 0 4px" onclick="event.stopPropagation();borrarMarca('+c.fila+')">✕</button></span>':'')+tag(c.estado)+'</div>';
 const board=document.getElementById('board');
 function acordeon(titulo,clase,tipos,extras,corto){
   var lista=tipos.slice();
@@ -4275,7 +4277,7 @@ COLS.forEach(function(x){
 });
 board.innerHTML+=acordeon('Reservas','res',RES_TIPOS,function(e){return /reserva/i.test(e);},'');
 function toast(){var s=document.getElementById('saved');s.classList.add('show');setTimeout(function(){s.classList.remove('show');},1500);}
-document.querySelectorAll('.col-body,.dbody').forEach(function(col){new Sortable(col,{group:'kb',animation:150,forceFallback:true,fallbackOnBody:true,scroll:true,bubbleScroll:true,scrollSensitivity:80,scrollSpeed:15,onEnd:function(evt){var fila=+evt.item.dataset.fila;var estado=evt.to.dataset.estado;var cc=DATA_ALL.find(function(x){return x.fila===fila;});if(cc&&estado)cc.estado=estado;if(estado&&evt.from!==evt.to){google.script.run.withSuccessHandler(toast).withFailureHandler(function(e){alert('Error: '+e.message);window.top.location.reload();}).moverEstado(PERFIL,fila,estado);}}});});
+document.querySelectorAll('.col-body,.dbody').forEach(function(col){new Sortable(col,{group:'kb',animation:150,forceFallback:true,fallbackOnBody:true,scroll:true,bubbleScroll:true,scrollSensitivity:80,scrollSpeed:15,onEnd:function(evt){var fila=+evt.item.dataset.fila;var estado=evt.to.dataset.estado;var cc=DATA_ALL.find(function(x){return x.fila===fila;});if(cc&&estado)cc.estado=estado;if(estado&&evt.from!==evt.to){google.script.run.withSuccessHandler(function(){toast();if(/^Descartad/i.test(estado))pedirMotivo(fila,true);}).withFailureHandler(function(e){alert('Error: '+e.message);window.top.location.reload();}).moverEstado(PERFIL,fila,estado);}}});});
 function nrm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g,'');}
 function raiz(p){p=nrm(p);if(p.length>5)return p.slice(0,-2);if(p.length>3)return p.slice(0,-1);return p;}
 function coincide(texto,consulta){if(!consulta.trim())return true;var t=nrm(texto);var ps=consulta.trim().split(/\\s+/);for(var i=0;i<ps.length;i++){if(t.indexOf(raiz(ps[i]))===-1)return false;}return true;}
@@ -4311,7 +4313,29 @@ function filtrar(){
 }
 function limpiarFiltros(){['fNombre','fZona','fForm','fExp','fPret'].forEach(function(id){document.getElementById(id).value='';});document.getElementById('fEstado').value='';document.querySelectorAll('.acc details').forEach(function(d){d.open=false;});filtrar();}
 (function(){var est=[];DATA.forEach(function(c){if(c.estado&&est.indexOf(c.estado)===-1)est.push(c.estado);});est.sort();var s=document.getElementById('fEstado');est.forEach(function(e){var o=document.createElement('option');o.value=e;o.text=e;s.appendChild(o);});})();
-function ficha(f){var c=DATA.find(function(x){return x.fila===f;});var row=function(l,v){return v?'<div class="frow"><span class="fl">'+l+'</span><span class="fv">'+v+'</span></div>':'';};var btn=function(u,t){return u?'<a href="'+u+'" target="_blank" class="mbtn">'+t+'</a>':'';};var waBtn='<button class="mbtn wa" onclick="menuWA('+c.fila+')">💬 WhatsApp ▾</button>';var mailBtn=(c.mail&&c.mail!=='Sin dato'&&c.mail.indexOf('@')>-1)?'<a href="https://mail.google.com/mail/?view=cm&to='+c.mail+'" target="_blank" class="mbtn" style="background:#EA4335;color:#fff">✉ Mail</a>':'';var cvBtn=c.cv?'<a href="https://drive.google.com/file/d/'+c.cv+'/view" target="_blank" class="mbtn alt">Ver CV</a>':'';var genBtn=c.informe?'':'<button class="mbtn gen" onclick="if(confirm(\\'Generar informe con IA. Puede tener costo. ¿Continuar?\\'))generar('+c.fila+',this)">Generar informe</button>';var delBtn='<button class="mbtn" style="background:#B91C1C;color:#fff" onclick="eliminar('+c.fila+')">🗑 Eliminar</button>';var bancoBtn='<button class="mbtn" style="background:#7C3AED" onclick="menuBanco('+c.fila+')">★ Banco de talento</button>';var notasEmp=/screening empresa|presencial empresa|avanza a empresa|entrevista empresa|reserva screening empresa|reserva presencial empresa/i.test(c.estado)?['screening-empresa','presencial-empresa'].map(function(ep){return '<div class="notarow"><span>'+(ep==='screening-empresa'?'Emp. screening':'Emp. presencial')+'</span>'+['A','B','C'].map(function(n){return '<button class="nb" onclick="setNotaEmp('+c.fila+',\\''+ep+'\\',\\''+n+'\\',this)">'+n+'</button>';}).join('')+'</div>';}).join(''):'';document.getElementById('mbody').innerHTML=row('Recibido',c.recibido)+row('Estado',c.estado)+row('Cita agendada',c.cita)+(c.historial?'<div class="frow"><span class="fl">Historial entrevistas</span><span class="fv" style="white-space:pre-line">'+c.historial+'</span></div>':'')+(c.contactado?'<div class="frow"><span class="fl">Último contacto</span><span class="fv">'+c.contactado+' <a href="#" onclick="borrarMarca('+c.fila+');return false" style="color:#aaa;font-size:11px;text-decoration:none;margin-left:6px">✕ borrar</a></span></div>':'')+'<div class="frow"><span class="fl">Registro de contactos</span><span class="fv" id="regCont" style="white-space:pre-line">cargando…</span></div>'+row('Teléfono',c.tel)+row('Email',c.mail)+row('Zona',c.zona)+row('Formación',c.formacion)+row('Pretensión',c.pretension?'$'+c.pretension:'')+row('Nota screening',c.notaScr)+row('Nota competencias',c.notaComp)+row('Nota screening empresa',c.notaScrEmp)+row('Nota presencial empresa',c.notaPresEmp)+'<div class="fres">'+(c.resumen||'Sin resumen')+'</div><div class="notabox"><div class="notatit">Poner nota manual</div>'+['cv','screening','competencias'].map(function(et){return '<div class="notarow"><span>'+({cv:'CV',screening:'Screening',competencias:'Competencias'}[et])+'</span>'+['A','B+','B','C'].map(function(n){return '<button class="nb" onclick="setNota('+c.fila+',\\''+et+'\\',\\''+n+'\\',this)">'+n+'</button>';}).join('')+'</div>';}).join('')+notasEmp+'</div><div class="mbtns">'+waBtn+mailBtn+cvBtn+btn(c.scrPDF,'Ver screening')+btn(c.compPDF,'Ver competencias')+btn(c.postulacion,'Ver postulación')+btn(c.scrLink,'Screening')+btn(c.compLink,'Competencias')+btn(c.informe,'Ver informe')+genBtn+bancoBtn+delBtn+'</div>';document.getElementById('mtit').textContent=c.nombre;document.getElementById('modal').classList.add('show');cargarRegCont(f);}
+const MOTIVOS=${JSON.stringify(MOTIVOS_DESCARTE_)};
+function tagsTarjeta(c){
+  var h='',T={contactar:'Falta contactar',norespondio:'Sin respuesta',pronto:'Entrevista pronto',sincargar:'Falta cargar formulario',sinfecha:'No está en el calendario'};
+  if(/^Descartad/i.test(c.estado)){h+=c.motivo?'<span class="tag" style="background:#FDE2E2;color:#9B1C1C" title="Motivo de descarte">✖ '+String(c.motivo).replace(/;\\s*/g,' · ')+'</span>':'<span class="tag" style="background:#FFF3CD;color:#7a5500;cursor:pointer" onclick="event.stopPropagation();pedirMotivo('+c.fila+')">Sin motivo · cargar</span>';}
+  if(c.mailDescarte)h+='<span class="tag">✉ Descarte enviado</span>';
+  try{avPendientes([c]).forEach(function(x){h+='<span class="tag" style="background:'+(x.urg?'#FDE2E2':'#FFF3CD')+';color:'+(x.urg?'#9B1C1C':'#7a5500')+'">'+x.ic+' '+(T[x.k.split('|')[0]]||x.txt)+'</span>';});}catch(e){}
+  return h;
+}
+function pedirMotivo(f,recargar){
+  var c=DATA_ALL.find(function(x){return x.fila===f;})||{};var ya=String(c.motivo||'');
+  var h='<div style="font-size:13px;color:#555;margin-bottom:10px">Elegí el o los motivos del descarte de <b>'+c.nombre+'</b>.</div>';
+  MOTIVOS.forEach(function(m,i){h+='<label style="display:flex;gap:8px;align-items:center;margin:6px 0;font-size:14px"><input type="checkbox" class="mot" value="'+m+'"'+(ya.indexOf(m)>-1?' checked':'')+'> '+m+'</label>';});
+  var otro=(ya.match(/Otro: ([^;]+)/)||[])[1]||'';
+  h+='<label style="display:block;margin-top:8px;font-size:13px">Otro (máximo tres palabras)<input id="motOtro" style="width:100%;padding:7px;border:1px solid #ccc;border-radius:6px;margin-top:3px" value="'+otro+'"></label>';
+  h+='<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button class="mbtn alt" onclick="cerrar();'+(recargar?'window.top.location.reload()':'')+'">Después</button><button class="mbtn" style="background:#1A6645;color:#fff" onclick="guardarMotivo('+f+','+(recargar?1:0)+',this)">Guardar motivo</button></div>';
+  document.getElementById('mtit').textContent='Motivo de descarte';document.getElementById('mbody').innerHTML=h;document.getElementById('modal').classList.add('show');
+}
+function guardarMotivo(f,rec,btn){
+  var sel=[].slice.call(document.querySelectorAll('.mot:checked')).map(function(x){return x.value;});var o=document.getElementById('motOtro').value;
+  btn.disabled=true;btn.textContent='Guardando...';
+  google.script.run.withSuccessHandler(function(){toast();cerrar();window.top.location.reload();}).withFailureHandler(function(e){btn.disabled=false;btn.textContent='Guardar motivo';alert(e.message);}).guardarMotivoDescarte(PERFIL,f,sel,o);
+}
+function ficha(f){var c=DATA.find(function(x){return x.fila===f;});var row=function(l,v){return v?'<div class="frow"><span class="fl">'+l+'</span><span class="fv">'+v+'</span></div>':'';};var btn=function(u,t){return u?'<a href="'+u+'" target="_blank" class="mbtn">'+t+'</a>':'';};var waBtn='<button class="mbtn wa" onclick="menuWA('+c.fila+')">💬 WhatsApp ▾</button>';var mailBtn=(c.mail&&c.mail!=='Sin dato'&&c.mail.indexOf('@')>-1)?'<a href="https://mail.google.com/mail/?view=cm&to='+c.mail+'" target="_blank" class="mbtn" style="background:#EA4335;color:#fff">✉ Mail</a>':'';var cvBtn=c.cv?'<a href="https://drive.google.com/file/d/'+c.cv+'/view" target="_blank" class="mbtn alt">Ver CV</a>':'';var genBtn=c.informe?'':'<button class="mbtn gen" onclick="if(confirm(\\'Generar informe con IA. Puede tener costo. ¿Continuar?\\'))generar('+c.fila+',this)">Generar informe</button>';var delBtn='<button class="mbtn" style="background:#B91C1C;color:#fff" onclick="eliminar('+c.fila+')">🗑 Eliminar</button>';var bancoBtn='<button class="mbtn" style="background:#7C3AED" onclick="menuBanco('+c.fila+')">★ Banco de talento</button>';var notasEmp=/screening empresa|presencial empresa|avanza a empresa|entrevista empresa|reserva screening empresa|reserva presencial empresa/i.test(c.estado)?['screening-empresa','presencial-empresa'].map(function(ep){return '<div class="notarow"><span>'+(ep==='screening-empresa'?'Emp. screening':'Emp. presencial')+'</span>'+['A','B','C'].map(function(n){return '<button class="nb" onclick="setNotaEmp('+c.fila+',\\''+ep+'\\',\\''+n+'\\',this)">'+n+'</button>';}).join('')+'</div>';}).join(''):'';document.getElementById('mbody').innerHTML=row('Recibido',c.recibido)+row('Estado',c.estado)+(/^Descartad/i.test(c.estado)?'<div class="frow"><span class="fl">Motivo de descarte</span><span class="fv">'+(c.motivo?String(c.motivo).replace(/;\\s*/g,' · '):'sin cargar')+' <a href="#" onclick="pedirMotivo('+c.fila+');return false" style="font-size:12px">'+(c.motivo?'editar':'cargar')+'</a></span></div>':'')+row('Cita agendada',c.cita)+(c.historial?'<div class="frow"><span class="fl">Historial entrevistas</span><span class="fv" style="white-space:pre-line">'+c.historial+'</span></div>':'')+(c.contactado?'<div class="frow"><span class="fl">Último contacto</span><span class="fv">'+c.contactado+' <a href="#" onclick="borrarMarca('+c.fila+');return false" style="color:#aaa;font-size:11px;text-decoration:none;margin-left:6px">✕ borrar</a></span></div>':'')+'<div class="frow"><span class="fl">Registro de contactos</span><span class="fv" id="regCont" style="white-space:pre-line">cargando…</span></div>'+row('Teléfono',c.tel)+row('Email',c.mail)+row('Zona',c.zona)+row('Formación',c.formacion)+row('Pretensión',c.pretension?'$'+c.pretension:'')+row('Nota screening',c.notaScr)+row('Nota competencias',c.notaComp)+row('Nota screening empresa',c.notaScrEmp)+row('Nota presencial empresa',c.notaPresEmp)+'<div class="fres">'+(c.resumen||'Sin resumen')+'</div><div class="notabox"><div class="notatit">Poner nota manual</div>'+['cv','screening','competencias'].map(function(et){return '<div class="notarow"><span>'+({cv:'CV',screening:'Screening',competencias:'Competencias'}[et])+'</span>'+['A','B+','B','C'].map(function(n){return '<button class="nb" onclick="setNota('+c.fila+',\\''+et+'\\',\\''+n+'\\',this)">'+n+'</button>';}).join('')+'</div>';}).join('')+notasEmp+'</div><div class="mbtns">'+waBtn+mailBtn+cvBtn+btn(c.scrPDF,'Ver screening')+btn(c.compPDF,'Ver competencias')+btn(c.postulacion,'Ver postulación')+btn(c.scrLink,'Screening')+btn(c.compLink,'Competencias')+btn(c.informe,'Ver informe')+genBtn+bancoBtn+delBtn+'</div>';document.getElementById('mtit').textContent=c.nombre;document.getElementById('modal').classList.add('show');cargarRegCont(f);}
 function cargarRegCont(f){google.script.run.withSuccessHandler(function(l){var e=document.getElementById('regCont');if(!e)return;e.innerHTML=(l.length?l.map(function(x){return avEsc(x.fecha+' · '+x.tipo+(x.quien?' · '+x.quien:''))+' <a href="#" title="Borrar este contacto" onclick="borrarRegCont('+f+',\\''+x.fecha+'\\');return false" style="color:#aaa;font-size:11px;text-decoration:none">✕</a>';}).join('<br>'):'Sin contactos registrados')+' <a href="#" onclick="regContacto('+f+');return false" style="font-size:12px">+ registrar</a>';}).withFailureHandler(function(){var e=document.getElementById('regCont');if(e)e.textContent='—';}).getContactosRegistro(PERFIL,f);}
 function borrarRegCont(f,fe){if(!confirm('¿Borrar este contacto del registro?'))return;google.script.run.withSuccessHandler(function(){cargarRegCont(f);}).withFailureHandler(function(e){alert('Error: '+e.message);}).borrarContactoRegistro(PERFIL,f,fe);}
 function regContacto(f){var t=prompt('¿Qué contacto hiciste? (ej: Llamé, Dejé mensaje, Respondió por mail)');if(!t||!t.trim())return;var qs=quienSoy();google.script.run.withSuccessHandler(function(){cargarRegCont(f);}).withFailureHandler(function(e){alert('Error: '+e.message);}).registrarContactoManual(PERFIL,f,t.trim(),qs);}
@@ -4355,8 +4379,8 @@ function guardarBanco(f,btn){
     else{alert(r?r.error:'Error');btn.textContent='★ Guardar en banco';btn.disabled=false;}
   }).withFailureHandler(function(e){alert('Error: '+e.message);btn.textContent='★ Guardar en banco';btn.disabled=false;}).enviarABanco(PERFIL,f,cat,sen,nota);
 }
-function setNota(f,et,n,btn){btn.textContent='...';google.script.run.withSuccessHandler(function(){toast();cerrar();setTimeout(function(){window.top.location.reload();},800);}).withFailureHandler(function(e){alert('Error: '+e.message);}).notaManual(PERFIL,f,et,n);}
-function setNotaEmp(f,et,n,btn){btn.textContent='...';google.script.run.withSuccessHandler(function(){toast();cerrar();setTimeout(function(){window.top.location.reload();},800);}).withFailureHandler(function(e){alert('Error: '+e.message);}).notaEmpresa(PERFIL,f,et,n);}
+function setNota(f,et,n,btn){btn.textContent='...';google.script.run.withSuccessHandler(function(r){toast();cerrar();if(r&&r.estado&&/^Descartad/i.test(r.estado)){pedirMotivo(f,true);}else setTimeout(function(){window.top.location.reload();},800);}).withFailureHandler(function(e){alert('Error: '+e.message);}).notaManual(PERFIL,f,et,n);}
+function setNotaEmp(f,et,n,btn){btn.textContent='...';google.script.run.withSuccessHandler(function(r){toast();cerrar();if(r&&r.estado&&/^Descartad/i.test(r.estado)){pedirMotivo(f,true);}else setTimeout(function(){window.top.location.reload();},800);}).withFailureHandler(function(e){alert('Error: '+e.message);}).notaEmpresa(PERFIL,f,et,n);}
 function generar(f,btn){btn.textContent='Generando...';btn.disabled=true;google.script.run.withSuccessHandler(function(url){window.open(url,'_blank');btn.textContent='✓ Listo';}).withFailureHandler(function(e){alert('Error: '+e.message);btn.textContent='Generar informe';btn.disabled=false;}).generarInformeCandidato(PERFIL,f);}
 function descartesMasivo(){google.script.run.withSuccessHandler(function(p){if(p.sinScr===0&&p.postScr===0){alert('No hay descartes pendientes de mail en esta búsqueda.');return;}var h='<div style="font-size:13px;margin-bottom:14px">Se van a enviar <b>'+(p.sinScr+p.postScr)+'</b> mails en '+p.puesto+'.<br>Sin screening: <b>'+p.sinScr+'</b> · Post screening: <b>'+p.postScr+'</b><br><span style="color:#888">[NOMBRE] se reemplaza por el nombre de cada persona.</span></div>';h+='<div class="notatit">Texto · Descartado sin screening ('+p.sinScr+')</div><textarea id="txtSin" style="width:100%;height:150px;font-family:inherit;font-size:12px;padding:8px;border:1px solid #DDD;border-radius:6px;margin-bottom:12px">'+p.textoSin+'</textarea>';h+='<div class="notatit">Texto · Descartado post screening ('+p.postScr+')</div><textarea id="txtPost" style="width:100%;height:150px;font-family:inherit;font-size:12px;padding:8px;border:1px solid #DDD;border-radius:6px;margin-bottom:12px">'+p.textoPost+'</textarea>';h+='<div class="mbtns"><button class="mbtn" style="background:#E06666" onclick="enviarDesc(this)">✉ Enviar '+(p.sinScr+p.postScr)+' mails</button></div>';document.getElementById('mtit').textContent='Mails de descarte';document.getElementById('mbody').innerHTML=h;document.getElementById('modal').classList.add('show');}).withFailureHandler(function(e){alert('Error: '+e.message);}).previaDescartes(PERFIL);}
 function enviarDesc(btn){if(!confirm('¿Confirmás el envío? No se puede deshacer.'))return;var s=document.getElementById('txtSin').value;var p=document.getElementById('txtPost').value;btn.textContent='Enviando...';btn.disabled=true;google.script.run.withSuccessHandler(function(r){alert('Enviados: '+r.enviados+(r.sinMail?' · Sin mail válido: '+r.sinMail:''));window.top.location.reload();}).withFailureHandler(function(e){alert('Error: '+e.message);btn.disabled=false;btn.textContent='✉ Enviar';}).enviarDescartesMasivo(PERFIL,s,p);}
@@ -4415,7 +4439,7 @@ function avNovedades(L){
   });
   avLS('snap',snap);return nov;
 }
-function avPintar(){var b=document.getElementById('avCnt');if(!b)return;var n=AV_PEND.filter(function(x){return x.urg;}).length+(avLS('sinver')||0);b.textContent=n||'';b.style.display=n?'':'none';}
+function avPintar(){var b=document.getElementById('avCnt');if(!b)return;var n=AV_PEND.length+(avLS('sinver')||0),u=AV_PEND.filter(function(x){return x.urg;}).length;b.textContent=n||'';b.style.display=n?'':'none';var bt=document.getElementById('avBtn');if(bt)bt.style.background=u?'#B91C1C':'';}
 function avAbrir(f){if(DATA.some(function(x){return x.fila===f;}))ficha(f);else cerrar();}
 function verAvisos(){
   avLS('sinver',0);avPintar();
@@ -4477,7 +4501,9 @@ function notaManual(perfilId, fila, etapa, nota) {
   const col = {cv:5, screening:12, competencias:16}[etapa];
   sh.getRange(fila, col).setValue(nota);
   aplicarEstadoNota(sh, fila, etapa, nota);
-  return true;
+  const est = String(sh.getRange(fila, 9).getValue() || '').trim();
+  limpiarMotivoSiNoDescartado_(sh, fila, est);
+  return { ok: true, estado: est };
 }
 function syncCitasCalendar() {
   const cal = CalendarApp.getCalendarById('blumiaconsulting@gmail.com');
@@ -4751,7 +4777,8 @@ function notaEmpresa(perfilId, fila, etapa, nota) {
   const colNota = (etapa === 'screening-empresa') ? 44 : 45;
   if (sh.getMaxColumns() < colNota) sh.insertColumnsAfter(sh.getMaxColumns(), colNota - sh.getMaxColumns());
   sh.getRange(fila, colNota).clearDataValidations().setValue(nota);
-  return true;
+  limpiarMotivoSiNoDescartado_(sh, fila, estado);
+  return { ok: true, estado: estado };
 }
 function verDescartesEmpresa(){
   const perfiles=['coord-rrhh','analista-datos','analista-compras','analista-sgi'];
