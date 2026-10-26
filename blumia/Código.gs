@@ -4099,7 +4099,7 @@ function kanbanHTML(perfilId) {
   const perfilProt = String(cfg.perfil_protegido || '').toUpperCase() === 'SI';
   const perfilPdf = (!perfilProt && typeof cfg.link_perfil === 'string') ? cfg.link_perfil : '';
   let html = KANBAN_TPL(perfilId, titulo, data, empresas, empresaActual, flyer, perfilPdf, perfilProt);
-  try { html = html.replace(/<\/html>\s*$/, () => HtmlService.createHtmlOutputFromFile('ConfigPanel').getContent() + '</html>'); } catch (e) { }
+  try { const extra = ['ConfigPanel', 'ResumenPanel'].map(f => HtmlService.createHtmlOutputFromFile(f).getContent()).join(''); html = html.replace(/<\/html>\s*$/, () => extra + '</html>'); } catch (e) { }
   return HtmlService.createHtmlOutput(html)
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
@@ -4127,7 +4127,7 @@ const link = (r, col) => {
       tel: d[i][2] || '', mail: d[i][21] || '',
       resumen: d[i][6] || '', cv: extraerFileId(sh, i + 1, 8) || '',
       scrLink: link(i + 1, 11), compLink: link(i + 1, 15), informe: link(i + 1, 33),
-      scrPDF: link(i + 1, 13), compPDF: link(i + 1, 17), postulacion: link(i + 1, 31), cita: d[i][36] || '', historial: d[i][37] || '', whatsapp: link(i + 1, 21), mailDescarte: d[i][39] || '', contactado: d[i][40] || '', notaScrEmp: d[i][43] || '', notaPresEmp: d[i][44] || '', notaScrEmp: d[i][43] || '', notaPresEmp: d[i][44] || '', formacion: d[i][22] || '', requisitos: d[i][5] || '', pretNum: (function(){var m=String(d[i][5]||'').match(/Remuneraci[oó]n pretendida:\s*\$?\s*([\d.\s]+)/i);return m?Number(m[1].replace(/[.\s]/g,'')):0;})()
+      scrPDF: link(i + 1, 13), compPDF: link(i + 1, 17), postulacion: link(i + 1, 31), cita: d[i][36] || '', historial: d[i][37] || '', whatsapp: link(i + 1, 21), mailDescarte: d[i][39] || '', fuente: String(d[i][9] || ''), contactado: d[i][40] || '', notaScrEmp: d[i][43] || '', notaPresEmp: d[i][44] || '', notaScrEmp: d[i][43] || '', notaPresEmp: d[i][44] || '', formacion: d[i][22] || '', requisitos: d[i][5] || '', pretNum: (function(){var m=String(d[i][5]||'').match(/Remuneraci[oó]n pretendida:\s*\$?\s*([\d.\s]+)/i);return m?Number(m[1].replace(/[.\s]/g,'')):0;})()
     });
   }
   return JSON.stringify(out);
@@ -4249,7 +4249,8 @@ navHTML+='<button onclick="window.top.location.href=\\'${URL_WEBAPP}?tipo=kanban
 navHTML+='<button class="proc" onclick="window.open(\\'${URL_WEBAPP}?tipo=procesohtml&perfil=${perfilId}\\',\\'_blank\\')">Informe proceso</button>';
 navHTML+='<button class="proc" onclick="if(confirm(\\'¿Generar PDF cliente de esta búsqueda?\\'))window.open(\\'${URL_WEBAPP}?tipo=pdfcliente&perfil=${perfilId}\\',\\'_blank\\')">PDF cliente</button>';
 navHTML+='<button style="background:#E06666;color:#fff" onclick="descartesMasivo()">✉ Descartes</button>';
-navHTML+='<button onclick="bajarContactos(this)">📇 Contactos</button>';
+navHTML+='<button id="quienBtn" onclick="quienSoy(true)">👤 ¿Quién sos?</button>';
+navHTML+='<button title="Baja un archivo para importar a los contactos de Google (así los candidatos aparecen con nombre en el WhatsApp del celular)" onclick="bajarContactos(this)">📇 Contactos al celular</button>';
 navHTML+='<button id="avBtn" onclick="verAvisos()" style="position:relative">🔔 Avisos<span id="avCnt" style="display:none;position:absolute;top:-6px;right:-6px;background:#B91C1C;color:#fff;border-radius:10px;font-size:11px;font-weight:800;padding:1px 6px"></span></button>';
 navHTML+='<button onclick="abrirPapelera()">🗑 Papelera ('+ELIM.length+')</button>';
 navHTML+='<button style="background:#F5C842;color:#1A1A1A" onclick="window.top.location.href=\\'${URL_WEBAPP}?tipo=banco&desde=${perfilId}\\'">★ Banco</button>';
@@ -4258,6 +4259,7 @@ navHTML+='<button onclick="window.open(\\'${flyerUrl}\\',\\'_blank\\')">📢 Fly
 navHTML+='<button onclick="prompt(\\'Link del formulario de postulación (copialo):\\',\\'${URL_WEBAPP}?tipo=postulacion&perfil=${perfilId}\\')">🔗 Link postulación</button>';
 document.getElementById('nav').innerHTML=navHTML;
 avInit();
+try{var _q=localStorage.getItem('blumia_quien');if(_q&&document.getElementById('quienBtn'))document.getElementById('quienBtn').textContent='👤 '+_q;}catch(e){}
 const COLS=[['Análisis de CV',['Nuevo','Contactado','Pendiente','']],['Screening',['Avanza a screening','Screening agendado']],['Competencias',['Avanza a competencias','Competencias agendada']],['Screening empresa',['Avanza a screening empresa','Screening empresa agendado']],['Presencial empresa',['Avanza a presencial empresa','Avanza a empresa','Entrevista empresa agendada','En cliente']],['Contratado',['Contratado']]];
 const BASE={'Análisis de CV':'Nuevo','Screening':'Avanza a screening','Competencias':'Avanza a competencias','Screening empresa':'Avanza a screening empresa','Presencial empresa':'Avanza a presencial empresa','Contratado':'Contratado'};
 const DESC_TIPOS=['Descartado sin screening','Descartado post screening','Descartado en competencias','Descartado en screening empresa','Descartado presencial empresa','Descartado Fuera de zona','Descartado NO le interesa'];
@@ -4323,8 +4325,8 @@ function filtrar(){
 function limpiarFiltros(){['fNombre','fZona','fForm','fExp','fPret'].forEach(function(id){document.getElementById(id).value='';});document.getElementById('fEstado').value='';document.querySelectorAll('.acc details').forEach(function(d){d.open=false;});filtrar();}
 (function(){var est=[];DATA.forEach(function(c){if(c.estado&&est.indexOf(c.estado)===-1)est.push(c.estado);});est.sort();var s=document.getElementById('fEstado');est.forEach(function(e){var o=document.createElement('option');o.value=e;o.text=e;s.appendChild(o);});})();
 function ficha(f){var c=DATA.find(function(x){return x.fila===f;});var row=function(l,v){return v?'<div class="frow"><span class="fl">'+l+'</span><span class="fv">'+v+'</span></div>':'';};var btn=function(u,t){return u?'<a href="'+u+'" target="_blank" class="mbtn">'+t+'</a>':'';};var waBtn='<button class="mbtn wa" onclick="menuWA('+c.fila+')">💬 WhatsApp ▾</button>';var mailBtn=(c.mail&&c.mail!=='Sin dato'&&c.mail.indexOf('@')>-1)?'<a href="https://mail.google.com/mail/?view=cm&to='+c.mail+'" target="_blank" class="mbtn" style="background:#EA4335;color:#fff">✉ Mail</a>':'';var cvBtn=c.cv?'<a href="https://drive.google.com/file/d/'+c.cv+'/view" target="_blank" class="mbtn alt">Ver CV</a>':'';var genBtn=c.informe?'':'<button class="mbtn gen" onclick="if(confirm(\\'Generar informe con IA. Puede tener costo. ¿Continuar?\\'))generar('+c.fila+',this)">Generar informe</button>';var delBtn='<button class="mbtn" style="background:#B91C1C;color:#fff" onclick="eliminar('+c.fila+')">🗑 Eliminar</button>';var bancoBtn='<button class="mbtn" style="background:#7C3AED" onclick="menuBanco('+c.fila+')">★ Banco de talento</button>';var notasEmp=/screening empresa|presencial empresa|avanza a empresa|entrevista empresa|reserva screening empresa|reserva presencial empresa/i.test(c.estado)?['screening-empresa','presencial-empresa'].map(function(ep){return '<div class="notarow"><span>'+(ep==='screening-empresa'?'Emp. screening':'Emp. presencial')+'</span>'+['A','B','C'].map(function(n){return '<button class="nb" onclick="setNotaEmp('+c.fila+',\\''+ep+'\\',\\''+n+'\\',this)">'+n+'</button>';}).join('')+'</div>';}).join(''):'';document.getElementById('mbody').innerHTML=row('Recibido',c.recibido)+row('Estado',c.estado)+row('Cita agendada',c.cita)+(c.historial?'<div class="frow"><span class="fl">Historial entrevistas</span><span class="fv" style="white-space:pre-line">'+c.historial+'</span></div>':'')+(c.contactado?'<div class="frow"><span class="fl">Último contacto</span><span class="fv">'+c.contactado+' <a href="#" onclick="borrarMarca('+c.fila+');return false" style="color:#aaa;font-size:11px;text-decoration:none;margin-left:6px">✕ borrar</a></span></div>':'')+'<div class="frow"><span class="fl">Registro de contactos</span><span class="fv" id="regCont" style="white-space:pre-line">cargando…</span></div>'+row('Teléfono',c.tel)+row('Email',c.mail)+row('Zona',c.zona)+row('Formación',c.formacion)+row('Pretensión',c.pretension?'$'+c.pretension:'')+row('Nota screening',c.notaScr)+row('Nota competencias',c.notaComp)+row('Nota screening empresa',c.notaScrEmp)+row('Nota presencial empresa',c.notaPresEmp)+'<div class="fres">'+(c.resumen||'Sin resumen')+'</div><div class="notabox"><div class="notatit">Poner nota manual</div>'+['cv','screening','competencias'].map(function(et){return '<div class="notarow"><span>'+({cv:'CV',screening:'Screening',competencias:'Competencias'}[et])+'</span>'+['A','B+','B','C'].map(function(n){return '<button class="nb" onclick="setNota('+c.fila+',\\''+et+'\\',\\''+n+'\\',this)">'+n+'</button>';}).join('')+'</div>';}).join('')+notasEmp+'</div><div class="mbtns">'+waBtn+mailBtn+cvBtn+btn(c.scrPDF,'Ver screening')+btn(c.compPDF,'Ver competencias')+btn(c.postulacion,'Ver postulación')+btn(c.scrLink,'Screening')+btn(c.compLink,'Competencias')+btn(c.informe,'Ver informe')+genBtn+bancoBtn+delBtn+'</div>';document.getElementById('mtit').textContent=c.nombre;document.getElementById('modal').classList.add('show');cargarRegCont(f);}
-function cargarRegCont(f){google.script.run.withSuccessHandler(function(l){var e=document.getElementById('regCont');if(!e)return;e.innerHTML=(l.length?l.map(function(x){return avEsc(x.fecha+' · '+x.tipo);}).join('<br>'):'Sin contactos registrados')+' <a href="#" onclick="regContacto('+f+');return false" style="font-size:12px">+ registrar</a>';}).withFailureHandler(function(){var e=document.getElementById('regCont');if(e)e.textContent='—';}).getContactosRegistro(PERFIL,f);}
-function regContacto(f){var t=prompt('¿Qué contacto hiciste? (ej: Llamé, Dejé mensaje, Respondió por mail)');if(!t||!t.trim())return;google.script.run.withSuccessHandler(function(){cargarRegCont(f);}).withFailureHandler(function(e){alert('Error: '+e.message);}).registrarContactoManual(PERFIL,f,t.trim());}
+function cargarRegCont(f){google.script.run.withSuccessHandler(function(l){var e=document.getElementById('regCont');if(!e)return;e.innerHTML=(l.length?l.map(function(x){return avEsc(x.fecha+' · '+x.tipo+(x.quien?' · '+x.quien:''));}).join('<br>'):'Sin contactos registrados')+' <a href="#" onclick="regContacto('+f+');return false" style="font-size:12px">+ registrar</a>';}).withFailureHandler(function(){var e=document.getElementById('regCont');if(e)e.textContent='—';}).getContactosRegistro(PERFIL,f);}
+function regContacto(f){var t=prompt('¿Qué contacto hiciste? (ej: Llamé, Dejé mensaje, Respondió por mail)');if(!t||!t.trim())return;var qs=quienSoy();google.script.run.withSuccessHandler(function(){cargarRegCont(f);}).withFailureHandler(function(e){alert('Error: '+e.message);}).registrarContactoManual(PERFIL,f,t.trim(),qs);}
 function bajarContactos(b){b.disabled=true;google.script.run.withSuccessHandler(function(r){b.disabled=false;var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([r.csv],{type:'text/csv'}));a.download='contactos-blumia.csv';a.click();alert(r.n+' contactos. Importalo en contacts.google.com → Importar.');}).withFailureHandler(function(e){b.disabled=false;alert('Error: '+e.message);}).exportarContactosCSV();}
 function menuWA(f){
   var c=DATA.find(function(x){return x.fila===f;});
@@ -4335,12 +4337,13 @@ function menuWA(f){
   document.getElementById('mtit').textContent='WhatsApp · '+c.nombre;
   document.getElementById('mbody').innerHTML=h;
 }
+function quienSoy(cambiar){var q='';try{q=localStorage.getItem('blumia_quien')||'';}catch(e){}if(!q||cambiar){var n=prompt('¿Quién sos? Escribí tu nombre (por ejemplo Ariel, Analía o Flavia). Se usa en los mensajes y en el registro de contactos.',q);if(n&&n.trim()){q=n.trim();try{localStorage.setItem('blumia_quien',q);sessionStorage.setItem('bl_quien',q);}catch(e){}}}var b=document.getElementById('quienBtn');if(b)b.textContent='👤 '+(q||'¿Quién sos?');return q;}
 function enviarWA(f,tipo,btn){
   btn.textContent='Preparando...';
   google.script.run.withSuccessHandler(function(r){
     if(r&&r.ok){window.open(r.url,'_blank');btn.textContent='✓ Abierto';}
     else{alert('Error: '+(r?r.error:'desconocido'));}
-  }).withFailureHandler(function(e){alert('Error: '+e.message);}).armarComunicacion(PERFIL,f,tipo);
+  }).withFailureHandler(function(e){alert('Error: '+e.message);}).armarComunicacion(PERFIL,f,tipo,quienSoy());
 }
 function menuBanco(f){
   var c=DATA.find(function(x){return x.fila===f;});
@@ -5195,12 +5198,12 @@ function verLinks(){
     Logger.log(id + ' → scr: ' + c.link_screening + ' | comp: ' + c.link_competencias + ' | emp: ' + c.link_empresa_virtual);
   });
 }
-function armarComunicacion(perfilId, fila, tipo){
+function armarComunicacion(perfilId, fila, tipo, quien){
   const cfg = getConfig(perfilId);
   const sh = getSheet(cfg);
   const nombre = String(sh.getRange(fila, 2).getValue() || '').split(' ')[0];
   const tel = String(sh.getRange(fila, 3).getValue() || '').replace(/\D/g,'');
-  const entrevistador = String(sh.getRange(fila, 14).getValue() || 'Ariel');
+  const entrevistador = String(quien || '').trim() || String(sh.getRange(fila, 14).getValue() || 'Ariel');
   const puesto = (typeof cfg.nombre_perfil === 'string') ? cfg.nombre_perfil : perfilId;
   const empresa = empresaParaCandidatos_(cfg);
 
@@ -5212,11 +5215,7 @@ function armarComunicacion(perfilId, fila, tipo){
   };
   const link = linkPorTipo[tipo] || '';
 
-  const plantillas = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName('Plantillas').getDataRange().getValues();
-  let texto = '';
-  for(let i=1;i<plantillas.length;i++){
-    if(plantillas[i][0] === tipo){ texto = plantillas[i][3]; break; }
-  }
+  let texto = plantillaTexto_(tipo, perfilId).texto;
   if(!texto) return {ok:false, error:'No encontré la plantilla ' + tipo};
 
   texto = texto.replace(/\[NOMBRE\]/g, nombre)
@@ -5231,7 +5230,7 @@ function armarComunicacion(perfilId, fila, tipo){
   var etiqueta = {'contacto-screening':'screening','contacto-competencias':'competencias','contacto-empresa-virtual':'empresa','contacto-empresa-presencial':'empresa','descarte-competencias':'descarte comp.','descarte-empresa':'descarte emp.'}[tipo] || '';
   if(etiqueta){
     sh.getRange(fila, 41).setValue(etiqueta + ' · ' + Utilities.formatDate(new Date(), 'GMT-3', 'dd/MM/yyyy'));
-    registrarContacto_(perfilId, fila, sh.getRange(fila, 2).getValue(), tel, 'WhatsApp: ' + etiqueta);
+    registrarContacto_(perfilId, fila, sh.getRange(fila, 2).getValue(), tel, 'WhatsApp: ' + etiqueta, entrevistador);
   }
   const url = 'https://wa.me/' + telWa + '?text=' + encodeURIComponent(texto);
   return {ok:true, url:url, texto:texto};

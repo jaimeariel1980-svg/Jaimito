@@ -23,6 +23,8 @@ Lo mantiene Claude. Prioridad: 🔴 urgente · 🟠 importante · 🟡 cuando se
 - ✅ **Avisos 🔔 del kanban** (26/10): campanita con pendientes y novedades, popups y refresco cada 3 min (probado en navegador; falta verlo con datos reales). Falta de PAMI: «anular etapa». — *Claude*
 - ✅ **Registro de contactos y exportación a Contactos de Google** (26/10): log por candidato en la ficha y botón 📇 que baja un CSV para importar (sin permisos nuevos). Falta probarlo con datos reales. — *Ariel*
 - ✅ **Workflow**: no detectaba cambios cuando solo cambiaba `Código.gs` (git escapaba la tilde); arreglado con `core.quotepath=false`.
+- 🟡 Los textos de Plantillas dicen «Soy Ariel» fijo en algunos mensajes (p. ej. contacto-competencias): cambiarlo a [ENTREVISTADOR] desde ⚙ Configurar → Mensajes para que cada persona firme con su nombre. — *Ariel / Flavia*
+- 🟡 Registrar los cambios de estado (fecha y quién) para poder medir tiempos por etapa en el 📊 Resumen. — *Claude*
 - ✅ **Modo edición de los formularios** (26/10, v1): Flavia edita screening y competencias desde la página (PIN). Falta v2: botón «deshacer» desde la página (hoy el respaldo está en `Historial_Formularios` y se restaura a mano), editar la hoja de portada del perfil (hero) desde competencias y probarlo con ella. — *Claude / Ariel*
 - ✅ **Informe de proceso por empresa** (26/10): cada empresa arma el suyo; MACS sin cambios.
 - ✅ **Lectura de CVs con Claude** (26/10) para las búsquedas que no son de MACS; MACS sigue con ChatGPT mini (se cambia por perfil con la columna `cv_ia`).

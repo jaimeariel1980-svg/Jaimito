@@ -6,11 +6,7 @@ function getConfigBusqueda(pin, perfilId) {
   const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
   const datos = {};
   CFG_CAMPOS_.forEach(k => { datos[k] = typeof cfg[k] === 'string' ? cfg[k] : (cfg[k] == null ? '' : String(cfg[k])); });
-  const plSh = ss.getSheetByName('Plantillas');
-  const plantillas = plSh && plSh.getLastRow() > 1
-    ? plSh.getRange(2, 1, plSh.getLastRow() - 1, 4).getValues().filter(r => r[0]).map(r => ({ clave: String(r[0]), canal: String(r[1]), texto: String(r[3] || '') }))
-    : [];
-  return { datos: datos, prompt_extra: String(cfg.prompt_extra || ''), preguntas: getPreguntasPostulacion(perfilId), plantillas: plantillas };
+  return { datos: datos, prompt_extra: String(cfg.prompt_extra || ''), preguntas: getPreguntasPostulacion(perfilId), plantillas: listarPlantillas_(ss, perfilId) };
 }
 
 function guardarConfigBusqueda(pin, perfilId, p, quien) {
@@ -62,22 +58,76 @@ function guardarConfigBusqueda(pin, perfilId, p, quien) {
       }), quien);
     }
 
-    if (p.plantillas) {
-      const sh = ss.getSheetByName('Plantillas');
-      const data = sh.getDataRange().getValues();
-      const antes = [];
-      p.plantillas.forEach(t => {
-        const i = data.findIndex((r, j) => j > 0 && r[0] === t.clave);
-        if (i < 1) return;
-        const txt = String(t.texto || '').replace(/[<>]/g, '').trim();
-        if (txt.length < 10) throw new Error('El mensaje «' + t.clave + '» quedó vacío.');
-        if (txt !== String(data[i][3])) {
-          antes.push({ clave: t.clave, texto: data[i][3] });
-          sh.getRange(i + 1, 4).setNumberFormat('@').setValue(txt);
-        }
-      });
-      if (antes.length) logForm_(ss, quien, perfilId, 'Plantillas', antes);
-    }
+    if (p.plantillas) guardarPlantillas_(ss, perfilId, p.plantillas, quien);
   } finally { lock.releaseLock(); }
   return { ok: true };
+}
+
+// ---- Plantillas de mensajes: texto general (columna perfil vacía) y texto propio de una búsqueda (columna perfil) ----
+function colPerfilPlantillas_(sh) {
+  const h = sh.getRange(1, 1, 1, Math.max(sh.getLastColumn(), 4)).getValues()[0];
+  let c = h.indexOf('perfil') + 1;
+  if (!c) { c = Math.max(sh.getLastColumn(), 4) + 1; sh.getRange(1, c).setValue('perfil').setFontWeight('bold'); }
+  return c;
+}
+
+// devuelve {texto, propia}: el texto propio de la búsqueda si existe, si no el general
+function plantillaTexto_(clave, perfilId) {
+  const sh = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName('Plantillas');
+  if (!sh || sh.getLastRow() < 2) return { texto: '', propia: false };
+  const data = sh.getDataRange().getValues();
+  const c = data[0].indexOf('perfil');
+  let general = '', propia = null;
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] !== clave) continue;
+    const pf = c >= 0 ? String(data[i][c] || '').trim() : '';
+    if (!pf) general = data[i][3];
+    else if (pf === perfilId) propia = data[i][3];
+  }
+  return propia ? { texto: propia, propia: true } : { texto: general, propia: false };
+}
+
+function listarPlantillas_(ss, perfilId) {
+  const sh = ss.getSheetByName('Plantillas');
+  if (!sh || sh.getLastRow() < 2) return [];
+  const data = sh.getDataRange().getValues();
+  const c = data[0].indexOf('perfil');
+  const out = [];
+  data.slice(1).forEach(r => {
+    if (!r[0] || (c >= 0 && String(r[c] || '').trim())) return;
+    const ef = plantillaTexto_(String(r[0]), perfilId);
+    out.push({ clave: String(r[0]), canal: String(r[1]), texto: String(ef.texto || ''), propia: ef.propia, general: String(r[3] || '') });
+  });
+  return out;
+}
+
+function guardarPlantillas_(ss, perfilId, lista, quien) {
+  const sh = ss.getSheetByName('Plantillas');
+  const cp = colPerfilPlantillas_(sh);
+  const antes = [];
+  lista.forEach(t => {
+    const data = sh.getDataRange().getValues();
+    let iGen = -1, iPro = -1;
+    for (let i = 1; i < data.length; i++) {
+      if (data[i][0] !== t.clave) continue;
+      const pf = String(data[i][cp - 1] || '').trim();
+      if (!pf) iGen = i; else if (pf === perfilId) iPro = i;
+    }
+    if (iGen < 0) return;
+    if (t.volver) {
+      if (iPro >= 0) { antes.push({ clave: t.clave, perfil: perfilId, texto: data[iPro][3] }); sh.deleteRow(iPro + 1); }
+      return;
+    }
+    const txt = String(t.texto || '').replace(/[<>]/g, '').trim();
+    if (txt.length < 10) throw new Error('El mensaje «' + t.clave + '» quedó vacío.');
+    if (t.alcance === 'todas') {
+      if (txt !== String(data[iGen][3])) { antes.push({ clave: t.clave, texto: data[iGen][3] }); sh.getRange(iGen + 1, 4).setNumberFormat('@').setValue(txt); }
+    } else if (iPro >= 0) {
+      if (txt !== String(data[iPro][3])) { antes.push({ clave: t.clave, perfil: perfilId, texto: data[iPro][3] }); sh.getRange(iPro + 1, 4).setNumberFormat('@').setValue(txt); }
+    } else if (txt !== String(data[iGen][3])) {
+      const fila = [t.clave, data[iGen][1], '', txt]; fila[cp - 1] = perfilId;
+      sh.getRange(sh.getLastRow() + 1, 1, 1, Math.max(cp, 4)).setNumberFormat('@').setValues([fila.concat(new Array(Math.max(cp, 4) - fila.length).fill(''))]);
+    }
+  });
+  if (antes.length) logForm_(ss, quien, perfilId, 'Plantillas', antes);
 }
