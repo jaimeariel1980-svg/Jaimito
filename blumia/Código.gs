@@ -3983,21 +3983,7 @@ function generarInformeProceso(empresa) {
     if (empresaKey_(cfg) !== empresa) return;
     const shP=getSheet(cfg);
     const datos=shP.getDataRange().getValues();
-    let c={cv:0,scr:0,comp:0,emp:0,res:0,dsin:0,dpost:0,dcomp:0};
-    for(let i=1;i<datos.length;i++){
-      if(!datos[i][1])continue;
-      if(/^Eliminado\|/.test(String(datos[i][8]||'')))continue;
-      c.cv++;
-      const e=String(datos[i][8]||'').trim();
-      if(e===AVANZA_EMP)c.emp++;
-      if(e===EN_RESERVA)c.res++;
-      if(e===DESC_SIN)c.dsin++;
-      if(e===DESC_POST)c.dpost++;
-      else if(e.indexOf('Descartado')===0&&[DESC_SIN,DESC_COMP].indexOf(e)===-1)c.dpost++;
-      if(e===DESC_COMP)c.dcomp++;
-      if(EN_COMPETENCIAS.indexOf(e)!==-1)c.comp++;
-      if(EN_COMPETENCIAS.indexOf(e)!==-1||HIZO_SCREENING_EXTRA.indexOf(e)!==-1)c.scr++;
-    }
+    const c=contarBusqueda_(datos.slice(1));
     const m=manualPrev[p.nombre]||{};
     sh.getRange(fila,1,1,16).setValues([[p.nombre,c.cv,c.scr,c.comp,c.emp,c.res,c.dsin,c.dpost,c.dcomp,
       m.banda||'','','','','',m.lectura||'',m.fuentes||FUENTES_DEF]]);
@@ -4046,7 +4032,8 @@ function completarProcesoIA(empresa) {
       const estado=String(datos[i][8]||'').trim();
       const req=String(datos[i][5]||'');
       const mSal=req.match(/Remuneraci[oó]n pretendida:\s*\$?\s*([\d.\s]+)/i);
-      if (banda && HIZO_SCREENING.indexOf(estado)!==-1 && mSal){
+      const mt = metEstado_(estado);
+      if (banda && mt && mt.scr && mSal){
         const val=Number(mSal[1].replace(/[.\s]/g,''));
         if(val>0){
           totalSal++;
@@ -4055,7 +4042,7 @@ function completarProcesoIA(empresa) {
           else linea++;
         }
       }
-      if (AVANZO.indexOf(estado)!==-1 && datos[i][6]){
+      if (mt && mt.comp && datos[i][6]){
         resumenesAvanzan.push(String(datos[i][6]).substring(0,300));
       }
     }
@@ -4099,7 +4086,7 @@ function kanbanHTML(perfilId) {
   const perfilProt = String(cfg.perfil_protegido || '').toUpperCase() === 'SI';
   const perfilPdf = (!perfilProt && typeof cfg.link_perfil === 'string') ? cfg.link_perfil : '';
   let html = KANBAN_TPL(perfilId, titulo, data, empresas, empresaActual, flyer, perfilPdf, perfilProt);
-  try { const extra = ['ConfigPanel', 'ResumenPanel'].map(f => HtmlService.createHtmlOutputFromFile(f).getContent()).join(''); html = html.replace(/<\/html>\s*$/, () => extra + '</html>'); } catch (e) { }
+  try { const extra = '<script>var metEstado = ' + metEstado_.toString() + ';</script>' + ['ConfigPanel', 'ResumenPanel'].map(f => HtmlService.createHtmlOutputFromFile(f).getContent()).join(''); html = html.replace(/<\/html>\s*$/, () => extra + '</html>'); } catch (e) { }
   return HtmlService.createHtmlOutput(html)
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
