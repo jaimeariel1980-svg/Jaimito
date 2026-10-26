@@ -132,9 +132,9 @@ header{min-height:86px}
     COLS_PUROS.forEach(function(x){
       var t=x[0],est=x[1],items=DATA.filter(function(c){return est.indexOf(c.estado)>-1;}).sort(ordCard);
       h+='<div class="col'+(t==='Contratado'?' ok':'')+'"><div class="col-h"><span>'+t+'</span><b>'+items.length+'</b></div><div class="col-body" data-estado="'+BASE[t]+'">'+items.map(cardN).join('')+'</div></div>';
-      if(t==='Análisis de CV')h+=acordeonN('Descartados','desc',DESC_TIPOS,function(e){return /^Descartad/.test(e);},'Descartado');
     });
     h+=acordeonN('Reservas','res',RES_TIPOS,function(e){return /reserva/i.test(e);},'');
+    h+=acordeonN('Descartados','desc',DESC_TIPOS,function(e){return /^Descartad/.test(e);},'Descartado');
     b.innerHTML=h;iniciarSortable();pintarKpi();filtrar();
   };
   // ---- indicadores clickeables
