@@ -164,6 +164,7 @@ html,body{background:var(--bg);font-family:var(--font);color:var(--text);}
 
 <div id="app"><div class="loading">Cargando perfil...</div></div>
 
+<?!= HtmlService.createHtmlOutputFromFile('IAForm').getContent() ?>
 <script>
 const PERFIL_ID = '<?= perfil ?>';
 const CAND_INICIAL = '<?= candidato ?>';
@@ -268,6 +269,15 @@ function render() {
 </div>
 
 <div class="main">
+  <div class="ia-ui ia-box" id="iaBox">
+    <div class="ia-tit">Completar con la grabación de la entrevista</div>
+    <div class="ia-tx">Grabá la videollamada de Meet desde acá (avisale a la persona entrevistada). Al terminar, la IA transcribe y completa los niveles, los ejemplos concretos de cada competencia, las fortalezas, las áreas y la recomendación, para que lo revises y lo guardes. El audio no se guarda.</div>
+    <div class="ia-acc">
+      <button class="ia-btn prim" type="button" onclick="IAEntrevista.grabar()">🎙 Grabar entrevista (Meet)</button>
+      <button class="ia-btn" type="button" title="Si grabaste y se perdió el resultado (por ejemplo, cerraste antes de terminar), recupera lo último que procesó la IA de esta persona (se conserva 6 horas)" onclick="IAEntrevista.recuperar()">↺ Recuperar el último análisis</button>
+      <span id="iaSt" style="font-size:13px;color:#555"></span>
+    </div>
+  </div>
   <div class="guide-box">
     <div class="guide-title">Guía para el Entrevistador</div>
     <div class="guide-text" contenteditable="true">Cada competencia tiene un peso (editable haciendo click en el número). El peso se aplica al score final.</div>
@@ -296,8 +306,8 @@ function render() {
     </div>
     <div class="obs-card">
       <div class="obs-grid">
-        <div><label class="note-label">Fortalezas Principales</label><textarea class="note-area" style="min-height:140px" placeholder="•&#10;•&#10;•"></textarea></div>
-        <div><label class="note-label">Áreas a desarrollar</label><textarea class="note-area" style="min-height:140px" placeholder="•&#10;•&#10;•"></textarea></div>
+        <div><label class="note-label">Fortalezas Principales</label><textarea id="ta-fort" class="note-area" style="min-height:140px" placeholder="•&#10;•&#10;•"></textarea></div>
+        <div><label class="note-label">Áreas a desarrollar</label><textarea id="ta-area" class="note-area" style="min-height:140px" placeholder="•&#10;•&#10;•"></textarea></div>
       </div>
       <label class="note-label">Matriz de Evaluación (4 niveles · Score Ponderado)</label>
       <table class="sum-table">
@@ -322,7 +332,7 @@ function render() {
       </div>
       <div style="margin-bottom:32px">
         <label class="note-label">Recomendación y Justificación de Viabilidad</label>
-        <textarea class="note-area" style="min-height:120px" placeholder="Redacte la justificación final aquí..."></textarea>
+        <textarea id="ta-rec" class="note-area" style="min-height:120px" placeholder="Redacte la justificación final aquí..."></textarea>
       </div>
       <div class="verdict-banner">
         <div class="verdict-title">Ajuste al Rol</div>
@@ -483,7 +493,9 @@ function congelarValores() {
 
 document.getElementById('btnDescargar').addEventListener('click', function() {
   congelarValores();
+  ocultarIA(true);
   const htmlContent = '<!DOCTYPE html>' + document.documentElement.outerHTML;
+  ocultarIA(false);
   const blob = new Blob([htmlContent], { type: 'text/html' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -499,6 +511,9 @@ document.getElementById('btnGuardar').addEventListener('click', function() {
   if (!cand) { alert('Falta nombre del entrevistado'); return; }
   congelarValores();
   expandirTextareas();
+  ocultarIA(true);
+  const htmlSnap = '<!DOCTYPE html>' + document.documentElement.outerHTML;
+  ocultarIA(false);
   const ajusteBtn = document.querySelector('.verdict-opt.sel');
   let ponderacion = '';
   if (ajusteBtn) {
@@ -521,7 +536,7 @@ document.getElementById('btnGuardar').addEventListener('click', function() {
       btn.textContent = 'Guardar PDF';
       alert('Error al guardar: ' + err.message);
     })
-    .guardarEnPlanilla(cand, '<!DOCTYPE html>' + document.documentElement.outerHTML, ponderacion, PERFIL_ID);
+    .guardarEnPlanilla(cand, htmlSnap, ponderacion, PERFIL_ID);
 });
 </script>
 </body>
