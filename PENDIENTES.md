@@ -34,9 +34,9 @@ Lo mantiene Claude. Prioridad: 🔴 urgente · 🟠 importante · 🟡 cuando se
 - 🟡 Cada `bajar` crea `sync-blumia`: si vuelve a haber claves en el código, quedan en esa rama. — *Claude*
 
 ## Empleos PAMI (27/10)
-- 🟠 **Bloquear a los candidatos con C para la técnica**: hoy solo se avisa en rojo («no corresponde a técnica») pero los jefes igual los ven si los piden por policlínico. Propuesta: no mostrarlos al jefe hasta que un administrador lo habilite. — *Claude, con OK de Ariel*
-- 🟠 **Revisión de segunda pasada del resumen para la técnica**: la IA (gpt-4o-mini/gpt-4o) no siempre cumple todas las reglas de tono (caso Manuel, C). Ya se garantiza por código la primera oración para una C; si sigue fallando, pasar el texto por un segundo control contra las reglas (o probar un modelo más fuerte). — *Claude*
-- 🟡 **Cruzar ausencias/reprogramaciones con el historial**: hoy solo aparecen en el resumen si el entrevistador las escribió; el sistema podría leer solo los «no se presentó» y reprogramaciones. — *Claude*
+- ✅ **Candidatos con C ocultos para los jefes** (27/10, v162): un administrador los habilita desde la ficha (columna `Habilitado técnica`). Falta probarlo con datos reales. — *Ariel*
+- ✅ **Segunda pasada del resumen para la técnica** (27/10, v162, `verificarResumen_`): falta ver con textos reales si corrige bien. — *Ariel*
+- ✅ **Reprogramaciones, citas desaparecidas y contactos repetidos** (27/10, v162, `hechosProceso_`) llegan solos al resumen. No detecta un «no se presentó» como tal: solo lo que registra el sistema. — *Claude*
 - 🟡 **Respaldo de la grabación**: el audio de la entrevista solo vive en la ventanita; si se cierra antes de terminar se pierde. Evaluar guardar el audio en Drive de forma temporal (decisión de Ariel por privacidad). — *Ariel + Claude*
 
 ## Operativo
