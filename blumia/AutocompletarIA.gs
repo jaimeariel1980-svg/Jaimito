@@ -104,3 +104,30 @@ function redactarIA(pin, texto, indic) {
   const usuario = texto.slice(0, 4000) + (String(indic || '').trim() ? '\n\nINDICACIONES (aplicalas sin inventar datos): ' + String(indic).trim().slice(0, 300) : '');
   return procesarConClaude(sistema, usuario, 'redactar').trim();
 }
+
+/* Lectura de un CV: devuelve el JSON que armó la IA. Usa Claude (Sonnet 5.5) en las búsquedas que no son de MACS y ChatGPT mini en las de MACS;
+   se puede forzar por perfil con la columna opcional `cv_ia` de Config (claude / openai). */
+function usarClaudeCV_(cfg) {
+  const x = String((cfg && cfg.cv_ia) || '').toLowerCase().trim();
+  if (x === 'claude') return true;
+  if (x === 'openai' || x === 'chatgpt') return false;
+  return empresaKey_(cfg) !== 'MACS';
+}
+
+function analizarJSONconIA_(cfg, promptSistema, contenidoUsuario) {
+  if (usarClaudeCV_(cfg)) return extraerJSON_(procesarConClaude(promptSistema, contenidoUsuario, 'cv'));
+  const response = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'post',
+    headers: { Authorization: 'Bearer ' + OPENAI_API_KEY },
+    contentType: 'application/json',
+    payload: JSON.stringify({
+      model: 'gpt-4o-mini',
+      response_format: { type: 'json_object' },
+      messages: [{ role: 'system', content: promptSistema }, { role: 'user', content: contenidoUsuario }]
+    }),
+    muteHttpExceptions: true
+  });
+  const parsed = JSON.parse(response.getContentText());
+  if (parsed.error) throw new Error('OpenAI: ' + parsed.error.message);
+  return JSON.parse(parsed.choices[0].message.content);
+}
