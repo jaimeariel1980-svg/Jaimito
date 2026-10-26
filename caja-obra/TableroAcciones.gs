@@ -54,6 +54,7 @@ function tbGuardarMov(clave,m){
       if(!(row>=2&&row<=mv.getLastRow())) throw new Error('CAMBIO');
       var r=mv.getRange(row,1,1,13).getValues()[0];
       if(tbFp_(r)!==m.fp) throw new Error('CAMBIO');
+      if(r[8]==='Certificado') throw new Error('CERT');
       var fecha=(r[0] instanceof Date&&Utilities.formatDate(r[0],'GMT-3','yyyy-MM-dd')===m.fecha)?r[0]:tbFecha_(m.fecha);
       mv.getRange(row,1,1,7).setValues([[fecha,tipo,rubro,det,prov,monto,fac]]);
       mv.getRange(row,11,1,3).setValues([[obra,bonus>0?bonus:'',bonus>0?gb:'']]);
@@ -73,6 +74,7 @@ function tbBorrarMov(clave,row,fp){
     if(!(row>=2&&row<=mv.getLastRow())) throw new Error('CAMBIO');
     var r=mv.getRange(row,1,1,13).getValues()[0];
     if(tbFp_(r)!==fp) throw new Error('CAMBIO');
+    if(r[8]==='Certificado') throw new Error('CERT');
     tbPapelera_().appendRow([new Date(),'Tablero'].concat(r));
     mv.deleteRow(row);
     SpreadsheetApp.flush();
