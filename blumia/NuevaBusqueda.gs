@@ -7,6 +7,7 @@
       competencias y preguntas de postulación (mismo resultado que crearPerfilDirectorComercial).
    ============================================================ */
 
+const LINKS_AGENDA_ = ['link_screening', 'link_competencias', 'link_empresa_virtual', 'link_empresa_presencial'];
 const CARPETA_MADRE_BUSQUEDAS_ = '18bhn7cD2PkcK_SldSfKHrjiieHvO3tYH';
 const ESTADOS_BUSQUEDA_ = ['Pendiente', 'Nuevo', 'Contactado', 'Avanza a screening', 'Screening agendado', 'Avanza a competencias', 'Competencias agendada',
   'Avanza a screening empresa', 'Screening empresa agendado', 'Avanza a presencial empresa', 'Entrevista empresa agendada',
@@ -70,8 +71,10 @@ function normalizarPropuesta_(r) {
       const ops = tipo === 'select' ? String(q.opciones || '').split('|').map(o => t(o, 60)).filter(Boolean).join('|') : '';
       return { etiqueta: t(q.etiqueta, 300), tipo: ops || tipo === 'texto' ? tipo : 'texto', opciones: ops, requerido: q.requerido === 'NO' ? 'NO' : 'SI' };
     }).filter(q => q.etiqueta),
-    avisos: (Array.isArray(r.avisos) ? r.avisos : []).slice(0, 8).map(a => t(a, 250)).filter(Boolean)
+    avisos: (Array.isArray(r.avisos) ? r.avisos : []).slice(0, 8).map(a => t(a, 250)).filter(Boolean),
+    links: {}
   };
+  LINKS_AGENDA_.forEach(k => { const v = t((r.links || {})[k], 500); if (v) p.links[k] = v; });
   return p;
 }
 
@@ -97,9 +100,18 @@ function validarPropuesta_(p) {
   if (p.competencias.length < 2) throw new Error('Se necesitan al menos 2 competencias.');
   p.competencias.forEach(c => { if (!c.preguntas.length) throw new Error('La competencia «' + c.nombre + '» no tiene preguntas.'); });
   if (!p.postulacion.length) throw new Error('Se necesita al menos una pregunta de postulación.');
+  LINKS_AGENDA_.forEach(k => { if (p.links[k] && !/^https?:\/\//i.test(p.links[k])) throw new Error('Los links de agenda tienen que empezar con https://'); });
 }
 
-function crearBusquedaIA_(pin, prop, quien) {
+// no deja crear una búsqueda con el nombre de una que ya existe (el mail por asunto y el selector se confundirían)
+function nombreBusquedaRepetido_(config, nombre) {
+  const d = config.getDataRange().getValues(), H = d[0], n = normOpc_(nombre);
+  const cols = ['nombre', 'nombre_perfil'].map(k => H.indexOf(k)).filter(c => c >= 0);
+  const hit = d.slice(1).find(r => r[0] && cols.some(c => normOpc_(r[c]) === n));
+  return hit ? String(hit[cols.length ? cols[0] : 1] || hit[0]) : '';
+}
+
+function crearBusquedaIA_(pin, prop, quien, texto) {
   pinValido_(pin);
   quien = limpiarTxt_(quien) || 'sin nombre';
   const p = normalizarPropuesta_(prop || {});
@@ -112,6 +124,8 @@ function crearBusquedaIA_(pin, prop, quien) {
     const hojaNombre = p.nombre.replace(/[\[\]\*\?\:\/\\]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
     if (ss.getSheetByName(hojaNombre)) throw new Error('Ya existe una pestaña llamada «' + hojaNombre + '». Cambiá el nombre del puesto.');
     const config = ss.getSheetByName('Config');
+    const repetido = nombreBusquedaRepetido_(config, p.nombre);
+    if (repetido) throw new Error('Ya existe una búsqueda llamada «' + repetido + '». Cambiá el nombre del puesto (por ejemplo, agregale «PRUEBA») o editá la que ya existe desde ⚙ Configurar.');
     const H = config.getDataRange().getValues()[0];
 
     const carpetaMadre = DriveApp.getFolderById(CARPETA_MADRE_BUSQUEDAS_);
@@ -136,7 +150,10 @@ function crearBusquedaIA_(pin, prop, quien) {
       prompt_extra: p.prompt_extra, empresa: p.empresa
     };
     if (p.banda_salarial && Number(p.banda_salarial) >= 1000) valores.banda_salarial = p.banda_salarial;
-    ['banda_salarial'].forEach(k => { if (valores[k] !== undefined && H.indexOf(k) === -1) { H.push(k); config.getRange(1, H.length).setValue(k); } });
+    Object.keys(p.links).forEach(k => { valores[k] = p.links[k]; });
+    valores.perfil_html = 'RelevamientoPuesto';
+    valores.perfil_protegido = 'SI';
+    Object.keys(valores).forEach(k => { if (H.indexOf(k) === -1) { H.push(k); config.getRange(1, H.length).setValue(k); } });
     config.appendRow(H.map(h => valores[h] !== undefined ? valores[h] : ''));
 
     ss.getSheetByName('Perfiles_Hero').appendRow([id, p.empresa, p.nombre, p.ubicacion, 'Screening · 1ª entrevista', 'Ariel, Analía, Flavia, Marcos', '8.5', '6.5']);
@@ -152,7 +169,12 @@ function crearBusquedaIA_(pin, prop, quien) {
 
     logForm_(ss, quien, id, 'Búsqueda creada desde Word + IA', { nombre: p.nombre, empresa: p.empresa });
     try { registrarHistorial_(hojaNombre, '(búsqueda)', 'Búsqueda creada', 'Creada desde un Word con IA por ' + quien, quien); } catch (e) { }
-    return { id: id, nombre: p.nombre, empresa: p.empresa, kanban: URL_DEPLOY + '?tipo=kanban&perfil=' + id, postulacion: URL_DEPLOY + '?tipo=postulacion&perfil=' + id, carpeta: carpetaPerfil.getUrl() };
+    let perfil = { ok: false, error: 'No se cargó el texto del Word.' };
+    if (String(texto || '').trim().length >= 200) {
+      try { perfil = Object.assign({ ok: true }, armarPerfilDesdeTexto_({ folder_madre: fNuevos.getId() }, texto)); }
+      catch (e) { perfil = { ok: false, error: String(e && e.message || e).slice(0, 200) }; }
+    }
+    return { perfil: perfil, id: id, nombre: p.nombre, empresa: p.empresa, kanban: URL_DEPLOY + '?tipo=kanban&perfil=' + id, postulacion: URL_DEPLOY + '?tipo=postulacion&perfil=' + id, carpeta: carpetaPerfil.getUrl() };
   } finally { lock.releaseLock(); }
 }
 

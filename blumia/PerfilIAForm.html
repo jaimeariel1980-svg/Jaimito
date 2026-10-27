@@ -1,0 +1,89 @@
+<style>
+.ia-ui.ia-btn{background:#F9E7A0;color:#243D2C;border:1px solid #d9c46a;border-radius:20px;padding:6px 14px;font:600 12px Poppins,sans-serif;cursor:pointer;margin-right:8px}
+.ia-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99998;display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:30px 12px}
+.ia-bg.show{display:flex}
+.ia-box{background:#fff;border-radius:12px;max-width:640px;width:100%;padding:20px 22px;font:14px Poppins,sans-serif;color:#222}
+.ia-box h3{margin:0 0 8px;color:#243D2C}.ia-box p{font-size:12px;color:#666;line-height:1.5;margin:0 0 10px}
+.ia-box textarea{width:100%;min-height:180px;border:1px solid #ccc;border-radius:8px;padding:8px;box-sizing:border-box;font:13px Poppins,sans-serif}
+.ia-box input[type=file]{margin:6px 0 10px;width:100%}
+.ia-box .ia-row{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
+.ia-box button{border-radius:8px;padding:9px 18px;font-weight:700;cursor:pointer;border:1px solid #999;background:#fff}
+.ia-box button.go{background:#243D2C;color:#fff;border-color:#243D2C}
+.ia-fill{outline:2px solid #5BB5A5!important;outline-offset:1px}
+@media print{.ia-ui,.ia-bg{display:none!important}.ia-fill{outline:none!important}}
+</style>
+<script>
+(function(){
+  if(typeof google==='undefined'||!google.script||typeof PERFIL_ID==='undefined'||typeof controles!=='function')return;
+  function xmlATexto(xml){
+    xml=xml.replace(/<w:tab\/>/g,'\t').replace(/<w:(br|cr)\/>/g,'\n').replace(/<\/w:p>\s*<\/w:tc>/g,' | ').replace(/<\/w:tr>/g,'\n').replace(/<\/w:p>/g,'\n').replace(/<[^>]+>/g,'');
+    var ta=document.createElement('textarea');xml=xml.replace(/&(#x?[0-9a-fA-F]+|amp|lt|gt|quot|apos);/g,function(m){ta.innerHTML=m;return ta.value;});
+    return xml.replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
+  }
+  function docxTexto(file){
+    return file.arrayBuffer().then(function(ab){
+      var buf=new Uint8Array(ab),dv=new DataView(ab),e=buf.length-22;
+      while(e>=0&&dv.getUint32(e,true)!==0x06054b50)e--;
+      if(e<0)throw new Error('No parece un archivo Word (.docx). Si es un .doc viejo, guardalo como .docx o pegá el texto.');
+      var n=dv.getUint16(e+10,true),off=dv.getUint32(e+16,true);
+      for(var i=0;i<n;i++){
+        if(dv.getUint32(off,true)!==0x02014b50)break;
+        var meth=dv.getUint16(off+10,true),csz=dv.getUint32(off+20,true),nl=dv.getUint16(off+28,true),xl=dv.getUint16(off+30,true),cl=dv.getUint16(off+32,true),lho=dv.getUint32(off+42,true);
+        var name=new TextDecoder().decode(buf.subarray(off+46,off+46+nl));
+        if(name==='word/document.xml'){
+          var st=lho+30+dv.getUint16(lho+26,true)+dv.getUint16(lho+28,true),data=buf.subarray(st,st+csz);
+          if(meth===0)return xmlATexto(new TextDecoder().decode(data));
+          if(typeof DecompressionStream==='undefined')throw new Error('Este navegador no puede leer el Word: pegá el texto en el cuadro.');
+          return new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text().then(xmlATexto);
+        }
+        off+=46+nl+xl+cl;
+      }
+      throw new Error('No encontré el contenido del Word. Pegá el texto en el cuadro.');
+    });
+  }
+  function sec(e){var c=e.closest('.card');var t=c&&c.querySelector('.card-title');return t?t.textContent.trim():'';}
+  function lab(e){var f=e.closest('.f');var l=f&&f.querySelector('label');var t=l?l.textContent.trim():'';if(!t){var fb=e.closest('.fb');var fl=fb&&fb.querySelector('.fl-lbl');t=fl?fl.textContent.trim():'';}return t;}
+  function lista(){
+    var cs=controles().filter(function(e){return !e.closest('.ia-bg');});
+    var campos=cs.map(function(e,i){var o={i:i,t:e.tagName==='SELECT'?'select':(e.tagName==='TEXTAREA'?'textarea':(e.type||'text')),s:sec(e),l:lab(e),h:e.getAttribute('placeholder')||''};if(e.tagName==='SELECT')o.o=[].map.call(e.options,function(x){return x.text.trim();});return o;});
+    var pills=[].map.call(document.querySelectorAll('.pills'),function(g){return {id:g.id,s:sec(g),o:[].map.call(g.querySelectorAll('.pill'),function(x){return x.textContent.trim();})};});
+    return {campos:campos,pills:pills};
+  }
+  function marca(e){e.classList.add('ia-fill');var q=function(){e.classList.remove('ia-fill');e.removeEventListener('input',q);e.removeEventListener('change',q);};e.addEventListener('input',q);e.addEventListener('change',q);}
+  function aplicar(r){
+    var cs=controles(),n=0;
+    Object.keys(r.c||{}).forEach(function(k){
+      var e=cs[Number(k)];if(!e)return;
+      if(e.tagName==='SELECT'){if(e.selectedIndex>0)return;var ix=[].findIndex.call(e.options,function(o){return o.text.trim()===r.c[k];});if(ix>0){e.selectedIndex=ix;marca(e);n++;}}
+      else if(!String(e.value||'').trim()){e.value=r.c[k];marca(e);n++;}
+    });
+    Object.keys(r.p||{}).forEach(function(id){
+      var g=document.getElementById(id);if(!g)return;var ps=[].slice.call(g.querySelectorAll('.pill'));
+      var ix=ps.findIndex(function(x){return x.textContent.trim()===r.p[id];});
+      if(ix>=0&&!ps.some(function(x){return x.classList.contains('on');})){ps.forEach(function(x,k){x.classList.toggle('on',k===ix);var rd=x.querySelector('input');if(rd)rd.checked=(k===ix);});n++;}
+    });
+    return n;
+  }
+  var HTML_MODAL='<div class="ia-box"><h3>✨ Completar el perfil con IA</h3><p>Subí el <b>Word</b> del puesto (o pegá el texto). La IA completa <b>solo los campos vacíos</b> con lo que el documento dice, y los marca con un borde verde para que los revises. Después tocá «Guardar en el sistema». No inventa datos: lo que no esté en el documento queda vacío.</p><input type="file" id="ia-file" accept=".docx,.txt"><textarea id="ia-txt" placeholder="…o pegá acá el texto del relevamiento"></textarea><div class="ia-row"><button id="ia-x">Cancelar</button><button class="go" id="ia-go">Completar</button></div></div>';
+  var btn=document.createElement('button');btn.className='ia-ui ia-btn';btn.textContent='✨ Completar con IA desde un Word';
+  var sis=document.getElementById('btn-sis');(sis&&sis.parentNode?sis.parentNode:document.body).insertBefore(btn,sis||null);
+  // el cuadro se arma al abrirlo y se saca al cerrarlo: así sus campos nunca se cuentan ni se guardan como parte del perfil
+  btn.onclick=function(){
+    var bg=document.createElement('div');bg.className='ia-bg ia-ui show';bg.innerHTML=HTML_MODAL;document.body.appendChild(bg);
+    document.getElementById('ia-x').onclick=function(){bg.remove();};
+    document.getElementById('ia-file').onchange=function(){
+      var f=this.files&&this.files[0];if(!f)return;var t=document.getElementById('ia-txt');
+      var ok=function(x){t.value=x;},ko=function(e){alert((e&&e.message)||e);};
+      if(/\.txt$/i.test(f.name))f.text().then(ok,ko);else docxTexto(f).then(ok,ko);
+    };
+    document.getElementById('ia-go').onclick=function(){
+      var t=document.getElementById('ia-txt').value.trim();if(t.length<200){alert('Falta el texto del puesto (mínimo 200 caracteres).');return;}
+      var go=this;go.disabled=true;go.textContent='La IA está leyendo… (hasta 1 minuto)';var L=lista();
+      google.script.run.withSuccessHandler(function(j){
+        var r=JSON.parse(j),n=aplicar(r);bg.remove();
+        alert('Listo: la IA completó '+n+' campos (marcados con borde verde).'+(r.avisos&&r.avisos.length?'\n\nLa IA avisa:\n- '+r.avisos.join('\n- '):'')+'\n\nRevisalos y tocá «Guardar en el sistema».');
+      }).withFailureHandler(function(e){go.disabled=false;go.textContent='Completar';alert('No se pudo: '+((e&&e.message)||e));}).completarPerfilIA(PERFIL_ID,PERFIL_TOKEN,JSON.stringify(L.campos),JSON.stringify(L.pills),t);
+    };
+  };
+})();
+</script>
