@@ -1226,12 +1226,19 @@ function getLinkScreening_(perfilId, nombreCandidato) {
           if (v.indexOf('http') === 0) link = v;
         }
         const nota = String(datos[i][11] || '');  // col 12 = nota screening
-        return { link: link, nota: nota };
+        const cvCel = sh.getRange(i+1, 8);  // col 8 = CV
+        let cvU = '';
+        const cvF = cvCel.getFormula().match(/HYPERLINK\("([^"]+)"/i);
+        if (cvF) cvU = cvF[1];
+        if (!cvU) { const rt = cvCel.getRichTextValue(); if (rt && rt.getLinkUrl()) cvU = rt.getLinkUrl(); }
+        if (!cvU) cvU = String(datos[i][7] || '');
+        const cvId = (cvU.match(/[?&]id=([-\w]{25,})/) || [])[1] || (cvU.match(/[-\w]{25,}/) || [''])[0];
+        return { link: link, nota: nota, cv: cvId ? 'https://drive.google.com/file/d/' + cvId + '/view' : '' };
       }
     }
-    return { link: '', nota: '' };
+    return { link: '', nota: '', cv: '' };
   } catch (e) {
-    return { link: '', nota: '' };
+    return { link: '', nota: '', cv: '' };
   }
 }
 

@@ -32,7 +32,7 @@ function getDatosForm_(k, id, etapa) {
   return {
     cand: {
       id: String(id), nombre: r[COL.nombre - 1], email: jefe ? '' : r[COL.email - 1], tel: jefe ? '' : String(r[COL.tel - 1] || ''), loc: r[COL.loc - 1], pret: jefe ? '' : String(r[COL.pret - 1] || ''),
-      turno: String(r[COL.turno - 1] || ''), notaCV: jefe ? '' : r[COL.ajuste - 1], notaScr: jefe ? '' : r[COL.notaScr - 1], notaComp: jefe ? '' : r[COL.notaComp - 1], entrev: r[COL.entrev - 1], infScr: jefe ? '' : String(r[COL.infScr - 1] || ''), resp: jefe ? [] : resp
+      turno: String(r[COL.turno - 1] || ''), notaCV: jefe ? '' : r[COL.ajuste - 1], notaScr: jefe ? '' : r[COL.notaScr - 1], notaComp: jefe ? '' : r[COL.notaComp - 1], entrev: r[COL.entrev - 1], cv: String(r[COL.cv - 1] || ''), infScr: jefe ? '' : String(r[COL.infScr - 1] || ''), resp: jefe ? [] : resp
     },
     hero: { puesto: b.titulo, ubicacion: b.ubicacion, cliente: aj.nombre_cliente || 'PAMI' },
     evalItems: tablaBusq_('Screening_Eval', bid).map(x => ({ id: String(x[1]), label: String(x[2]), peso: Number(x[3]) || 1, opts: opcionesEval_(x[2]), pts: puntosEval_(x[2]) })),
