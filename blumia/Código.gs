@@ -306,7 +306,7 @@ Devolvé SOLO JSON válido con este formato:
   "localidad": "Ciudad/localidad textual del CV",
   "nivel_ajuste": "A/B+/B/C",
   "justificacion": "Una sola oración corta explicando el porqué de la nota",
-  "requisitos": { "zona": "", "liderazgo": "", "formacion": "", "edad": "", "exp_rubro": "" },
+  "requisitos": { "zona": "", "liderazgo": "", "formacion": "", "genero": "", "edad": "", "exp_rubro": "" },
   "resumen_experiencia": "3-4 oraciones narrativas"
 }
 REGLAS:
@@ -851,7 +851,7 @@ Devolvé SOLO JSON válido con este formato:
   "nombre": "Nombre Real", "telefono": "Numero", "dni": "Solo numeros", "localidad": "Ciudad/localidad textual declarada o del CV",
   "nivel_ajuste": "A/B+/B/C",
   "justificacion": "Una sola oración corta explicando el porqué de la nota",
-  "requisitos": { "zona": "", "liderazgo": "", "formacion": "", "edad": "", "exp_rubro": "" },
+  "requisitos": { "zona": "", "liderazgo": "", "formacion": "", "genero": "", "edad": "", "exp_rubro": "" },
   "resumen_experiencia": "3-4 oraciones narrativas, atributos/actitud, sin repetir el checklist"
 }
 REGLAS DE LA NOTA (nivel_ajuste):
@@ -976,7 +976,7 @@ function verLinks() {
 }
 function formatearRequisitos(req, localidad) {
   if (!req || typeof req !== 'object') return 'Error';
-  const labels = { zona: 'Zona', liderazgo: 'Liderazgo', formacion: 'Formación', edad: 'Edad', exp_rubro: 'Exp. rubro' };
+  const labels = { zona: 'Zona', liderazgo: 'Liderazgo', formacion: 'Formación', genero: 'Género', edad: 'Edad', exp_rubro: 'Exp. rubro' };
   return Object.keys(labels).map(k => {
     let val = req[k] || 'N/D';
     if (k === 'zona' && localidad && String(localidad).trim()) val = val + ' (' + String(localidad).trim() + ')';
