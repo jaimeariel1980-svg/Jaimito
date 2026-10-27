@@ -1,4 +1,5 @@
 <style>
+.nbf{display:inline-flex;align-items:center;gap:8px;border:1.5px dashed #243D2C;padding:10px 16px;border-radius:8px;cursor:pointer;color:#243D2C;font-weight:700;font-size:13px;position:relative;text-transform:none}.nbf:hover{background:#E3EEDC}.nbf:focus-within{outline:3px solid #5BB5A5}
 .cf-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9100;display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 10px}
 .cf-bg.show{display:flex}
 .cf-box{background:#fff;border-radius:12px;max-width:900px;width:100%;padding:20px 24px;color:#222;font-size:14px}
@@ -46,8 +47,8 @@
   function pesoSel(id,v){return '<select id="'+id+'" style="width:70px">'+[1,2,3].map(function(n){return '<option'+(Number(v)===n?' selected':'')+'>'+n+'</option>';}).join('')+'</select>';}
   function nbHtml(){
     if(NB.creada){var c=NB.creada;return '<div class="cf-pl"><b>✅ Búsqueda creada: '+esc(c.nombre)+'</b><div class="cf-help" style="margin-top:8px">Empresa: '+esc(c.empresa)+'. Ya tiene su pestaña de candidatos, carpetas de Drive, formularios de screening y competencias, y preguntas de postulación.<br><br>'+(c.perfil&&c.perfil.ok?'<b>Perfil del puesto:</b> la IA completó '+c.perfil.campos+' campos con el Word. <b>Revisalo</b> antes de usarlo.'+((c.perfil.avisos||[]).length?'<ul style="margin:6px 0 0 18px">'+c.perfil.avisos.map(function(a){return '<li>'+esc(a)+'</li>';}).join('')+'</ul>':''):'<b>Perfil del puesto:</b> no se pudo armar solo ('+esc((c.perfil&&c.perfil.error)||'sin detalle')+'). Abrilo con el botón y usá «✨ Completar con IA desde un Word».')+'<br><br>Los CVs que lleguen al mail con el nombre del puesto en el asunto se ordenan solos.</div></div><div id="nbPerfilFr" style="margin-top:10px"></div><div class="cf-foot"><button class="cf-close" onclick="nbOtra()">Crear otra</button><button class="cf-close" onclick="nbVerPerfil(this)">✏️ Revisar el perfil del puesto</button><button class="cf-save" onclick="window.top.location.href=NB.creada.kanban">Abrir el tablero de la búsqueda</button></div>';}
-    if(!NB.prop)return '<div class="cf-help">Acá se crea una <b>búsqueda nueva</b>; no modifica la que tenés abierta. Subí el <b>Word</b> con el relevamiento del puesto (o pegá el texto) y la <b>IA de Anthropic</b> arma la búsqueda completa: requisitos para puntuar CVs, criterios de screening, competencias con preguntas y preguntas de postulación. <b>Antes de crear nada lo revisás y lo corregís vos.</b> El archivo no se guarda: solo se lee el texto.</div>'
-      +'<label>Archivo Word (.docx)</label><input type="file" id="nb_file" accept=".docx,.txt" onchange="nbArchivo(this)">'
+    if(!NB.prop)return '<div class="cf-help">Acá se crea una <b>búsqueda nueva</b>; no modifica la que tenés abierta. Subí el <b>Word</b> con el relevamiento del puesto (o pegá el texto) y la <b>IA</b> arma la búsqueda completa: requisitos para puntuar CVs, criterios de screening, competencias con preguntas y preguntas de postulación. <b>Antes de crear nada lo revisás y lo corregís vos.</b> El archivo no se guarda: solo se lee el texto.</div>'
+      +'<label>Archivo Word (.docx)</label><label class="nbf"><input type="file" id="nb_file" accept=".docx,.txt" onchange="nbArchivo(this);var f=this.files&&this.files[0];document.getElementById(\'nbFn\').textContent=f?\'✓ \'+f.name:\'\'" style="position:absolute;width:1px;height:1px;opacity:0">📎 Elegir el archivo Word</label><span id="nbFn" style="margin-left:10px;font-size:13px;color:#243D2C;font-weight:600"></span>'
       +'<label>…o pegá el texto del relevamiento</label><textarea id="nb_texto" style="min-height:220px" placeholder="Pegá acá el texto o subí el Word">'+esc(NB.texto)+'</textarea>'
       +'<label>Empresa (opcional: si la dejás vacía la propone la IA)</label><input id="nb_emp" value="'+esc(NB.empresa)+'">'
       +'<div class="cf-foot"><button class="cf-save" id="nb_go" onclick="nbAnalizar(this)"'+(NB.ocupado?' disabled':'')+'>🤖 Analizar con IA</button></div>';
@@ -198,8 +199,8 @@
     ping(0);
   };
   function render(tab){
-    var T=[['nueva','➕ Nueva búsqueda'],['usr','👥 Usuarios'],['copia','💾 Copia de seguridad'],['acc','📜 Accesos'],['vel','⏱ Velocidad']];
-    var x='<h2>⚙ Administración</h2><div class="cf-help" style="margin:0 0 6px">Lo que no depende de una búsqueda en particular.</div><div class="cf-tabs">'+T.map(function(t){return '<button class="cf-tab'+(t[0]===tab?' on':'')+'" onclick="adTab(\''+t[0]+'\')">'+t[1]+'</button>';}).join('')+'</div>';
+    var T=[['usr','👥 Usuarios'],['copia','💾 Copia de seguridad'],['acc','📜 Accesos'],['vel','⏱ Diagnóstico de velocidad']];
+    var x=tab==='nueva'?'<h2>➕ Nueva búsqueda</h2>':'<h2>⚙ Administración</h2><div class="cf-help" style="margin:0 0 6px">Lo que no depende de una búsqueda en particular.</div><div class="cf-tabs">'+T.map(function(t){return '<button class="cf-tab'+(t[0]===tab?' on':'')+'" onclick="adTab(\''+t[0]+'\')">'+t[1]+'</button>';}).join('')+'</div>';
     if(tab==='nueva')x+=nbHtml();
     if(tab==='usr')x+='<div class="cf-help">Quién puede entrar. Los <b>administradores</b> configuran las búsquedas y manejan los usuarios; los <b>usuarios</b> trabajan con los candidatos. Por ahora se entra solo con nombre y apellido (sin PIN): escribí el nombre completo como lo va a poner la persona.</div><div id="cfUsr">Cargando…</div><div class="cf-foot"><button class="cf-close" onclick="adCerrar()">Cerrar</button></div>';
     if(tab==='copia')x+='<div id="adCopia">Cargando…</div><div class="cf-foot"><button class="cf-close" onclick="adCerrar()">Cerrar</button></div>';

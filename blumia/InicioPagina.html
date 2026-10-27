@@ -37,21 +37,22 @@ main{padding:30px 28px 50px}
 .emp h2{flex-wrap:wrap}.emp h2 span{white-space:nowrap}
 .emp h2 span.gr{background:#E6E8E4;color:#666}
 .emp h2 span{background:var(--cream);color:var(--deep);border-radius:14px;padding:3px 12px;font-size:12px;font-weight:700}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,380px));gap:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
 .card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px;cursor:pointer;display:flex;gap:14px;align-items:center;transition:.15s}
 .card:hover{box-shadow:0 8px 22px rgba(13,63,41,.16);transform:translateY(-2px);border-color:var(--deep)}
 .card img{width:54px;height:54px;border-radius:14px;flex:none}
+.card .av{width:54px;height:54px;border-radius:14px;flex:none;display:flex;align-items:center;justify-content:center;font:800 18px var(--font);color:var(--deep)}.card.cerr .av{filter:grayscale(1)}
 .card .t{flex:1;min-width:0}
 .card b{display:block;font-size:14px;font-weight:700;color:var(--deep);line-height:1.25}
 .card small{display:block;margin-top:4px;color:#666;font-size:12px}
 .card .go{font-size:20px;color:var(--deep);font-weight:700}
 .card.cerr{background:#FAFBF9;opacity:.85}.card.cerr img{filter:grayscale(1)}
-.card .cl{flex:none;border:1px solid var(--line);background:#fff;color:#666;border-radius:14px;padding:4px 11px;font:600 11px var(--font);cursor:pointer}.card .cl:hover{background:var(--glight);color:var(--deep);border-color:var(--deep)}
+.card .cl{flex:none;border:1px solid var(--line);background:#fff;color:#666;border-radius:8px;width:32px;height:32px;font:700 18px/1 var(--font);cursor:pointer}.card .cl:hover{background:var(--glight);color:var(--deep);border-color:var(--deep)}
 .tag{display:inline-block;background:#eee;color:#666;border-radius:10px;padding:1px 8px;font-size:11px;margin-left:6px;font-weight:600}
 details.cerr{margin-top:12px}details.cerr summary{cursor:pointer;color:#666;font-weight:700;margin:4px 0 12px}
 .vacio{background:#fff;border:1px dashed var(--line);border-radius:18px;padding:34px;text-align:center;color:#666}
 footer{text-align:center;color:#888;font-size:12px;padding:10px 0 30px}
-@media(max-width:640px){.hero{padding:16px 16px 28px;min-height:260px}.ht{margin-top:26px}.ht h1{font-size:26px}.s2{right:-80px;top:auto;bottom:10px;transform:none;height:230px;opacity:.22}.stats{gap:20px}.cta button,.cta a{flex:1 1 100%;text-align:center}.grid{grid-template-columns:1fr}.top img{height:32px}}
+@media(max-width:640px){.hero{padding:16px 16px 28px;min-height:260px}.ht{margin-top:26px}.ht h1{font-size:26px}.s2{display:none}.stats{gap:20px}.cta button,.cta a{flex:1 1 100%;text-align:center}.grid{grid-template-columns:1fr}.top img{height:32px}}
 </style></head><body>
 <section class="hero">
   <img class="sq s2" id="s2" alt="">
@@ -90,7 +91,9 @@ var abiertas=DATOS.filter(function(b){return !b.cerrada;});
 document.getElementById('stA').textContent=abiertas.length;
 document.getElementById('stC').textContent=abiertas.reduce(function(a,b){return a+(b.n||0);},0);
 var k=0;
-function tarjeta(b){var av=(k%2===0)?AS.by:AS.bp;return '<div class="card'+(b.cerrada?' cerr':'')+'" onclick="ir(\''+esc(b.id)+'\')"><img src="'+av+'" alt=""><div class="t"><b>'+esc(b.nombre)+(b.cerrada?'<span class="tag">cerrada</span>':'')+'</b><small>'+b.n+' candidato'+(b.n===1?'':'s')+'</small></div>'+(esAdmin?'<button class="cl" onclick="event.stopPropagation();estado(\''+esc(b.id)+'\','+(b.cerrada?'false':'true')+')">'+(b.cerrada?'Reabrir':'Cerrar')+'</button>':'')+'<span class="go">›</span></div>';}
+function ini(e){var w=String(e||'').trim().split(/\s+/).filter(Boolean);return ((w[0]||'?').charAt(0)+(w.length>1?w[1].charAt(0):(w[0]||'').charAt(1))).toUpperCase();}
+function colorEmp(e){var h=0,t=String(e||'');for(var i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))>>>0;return ['#FBE794','#F9BDBB','#DCE8D3','#BFE3DB'][h%4];}
+function tarjeta(b){return '<div class="card'+(b.cerrada?' cerr':'')+'" onclick="ir(\''+esc(b.id)+'\')"><div class="av" style="background:'+colorEmp(b.empresa)+'" aria-hidden="true">'+esc(ini(b.empresa))+'</div><div class="t"><b>'+esc(b.nombre)+'</b><small>'+b.n+' candidato'+(b.n===1?'':'s')+(b.cerrada?' · cerrada':'')+'</small></div>'+(esAdmin?'<button class="cl" title="Más opciones" aria-label="Más opciones de '+esc(b.nombre)+'" onclick="event.stopPropagation();menuTar(\''+esc(b.id)+'\')">⋯</button>':'')+'<span class="go">›</span></div>';}
 var por={};DATOS.forEach(function(b){(por[b.empresa]=por[b.empresa]||[]).push(b);});
 var h='';
 Object.keys(por).sort().forEach(function(emp,ix){k=ix;
@@ -100,6 +103,7 @@ Object.keys(por).sort().forEach(function(emp,ix){k=ix;
 });
 document.getElementById('lista').innerHTML=h||'<div class="vacio">Todavía no hay búsquedas.'+(esAdmin?' Creá la primera con «➕ Nueva búsqueda».':'')+'</div>';
 }
+function menuTar(id){var b=DATOS.filter(function(x){return x.id===id;})[0];if(!b)return;blMenu(b.nombre,'',[[b.cerrada?'Reabrir búsqueda':'Cerrar búsqueda',function(){estado(id,!b.cerrada);}]]);}
 function estado(id,cerrar){
   var b=DATOS.filter(function(x){return x.id===id;})[0];if(!b)return;
   var msg=cerrar?'¿Cerrar «'+b.nombre+'»?\n\nLa página de postulación avisa que ya terminó y deja de recibir CVs por mail y por carpeta. Los candidatos y el tablero siguen disponibles. Podés reabrirla cuando quieras.':'¿Reabrir «'+b.nombre+'»? Vuelve a recibir postulaciones y CVs.';

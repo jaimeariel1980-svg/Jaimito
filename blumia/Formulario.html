@@ -10,7 +10,7 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#F3F8F1;--white:#FFFFFF;--dark:#111111;--text:#1A1A1A;--mid:#555555;--light:#999999;--line:#D5E0CE;
+  --bg:#F3F8F1;--white:#FFFFFF;--dark:#111111;--text:#1A1A1A;--mid:#555555;--light:#6B6B6B;--line:#D5E0CE;
   --green:#243D2C;--green2:#2F5E41;--glight:#E3EEDC;--dorado:#FBC67B;--coral:#E8501A;
   --font:'Poppins','Plus Jakarta Sans',sans-serif;
 }
@@ -58,13 +58,13 @@ body{font-family:var(--font);background:var(--bg);color:var(--text)}
 .val-row:last-child{border-bottom:none}
 .val-label{font-size:15px;font-weight:500;color:var(--text)}
 .pill-group{display:flex;gap:6px;flex-wrap:wrap}
-.pill{border:1.5px solid var(--line);border-radius:2px;background:var(--bg);padding:7px 14px;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--mid);cursor:pointer;transition:all .12s;user-select:none}
+.pill{border:1.5px solid var(--line);border-radius:2px;background:var(--bg);padding:10px 18px;min-height:40px;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--mid);cursor:pointer;transition:all .12s;user-select:none}
 .pill.active-alto,.pill.active-si{background:var(--green);color:var(--white);border-color:var(--green)}
 .pill.active-medio,.pill.active-revisar{background:var(--dorado);color:#5a3a00;border-color:var(--dorado)}
 .pill.active-bajo,.pill.active-no{background:#FDEAE4;color:var(--coral);border-color:var(--coral)}
 .resultado-card{border:1.5px solid var(--line);border-radius:2px;background:var(--white);padding:28px 32px;display:flex;align-items:stretch;gap:28px}
 .semaforo{display:flex;flex-direction:column;gap:7px;justify-content:center}
-.semaforo-dot{width:22px;height:22px;border-radius:50%;border:2px solid transparent;transition:all .25s}
+.semaforo-dot{width:28px;height:28px;border-radius:50%;border:2px solid transparent;transition:all .25s}
 .sd-rojo{background:#FDEAE4;border-color:#FDEAE4}
 .sd-amarillo{background:#FEF3D8;border-color:#FEF3D8}
 .sd-verde{background:#E6F2EC;border-color:#E6F2EC}
@@ -141,7 +141,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text)}
   <div class="tb-left">
     <img class="tb-logo" alt="Blumia" src="<?!= LOGO_BLUMIA_VERDE_ ?>">
     <div class="tb-sep"></div>
-    <div class="tb-doc">Screening Inicial</div>
+    <div class="tb-doc">Screening inicial</div>
   </div>
 </nav>
 
@@ -166,7 +166,7 @@ const EVAL_STYLE = {
   alto: { t: 'Alto', bg: '#E6F2EC', c: '#1A6645', b: 'rgba(26,102,69,.3)' },
   medio: { t: 'Medio', bg: '#FEF3D8', c: '#7a5500', b: 'rgba(251,198,123,.5)' },
   bajo: { t: 'Bajo', bg: '#FDEAE4', c: '#E8501A', b: 'rgba(232,80,26,.3)' },
-  '': { t: '— Sin evaluar', bg: '#F7F5F1', c: '#999999', b: '#DDDBD7' }
+  '': { t: '— Sin evaluar', bg: '#F7F5F1', c: '#6B6B6B', b: '#DDDBD7' }
 };
 const VEREDICTOS = {
   A: { titulo: 'A · Avanza', desc: 'Cumple lo crítico y lo deseable. Avanza a la siguiente instancia.', cls: 'res-verde', color: 'verde' },
@@ -298,7 +298,7 @@ function buildEval() {
     const row = document.createElement('div');
     row.className = 'eval-row';
     row.innerHTML = `<div class="eval-label">${item.label}</div>
-      <select class="eval-select" id="sel-${item.id}" onchange="onEvalChange('${item.id}',this)">
+      <select class="eval-select" id="sel-${item.id}" aria-label="${item.label}" onchange="onEvalChange('${item.id}',this)">
         <option value="">— Sin evaluar</option><option value="bajo">Bajo</option><option value="medio">Medio</option><option value="alto">Alto</option>
       </select>`;
     c.appendChild(row);
@@ -321,7 +321,7 @@ function buildVal() {
     const tipoMap = { 'Sí': 'si', 'No': 'no', 'A revisar': 'revisar', 'Alto': 'alto', 'Medio': 'medio', 'Bajo': 'bajo' };
     const row = document.createElement('div');
     row.className = 'val-row';
-    const pills = item.opts.map(t => `<div class="pill" data-id="${item.id}" data-val="${tipoMap[t] || t.toLowerCase()}" data-cls="active-${tipoMap[t] || t.toLowerCase()}" onclick="pickPill(this)">${t}</div>`).join('');
+    const pills = item.opts.map(t => `<div class="pill" data-id="${item.id}" data-val="${tipoMap[t] || t.toLowerCase()}" data-cls="active-${tipoMap[t] || t.toLowerCase()}" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();pickPill(this)}" onclick="pickPill(this)">${t}</div>`).join('');
     row.innerHTML = `<div class="val-label">${item.label}</div><div class="pill-group">${pills}</div>`;
     c.appendChild(row);
   });
@@ -458,7 +458,7 @@ function enviarALaPlanilla() {
       alto:  { t: 'Alto',  bg: '#E6F2EC', col: '#1A6645', bd: '#1A6645' },
       medio: { t: 'Medio', bg: '#FEF3D8', col: '#7a5500', bd: '#FBC67B' },
       bajo:  { t: 'Bajo',  bg: '#FDEAE4', col: '#E8501A', bd: '#E8501A' },
-      '':    { t: '— Sin evaluar', bg: '#F7F5F1', col: '#999999', bd: '#DDDBD7' }
+      '':    { t: '— Sin evaluar', bg: '#F7F5F1', col: '#6B6B6B', bd: '#DDDBD7' }
     };
     const e = estilos[state.eval[item.id] || ''] || estilos[''];
     const div = clone.ownerDocument.createElement('div');
