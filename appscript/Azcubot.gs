@@ -694,7 +694,7 @@ function azcuTools_(){
   return [
     t('buscar_propiedades','Busca propiedades por dirección, código, propietario o tipo.',{texto:S},['texto']),
     t('consultas_whatsapp','Consultas/mensajes recibidos por WhatsApp (pestaña Consultas del Sheet, con las respuestas automáticas). Filtros: finde (desde el viernes 18 h), hoy, semana, pendientes (sin atender, 14 días), todas.',{filtro:{type:'string',enum:['finde','hoy','semana','pendientes','todas']}}),
-    t('ficha_propiedad','Ficha completa de una propiedad: datos, precio, documentos, propietarios, historial con número de fila, encuesta, links.',{id:{type:'string',description:'Código, ej PRE-2026-0004 o MIG-P004'},puntual:{type:'boolean',description:'true SOLO si preguntan un único dato concreto (un precio, un teléfono, una fecha). Por defecto (omitido) el sistema arma y devuelve directamente la ficha completa y ordenada'}},['id']),
+    t('ficha_propiedad','Ficha completa de una propiedad: datos, precio, documentos, propietarios, historial con número de fila, encuesta, links.',{id:{type:'string',description:'Código exacto que devolvió buscar_propiedades o el DATO VERIFICADO; nunca lo inventes'},puntual:{type:'boolean',description:'true SOLO si preguntan un único dato concreto (un precio, un teléfono, una fecha). Por defecto (omitido) el sistema arma y devuelve directamente la ficha completa y ordenada'}},['id']),
     t('captacion_formulario','Todo lo cargado en el formulario de captación/precarga de una propiedad (superficies, ambientes, servicios, dueños, datos del inmueble, etc.).',{id:S},['id']),
     t('guia_pagina','Lee el texto de una página del tablero para explicarla o repasarla. Si hay varias partes, pedí la siguiente con parte.',{pagina:{type:'string',enum:['procedimiento_ventas','generador_documentos','formulario_captacion','encuesta']}, parte:{type:'number'}},['pagina']),
     t('dashboard','Panel inicial del tablero: totales, etapas, papeles, propuestas, sin movimiento y satisfacción. Se muestra además como tarjetas.',{}),
@@ -716,7 +716,7 @@ function azcuTools_(){
     t('abrir_enlace','Deja en el chat botones para abrir un enlace, mandarlo por WhatsApp y copiarlo. El formulario_captacion NO necesita id (sirve para un cliente nuevo).',{cual:{type:'string',enum:['tablero','procedimiento_ventas','formulario_captacion','generador_documentos','encuesta','carpeta_drive','link_tokko','ubicacion']}, id:S, telefono:S},['cual']),
     t('enviar_whatsapp','Deja un botón para abrir WhatsApp con el mensaje armado. Con id va por defecto al primer propietario; sin id (captación nueva, texto libre) el usuario elige el contacto.',{id:S, que:{type:'string',enum:['encuesta','formulario_captacion','link_tokko','ubicacion','documento','texto_libre']}, documento:S, telefono:S, texto:S},['que']),
     t('generar_pdf','Genera el PDF de la ficha de una propiedad y lo deja en el chat para descargar o compartir.',{id:S},['id']),
-    t('proponer_cargar_interaccion','Registrar una consulta o visita ya ocurrida en una propiedad NUESTRA (que está en el sistema); si es de otra inmobiliaria usá proponer_visita_externa. Queda pendiente de confirmación.',{id:S, interesado:S, telefono:S, via:{type:'string',enum:AZCU_VIAS}, resultado:{type:'string',enum:AZCU_RESULTADOS}, proximo_paso:S, observaciones:{type:'string',description:'Detalle completo de lo que pasó'}},['id','interesado','via','resultado']),
+    t('proponer_cargar_interaccion','Registrar una consulta o visita ya ocurrida en una propiedad NUESTRA (que está en el sistema); si es de otra inmobiliaria usá proponer_visita_externa. Queda pendiente de confirmación.',{id:S, interesado:S, telefono:S, via:{type:'string',enum:AZCU_VIAS}, resultado:{type:'string',enum:AZCU_RESULTADOS}, proximo_paso:S, observaciones:{type:'string',description:'Detalle completo de lo que pasó'}, inmobiliaria:{type:'string',description:'Solo si el interesado vino de la mano de otra inmobiliaria'}, colega:{type:'string',description:'Colega de esa inmobiliaria'}},['id','interesado','via','resultado']),
     t('visitas','Visitas del equipo, propias y a propiedades de OTRAS inmobiliarias: hoy, esta semana, próximas, realizadas o un rango. Usala para "qué visitas hay hoy", "cuántas visitas hizo X", "visitas externas", etc. Cada visita trae su fila (para cancelarla).',{periodo:{type:'string',enum:['hoy','semana','proximas','pendientes','realizadas','canceladas','todas','rango']}, texto:{type:'string',description:'Filtra por dirección, inmobiliaria, colega o cliente'}, desde:F, hasta:F, vendedor:S, solo_externas:{type:'boolean'}}),
     t('datos_tecnicos','Datos técnicos de una propiedad (superficies, ambientes, cochera, patios, servicios, antigüedad, orientación, etc.). Usala cuando pidan datos técnicos o más detalles de una propiedad.',{id:S},['id']),
     t('papelera','Papelera de reciclaje: propiedades, visitas/interacciones y documentos borrados en los últimos 30 días, que se pueden restaurar. Cada uno trae su id.',{}),
@@ -864,8 +864,8 @@ function azcuValidarAccion_(tipo, a){
   if(tipo==='cargar'){
     if(AZCU_VIAS.indexOf(a.via)<0 || AZCU_RESULTADOS.indexOf(a.resultado)<0) return {error:'Vía o resultado inválidos.'};
     if(/rechaz|no le interes/i.test(a.resultado||'') && !String(a.observaciones||'').trim()) return {error:'Falta el motivo (por qué se rechazó o no le interesó): preguntalo en una línea; queda registrado.'};
-    datos.interesado = a.interesado||''; datos.tel = String(a.telefono||'').replace(/[^0-9]/g,''); datos.via = a.via; datos.resultado = a.resultado; datos.prox = a.proximo_paso||''; datos.obs = a.observaciones||'';
-    resumen = 'Cargar en '+p.dir+': '+datos.interesado+' · '+datos.via+' · '+datos.resultado+(datos.prox?' · próximo paso: '+datos.prox:'')+(datos.obs?' · detalle: '+datos.obs:'');
+    datos.interesado = a.interesado||''; datos.tel = String(a.telefono||'').replace(/[^0-9]/g,''); datos.via = a.via; datos.resultado = a.resultado; datos.prox = a.proximo_paso||''; datos.obs = a.observaciones||''; datos.inmob = a.inmobiliaria||''; datos.colega = a.colega||'';
+    resumen = 'Cargar en '+p.dir+': '+datos.interesado+' · '+datos.via+' · '+datos.resultado+(datos.prox?' · próximo paso: '+datos.prox:'')+(datos.inmob?' · viene por '+datos.inmob+(datos.colega?' (colega '+datos.colega+')':''):'')+(datos.obs?' · detalle: '+datos.obs:'');
   } else if(tipo==='agendar'){
     if(!/^\d{4}-\d{2}-\d{2}$/.test(a.fecha||'') || !/^\d{1,2}:\d{2}$/.test(a.hora||'')) return {error:'Fecha u hora inválidas.'};
     datos.fecha = a.fecha; datos.hora = ('0'+a.hora.split(':')[0]).slice(-2)+':'+a.hora.split(':')[1]; datos.interesado = a.interesado||''; datos.tel = String(a.telefono||'').replace(/[^0-9]/g,''); datos.mail = a.email||''; datos.obs = a.nota||''; datos.inmob = a.inmobiliaria||''; datos.colega = a.colega||'';
@@ -921,9 +921,6 @@ function azcuValidarAccion_(tipo, a){
   var acc = {tipo:tipo, datos:datos, resumen:resumen}; if(peligro) acc.peligro = true;
   return {accion:acc};
 }
-function azcuLista_(){
-  try{ return azcuDatos_().filter(function(p){ return p.etapa!=='Vendida'; }).slice(0,400).map(function(p){ return p.id+'|'+p.dir+'|'+(p.prop||''); }).join('\n'); }catch(e){ return ''; }
-}
 function azcuSistema_(ctx){
   ctx = ctx || {};
   var hoy = Utilities.formatDate(new Date(), AZCU_TZ, 'yyyy-MM-dd'), dia = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'][new Date(Date.now()-3*3600000).getUTCDay()];
@@ -931,14 +928,14 @@ function azcuSistema_(ctx){
     'Sos Azcu, el asistente interno de Azcuénaga Inmobiliaria: cálido, confiable y atento, una casita-robot simpática. Hablás con un compañero del equipo (su nombre va al final).',
     'TONO: coloquial, cercano y con buena onda (vos, che, dale), pero prolijo. Como un colega que te da una mano. Respuestas cortas en charla normal; PERO cuando pidan listas, datos, detalle, resúmenes de la cartera, documentos faltantes, interacciones o cualquier información, dala COMPLETA: todos los ítems, sin resumir, sin recortar y sin «y N más» (si son muchos, listalos igual). Sin encabezados; podés usar **negrita** y listas con guiones.',
     'QUÉ HACÉS: respondés sobre todo lo del tablero (propiedades, etapas, documentos, propietarios, historial, encuestas, alertas) y hacés lo mismo que el bot de Telegram: cargar consultas/visitas, agendar visitas, cambiar etapas, editar precio/observaciones y enviar el reporte al propietario.',
-    'USO DE DATOS (REGLA CRÍTICA, son datos sensibles de clientes y operaciones): NUNCA inventes, supongas ni completes de memoria nombres, teléfonos, DNI, mails, precios, fechas, montos, direcciones, estados, cantidades ni resultados. Todo dato que digas tiene que salir de lo que devolvió una herramienta en esta conversación o de lo que dijo el usuario. Si no lo tenés, la herramienta no lo devolvió, vino vacío o dio error, decí claramente "no tengo ese dato" o "no figura cargado" y ofrecé buscarlo o cargarlo; no lo rellenes ni lo estimes. Si un dato es dudoso o hay varias coincidencias, preguntá antes de afirmar. No hagas cuentas de cabeza: para totales o porcentajes usá solo cifras que devolvió una herramienta o decile que use la calculadora. Si dudás de algo, decilo en vez de afirmarlo. Para consultar usá las herramientas (buscar_propiedades, ficha_propiedad, ultimas_interacciones, alertas, resumen_cartera). Si una búsqueda da varias propiedades, preguntá cuál.',
+    'USO DE DATOS (REGLA CRÍTICA): NUNCA inventes, supongas ni completes de memoria nombres, teléfonos, DNI, mails, precios, fechas, montos, direcciones, estados, cantidades ni resultados. Todo dato que digas tiene que salir de lo que devolvió una herramienta en esta conversación o de lo que dijo el usuario. Si no lo tenés, la herramienta no lo devolvió, vino vacío o dio error, decí claramente "no tengo ese dato" o "no figura cargado" y ofrecé buscarlo o cargarlo; no lo rellenes ni lo estimes. Si un dato es dudoso o hay varias coincidencias, preguntá antes de afirmar. No hagas cuentas de cabeza: para totales o porcentajes usá solo cifras que devolvió una herramienta o decile que use la calculadora. Si dudás de algo, decilo en vez de afirmarlo. Para consultar usá las herramientas (buscar_propiedades, ficha_propiedad, ultimas_interacciones, alertas, resumen_cartera).',
     'CAMBIOS: para escribir datos usá SIEMPRE las herramientas proponer_*: eso arma una tarjeta que el usuario confirma con un botón. Nunca digas que algo ya está hecho: decí que dejaste la tarjeta para confirmar. Inferí lo que puedas del mensaje y preguntá solo lo indispensable (propiedad, quién, resultado / fecha y hora).',
     'CARGA ÁGIL: NUNCA frenes la tarjeta para pedir datos opcionales (teléfono, próximo paso, mail, precio, link): armala YA; el sistema agrega solo, debajo de la tarjeta, la pregunta por los datos opcionales que faltan, no la repitas vos. Si el usuario responde con esos datos, armá una tarjeta NUEVA con TODO lo que contó antes (mensajes anteriores) más lo nuevo; si dice que no o que así está bien, decile que confirme la tarjeta, sin armar otra. OBSERVACIONES es lo más importante: es el detalle de lo que pasó. Siempre completá observaciones con TODO lo que el usuario contó (comentarios del interesado, objeciones, ofertas, impresiones, lo que quiere), fiel y sin recortar, en 1ª persona neutra; no las omitas aunque el usuario no las marque. Si no contó ningún detalle, preguntá una sola vez "¿Algún detalle de lo que pasó?" antes de armar la tarjeta. Si el usuario ya dio propiedad, quién y cómo resultó, armá la tarjeta YA. Si dice que visitó o vino, la vía es Visita. Si falta algo obligatorio (propiedad, quién, vía o resultado) preguntá SOLO eso, en una línea corta. Ejemplo: "Mendoza 7201, Marcos Tejo, le interesó" → tarjeta directa.',
     'EFICIENCIA: usá la menor cantidad de llamadas posible. Para documentos faltantes de varias propiedades usá documentos_faltantes (una sola llamada). Si necesitás varias fichas, pedilas todas juntas en la misma vuelta. Respondé directo, sin vueltas.',
-    'PROPIEDADES (id|dirección|propietario). Si el usuario nombra una que está acá y no hay ambigüedad, usá el id directo SIN buscar_propiedades; si hay 2 o más coincidencias, preguntá cuál:\n'+azcuLista_(),
+    'PROPIEDADES: no tenés la lista de la cartera. Si el sistema te da un DATO VERIFICADO o hay ficha abierta, usá ese id. Si no, resolvé la propiedad con buscar_propiedades (dirección, código o propietario). Con 2 o más coincidencias, preguntá cuál.',
     'TODO EL TABLERO: tenés acceso a todo lo que tiene el tablero. Recordatorios y agenda personal: crear_recordatorio, mis_recordatorios, cancelar_recordatorio, agenda. Consultar: resumen_semana (cómo viene la semana, por vendedor), dashboard (panel inicial), listar_propiedades (como los detalles: sin movimiento, sin visitas, con propuesta, papeles, encuestas), encuestas, ficha_propiedad (datos, precio, documentos con archivo, propietarios, historial con fila, links), captacion_formulario (todo lo cargado en el formulario de captación/precarga: "repasame el formulario de captación de X"), guia_pagina (procedimiento_ventas, generador_documentos, formulario_captacion, encuesta: leé el texto y explicalo o repasalo paso a paso fiel al contenido; si dice "parte 1 de N" y hace falta, pedí las siguientes). Enviar/compartir: abrir_enlace, enviar_whatsapp (encuesta, formulario de captación, link de la ficha de la propiedad, documento), generar_pdf (ficha de la propiedad en PDF). Cambiar: cargar visita/consulta, agendar, registrar propuesta, cambiar etapa, editar campos (precio, tipo, observaciones, URL de ficha, origen, colega, comisión, vendedor, motivo de suspensión, % de aviso, datos del propietario), marcar o borrar documentos, corregir o borrar interacciones del historial, eliminar una propiedad y enviar el reporte al propietario. Todo lo que modifica datos pasa por una tarjeta de confirmación. Si una propuesta fue aceptada, ofrecé pasar la propiedad a Reserva. Para repasar un procedimiento o formulario podés extenderte hasta ~350 palabras con pasos numerados.',
     'ENLACES: cualquier enlace (formulario de captación, encuesta, tablero, procedimiento, carpeta, ficha de la propiedad) lo das con abrir_enlace, que deja abrir, mandar por WhatsApp y copiar. Si piden "el enlace" o "el formulario de captación" para mandar a alguien, usá abrir_enlace de una, SIN pedir ID (el de captación nuevo no lleva propiedad; la encuesta sí necesita elegir la propiedad). Si piden repasar lo cargado del formulario de una propiedad existente: usá captacion_formulario, resumí lo cargado y lo que falta, y cerrá con ofrecer_ayuda con que ambos para completar datos o subir papeles. Siempre que se pueda, ofrecé mandarlo por WhatsApp.',
-    'PROPIEDAD CORRECTA: antes de proponer cualquier tarjeta de una propiedad NUESTRA (visita, consulta, propuesta, etapa, edición; NO aplica a visitas de otras inmobiliarias) resolvé la propiedad con buscar_propiedades usando la dirección que dijo el usuario y usá el id que devuelva; nunca adivines ni reutilices un id sin verificar. COINCIDENCIA DE DIRECCIÓN: una propiedad es la que el usuario nombró solo si coinciden la calle Y el número (o el código). Si coincide solo el número o solo la calle, NO es esa: decí que no encontrás esa dirección y preguntá si se refería a una de las parecidas, nombrándolas con su dirección completa. Al responder citá siempre la dirección tal como figura en la lista o en lo que devolvió la herramienta, nunca la que escribió el usuario, y nunca uses la lista de PROPIEDADES para dar por buena una dirección que no coincide del todo. Si el usuario corrige la dirección o un dato, volvé a buscar y armá una tarjeta nueva con lo corregido (las tarjetas pendientes anteriores quedan sin efecto).',
+    'PROPIEDAD CORRECTA: antes de proponer cualquier tarjeta de una propiedad NUESTRA (visita, consulta, propuesta, etapa, edición; NO aplica a visitas de otras inmobiliarias) resolvé la propiedad con buscar_propiedades usando la dirección que dijo el usuario (o usá el DATO VERIFICADO / la ficha abierta) y usá solo ese id; nunca adivines ni reutilices un id sin verificar. COINCIDENCIA DE DIRECCIÓN: una propiedad es la que el usuario nombró solo si coinciden la calle Y el número (o el código). Si coincide solo el número o solo la calle, NO es esa: decí que no encontrás esa dirección y preguntá si se refería a una de las parecidas, nombrándolas con su dirección completa. Al responder citá siempre la dirección tal como figura en la lista o en lo que devolvió la herramienta, nunca la que escribió el usuario, y nunca uses la lista de PROPIEDADES para dar por buena una dirección que no coincide del todo. Si el usuario corrige la dirección o un dato, volvé a buscar y armá una tarjeta nueva con lo corregido, conservando todo lo ya contado (las tarjetas pendientes anteriores quedan sin efecto). CORRECCIONES: una frase corta como «no, 54000», «en realidad…», «ponele que…» corrige la tarjeta anterior: armá la tarjeta nueva, NUNCA muestres la ficha. Si se arrepiente («dejalo», «mejor no», «olvidate»), NO armes otra tarjeta: decile que simplemente no confirme la anterior y queda sin efecto. Si dice «la otra», «esa» o similar y hay más de una posible, preguntá cuál; no adivines. UNA SOLA TARJETA POR PEDIDO: una visita a una propiedad nuestra que viene por otra inmobiliaria va en proponer_cargar_interaccion o proponer_agendar_visita con inmobiliaria y colega; proponer_visita_externa es solo para propiedades que NO son nuestras.',
     'AVISO A OTRA PERSONA: si piden avisarle/recordarle algo a una persona concreta ("decile a Marcos que mañana vaya a…"), usá proponer_aviso_persona con el nombre, el mensaje y cuándo. Si piden que lo repita/insista/"porque se olvidan", poné repetir_cada_min (preguntá cada cuánto si no lo dijeron; sugerí 60). Se repite hasta que la persona lo marque como hecho. Si no dicen cuándo, preguntá la hora.',
     'AVISOS AL EQUIPO: si piden avisar, notificar o mandar una alerta a todos/al equipo/al grupo, usá proponer_aviso_equipo con el mensaje redactado claro y corto (sin inventar datos). Nunca lo mandes sin que quede la tarjeta para confirmar.',
     'COLABORATIVO: sos un asistente que ayuda de verdad, con buena onda. Cuando mostrés papeles o datos del formulario que faltan, ofrecé ayuda con una frase breve ("pasame una foto o un PDF y lo subo yo" / "si querés completamos juntos lo que falta") y dejá los botones con ofrecer_ayuda. Ofrecelo una sola vez por charla, sin insistir. Para crear una captación nueva no la armes vos: pasá el link del formulario de captación (abrir_enlace o enviar_whatsapp).',
@@ -1029,6 +1026,8 @@ function azcuChat(pin, mensajes, ctx){
   var tools = azcuTools_(), acciones = [], adj = [], panel = null, i;
   var mapa = {proponer_cargar_interaccion:'cargar', proponer_agendar_visita:'agendar', proponer_visita_externa:'visitaext', proponer_cancelar_visita:'cancelvis', proponer_restaurar:'restaurar', proponer_registrar_propuesta:'propuesta', proponer_cambiar_etapa:'etapa', proponer_editar_campos:'campos', proponer_marcar_documento:'doc', proponer_borrar_documento:'borrardoc', proponer_editar_interaccion:'editarint', proponer_eliminar_interaccion:'elimint', proponer_eliminar_propiedad:'elimprop', proponer_enviar_reporte:'reporte'};
   var directo = null, ult = (mensajes||[]).length ? mensajes[mensajes.length-1] : null, esAcc = !!(ult && /carg|agend|registr|propuesta|cambi|pas[aá] a|edit|borr|elimin|marc|sub[ií]|envi|mand|record|avis|visita|document|papeles|falta|cu[aá]nto|cu[aá]ndo|qui[eé]n|tel[eé]fono|mail|historial|interacci/i.test(String(ult.content||'')) && !/^(info|datos|ficha|contame)/i.test(String(ult.content||'').trim()));
+  var txU = String((ult && ult.content)||''), pideFicha = /info|datos|ficha|contame|cont[aá] de|completo|detalle|mostr[aá]|pasame|todo (de|sobre)/i.test(txU) || (txU.split(/\s+/).length<=6 && pedUlt.length>0);
+  if(!pideFicha) esAcc = true;
   function fin(t){ return {texto:t, acciones:acciones, adjuntos:adj, panel:panel}; }
   for(i=0;i<8;i++){
     azcuProg_(ctx, i===0 ? 'Pensando…' : 'Armando la respuesta…');
@@ -1179,7 +1178,7 @@ function azcuEjecutar_(pin, accion){
   azcuLimpiarCache_();
   if(tipo==='cargar'){
     if(AZCU_VIAS.indexOf(d.via)<0 || AZCU_RESULTADOS.indexOf(d.resultado)<0) throw new Error('Datos inválidos');
-    registrarInteraccion(p.id, {fecha:hoy, via:d.via, interesado:d.interesado, tel:d.tel, resultado:d.resultado, prox:d.prox, obs:d.obs, vendedor:(p.vendedor||quien), cargo:quien});
+    registrarInteraccion(p.id, {fecha:hoy, via:d.via, interesado:d.interesado, tel:d.tel, resultado:d.resultado, prox:d.prox, obs:d.obs, inmob:d.inmob||'', colega:d.colega||'', vendedor:(p.vendedor||quien), cargo:quien});
     return {ok:true, mensaje:'Listo, quedó cargado en el historial de '+p.dir+'.'};
   }
   if(tipo==='agendar'){
@@ -2695,6 +2694,64 @@ function azcuTgProbar(){
   ks.forEach(function(k){ Logger.log(k+' → '+azcuTgApi_('sendMessage', {chat_id:mapa[k], text:'🔔 Prueba de avisos de Azcu. Si ves esto, Telegram funciona.', reply_markup:{inline_keyboard:[[{text:'👉 Abrir Azcu', url:AZCU_WEB}]]}}).code); });
 }
 
+function azcuProbarChat(){
+  var pin = PropertiesService.getScriptProperties().getProperty('AZCU_PIN'), ds = azcuDatos_().filter(function(p){ return p.det && p.det.calle && p.det.numero && p.prop; });
+  if(!ds.length) { Logger.log('No hay propiedades con calle, número y propietario.'); return; }
+  var a = ds[0], b = ds[Math.min(1, ds.length-1)], out = [];
+  function run(titulo, msgs, ctx){
+    var t = Date.now(), r;
+    try{ r = azcuChat(pin, msgs, ctx||{nombre:'Prueba'}); }catch(e){ r = {texto:'ERROR: '+e.message, acciones:[]}; }
+    out.push('== '+titulo+' ('+(Date.now()-t)+' ms)\nPregunta: '+msgs[msgs.length-1].content+'\nRespuesta: '+String(r.texto||'').slice(0,500)+'\nTarjetas: '+((r.acciones||[]).map(function(x){ return x.tipo+' → '+x.resumen; }).join(' | ')||'ninguna'));
+    return r;
+  }
+  var m1 = a.dir+', Marcos Tejo, le interesó', r1 = run('1 Carga normal', [{role:'user', content:m1}]);
+  run('2 Corrección', [{role:'user', content:m1}, {role:'assistant', content:r1.texto||''}, {role:'user', content:'no, en realidad no le interesó, le pareció caro'}]);
+  run('3 Dirección parecida (número cambiado)', [{role:'user', content:'¿cuánto sale '+a.det.calle+' '+(parseInt(a.det.numero,10)+1)+'?'}]);
+  run('4 Por propietario', [{role:'user', content:'¿qué propiedad tiene '+String(a.prop).split(/[ ,]+/)[0]+'?'}]);
+  run('5 Con ficha abierta', [{role:'user', content:'¿cuánto sale?'}], {nombre:'Prueba', fichaId:b.id});
+  Logger.log('Ficha abierta en la prueba 5: '+b.dir+'\n\n'+out.join('\n\n'));
+}
+function azcuProbarChatDificil(){
+  var pin = PropertiesService.getScriptProperties().getProperty('AZCU_PIN'), ds = azcuDatos_().filter(function(p){ return p.det && p.det.calle && p.det.numero && p.prop && p.etapa!=='Vendida'; });
+  if(ds.length<2){ Logger.log('Hacen falta al menos 2 propiedades.'); return; }
+  var A = ds[0].dir, B = ds[1].dir, out = [];
+  var convs = [
+    {t:'A Correcciones encadenadas', pasos:[
+      ['Visité '+A+' con Marcos Tejo, le interesó', 'Tarjeta de visita en A, Le interesó'],
+      ['no pará, me equivoqué, era '+B, 'Tarjeta NUEVA en B (no en A)'],
+      ['y en realidad no le interesó, dijo que está caro', 'Tarjeta en B, No le interesó, motivo precio'],
+      ['ponele que vino por la inmobiliaria Bertollo, el colega es Lucía', 'Tarjeta en B con inmobiliaria Bertollo y colega Lucía, manteniendo lo anterior']]},
+    {t:'B Repreguntas', pasos:[
+      ['¿cuánto sale '+A+'?', 'Precio de A'],
+      ['¿y quién es el dueño?', 'Dueño de A (sin que lo nombre otra vez)'],
+      ['pasame el teléfono', 'Teléfono del dueño de A'],
+      ['y la otra?', 'Debe preguntar cuál es "la otra" o aclarar, NO inventar'],
+      ['la de '+B, 'Datos de B']]},
+    {t:'C Charla como IA común / fuera de tema', pasos:[
+      ['¿qué opinás, conviene bajarle el precio a '+A+'?', 'Opinión breve usando datos reales, sin inventar números'],
+      ['explicame cómo funciona una hipoteca UVA', 'Reorientar con simpatía o respuesta muy breve; no hacer un tratado'],
+      ['escribime un mail para un cliente que no me contesta hace una semana', 'Debe poder ayudar o reorientar, sin crear tarjetas ni enviar nada'],
+      ['gracias, sos un genio', 'Respuesta corta y simpática']]},
+    {t:'D Edición y arrepentimiento', pasos:[
+      ['cambiale el precio de '+A+' a 45000', 'Tarjeta de editar precio en A = 45000'],
+      ['no, perdón, 54000', 'Tarjeta NUEVA con 54000 (la anterior queda sin efecto)'],
+      ['mejor dejalo como estaba', 'NO debe armar tarjeta de cambio; debe decir que no hace falta confirmar nada']]},
+    {t:'E Dos pedidos en uno', pasos:[
+      ['pasá '+A+' a reserva y agendá una visita en '+B+' mañana a las 10 con Laura', 'DOS tarjetas: etapa en A y visita en B']]}
+  ];
+  convs.forEach(function(cv){
+    var hist = [];
+    out.push('######## '+cv.t);
+    cv.pasos.forEach(function(pa, i){
+      hist.push({role:'user', content:pa[0]});
+      var t = Date.now(), r;
+      try{ r = azcuChat(pin, hist.slice(), {nombre:'Prueba'}); }catch(e){ r = {texto:'ERROR: '+e.message, acciones:[]}; }
+      hist.push({role:'assistant', content:String(r.texto||'')});
+      out.push((i+1)+') '+pa[0]+'  ['+(Date.now()-t)+' ms]\n   Esperado: '+pa[1]+'\n   Respuesta: '+String(r.texto||'').replace(/\n+/g,' / ').slice(0,350)+'\n   Tarjetas: '+((r.acciones||[]).map(function(x){ return x.tipo+' → '+x.resumen; }).join(' | ')||'ninguna'));
+    });
+  });
+  Logger.log('A='+A+'  B='+B+'\n\n'+out.join('\n'));
+}
 function azcuProbarVenta(nombre){
   var n = String(nombre||'Ariel Jaime'), d = azcuDestinos_(n, true), url = AZCU_WEB+'?go=novedades';
   Logger.log('Para equipo → '+azcuPush_('🧪 PRUEBA · ✅ Analía marcó como VENDIDA', 'Av. Francia 252 (venta simulada)', url, d.slice(), true, true));
