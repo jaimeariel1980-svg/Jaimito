@@ -2833,13 +2833,13 @@ function BANCO_TPL(dataJSON, empresasJSON, desde){
 header{background:var(--violet);color:#fff;padding:16px 20px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:10;flex-wrap:wrap}
 header img{height:34px}header h1{font-size:18px;font-weight:800}
 .nav{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap}
-.nav button{padding:8px 16px;border-radius:99px;font-size:12px;font-weight:700;color:#243D2C;background:#F9E7A0;border:none;cursor:pointer;font-family:var(--font)}
+.nav button{padding:8px 16px;border-radius:8px;font-size:12px;font-weight:700;color:#243D2C;background:#F9E7A0;border:none;cursor:pointer;font-family:var(--font)}
 .filtros{padding:14px 16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;background:#fff;border-bottom:1px solid var(--line)}
 .fwrap{position:relative;display:inline-block}
 .fwrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);opacity:.4;pointer-events:none}
 .filtros input,.filtros select{padding:10px;border:1px solid var(--line);border-radius:8px;font-family:var(--font);font-size:13px;background:#fff}
 .fwrap input{padding-left:30px}
-.filtros button{padding:10px 14px;border:1px solid var(--line);border-radius:99px;background:#fff;cursor:pointer;font-family:var(--font);font-size:13px}
+.filtros button{padding:10px 14px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer;font-family:var(--font);font-size:13px}
 .wrap{padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
 .p{background:#fff;border:1px solid var(--line);border-left:5px solid #5BB5A5;border-radius:16px;padding:14px;cursor:pointer}
 .p:hover{box-shadow:0 2px 10px rgba(0,0,0,.08)}
