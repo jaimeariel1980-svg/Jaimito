@@ -164,13 +164,46 @@
       d.innerHTML=L.length?'<table style="width:100%;border-collapse:collapse;font-size:12px">'+L.map(function(r){return '<tr style="border-bottom:1px solid #eee"><td style="padding:6px 4px;white-space:nowrap;color:#666">'+esc(r.fecha)+'</td><td style="padding:6px 4px"><b>'+esc(r.usuario)+'</b></td><td style="padding:6px 4px">'+esc(r.evento)+'</td><td style="padding:6px 4px;color:#666">'+esc(r.detalle)+'</td></tr>';}).join('')+'</table>':'<div class="cf-help">Todavía no hay accesos registrados.</div>';
     }).withFailureHandler(function(e){d.innerHTML='<div style="color:#B91C1C">'+esc(badPin(e))+'</div>';}).listarAccesos();
   };
+  window.adMedir=function(b){
+    var id=document.getElementById('adVelSel').value,d=document.getElementById('adVel');if(!id)return;
+    b.disabled=true;b.textContent='Midiendo…';var rtts=[];
+    function fin(){b.disabled=false;b.textContent='⏱ Medir';}
+    function ping(k){
+      if(k===3)return servidor();
+      d.innerHTML='<div class="cf-help">Midiendo la conexión ('+(k+1)+'/3)…</div>';var t=Date.now();
+      google.script.run.withSuccessHandler(function(){rtts.push(Date.now()-t);ping(k+1);}).withFailureHandler(function(e){fin();d.innerHTML='<div style="color:#B91C1C">'+esc(badPin(e))+'</div>';}).yo();
+    }
+    function servidor(){
+      d.innerHTML='<div class="cf-help">Midiendo la planilla paso a paso…</div>';
+      google.script.run.withSuccessHandler(function(r){real(r);}).withFailureHandler(function(e){fin();d.innerHTML='<div style="color:#B91C1C">'+esc(badPin(e))+'</div>';}).diagnosticoVelocidad(id);
+    }
+    function real(r){
+      d.innerHTML='<div class="cf-help">Midiendo la apertura completa…</div>';var t=Date.now();
+      google.script.run.withSuccessHandler(function(h){var ms=Date.now()-t;fin();pintar(r,ms,h?Math.round(String(h).length/1024):0);}).withFailureHandler(function(e){fin();pintar(r,0,0);}).pagina({tipo:'kanban',perfil:id});
+    }
+    function pintar(r,msReal,kbReal){
+      var prom=Math.round(rtts.reduce(function(a,c){return a+c;},0)/rtts.length);
+      var x='<table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:10px">';
+      x+='<tr style="border-bottom:1px solid #eee"><td style="padding:7px 4px"><b>Conexión con Google</b> (ida y vuelta, promedio de 3)</td><td style="text-align:right"><b>'+prom+' ms</b></td></tr>';
+      r.pasos.forEach(function(p){x+='<tr style="border-bottom:1px solid #eee"><td style="padding:7px 4px">'+esc(p.n)+'</td><td style="text-align:right">'+p.ms+' ms</td></tr>';});
+      x+='<tr style="border-bottom:1px solid #eee"><td style="padding:7px 4px"><b>Total en el servidor</b></td><td style="text-align:right"><b>'+r.total+' ms</b></td></tr>';
+      x+='<tr><td style="padding:7px 4px"><b>Abrir el tablero, de punta a punta</b> (lo que esperás vos'+(kbReal?' · página de '+kbReal+' KB':'')+')</td><td style="text-align:right"><b>'+msReal+' ms</b></td></tr></table>';
+      x+='<div class="cf-help" style="margin-top:8px">Se suma además la carga del programa y de las fuentes en el navegador. Mandame una captura de esta tabla y veo qué conviene mejorar.</div>';
+      d.innerHTML=x;
+    }
+    ping(0);
+  };
   function render(tab){
-    var T=[['nueva','➕ Nueva búsqueda'],['usr','👥 Usuarios'],['copia','💾 Copia de seguridad'],['acc','📜 Accesos']];
+    var T=[['nueva','➕ Nueva búsqueda'],['usr','👥 Usuarios'],['copia','💾 Copia de seguridad'],['acc','📜 Accesos'],['vel','⏱ Velocidad']];
     var x='<h2>⚙ Administración</h2><div class="cf-help" style="margin:0 0 6px">Lo que no depende de una búsqueda en particular.</div><div class="cf-tabs">'+T.map(function(t){return '<button class="cf-tab'+(t[0]===tab?' on':'')+'" onclick="adTab(\''+t[0]+'\')">'+t[1]+'</button>';}).join('')+'</div>';
     if(tab==='nueva')x+=nbHtml();
     if(tab==='usr')x+='<div class="cf-help">Quién puede entrar. Los <b>administradores</b> configuran las búsquedas y manejan los usuarios; los <b>usuarios</b> trabajan con los candidatos. Por ahora se entra solo con nombre y apellido (sin PIN): escribí el nombre completo como lo va a poner la persona.</div><div id="cfUsr">Cargando…</div><div class="cf-foot"><button class="cf-close" onclick="adCerrar()">Cerrar</button></div>';
     if(tab==='copia')x+='<div id="adCopia">Cargando…</div><div class="cf-foot"><button class="cf-close" onclick="adCerrar()">Cerrar</button></div>';
     if(tab==='acc')x+='<div class="cf-help">Los últimos ingresos y cambios de usuarios.</div><div id="adAcc">Cargando…</div><div class="cf-foot"><button class="cf-close" onclick="adCerrar()">Cerrar</button></div>';
+    if(tab==='vel'){
+      var opts=(typeof DATOS!=='undefined'?DATOS:[]).map(function(b){return '<option value="'+esc(b.id)+'">'+esc(b.nombre)+(b.cerrada?' (cerrada)':'')+'</option>';}).join('');
+      x+='<div class="cf-help">Mide cuánto tarda en abrirse el tablero de una búsqueda y <b>en qué paso se va el tiempo</b>: la conexión con Google, la lectura de la planilla y el armado de la página. Sirve para saber qué mejorar. Tarda unos segundos.</div><label>Búsqueda</label><select id="adVelSel">'+opts+'</select><div class="cf-foot" style="justify-content:flex-start"><button class="cf-save" onclick="adMedir(this)">⏱ Medir</button></div><div id="adVel"></div><div class="cf-foot"><button class="cf-close" onclick="adCerrar()">Cerrar</button></div>';
+    }
     document.getElementById('cfBox').innerHTML=x;
     if(tab==='usr')cfUsuarios();if(tab==='copia')adCopia();if(tab==='acc')adAccesos();
   }

@@ -37,11 +37,13 @@ function inicioDatos_() {
 
 function inicioHTML_() {
   const datos = inicioDatos_();
-  let html = HtmlService.createHtmlOutputFromFile('InicioPagina').getContent();
-  const admin = HtmlService.createHtmlOutputFromFile('AdminPanel').getContent();
-  html = html.replace('/*DATOS*/[]', () => JSON.stringify(datos).replace(/</g, '\\u003c'))
-    .replace('/*URL*/""', () => JSON.stringify(URL_BASE()))
-    .replace('/*LOGO*/""', () => JSON.stringify(LOGO_BLUMIA_))
+  // getRawContent: el HTML tal cual está en el archivo (createHtmlOutputFromFile le saca los comentarios y no se podrían reemplazar los marcadores)
+  let html = HtmlService.createTemplateFromFile('InicioPagina').getRawContent();
+  const admin = HtmlService.createTemplateFromFile('AdminPanel').getRawContent();
+  html = html.replace('%%DATOS%%', () => JSON.stringify(datos).replace(/</g, '\\u003c'))
+    .replace('%%URL%%', () => JSON.stringify(URL_BASE()))
+    .replace('%%LOGO%%', () => JSON.stringify(LOGO_BLUMIA_))
+    .replace('%%ASSETS%%', () => JSON.stringify(INICIO_ASSETS_))
     .replace('</body>', () => admin + '</body>');
   return HtmlService.createHtmlOutput(html).setTitle('Blumia · Inicio')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
@@ -58,4 +60,24 @@ function listarAccesos_() {
     fecha: r[0] instanceof Date ? Utilities.formatDate(r[0], 'America/Argentina/Buenos_Aires', 'dd/MM HH:mm') : String(r[0]),
     usuario: String(r[1] || ''), evento: String(r[2] || ''), detalle: String(r[3] || '')
   }));
+}
+
+// ⏱ Velocidad (Administración): cuánto tarda cada paso de armar el tablero de una búsqueda, para saber dónde se va el tiempo
+function diagnosticoVelocidad_(perfilId) {
+  const pasos = [], t0 = Date.now();
+  let t = t0;
+  const lap = n => { const x = Date.now(); pasos.push({ n: n, ms: x - t }); t = x; };
+  CFG_MEMO_ = {};
+  let filas = 0, kb = 0;
+  try {
+    configValores_(); lap('Leer la pestaña Config');
+    const cfg = getConfig(perfilId), sh = getSheet(cfg); lap('Abrir la pestaña de candidatos');
+    const d = sh.getDataRange().getValues(); filas = d.length - 1; lap('Leer los candidatos (' + filas + ' filas)');
+    if (filas > 0) { [11, 13, 15, 17, 21, 31, 33].forEach(c => linksColumna_(sh, c, filas)); idsCVColumna_(sh, 8, filas, d.slice(1).map(r => r[7])); }
+    lap('Leer los links de cada candidato (8 columnas)');
+    ultimosMovimientos_(sh.getName()); lap('Leer el historial de movimientos');
+    previosDeFilas_(perfilId, d.slice(1)); lap('Buscar si ya se postularon a otra búsqueda');
+    kb = Math.round(kanbanHTML_(perfilId).getContent().length / 1024); lap('Armar el tablero completo (incluye lo anterior)');
+  } finally { CFG_MEMO_ = null; }
+  return { pasos: pasos, total: Date.now() - t0, filas: filas, kb: kb };
 }
