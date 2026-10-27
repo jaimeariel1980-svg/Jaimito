@@ -2692,6 +2692,23 @@ function azcuTgProbar(){
   ks.forEach(function(k){ Logger.log(k+' → '+azcuTgApi_('sendMessage', {chat_id:mapa[k], text:'🔔 Prueba de avisos de Azcu. Si ves esto, Telegram funciona.', reply_markup:{inline_keyboard:[[{text:'👉 Abrir Azcu', url:AZCU_WEB}]]}}).code); });
 }
 
+function azcuProbarChat(){
+  var pin = PropertiesService.getScriptProperties().getProperty('AZCU_PIN'), ds = azcuDatos_().filter(function(p){ return p.det && p.det.calle && p.det.numero && p.prop; });
+  if(!ds.length) { Logger.log('No hay propiedades con calle, número y propietario.'); return; }
+  var a = ds[0], b = ds[Math.min(1, ds.length-1)], out = [];
+  function run(titulo, msgs, ctx){
+    var t = Date.now(), r;
+    try{ r = azcuChat(pin, msgs, ctx||{nombre:'Prueba'}); }catch(e){ r = {texto:'ERROR: '+e.message, acciones:[]}; }
+    out.push('== '+titulo+' ('+(Date.now()-t)+' ms)\nPregunta: '+msgs[msgs.length-1].content+'\nRespuesta: '+String(r.texto||'').slice(0,500)+'\nTarjetas: '+((r.acciones||[]).map(function(x){ return x.tipo+' → '+x.resumen; }).join(' | ')||'ninguna'));
+    return r;
+  }
+  var m1 = a.dir+', Marcos Tejo, le interesó', r1 = run('1 Carga normal', [{role:'user', content:m1}]);
+  run('2 Corrección', [{role:'user', content:m1}, {role:'assistant', content:r1.texto||''}, {role:'user', content:'no, en realidad no le interesó, le pareció caro'}]);
+  run('3 Dirección parecida (número cambiado)', [{role:'user', content:'¿cuánto sale '+a.det.calle+' '+(parseInt(a.det.numero,10)+1)+'?'}]);
+  run('4 Por propietario', [{role:'user', content:'¿qué propiedad tiene '+String(a.prop).split(/[ ,]+/)[0]+'?'}]);
+  run('5 Con ficha abierta', [{role:'user', content:'¿cuánto sale?'}], {nombre:'Prueba', fichaId:b.id});
+  Logger.log('Ficha abierta en la prueba 5: '+b.dir+'\n\n'+out.join('\n\n'));
+}
 function azcuProbarVenta(nombre){
   var n = String(nombre||'Ariel Jaime'), d = azcuDestinos_(n, true), url = AZCU_WEB+'?go=novedades';
   Logger.log('Para equipo → '+azcuPush_('🧪 PRUEBA · ✅ Analía marcó como VENDIDA', 'Av. Francia 252 (venta simulada)', url, d.slice(), true, true));
