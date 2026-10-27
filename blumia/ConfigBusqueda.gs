@@ -6,7 +6,7 @@ function getConfigBusqueda_(pin, perfilId) {
   const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
   const datos = {};
   CFG_CAMPOS_.forEach(k => { datos[k] = typeof cfg[k] === 'string' ? cfg[k] : (cfg[k] == null ? '' : String(cfg[k])); });
-  return { datos: datos, prompt_extra: String(cfg.prompt_extra || ''), preguntas: getPreguntasPostulacion(perfilId), plantillas: listarPlantillas_(ss, perfilId) };
+  return { perfil: perfilPuestoInfo_(cfg), datos: datos, prompt_extra: String(cfg.prompt_extra || ''), preguntas: getPreguntasPostulacion(perfilId), plantillas: listarPlantillas_(ss, perfilId) };
 }
 
 function guardarConfigBusqueda_(pin, perfilId, p, quien) {
