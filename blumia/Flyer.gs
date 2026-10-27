@@ -52,7 +52,7 @@ function flyerDatos_(perfilId) {
 function flyerHTML_(perfilId) {
   const datos = flyerDatos_(perfilId);
   const js = o => JSON.stringify(o).replace(/</g, '\\u003c');
-  let html = HtmlService.createTemplateFromFile('Flyer').getRawContent();
+  let html = HtmlService.createTemplateFromFile('FlyerPagina').getRawContent();
   const lib = HtmlService.createTemplateFromFile('FlyerQRLib').getRawContent();
   html = html.replace('%%QRLIB%%', () => lib).replace('%%ASSETS%%', () => js(FLYER_ASSETS_)).replace('%%DATOS%%', () => js(datos));
   return HtmlService.createHtmlOutput(html).setTitle('Flyer · ' + datos.puesto + ' | Blumia')
