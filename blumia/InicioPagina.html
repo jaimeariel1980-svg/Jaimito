@@ -4,7 +4,8 @@
 :root{--deep:#0D3F29;--green:#243D2C;--glight:#E3EEDC;--bg:#F3F8F1;--line:#D5E0CE;--cream:#FBE794;--pink:#F9BDBB;--teal:#5BB5A5;--font:'Poppins',sans-serif}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--font);background:var(--bg);color:#1A1A1A;font-size:14px}
-.hero{background:var(--deep);color:#fff;position:relative;overflow:hidden;padding:20px 28px 34px;min-height:300px}
+.hero{background:var(--deep);color:#fff;position:relative;overflow:hidden;padding:20px 0 34px;min-height:300px}
+.in{max-width:1100px;margin:0 auto;padding:0 28px;position:relative}
 .top{display:flex;align-items:center;justify-content:space-between;position:relative;z-index:2}
 .top img{height:38px}
 .top .r{display:flex;gap:10px;align-items:center;position:relative}
@@ -28,13 +29,15 @@ body{font-family:var(--font);background:var(--bg);color:#1A1A1A;font-size:14px}
 .cta .pri{background:var(--cream);color:var(--deep);border:none}.cta .pri:hover{background:#f6dc72}
 .cta .sec{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.55)}.cta .sec:hover{background:rgba(255,255,255,.14)}
 .sq{position:absolute;z-index:1;pointer-events:none}
-.s2{right:-70px;top:50%;transform:translateY(-50%);height:320px;opacity:.7}
+.s2{right:-70px;top:calc(50% + 26px);transform:translateY(-50%);height:270px;opacity:.7}
 body{overflow-x:hidden}
-main{max-width:1100px;margin:0 auto;padding:26px 18px 50px}
+main{max-width:1100px;margin:0 auto;padding:30px 28px 50px}
 .emp{margin-bottom:30px}
 .emp h2{font-size:18px;font-weight:800;color:var(--deep);margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.emp h2{flex-wrap:wrap}.emp h2 span{white-space:nowrap}
+.emp h2 span.gr{background:#E6E8E4;color:#666}
 .emp h2 span{background:var(--cream);color:var(--deep);border-radius:14px;padding:3px 12px;font-size:12px;font-weight:700}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
 .card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px;cursor:pointer;display:flex;gap:14px;align-items:center;transition:.15s}
 .card:hover{box-shadow:0 8px 22px rgba(13,63,41,.16);transform:translateY(-2px);border-color:var(--deep)}
 .card img{width:54px;height:54px;border-radius:14px;flex:none}
@@ -48,14 +51,16 @@ main{max-width:1100px;margin:0 auto;padding:26px 18px 50px}
 details.cerr{margin-top:12px}details.cerr summary{cursor:pointer;color:#666;font-weight:700;margin:4px 0 12px}
 .vacio{background:#fff;border:1px dashed var(--line);border-radius:18px;padding:34px;text-align:center;color:#666}
 footer{text-align:center;color:#888;font-size:12px;padding:10px 0 30px}
-@media(max-width:640px){.hero{padding:16px 16px 28px;min-height:260px}.ht{margin-top:26px}.ht h1{font-size:26px}.s2{right:-80px;top:auto;bottom:10px;transform:none;height:230px;opacity:.3}.stats{gap:20px}.cta button,.cta a{flex:1 1 100%;text-align:center}.grid{grid-template-columns:1fr}.top img{height:32px}}
+@media(max-width:640px){.hero{padding:16px 16px 28px;min-height:260px}.ht{margin-top:26px}.ht h1{font-size:26px}.s2{right:-80px;top:auto;bottom:10px;transform:none;height:230px;opacity:.22}.stats{gap:20px}.cta button,.cta a{flex:1 1 100%;text-align:center}.grid{grid-template-columns:1fr}.top img{height:32px}}
 </style></head><body>
 <section class="hero">
   <img class="sq s2" id="s2" alt="">
+  <div class="in">
   <div class="top"><img id="lg" alt="Blumia"><div class="r"><button class="gear" id="gear" title="Administración" onclick="menuAdm(event)">⚙</button><div class="menu" id="menu"></div><button class="avt" id="quienBtn" onclick="blMenuUsuario()">·</button></div></div>
   <div class="ht"><div class="hi" id="hola">Hola</div><h1>Atracción y Elección</h1><p>Elegí una búsqueda para ver a sus candidatos.</p>
     <div class="stats"><div><b id="stA">0</b><span>búsquedas abiertas</span></div><div><b id="stC">0</b><span>candidatos</span></div></div>
     <div class="cta" id="cta"></div></div>
+  </div>
 </section>
 <main>
   <div id="lista"></div>
@@ -90,9 +95,8 @@ var por={};DATOS.forEach(function(b){(por[b.empresa]=por[b.empresa]||[]).push(b)
 var h='';
 Object.keys(por).sort().forEach(function(emp,ix){k=ix;
   var ab=por[emp].filter(function(b){return !b.cerrada;}),ce=por[emp].filter(function(b){return b.cerrada;});
-  h+='<div class="emp"><h2>'+esc(emp)+'<span>'+ab.length+' abierta'+(ab.length===1?'':'s')+'</span></h2>'
-    +(ab.length?'<div class="grid">'+ab.map(tarjeta).join('')+'</div>':'<div style="color:#666">No hay búsquedas abiertas.</div>')
-    +(ce.length?'<details class="cerr"><summary>Cerradas ('+ce.length+')</summary><div class="grid">'+ce.map(tarjeta).join('')+'</div></details>':'')+'</div>';
+  h+='<div class="emp"><h2>'+esc(emp)+'<span>'+ab.length+' abierta'+(ab.length===1?'':'s')+'</span>'+(ce.length?'<span class="gr">'+ce.length+' cerrada'+(ce.length===1?'':'s')+'</span>':'')+'</h2>'
+    +'<div class="grid">'+ab.concat(ce).map(tarjeta).join('')+'</div></div>';
 });
 document.getElementById('lista').innerHTML=h||'<div class="vacio">Todavía no hay búsquedas.'+(esAdmin?' Creá la primera con «➕ Nueva búsqueda».':'')+'</div>';
 }
