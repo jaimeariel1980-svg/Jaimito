@@ -78,10 +78,24 @@ function getDatosPerfil_(perfilId) {
   };
 }
 
+// Un link sin «perfil» no cae en ninguna búsqueda por defecto: se avisa que está incompleto
+function perfilObligatorio_(p) {
+  const v = String(p || '').trim();
+  if (!v) throw new Error('El link está incompleto: falta indicar la búsqueda.');
+  return v;
+}
+
+function linkIncompleto_() {
+  return HtmlService.createHtmlOutput('<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Link incompleto | Blumia</title><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"></head><body style="margin:0;background:#F3F8F1;font-family:Poppins,sans-serif;color:#243D2C;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;box-sizing:border-box"><div style="max-width:460px;text-align:center;background:#fff;border-radius:16px;padding:36px 28px;box-shadow:0 4px 18px rgba(36,61,44,.12)"><h2 style="margin:0 0 10px">Este link está incompleto</h2><p style="margin:0;line-height:1.5;font-size:14px">Falta indicar de qué búsqueda se trata. Pedí el link de nuevo a quien te lo envió o escribí a <b>empleos@blumiaconsulting.com</b>.</p></div></body></html>')
+    .setTitle('Link incompleto | Blumia').addMetaTag('viewport', 'width=device-width, initial-scale=1').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+}
+
 function doGetPagina_(e) {
   const tipo = e?.parameter?.tipo;
-  const perfil = e?.parameter?.perfil || 'operaciones';
+  const perfil = e?.parameter?.perfil || '';
   let template, titulo;
+  const tipoQuePideBusqueda = ['competencias', 'postulacion', 'kanban', 'flyer', 'perfilpuesto', 'pdfcliente', 'informe', 'procesohtml'].indexOf(tipo) >= 0 || (!tipo && !!e?.parameter?.nombre);
+  if (!perfil && tipoQuePideBusqueda) return linkIncompleto_();
 
   if (tipo === 'competencias') {
     template = HtmlService.createTemplateFromFile('Index');
@@ -143,7 +157,7 @@ function doGetPagina_(e) {
   } else if (tipo === 'flyer') {
     return flyerHTML_(perfil);
   } else if (tipo === 'procesohtml') {
-    let empProceso = 'MACS';
+    let empProceso = empresaDefault_();
     try { if (e.parameter.perfil) empProceso = empresaKey_(getConfig(e.parameter.perfil)); } catch (err) { }
     generarInformeProceso(empProceso);
     completarProcesoIA(empProceso);
@@ -339,7 +353,7 @@ REGLAS:
 
 function procesarScreening_(data) {
   QUIEN_ = String(data.entrevistador || '');
-  const cfg = getConfig(data.perfil || 'operaciones');
+  const cfg = getConfig(perfilObligatorio_(data.perfil));
   const sheet = getSheet(cfg);
   const rows = sheet.getDataRange().getValues();
   const norm = s => s.toString().toLowerCase().trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ');
@@ -366,7 +380,7 @@ function procesarScreening_(data) {
   sheet.getRange(fila, 26).setValue('DEBUG resultado=' + data.resultado);
   registrarHistorial_(sheet.getName(), sheet.getRange(fila, 2).getValue(), data.editar ? 'Screening editado' : 'Screening', (data.editar ? (notaAntesScr || '—') + ' → ' + data.resultado : 'Formulario guardado · resultado ' + data.resultado) + (data.entrevistador ? ' · entrevistó ' + data.entrevistador : ''));
   if (!data.editar || aplicarEdicion_(sheet, fila, 'screening', notaAntesScr, data.resultado)) aplicarEstadoNota(sheet, fila, 'screening', data.resultado);
-  guardarEstadoEval_(cfg, data.perfil || 'operaciones', data.nombre, 'screening', data.estado, data.resultado, data.entrevistador);
+  guardarEstadoEval_(cfg, perfilObligatorio_(data.perfil), data.nombre, 'screening', data.estado, data.resultado, data.entrevistador);
   try {
     const folder = DriveApp.getFolderById(cfg.folder_pdf_screening);
     const blob = Utilities.newBlob(logoParaPdf_(data.htmlFull), 'text/html', 'Screening_' + data.nombre.replace(/\s+/g, '_') + '.html');
@@ -401,7 +415,7 @@ function guardarEnPlanilla_(nombreCandidato, htmlContent, ajustePonderacion, per
   QUIEN_ = quien || '';
   try {
     console.log("Perfil recibido: " + perfilId);
-    const cfg = getConfig(perfilId || 'operaciones');
+    const cfg = getConfig(perfilObligatorio_(perfilId));
     const sheet = getSheet(cfg);
     const data = sheet.getDataRange().getValues();
     
@@ -441,7 +455,7 @@ function guardarEnPlanilla_(nombreCandidato, htmlContent, ajustePonderacion, per
     if (ajustePonderacion) sheet.getRange(fila, 16).setValue(ajustePonderacion);
     registrarHistorial_(sheet.getName(), sheet.getRange(fila, 2).getValue(), editar ? 'Competencias editado' : 'Competencias', editar ? (notaAntesComp || '—') + ' → ' + (ajustePonderacion || '—') : 'Formulario guardado' + (ajustePonderacion ? ' · resultado ' + ajustePonderacion : ''));
     if (ajustePonderacion && (!editar || aplicarEdicion_(sheet, fila, 'competencias', notaAntesComp, ajustePonderacion))) aplicarEstadoNota(sheet, fila, 'competencias', ajustePonderacion);
-    guardarEstadoEval_(cfg, perfilId || 'operaciones', nombreCandidato, 'competencias', estadoJSON, ajustePonderacion, quien);
+    guardarEstadoEval_(cfg, perfilObligatorio_(perfilId), nombreCandidato, 'competencias', estadoJSON, ajustePonderacion, quien);
     sheet.getRange(fila, 17).setFormula('=HYPERLINK("' + pdf.getUrl() + '"; "Ver PDF")');
     
     return 'OK';
@@ -551,35 +565,6 @@ function crearTriggers() {
   ScriptApp.newTrigger('onEditDescartado').forSpreadsheet(ss).onEdit().create();
   console.log('Triggers OK');
 }
-
-function cargarPostulacionPreguntas() {
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
-  let sh = ss.getSheetByName('Postulacion_Preguntas');
-  if (!sh) sh = ss.insertSheet('Postulacion_Preguntas');
-  sh.clear();
-
-  const headers = ['perfil_id', 'id_preg', 'etiqueta', 'tipo', 'opciones', 'requerido'];
-  sh.getRange(1, 1, 1, 6).setValues([headers])
-    .setFontWeight('bold').setBackground('#1A6645').setFontColor('#FFFFFF');
-  sh.setFrozenRows(1);
-
-  const filas = [
-    ['operaciones', 'p5', '¿Trabajaste en extracción de barros, tratamiento de residuos o limpieza industrial?', 'select', 'Sí|No', 'SI'],
-    ['operaciones', 'p6', 'Nivel en ese tipo de operación', 'select', 'Básico|Intermedio|Avanzado', 'SI'],
-    ['coord-rrhh', 'p5', '¿Con qué sistema de liquidación de sueldos trabajaste? (Tango, Bejerman, SAP, otro)', 'texto', '', 'SI'],
-    ['coord-rrhh', 'p6', 'Nivel en ese sistema', 'select', 'Básico|Intermedio|Avanzado', 'SI'],
-    ['analista-datos', 'p5', '¿Qué herramientas manejás? (Excel, SQL, Power BI, Python…)', 'texto', '', 'SI'],
-    ['analista-datos', 'p6', 'Nivel general en esas herramientas', 'select', 'Básico|Intermedio|Avanzado', 'SI'],
-    ['analista-compras', 'p5', '¿Qué ERP o sistema de compras usaste? (SAP, Oracle, otro)', 'texto', '', 'SI'],
-    ['analista-compras', 'p6', 'Nivel en ese ERP', 'select', 'Básico|Intermedio|Avanzado', 'SI'],
-    ['analista-sgi', 'p5', '¿Qué normas ISO manejás? (9001, 14001, 45001)', 'texto', '', 'SI'],
-    ['analista-sgi', 'p6', 'Nivel de dominio de esas normas', 'select', 'Básico|Intermedio|Avanzado', 'SI']
-  ];
-
-  sh.getRange(2, 1, filas.length, 6).setValues(filas);
-  sh.autoResizeColumns(1, 6);
-  Logger.log('Cargadas ' + filas.length + ' preguntas dinámicas');
-}
 function getPreguntasPostulacion(perfilId) {
   const sh = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName('Postulacion_Preguntas');
   if (!sh) return [];
@@ -598,13 +583,15 @@ function getPreguntasPostulacion(perfilId) {
 }
 function recibirPostulacion(payload) {
   try {
-    const cfg = getConfig(payload.perfil || 'operaciones');
+    const cfg = getConfig(perfilObligatorio_(payload.perfil));
     if (estadoBusqueda_(cfg) === 'CERRADA') throw new Error('BUSQUEDA_CERRADA');
     const sheet = getSheet(cfg);
 
     const d = payload.datos || {};
     if (esDuplicado(d, sheet)) return 'DUPLICADO';
 
+    if (!payload.cvBase64 || String(payload.cvBase64).length > 14.5 * 1024 * 1024) throw new Error('El CV falta o pesa más de 10 MB.'); // control del servidor (el formulario ya lo valida)
+    if (!/\.(pdf|doc|docx)$/i.test(String(payload.cvNombre || ''))) throw new Error('El CV tiene que ser PDF o Word.');
     const mime = payload.cvTipo || MimeType.PDF;
     const blob = Utilities.newBlob(Utilities.base64Decode(payload.cvBase64), mime, payload.cvNombre || 'CV');
     const file = DriveApp.getFolderById(cfg.folder_recibidos).createFile(blob);
@@ -626,7 +613,7 @@ function recibirPostulacion(payload) {
     ]]);
     sheet.getRange(fila, 22, 1, 9).setValues([[
       d.email || '', formacion, '', 0,
-      JSON.stringify({ perfil: payload.perfil || 'operaciones', datos: d, declaradas: payload.declaradas || {}, cvId: file.getId() }),
+      JSON.stringify({ perfil: perfilObligatorio_(payload.perfil), datos: d, declaradas: payload.declaradas || {}, cvId: file.getId() }),
       posgrado, d.excel || '', d.powerbi || '', ia
     ]]);
     ponerFormulaWhatsApp(sheet, fila);
@@ -696,11 +683,11 @@ function getHeroPostulacion(perfilId) {
 }
 
 // Logo claro del cliente para el encabezado verde de la postulación: Config.logo_cliente (link https a un PNG blanco con fondo transparente).
-// Las búsquedas de MACS que todavía no lo tienen cargado usan el archivo publicado en la web de Azcu.
+// Una empresa de EMPRESAS_CONOCIDAS_ (MACS) que todavía no lo tiene cargado usa el logo publicado en la web de Azcu.
 function logoCliente_(cfg) {
   const l = (cfg && typeof cfg.logo_cliente === 'string') ? cfg.logo_cliente.trim() : '';
   if (/^https:\/\//i.test(l)) return l;
-  return empresaKey_(cfg) === 'MACS' ? 'https://azcubot.pages.dev/macs-logo-blanco.png' : '';
+  return logoConocido_(empresaKey_(cfg));
 }
 
 // Preguntas fijas de la postulación que se muestran en cada búsqueda (Config.preguntas_base, separadas con coma; «ninguna» = ninguna).
@@ -922,43 +909,6 @@ function setupPostulacionAsync() {
 
   Logger.log('Setup async completo: estados, headers 23-26, fórmulas a 250, trigger 5 min.');
 }
-function chequearTodas() {
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
-  listarPerfiles().forEach(p => {
-    let cfg;
-    try { cfg = getConfig(p.id); } catch (e) { Logger.log('❌ [' + p.id + '] sin Config'); return; }
-    const sh = ss.getSheetByName(cfg.hoja_nombre);
-    if (!sh) { Logger.log('❌ [' + p.id + '] NO existe la hoja "' + cfg.hoja_nombre + '"'); return; }
-
-    const headers = sh.getRange(1, 23, 1, 4).getValues()[0];
-    const headersOK = headers[0] === 'Formación declarada' && headers[1] === 'Zona' && headers[2] === 'Intentos' && headers[3] === '_meta';
-    const f250 = sh.getRange(250, 11).getFormula();
-    const formulasOK = f250 && f250.indexOf('HYPERLINK') > -1;
-    const val = sh.getRange(2, 9).getDataValidation();
-    const tieneVal = val ? val.getCriteriaValues()[0].indexOf('Pendiente') > -1 : false;
-
-    const estado = (headersOK && formulasOK && tieneVal) ? '✅ COMPLETA' : '⚠️ FALTA';
-    Logger.log(estado + ' [' + p.id + '] → headers:' + (headersOK?'ok':'NO') + ' | formulas250:' + (formulasOK?'ok':'NO') + ' | estados:' + (tieneVal?'ok':'NO'));
-  });
-  Logger.log('--- fin chequeo ---');
-}
-function chequearTodas() {
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
-  listarPerfiles().forEach(p => {
-    let cfg;
-    try { cfg = getConfig(p.id); } catch (e) { Logger.log('❌ [' + p.id + '] sin Config'); return; }
-    const sh = ss.getSheetByName(cfg.hoja_nombre);
-    if (!sh) { Logger.log('❌ [' + p.id + '] NO existe la hoja'); return; }
-    const headers = sh.getRange(1, 23, 1, 4).getValues()[0];
-    const headersOK = headers[0] === 'Formación declarada' && headers[1] === 'Zona' && headers[2] === 'Intentos' && headers[3] === '_meta';
-    const f250 = sh.getRange(250, 11).getFormula();
-    const formulasOK = f250 && f250.indexOf('HYPERLINK') > -1;
-    const val = sh.getRange(2, 9).getDataValidation();
-    const tieneVal = val ? val.getCriteriaValues()[0].indexOf('Pendiente') > -1 : false;
-    const estado = (headersOK && formulasOK && tieneVal) ? '✅ COMPLETA' : '⚠️ FALTA';
-    Logger.log(estado + ' [' + p.id + '] → headers:' + (headersOK?'ok':'NO') + ' | formulas250:' + (formulasOK?'ok':'NO') + ' | estados:' + (tieneVal?'ok':'NO'));
-  });
-}
 function ponerFormulaWhatsApp(sheet, fila) {
   // limpia el teléfono (solo dígitos), saca 0 y 15 iniciales, antepone 549
   const f =
@@ -966,13 +916,6 @@ function ponerFormulaWhatsApp(sheet, fila) {
     'REGEXREPLACE(REGEXREPLACE(SUBSTITUTE(SUBSTITUTE(C' + fila + ';"+54";"");"+";"");"[^0-9]";"");"^0";"");' +
     '"Abrir WhatsApp");"")';
   sheet.getRange(fila, 21).setFormula(f);
-}
-function verLinks() {
-  const cfg = getConfig('coord-rrhh');
-  const sh = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName(cfg.hoja_nombre);
-  Logger.log('K2 (screening): ' + sh.getRange(2,11).getFormula());
-  Logger.log('O2 (competencias): ' + sh.getRange(2,15).getFormula());
-  Logger.log('U2 (whatsapp): ' + sh.getRange(2,21).getFormula());
 }
 function formatearRequisitos(req, localidad) {
   if (!req || typeof req !== 'object') return 'Error';
@@ -1003,23 +946,6 @@ function perfilesActivos_() {
     out.push({ id: id, nombre: cfg[i][1], prompt: cfg[i][8] || '' });
   }
   return out;
-}
-
-// --- tabla Mail_Routing: atajo opcional por asunto (la editás vos) ---
-function setupMailRouting() {
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
-  let sh = ss.getSheetByName('Mail_Routing');
-  if (!sh) sh = ss.insertSheet('Mail_Routing');
-  sh.clear();
-  const filas = [
-    ['perfil_id', 'palabras_clave_asunto (separadas por |)'],
-    ['coord-rrhh', 'rrhh|recursos humanos|gestión de personas|coordinador rrhh|personas'],
-    ['analista-datos', 'datos|data|analista de datos|bi|power bi|sql'],
-    ['analista-compras', 'compras|contrataciones|abastecimiento|comprador'],
-    ['analista-sgi', 'sgi|sistema de gestión|iso|calidad|seguridad|medio ambiente|auditor']
-  ];
-  sh.getRange(1, 1, filas.length, 2).setValues(filas);
-  Logger.log('✅ Mail_Routing creada. Editá las palabras clave a gusto.');
 }
 
 function rutearPorAsunto_(asunto) {
@@ -1270,46 +1196,6 @@ function generarPDFPostulacion(d, decl, cfg, perfil) {
   const pdf = DriveApp.getFolderById(folderId).createFile(blob.getAs('application/pdf'));
   return pdf.getUrl();
 }
-/* ============================================================
-   WHATSAPP con mensaje + link de agenda de screening por perfil.
-   Reemplaza la fórmula simple anterior de la col 21.
-   Correr: ponerWhatsAppAgenda()  (aplica a las 4 búsquedas activas)
-   ============================================================ */
-
-/* WhatsApp con mensaje + link de agenda — versión EN INGLÉS (Sheet en inglés) */
-
-function ponerWhatsAppAgenda() {
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
-
-  const MAP = {
-    'analista-compras': { link: 'https://calendar.app.google/JxPyBZGrP1i4FhKY9', pos: 'Analista de Compras y Contrataciones' },
-    'coord-rrhh':       { link: 'https://calendar.app.google/WrYYgPKMCVbAS56Q7', pos: 'Coordinador/a de Gestión de Personas' },
-    'analista-sgi':     { link: 'https://calendar.app.google/7Y3g2QVh4Uuhzojh6', pos: 'Analista de SGI / Calidad' },
-    'analista-datos':   { link: 'https://calendar.app.google/R3XSVkLUpRJVyFaX6', pos: 'Analista de Datos' }
-  };
-
-  Object.keys(MAP).forEach(pid => {
-    let cfg; try { cfg = getConfig(pid); } catch(e){ return; }
-    const sh = ss.getSheetByName(cfg.hoja_nombre);
-    if (!sh) return;
-    const link = MAP[pid].link;
-    const pos = MAP[pid].pos;
-
-    for (let i = 2; i <= 250; i++) {
-      const f =
-        '=IF(C' + i + '<>"";HYPERLINK("https://api.whatsapp.com/send?phone="&' +
-        'SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(C' + i + ';"+";"");" ";"");"-";"");"(";"");")";"")&' +
-        '"&text="&ENCODEURL("Hola "&IFERROR(LEFT(B' + i + ';FIND(" ";B' + i + ')-1);B' + i + ')&' +
-        '", ¿cómo estás? Soy "&N' + i + '&" de Blumia Consulting."&CHAR(10)&CHAR(10)&' +
-        '"Te contacto por la búsqueda de ' + pos + ' para la empresa MACS."&CHAR(10)&CHAR(10)&' +
-        '"Me gustaría coordinar una charla breve con vos. Si te interesa, elegí el horario que mejor te quede en este link y ya nos queda agendado: ' + link + '"&CHAR(10)&CHAR(10)&' +
-        '"Saludos!");"WHATSAPP ▶");"")';
-      sh.getRange(i, 21).setFormula(f);
-    }
-    Logger.log('WhatsApp+agenda OK: ' + cfg.hoja_nombre);
-  });
-  Logger.log('Listo.');
-}
 /* EXPORTA candidatos contactados a una PESTAÑA "Contactos" del Sheet */
 
 function getLinkScreening_(perfilId, nombreCandidato) {
@@ -1359,7 +1245,7 @@ function setupColumnasInforme() {
     sh.getRange(1, 33).setValue('Informe');
     sh.getRange(1, 32, 1, 2).setFontWeight('bold').setBackground('#1A6645').setFontColor('#FFFFFF');
   });
-  SpreadsheetApp.getUi().alert('Columnas 32 y 33 creadas.');
+  SpreadsheetApp.getUi().alert('Listo: se agregaron las columnas del informe.');
 }
 function setupColumnasInforme() {
   const perfiles = perfilesActivos_();
@@ -1750,7 +1636,7 @@ function setupColumnasCliente() {
   Logger.log('Columnas 35 (Orden) y 36 (Valoración) creadas.');
 }
 function generarHTMLProceso(empresa) {
-  empresa = empresa || 'MACS';
+  empresa = empresa || empresaDefault_();
   const nombreEmp = empresaInforme_({ empresa: empresa });
   const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
   const sh = ss.getSheetByName(hojaProceso_(empresa));
@@ -1901,7 +1787,7 @@ function menuPDFClienteActivo() {
   ui.alert('PDF cliente generado:\n\n' + url);
 }
 function generarInformeProceso(empresa) {
-  empresa = empresa || 'MACS';
+  empresa = empresa || empresaDefault_();
   const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
   let sh = ss.getSheetByName(hojaProceso_(empresa));
   const existe = !!sh;
@@ -1955,7 +1841,7 @@ function generarInformeProceso(empresa) {
   Logger.log('Informe_Proceso generado.');
 }
 function completarProcesoIA(empresa) {
-  empresa = empresa || 'MACS';
+  empresa = empresa || empresaDefault_();
   const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
   const sh = ss.getSheetByName(hojaProceso_(empresa));
   if (!sh) { Logger.log('Corré primero generarInformeProceso'); return; }
@@ -2040,18 +1926,19 @@ function kanbanHTML(perfilId) {
 
 function kanbanHTML_(perfilId) {
   const cfg = getConfig(perfilId);
-  const emp = (typeof cfg.empresa === 'string') ? cfg.empresa : 'MACS';
+  const emp = empresaKey_(cfg);
   const titulo = ((typeof cfg.nombre === 'string' && cfg.nombre) ? cfg.nombre : (typeof cfg.nombre_perfil === 'string' && cfg.nombre_perfil) ? cfg.nombre_perfil : perfilId) + ' · ' + emp;
   lapT_('Leer la configuración de la búsqueda');
   const data = doGetKanban_(perfilId);
   KANBAN_KB_ = Math.round(data.length / 1024);
   const empresas = JSON.stringify(empresasYPerfiles());
   lapT_('Lista de búsquedas para el selector');
-  const empresaActual = (typeof cfg.empresa === 'string') ? cfg.empresa : 'MACS';
+  const empresaActual = empresaKey_(cfg);
   const flyer = URL_WEBAPP + '?tipo=flyer&perfil=' + encodeURIComponent(perfilId); // editor de flyer propio (el link viejo de Config se ve adentro)
   const perfilProt = String(cfg.perfil_protegido || '').toUpperCase() === 'SI';
   const perfilPdf = (!perfilProt && typeof cfg.link_perfil === 'string') ? cfg.link_perfil : '';
   let html = KANBAN_TPL(perfilId, titulo, data, empresas, empresaActual, flyer, perfilPdf, perfilProt);
+  html = html.replace('%%SORTABLE%%', () => HtmlService.createHtmlOutputFromFile('SortableLib').getContent()); // arrastrar tarjetas no depende de una CDN externa
   lapT_('Armar la plantilla del tablero');
   let bandaRef = 0;
   try { bandaRef = Number(datosInformeBusqueda(perfilId).banda) || 0; } catch (e) { }
@@ -2152,9 +2039,9 @@ function moverEstado_(perfilId, fila, estado, quien) {
 }
 
 function KANBAN_TPL(perfilId, titulo, dataJSON, empresasJSON, empresaActual, flyerUrl, perfilUrl, perfilProt) {
-  const LOGO='https://lh3.googleusercontent.com/d/1WdoIWop2mZ_KnSa9raQM1Xb5TFP2JvGO';
+  const LOGO=LOGO_BLUMIA_;
   return `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Kanban · ${titulo}</title>
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"><\/script>
+%%SORTABLE%%
 <style>
 :root{--green:#243D2C;--glight:#E3EEDC;--amber:#F9E7A0;--bg:#F3F8F1;--line:#D5E0CE;--mid:#555;--red:#E06666;--font:'Poppins','Plus Jakarta Sans',sans-serif;--cream:#F9E7A0;--mint:#DCE8D3;--teal:#5BB5A5}
 *{box-sizing:border-box;margin:0;padding:0}body{font-family:var(--font);background:var(--bg);color:#1A1A1A;font-size:14px}
@@ -2480,8 +2367,8 @@ function verAvisos(){
 }
 function avPopups(L){
   var cont=document.getElementById('avPop');
-  if(!cont){cont=document.createElement('div');cont.id='avPop';cont.style.cssText='position:fixed;top:14px;right:14px;z-index:9999;display:flex;flex-direction:column;gap:8px;max-width:340px';document.body.appendChild(cont);}
-  var mk=function(x){var d=document.createElement('div');d.style.cssText='background:#fff;border-left:4px solid '+(x.urg?'#B91C1C':'#1A6645')+';box-shadow:0 4px 14px rgba(0,0,0,.2);border-radius:6px;padding:10px 12px;font-size:13px;cursor:pointer';d.innerHTML='<b>'+x.ic+' '+avEsc(x.n)+'</b><br>'+avEsc(x.txt);d.onclick=function(){d.remove();if(x.panel)verAvisos();else if(x.f)avAbrir(x.f);};cont.appendChild(d);setTimeout(function(){if(d.parentNode)d.remove();},x.urg?15000:8000);};
+  if(!cont){cont=document.createElement('div');cont.id='avPop';cont.style.cssText='position:fixed;bottom:14px;left:14px;z-index:150;display:flex;flex-direction:column-reverse;gap:8px;max-width:min(340px,calc(100vw - 110px))';document.body.appendChild(cont);}
+  var mk=function(x){var d=document.createElement('div');d.style.cssText='background:#fff;border-left:4px solid '+(x.urg?'#B91C1C':'#1A6645')+';box-shadow:0 4px 14px rgba(0,0,0,.2);border-radius:6px;padding:10px 12px;font-size:13px;cursor:pointer';d.innerHTML='<button type="button" aria-label="Cerrar aviso" style="float:right;border:none;background:none;font-size:16px;line-height:1;cursor:pointer;color:#777;margin:-4px -6px 0 8px;padding:4px" onclick="event.stopPropagation();this.parentNode.remove()">✕</button><b>'+x.ic+' '+avEsc(x.n)+'</b><br>'+avEsc(x.txt);d.onclick=function(){d.remove();if(x.panel)verAvisos();else if(x.f)avAbrir(x.f);};cont.appendChild(d);setTimeout(function(){if(d.parentNode)d.remove();},x.urg?15000:8000);};
   L.slice(0,5).forEach(mk);
   if(L.length>5)mk({ic:'🔔',n:'Y '+(L.length-5)+' más',txt:'Tocá para ver la lista',panel:1});
 }
@@ -2600,9 +2487,6 @@ function crearTriggerCitas() {
   ScriptApp.getProjectTriggers().forEach(t => { if (t.getHandlerFunction() === 'syncCitasCalendar') ScriptApp.deleteTrigger(t); });
   ScriptApp.newTrigger('syncCitasCalendar').timeBased().everyHours(1).create();
 }
-function verTriggers(){
-  ScriptApp.getProjectTriggers().forEach(t=>Logger.log(t.getHandlerFunction()+' | '+t.getEventType()));
-}
 function notaEmpresa_(perfilId, fila, etapa, nota, quien) {
   QUIEN_ = quien || '';
   const sh = getSheet(getConfig(perfilId));
@@ -2623,9 +2507,6 @@ function notaEmpresa_(perfilId, fila, etapa, nota, quien) {
   sh.getRange(fila, colNota).clearDataValidations().setValue(nota);
   limpiarMotivoSiNoDescartado_(sh, fila, estado);
   return { ok: true, estado: estado };
-}
-function verTriggers(){
-  ScriptApp.getProjectTriggers().forEach(t=>Logger.log(t.getHandlerFunction()+' | '+t.getEventType()));
 }
 function enviarMailDescarte(perfilId, fila) {
   const cfg = getConfig(perfilId);
@@ -2737,24 +2618,6 @@ function previaDescartes_(perfilId) {
     textoPost: 'Hola [NOMBRE], ¿cómo estás?\n\nAnte todo, gracias por el tiempo que compartimos durante la entrevista y por tu buena predisposición a lo largo del proceso.\n\nDespués de evaluar a todos los candidatos, en esta ocasión decidimos avanzar con otros perfiles que se ajustaban más a los requerimientos específicos de la búsqueda de ' + puesto + '. Así que no vamos a continuar con tu candidatura en este proceso.\n\nFue un gusto conocerte. Tu perfil queda en nuestra base y te vamos a tener presente para futuras búsquedas que puedan encajar mejor con tu experiencia.\n\nTe deseamos mucho éxito en tus próximos pasos profesionales.\n\nSaludos,\nEquipo de Blumia Consulting'
   };
 }
-function verEntrevistador(){
-  const sh=getSheet(getConfig('coord-rrhh'));
-  const d=sh.getDataRange().getValues();
-  for(let i=1;i<d.length;i++){
-    if(String(d[i][1]).toLowerCase().includes('APELLIDO')){
-      Logger.log('Col14 (entrevistador): "'+d[i][13]+'"');
-    }
-  }
-}
-function verEntrevistador(){
-  const sh=getSheet(getConfig('analista-compras'));
-  const d=sh.getDataRange().getValues();
-  for(let i=1;i<d.length;i++){
-    if(String(d[i][1]).toLowerCase().includes('APELLIDO')){
-      Logger.log('Col14 (entrevistador): "'+d[i][13]+'"');
-    }
-  }
-}
 function empresasYPerfiles(){
   const rows = configValores_();
   const emp = {};
@@ -2785,12 +2648,6 @@ function crearPestanaPlantillas(){
   sh.setColumnWidth(4, 600);
   Logger.log('Pestaña Plantillas creada con 5 filas');
 }
-function verLinks(){
-  ['coord-rrhh','analista-datos','analista-compras','analista-sgi'].forEach(id=>{
-    const c = getConfig(id);
-    Logger.log(id + ' → scr: ' + c.link_screening + ' | comp: ' + c.link_competencias + ' | emp: ' + c.link_empresa_virtual);
-  });
-}
 function armarComunicacion_(perfilId, fila, tipo, quien){
   const cfg = getConfig(perfilId);
   const sh = getSheet(cfg);
@@ -2813,7 +2670,7 @@ function armarComunicacion_(perfilId, fila, tipo, quien){
 
   texto = firmaConPlaceholder_(texto).replace(/\[NOMBRE\]/g, nombre)
                .replace(/\[PUESTO\]/g, puesto)
-               .replace(/la empresa \[EMPRESA\]/g, empresa === 'MACS' ? 'la empresa MACS' : empresa)
+               .replace(/la empresa \[EMPRESA\]/g, EMPRESAS_CONOCIDAS_[empresa] ? 'la empresa ' + empresa : empresa)
                .replace(/\[EMPRESA\]/g, empresa)
                .replace(/\[ENTREVISTADOR\]/g, entrevistador)
                .replace(/\[LINK\]/g, link);
@@ -3102,7 +2959,7 @@ function ficha(f){
   document.getElementById('mtit').textContent=c.nombre;
   document.getElementById('modal').classList.add('show');
 }
-function volver(){if(history.length>1){history.back();}else{window.top.location.href='${URL_WEBAPP}?tipo=kanban&perfil=coord-rrhh';}}
+function volver(){if(history.length>1){history.back();}else{window.top.location.href='${URL_WEBAPP}?tipo=inicio';}}
 function borrarBanco(f,btn){
   var c=DATA.find(function(x){return x.fila===f;});
   blConfirm('¿Quitar a '+c.nombre+' del banco de talento?\\nSigue estando en su búsqueda de origen.',function(){
@@ -3137,13 +2994,13 @@ function mandarABusqueda(f,btn){
     else{alert(r?r.error:'Error');btn.textContent='→ Enviar';btn.disabled=false;}
   }).withFailureHandler(function(e){alert('Error: '+e.message);btn.textContent='→ Enviar';btn.disabled=false;}).enviarABusqueda(f,dest);
 }
-function volver(){if(history.length>1){history.back();}else{window.top.location.href='${URL_WEBAPP}?tipo=kanban&perfil=coord-rrhh';}}
+function volver(){if(history.length>1){history.back();}else{window.top.location.href='${URL_WEBAPP}?tipo=inicio';}}
 function cerrar(){document.getElementById('modal').classList.remove('show');}
 </script></body></html>`;
 }
 
 function bancoHTML(desde){
-  return HtmlService.createHtmlOutput(BANCO_TPL(doGetBanco(), JSON.stringify(empresasYPerfiles()), desde || 'coord-rrhh'))
+  return HtmlService.createHtmlOutput(BANCO_TPL(doGetBanco(), JSON.stringify(empresasYPerfiles()), desde || ((listarPerfiles()[0] || {}).id || '')))
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag('viewport','width=device-width, initial-scale=1');
 }
@@ -3216,26 +3073,4 @@ function borrarMarcaContacto_(perfilId, fila, quien){
   registrarHistorial_(sh.getName(), sh.getRange(fila, 2).getValue(), 'Contacto', 'Marca de contacto borrada (' + sh.getRange(fila, 41).getValue() + ')');
   sh.getRange(fila, 41).clearContent();
   return {ok:true};
-}
-function verCitaVieja(){
-  const sh = getSheet(getConfig('coord-rrhh'));
-  const d = sh.getDataRange().getValues();
-  for(let i=1;i<d.length;i++){
-    if(String(d[i][1]).toLowerCase().includes('bodean')){
-      Logger.log('Estado (col9): "'+d[i][8]+'"');
-      Logger.log('Cita (col37): "'+d[i][36]+'"');
-      Logger.log('Historial (col38): "'+d[i][37]+'"');
-    }
-  }
-}
-function verCitaVieja(){
-  ['coord-rrhh','analista-datos','analista-compras','analista-sgi','operaciones'].forEach(function(id){
-    const sh = getSheet(getConfig(id));
-    const d = sh.getDataRange().getValues();
-    for(let i=1;i<d.length;i++){
-      if(String(d[i][1]).toLowerCase().includes('bodean')){
-        Logger.log(id+' → estado:"'+d[i][8]+'" cita:"'+d[i][36]+'" hist:"'+d[i][37]+'"');
-      }
-    }
-  });
 }

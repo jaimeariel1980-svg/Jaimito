@@ -105,8 +105,8 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
     </header>
 
     <div class="intro">
-      <p style="margin-bottom:8px">¡Gracias por postularte a la búsqueda de <b><?= pos ?></b>!</p>
-    <p>Completar el formulario te va a tomar menos de 3 minutos. Tomate un momento y confeccionalo sin omitir ningún campo.</p>
+      <p style="margin-bottom:8px">Te estás postulando a la búsqueda de <b><?= pos ?></b>.</p>
+    <p>Completar el formulario te va a tomar menos de 3 minutos. Los campos con <span class="req">*</span> son obligatorios; el resto es opcional.</p>
     </div>
 
     <form id="form" novalidate>
@@ -136,17 +136,17 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
         <small>Si hiciste una especialización, maestría o doctorado, contanos.</small>
         <div class="row2">
           <select id="posgradoEstado"><option value="" selected>Sin posgrado</option><option>Completo</option><option>Incompleto / En curso</option></select>
-          <input type="text" id="posgradoCual" aria-label="Posgrado: ¿cuál?" placeholder="¿Cuál? Ej: Maestría en RRHH">
+          <input type="text" id="posgradoCual" aria-label="Posgrado: ¿cuál?" placeholder="¿Cuál?">
         </div></div>
 
 
       <div id="baseConoc" style="display:none"><div class="sep"><span>Conocimientos</span></div></div>
 
-      <div class="sep"><span>Sobre la búsqueda</span></div>
+      <div class="sep"><span>Tus expectativas y disponibilidad</span></div>
 
       <div class="group" data-req><label for="remuneracion">¿Cuál es tu remuneración pretendida? <span class="req">*</span></label>
         <small>Bruto mensual, en pesos.</small>
-        <input type="number" id="remuneracion" placeholder="Ej: 850000"><div class="errmsg" role="alert">Completá este campo</div></div>
+        <input type="number" id="remuneracion" placeholder="Ej: 850.000"><div class="errmsg" role="alert">Completá este campo</div></div>
       <div class="group" data-req><label for="localidad">¿En qué localidad vivís? <span class="req">*</span></label>
         <input type="text" id="localidad" placeholder="Ej: San Nicolás"><div class="errmsg" role="alert">Completá este campo</div></div>
       <div class="group" data-req><label for="movilidad">¿Tenés movilidad propia? <span class="req">*</span></label>
@@ -172,7 +172,7 @@ select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='ht
       <div class="note">Al enviar aceptás que tratemos tus datos para este proceso de selección.</div>
     </form>
 
-    <div class="foot"><img data-lg alt="Blumia Consulting"><div class="line"><b>Atracción y Elección</b></div></div>
+    <div class="foot"><img data-lg alt="Blumia Consulting"><div class="line"><b>Blumia Consulting</b> · Atracción y Elección</div></div>
 
   </div>
 
@@ -246,13 +246,20 @@ if(typeof google!=='undefined'&&google.script&&google.script.run){
   google.script.run.withSuccessHandler(renderDyn).withFailureHandler(function(){}).getPreguntasPostulacion(PERFIL);
 }
 var cv=document.getElementById('cv'),drop=document.getElementById('drop'),fn=document.getElementById('fname');
+var CV_MAX=10*1024*1024,CV_EXT=/\.(pdf|doc|docx)$/i;
+function cvError(msg){var g=cv.closest('.group');cv.value='';drop.classList.remove('has');fn.textContent='';drop.querySelector('.t').textContent='Tocá para subir tu CV';drop.querySelector('.s').textContent='o arrastralo acá';g.querySelector('.errmsg').textContent=msg;g.classList.add('invalid');}
 cv.addEventListener('change',function(){
-  if(cv.files.length){drop.classList.add('has');fn.textContent='✓ '+cv.files[0].name;
+  if(cv.files.length){
+    var f0=cv.files[0];
+    if(!CV_EXT.test(f0.name)){cvError('El archivo tiene que ser PDF o Word (.pdf, .doc, .docx).');return;}
+    if(f0.size>CV_MAX){cvError('El archivo pesa más de 10 MB. Probá con uno más liviano.');return;}
+    if(!f0.size){cvError('El archivo está vacío.');return;}
+    drop.classList.add('has');fn.textContent='✓ '+cv.files[0].name;
     drop.querySelector('.t').textContent='Archivo cargado';drop.querySelector('.s').textContent='Tocá para cambiarlo';
     cv.closest('.group').classList.remove('invalid');}
 });
 function valid(g){
-  if(g.hasAttribute('data-file')) return cv.files.length>0;
+  if(g.hasAttribute('data-file')){if(!cv.files.length){g.querySelector('.errmsg').textContent='Subí tu CV para continuar';return false;}return true;}
   var f=g.querySelectorAll('input,select'),ok=true;
   f.forEach(function(e){if(!e.value.trim())ok=false;
     if(g.hasAttribute('data-email')&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e.value))ok=false;});

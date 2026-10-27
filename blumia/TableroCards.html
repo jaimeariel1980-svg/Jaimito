@@ -78,16 +78,18 @@ header{min-height:86px}
   }
   function dias(c){var m=c.movMs;return m?Math.floor((Date.now()-m)/864e5):0;} // sin historial todavía = no se sabe, no se alerta
   function terminal(c){var m=metEstado(c.estado);return !m||m.t==='desc'||m.t==='cont';}
-  function money(n){return n?'$'+(Math.round(n/1e5)/10)+' M':'';}
+  function money(n){if(!n)return '';if(n<1e6)return '$'+Math.round(n/1e3)+' mil';var m=n/1e6;return '$'+(m>=10?Math.round(m):m.toLocaleString('es-AR',{maximumFractionDigits:1}))+' M';}
+  function fmtForm(f){var t=String(f||'').split(/\s+[—–-]\s+/);var a=t.shift().split(' ').map(function(w,i){return i?w.toLowerCase():w;}).join(' ');return [a].concat(t).join(' · ');}
+  function fmtMiles(v){var d=String(v==null?'':v).replace(/\D/g,'');return d?Number(d).toLocaleString('es-AR'):String(v||'');}
   window.dias=dias;
   window.cardN=function(c){
     var en=etapaNota(c),n=en[0],ep=en[1],m=metEstado(c.estado)||{t:'act'};
-    var fo=c.formacion&&c.formacion!=='Sin dato'?'<div class="fo" title="'+esc(c.formacion)+'">🎓 '+esc(String(c.formacion).slice(0,80))+'</div>':'';
+    var fo=c.formacion&&c.formacion!=='Sin dato'?'<div class="fo" title="'+esc(fmtForm(c.formacion))+'">🎓 '+esc(String(fmtForm(c.formacion)).slice(0,80))+'</div>':'';
     var zt=c.zona&&c.zona!=='Sin dato'?'<span class="tag '+(/fuera/i.test(c.zona)?'zfu':'zok')+'">'+(/fuera/i.test(c.zona)?'Fuera de zona':'En zona')+'</span>':'';
     var ub='<div class="ln"><i>📍</i><span>'+esc(c.zona||'—')+' '+zt+'</span></div>';
     var pr='';
     if(c.pretNum>0){var cl=typeof BANDA_REF==='number'&&BANDA_REF>0?(c.pretNum<BANDA_REF*0.95?'pdeb':c.pretNum>BANDA_REF*1.05?'penc':'plin'):'';pr='<div class="ln"><i>💰</i><div class="tags"><span class="tag '+cl+'" title="Pretensión'+(cl?' respecto de la banda de referencia':'')+'">'+money(c.pretNum)+(cl==='pdeb'?' · debajo de la banda':cl==='penc'?' · sobre la banda':cl==='plin'?' · en la banda':'')+'</span></div></div>';}
-    else if(c.pretension){pr='<div class="ln"><i>💰</i><span>$'+esc(c.pretension)+'</span></div>';}
+    else if(c.pretension){pr='<div class="ln"><i>💰</i><span>$'+fmtMiles(c.pretension)+'</span></div>';}
     var t1='',cf=avFecha(c.cita);
     if(c.cita){var hoy=false;if(cf){var d0=new Date();d0.setHours(0,0,0,0);hoy=cf>=d0.getTime()&&cf<d0.getTime()+864e5;}t1+='<span class="tag cit'+(hoy?' hoy':'')+'">📅 '+esc(c.cita)+'</span>';}
     if(c.contactado)t1+='<span class="tag ctc">💬 '+esc(c.contactado)+' <button title="Borrar la marca de contacto" style="border:none;background:none;color:#7A5200;cursor:pointer;font-weight:800;padding:0 0 0 3px" onclick="event.stopPropagation();borrarMarca('+c.fila+')">✕</button></span>';
@@ -181,7 +183,7 @@ header{min-height:86px}
   function pintarKpi(){
     var K=[['ctc','w','Falta contactar'],['mov','r','Sin movimiento'],['ffo','r','Falta formulario'],['fet','r','Falta etapa']];
     var e=document.getElementById('kpiT');if(!e)return;
-    e.innerHTML=K.map(function(k){var n=DATA.filter(function(c){return kpiOk(k[0],c);}).length;return '<div class="kpT '+k[1]+(KF===k[0]&&k[0]!=='all'?' on':'')+'" title="'+(KF===k[0]?'Quitar filtro':'Ver estos candidatos')+'" onclick="kpiClickT(\''+k[0]+'\')"><b>'+n+'</b><span>'+k[2]+'</span></div>';}).join('');
+    e.innerHTML=K.map(function(k){var n=DATA.filter(function(c){return kpiOk(k[0],c);}).length;return '<div class="kpT '+(n?k[1]:'g')+(KF===k[0]&&k[0]!=='all'?' on':'')+'" title="'+(KF===k[0]?'Quitar filtro':'Ver estos candidatos')+'" onclick="kpiClickT(\''+k[0]+'\')"><b>'+n+'</b><span>'+k[2]+'</span></div>';}).join('');
     e.insertAdjacentHTML('beforeend','<div class="ftogw"><span id="ftogRes"></span><button id="ftogK" onclick="ftogToggle()"></button></div>');
     ftogPintar();
     var p=document.getElementById('cntC');if(p)p.textContent=DATA.length+' candidatos';
@@ -265,7 +267,7 @@ header{min-height:86px}
       +(al?'<div class="fal">'+al+'</div>':'')
       +'<div class="fb"><div class="acts">'+waBtn+mailBtn+cvBtn+etapaBtn('screening',c.scrPDF,'Screening','📝 Screening')+etapaBtn('competencias',c.compPDF,'Competencias','💼 Competencias')+btn(c.postulacion,'Ver postulación')+btn(c.informe,'Ver informe')+cvVer+genBtn+agBtn+bancoBtn+'</div>'+agendarHtml(c)+'<div class="edp" id="cvPanel" hidden></div>'
       +'<div class="fpw"><button class="fpe" title="Editar datos del candidato" onclick="panelTog(\'edPanel\')">✏️</button><div class="fp"><div class="pn"><h4>Contacto</h4>'+row('Teléfono',esc(c.tel))+row('Email',esc(c.mail))+row('Zona',esc(c.zona))+'</div>'
-      +'<div class="pn"><h4>Postulación</h4>'+row('Recibido',esc(c.recibido))+row('Llegó por',esc(c.fuente))+row('Formación',esc(c.formacion))+row('Pretensión',c.pretension?'$'+esc(c.pretension):'')+'</div></div></div>'+editarHtml(c)
+      +'<div class="pn"><h4>Postulación</h4>'+row('Recibido',esc(c.recibido))+row('Llegó por',esc(c.fuente))+row('Formación',esc(fmtForm(c.formacion)))+row('Pretensión',c.pretension?'$'+fmtMiles(c.pretension):'')+'</div></div></div>'+editarHtml(c)
       +(c.resumen?'<div class="sec">Análisis del CV</div><div class="fres" style="margin:0">'+esc(c.resumen)+'</div>':'')
       +'<div class="sec">Calificaciones</div>'+notas
       +((c.cita||c.historial)?'<div class="sec">Entrevistas (calendario)</div>'+row('Cita agendada',esc(c.cita))+(c.historial?'<div style="white-space:pre-line;font-size:13px">'+esc(c.historial)+'</div>':''):'')
@@ -470,6 +472,7 @@ header h1{display:none!important}
 @media(max-width:640px){.rs-tabs{padding:12px 10px 2px}#resumenPage{padding:10px 10px 50px!important}.nav button,.nav .dd>button{height:36px;padding:0 12px!important;font-size:12px}.rs-tab{height:38px;padding:0 14px}.filtros{padding:10px 10px 0}#kpiT{padding:10px 10px 0}.board{gap:12px}}
 </style>
 <style id="a11y">
+.modal-bg.show~#avPop{display:none!important}
 button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline:3px solid #5BB5A5!important;outline-offset:2px!important}
 .card:focus-visible{outline-offset:-3px!important}
 .tag,.card .tag,.cita-tag{font-size:11.5px!important}.card .meta{font-size:12px!important}.card .bdg small{font-size:11px!important}
@@ -543,6 +546,7 @@ header h1{font-size:15px;line-height:1.25;flex:1 1 100%;min-width:0;display:-web
   }
   var t=null;new MutationObserver(function(){clearTimeout(t);t=setTimeout(fix,150);}).observe(document.body,{childList:true,subtree:true});fix();
   document.addEventListener('keydown',function(e){if((e.key==='Enter'||e.key===' ')&&e.target.classList&&e.target.classList.contains('card')){e.preventDefault();e.target.click();}});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'){var m=document.getElementById('modal');if(m&&m.classList.contains('show')){e.preventDefault();cerrar();}}});
 })();
 </script>
 <script>

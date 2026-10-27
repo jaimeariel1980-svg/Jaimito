@@ -64,7 +64,7 @@ window.blMenuUsuario = function () {
 
 function guardarSesion(r) { TOK = r.token; NOM = r.nombre; ROL = r.rol; ls('bl_tok', TOK); ls('blumia_quien', NOM); ls('bl_rol', ROL); }
 function formLogin(texto) {
-  $('v').innerHTML = '<h1>Ingresá</h1><p class="s">' + (texto || (USA_PIN ? 'Con tu nombre y apellido y tu PIN.' : 'Con tu nombre y apellido.')) + '</p><label>Nombre y apellido</label><input id="n" autocomplete="name" value="' + (ls('bl_ult') || '').replace(/"/g, '') + '">' + (USA_PIN ? '<label>PIN</label><input id="p" type="password" inputmode="numeric" maxlength="6" autocomplete="current-password">' : '') + '<div class="er" id="er"></div><button id="b" onclick="entrar()">Entrar</button>' + (USA_PIN ? '<p class="s" style="margin:12px 0 0">¿Primer ingreso? Tu PIN temporal te lo da un administrador.</p>' : '<p class="s" style="margin:12px 0 0">Si no podés entrar, pedile a un administrador que te dé de alta.</p>');
+  $('v').innerHTML = '<h1>Ingresá</h1><p class="s">' + (texto || (USA_PIN ? 'Con tu nombre y apellido y tu PIN.' : 'Con tu nombre y apellido.')) + '</p><label for="n">Nombre y apellido</label><input id="n" autocomplete="name" value="' + (ls('bl_ult') || '').replace(/"/g, '') + '">' + (USA_PIN ? '<label for="p">PIN</label><input id="p" type="password" inputmode="numeric" maxlength="6" autocomplete="current-password">' : '') + '<div class="er" id="er"></div><button id="b" onclick="entrar()">Entrar</button>' + (USA_PIN ? '<p class="s" style="margin:12px 0 0">¿Primer ingreso? Tu PIN temporal te lo da un administrador.</p>' : '<p class="s" style="margin:12px 0 0">Si no podés entrar, pedile a un administrador que te dé de alta.</p>');
   $('n').onkeydown = function (e) { if (e.key === 'Enter') entrar(); };
   if ($('p')) $('p').onkeydown = $('n').onkeydown;
   ($('n').value && $('p') ? $('p') : $('n')).focus();
@@ -79,7 +79,7 @@ function entrar() {
   }).withFailureHandler(function (e) { $('b').disabled = false; msg(E(e)); }).login(n, p);
 }
 function formPin() {
-  $('v').innerHTML = '<h1>Elegí tu PIN</h1><p class="s">Hola ' + NOM + '. Tu PIN actual es temporal: elegí uno propio de 4 a 6 números.</p><label>PIN nuevo</label><input id="p1" type="password" inputmode="numeric" maxlength="6"><label>Repetilo</label><input id="p2" type="password" inputmode="numeric" maxlength="6"><div class="er" id="er"></div><button id="b" onclick="guardarPin()">Guardar y entrar</button>';
+  $('v').innerHTML = '<h1>Elegí tu PIN</h1><p class="s">Hola ' + NOM + '. Tu PIN actual es temporal: elegí uno propio de 4 a 6 números.</p><label for="p1">PIN nuevo</label><input id="p1" type="password" inputmode="numeric" maxlength="6"><label for="p2">Repetilo</label><input id="p2" type="password" inputmode="numeric" maxlength="6"><div class="er" id="er"></div><button id="b" onclick="guardarPin()">Guardar y entrar</button>';
   $('p1').focus();
 }
 function guardarPin() {

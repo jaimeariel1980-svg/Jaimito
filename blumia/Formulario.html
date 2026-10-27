@@ -180,6 +180,8 @@ google.script.run.withSuccessHandler(d => { if (!d) { document.getElementById('a
   document.getElementById('app').innerHTML = '<div class="loading" style="color:red;font-weight:bold;">Error: ' + e.message + '</div>';
 }).getDatosPerfil(PERFIL_ID);
 
+const fmtN = v => String(v).replace('.', ','); // números con coma decimal (es-AR)
+
 function render() {
   const h = DATOS.hero;
   const entrevistadoras = DATOS.entrevistadoras;
@@ -275,9 +277,10 @@ function render() {
     </div>
     <div class="criterio-box">
       <div style="font-size:10px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:var(--mid)">Umbrales automáticos</div>
-      <div class="criterio-item"><div class="criterio-dot" style="background:var(--green)"></div><span style="color:var(--green)">≥ ${h.criterio_avanza || 8.5} — A (Avanza)</span></div>
-      <div class="criterio-item"><div class="criterio-dot" style="background:var(--dorado)"></div><span style="color:#7a5500">≥ ${h.criterio_reserva || 6.5} — B (Avanza)</span></div>
-      <div class="criterio-item"><div class="criterio-dot" style="background:var(--coral)"></div><span style="color:var(--coral)">&lt; ${h.criterio_reserva || 6.5} — C (No avanza)</span></div>
+      <div class="criterio-item"><div class="criterio-dot" style="background:var(--green)"></div><span style="color:var(--green)">≥ ${fmtN(Number(h.criterio_avanza) || 9)} — A (Avanza)</span></div>
+      <div class="criterio-item"><div class="criterio-dot" style="background:#6EE7B7"></div><span style="color:var(--green)">≥ ${fmtN(Number(h.criterio_bplus) || 8)} — B+ (Avanza)</span></div>
+      <div class="criterio-item"><div class="criterio-dot" style="background:var(--dorado)"></div><span style="color:#7a5500">≥ ${fmtN(Number(h.criterio_reserva) || 6.5)} — B (en reserva)</span></div>
+      <div class="criterio-item"><div class="criterio-dot" style="background:var(--coral)"></div><span style="color:var(--coral)">&lt; ${fmtN(Number(h.criterio_reserva) || 6.5)} — C (No avanza)</span></div>
     </div>
   </div>
   <div class="footer">Confidencial · Blumia Consulting · © 2026</div>
@@ -285,6 +288,7 @@ function render() {
   document.getElementById('app').innerHTML = html;
   buildEval();
   buildVal();
+  preseleccionarEntrevistadora();
 }
 
 function buildEval() {
@@ -359,7 +363,7 @@ function calcular() {
   const salarioRechazado = (salario === 'no');
   if (salarioRechazado) norm = Math.min(norm, 4.9);
 
-  document.getElementById('score-num').textContent = norm.toFixed(1);
+  document.getElementById('score-num').textContent = fmtN(norm.toFixed(1));
   document.getElementById('barra').style.width = (norm * 10) + '%';
 
   const cAvanza = Number(DATOS.hero.criterio_avanza) || 9;
@@ -426,7 +430,7 @@ function enviarALaPlanilla() {
   const entrevistador = document.getElementById('d-entrevistadora').value;
   const tituloRaw = document.getElementById('res-titulo').textContent;
   const notas = document.getElementById('comentario').value;
-  if (!nombre) { alert('Falta el nombre del candidato.'); return; }
+  if (!nombre) { alert('Falta el nombre de la persona entrevistada.'); return; }
   const ESTADO_EF = efCapturar();
 
   let cat = state.veredictoManual || state.letraAuto || 'C';
@@ -493,7 +497,7 @@ function enviarALaPlanilla() {
       setTimeout(() => { btn.innerHTML = 'Guardar entrevista'; btn.disabled = false; }, 3000);
     })
     .withFailureHandler(err => {
-      alert('Fallo el guardado: ' + err.message);
+      alert('Falló el guardado: ' + err.message);
       btn.innerHTML = '❌ REINTENTAR';
       btn.disabled = false;
     })

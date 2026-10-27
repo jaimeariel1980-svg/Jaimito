@@ -33,7 +33,7 @@ function linkPerfilConPin_(perfilId, pin, modo) {
    Si hay versiones guardadas con guardarPerfilDatos, carga la última sobre el formulario. */
 function perfilPuestoHTML(perfilId, tok, modo) {
   const msg = txt => HtmlService.createHtmlOutput('<p style="font-family:sans-serif;padding:40px;text-align:center">' + txt + '</p>');
-  if (!tok || CacheService.getScriptCache().get('pp_' + tok) !== String(perfilId)) return msg('Acceso vencido. Abrí el botón «Perfil del puesto» desde el kanban e ingresá el PIN.');
+  if (!tok || CacheService.getScriptCache().get('pp_' + tok) !== String(perfilId)) return msg('Acceso vencido. Abrí el botón «Perfil del puesto» desde el tablero e ingresá el PIN.');
   const cfg = getConfig(perfilId);
   if (!cfg.perfil_html) return msg('Este perfil no tiene documento vinculado.');
   const plantilla = HtmlService.createTemplateFromFile(String(cfg.perfil_html));
@@ -71,7 +71,7 @@ function ultimoPerfilDatos_(cfg) {
 /* Guarda una versión con fecha y hora del perfil del puesto (los valores del formulario) en la carpeta del perfil en Drive.
    Solo se puede con el acceso temporal que da linkPerfilConPin_ (o sea, después del PIN). */
 function guardarPerfilDatos(perfilId, tok, datosJson) {
-  if (!tok || CacheService.getScriptCache().get('pp_' + tok) !== String(perfilId)) throw new Error('Acceso vencido. Volvé a abrir el perfil desde el kanban con el PIN.');
+  if (!tok || CacheService.getScriptCache().get('pp_' + tok) !== String(perfilId)) throw new Error('Acceso vencido. Volvé a abrir el perfil desde el tablero con el PIN.');
   const txt = String(datosJson || '');
   if (txt.length > 300000) throw new Error('El perfil es demasiado grande para guardarlo.');
   const d = JSON.parse(txt);

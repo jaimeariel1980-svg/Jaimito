@@ -1,8 +1,8 @@
 <style>
-.ed-fab{position:fixed;right:18px;bottom:18px;z-index:9000;background:#1A6645;color:#fff;border:none;border-radius:24px;padding:11px 18px;font:700 13px/1 'PP Pangram Sans','Plus Jakarta Sans',sans-serif;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.ed-fab{position:fixed;right:18px;bottom:18px;z-index:9000;background:#1A6645;color:#fff;border:none;border-radius:24px;padding:11px 18px;font:700 13px/1 'Poppins',sans-serif;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25)}
 .ed-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9100;display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 10px}
 .ed-bg.show{display:flex}
-.ed-box{background:#fff;border-radius:12px;max-width:860px;width:100%;padding:22px 24px;font-family:'PP Pangram Sans','Plus Jakarta Sans',sans-serif;color:#222}
+.ed-box{background:#fff;border-radius:12px;max-width:860px;width:100%;padding:22px 24px;font-family:'Poppins',sans-serif;color:#222}
 .ed-box h2{margin:0 0 4px;font-size:20px;color:#1A6645}
 .ed-box .ed-sub{font-size:12px;color:#666;margin-bottom:14px}
 .ed-box h3{margin:20px 0 8px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#1A6645}
@@ -51,7 +51,7 @@ function edSync(){
   ED.comps.forEach(function(c,i){c.nombre=g('edc_n'+i);c.descripcion=g('edc_d'+i);c.peso=g('edc_p'+i);c.preguntas=g('edc_q'+i);});
 }
 function edMover(k,i,d){edSync();var a=ED[k],j=i+d;if(j<0||j>=a.length)return;var t=a[i];a[i]=a[j];a[j]=t;edRender();}
-function edBorrar(k,i){edSync();blConfirm('¿Sacar este elemento? (queda copia en la pestaña Historial_Formularios)',function(){ED[k].splice(i,1);edRender();},{si:'Sacar',peligro:true});}
+function edBorrar(k,i){edSync();blConfirm('¿Sacar este elemento? (queda guardada una copia de lo anterior)',function(){ED[k].splice(i,1);edRender();},{si:'Sacar',peligro:true});}
 function edAgregar(k){edSync();ED[k].push(k==='eval'?{id:'',label:'',peso:1}:k==='val'?{id:'',label:'',opts:'Sí | No'}:{id:'',nombre:'',descripcion:'',peso:1,preguntas:''});edRender();}
 function edBtns(k,i){return '<div style="display:flex;gap:4px"><button class="ed-mini" onclick="edMover(\''+k+'\','+i+',-1)">↑</button><button class="ed-mini" onclick="edMover(\''+k+'\','+i+',1)">↓</button><button class="ed-mini x" onclick="edBorrar(\''+k+'\','+i+')">✕</button></div>';}
 function edRender(){
