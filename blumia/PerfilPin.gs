@@ -16,14 +16,14 @@ function pinValido_(pin) {
   cache.remove('pin_fallos');
 }
 
-function linkPerfilConPin_(perfilId, pin) {
+function linkPerfilConPin_(perfilId, pin, modo) {
   pinValido_(pin);
   const cache = CacheService.getScriptCache();
   const cfg = getConfig(perfilId);
   if (cfg.perfil_html) {
     const t = Utilities.getUuid();
     cache.put('pp_' + t, String(perfilId), 21600);
-    return URL_DEPLOY + '?tipo=perfilpuesto&perfil=' + encodeURIComponent(perfilId) + '&t=' + t;
+    return URL_DEPLOY + '?tipo=perfilpuesto&perfil=' + encodeURIComponent(perfilId) + '&t=' + t + (modo === 'editar' ? '&m=editar' : '&m=ver');
   }
   if (!cfg.link_perfil) throw new Error('Este perfil todavía no tiene el documento vinculado.');
   return String(cfg.link_perfil);
@@ -31,7 +31,7 @@ function linkPerfilConPin_(perfilId, pin) {
 
 /* Sirve el HTML editable del perfil del puesto (Config.perfil_html) solo con el acceso temporal que da linkPerfilConPin.
    Si hay versiones guardadas con guardarPerfilDatos, carga la última sobre el formulario. */
-function perfilPuestoHTML(perfilId, tok) {
+function perfilPuestoHTML(perfilId, tok, modo) {
   const msg = txt => HtmlService.createHtmlOutput('<p style="font-family:sans-serif;padding:40px;text-align:center">' + txt + '</p>');
   if (!tok || CacheService.getScriptCache().get('pp_' + tok) !== String(perfilId)) return msg('Acceso vencido. Abrí el botón «Perfil del puesto» desde el kanban e ingresá el PIN.');
   const cfg = getConfig(perfilId);
@@ -42,10 +42,19 @@ function perfilPuestoHTML(perfilId, tok) {
   plantilla.token = String(tok);
   plantilla.datos = ult ? ult.texto.replace(/</g, '\\u003c') : 'null';
   plantilla.fecha = ult ? ult.fecha : '';
-  return plantilla.evaluate()
+  const out = plantilla.evaluate()
     .setTitle('Perfil del puesto | Blumia Consulting')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  // modo «ver»: la versión definitiva guardada, solo para consultar (no se edita ni se guarda; se puede exportar a PDF). Para editar: ⚙ Configurar → Perfil del puesto.
+  if (modo !== 'editar') out.append('<style>.pill,.opt,label.pill{pointer-events:none}#btn-sis{display:none!important}</style><script>window.addEventListener("load",function(){document.querySelectorAll("input,textarea,select").forEach(function(e){e.disabled=true;});var b=document.createElement("div");b.style.cssText="position:fixed;left:50%;transform:translateX(-50%);bottom:12px;z-index:9999;background:#243D2C;color:#fff;padding:8px 18px;border-radius:99px;font:600 12px Arial,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.3)";b.textContent="Versión guardada' + (ult ? ' el ' + ult.fecha : '') + ' · solo lectura (para editar: ⚙ Configurar → Perfil del puesto)";document.body.appendChild(b);});</script>');
+  return out;
+}
+
+// fecha de la última versión guardada del perfil del puesto (para ⚙ Configurar)
+function perfilPuestoInfo_(cfg) {
+  if (!cfg.perfil_html) return { propio: false, fecha: '' };
+  try { const u = ultimoPerfilDatos_(cfg); return { propio: true, fecha: u ? u.fecha : '' }; } catch (e) { return { propio: true, fecha: '' }; }
 }
 
 function carpetaPerfil_(cfg) { return DriveApp.getFolderById(cfg.folder_madre).getParents().next(); }
