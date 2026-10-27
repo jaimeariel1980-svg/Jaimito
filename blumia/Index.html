@@ -517,12 +517,8 @@ document.getElementById('btnGuardar').addEventListener('click', function() {
   ocultarIA(false);
   const ajusteBtn = document.querySelector('.verdict-opt.sel');
   let ponderacion = '';
-  if (ajusteBtn) {
-    const txt = ajusteBtn.innerText.toUpperCase();
-    if (txt.includes('ALTO')) ponderacion = 'A';
-    else if (txt.includes('MODERADO')) ponderacion = 'B';
-    else if (txt.includes('NO AJUSTA')) ponderacion = 'C';
-  }
+  if (ajusteBtn) ponderacion = ajusteBtn.classList.contains('adj-alto') ? 'A' : ajusteBtn.classList.contains('adj-mod') ? 'B' : ajusteBtn.classList.contains('adj-bajo') ? 'C' : '';
+  if (!ponderacion && !confirm('No elegiste el «Ajuste al rol» (Alto / Con observaciones / No ajusta): la entrevista se guarda pero la nota de competencias queda sin cargar.\n\n¿Guardar igual?')) return;
   const btn = this;
   btn.disabled = true;
   btn.textContent = 'Procesando...';
