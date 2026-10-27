@@ -154,7 +154,8 @@
   window.adCopia=function(){
     var d=document.getElementById('adCopia');if(!d)return;
     google.script.run.withSuccessHandler(function(r){
-      d.innerHTML='<p style="margin:6px 0"><b>Última copia:</b> '+(r.ultima?esc(r.ultima):'todavía no hay registro')+'</p><div class="cf-help">La copia se hace <b>sola todos los días a la madrugada</b> y se guardan las últimas 14, en la carpeta «Copias de seguridad Blumia» de Drive. Solo apretá el botón si vas a hacer un cambio grande y querés una copia justo antes.</div><button class="cf-save" onclick="adCopiaYa(this)">💾 Hacer una copia ahora</button>';
+      var L=(r.copias||[]).map(function(c){return '<tr style="border-bottom:1px solid #eee"><td style="padding:7px 4px">'+esc(c.nombre)+'</td><td style="text-align:right"><a href="'+esc(c.url)+'" target="_blank">Abrir en Drive ↗</a></td></tr>';}).join('');
+      d.innerHTML='<p style="margin:6px 0"><b>Última copia:</b> '+(r.ultima?esc(r.ultima):'todavía no hay registro')+'</p><div class="cf-help">La copia (de <b>toda la planilla</b>: candidatos, configuración, formularios e historial) se hace <b>sola todos los días a la madrugada</b> y se guardan las últimas 14, en la carpeta «Copias de seguridad Blumia» de <b>Google Drive</b>. Acá abajo ves la lista y las abrís. Para recuperar algo, abrí la copia de la fecha que te sirva y copiá de ahí la pestaña o los datos; si hace falta restaurar todo, pedímelo.</div><button class="cf-save" onclick="adCopiaYa(this)">💾 Hacer una copia ahora</button>'+(L?'<table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:14px">'+L+'</table>':'');
     }).withFailureHandler(function(e){d.innerHTML='<div style="color:#B91C1C">'+esc(badPin(e))+'</div>';}).copiaInfo();
   };
   window.adCopiaYa=function(b){b.disabled=true;b.textContent='Copiando…';google.script.run.withSuccessHandler(function(r){alert('Copia hecha: '+r.fecha);adCopia();}).withFailureHandler(function(e){b.disabled=false;b.textContent='💾 Hacer una copia ahora';alert(badPin(e));}).copiaAhoraBlumia(pin());};
@@ -187,6 +188,7 @@
       x+='<tr style="border-bottom:1px solid #eee"><td style="padding:7px 4px"><b>Conexión con Google</b> (ida y vuelta, promedio de 3)</td><td style="text-align:right"><b>'+prom+' ms</b></td></tr>';
       r.pasos.forEach(function(p){x+='<tr style="border-bottom:1px solid #eee"><td style="padding:7px 4px">'+esc(p.n)+'</td><td style="text-align:right">'+p.ms+' ms</td></tr>';});
       x+='<tr style="border-bottom:1px solid #eee"><td style="padding:7px 4px"><b>Total en el servidor</b></td><td style="text-align:right"><b>'+r.total+' ms</b></td></tr>';
+      x+='<tr style="border-bottom:1px solid #eee"><td style="padding:7px 4px">Tamaño de la página: '+r.kb+' KB (los datos de los candidatos son '+(r.kbDatos||0)+' KB)</td><td></td></tr>';
       x+='<tr><td style="padding:7px 4px"><b>Abrir el tablero, de punta a punta</b> (lo que esperás vos'+(kbReal?' · página de '+kbReal+' KB':'')+')</td><td style="text-align:right"><b>'+msReal+' ms</b></td></tr></table>';
       x+='<div class="cf-help" style="margin-top:8px">Se suma además la carga del programa y de las fuentes en el navegador. Mandame una captura de esta tabla y veo qué conviene mejorar.</div>';
       d.innerHTML=x;
