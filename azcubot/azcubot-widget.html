@@ -369,7 +369,7 @@ if(!window.festejar) window.festejar = function(msg,tipo){
     setTimeout(function(){m.remove();},res?2300:3400);
   }catch(e){}
 };
-  function reply(r){ if(st.vis && (r.acciones||[]).length) st.vis = null; st.msgs.push({role:'assistant', content:r.texto, acciones:(r.acciones||[]).map(function(a){ a.estado = 'pendiente'; return a; }), panel:r.panel||null, adj:stash(r.adjuntos)}); }
+  function reply(r){ if(st.vis && (r.acciones||[]).length) st.vis = null; var nt = (r.acciones||[]).map(function(a){ return a.tipo; }); if(nt.length) st.msgs.forEach(function(m){ (m.acciones||[]).forEach(function(a){ if(a.estado==='pendiente' && nt.indexOf(a.tipo)>=0){ a.estado = 'cancelado'; a.reemplazada = 1; } }); }); st.msgs.push({role:'assistant', content:r.texto, acciones:(r.acciones||[]).map(function(a){ a.estado = 'pendiente'; return a; }), panel:r.panel||null, adj:stash(r.adjuntos)}); }
   function openFile(id, nombre){
     var m = st.fd[id]; if(!m){ alert('Ese archivo ya no está disponible. Pedilo de nuevo.'); return; }
     var bin = atob(m.b64), u = new Uint8Array(bin.length), i; for(i=0;i<bin.length;i++) u[i] = bin.charCodeAt(i);
@@ -620,8 +620,8 @@ if(!window.festejar) window.festejar = function(msg,tipo){
           if(m.adj && m.adj.length) h += adjHtml(m.adj);
           (m.acciones||[]).forEach(function(a,ai){
             var done = a.estado==='hecho', canc = a.estado==='cancelado';
-            h += '<div class="azb-card'+(done?' ok':'')+(canc?' no':'')+(a.peligro&&!done&&!canc?' dg':'')+'"><div class="azb-k">'+(done?'✓ Hecho':canc?'Cancelado':(a.peligro?'⚠️ Confirmá con cuidado':'Confirmá esta acción'))+'</div><div class="azb-s">'+esc(done&&a.resultado?(a.resultado==='Ejecutando…'&&st.status?st.status:a.resultado):a.resumen)+'</div>'+
-              (a.estado==='pendiente'?'<div class="azb-bt"><button class="azb-btn" data-ok="'+mi+':'+ai+'">Confirmar</button><button class="azb-btn o" data-no="'+mi+':'+ai+'">Cancelar</button></div>':'')+'</div>';
+            h += '<div class="azb-card'+(done?' ok':'')+(canc?' no':'')+(a.peligro&&!done&&!canc?' dg':'')+'"><div class="azb-k">'+(done?(a.deshecho?'↩ Deshecho':'✓ Hecho'):canc?(a.reemplazada?'Reemplazada por una tarjeta nueva':'Cancelado'):(a.peligro?'⚠️ Confirmá con cuidado':'Confirmá esta acción'))+'</div><div class="azb-s">'+esc(done&&a.resultado?(a.resultado==='Ejecutando…'&&st.status?st.status:a.resultado):a.resumen)+'</div>'+
+              (a.estado==='pendiente'?'<div class="azb-bt"><button class="azb-btn" data-ok="'+mi+':'+ai+'">Confirmar</button><button class="azb-btn o" data-no="'+mi+':'+ai+'">Cancelar</button></div>':'')+(done && a.deshacer && !a.deshecho && a.resultado!=='Ejecutando…'?'<div class="azb-bt"><button class="azb-btn o" data-un="'+mi+':'+ai+'">↩ Deshacer</button></div>':'')+'</div>';
           });
         }
       });
@@ -970,7 +970,7 @@ if(!window.festejar) window.festejar = function(msg,tipo){
     enviar(fl);
     function enviar(fl){
     call('azcuEjecutar', [Object.assign({quien:st.nombre||'', files:fl}, a2)], function(r){
-      a.resultado = r.mensaje; delete st.fz[a.id];
+      a.resultado = r.mensaje; if(r.deshacer) a.deshacer = r.deshacer; delete st.fz[a.id];
       if(a.tipo==='etapa' && a.datos && typeof window.festejar==='function'){ if(a.datos.etapa==='Vendida') window.festejar('🎉 ¡Vendida! '+(a.datos.dir||'')); else if(a.datos.etapa==='Reserva') window.festejar(null,'reserva'); }
       if(r.enlaces && r.enlaces.length) st.msgs.push({role:'assistant', content:'', adj:r.enlaces});
       save(); render();
@@ -978,6 +978,16 @@ if(!window.festejar) window.festejar = function(msg,tipo){
       if(typeof window.visLoad==='function'){ try{ window.visLoad(); }catch(e){} }
     }, function(err){ a.estado = 'pendiente'; a.resultado = ''; st.msgs.push({role:'assistant', content:'No pude hacerlo: '+err}); save(); render(); });
     }
+  }
+  function deshacerAccion(mi, ai){
+    var a = st.msgs[mi].acciones[ai];
+    if(!a || !a.deshacer || a.deshecho || !window.confirm('¿Deshacer esto?')) return;
+    a.deshecho = 1; a.resultado = 'Deshaciendo…'; render();
+    call('azcuEjecutar', [Object.assign({quien:st.nombre||''}, a.deshacer)], function(r){
+      a.resultado = r.mensaje; save(); render();
+      if(typeof window.recargar==='function'){ try{ window.recargar(AZ.ctx||undefined); }catch(e){} }
+      if(typeof window.visLoad==='function'){ try{ window.visLoad(); }catch(e){} }
+    }, function(err){ a.deshecho = 0; a.resultado = 'Listo'; st.msgs.push({role:'assistant', content:'No pude deshacerlo: '+err}); save(); render(); });
   }
   function azUnirGrupos(fl, grp, multi){
     function aFile(f){ var bin = atob(f.b), u = new Uint8Array(bin.length); for(var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new File([u], f.n, {type:f.m}); }
@@ -1056,7 +1066,7 @@ if(!window.festejar) window.festejar = function(msg,tipo){
   }
   root.addEventListener('click', function(e){
     var mvEl = e.target.closest && e.target.closest('[data-mvi]'); if(mvEl && st.mov){ var xi = st.mov[+mvEl.getAttribute('data-mvi')]; if(xi){ mvGo(xi); return; } }
-    var t = e.target.closest('[data-a],[data-q],[data-ok],[data-no],[data-w],[data-wo],[data-ws],[data-wx],[data-f],[data-d],#azbFab'); if(!t) return;
+    var t = e.target.closest('[data-a],[data-q],[data-ok],[data-no],[data-un],[data-w],[data-wo],[data-ws],[data-wx],[data-f],[data-d],#azbFab'); if(!t) return;
     if(t.id==='azbAgJ') return;
     if(t.dataset.d){ st.agSel = t.dataset.d; st.agForm = false; render(); return; }
     if(t.dataset.f){ openFile(t.dataset.f, t.dataset.fn||'archivo'); return; }
@@ -1067,6 +1077,7 @@ if(!window.festejar) window.festejar = function(msg,tipo){
     if(t.id==='azbFab'){ st.open = !st.open; var tip = document.querySelector('.azb-tip'); if(tip) tip.remove(); render(); return; }
     if(t.dataset.q){ ask(t.dataset.q, t.dataset.at); return; }
     if(t.dataset.ok){ var p = t.dataset.ok.split(':'); doAction(+p[0], +p[1], true); return; }
+    if(t.dataset.un){ var pu = t.dataset.un.split(':'); deshacerAccion(+pu[0], +pu[1]); return; }
     if(t.dataset.no){ var q = t.dataset.no.split(':'); doAction(+q[0], +q[1], false); return; }
     var a = t.dataset.a;
     if(a==='close'){ st.open = false; render(); }
