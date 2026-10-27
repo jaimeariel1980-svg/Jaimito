@@ -1,4 +1,4 @@
-const CFG_CAMPOS_ = ['nombre', 'nombre_perfil', 'empresa', 'empresa_candidatos', 'banda_salarial', 'link_screening', 'link_competencias', 'link_empresa_virtual', 'link_empresa_presencial', 'link_flyer', 'link_perfil'];
+const CFG_CAMPOS_ = ['nombre', 'nombre_perfil', 'empresa', 'empresa_candidatos', 'logo_cliente', 'preguntas_base', 'banda_salarial', 'link_screening', 'link_competencias', 'link_empresa_virtual', 'link_empresa_presencial', 'link_flyer', 'link_perfil'];
 
 function getConfigBusqueda_(pin, perfilId) {
   pinValido_(pin);
@@ -37,7 +37,13 @@ function guardarConfigBusqueda_(pin, perfilId, p, quien) {
         if (p.datos[k] === undefined) return;
         const v = String(p.datos[k]).replace(/[<>]/g, '').trim();
         if ((k === 'nombre' || k === 'nombre_perfil' || k === 'empresa') && !v) throw new Error('«' + k + '» no puede quedar vacío.');
-        if (/^link_/.test(k) && v && !/^https?:\/\//i.test(v)) throw new Error('El link «' + k + '» tiene que empezar con https://');
+        if ((/^link_/.test(k) || k === 'logo_cliente') && v && !/^https?:\/\//i.test(v)) throw new Error('El link «' + k + '» tiene que empezar con https://');
+        if (k === 'preguntas_base') {
+          const L = v.toLowerCase().split(',').map(x => x.trim()).filter(Boolean);
+          if (L.some(x => x !== 'ninguna' && PREG_BASE_.indexOf(x) < 0)) throw new Error('Alguna pregunta fija no es válida.');
+          if (!v) return; // sin dato = la búsqueda sigue mostrando todas las preguntas fijas
+          poner(k, L.join(','), (base.datos || {})[k]); return;
+        }
         if (k === 'banda_salarial') { const num = String(v).replace(/\D/g, ''); if (v && Number(num) < 1000) throw new Error('La banda salarial va en pesos, por ejemplo 13000000.'); poner(k, num, (base.datos || {})[k]); return; }
         poner(k, v, (base.datos || {})[k]);
       });
@@ -84,9 +90,11 @@ function colPerfilPlantillas_(sh) {
   return c;
 }
 
-// «Soy Ariel» y la firma «Ariel» fijos pasan a [ENTREVISTADOR] (así firma quien envía)
+// «Soy <nombre>» y la firma con el nombre de un usuario pasan a [ENTREVISTADOR] (así firma quien envía)
 function firmaConPlaceholder_(t) {
-  return String(t || '').replace(/\bSoy Ariel\b/g, 'Soy [ENTREVISTADOR]').replace(/(Saludos,?[ \t]*\r?\n)Ariel\b/g, '$1[ENTREVISTADOR]');
+  const nombres = entrevistadoresDefault_().map(n => n.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g, '')).filter(Boolean).join('|');
+  if (!nombres) return String(t || '');
+  return String(t || '').replace(new RegExp('\\bSoy (' + nombres + ')\\b', 'g'), 'Soy [ENTREVISTADOR]').replace(new RegExp('(Saludos,?[ \\t]*\\r?\\n)(' + nombres + ')\\b', 'g'), '$1[ENTREVISTADOR]');
 }
 
 // devuelve {texto, propia}: el texto propio de la búsqueda si existe, si no el general

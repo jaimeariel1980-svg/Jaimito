@@ -79,6 +79,14 @@ function leerUsuariosHoja_() {
   })).filter(u => u.nombre);
 }
 
+// Primer nombre de cada usuario activo de la pestaña «Usuarios»: es la lista de entrevistadores por defecto (no hay nombres escritos en el código)
+function entrevistadoresDefault_() {
+  let L = [];
+  try { L = leerUsuarios_().filter(u => u.activo === 'SI').map(u => String(u.nombre).split(' ')[0]); } catch (e) { }
+  L = L.filter((n, i) => n && L.indexOf(n) === i);
+  return L.length ? L : ['Entrevistador'];
+}
+
 function emitirToken_(u) {
   const iat = Date.now(), cuerpo = u.clave + '.' + iat + '.' + (iat + SES_DIAS_ * 864e5);
   return cuerpo + '.' + firmar_(cuerpo);
