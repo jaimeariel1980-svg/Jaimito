@@ -389,11 +389,6 @@ header h1{display:none!important}
 .nav button,.nav .dd>button{padding:10px 18px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);font-size:13px}
 .nav button.avt{padding:0}
 .rs-tabs{gap:10px;padding:16px 20px 0}
-.rs-tab.inicio{background:#fff;color:var(--green);border:1.5px solid var(--green)}
-.rs-tab.inicio:hover{background:var(--glight)}
-.rs-tab.ag{background:#F0605D;border-color:#F0605D;color:#fff;box-shadow:0 4px 12px rgba(240,96,93,.35)}
-.rs-tab.ag:hover{background:#DD4B48}
-.rs-tab.ag b{background:var(--cream);color:var(--green);border-radius:99px;padding:2px 9px;margin-left:8px;font-size:12px}
 @media(max-width:640px){header{padding:12px 14px;border-bottom-width:3px;min-height:0}.htit{flex:1 1 100%}.htit select{font-size:16px}.rs-tab.ag{margin-left:0}.rs-tabs{flex-wrap:wrap!important;overflow:visible!important}}
 </style>
 <style id="btnA">
@@ -402,10 +397,14 @@ header h1{display:none!important}
 .nav button.avt{border-radius:50%!important;width:40px;padding:0!important;background:#FBE794;border:none}
 .rs-tabs{gap:10px;padding:18px 28px 2px;max-width:none!important;margin:0!important}
 #resumenPage{max-width:none!important;margin:0!important;padding:14px 28px 50px!important}
-.rs-tab{height:40px;padding:0 18px;border-radius:8px;display:inline-flex;align-items:center;font-size:13px;font-weight:700;background:#fff;border:1.5px solid var(--line);color:var(--green)}
+.rs-tab{height:40px;padding:0 22px;border-radius:8px;display:inline-flex;align-items:center;font-size:13px;font-weight:700;background:var(--cream);border:1.5px solid #EBCF5F;color:var(--green)}
+.rs-tab:hover{background:#F6DC72}
 .rs-tab.on{background:var(--green);color:#fff;border-color:var(--green)}
-.rs-tab.inicio{border-color:var(--line)}
-.rs-tab.ag{background:#F0605D;border-color:#F0605D;color:#fff}
+#inicioBtn{width:40px;padding:0!important;font-size:17px}
+.agb{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;margin-left:8px;border-radius:99px;font-size:12px;font-weight:800;background:rgba(255,255,255,.9);color:var(--green)}
+.agb.hoy{background:#F0605D;color:#fff;box-shadow:0 0 0 2px #fff;animation:agp 2.4s ease-in-out infinite}
+@keyframes agp{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+@media(prefers-reduced-motion:reduce){.agb.hoy{animation:none}}
 .filtros{padding:16px 28px 4px;gap:10px}
 .filtros input,.filtros select,.filtros button,#fTog{height:40px;border-radius:8px;border:1.5px solid var(--line);font-size:13px;font-weight:600;box-sizing:border-box}
 .filtros input{padding:0 12px 0 32px}.filtros select{padding:0 12px}.filtros button,#fTog{padding:0 16px;font-weight:700;color:var(--green);background:#fff}
@@ -466,6 +465,8 @@ header h1{font-size:15px;line-height:1.25;flex:1 1 100%;min-width:0;display:-web
 (function(){
   var nav=document.getElementById('nav'),hd=document.querySelector('header');if(!nav||!hd)return;
   var sel=nav.querySelector('select'),im=hd.querySelector('img');
+  var irInicio=function(){window.top.location.href=(typeof URL_APP==='string'?URL_APP:'')+'?tipo=inicio';};
+  if(im){im.style.cursor='pointer';im.title='Volver al Inicio';im.onclick=irInicio;}
   if(sel&&im){
     var og=sel.options[sel.selectedIndex],emp=(og&&og.parentNode&&og.parentNode.label)||'';
     var w=document.createElement('div');w.className='htit';w.innerHTML='<small></small>';w.firstChild.textContent=emp;w.appendChild(sel);
@@ -473,14 +474,18 @@ header h1{font-size:15px;line-height:1.25;flex:1 1 100%;min-width:0;display:-web
     var fit=function(){var c=document.createElement('canvas').getContext('2d'),cs=getComputedStyle(sel);c.font=cs.fontWeight+' '+cs.fontSize+' '+cs.fontFamily;var tx=og?og.textContent:'';sel.style.width=Math.min(Math.ceil(c.measureText(tx).width)+30,Math.max(200,hd.clientWidth-60))+'px';};
     fit();if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit);window.addEventListener('resize',fit);
   }
-  var tabs=document.querySelector('.rs-tabs'),ini=nav.querySelector('button[title^="Volver al inicio"]');
-  if(tabs&&ini){ini.className='rs-tab inicio';ini.textContent='🏠 Inicio';tabs.insertBefore(ini,tabs.firstChild);}
-  var ag=tabs&&tabs.querySelector('button[onclick^="abrirAgenda"]');
-  if(ag){
-    ag.className='rs-tab ag';
-    var pc=function(s){var m=/(\d{2})\/(\d{2})\/(\d{4}).*?(\d{2}):(\d{2})/.exec(String(s||''));return m?new Date(+m[3],+m[2]-1,+m[1],+m[4],+m[5]):null;};
-    var n=0,ahora=Date.now()-36e5;(typeof DATA!=='undefined'?DATA:[]).forEach(function(c){var d=pc(c.cita);if(d&&d.getTime()>=ahora)n++;});
-    ag.innerHTML='📅 Agenda'+(n?'<b>'+n+'</b>':'');
-  }
+  // 🏠 solo el ícono, primero de la barra
+  var ini=nav.querySelector('button[title^="Volver al inicio"]');
+  if(ini){ini.id='inicioBtn';ini.className='';ini.textContent='🏠';ini.title='Volver al Inicio';nav.insertBefore(ini,nav.firstChild);}
+  // 📅 Agenda arriba como un botón más, con globito de las entrevistas de hoy
+  var tabs=document.querySelector('.rs-tabs'),agT=tabs&&tabs.querySelector('button[onclick^="abrirAgenda"]');if(agT)agT.remove();
+  var pc=function(s){var m=/(\d{2})\/(\d{2})\/(\d{4}).*?(\d{2}):(\d{2})/.exec(String(s||''));return m?new Date(+m[3],+m[2]-1,+m[1],+m[4],+m[5]):null;};
+  var hoy=0,prox=0,ahora=Date.now()-36e5,d0=new Date();
+  (typeof DATA!=='undefined'?DATA:[]).forEach(function(c){var d=pc(c.cita);if(!d||d.getTime()<ahora)return;prox++;if(d.toDateString()===d0.toDateString())hoy++;});
+  var ag=document.createElement('button');ag.id='agBtn';ag.setAttribute('onclick','abrirAgenda()');
+  ag.title=hoy?(hoy+' entrevista'+(hoy===1?'':'s')+' hoy · '+prox+' próximas'):(prox?prox+' entrevista'+(prox===1?'':'s')+' próxima'+(prox===1?'':'s'):'Sin entrevistas agendadas');
+  ag.innerHTML='📅 Agenda'+(hoy?'<span class="agb hoy">'+hoy+'</span>':(prox?'<span class="agb">'+prox+'</span>':''));
+  var bell=document.getElementById('avBtn');
+  if(bell&&bell.nextSibling)nav.insertBefore(ag,bell.nextSibling);else nav.insertBefore(ag,nav.children[1]||null);
 })();
 </script>

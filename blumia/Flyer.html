@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Flyer | Blumia</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--g:#243D2C;--gf:#1A6645;--m:#E3EEDC;--l:#D5E0CE;--bg:#F3F8F1;--c:#FBE794;--coral:#F0605D;--font:'Poppins',sans-serif}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);background:var(--bg);color:#1A1A1A;display:flex;gap:24px;padding:20px;align-items:flex-start;min-height:100vh}
+#panel{width:340px;flex:none;background:#fff;border:1px solid var(--l);border-radius:14px;padding:16px;position:sticky;top:20px;max-height:calc(100vh - 40px);overflow-y:auto}
+#panel h2{font-size:17px;color:var(--g);margin-bottom:2px}
+#panel .sub{font-size:12px;color:#666;margin-bottom:12px}
+.sec{border-top:1px solid var(--l);padding:12px 0}
+.sec h3{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--g);margin-bottom:8px}
+.row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.row>*{flex:1}
+label.lb{display:block;font-size:11px;font-weight:600;color:#555;margin-bottom:3px}
+.lb b{float:right;color:var(--gf)}
+input[type=range]{width:100%}
+input[type=text]{width:100%;height:36px;border:1.5px solid var(--l);border-radius:8px;padding:0 10px;font:500 12px var(--font)}
+textarea{width:100%;border:1.5px solid var(--l);border-radius:8px;padding:8px 10px;font:500 12px/1.4 var(--font);resize:vertical}
+.bt{height:38px;border-radius:8px;border:1.5px solid var(--l);background:var(--m);color:var(--g);font:700 12px var(--font);cursor:pointer;padding:0 12px;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none}
+.bt:hover{border-color:var(--g)}
+.bt.pri{background:var(--g);color:#fff;border-color:var(--g)}
+.bt.ia{background:var(--c);border-color:var(--c)}
+.bt.on{background:var(--g);color:#fff;border-color:var(--g)}
+.bt:disabled{opacity:.6;cursor:default}
+.bt.full{width:100%}
+.dots{display:flex;gap:6px}.dot{width:26px;height:26px;border-radius:6px;cursor:pointer;border:2px solid transparent;outline:1px solid #ccc}.dot.on{border-color:var(--coral)}
+.chk{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;margin-bottom:8px;cursor:pointer}
+.nota{font-size:11px;color:#777;line-height:1.4}
+.aviso{background:#FFF3CD;color:#7a5500;border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:10px}
+#msg{font-size:12px;margin-top:8px;min-height:16px;color:var(--gf);font-weight:600}
+#main{flex:1;min-width:0}
+#vwrap{width:100%;overflow:hidden}
+#stage{transform-origin:top left;width:1080px}
+/* ---- el flyer (1080 px de ancho) ---- */
+#flyer{width:1080px;height:1920px;position:relative;overflow:hidden;background:#F7F5F1;font-family:'Plus Jakarta Sans',sans-serif;--s:1;--k:1;--tc:#1A1A1A;--ac:#1A6645;box-shadow:0 8px 40px rgba(0,0,0,.25)}
+#ph{position:absolute;top:0;left:0;width:100%;height:72%;background:linear-gradient(160deg,#1A6645 0%,#2F7A56 55%,#7FB08F 100%)}
+#bg{position:absolute;object-fit:cover}
+#ov{position:absolute;inset:0;pointer-events:none}
+#bucle{position:absolute;top:40px;right:-180px;width:900px;z-index:5;pointer-events:none}
+#logo{position:absolute;top:44px;left:52px;z-index:10}
+#logoCli{position:absolute;top:44px;right:52px;z-index:10;display:none}
+#cont{position:absolute;left:56px;right:56px;z-index:6;display:flex;flex-direction:column;gap:calc(22px*var(--k)*var(--s))}
+.badge{align-self:flex-start;background:#FBC67B;color:#1A1A1A;font-weight:700;font-size:calc(28px*var(--k)*var(--s));padding:.55em 1.1em;border-radius:3px}
+#tit{font-weight:800;line-height:1.02;letter-spacing:-.03em;font-size:calc(92px*var(--k)*var(--s));color:var(--tc)}
+#tit em{font-style:normal;color:var(--ac)}
+#baj{font-weight:500;line-height:1.4;font-size:calc(30px*var(--k)*var(--s));color:var(--tc);max-width:960px}
+.secbox{border-left:6px solid var(--ac);padding-left:28px}
+.sectit{font-weight:800;color:var(--ac);font-size:calc(36px*var(--k)*var(--s));margin-bottom:.3em}
+.item{display:flex;gap:14px;align-items:flex-start;font-weight:500;line-height:1.35;margin-bottom:.3em;font-size:calc(28px*var(--k)*var(--s));color:var(--tc)}
+.item i{font-style:normal;font-weight:700;color:var(--ac);flex:none}
+#foot{position:absolute;left:0;bottom:0;width:100%;background:#1A6645;z-index:7;display:flex;align-items:center;gap:50px;padding:0 80px}
+#qrbox{flex:none;text-align:center}
+#qrImg{background:#fff;padding:12px;border-radius:10px;display:block;margin:0 auto}
+#qrCap{font-size:22px;font-weight:700;color:#F7F5F1;margin-top:10px}
+#fcol{flex:1;min-width:0}
+#fTxt{font-size:calc(34px*var(--k));font-weight:600;line-height:1.35;color:#F7F5F1}
+#arrow{font-size:calc(60px*var(--k));font-weight:800;line-height:1;color:#F4D03F;margin:6px 0}
+#fMail{font-size:calc(34px*var(--k));font-weight:700;color:#F7F5F1;white-space:nowrap}
+#flyer.noqr #qrbox{display:none}
+#flyer.noqr #fcol{text-align:center}
+.exporting [contenteditable]{outline:none!important;background:transparent!important}
+[contenteditable]{outline:none}
+body:not(.exporting) [contenteditable]:hover{background:rgba(255,255,255,.28)}
+body:not(.exporting) [contenteditable]:focus{background:rgba(255,255,255,.85);color:#1a1a1a}
+/* resultado de la descarga */
+#res{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:99;align-items:center;justify-content:center;padding:20px}
+#res.show{display:flex}
+#res .in{background:#fff;border-radius:14px;padding:16px;max-width:560px;width:100%;max-height:94vh;overflow:auto;text-align:center}
+#res img{width:100%;border-radius:8px;border:1px solid var(--l);margin:10px 0}
+@media(max-width:900px){body{flex-direction:column;padding:12px}#panel{width:100%;position:static;max-height:none}}
+</style></head><body>
+<div id="panel">
+  <h2>📢 Flyer y textos</h2><div class="sub" id="sub"></div>
+  <div id="avisoIA" class="aviso" style="display:none">Todavía no generaste los textos: tocá «✨ Generar textos» o escribí directo sobre el flyer.</div>
+
+  <div class="sec"><h3>Formato</h3>
+    <div class="row"><button class="bt" id="fSt">📱 Historia 1080×1920</button><button class="bt" id="fLi">🖼 Post 1080×1350</button></div>
+    <div class="nota">El de 1350 sirve para LinkedIn y WhatsApp.</div></div>
+
+  <div class="sec"><h3>Textos con IA</h3>
+    <label class="chk"><input type="checkbox" id="mostrarEmp"> Nombrar a la empresa en el flyer</label>
+    <button class="bt ia full" id="btnIA">✨ Generar textos</button>
+    <div class="nota" style="margin-top:6px">Redacta bajada, desafíos, requisitos y los posteos con lo que está cargado en el perfil del puesto. Después editás todo directo sobre el flyer.</div></div>
+
+  <div class="sec"><h3>Foto de fondo</h3>
+    <div class="row"><label class="bt" for="inBg" style="flex:2">📷 Subir foto</label><button class="bt" id="quitBg">Quitar</button></div><input type="file" id="inBg" accept="image/*" style="display:none">
+    <label class="lb">Difuminado <b id="vOv">60%</b></label><input type="range" id="sOv" min="0" max="100" value="60">
+    <label class="lb" style="margin-top:6px">Zoom <b id="vZ">100%</b></label><input type="range" id="sZ" min="100" max="220" value="100">
+    <label class="lb" style="margin-top:6px">Mover a los costados <b id="vPx">50%</b></label><input type="range" id="sPx" min="0" max="100" value="50">
+    <label class="lb" style="margin-top:6px">Mover arriba / abajo <b id="vPy">50%</b></label><input type="range" id="sPy" min="0" max="100" value="50">
+    <div class="nota" style="margin-top:6px">Cada búsqueda cambia de foto: se guarda junto con el diseño.</div></div>
+
+  <div class="sec"><h3>Logos y cinta</h3>
+    <div class="row"><button class="bt" id="logoC">Logo claro</button><button class="bt" id="logoO">Logo oscuro</button></div>
+    <label class="lb">Tamaño del logo <b id="vLg">110px</b></label><input type="range" id="sLg" min="60" max="200" value="110">
+    <div class="row" style="margin-top:8px"><label class="bt" for="inCli" style="flex:2">🏷 Logo del cliente</label><button class="bt" id="quitCli">Quitar</button></div><input type="file" id="inCli" accept="image/*" style="display:none">
+    <label class="lb">Tamaño logo cliente <b id="vCl">80px</b></label><input type="range" id="sCl" min="40" max="200" value="80">
+    <label class="chk" style="margin-top:8px"><input type="checkbox" id="bucOn"> Mostrar la cinta amarilla</label>
+    <label class="lb">Opacidad de la cinta <b id="vBo">100%</b></label><input type="range" id="sBo" min="10" max="100" value="100"></div>
+
+  <div class="sec"><h3>Colores y tamaño</h3>
+    <label class="lb">Título y textos</label><div class="dots" id="cT"><span class="dot" data-c="#1A1A1A" style="background:#1A1A1A"></span><span class="dot" data-c="#FFFFFF" style="background:#fff"></span><span class="dot" data-c="#1A6645" style="background:#1A6645"></span><span class="dot" data-c="#F7F5F1" style="background:#F7F5F1"></span></div>
+    <label class="lb" style="margin-top:8px">Acento (cargo, títulos, tildes)</label><div class="dots" id="cA"><span class="dot" data-c="#1A6645" style="background:#1A6645"></span><span class="dot" data-c="#E8501A" style="background:#E8501A"></span><span class="dot" data-c="#FBC67B" style="background:#FBC67B"></span><span class="dot" data-c="#FFFFFF" style="background:#fff"></span></div>
+    <label class="lb" style="margin-top:8px">Tamaño del texto <b id="vTs">100%</b></label><input type="range" id="sTs" min="70" max="130" value="100">
+    <div class="nota">Si el texto no entra, se achica solo.</div></div>
+
+  <div class="sec"><h3>Ítems</h3>
+    <div class="row"><span style="flex:2;font-size:12px;font-weight:600">Desafíos</span><button class="bt" id="addD">+</button><button class="bt" id="remD">−</button></div>
+    <div class="row"><span style="flex:2;font-size:12px;font-weight:600">Requisitos</span><button class="bt" id="addR">+</button><button class="bt" id="remR">−</button></div></div>
+
+  <div class="sec"><h3>Postulación</h3>
+    <label class="chk"><input type="checkbox" id="conQr"> Con código QR</label>
+    <label class="lb">Link del QR</label><input type="text" id="qrUrl" placeholder="https://...">
+    <div class="nota" style="margin-top:4px">Conviene pegar un link corto (el QR queda más limpio).</div></div>
+
+  <div class="sec"><h3>Guardar</h3>
+    <button class="bt pri full" id="btnSave" style="margin-bottom:8px">💾 Guardar en Drive</button>
+    <button class="bt pri full" id="btnPng">⬇ Descargar imagen (PNG)</button>
+    <div id="msg"></div>
+    <div class="nota" id="fechaG"></div><div class="nota" id="viejo"></div></div>
+
+  <div class="sec"><h3>Textos para redes</h3>
+    <label class="lb">LinkedIn</label><textarea id="tLi" rows="6"></textarea><button class="bt full" data-cp="tLi" style="margin:4px 0 10px">Copiar</button>
+    <label class="lb">Instagram</label><textarea id="tIg" rows="5"></textarea><button class="bt full" data-cp="tIg" style="margin:4px 0 10px">Copiar</button>
+    <label class="lb">WhatsApp</label><textarea id="tWa" rows="4"></textarea><button class="bt full" data-cp="tWa" style="margin:4px 0 0">Copiar</button></div>
+</div>
+
+<div id="main"><div id="vwrap"><div id="stage">
+<div id="flyer">
+  <div id="ph"></div><img id="bg" alt=""><div id="ov"></div>
+  <img id="bucle" alt=""><img id="logo" alt=""><img id="logoCli" alt="">
+  <div id="cont">
+    <div class="badge" id="badge" contenteditable="true"></div>
+    <h1 id="tit"><span id="busc" contenteditable="true"></span><br><em id="cargo" contenteditable="true"></em></h1>
+    <p id="baj" contenteditable="true"></p>
+    <div class="secbox"><div class="sectit" id="titD" contenteditable="true"></div><div id="iD"></div></div>
+    <div class="secbox"><div class="sectit" id="titR" contenteditable="true"></div><div id="iR"></div></div>
+  </div>
+  <div id="foot">
+    <div id="qrbox"><img id="qrImg" alt=""><p id="qrCap" contenteditable="true"></p></div>
+    <div id="fcol"><p id="fTxt" contenteditable="true"></p><div id="arrow">↓</div><p id="fMail" contenteditable="true"></p></div>
+  </div>
+</div></div></div></div>
+
+<div id="res"><div class="in"><b id="resT">Tu flyer está listo</b><div class="nota" id="resN"></div><img id="resImg" alt=""><div class="row"><a class="bt pri" id="resA" download="flyer.png">⬇ Descargar</a><button class="bt" id="resX">Cerrar</button></div></div></div>
+
+<script>%%QRLIB%%</script>
+<script>
+var DATOS=%%DATOS%%;
+var ASSETS=%%ASSETS%%;
+var $=function(i){return document.getElementById(i)};
+var FMT={st:{H:1920,foot:380,k:1,minTop:380,qr:220},li:{H:1350,foot:300,k:.9,minTop:290,qr:170}};
+var generado=false,sucio=false;
+var S=null;
+
+function porDefecto(){
+  var emp=DATOS.empresa==='MACS';
+  var nombre=emp?DATOS.empresa:DATOS.empresaNeutral;
+  return {fmt:'st',qr:true,qrUrl:DATOS.linkPostulacion,mostrarEmpresa:emp,bg:'',cli:'',colT:'#1A1A1A',colA:'#1A6645',logoOsc:false,
+    ov:60,px:50,py:50,zoom:100,ts:100,logoH:110,cliH:80,bucOn:true,bucOp:100,
+    txt:{badge:[DATOS.ubicacion,DATOS.instancia].filter(Boolean).join(' · ')||'Presencial',busc:'Buscamos',cargo:DATOS.puesto,
+      baj:nombre.charAt(0).toUpperCase()+nombre.slice(1)+' busca incorporar a su equipo a: '+DATOS.puesto+'.',
+      titD:'Principales desafíos',titR:'Requisitos',
+      form:'Te invitamos a postularte escaneando el QR o ingresando al enlace de la descripción.',qrCap:'Escaneá para postularte',mail:DATOS.mail},
+    iD:['Completá los principales desafíos del puesto.'],iR:['Completá los requisitos del puesto.'],
+    social:{linkedin:'',instagram:'',whatsapp:''}};
+}
+
+function cargarEstado(){
+  S=porDefecto();
+  if(DATOS.guardado){try{var g=JSON.parse(DATOS.guardado);for(var k in g){if(k==='txt'){for(var t in g.txt)S.txt[t]=g.txt[t]}else S[k]=g[k]}generado=true}catch(e){}}
+}
+
+function setItems(id,arr){var c=$(id);c.innerHTML='';arr.forEach(function(t){var d=document.createElement('div');d.className='item';var i=document.createElement('i');i.textContent='✓';var s=document.createElement('span');s.setAttribute('contenteditable','true');s.textContent=t;d.appendChild(i);d.appendChild(s);c.appendChild(d)})}
+function getItems(id){var o=[];var s=$(id).querySelectorAll('.item span');for(var i=0;i<s.length;i++){var v=s[i].textContent.trim();if(v)o.push(v)}return o}
+
+function makeQr(u){var im=$('qrImg');if(!u){im.removeAttribute('src');return}try{var q=qrcode(0,'M');q.addData(u);q.make();im.src=q.createDataURL(8,2)}catch(e){im.removeAttribute('src')}}
+
+function aplicar(){
+  var f=FMT[S.fmt],fl=$('flyer');
+  fl.style.height=f.H+'px';fl.style.setProperty('--k',f.k);
+  fl.style.setProperty('--tc',S.colT);fl.style.setProperty('--ac',S.colA);
+  fl.className=S.qr?'':'noqr';
+  $('foot').style.height=f.foot+'px';
+  $('cont').style.bottom=(f.foot+36)+'px';
+  var q=$('qrImg');q.style.width=f.qr+'px';q.style.height=f.qr+'px';
+  // fondo: tamaño y posición
+  var z=S.zoom/100,w=1080*z,h=f.H*z,bg=$('bg');
+  bg.style.width=w+'px';bg.style.height=h+'px';bg.style.left=((1080-w)*S.px/100)+'px';bg.style.top=((f.H-h)*S.py/100)+'px';
+  if(S.bg){bg.src=S.bg;bg.style.display='block';$('ph').style.display='none'}else{bg.removeAttribute('src');bg.style.display='none';$('ph').style.display='block'}
+  var v=S.ov;$('ov').style.background='linear-gradient(to bottom,rgba(247,245,241,0) 0%,rgba(247,245,241,'+(v*.004)+') 25%,rgba(247,245,241,'+(v*.01)+') 42%,rgba(247,245,241,'+(v*.015)+') 55%,rgba(247,245,241,1) 68%,rgba(247,245,241,1) 100%)';
+  $('logo').src=S.logoOsc?ASSETS.logoOsc:ASSETS.logo;$('logo').style.height=S.logoH+'px';
+  var cl=$('logoCli');if(S.cli){cl.src=S.cli;cl.style.display='block';cl.style.height=S.cliH+'px'}else{cl.removeAttribute('src');cl.style.display='none'}
+  var bu=$('bucle');bu.src=ASSETS.bucle;bu.style.display=S.bucOn?'block':'none';bu.style.opacity=S.bucOp/100;
+  makeQr(S.qr?S.qrUrl:'');
+  pintarPanel();
+  ajustar();vista();
+}
+
+function pintarPanel(){
+  $('fSt').classList.toggle('on',S.fmt==='st');$('fLi').classList.toggle('on',S.fmt==='li');
+  $('logoC').classList.toggle('on',!S.logoOsc);$('logoO').classList.toggle('on',S.logoOsc);
+  $('mostrarEmp').checked=!!S.mostrarEmpresa;$('conQr').checked=!!S.qr;$('bucOn').checked=!!S.bucOn;$('qrUrl').value=S.qrUrl||'';
+  var m={sOv:['ov','vOv','%'],sZ:['zoom','vZ','%'],sPx:['px','vPx','%'],sPy:['py','vPy','%'],sLg:['logoH','vLg','px'],sCl:['cliH','vCl','px'],sBo:['bucOp','vBo','%'],sTs:['ts','vTs','%']};
+  for(var id in m){$(id).value=S[m[id][0]];$(m[id][1]).textContent=S[m[id][0]]+m[id][2]}
+  var d=document.querySelectorAll('#cT .dot');for(var i=0;i<d.length;i++)d[i].classList.toggle('on',d[i].getAttribute('data-c')===S.colT);
+  d=document.querySelectorAll('#cA .dot');for(var i=0;i<d.length;i++)d[i].classList.toggle('on',d[i].getAttribute('data-c')===S.colA);
+  $('avisoIA').style.display=generado?'none':'block';
+}
+
+function pintarTextos(){
+  var t=S.txt;
+  $('badge').textContent=t.badge;$('busc').textContent=t.busc;$('cargo').textContent=t.cargo;$('baj').textContent=t.baj;
+  $('titD').textContent=t.titD;$('titR').textContent=t.titR;$('fTxt').textContent=t.form;$('qrCap').textContent=t.qrCap;$('fMail').textContent=t.mail;
+  setItems('iD',S.iD);setItems('iR',S.iR);
+  $('tLi').value=S.social.linkedin||'';$('tIg').value=S.social.instagram||'';$('tWa').value=S.social.whatsapp||'';
+}
+
+function leerTextos(){
+  var t=S.txt;
+  t.badge=$('badge').textContent.trim();t.busc=$('busc').textContent.trim();t.cargo=$('cargo').textContent.trim();t.baj=$('baj').textContent.trim();
+  t.titD=$('titD').textContent.trim();t.titR=$('titR').textContent.trim();t.form=$('fTxt').textContent.trim();t.qrCap=$('qrCap').textContent.trim();t.mail=$('fMail').textContent.trim();
+  S.iD=getItems('iD');S.iR=getItems('iR');
+  S.social={linkedin:$('tLi').value,instagram:$('tIg').value,whatsapp:$('tWa').value};
+}
+
+// el contenido se ancla abajo (sobre el pie): si sube demasiado y tapa el logo, se achica el texto
+function ajustar(){
+  var f=FMT[S.fmt],fl=$('flyer'),ct=$('cont'),us=S.ts/100,s=1,n=0;
+  fl.style.setProperty('--s',us);
+  while(ct.offsetTop<f.minTop&&s>.5&&n++<40){s-=.02;fl.style.setProperty('--s',(us*s).toFixed(3))}
+  $('sub').textContent=DATOS.puesto+(s<.999?' · texto ajustado al '+Math.round(us*s*100)+'%':'');
+}
+
+function vista(){
+  var vw=$('vwrap'),W=vw.clientWidth||1080,sc=Math.min(1,W/1080);
+  $('stage').style.transform='scale('+sc+')';vw.style.height=(FMT[S.fmt].H*sc)+'px';
+}
+window.addEventListener('resize',vista);
+
+function marcar(){sucio=true;$('msg').textContent=''}
+function msg(t,ok){var m=$('msg');m.textContent=t;m.style.color=ok===false?'#B91C1C':'#1A6645'}
+
+function aJpeg(file,max,png,cb){
+  var r=new FileReader();r.onload=function(e){var im=new Image();im.onload=function(){
+    var sc=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*sc);c.height=Math.round(im.height*sc);
+    var x=c.getContext('2d');if(!png){x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height)}x.drawImage(im,0,0,c.width,c.height);
+    cb(png?c.toDataURL('image/png'):c.toDataURL('image/jpeg',.85))};
+    im.onerror=function(){msg('No pude leer esa imagen.',false)};im.src=e.target.result};r.readAsDataURL(file)}
+
+function cableado(){
+  $('fSt').onclick=function(){leerTextos();S.fmt='st';aplicar();marcar()};
+  $('fLi').onclick=function(){leerTextos();S.fmt='li';aplicar();marcar()};
+  $('logoC').onclick=function(){S.logoOsc=false;aplicar();marcar()};
+  $('logoO').onclick=function(){S.logoOsc=true;aplicar();marcar()};
+  $('mostrarEmp').onchange=function(){S.mostrarEmpresa=this.checked;marcar()};
+  $('conQr').onchange=function(){
+    leerTextos();S.qr=this.checked;
+    var CQ='Te invitamos a postularte escaneando el QR o ingresando al enlace de la descripción.',SQ='Te invitamos a postularte enviando tu CV o ingresando al enlace de la descripción.';
+    if(S.qr&&S.txt.form===SQ)S.txt.form=CQ;else if(!S.qr&&S.txt.form===CQ)S.txt.form=SQ;
+    pintarTextos();aplicar();marcar()};
+  $('bucOn').onchange=function(){S.bucOn=this.checked;aplicar();marcar()};
+  $('qrUrl').oninput=function(){S.qrUrl=this.value.trim();makeQr(S.qr?S.qrUrl:'');marcar()};
+  var sl={sOv:'ov',sZ:'zoom',sPx:'px',sPy:'py',sLg:'logoH',sCl:'cliH',sBo:'bucOp',sTs:'ts'};
+  Object.keys(sl).forEach(function(id){$(id).oninput=function(){S[sl[id]]=Number(this.value);leerTextos();aplicar();marcar()}});
+  var dt=document.querySelectorAll('#cT .dot');for(var i=0;i<dt.length;i++)dt[i].onclick=function(){S.colT=this.getAttribute('data-c');aplicar();marcar()};
+  dt=document.querySelectorAll('#cA .dot');for(var i=0;i<dt.length;i++)dt[i].onclick=function(){S.colA=this.getAttribute('data-c');aplicar();marcar()};
+  $('inBg').onchange=function(e){var f=e.target.files[0];if(!f)return;aJpeg(f,1800,false,function(u){S.bg=u;S.zoom=100;S.px=50;S.py=50;aplicar();marcar()});this.value=''};
+  $('quitBg').onclick=function(){S.bg='';aplicar();marcar()};
+  $('inCli').onchange=function(e){var f=e.target.files[0];if(!f)return;aJpeg(f,600,true,function(u){S.cli=u;aplicar();marcar()});this.value=''};
+  $('quitCli').onclick=function(){S.cli='';aplicar();marcar()};
+  $('addD').onclick=function(){leerTextos();S.iD.push('Nuevo ítem');setItems('iD',S.iD);ajustar();marcar()};
+  $('remD').onclick=function(){leerTextos();if(S.iD.length>1)S.iD.pop();setItems('iD',S.iD);ajustar();marcar()};
+  $('addR').onclick=function(){leerTextos();S.iR.push('Nuevo ítem');setItems('iR',S.iR);ajustar();marcar()};
+  $('remR').onclick=function(){leerTextos();if(S.iR.length>1)S.iR.pop();setItems('iR',S.iR);ajustar();marcar()};
+  $('flyer').addEventListener('input',function(){ajustar();marcar()});
+  $('flyer').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();e.target.blur()}});
+  ['tLi','tIg','tWa'].forEach(function(id){$(id).oninput=marcar});
+  var cp=document.querySelectorAll('[data-cp]');for(var i=0;i<cp.length;i++)cp[i].onclick=function(){copiar(this.getAttribute('data-cp'),this)};
+  $('btnIA').onclick=generarIA;
+  $('btnSave').onclick=guardar;
+  $('btnPng').onclick=descargar;
+  $('resX').onclick=function(){$('res').classList.remove('show')};
+  window.onbeforeunload=function(){return sucio?'Tenés cambios sin guardar.':undefined};
+}
+
+function copiar(id,btn){
+  var t=$(id);t.select();var ok=false;
+  try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t.value);ok=true}}catch(e){}
+  if(!ok){try{ok=document.execCommand('copy')}catch(e){}}
+  var o=btn.textContent;btn.textContent=ok?'¡Copiado!':'Seleccioná y copiá (Ctrl+C)';setTimeout(function(){btn.textContent=o},1600);
+}
+
+function generarIA(){
+  var b=$('btnIA');
+  if(generado&&!confirm('Se van a reemplazar la bajada, los desafíos, los requisitos y los textos de redes por los que arme la IA. ¿Seguimos?'))return;
+  b.disabled=true;b.textContent='Redactando…';msg('');
+  google.script.run.withSuccessHandler(function(r){
+    b.disabled=false;b.textContent='✨ Generar textos';
+    var link=S.qrUrl||DATOS.linkPostulacion;
+    function L(x){return String(x||'').split('[LINK]').join(link)}
+    leerTextos();
+    if(r.badge)S.txt.badge=r.badge;if(r.bajada)S.txt.baj=r.bajada;
+    if(r.desafios&&r.desafios.length)S.iD=r.desafios;if(r.requisitos&&r.requisitos.length)S.iR=r.requisitos;
+    S.social={linkedin:L(r.linkedin),instagram:L(r.instagram),whatsapp:L(r.whatsapp)};
+    generado=true;pintarTextos();aplicar();marcar();msg('Textos listos. Revisalos y editá lo que haga falta.');
+  }).withFailureHandler(function(e){b.disabled=false;b.textContent='✨ Generar textos';msg((e&&e.message)||String(e),false)}).flyerTextosIA(DATOS.perfil,{mostrarEmpresa:S.mostrarEmpresa});
+}
+
+function guardar(){
+  leerTextos();var b=$('btnSave');b.disabled=true;b.textContent='Guardando…';
+  google.script.run.withSuccessHandler(function(r){b.disabled=false;b.textContent='💾 Guardar en Drive';sucio=false;msg('Guardado.');$('fechaG').textContent='Último guardado: '+r.fecha})
+    .withFailureHandler(function(e){b.disabled=false;b.textContent='💾 Guardar en Drive';msg((e&&e.message)||String(e),false)}).flyerGuardar(DATOS.perfil,JSON.stringify(S));
+}
+
+function descargar(){
+  if(typeof html2canvas!=='function'){msg('No se pudo cargar la herramienta de imagen. Revisá la conexión y recargá.',false);return}
+  leerTextos();var b=$('btnPng'),f=FMT[S.fmt];b.disabled=true;b.textContent='Armando la imagen…';
+  if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
+  document.body.classList.add('exporting');
+  var st=$('stage'),tr=st.style.transform;st.style.transform='none';
+  var fin=function(){st.style.transform=tr;document.body.classList.remove('exporting');b.disabled=false;b.textContent='⬇ Descargar imagen (PNG)'};
+  setTimeout(function(){
+    html2canvas($('flyer'),{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#F7F5F1',width:1080,height:f.H,windowWidth:1080,windowHeight:f.H,scrollX:0,scrollY:0}).then(function(c){
+      fin();
+      var url=c.toDataURL('image/png'),nom='flyer-'+DATOS.puesto.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'-'+S.fmt+'.png';
+      $('resImg').src=url;$('resA').href=url;$('resA').setAttribute('download',nom);$('resN').textContent='Si no se descargó sola, tocá «Descargar» o mantené apretada la imagen para guardarla.';$('res').classList.add('show');
+      try{var a=document.createElement('a');a.href=url;a.download=nom;document.body.appendChild(a);a.click();a.remove()}catch(e){}
+    }).catch(function(e){fin();msg('No se pudo armar la imagen: '+((e&&e.message)||e),false)});
+  },80);
+}
+
+cargarEstado();cableado();pintarTextos();aplicar();
+if(DATOS.fecha)$('fechaG').textContent='Último guardado: '+DATOS.fecha;
+if(DATOS.linkViejo)$('viejo').innerHTML='Flyer anterior: <a href="'+DATOS.linkViejo.replace(/"/g,'')+'" target="_blank">abrir</a>';
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){ajustar();vista()});
+</script>
+</body></html>
