@@ -249,8 +249,6 @@ function registroApi_() {
     listarAccesos: { f: listarAccesos_, admin: true },
     guardarDatosCandidato: { f: guardarDatosCandidato_ },
     guardarEnPlanilla: { f: guardarEnPlanilla_ },
-    flyerGuardar: { f: flyerGuardar_ },
-    flyerTextosIA: { f: flyerTextosIA_ },
     guardarFormularioPerfil: { f: guardarFormularioPerfil_, admin: true },
     guardarInformeEditado: { f: guardarInformeEditado_ },
     guardarMotivoDescarte: { f: guardarMotivoDescarte_ },
