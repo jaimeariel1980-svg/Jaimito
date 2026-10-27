@@ -96,3 +96,10 @@ Hecha con el código real y 37 fichas de ejemplo; el modelo real (`gpt-4o-mini`)
 - 🟠 Tarjetas pendientes viejas siguen confirmables; `ultimas_interacciones` con una dirección devuelve 0 sin error; una visita agendada desaparece si otra persona con el mismo teléfono visitó (parejas).
 - 🟡 La calculadora responde a teléfonos y fechas («341-5551234» → -5.550.893); `azcuMismoNombre_` por subconjunto de palabras (puede cargar un DNI en el titular equivocado); la lista de propiedades del prompt corta en 400 y excluye Vendidas; cuentas de cabeza sobre listas truncadas; la búsqueda no mira teléfonos (conviene una herramienta que avise si hay 2 dueños con el mismo número).
 
+
+## Chat de Azcu: modelo y pruebas (27/10)
+- ✅ (HECHO 27/10) Instrucciones sin la lista de propiedades (−8.000 tokens por mensaje); ficha pegada solo si piden info; trampa «dijo que dejó una tarjeta y no la armó» (reintenta); «la otra» sin contexto pregunta por código; «no figura» sin consultar reintenta con ficha_propiedad; una tarjeta por visita con inmobiliaria/colega; modelo `gpt-4.1-mini` (propiedad `AZCU_MODELO`, respaldo automático a `gpt-4o-mini`).
+- 🟠 Botón «Deshacer» en tarjetas ya confirmadas (hoy solo se corrige a mano o desde la Papelera). Quién: Claude.
+- 🟠 Tarjetas pendientes viejas siguen confirmables cuando se arma una nueva (hay que taparlas en la pantalla). Quién: Claude.
+- 🟠 Búsqueda de dirección por palabra completa (450 vs 4500). Quién: Claude.
+- 🟡 Prueba fija del chat: ejecutar `azcuProbarChatDificil` (Apps Script) después de cada cambio del chat o del modelo; solo propone, no guarda nada. Sacarla cuando Ariel diga.
