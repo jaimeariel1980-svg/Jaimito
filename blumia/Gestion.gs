@@ -44,6 +44,7 @@ function guardarDatosCandidato_(perfilId, fila, d, quien) {
   const tel = limpio(d.tel);
   if (tel && tel.replace(/\D/g, '').length < 8) throw new Error('El teléfono tiene que tener al menos 8 números.');
   const campos = [[2, 'Nombre', nombre], [3, 'Teléfono', tel], [4, 'DNI', limpio(d.dni)], [22, 'Mail', mail], [23, 'Formación', limpio(d.formacion)], [24, 'Zona', limpio(d.zona)]];
+  if (d.fuente !== undefined) campos.push([10, 'Llegó por', limpio(d.fuente).slice(0, 80)]);
   const cambios = [];
   campos.forEach(c => {
     const antes = String(sh.getRange(fila, c[0]).getValue() || '');
@@ -119,6 +120,7 @@ function agendarCitaTablero_(perfilId, fila, tipo, fecha, hora, duracion, lugar,
   if (lugar) opts.location = String(lugar).slice(0, 300);
   if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)) { opts.guests = mail; opts.sendInvites = true; }
   const ev = cal.createEvent(T.titulo + ' (' + nombre + ')', inicio, fin, opts);
+  try { ev.removeAllReminders(); ev.addEmailReminder(30); ev.addPopupReminder(30); } catch (e) { } // Google avisa 30 min antes (mail y aviso en el celular)
   // estado y cita en la ficha (el sincronizador de Calendar los confirma después)
   const c9 = sh.getRange(fila, 9), r = c9.getDataValidation();
   c9.setDataValidation(null).setValue(T.estado);
