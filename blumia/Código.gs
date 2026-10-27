@@ -4248,7 +4248,7 @@ header img{height:34px}header h1{font-size:18px;font-weight:800}
 .nav{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap;align-items:center}
 .nav button,.nav .dd>button{padding:8px 14px;border-radius:8px;font-size:13px;font-weight:700;color:#fff;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.22);cursor:pointer;font-family:var(--font);white-space:nowrap}
 .nav button:hover,.nav .dd>button:hover{background:rgba(255,255,255,.28)}
-.nav button.avt{width:38px;height:38px;border-radius:50%;padding:0;background:#FBE794;color:#0D3F29;border:none;font-weight:800;font-size:13px;display:inline-flex;align-items:center;justify-content:center}.nav button.avt:hover{background:#f6dc72}
+.nav button.avt{order:99;margin-left:6px;width:38px;height:38px;border-radius:50%;padding:0;background:#FBE794;color:#0D3F29;border:none;font-weight:800;font-size:13px;display:inline-flex;align-items:center;justify-content:center}.nav button.avt:hover{background:#f6dc72}
 .nav select{padding:8px 10px;border-radius:8px;border:none;font-family:var(--font);font-weight:700;font-size:13px;cursor:pointer;max-width:260px}
 .nav .dd{position:relative}
 .nav .ddm{display:none;position:absolute;right:0;top:calc(100% + 6px);background:#fff;color:#1A1A1A;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.25);min-width:230px;padding:6px;z-index:60}

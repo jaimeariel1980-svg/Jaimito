@@ -41,7 +41,8 @@ main{max-width:1100px;margin:0 auto;padding:26px 18px 50px}
 .card b{display:block;font-size:14px;font-weight:700;color:var(--deep);line-height:1.25}
 .card small{display:block;margin-top:4px;color:#666;font-size:12px}
 .card .go{font-size:20px;color:var(--deep);font-weight:700}
-.card.cerr{background:#FAFBF9;opacity:.8}.card.cerr img{filter:grayscale(1)}
+.card.cerr{background:#FAFBF9;opacity:.85}.card.cerr img{filter:grayscale(1)}
+.card .cl{flex:none;border:1px solid var(--line);background:#fff;color:#666;border-radius:14px;padding:4px 11px;font:600 11px var(--font);cursor:pointer}.card .cl:hover{background:var(--glight);color:var(--deep);border-color:var(--deep)}
 .tag{display:inline-block;background:#eee;color:#666;border-radius:10px;padding:1px 8px;font-size:11px;margin-left:6px;font-weight:600}
 details.cerr{margin-top:12px}details.cerr summary{cursor:pointer;color:#666;font-weight:700;margin:4px 0 12px}
 .vacio{background:#fff;border:1px dashed var(--line);border-radius:18px;padding:34px;text-align:center;color:#666}
@@ -71,9 +72,6 @@ var esAdmin=(typeof blRol==='function')&&blRol()==='Administrador';
 var nom='';try{nom=(typeof blNombre==='function'&&blNombre())||localStorage.getItem('blumia_quien')||'';}catch(e){}
 document.getElementById('hola').innerHTML=nom?'Hola, <em>'+esc(nom.split(' ')[0])+'</em>':'Hola';
 var pn=nom.trim().split(/\s+/).filter(Boolean);document.getElementById('quienBtn').textContent=pn.length?(pn[0].charAt(0)+(pn.length>1?pn[pn.length-1].charAt(0):'')).toUpperCase():'👤';document.getElementById('quienBtn').title=(nom||'Usuario')+' · tocá para salir';
-var abiertas=DATOS.filter(function(b){return !b.cerrada;});
-document.getElementById('stA').textContent=abiertas.length;
-document.getElementById('stC').textContent=abiertas.reduce(function(a,b){return a+(b.n||0);},0);
 var cta='';
 if(esAdmin)cta+='<button class="pri" onclick="adAbrir(\'nueva\')">➕ Nueva búsqueda</button>';
 cta+='<a class="sec" href="#" onclick="window.top.location.href=URL_APP+\'?tipo=banco\';return false">★ Banco de talento</a>';
@@ -81,8 +79,12 @@ document.getElementById('cta').innerHTML=cta;
 if(esAdmin){document.getElementById('gear').style.display='inline-block';document.getElementById('menu').innerHTML='<button onclick="adAbrir(\'usr\')">👥 Usuarios</button><button onclick="adAbrir(\'copia\')">💾 Copias de seguridad</button><button onclick="adAbrir(\'acc\')">📜 Accesos</button><button onclick="adAbrir(\'vel\')">⏱ Velocidad</button>';}
 function menuAdm(e){e.stopPropagation();document.getElementById('menu').classList.toggle('show');}
 document.addEventListener('click',function(){var m=document.getElementById('menu');if(m)m.classList.remove('show');});
+function pintar(){
+var abiertas=DATOS.filter(function(b){return !b.cerrada;});
+document.getElementById('stA').textContent=abiertas.length;
+document.getElementById('stC').textContent=abiertas.reduce(function(a,b){return a+(b.n||0);},0);
 var k=0;
-function tarjeta(b){var av=(k%2===0)?AS.by:AS.bp;return '<div class="card'+(b.cerrada?' cerr':'')+'" onclick="ir(\''+esc(b.id)+'\')"><img src="'+av+'" alt=""><div class="t"><b>'+esc(b.nombre)+(b.cerrada?'<span class="tag">cerrada</span>':'')+'</b><small>'+b.n+' candidato'+(b.n===1?'':'s')+'</small></div><span class="go">›</span></div>';}
+function tarjeta(b){var av=(k%2===0)?AS.by:AS.bp;return '<div class="card'+(b.cerrada?' cerr':'')+'" onclick="ir(\''+esc(b.id)+'\')"><img src="'+av+'" alt=""><div class="t"><b>'+esc(b.nombre)+(b.cerrada?'<span class="tag">cerrada</span>':'')+'</b><small>'+b.n+' candidato'+(b.n===1?'':'s')+'</small></div>'+(esAdmin?'<button class="cl" onclick="event.stopPropagation();estado(\''+esc(b.id)+'\','+(b.cerrada?'false':'true')+')">'+(b.cerrada?'Reabrir':'Cerrar')+'</button>':'')+'<span class="go">›</span></div>';}
 var por={};DATOS.forEach(function(b){(por[b.empresa]=por[b.empresa]||[]).push(b);});
 var h='';
 Object.keys(por).sort().forEach(function(emp,ix){k=ix;
@@ -92,5 +94,13 @@ Object.keys(por).sort().forEach(function(emp,ix){k=ix;
     +(ce.length?'<details class="cerr"><summary>Cerradas ('+ce.length+')</summary><div class="grid">'+ce.map(tarjeta).join('')+'</div></details>':'')+'</div>';
 });
 document.getElementById('lista').innerHTML=h||'<div class="vacio">Todavía no hay búsquedas.'+(esAdmin?' Creá la primera con «➕ Nueva búsqueda».':'')+'</div>';
+}
+function estado(id,cerrar){
+  var b=DATOS.filter(function(x){return x.id===id;})[0];if(!b)return;
+  var msg=cerrar?'¿Cerrar «'+b.nombre+'»?\n\nLa página de postulación avisa que ya terminó y deja de recibir CVs por mail y por carpeta. Los candidatos y el tablero siguen disponibles. Podés reabrirla cuando quieras.':'¿Reabrir «'+b.nombre+'»? Vuelve a recibir postulaciones y CVs.';
+  if(!confirm(msg))return;
+  google.script.run.withSuccessHandler(function(){b.cerrada=!!cerrar;pintar();}).withFailureHandler(function(e){alert((e&&e.message)||e);}).cambiarEstadoBusqueda(id,cerrar?'CERRADA':'ABIERTA');
+}
+pintar();
 </script>
 </body></html>
