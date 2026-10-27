@@ -146,7 +146,7 @@
   if(hd){
     hd.insertAdjacentHTML('afterend','<div class="rs-tabs"><button class="rs-tab on" id="rsTabR" onclick="rsVer(\'resumen\')">📊 Resumen</button><button class="rs-tab" id="rsTabT" onclick="rsVer(\'tablero\')">🗂 Tablero de candidatos</button><button class="rs-tab" onclick="abrirAgenda()">📅 Agenda</button></div><div id="resumenPage"></div>');
     document.getElementById('resumenPage').addEventListener('click',function(e){
-      var p=e.target.closest('[data-p]');if(p){var s=document.querySelector('#nav select');if(s){s.value=p.getAttribute('data-p');if(s.onchange)s.onchange.call(s);}return;}
+      var p=e.target.closest('[data-p]');if(p){var s=document.querySelector('header select');if(s){s.value=p.getAttribute('data-p');if(s.onchange)s.onchange.call(s);}return;}
       var d=e.target.closest('[data-k]');if(d){var k=d.getAttribute('data-k');if(k==='avisos')verAvisos();else rsDrill(k);}
     });
     var v='resumen';try{v=sessionStorage.getItem('bl_vista')||'resumen';}catch(e){}

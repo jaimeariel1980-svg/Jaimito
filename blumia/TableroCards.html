@@ -375,6 +375,27 @@ header{background:var(--green)}
 #mbody .mbtns .mbtn.gen{background:var(--cream)!important;color:var(--green)!important;border-color:var(--cream)!important}
 #mbody .mbtns .mbtn[onclick*="eliminar"]{background:#fff!important;color:#B91C1C!important;border-color:#B91C1C!important}
 </style>
+<style id="hdrcss">
+/* cabecera del kanban: el selector de búsqueda es el título; Inicio y Agenda en la fila de pestañas */
+header{padding:18px 28px;gap:16px;min-height:92px;border-bottom:4px solid var(--cream)}
+header img{height:40px}
+header h1{display:none!important}
+.htit{display:flex;flex-direction:column;min-width:0;line-height:1.2}
+.htit small{font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#cfe3d4}
+.htit select{appearance:none;-webkit-appearance:none;background:transparent url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3'><path d='M6 9l6 6 6-6'/></svg>") no-repeat right 2px center/14px;color:#fff;border:none;font:800 21px/1.25 var(--font);padding:2px 26px 2px 0;cursor:pointer;max-width:100%;text-overflow:ellipsis;outline:none;border-radius:0}
+.htit select:hover{color:var(--cream)}
+.htit select option,.htit select optgroup{color:#1A1A1A;background:#fff;font:600 14px var(--font)}
+.nav{gap:10px}
+.nav button,.nav .dd>button{padding:10px 18px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);font-size:13px}
+.nav button.avt{padding:0}
+.rs-tabs{gap:10px;padding:16px 20px 0}
+.rs-tab.inicio{background:#fff;color:var(--green);border:1.5px solid var(--green)}
+.rs-tab.inicio:hover{background:var(--glight)}
+.rs-tab.ag{background:#F0605D;border-color:#F0605D;color:#fff;margin-left:auto;box-shadow:0 4px 12px rgba(240,96,93,.35)}
+.rs-tab.ag:hover{background:#DD4B48}
+.rs-tab.ag b{background:var(--cream);color:var(--green);border-radius:99px;padding:2px 9px;margin-left:8px;font-size:12px}
+@media(max-width:640px){header{padding:12px 14px;border-bottom-width:3px;min-height:0}.htit{flex:1 1 100%}.htit select{font-size:16px}.rs-tab.ag{margin-left:0}.rs-tabs{flex-wrap:wrap!important;overflow:visible!important}}
+</style>
 <style id="mobcss">
 @media(max-width:640px){
 header{position:static;padding:10px 12px;gap:6px 10px;min-height:0}
@@ -407,3 +428,25 @@ header h1{font-size:15px;line-height:1.25;flex:1 1 100%;min-width:0;display:-web
 .col{min-width:84vw;max-width:84vw;scroll-snap-align:center}
 }
 </style>
+<script>
+(function(){
+  var nav=document.getElementById('nav'),hd=document.querySelector('header');if(!nav||!hd)return;
+  var sel=nav.querySelector('select'),im=hd.querySelector('img');
+  if(sel&&im){
+    var og=sel.options[sel.selectedIndex],emp=(og&&og.parentNode&&og.parentNode.label)||'';
+    var w=document.createElement('div');w.className='htit';w.innerHTML='<small></small>';w.firstChild.textContent=emp;w.appendChild(sel);
+    im.insertAdjacentElement('afterend',w);
+    var fit=function(){var c=document.createElement('canvas').getContext('2d'),cs=getComputedStyle(sel);c.font=cs.fontWeight+' '+cs.fontSize+' '+cs.fontFamily;var tx=og?og.textContent:'';sel.style.width=Math.min(Math.ceil(c.measureText(tx).width)+30,Math.max(200,hd.clientWidth-60))+'px';};
+    fit();if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit);window.addEventListener('resize',fit);
+  }
+  var tabs=document.querySelector('.rs-tabs'),ini=nav.querySelector('button[title^="Volver al inicio"]');
+  if(tabs&&ini){ini.className='rs-tab inicio';ini.textContent='🏠 Inicio';tabs.insertBefore(ini,tabs.firstChild);}
+  var ag=tabs&&tabs.querySelector('button[onclick^="abrirAgenda"]');
+  if(ag){
+    ag.className='rs-tab ag';
+    var pc=function(s){var m=/(\d{2})\/(\d{2})\/(\d{4}).*?(\d{2}):(\d{2})/.exec(String(s||''));return m?new Date(+m[3],+m[2]-1,+m[1],+m[4],+m[5]):null;};
+    var n=0,ahora=Date.now()-36e5;(typeof DATA!=='undefined'?DATA:[]).forEach(function(c){var d=pc(c.cita);if(d&&d.getTime()>=ahora)n++;});
+    ag.innerHTML='📅 Agenda'+(n?'<b>'+n+'</b>':'');
+  }
+})();
+</script>
