@@ -85,3 +85,16 @@ function diagnosticoVelocidad_(perfilId) {
   } finally { pasos = TIMING_ || []; TIMING_ = null; CFG_MEMO_ = null; }
   return { pasos: pasos, total: Date.now() - t0, kb: kb, kbDatos: KANBAN_KB_ };
 }
+
+// Cerrar o reabrir una búsqueda desde el Inicio (solo administradores, ver registroApi_). Es lo mismo que «Estado de la búsqueda» en ⚙ Configurar → Datos.
+function cambiarEstadoBusqueda_(perfilId, estado) {
+  const e = String(estado).toUpperCase();
+  if (e !== 'ABIERTA' && e !== 'CERRADA') throw new Error('El estado tiene que ser ABIERTA o CERRADA.');
+  const cfg = getConfig(perfilId);
+  const antes = estadoBusqueda_(cfg);
+  if (antes === e) return { ok: true, estado: e };
+  setConfigCampo_(perfilId, 'estado_busqueda', e);
+  logForm_(SpreadsheetApp.openById(SHEET_MASTER_ID), (typeof SES_ !== 'undefined' && SES_ && SES_.nombre) || 'sin nombre', perfilId, 'Config', { estado_busqueda: antes });
+  try { registrarHistorial_('(búsqueda)', String(cfg.nombre || perfilId), e === 'CERRADA' ? 'Búsqueda cerrada' : 'Búsqueda reabierta', 'Desde el Inicio', (typeof SES_ !== 'undefined' && SES_ && SES_.nombre) || 'sistema'); } catch (x) { }
+  return { ok: true, estado: e };
+}
