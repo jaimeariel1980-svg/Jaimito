@@ -45,7 +45,7 @@ function inicioHTML_() {
     .replace('%%LOGO%%', () => JSON.stringify(LOGO_BLUMIA_))
     .replace('%%ASSETS%%', () => JSON.stringify(INICIO_ASSETS_))
     .replace('</body>', () => admin + '</body>');
-  return HtmlService.createHtmlOutput(html).setTitle('Blumia · Atracción y Selección')
+  return HtmlService.createHtmlOutput(html).setTitle('Blumia · Atracción y Elección')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
