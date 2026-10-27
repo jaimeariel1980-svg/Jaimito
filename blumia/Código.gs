@@ -136,6 +136,8 @@ function doGetPagina_(e) {
     return kanbanHTML(perfil);
   } else if (tipo === 'banco') {
     return bancoHTML(e.parameter.desde || '');
+  } else if (tipo === 'flyer') {
+    return flyerHTML_(perfil);
   } else if (tipo === 'procesohtml') {
     let empProceso = 'MACS';
     try { if (e.parameter.perfil) empProceso = empresaKey_(getConfig(e.parameter.perfil)); } catch (err) { }
@@ -4139,7 +4141,7 @@ function kanbanHTML_(perfilId) {
   const empresas = JSON.stringify(empresasYPerfiles());
   lapT_('Lista de búsquedas para el selector');
   const empresaActual = (typeof cfg.empresa === 'string') ? cfg.empresa : 'MACS';
-  const flyer = (typeof cfg.link_flyer === 'string') ? cfg.link_flyer : '';
+  const flyer = URL_WEBAPP + '?tipo=flyer&perfil=' + encodeURIComponent(perfilId); // editor de flyer propio (el link viejo de Config se ve adentro)
   const perfilProt = String(cfg.perfil_protegido || '').toUpperCase() === 'SI';
   const perfilPdf = (!perfilProt && typeof cfg.link_perfil === 'string') ? cfg.link_perfil : '';
   let html = KANBAN_TPL(perfilId, titulo, data, empresas, empresaActual, flyer, perfilPdf, perfilProt);
@@ -4353,7 +4355,7 @@ navHTML+='</select>';
 navHTML+='<button title="Volver al inicio (todas las búsquedas)" onclick="window.top.location.href=\\'${URL_WEBAPP}?tipo=inicio\\'">🏠 Inicio</button>';
 navHTML+='<button id="quienBtn" class="avt" title="Tocá para salir" onclick="blMenuUsuario()">👤</button>';
 navHTML+='<div class="dd"><button onclick="ddToggle(this)">📄 Informes ▾</button><div class="ddm"><a onclick="window.open(\\'${URL_WEBAPP}?tipo=procesohtml&perfil=${perfilId}\\',\\'_blank\\')">Informe de proceso (para la empresa)</a><a onclick="if(confirm(\\'¿Generar PDF cliente de esta búsqueda?\\'))window.open(\\'${URL_WEBAPP}?tipo=pdfcliente&perfil=${perfilId}\\',\\'_blank\\')">PDF para el cliente</a></div></div>';
-navHTML+='<div class="dd"><button onclick="ddToggle(this)">📚 Búsqueda ▾</button><div class="ddm">'+(${perfilProt?'true':'false'}?'<a onclick="pedirPerfilPin()">🔒 Perfil del puesto</a>':'<a onclick="window.open(\\'${perfilUrl}\\',\\'_blank\\')">📋 Perfil del puesto</a>')+'<a onclick="window.open(\\'${flyerUrl}\\',\\'_blank\\')">📢 Flyer</a><a onclick="prompt(\\'Link del formulario de postulación (copialo):\\',\\'${URL_WEBAPP}?tipo=postulacion&perfil=${perfilId}\\')">🔗 Link de postulación</a><a onclick="verHistorial()">📜 Historial de la búsqueda</a></div></div>';
+navHTML+='<div class="dd"><button onclick="ddToggle(this)">📚 Búsqueda ▾</button><div class="ddm">'+(${perfilProt?'true':'false'}?'<a onclick="pedirPerfilPin()">🔒 Perfil del puesto</a>':'<a onclick="window.open(\\'${perfilUrl}\\',\\'_blank\\')">📋 Perfil del puesto</a>')+'<a onclick="window.open(\\'${flyerUrl}\\',\\'_blank\\')">📢 Flyer y textos</a><a onclick="prompt(\\'Link del formulario de postulación (copialo):\\',\\'${URL_WEBAPP}?tipo=postulacion&perfil=${perfilId}\\')">🔗 Link de postulación</a><a onclick="verHistorial()">📜 Historial de la búsqueda</a></div></div>';
 navHTML+='<div class="dd"><button onclick="ddToggle(this)">🧰 Candidatos ▾</button><div class="ddm"><a onclick="descartesMasivo()">✉ Mails de descarte</a><a title="Baja un archivo para importar a los contactos de Google" onclick="bajarContactos(this)">📇 Contactos al celular</a><a onclick="window.top.location.href=\\'${URL_WEBAPP}?tipo=banco&desde=${perfilId}\\'">★ Banco de talento</a><a onclick="abrirPapelera()">🗑 Papelera ('+ELIM.length+')</a></div></div>';
 document.addEventListener('click',function(e){if(!e.target.closest('.dd'))document.querySelectorAll('.ddm.show').forEach(function(m){m.classList.remove('show');});});
 function ddToggle(b){var m=b.nextElementSibling,ab=m.classList.contains('show');document.querySelectorAll('.ddm.show').forEach(function(x){x.classList.remove('show');});if(!ab)m.classList.add('show');}
