@@ -1,4 +1,5 @@
 var AZCU_MODEL = 'gpt-4o-mini';
+function azcuModelo_(){ return PropertiesService.getScriptProperties().getProperty('AZCU_MODELO') || 'gpt-4.1-mini'; }
 var AZCU_TZ = 'America/Argentina/Buenos_Aires';
 var AZCU_KB = 'Azcuénaga Inmobiliaria es una empresa familiar de Rosario, fundada en 1981 por Rubén Alberto Novillo. Oficina en Mendoza 4873. Más de 450 propiedades en cartera de alquileres (se asegura el pago al cliente), tasaciones y gran variedad de propiedades a la venta. Valores: responsabilidad, atención y capacidad de gestión en negocios. Combina experiencia con juventud.';
 var AZCU_ETAPAS = ['Captación','Publicada','Reserva','Vendida','Otras inmobiliarias','Baja'];
@@ -112,6 +113,11 @@ function azcuPedidas_(texto){
     while(j>=0 && w.length<2){ x = t[j].replace(/\.$/,''); if(/^\d+$/.test(x)) break; if(x.length>=3 && !AZCU_NOCALLE_[x] && !TR[x]) w.unshift(x); j--; }
     if(w.length) out.push({n:String(+t[i]), w:w, raw:w.join(' ')+' '+t[i]});
   }
+  try{
+    var cs = {}; azcuDatos_().forEach(function(p){ azcuTokens_(p.dir||'', true).forEach(function(x){ if(!/^\d+$/.test(x) && x.length>=3) cs[x] = 1; }); });
+    var ck = Object.keys(cs);
+    out = out.filter(function(q){ return q.w.some(function(a){ return cs[a] || (a.length>=4 && ck.some(function(d){ return d.length>=4 && (d.indexOf(a)===0 || a.indexOf(d)===0); })); }); });
+  }catch(eC){}
   return out;
 }
 function azcuPedidaCoincide_(ped, p){
@@ -963,11 +969,16 @@ function azcuSistema_(ctx){
 function azcuOpenAI_(messages, tools){
   var key = _openAiApiKey();
   if(!key) throw new Error('Falta configurar OPENAI_API_KEY en las propiedades del script');
-  var r = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {
-    method:'post', contentType:'application/json', headers:{Authorization:'Bearer '+key}, muteHttpExceptions:true,
-    payload:JSON.stringify({model:AZCU_MODEL, messages:messages, tools:tools, tool_choice:'auto', temperature:0.1, max_tokens:900})
-  });
-  if(r.getResponseCode()<200 || r.getResponseCode()>=300) throw new Error('OpenAI '+r.getResponseCode()+': '+r.getContentText().slice(0,200));
+  var mod = azcuModelo_(), r;
+  for(var k=0;k<2;k++){
+    r = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {
+      method:'post', contentType:'application/json', headers:{Authorization:'Bearer '+key}, muteHttpExceptions:true,
+      payload:JSON.stringify({model:mod, messages:messages, tools:tools, tool_choice:'auto', temperature:0.1, max_tokens:900})
+    });
+    if(r.getResponseCode()>=200 && r.getResponseCode()<300) break;
+    if(k===0 && mod!==AZCU_MODEL && r.getResponseCode()<500 && r.getResponseCode()!==429){ try{ Logger.log('azcuOpenAI_: '+mod+' falló ('+r.getResponseCode()+'), uso '+AZCU_MODEL); }catch(e){} mod = AZCU_MODEL; continue; }
+    throw new Error('OpenAI '+r.getResponseCode()+': '+r.getContentText().slice(0,200));
+  }
   return JSON.parse(r.getContentText()).choices[0].message;
 }
 
@@ -2738,7 +2749,7 @@ function azcuProbarChatDificil(){
       out.push((i+1)+') '+pa[0]+'  ['+(Date.now()-t)+' ms]\n   Esperado: '+pa[1]+'\n   Respuesta: '+String(r.texto||'').replace(/\n+/g,' / ').slice(0,350)+'\n   Tarjetas: '+((r.acciones||[]).map(function(x){ return x.tipo+' → '+x.resumen; }).join(' | ')||'ninguna'));
     });
   });
-  Logger.log('A='+A+'  B='+B+'\n\n'+out.join('\n'));
+  Logger.log('Modelo: '+azcuModelo_()+'\nA='+A+'  B='+B+'\n\n'+out.join('\n'));
 }
 function azcuProbarVenta(nombre){
   var n = String(nombre||'Ariel Jaime'), d = azcuDestinos_(n, true), url = AZCU_WEB+'?go=novedades';
