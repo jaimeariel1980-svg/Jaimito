@@ -8,9 +8,8 @@ header{min-height:86px}
 .hdr-cta{background:#F0605D;color:#fff;border:none;border-radius:8px;padding:10px 16px;font-weight:800;font-size:13px;cursor:pointer;font-family:var(--font);text-transform:uppercase;white-space:nowrap}
 .hdr-cta:hover{background:#DD4B48}
 #fTog{display:none;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer}
-#kpiT{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:10px;padding:12px 16px 0}
-@media(max-width:1500px){#kpiT{grid-template-columns:repeat(4,minmax(0,1fr))}}
-@media(max-width:600px){#kpiT{grid-template-columns:repeat(2,minmax(0,1fr))}}
+#kpiT{display:grid;grid-template-columns:repeat(9,minmax(0,1fr));gap:10px;padding:12px 16px 0}
+@media(max-width:1500px){#kpiT{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .kpT{background:#fff;border-radius:8px;border-left:5px solid var(--green);padding:9px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 1px 3px rgba(0,0,0,.08);cursor:pointer;min-width:0}
 .kpT.on{outline:2px solid var(--green);background:var(--glight)}
 .kpT b{font-size:26px;font-weight:800;color:var(--green);line-height:1}
@@ -146,7 +145,8 @@ header{min-height:86px}
     if(k==='nue'){return !!c.recMs&&Date.now()-c.recMs<=7*864e5;}
     if(k==='ctc'){return avPendientes([c]).some(function(x){return /^contactar/.test(x.k);});}
     if(k==='mov')return m.t==='act'&&dias(c)>=DIAS_ALERTA&&!/agendad/i.test(c.estado);
-    if(k==='fal'){return avPendientes([c]).some(function(x){return /^(sincargar|falta)/.test(x.k);});}
+    if(k==='ffo'){return avPendientes([c]).some(function(x){return /^sincargar/.test(x.k);});}
+    if(k==='fet'){return avPendientes([c]).some(function(x){return /^falta/.test(x.k);});}
     if(k==='scr')return m.t==='act'&&m.lv===1;if(k==='comp')return m.t==='act'&&m.lv===2;if(k==='emp')return m.t==='act'&&m.lv>=3;
     if(k==='res')return m.t==='res';if(k==='desc')return m.t==='desc';return true;
   }
@@ -173,7 +173,7 @@ header{min-height:86px}
   var avPintar0=window.avPintar;window.avPintar=function(){if(avPintar0)avPintar0();dockPintar();};
   window.kpiClickT=function(k){KF=(KF===k)?'':k;pintarKpi();filtrar();};
   function pintarKpi(){
-    var K=[['ctc','w','Falta contactar'],['cit','','Citas hoy'],['mov','r','Sin movimiento'],['fal','r','Falta cargar'],['act','','En proceso'],['scr','','Screening'],['comp','','Competencias'],['emp','','Empresa']];
+    var K=[['ctc','w','Falta contactar'],['cit','','Citas hoy'],['mov','r','Sin movimiento'],['ffo','r','Falta formulario'],['fet','r','Falta etapa'],['act','','En proceso'],['scr','','Screening'],['comp','','Competencias'],['emp','','Empresa']];
     var e=document.getElementById('kpiT');if(!e)return;
     e.innerHTML=K.map(function(k){var n=DATA.filter(function(c){return kpiOk(k[0],c);}).length;return '<div class="kpT '+k[1]+(KF===k[0]&&k[0]!=='all'?' on':'')+'" title="'+(KF===k[0]?'Quitar filtro':'Ver estos candidatos')+'" onclick="kpiClickT(\''+k[0]+'\')"><b>'+n+'</b><span>'+k[2]+'</span></div>';}).join('');
     var p=document.getElementById('cntC');if(p)p.textContent=DATA.length+' candidatos';
@@ -379,7 +379,7 @@ header h1{font-size:15px;line-height:1.25;flex:1 1 100%;min-width:0;display:-web
 .hdr-cta{padding:7px 10px;font-size:12px}
 .rs-tabs{padding:8px 10px 0;gap:6px;overflow-x:auto;scrollbar-width:none}
 .rs-tab{padding:9px 12px;font-size:12.5px;white-space:nowrap;flex:0 0 auto}
-#kpiT{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding:8px 10px 0}
+#kpiT{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:8px 10px 0}
 .kpT{flex-direction:column;align-items:flex-start;gap:3px;padding:7px 8px;border-left-width:4px}
 .kpT b{font-size:20px}.kpT span{font-size:9px}
 .filtros{display:grid!important;grid-template-columns:1fr 1fr;gap:6px;padding:8px 10px 0}
