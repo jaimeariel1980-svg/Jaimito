@@ -38,7 +38,7 @@
   window.cfCerrar=function(){document.getElementById('cfBg').classList.remove('show');};
   window.cfTab=function(t){sync();render(t);};
   function sync(){
-    nbSync();
+    nbSync();fdSync();
     if(!CF)return;var g=function(id){var e=document.getElementById(id);return e?e.value:null;},v;
     if((v=g('cf_ia'))!==null)CF.prompt_extra=v;
     Object.keys(CF.datos).forEach(function(k){if((v=g('cfd_'+k))!==null)CF.datos[k]=v;});
@@ -46,7 +46,7 @@
     CF.plantillas.forEach(function(t,i){if((v=g('cfp_'+i))!==null){t.texto=v;t.alcance=g('cfa_'+i);}});
   }
   function render(tab){
-    var T=[['ia','Requisitos para la IA'],['post','Preguntas de postulación'],['msg','Mensajes'],['dat','Datos de la búsqueda'],['perfil','Perfil del puesto'],['nueva','➕ Nueva búsqueda'],['usr','Usuarios']];
+    var T=[['ia','Requisitos para la IA'],['post','Preguntas de postulación'],['msg','Mensajes'],['dat','Datos de la búsqueda'],['scr','Screening'],['comp','Competencias'],['perfil','Perfil del puesto'],['nueva','➕ Nueva búsqueda'],['usr','Usuarios']];
     var x='<h2>⚙ Configurar búsqueda · '+esc(CF.datos.nombre||PERFIL)+'</h2><div class="cf-tabs">'+T.map(function(t){return '<button class="cf-tab'+(t[0]===tab?' on':'')+'" onclick="cfTab(\''+t[0]+'\')">'+t[1]+'</button>';}).join('')+'</div>';
     x+='<div class="cf-sec'+(tab==='ia'?' on':'')+'"><div class="cf-help">Es el texto que la IA usa para <b>puntuar los CVs</b> de esta búsqueda (perfil, experiencia excluyente, deseable, zona, pretensión…). Si cambia el perfil del puesto, actualizalo acá. Vale para los CVs que entren desde ahora; los ya analizados no se recalculan.</div><textarea id="cf_ia" style="min-height:340px">'+esc(CF.prompt_extra)+'</textarea>'+foot('ia')+'</div>';
     x+='<div class="cf-sec'+(tab==='post'?' on':'')+'"><div class="cf-help">Preguntas que se agregan al formulario de postulación de esta búsqueda (además de los datos básicos y el CV). En «Opciones» separá con | (por ejemplo: Básico|Intermedio|Avanzado).</div>';
@@ -59,12 +59,14 @@
     Object.keys(ETQ).forEach(function(k){x+='<label>'+ETQ[k]+'</label><input id="cfd_'+k+'" value="'+esc(CF.datos[k])+'">';});
     x+=foot('dat')+'</div>';
     x+='<div class="cf-sec'+(tab==='perfil'?' on':'')+'"><div class="cf-help">El <b>perfil del puesto</b> es el relevamiento de la búsqueda (organización, puesto, perfil, formación, experiencia, competencias, contratación y proceso). Acá se <b>edita</b>; la versión guardada para consultar sin tocar nada está en el menú <b>📚 Búsqueda → Perfil del puesto</b>.</div>'
-      +(CF.perfil&&CF.perfil.propio?'<p style="margin:10px 0"><b>Última versión guardada:</b> '+(CF.perfil.fecha||'todavía no se guardó ninguna')+'</p><button class="cf-save" onclick="cfPerfilEditar(this)">✏️ Abrir y editar el perfil</button><div class="cf-help" style="margin-top:10px">Se abre en una pestaña nueva. Al terminar tocá «Guardar en el sistema»: cada versión queda guardada con fecha y hora, y se abre siempre la última.</div>':'<p style="margin:10px 0">Este puesto usa un documento externo como perfil: su link se cambia en la pestaña «Datos de la búsqueda» (campo «link_perfil»).</p>')
+      +(CF.perfil&&CF.perfil.propio?'<p style="margin:10px 0"><b>Última versión guardada:</b> '+(CF.perfil.fecha||'todavía no se guardó ninguna')+'</p><button class="cf-save" onclick="cfPerfilEditar(this)">✏️ Abrir y editar el perfil</button><div class="cf-help" style="margin-top:10px">Se abre acá mismo, abajo. Al terminar tocá «Guardar en el sistema»: cada versión queda guardada con fecha y hora, y se abre siempre la última.</div><div id="cfPerfilFr" style="margin-top:12px"></div>':'<p style="margin:10px 0">Este puesto usa un documento externo como perfil: su link se cambia en la pestaña «Datos de la búsqueda» (campo «link_perfil»).</p>')
       +'<div class="cf-foot"><button class="cf-close" onclick="cfCerrar()">Cerrar</button></div></div>';
+    x+='<div class="cf-sec'+(tab==='scr'?' on':'')+'">'+scrHtml()+'</div><div class="cf-sec'+(tab==='comp'?' on':'')+'">'+compHtml()+'</div>';
     x+='<div class="cf-sec'+(tab==='nueva'?' on':'')+'">'+nbHtml()+'</div>';
     x+='<div class="cf-sec'+(tab==='usr'?' on':'')+'"><div class="cf-help">Quién puede entrar al tablero. Los <b>administradores</b> configuran las búsquedas y manejan los usuarios; los <b>usuarios</b> trabajan con los candidatos. Por ahora se entra solo con nombre y apellido (sin PIN): escribí el nombre completo como lo va a poner la persona.</div><div id="cfUsr">Cargando…</div><div class="cf-foot"><button class="cf-close" onclick="cfCerrar()">Cerrar</button></div></div>';
     document.getElementById('cfBox').innerHTML=x;
     if(tab==='usr')cfUsuarios();
+    if((tab==='scr'||tab==='comp')&&!FD&&!FDcarga){FDcarga=true;google.script.run.withSuccessHandler(function(d){FD=d;FDcarga=false;render(tab);}).withFailureHandler(function(e){FDcarga=false;alert(badPin(e));}).getDatosPerfil(PERFIL);}
   }
   function foot(t){return '<div class="cf-foot"><button class="cf-close" onclick="cfCerrar()">Cerrar</button><button class="cf-save" onclick="cfGuardar(\''+t+'\',this)">Guardar</button></div>';}
   window.cfQuitar=function(i){sync();if(!confirm('¿Sacar esta pregunta? (queda copia en Historial_Formularios)'))return;CF.preguntas.splice(i,1);render('post');};
@@ -81,7 +83,7 @@
      .withFailureHandler(function(e){btn.disabled=false;btn.textContent='Guardar';alert('No se guardó: '+badPin(e));})
      .guardarConfigBusqueda(p,PERFIL,d,q);
   };
-  window.cfPerfilEditar=function(b){b.disabled=true;google.script.run.withSuccessHandler(function(u){b.disabled=false;if(typeof abrirPerfilLink==='function')abrirPerfilLink(u);else window.open(u,'_blank');}).withFailureHandler(function(e){b.disabled=false;alert((e&&e.message)||e);}).linkPerfilConPin(PERFIL,'sesion','editar');};
+  window.cfPerfilEditar=function(b){b.disabled=true;google.script.run.withSuccessHandler(function(u){b.disabled=false;var d=document.getElementById('cfPerfilFr');if(!d){window.open(u,'_blank');return;}d.innerHTML='<iframe src="'+esc(u)+'" style="width:100%;height:78vh;border:1px solid #ccc;border-radius:8px;background:#fff"></iframe><div style="text-align:right;margin-top:6px"><a href="'+esc(u)+'" target="_blank" style="font-size:12px">Abrir en pantalla completa ↗</a></div>';}).withFailureHandler(function(e){b.disabled=false;alert((e&&e.message)||e);}).linkPerfilConPin(PERFIL,'sesion','editar');};
 
   var NB={texto:'',empresa:'',prop:null,creada:null,ocupado:false};
   function g(id){var e=document.getElementById(id);return e?e.value:null;}
@@ -170,6 +172,45 @@
     if(!confirm('Se va a crear la búsqueda «'+p.nombre+'» ('+p.empresa+') con carpetas de Drive, pestaña de candidatos y formularios. ¿Crear?'))return;
     btn.disabled=true;btn.textContent='Creando…';
     google.script.run.withSuccessHandler(function(r){NB.creada=r;render('nueva');}).withFailureHandler(function(e){btn.disabled=false;btn.textContent='✅ Crear la búsqueda';alert('No se creó: '+badPin(e));}).crearBusquedaIA(pin(),p,q);
+  };
+
+  var FD=null,FDcarga=false;
+  function fdSync(){
+    if(!FD||g('fd_a')===null)return;var v;
+    FD.hero.criterio_avanza=g('fd_a');FD.hero.criterio_bplus=g('fd_b');FD.hero.criterio_reserva=g('fd_r');
+    FD.eval_items.forEach(function(e,i){e.label=g('fe_l'+i);e.peso=g('fe_p'+i);});
+    FD.val_items.forEach(function(e,i){e.label=g('fv_l'+i);e.opts=String(g('fv_o'+i)||'').split('|').map(function(o){return o.trim();}).filter(Boolean);});
+    FD.competencias.forEach(function(c,i){c.nombre=g('fc_n'+i);c.descripcion=g('fc_d'+i);c.peso=g('fc_p'+i);c.preguntas=String(g('fc_q'+i)||'').split('\n').map(function(q){return q.trim();}).filter(Boolean);});
+  }
+  function cargando(){return '<div class="cf-help">Cargando…</div>';}
+  function scrHtml(){
+    if(!FD)return cargando();
+    var h=FD.hero,x='<div class="cf-help">El <b>formulario de screening</b> de esta búsqueda: criterios con su peso, datos a validar con el candidato y los puntajes que definen la nota (A, B+, B). Se aplica a las evaluaciones nuevas; las ya guardadas no cambian. También se puede editar con el lápiz ✏️ dentro del formulario.</div>';
+    x+='<h3 style="margin:10px 0 4px;font-size:15px">Criterios con peso</h3>';
+    FD.eval_items.forEach(function(e,i){x+='<div class="cf-pl" style="display:flex;gap:8px;align-items:center"><input id="fe_l'+i+'" value="'+esc(e.label)+'"><input id="fe_p'+i+'" type="number" min="0" max="10" step="0.5" value="'+esc(e.peso)+'" style="width:80px" title="Peso"><button class="cf-mini x" onclick="fdQuitar(\'eval_items\','+i+')">✕</button></div>';});
+    x+='<button class="cf-add" onclick="fdAgregar(\'eval_items\')">+ Criterio</button>';
+    x+='<h3 style="margin:16px 0 4px;font-size:15px">Datos a validar (opciones separadas con |)</h3>';
+    FD.val_items.forEach(function(e,i){x+='<div class="cf-pl" style="display:flex;gap:8px;align-items:center"><input id="fv_l'+i+'" value="'+esc(e.label)+'"><input id="fv_o'+i+'" value="'+esc((e.opts||[]).join('|'))+'" style="width:220px"><button class="cf-mini x" onclick="fdQuitar(\'val_items\','+i+')">✕</button></div>';});
+    x+='<button class="cf-add" onclick="fdAgregar(\'val_items\')">+ Dato</button>';
+    x+='<h3 style="margin:16px 0 4px;font-size:15px">Puntajes de corte</h3><div class="cf-help">Nota A: desde · B+: desde · B (en reserva): desde. Tienen que ir de mayor a menor.</div><div style="display:flex;gap:10px"><div><label>A desde</label><input id="fd_a" type="number" step="0.1" value="'+esc(h.criterio_avanza==null?'8.5':h.criterio_avanza)+'"></div><div><label>B+ desde</label><input id="fd_b" type="number" step="0.1" value="'+esc(h.criterio_bplus==null?'8':h.criterio_bplus)+'"></div><div><label>B desde</label><input id="fd_r" type="number" step="0.1" value="'+esc(h.criterio_reserva==null?'6.5':h.criterio_reserva)+'"></div></div>';
+    return x+'<div class="cf-foot"><button class="cf-close" onclick="cfCerrar()">Cerrar</button><button class="cf-save" onclick="fdGuardar(\'scr\',this)">Guardar</button></div>';
+  }
+  function compHtml(){
+    if(!FD)return cargando();
+    var x='<div class="cf-help">Las <b>competencias</b> del formulario de entrevista: nombre, descripción, peso y las preguntas (una por línea). Se aplica a las evaluaciones nuevas.</div>';
+    FD.competencias.forEach(function(c,i){x+='<div class="cf-pl"><div style="display:flex;gap:8px;align-items:center"><input id="fc_n'+i+'" value="'+esc(c.nombre)+'"><input id="fc_p'+i+'" type="number" min="0" max="10" step="0.5" value="'+esc(c.peso)+'" style="width:80px" title="Peso"><button class="cf-mini x" onclick="fdQuitar(\'competencias\','+i+')">✕</button></div><label>Descripción</label><input id="fc_d'+i+'" value="'+esc(c.descripcion)+'"><label>Preguntas de entrevista</label><textarea id="fc_q'+i+'" style="min-height:90px">'+esc((c.preguntas||[]).join('\n'))+'</textarea></div>';});
+    x+='<button class="cf-add" onclick="fdAgregar(\'competencias\')">+ Competencia</button>';
+    return x+'<div class="cf-foot"><button class="cf-close" onclick="cfCerrar()">Cerrar</button><button class="cf-save" onclick="fdGuardar(\'comp\',this)">Guardar</button></div>';
+  }
+  var FD_VACIO={eval_items:{label:'',peso:1},val_items:{label:'',opts:['Sí','No']},competencias:{nombre:'',descripcion:'',peso:1,preguntas:[]}};
+  window.fdAgregar=function(k){sync();FD[k].push(JSON.parse(JSON.stringify(FD_VACIO[k])));render(k==='competencias'?'comp':'scr');};
+  window.fdQuitar=function(k,i){sync();if(!confirm('¿Sacar este elemento? (queda copia en Historial_Formularios)'))return;FD[k].splice(i,1);render(k==='competencias'?'comp':'scr');};
+  window.fdGuardar=function(t,btn){
+    sync();var q=quien();var p={};
+    if(t==='scr'){p.eval=FD.eval_items.map(function(e){return {label:e.label,peso:e.peso};});p.val=FD.val_items.map(function(e){return {label:e.label,opts:e.opts};});p.hero={criterio_avanza:FD.hero.criterio_avanza,criterio_bplus:FD.hero.criterio_bplus,criterio_reserva:FD.hero.criterio_reserva};}
+    else p.comps=FD.competencias.map(function(c){return {nombre:c.nombre,descripcion:c.descripcion,peso:c.peso,preguntas:c.preguntas};});
+    btn.disabled=true;btn.textContent='Guardando...';
+    google.script.run.withSuccessHandler(function(){btn.disabled=false;btn.textContent='Guardar';FD=null;alert('Guardado ✓');render(t);}).withFailureHandler(function(e){btn.disabled=false;btn.textContent='Guardar';alert('No se guardó: '+badPin(e));}).guardarFormularioPerfil(pin(),PERFIL,p,q);
   };
   function uErr(e){alert((e&&e.message)||e);}
   window.cfUsuarios=function(){
