@@ -73,7 +73,7 @@ function getDatosPerfil_(perfilId) {
       peso: Number(r.peso) || 1,
       preguntas: String(r.preguntas || '').split('|').map(s => s.trim()).filter(Boolean)
     })),
-    entrevistadoras: String(hero.entrevistadoras || 'Ariel').split(',').map(s => s.trim()).filter(Boolean)
+    entrevistadoras: String(hero.entrevistadoras || entrevistadoresDefault_().join(',')).split(',').map(s => s.trim()).filter(Boolean)
   };
 }
 
@@ -102,6 +102,9 @@ function doGetPagina_(e) {
     template.perfil = perfil;
     template.pos = hero.pos;
     template.loc = hero.loc;
+    template.logo = hero.logo;
+    template.empresa = hero.empresa;
+    template.base = JSON.stringify(preguntasBase_(getConfig(perfil)));
     titulo = 'Postulación · ' + hero.pos + ' | Blumia';
   } else if (tipo === 'pdfcliente') {
     const urlPdf = generarPDFClientes(perfil);
@@ -1260,14 +1263,37 @@ function getHeroPostulacion(perfilId) {
       .getSheetByName('Perfiles_Hero').getDataRange().getValues();
     const headers = rows[0];
     const fila = rows.slice(1).find(r => r[0] === perfilId);
-    if (!fila) return { pos: 'Búsqueda', loc: '' };
+    if (!fila) return { pos: 'Búsqueda', loc: '', logo: '', empresa: '' };
     const o = {};
     headers.forEach((h, i) => o[h] = fila[i]);
     const loc = [o.empresa, o.ubicacion].filter(Boolean).join(' · ');
-    return { pos: String(o.posicion || 'Búsqueda'), loc: loc };
+    let logo = '', empresa = String(o.empresa || '');
+    try {
+      const cfg = getConfig(perfilId);
+      logo = logoCliente_(cfg);
+      if (!empresa) empresa = empresaKey_(cfg);
+    } catch (e) { }
+    return { pos: String(o.posicion || 'Búsqueda'), loc: loc, logo: logo, empresa: empresa };
   } catch (err) {
-    return { pos: 'Búsqueda', loc: '' };
+    return { pos: 'Búsqueda', loc: '', logo: '', empresa: '' };
   }
+}
+
+// Logo claro del cliente para el encabezado verde de la postulación: Config.logo_cliente (link https a un PNG blanco con fondo transparente).
+// Las búsquedas de MACS que todavía no lo tienen cargado usan el archivo publicado en la web de Azcu.
+function logoCliente_(cfg) {
+  const l = (cfg && typeof cfg.logo_cliente === 'string') ? cfg.logo_cliente.trim() : '';
+  if (/^https:\/\//i.test(l)) return l;
+  return empresaKey_(cfg) === 'MACS' ? 'https://azcubot.pages.dev/macs-logo-blanco.png' : '';
+}
+
+// Preguntas fijas de la postulación que se muestran en cada búsqueda (Config.preguntas_base, separadas con coma; «ninguna» = ninguna).
+// Una búsqueda sin el dato (las anteriores) sigue mostrando todas; las nuevas arrancan sin ninguna.
+const PREG_BASE_ = ['excel', 'powerbi', 'ingles', 'ia', 'fulltime', 'presencial'];
+function preguntasBase_(cfg) {
+  const v = (cfg && typeof cfg.preguntas_base === 'string') ? cfg.preguntas_base.trim().toLowerCase() : '';
+  if (!v) return PREG_BASE_.slice();
+  return v.split(',').map(x => x.trim()).filter(x => PREG_BASE_.indexOf(x) >= 0);
 }
 const URL_WEBAPP = 'https://script.google.com/macros/s/AKfycbytekPKN31bZLxczDVknMr433K9KflzmrR-dCWsC1hLlx2MO7tbw6SrMjFXa1PnucQo/exec';
 
@@ -1337,17 +1363,20 @@ function procesarPendientes() {
           'Nombre: ' + (d.nombre || ''), 'Email: ' + (d.email || ''),
           'Teléfono: ' + (d.telefono || ''), 'DNI: ' + (d.dni || ''),
           'Formación: ' + formacion,
-          'Posgrado: ' + (d.posgradoEstado ? d.posgradoEstado + (d.posgradoCual ? ' (' + d.posgradoCual + ')' : '') : 'Sin posgrado'),
-          'Excel: ' + (d.excel || ''),
-          'Power BI: ' + (d.powerbi || ''),
-          'Inglés: ' + (d.ingles || ''),
-          'Herramientas de IA: ' + (d.ia || '') + (d.iaTools ? ' — usa: ' + d.iaTools : ''),
+          'Posgrado: ' + (d.posgradoEstado ? d.posgradoEstado + (d.posgradoCual ? ' (' + d.posgradoCual + ')' : '') : 'Sin posgrado')
+        ];
+        const declaradasBase = [
+          d.excel ? 'Excel: ' + d.excel : '',
+          d.powerbi ? 'Power BI: ' + d.powerbi : '',
+          d.ingles ? 'Inglés: ' + d.ingles : '',
+          d.ia ? 'Herramientas de IA: ' + d.ia + (d.iaTools ? ' — usa: ' + d.iaTools : '') : '',
           'Remuneración pretendida: ' + (d.remuneracion || ''),
           'Localidad: ' + (d.localidad || ''),
           'Movilidad propia: ' + (d.movilidad || ''),
-          'Disponibilidad full-time: ' + (d.fulltime || ''),
-          'Trabajo 100% presencial: ' + (d.presencial || '')
-        ];
+          d.fulltime ? 'Disponibilidad full-time: ' + d.fulltime : '',
+          d.presencial ? 'Trabajo 100% presencial: ' + d.presencial : ''
+        ].filter(Boolean);
+        declaradasBase.forEach(l => lineas.push(l));
         const decl = meta.declaradas || {};
         getPreguntasPostulacion(meta.perfil).forEach(q => {
           if (decl[q.id] != null && decl[q.id] !== '') lineas.push(q.etiqueta + ': ' + decl[q.id]);
@@ -2667,6 +2696,8 @@ function generarPDFPostulacion(d, decl, cfg, perfil) {
                     (d.tituloFormacion ? ' — ' + d.tituloFormacion : '');
   const posgrado = d.posgradoEstado ? d.posgradoEstado + (d.posgradoCual ? ' (' + d.posgradoCual + ')' : '') : 'Sin posgrado';
   const ia = (d.ia || '') + (d.iaTools ? ' — usa: ' + d.iaTools : '');
+  const conoc = [['Excel', d.excel], ['Power BI', d.powerbi], ['Inglés', d.ingles], ['Herramientas de IA', ia]]
+    .filter(x => x[1]).map(x => '<tr><td class="k">' + x[0] + '</td><td class="v">' + x[1] + '</td></tr>').join('');
 
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
     body{font-family:'Plus Jakarta Sans',Arial,sans-serif;margin:0;color:#111;background:#F7F5F1}
@@ -2694,8 +2725,8 @@ function generarPDFPostulacion(d, decl, cfg, perfil) {
         <tr><td class="k">DNI</td><td class="v">${d.dni || '-'}</td></tr>
         <tr><td class="k">Localidad</td><td class="v">${d.localidad || '-'}</td></tr>
         <tr><td class="k">Movilidad propia</td><td class="v">${d.movilidad || '-'}</td></tr>
-        <tr><td class="k">Disponibilidad full-time</td><td class="v">${d.fulltime || '-'}</td></tr>
-        <tr><td class="k">Trabajo 100% presencial</td><td class="v">${d.presencial || '-'}</td></tr>
+        ${d.fulltime ? '<tr><td class="k">Disponibilidad full-time</td><td class="v">' + d.fulltime + '</td></tr>' : ''}
+        ${d.presencial ? '<tr><td class="k">Trabajo 100% presencial</td><td class="v">' + d.presencial + '</td></tr>' : ''}
         <tr><td class="k">Remuneración pretendida</td><td class="v">${d.remuneracion || '-'}</td></tr>
       </table>
       <div class="sec">Formación</div>
@@ -2703,13 +2734,7 @@ function generarPDFPostulacion(d, decl, cfg, perfil) {
         <tr><td class="k">Formación</td><td class="v">${formacion || '-'}</td></tr>
         <tr><td class="k">Posgrado</td><td class="v">${posgrado}</td></tr>
       </table>
-      <div class="sec">Conocimientos</div>
-      <table>
-        <tr><td class="k">Excel</td><td class="v">${d.excel || '-'}</td></tr>
-        <tr><td class="k">Power BI</td><td class="v">${d.powerbi || '-'}</td></tr>
-        <tr><td class="k">Inglés</td><td class="v">${d.ingles || '-'}</td></tr>
-        <tr><td class="k">Herramientas de IA</td><td class="v">${ia || '-'}</td></tr>
-      </table>
+      ${conoc ? '<div class="sec">Conocimientos</div><table>' + conoc + '</table>' : ''}
       ${dyn ? '<div class="sec">Sobre esta búsqueda</div><table>' + dyn + '</table>' : ''}
     </div>
   </body></html>`;
@@ -5347,7 +5372,7 @@ function armarComunicacion_(perfilId, fila, tipo, quien){
   const sh = getSheet(cfg);
   const nombre = String(sh.getRange(fila, 2).getValue() || '').split(' ')[0];
   const tel = String(sh.getRange(fila, 3).getValue() || '').replace(/\D/g,'');
-  const entrevistador = String(quien || '').trim() || String(sh.getRange(fila, 14).getValue() || 'Ariel');
+  const entrevistador = String(quien || '').trim() || String(sh.getRange(fila, 14).getValue() || 'Equipo Blumia');
   const puesto = (typeof cfg.nombre_perfil === 'string') ? cfg.nombre_perfil : perfilId;
   const empresa = empresaParaCandidatos_(cfg);
 

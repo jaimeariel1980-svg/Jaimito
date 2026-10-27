@@ -78,7 +78,7 @@ NIVEL_AJUSTE:
   config.appendRow(H.map(h => valores[h] !== undefined ? valores[h] : ''));
 
   // 4) Perfiles_Hero
-  ss.getSheetByName('Perfiles_Hero').appendRow([p.id, p.empresa, p.nombre, p.ubicacion, 'Screening · 1ª entrevista', 'Ariel, Analía, Flavia, Marcos', '8.5', '6.5']);
+  ss.getSheetByName('Perfiles_Hero').appendRow([p.id, p.empresa, p.nombre, p.ubicacion, 'Screening · 1ª entrevista', entrevistadoresDefault_().join(', '), '8.5', '6.5']);
 
   // 5) Screening: criterios con peso
   const ev = ss.getSheetByName('Perfiles_Screening_Eval');
@@ -141,7 +141,7 @@ function formatearHojaDirectorComercial() {
   const modelo = ss.getSheetByName('Supervisor de Operaciones');
   if (modelo) for (let c = 1; c <= Math.min(modelo.getLastColumn(), hoja.getMaxColumns()); c++) hoja.setColumnWidth(c, modelo.getColumnWidth(c));
   const lista = l => SpreadsheetApp.newDataValidation().requireValueInList(l, true).setAllowInvalid(true).build();
-  const entrevistadores = ['Ariel', 'Marcos', 'Ever', 'Analía', 'Flavia'];
+  const entrevistadores = entrevistadoresDefault_();
   hoja.getRange(2, 9, 250, 1).setDataValidation(lista([
     'Pendiente','Nuevo','Contactado','Avanza a screening','Screening agendado','Avanza a competencias','Competencias agendada',
     'Avanza a screening empresa','Screening empresa agendado','Avanza a presencial empresa','Entrevista empresa agendada',

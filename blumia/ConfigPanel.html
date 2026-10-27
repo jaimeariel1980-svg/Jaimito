@@ -25,7 +25,7 @@
 <script>
 (function(){
   var CF=null;
-  var ETQ={nombre:'Nombre en el tablero',nombre_perfil:'Nombre del puesto (se usa en los mensajes)',empresa:'Empresa (agrupa las búsquedas en el tablero)',empresa_candidatos:'Cómo se nombra la empresa a los candidatos (vacío = «una empresa cliente del sector…»)',banda_salarial:'Banda salarial de referencia en $ (la usan el Informe de proceso y el Resumen), ej: 13000000',link_screening:'Link de agenda · screening',link_competencias:'Link de agenda · competencias',link_empresa_virtual:'Link de agenda · entrevista con la empresa (virtual / presencial)',link_empresa_presencial:'Link de agenda · empresa presencial (si es otro)',link_flyer:'Link del flyer',link_perfil:'Link del perfil del puesto en PDF (si no está protegido)'};
+  var ETQ={nombre:'Nombre en el tablero',nombre_perfil:'Nombre del puesto (se usa en los mensajes)',empresa:'Empresa (agrupa las búsquedas en el tablero)',logo_cliente:'Logo del cliente en la postulación (link https a un PNG claro, con fondo transparente; vacío = sin logo)',empresa_candidatos:'Cómo se nombra la empresa a los candidatos (vacío = «una empresa cliente del sector…»)',banda_salarial:'Banda salarial de referencia en $ (la usan el Informe de proceso y el Resumen), ej: 13000000',link_screening:'Link de agenda · screening',link_competencias:'Link de agenda · competencias',link_empresa_virtual:'Link de agenda · entrevista con la empresa (virtual / presencial)',link_empresa_presencial:'Link de agenda · empresa presencial (si es otro)',link_flyer:'Link del flyer',link_perfil:'Link del perfil del puesto en PDF (si no está protegido)'};
   function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
   function pin(){return 'sesion';}
   function quien(){var q='';try{q=localStorage.getItem('blumia_quien')||'';}catch(e){}return q;}
@@ -43,6 +43,7 @@
     if(!CF)return;var g=function(id){var e=document.getElementById(id);return e?e.value:null;},v;
     if((v=g('cf_ia'))!==null)CF.prompt_extra=v;
     ['posicion','ubicacion','instancia','entrevistadoras'].forEach(function(k){if((v=g('cfh_'+k))!==null)CF.extra.hero[k]=v;});
+    var pb=document.querySelectorAll('.cfpb');if(pb.length){var sel=[];pb.forEach(function(c){if(c.checked)sel.push(c.value);});CF.datos.preguntas_base=sel.length?sel.join(','):'ninguna';}
     if((v=g('cfx_estado'))!==null)CF.extra.estado=v;if((v=g('cfx_cvia'))!==null)CF.extra.cv_ia=v;if((v=g('cfx_mail'))!==null)CF.extra.mail=v;
     Object.keys(CF.datos).forEach(function(k){if((v=g('cfd_'+k))!==null)CF.datos[k]=v;});
     CF.preguntas.forEach(function(q,i){if((v=g('cfq_e'+i))!==null){q.etiqueta=v;q.tipo=g('cfq_t'+i);q.opciones=g('cfq_o'+i);q.requerido=g('cfq_r'+i);}});
@@ -52,7 +53,10 @@
     var T=[['ia','Requisitos para la IA'],['post','Preguntas de postulación'],['msg','Mensajes'],['dat','Datos de la búsqueda'],['scr','Screening'],['comp','Competencias'],['perfil','Perfil del puesto']];var tb=function(L){return L.map(function(t){return '<button class="cf-tab'+(t[0]===tab?' on':'')+'" onclick="cfTab(\''+t[0]+'\')">'+t[1]+'</button>';}).join('');};
     var x='<h2>⚙ Configurar esta búsqueda</h2><div class="cf-help" style="margin:0 0 6px">'+esc(CF.datos.nombre||PERFIL)+' · para crear búsquedas nuevas o manejar usuarios usá la pantalla de Inicio (🏠).</div><div class="cf-tabs">'+tb(T)+'</div>';
     x+='<div class="cf-sec'+(tab==='ia'?' on':'')+'"><div class="cf-help">Es el texto que la IA usa para <b>puntuar los CVs</b> de esta búsqueda (perfil, experiencia excluyente, deseable, zona, pretensión…). Si cambia el perfil del puesto, actualizalo acá. Vale para los CVs que entren desde ahora; los ya analizados no se recalculan.</div><textarea id="cf_ia" style="min-height:340px">'+esc(CF.prompt_extra)+'</textarea>'+foot('ia')+'</div>';
-    x+='<div class="cf-sec'+(tab==='post'?' on':'')+'"><div class="cf-help">Preguntas que se agregan al formulario de postulación de esta búsqueda (además de los datos básicos y el CV). En «Opciones» separá con | (por ejemplo: Básico|Intermedio|Avanzado).</div>';
+    x+='<div class="cf-sec'+(tab==='post'?' on':'')+'"><div class="cf-help"><b>Preguntas fijas</b>: tildá las que querés que aparezcan en el formulario de esta búsqueda (todas son obligatorias para quien se postula).</div>';
+    var PB=[['excel','Excel'],['powerbi','Power BI'],['ingles','Inglés'],['ia','Herramientas de IA'],['fulltime','Disponibilidad full-time'],['presencial','Trabajo 100% presencial']],on=CF.datos.preguntas_base?CF.datos.preguntas_base.split(','):PB.map(function(o){return o[0];});
+    x+='<div style="display:flex;flex-wrap:wrap;gap:6px 18px;margin:6px 0 14px">'+PB.map(function(o){return '<label style="display:flex;gap:6px;align-items:center;margin:0;font-weight:600"><input type="checkbox" class="cfpb" value="'+o[0]+'"'+(on.indexOf(o[0])>=0?' checked':'')+' style="width:auto"> '+o[1]+'</label>';}).join('')+'</div>';
+    x+='<div class="cf-help"><b>Preguntas propias</b> de esta búsqueda (se agregan al formulario además de los datos básicos y el CV). En «Opciones» separá con | (por ejemplo: Básico|Intermedio|Avanzado).</div>';
     CF.preguntas.forEach(function(q,i){x+='<div class="cf-row"><div><label>Pregunta</label><input id="cfq_e'+i+'" value="'+esc(q.etiqueta)+'"></div><div><label>Tipo</label><select id="cfq_t'+i+'"><option value="texto"'+(q.tipo==='texto'?' selected':'')+'>Texto libre</option><option value="select"'+(q.tipo==='select'?' selected':'')+'>Elegir opción</option></select></div><div><label>Opciones (si elige)</label><input id="cfq_o'+i+'" value="'+esc(q.opciones)+'"></div><div><label>Obligatoria</label><select id="cfq_r'+i+'"><option value="SI"'+(q.requerido!=='NO'?' selected':'')+'>Sí</option><option value="NO"'+(q.requerido==='NO'?' selected':'')+'>No</option></select></div><button class="cf-mini x" onclick="cfQuitar('+i+')">✕</button></div>';});
     x+='<button class="cf-add" onclick="cfAgregar()">+ Agregar pregunta</button>'+foot('post')+'</div>';
     x+='<div class="cf-sec'+(tab==='msg'?' on':'')+'"><div class="cf-help">Textos de los WhatsApp y mails. Por defecto cada cambio vale <b>solo para esta búsqueda</b>; si elegís «Todas las búsquedas» cambia el texto general. Se completan solos: [NOMBRE] [PUESTO] [EMPRESA] [ENTREVISTADOR] (quien envía) y [LINK] (agenda).</div>';
@@ -83,7 +87,7 @@
   window.cfGuardar=function(t,btn){
     sync();var q=quien();if(!q)return;var p=pin();if(!p)return;var d={};
     if(t==='ia')d.prompt_extra=CF.prompt_extra;
-    if(t==='post')d.preguntas=CF.preguntas;
+    if(t==='post'){d.preguntas=CF.preguntas;d.datos={preguntas_base:CF.datos.preguntas_base};}
     if(t==='msg')d.plantillas=CF.plantillas.map(function(x){return {clave:x.clave,texto:x.texto,alcance:x.alcance||'esta'};});
     if(t==='dat'){d.datos=CF.datos;d.extra={hero:CF.extra.hero,estado:CF.extra.estado,cv_ia:CF.extra.cv_ia,mail:CF.extra.mail};}
     d.base=CF.base;

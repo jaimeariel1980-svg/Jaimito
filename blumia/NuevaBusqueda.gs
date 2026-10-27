@@ -151,12 +151,13 @@ function crearBusquedaIA_(pin, prop, quien, texto) {
     };
     if (p.banda_salarial && Number(p.banda_salarial) >= 1000) valores.banda_salarial = p.banda_salarial;
     Object.keys(p.links).forEach(k => { valores[k] = p.links[k]; });
+    valores.preguntas_base = 'ninguna'; // las preguntas fijas (Excel, Power BI, Inglés, IA, full-time, presencial) se activan por búsqueda desde ⚙ Configurar
     valores.perfil_html = 'RelevamientoPuesto';
     valores.perfil_protegido = 'SI';
     Object.keys(valores).forEach(k => { if (H.indexOf(k) === -1) { H.push(k); config.getRange(1, H.length).setValue(k); } });
     config.appendRow(H.map(h => valores[h] !== undefined ? valores[h] : ''));
 
-    ss.getSheetByName('Perfiles_Hero').appendRow([id, p.empresa, p.nombre, p.ubicacion, 'Screening · 1ª entrevista', 'Ariel, Analía, Flavia, Marcos', '8.5', '6.5']);
+    ss.getSheetByName('Perfiles_Hero').appendRow([id, p.empresa, p.nombre, p.ubicacion, 'Screening · 1ª entrevista', entrevistadoresDefault_().join(', '), '8.5', '6.5']);
     const ev = ss.getSheetByName('Perfiles_Screening_Eval');
     p.screening_eval.forEach((e, i) => ev.appendRow([id, 'e' + (i + 1), e.criterio, e.peso]));
     const va = ss.getSheetByName('Perfiles_Screening_Val');
@@ -183,7 +184,7 @@ function formatearHojaBusqueda_(ss, id, hoja) {
   const modelo = ss.getSheetByName('Supervisor de Operaciones');
   if (modelo) for (let c = 1; c <= Math.min(modelo.getLastColumn(), hoja.getMaxColumns()); c++) hoja.setColumnWidth(c, modelo.getColumnWidth(c));
   const lista = l => SpreadsheetApp.newDataValidation().requireValueInList(l, true).setAllowInvalid(true).build();
-  const entrevistadores = ['Ariel', 'Marcos', 'Ever', 'Analía', 'Flavia'];
+  const entrevistadores = entrevistadoresDefault_();
   hoja.getRange(2, 9, 250, 1).setDataValidation(lista(ESTADOS_BUSQUEDA_));
   hoja.getRange(2, 12, 250, 1).setDataValidation(lista(['A', 'B', 'C']));
   hoja.getRange(2, 16, 250, 1).setDataValidation(lista(['A', 'B', 'C']));
