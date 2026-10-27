@@ -239,6 +239,7 @@ function registroApi_() {
     guardarConfigBusqueda: { f: guardarConfigBusqueda_, admin: true },
     proponerBusquedaIA: { f: proponerBusquedaIA_, admin: true },
     crearBusquedaIA: { f: crearBusquedaIA_, admin: true },
+    activarPerfilPuesto: { f: activarPerfilPuesto_, admin: true },
     guardarDatosCandidato: { f: guardarDatosCandidato_ },
     guardarEnPlanilla: { f: guardarEnPlanilla_ },
     guardarFormularioPerfil: { f: guardarFormularioPerfil_, admin: true },

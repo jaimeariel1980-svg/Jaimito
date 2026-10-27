@@ -48,6 +48,7 @@ function perfilPuestoHTML(perfilId, tok, modo) {
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
   // modo «ver»: la versión definitiva guardada, solo para consultar (no se edita ni se guarda; se puede exportar a PDF). Para editar: ⚙ Configurar → Perfil del puesto.
   if (modo !== 'editar') out.append('<style>.pill,.opt,label.pill{pointer-events:none}#btn-sis{display:none!important}</style><script>window.addEventListener("load",function(){document.querySelectorAll("input,textarea,select").forEach(function(e){e.disabled=true;});var b=document.createElement("div");b.style.cssText="position:fixed;left:50%;transform:translateX(-50%);bottom:12px;z-index:9999;background:#243D2C;color:#fff;padding:8px 18px;border-radius:99px;font:600 12px Arial,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.3)";b.textContent="Versión guardada' + (ult ? ' el ' + ult.fecha : '') + ' · solo lectura (para editar: ⚙ Configurar → Perfil del puesto)";document.body.appendChild(b);});</script>');
+  else out.append(HtmlService.createHtmlOutputFromFile('PerfilIAForm').getContent()); // modo «editar»: botón «Completar con IA desde un Word»
   return out;
 }
 
