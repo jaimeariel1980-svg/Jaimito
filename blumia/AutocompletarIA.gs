@@ -20,7 +20,7 @@ function transcribirAudio_(pin, perfilId, cand, b64, mime) {
   });
   let parsed = JSON.parse(pedir('gpt-4o-mini-transcribe').getContentText());
   if (parsed.error) parsed = JSON.parse(pedir('whisper-1').getContentText());
-  if (parsed.error) throw new Error('No pude transcribir: ' + parsed.error.message);
+  if (parsed.error) throw new Error('No se pudo transcribir: ' + parsed.error.message);
   const texto = String(parsed.text || '').trim();
   if (perfilId && cand) guardarTransParcial_(perfilId, cand, texto);
   return texto;

@@ -1,12 +1,12 @@
 <style>
 .ia-bar{display:flex;gap:8px;margin:6px 0 12px;flex-wrap:wrap}
-.ia-btn{background:#fff;color:#1A6645;border:1px solid #1A6645;border-radius:6px;padding:6px 12px;font:600 12px/1.2 'PP Pangram Sans','Plus Jakarta Sans',sans-serif;cursor:pointer}
+.ia-btn{background:#fff;color:#1A6645;border:1px solid #1A6645;border-radius:6px;padding:6px 12px;font:600 12px/1.2 'Poppins',sans-serif;cursor:pointer}
 .ia-btn:hover{background:#E6F2EC}
 .ia-btn:disabled{opacity:.6;cursor:default}
 .ia-btn.prim{background:#1A6645;color:#fff;font-size:13px;padding:9px 16px}
 .ia-btn.prim:hover{background:#238055}
 .ia-box{margin:0 0 24px;padding:18px 22px;background:#E6F2EC;border:1px solid #1A6645;border-radius:10px}
-.ia-box .ia-tit{font:800 12px/1 'PP Pangram Sans','Plus Jakarta Sans',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#1A6645;margin-bottom:8px}
+.ia-box .ia-tit{font:800 12px/1 'Poppins',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#1A6645;margin-bottom:8px}
 .ia-box .ia-tx{font-size:13px;color:#333;line-height:1.5}
 .ia-box .ia-acc{margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
 .ia-box details{margin-top:12px}
@@ -147,14 +147,14 @@
   }
   function grabar(){
     var ctx=contexto(),st=$$('#iaSt');
-    if(!ctx.cand){alert('Completá primero el nombre del entrevistado/a.');return;}
+    if(!ctx.cand){alert('Completá primero el nombre de la persona entrevistada.');return;}
     var p=getPin();if(!p)return;
     st.style.color='#555';st.textContent='';
     abrirGrabadora(function(partes){transcribir(partes,0,[],st,p,contexto());});
   }
   function recuperar(){
     var ctx=contexto(),st=$$('#iaSt');if(!st)return;
-    if(!ctx.cand){alert('Completá primero el nombre del entrevistado/a.');return;}
+    if(!ctx.cand){alert('Completá primero el nombre de la persona entrevistada.');return;}
     var p=getPin();if(!p)return;
     st.style.color='#555';st.textContent='Buscando el último análisis…';
     google.script.run.withSuccessHandler(function(r){

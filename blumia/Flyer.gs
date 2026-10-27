@@ -28,7 +28,7 @@ function flyerDatos_(perfilId) {
   const cfg = getConfig(perfilId);
   const hero = flyerHero_(perfilId);
   const puesto = (typeof cfg.nombre === 'string' && cfg.nombre) ? cfg.nombre : String(hero.posicion || perfilId);
-  const empresa = (typeof cfg.empresa === 'string' && cfg.empresa.trim()) ? cfg.empresa.trim() : 'MACS';
+  const empresa = empresaKey_(cfg);
   let guardado = '', fecha = '';
   try {
     const f = flyerArchivo_(cfg);
@@ -107,7 +107,7 @@ function flyerTextosIA_(perfilId, opciones) {
     'no inventes datos que no estén en el material; no pongas sueldo, banda salarial, puntajes ni criterios internos de evaluación; ' +
     'el nombre de la empresa es exactamente «' + empresa + '»' + (mostrar ? '' : ' (es confidencial: no nombres ni insinúes qué empresa es)') + '; ' +
     'escribí [LINK] tal cual donde va el link de postulación.';
-  const usuario = 'PUESTO: ' + d.puesto + '\nEMPRESA: ' + empresa + '\nUBICACIÓN: ' + (d.ubicacion || '(sin dato)') + '\nINSTANCIA / MODALIDAD: ' + (d.instancia || '(sin dato)') +
+  const usuario = 'PUESTO: ' + d.puesto + '\nEMPRESA: ' + empresa + '\nUBICACIÓN: ' + (d.ubicacion || '(sin dato)') + 
     (perfil ? '\n\nPERFIL DEL PUESTO (relevamiento):\n' + perfil : '') + (extra ? '\n\nOTROS DATOS DE LA BÚSQUEDA (uso interno, no copies criterios de evaluación):\n' + extra : '');
   const r = extraerJSON_(procesarConClaude(sistema, usuario, 'redactar'));
   const lista = (a, n, max) => (Array.isArray(a) ? a : []).slice(0, n).map(x => limpiarTxt_(x).slice(0, max)).filter(Boolean);

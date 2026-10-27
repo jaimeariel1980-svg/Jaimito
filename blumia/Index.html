@@ -55,7 +55,7 @@ html,body{background:var(--bg);font-family:var(--font);color:var(--text);}
 .mf input,.mf select{width:100%;border:none;border-bottom:1.5px solid var(--line);background:transparent;font-family:var(--font);font-size:14px;color:var(--text);padding:6px 0;outline:none;transition:.2s;}
 .mf input:focus,.mf select:focus{border-bottom-color:var(--green);}
 
-.main{padding:40px 52px 80px;max-width:1300px;margin:0 auto;}
+.main{padding:40px 52px 120px;max-width:1300px;margin:0 auto;}
 
 .guide-box{background:#fff;border-left:4px solid var(--green);border-radius:4px;padding:24px;margin-bottom:40px;box-shadow:0 2px 10px rgba(0,0,0,0.03);}
 .guide-title{font-size:13px;font-weight:800;color:var(--green);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.05em;}
@@ -91,7 +91,7 @@ html,body{background:var(--bg);font-family:var(--font);color:var(--text);}
 .btn-add-q:hover{background:var(--orange);color:#fff;}
 
 .freq-row{display:flex;margin-bottom:20px;gap:4px;}
-.freq-btn{flex:1;padding:12px 5px;text-align:center;border:1.5px solid var(--line);background:#fff;font-family:var(--font);font-size:10px;font-weight:700;color:var(--light);cursor:pointer;transition:.2s;text-transform:uppercase;border-radius:4px;}
+.freq-btn{flex:1;padding:12px 5px;text-align:center;border:1.5px solid var(--line);background:#fff;font-family:var(--font);font-size:11px;font-weight:700;color:var(--mid);cursor:pointer;transition:.2s;text-transform:uppercase;border-radius:4px;}
 .freq-btn:hover{background:var(--glight);color:var(--green);border-color:var(--green);}
 .freq-btn.f1.sel{background:var(--c-rojo);color:#fff;border-color:var(--c-rojo);}
 .freq-btn.f2.sel{background:var(--c-amarillo);color:#fff;border-color:var(--c-amarillo);}
@@ -162,11 +162,15 @@ html,body{background:var(--bg);font-family:var(--font);color:var(--text);}
   .comp-card{padding:18px}.comp-header{flex-direction:column;gap:8px}.comp-name{font-size:16px}
   .freq-row{flex-wrap:wrap}.freq-btn{flex:1 1 calc(50% - 4px);padding:12px 6px;font-size:11px;min-height:44px}
   .obs-grid{grid-template-columns:1fr}.obs-card{padding:18px}
-  .sum-table{display:block;overflow-x:auto}
   .score-banner{padding:16px 18px;gap:12px}.score-banner-num{font-size:36px}
   .verdict-banner{padding:18px}.verdict-opts{flex-direction:column;gap:10px}.verdict-opt{padding:14px;min-height:48px}
   .mf input,.mf select,.note-area{font-size:16px}.mf input,.mf select{padding:10px 0}
   .section-title{font-size:17px}.q-box{padding:14px}
+  #edFab{bottom:84px!important;right:12px!important;padding:9px 14px!important}
+  .sum-table{display:table;table-layout:fixed;font-size:11px}.sum-table th{padding:6px 2px;font-size:9px;word-break:break-word}.sum-table th:nth-child(1){width:32%}.sum-table th:nth-child(2){width:12%}
+  .sum-table td:first-child{padding:6px 8px;font-size:12px;word-break:break-word}.sum-table td{height:38px}
+  .score-banner>div:last-child{white-space:nowrap}.score-banner-max{white-space:nowrap}
+  .freq-btn{font-size:11px;color:var(--mid)}
 }
 @media (max-width:480px){.meta-strip{grid-template-columns:1fr}.star-grid{grid-template-columns:1fr}.hero-title{font-size:24px}}
 </style>
@@ -249,7 +253,7 @@ function render() {
         <button class="freq-btn f3" type="button" data-f="3"><span>Demuestra efectividad</span></button>
         <button class="freq-btn f4" type="button" data-f="4"><span>Demuestra solidez</span></button>
       </div>
-      <label class="note-label">Notas y evidencias (situación, acción, resultado)</label>
+      <label class="note-label">Notas y evidencias (acción, pensamiento, resultado, aprendizaje y aplicación)</label>
       <textarea class="note-area" placeholder="Escribí acá los hallazgos…"></textarea>
     </div>
   `).join('');
@@ -257,7 +261,7 @@ function render() {
   const sumRowsHTML = comps.map(c => `
     <tr data-comp="${c.id}">
       <td>${c.nombre}</td>
-      <td class="peso-col" data-peso-cell>${c.peso}</td>
+      <td class="peso-col" data-peso-cell>${String(c.peso).replace(".", ",")}</td>
       <td><div class="sum-cell" data-col="1"></div></td>
       <td><div class="sum-cell" data-col="2"></div></td>
       <td><div class="sum-cell" data-col="3"></div></td>
@@ -367,7 +371,7 @@ function render() {
       </div>
       <div class="verdict-banner">
         <div class="verdict-title">Ajuste al rol</div>
-        <div class="verdict-sub">Tu juicio profesional tiene prioridad sobre el score automático</div>
+        <div class="verdict-sub">Tu juicio profesional tiene prioridad sobre el puntaje automático</div>
         <div class="verdict-opts">
           <button class="verdict-opt adj-alto" type="button"><div class="vdot"></div><span>Alto ajuste</span></button>
           <button class="verdict-opt adj-mod" type="button"><div class="vdot"></div><span>Ajuste con observaciones</span></button>
@@ -455,7 +459,7 @@ function actualizarScore() {
     const tr = document.querySelector('tr[data-comp="' + compId + '"]');
     if (tr) {
       const pesoCell = tr.querySelector('[data-peso-cell]');
-      if (pesoCell) pesoCell.textContent = peso;
+      if (pesoCell) pesoCell.textContent = String(peso).replace('.', ',');
     }
     const selBtn = card.querySelector('.freq-btn.sel');
     if (selBtn && peso > 0) {
@@ -473,8 +477,8 @@ function actualizarScore() {
     return;
   }
   const score = (totalPuntos / totalMaximo) * 10;
-  scoreNum.textContent = score.toFixed(1);
-  scoreDetalle.textContent = evaluadas + ' competencia(s) evaluadas · ' + totalPuntos.toFixed(1) + ' / ' + totalMaximo.toFixed(1) + ' puntos ponderados';
+  scoreNum.textContent = score.toFixed(1).replace('.', ',');
+  scoreDetalle.textContent = evaluadas + ' competencia(s) evaluadas · ' + totalPuntos.toFixed(1).replace('.', ',') + ' / ' + totalMaximo.toFixed(1).replace('.', ',') + ' puntos ponderados';
 }
 
 function delComp(btn) {
@@ -530,7 +534,7 @@ function restaurarTextareas() {
 
 document.getElementById('btnGuardar').addEventListener('click', function() {
   const cand = (document.getElementById('inp-cand')?.value || '').trim();
-  if (!cand) { alert('Falta nombre del entrevistado'); return; }
+  if (!cand) { alert('Falta el nombre de la persona entrevistada.'); return; }
   const ajusteBtn = document.querySelector('.verdict-opt.sel');
   let ponderacion = '';
   if (ajusteBtn) ponderacion = ajusteBtn.classList.contains('adj-alto') ? 'A' : ajusteBtn.classList.contains('adj-mod') ? 'B' : ajusteBtn.classList.contains('adj-bajo') ? 'C' : '';
