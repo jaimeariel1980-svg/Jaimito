@@ -74,7 +74,7 @@
   var NB_VACIO={screening_eval:{criterio:'',peso:1},screening_val:{pregunta:'',opciones:'Sí|No'},competencias:{nombre:'',descripcion:'',peso:1,preguntas:[]},postulacion:{etiqueta:'',tipo:'texto',opciones:'',requerido:'SI'}};
   window.nbAgregar=function(k){sync();NB.prop[k].push(JSON.parse(JSON.stringify(NB_VACIO[k])));render('nueva');};
   window.nbQuitar=function(k,i){sync();NB.prop[k].splice(i,1);render('nueva');};
-  window.nbVolver=function(){sync();if(!confirm('¿Volver al texto? Se pierden las correcciones que hiciste a la propuesta.'))return;NB.prop=null;render('nueva');};
+  window.nbVolver=function(){sync();blConfirm('¿Volver al texto? Se pierden las correcciones que hiciste a la propuesta.',function(){NB.prop=null;render('nueva');},{si:'Volver al texto',peligro:true});};
   window.nbVerPerfil=function(b){b.disabled=true;google.script.run.withSuccessHandler(function(u){b.disabled=false;var d=document.getElementById('nbPerfilFr');if(d)d.innerHTML='<iframe src="'+esc(u)+'" style="width:100%;height:78vh;border:1px solid #ccc;border-radius:8px;background:#fff"></iframe>';}).withFailureHandler(function(e){b.disabled=false;alert((e&&e.message)||e);}).linkPerfilConPin(NB.creada.id,'sesion','editar');};
   window.nbOtra=function(){NB={texto:'',empresa:'',prop:null,creada:null,ocupado:false};render('nueva');};
   function xmlATexto(xml){
@@ -119,9 +119,10 @@
     sync();var q=quien();var p=NB.prop;
     var falta=!p.nombre.trim()?'el nombre del puesto':!p.empresa.trim()?'la empresa':null;
     if(falta){alert('Falta '+falta+'.');return;}
-    if(!confirm('Se va a crear la búsqueda «'+p.nombre+'» ('+p.empresa+') con carpetas de Drive, pestaña de candidatos y formularios. ¿Crear?'))return;
+    blConfirm('Se va a crear la búsqueda «'+p.nombre+'» ('+p.empresa+') con carpetas de Drive, pestaña de candidatos y formularios. ¿Crear?',function(){
     btn.disabled=true;btn.textContent='Creando… (con el perfil del puesto puede tardar un par de minutos)';
     google.script.run.withSuccessHandler(function(r){NB.creada=r;render('nueva');}).withFailureHandler(function(e){btn.disabled=false;btn.textContent='✅ Crear la búsqueda';alert('No se creó: '+badPin(e));}).crearBusquedaIA(pin(),p,q,NB.texto);
+    },{si:'Crear'});
   };
 
   function uErr(e){alert((e&&e.message)||e);}
@@ -143,10 +144,11 @@
     var n=document.getElementById('cfuN').value,r=document.getElementById('cfuR').value;b.disabled=true;
     google.script.run.withSuccessHandler(function(x){b.disabled=false;alert('Usuario creado: '+x.nombre+(x.pin?'\nPIN temporal: '+x.pin+'\n\nPasale este PIN. Al entrar elige el suyo.':'\n\nYa puede entrar con su nombre y apellido.'));cfUsuarios();}).withFailureHandler(function(e){b.disabled=false;uErr(e);}).crearUsuario(n,r);
   };
-  window.cfPinU=function(i){var u=uL(i);if(!u||!confirm('¿Reiniciar el PIN de '+u.nombre+'? Se cierra su sesión y recibe un PIN temporal.'))return;
-    google.script.run.withSuccessHandler(function(x){alert('PIN temporal de '+x.nombre+': '+x.pin+'\n\nPasáselo: al entrar elige el suyo.');cfUsuarios();}).withFailureHandler(uErr).reiniciarPinUsuario(u.nombre);};
-  window.cfActU=function(i,a){var u=uL(i);if(!u||(!a&&!confirm('¿Bloquear a '+u.nombre+'? No va a poder entrar.')))return;
+  window.cfPinU=function(i){var u=uL(i);if(!u)return;blConfirm('¿Reiniciar el PIN de '+u.nombre+'? Se cierra su sesión y recibe un PIN temporal.',function(){
+    google.script.run.withSuccessHandler(function(x){alert('PIN temporal de '+x.nombre+': '+x.pin+'\n\nPasáselo: al entrar elige el suyo.');cfUsuarios();}).withFailureHandler(uErr).reiniciarPinUsuario(u.nombre);},{si:'Reiniciar'});};
+  window.cfActU=function(i,a){var u=uL(i);if(!u)return;var go=function(){
     google.script.run.withSuccessHandler(function(){cfUsuarios();}).withFailureHandler(function(e){uErr(e);cfUsuarios();}).activarUsuario(u.nombre,a);};
+    if(a)go();else blConfirm('¿Bloquear a '+u.nombre+'? No va a poder entrar.',go,{si:'Bloquear',peligro:true});};
   window.cfRolU=function(i,r){var u=uL(i);if(!u)return;
     google.script.run.withSuccessHandler(function(){cfUsuarios();}).withFailureHandler(function(e){uErr(e);cfUsuarios();}).cambiarRolUsuario(u.nombre,r);};
 

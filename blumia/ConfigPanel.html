@@ -81,8 +81,8 @@
     if((tab==='scr'||tab==='comp')&&!FD&&!FDcarga){FDcarga=true;google.script.run.withSuccessHandler(function(d){FD=d;FDcarga=false;render(tab);}).withFailureHandler(function(e){FDcarga=false;alert(badPin(e));}).getDatosPerfil(PERFIL);}
   }
   function foot(t){return '<div class="cf-foot"><button class="cf-close" onclick="cfCerrar()">Cerrar</button><button class="cf-save" onclick="cfGuardar(\''+t+'\',this)">Guardar</button></div>';}
-  window.cfQuitar=function(i){sync();if(!confirm('¿Sacar esta pregunta? (queda copia en Historial_Formularios)'))return;CF.preguntas.splice(i,1);render('post');};
-  window.cfVolver=function(i){sync();if(!confirm('¿Volver al texto general para esta búsqueda?'))return;var t=CF.plantillas[i];google.script.run.withSuccessHandler(function(){t.texto=t.general;t.propia=false;render('msg');alert('Listo: esta búsqueda usa el texto general.');}).withFailureHandler(function(e){alert(badPin(e));}).guardarConfigBusqueda(pin(),PERFIL,{plantillas:[{clave:t.clave,volver:true}]},quien());};
+  window.cfQuitar=function(i){sync();blConfirm('¿Sacar esta pregunta? (queda copia en Historial_Formularios)',function(){CF.preguntas.splice(i,1);render('post');},{si:'Sacar',peligro:true});};
+  window.cfVolver=function(i){sync();blConfirm('¿Volver al texto general para esta búsqueda?',function(){var t=CF.plantillas[i];google.script.run.withSuccessHandler(function(){t.texto=t.general;t.propia=false;render('msg');alert('Listo: esta búsqueda usa el texto general.');}).withFailureHandler(function(e){alert(badPin(e));}).guardarConfigBusqueda(pin(),PERFIL,{plantillas:[{clave:t.clave,volver:true}]},quien());},{si:'Volver al general'});};
   window.cfAgregar=function(){sync();CF.preguntas.push({id:'',etiqueta:'',tipo:'texto',opciones:'',requerido:'SI'});render('post');};
   window.cfGuardar=function(t,btn){
     sync();var q=quien();if(!q)return;var p=pin();if(!p)return;var d={};
@@ -92,14 +92,14 @@
     if(t==='dat'){d.datos=CF.datos;d.extra={hero:CF.extra.hero,estado:CF.extra.estado,cv_ia:CF.extra.cv_ia,mail:CF.extra.mail};}
     d.base=CF.base;
     btn.disabled=true;btn.textContent='Guardando...';
-    google.script.run.withSuccessHandler(function(){btn.disabled=false;btn.textContent='Guardar';var sb=snapBase();if(t==='dat'){CF.base.datos=sb.datos;CF.base.hero=sb.hero;CF.base.estado=sb.estado;CF.base.cv_ia=sb.cv_ia;CF.base.mail=sb.mail;}if(t==='ia')CF.base.prompt_extra=sb.prompt_extra;alert('Guardado ✓');if(t==='dat')location.reload();})
+    google.script.run.withSuccessHandler(function(){btn.disabled=false;btn.textContent='Guardar';var sb=snapBase();if(t==='dat'){CF.base.datos=sb.datos;CF.base.hero=sb.hero;CF.base.estado=sb.estado;CF.base.cv_ia=sb.cv_ia;CF.base.mail=sb.mail;}if(t==='ia')CF.base.prompt_extra=sb.prompt_extra;if(t==='dat')blAlert('Guardado ✓',function(){location.reload();});else blAlert('Guardado ✓');})
      .withFailureHandler(function(e){btn.disabled=false;btn.textContent='Guardar';alert('No se guardó: '+badPin(e));})
      .guardarConfigBusqueda(p,PERFIL,d,q);
   };
   window.cfPerfilEditar=function(b){b.disabled=true;google.script.run.withSuccessHandler(function(u){b.disabled=false;var d=document.getElementById('cfPerfilFr');if(!d){window.open(u,'_blank');return;}d.innerHTML='<iframe src="'+esc(u)+'" style="width:100%;height:78vh;border:1px solid #ccc;border-radius:8px;background:#fff"></iframe><div style="text-align:right;margin-top:6px"><a href="'+esc(u)+'" target="_blank" style="font-size:12px">Abrir en pantalla completa ↗</a></div>';}).withFailureHandler(function(e){b.disabled=false;alert((e&&e.message)||e);}).linkPerfilConPin(PERFIL,'sesion','editar');};
 
   function g(id){var e=document.getElementById(id);return e?e.value:null;}
-  window.cfPerfilCrear=function(b){if(!confirm('Se va a crear el perfil del puesto de esta búsqueda (formulario en blanco). Si tenía un link a un documento externo, el botón «Perfil del puesto» de 📚 Búsqueda pasa a abrir este formulario. ¿Seguir?'))return;b.disabled=true;google.script.run.withSuccessHandler(function(){CF.perfil={propio:true,fecha:''};render('perfil');}).withFailureHandler(function(e){b.disabled=false;alert((e&&e.message)||e);}).activarPerfilPuesto(pin(),PERFIL);};
+  window.cfPerfilCrear=function(b){blConfirm('Se va a crear el perfil del puesto de esta búsqueda (formulario en blanco). Si tenía un link a un documento externo, el botón «Perfil del puesto» de 📚 Búsqueda pasa a abrir este formulario. ¿Seguir?',function(){b.disabled=true;google.script.run.withSuccessHandler(function(){CF.perfil={propio:true,fecha:''};render('perfil');}).withFailureHandler(function(e){b.disabled=false;alert((e&&e.message)||e);}).activarPerfilPuesto(pin(),PERFIL);},{si:'Crear'});};
   var FD=null,FDcarga=false;
   function fdSync(){
     if(!FD||g('fd_a')===null)return;var v;
@@ -130,7 +130,7 @@
   }
   var FD_VACIO={eval_items:{label:'',peso:1},val_items:{label:'',opts:['Sí','No']},competencias:{nombre:'',descripcion:'',peso:1,preguntas:[]}};
   window.fdAgregar=function(k){sync();FD[k].push(JSON.parse(JSON.stringify(FD_VACIO[k])));render(k==='competencias'?'comp':'scr');};
-  window.fdQuitar=function(k,i){sync();if(!confirm('¿Sacar este elemento? (queda copia en Historial_Formularios)'))return;FD[k].splice(i,1);render(k==='competencias'?'comp':'scr');};
+  window.fdQuitar=function(k,i){sync();blConfirm('¿Sacar este elemento? (queda copia en Historial_Formularios)',function(){FD[k].splice(i,1);render(k==='competencias'?'comp':'scr');},{si:'Sacar',peligro:true});};
   window.fdGuardar=function(t,btn){
     sync();var q=quien();var p={};
     if(t==='scr'){p.eval=FD.eval_items.map(function(e){return {label:e.label,peso:e.peso};});p.val=FD.val_items.map(function(e){return {label:e.label,opts:e.opts};});p.hero={criterio_avanza:FD.hero.criterio_avanza,criterio_bplus:FD.hero.criterio_bplus,criterio_reserva:FD.hero.criterio_reserva};}
