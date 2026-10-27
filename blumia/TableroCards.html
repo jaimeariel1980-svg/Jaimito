@@ -409,7 +409,9 @@ header h1{display:none!important}
 .filtros{padding:16px 28px 4px;gap:10px}
 .filtros input,.filtros select,.filtros button,#fTog{height:40px;border-radius:8px;border:1.5px solid var(--line);font-size:13px;font-weight:600;box-sizing:border-box}
 .filtros input{padding:0 12px 0 32px}.filtros select{padding:0 12px}.filtros button,#fTog{padding:0 16px;font-weight:700;color:var(--green);background:#fff}
-#kpiT{padding:16px 28px 0;gap:12px}
+#kpiT{display:flex;flex-wrap:wrap;gap:12px;padding:16px 28px 0}
+#kpiT .kpT{flex:0 0 auto;min-width:210px;padding:10px 20px}
+@media(max-width:640px){#kpiT{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:8px 10px 0}#kpiT .kpT{min-width:0;padding:7px 8px}}
 .board{gap:18px;padding:18px 28px 14px}
 .col-body{padding:12px}
 .card{margin-bottom:14px;padding:14px 14px 12px;border-radius:10px}
