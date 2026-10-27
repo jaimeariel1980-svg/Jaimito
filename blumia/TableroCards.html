@@ -162,7 +162,6 @@ header{min-height:86px}
     if(!d){document.body.insertAdjacentHTML('beforeend','<div id="dock"></div>');d=document.getElementById('dock');}
     d.className=min?'min':'';
     d.innerHTML='<button class="dk dkp'+(urg?' u':'')+'" onclick="verAvisos()" title="Avisos pendientes"><span>🔔</span><b>'+P.length+'</b><i>Pendientes</i></button>'
-      +'<button class="dk dka" onclick="abrirAgenda()" title="Próximas entrevistas"><span>📅</span><b>'+L.length+'</b><i>'+(L.length?cuando(L[0].f)+' · '+esc(corto(L[0].c.nombre)):'Sin entrevistas')+'</i></button>'
       +'<button class="dkt" onclick="dockMin()" title="'+(min?'Mostrar':'Achicar')+'">'+(min?'⌃':'⌄')+'</button>';
     var st=document.getElementById('agStrip');
     if(!st){var f=document.querySelector('.filtros');if(f)f.insertAdjacentHTML('afterend','<div id="agStrip"></div>');st=document.getElementById('agStrip');}

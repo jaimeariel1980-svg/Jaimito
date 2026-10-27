@@ -4,10 +4,19 @@ const CORREO_DESTINO = 'empleos@blumiaconsulting.com';
 const URL_DEPLOY = 'https://script.google.com/macros/s/AKfycbytekPKN31bZLxczDVknMr433K9KflzmrR-dCWsC1hLlx2MO7tbw6SrMjFXa1PnucQo/exec';
 function URL_BASE() { return ScriptApp.getService().getUrl(); }
 
-function getConfig(perfilId) {
+// Mientras se arma una página de solo lectura (kanban, inicio) la pestaña Config se lee UNA vez: cada lectura trae todos los requisitos para la IA (miles de caracteres por búsqueda).
+let CFG_MEMO_ = null;
+function configValores_() {
+  if (CFG_MEMO_ && CFG_MEMO_.v) return CFG_MEMO_.v;
   const config = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName('Config');
   if (!config) throw new Error('Falta pestaña Config. Corré setupInicial()');
-  const rows = config.getDataRange().getValues();
+  const v = config.getDataRange().getValues();
+  if (CFG_MEMO_) CFG_MEMO_.v = v;
+  return v;
+}
+
+function getConfig(perfilId) {
+  const rows = configValores_();
   const headers = rows[0];
   const fila = rows.find(r => r[0] === perfilId);
   if (!fila) throw new Error('Perfil no encontrado: ' + perfilId);
@@ -17,7 +26,7 @@ function getConfig(perfilId) {
 }
 
 function listarPerfiles() {
-  const config = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName('Config').getDataRange().getValues();
+  const config = configValores_();
   return config.slice(1).filter(r => r[0]).map(r => ({ id: r[0], nombre: r[1] }));
 }
 
@@ -121,6 +130,8 @@ function doGetPagina_(e) {
     ).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
   } else if (tipo === 'perfilpuesto') {
     return perfilPuestoHTML(perfil, e.parameter.t, e.parameter.m);
+  } else if (tipo === 'inicio') {
+    return inicioHTML_();
   } else if (tipo === 'kanban') {
     return kanbanHTML(perfil);
   } else if (tipo === 'banco') {
@@ -132,6 +143,8 @@ function doGetPagina_(e) {
     completarProcesoIA(empProceso);
     const url = generarHTMLProceso(empProceso);
     return HtmlService.createHtmlOutput('<!DOCTYPE html><html><body style="font-family:sans-serif;padding:40px;text-align:center"><h2 style="color:#1A6645">Informe de proceso listo</h2><a href="' + url + '" target="_blank" style="display:inline-block;background:#1A6645;color:#fff;padding:14px 28px;border-radius:6px;text-decoration:none;font-weight:800">Abrir informe</a></body></html>').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+  } else if (!tipo && !e?.parameter?.perfil && !e?.parameter?.nombre) {
+    return inicioHTML_(); // entrar al link base sin parámetros: pantalla de Inicio
   } else {
     template = HtmlService.createTemplateFromFile('Formulario');
     template.candidato = e.parameter.nombre || '';
@@ -4103,6 +4116,11 @@ function completarProcesoIA(empresa) {
   Logger.log('Proceso IA completado.');
 }
 function kanbanHTML(perfilId) {
+  CFG_MEMO_ = {};
+  try { return kanbanHTML_(perfilId); } finally { CFG_MEMO_ = null; }
+}
+
+function kanbanHTML_(perfilId) {
   const cfg = getConfig(perfilId);
   const emp = (typeof cfg.empresa === 'string') ? cfg.empresa : 'MACS';
   const titulo = ((typeof cfg.nombre === 'string' && cfg.nombre) ? cfg.nombre : (typeof cfg.nombre_perfil === 'string' && cfg.nombre_perfil) ? cfg.nombre_perfil : perfilId) + ' · ' + emp;
@@ -4121,16 +4139,43 @@ function kanbanHTML(perfilId) {
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 
+// links de una columna entera en una sola lectura (texto enriquecido primero, después la fórmula HYPERLINK)
+function linksColumna_(sh, col, n) {
+  try {
+    const rg = sh.getRange(2, col, n, 1), rts = rg.getRichTextValues(), fs = rg.getFormulas();
+    return rts.map((r, i) => {
+      const rt = r[0];
+      if (rt && rt.getLinkUrl()) return rt.getLinkUrl();
+      const m = String(fs[i][0] || '').match(/HYPERLINK\("([^"]+)"/i);
+      return m ? m[1] : '';
+    });
+  } catch (e) { return new Array(n).fill(''); }
+}
+
+// id de archivo de Drive de la columna del CV: primero la fórmula, después el link del texto y por último el valor (igual que extraerFileId)
+function idsCVColumna_(sh, col, n, valores) {
+  const rg = sh.getRange(2, col, n, 1), rts = rg.getRichTextValues(), fs = rg.getFormulas();
+  return fs.map((f, i) => {
+    let url = '';
+    const m = String(f[0] || '').match(/HYPERLINK\("([^"]+)"/i);
+    if (m) url = m[1];
+    if (!url) { const rt = rts[i][0]; if (rt && rt.getLinkUrl()) url = rt.getLinkUrl(); }
+    if (!url) url = String(valores[i] || '');
+    const mId = url.match(/[?&]id=([-\w]{25,})/);
+    if (mId) return mId[1];
+    const m2 = url.match(/[-\w]{25,}/);
+    return m2 ? m2[0] : '';
+  });
+}
+
 function doGetKanban_(perfilId) {
   const sh = getSheet(getConfig(perfilId));
   const d = sh.getDataRange().getValues();
-const link = (r, col) => {
-    const rt = sh.getRange(r, col).getRichTextValue();
-    if (rt && rt.getLinkUrl()) return rt.getLinkUrl();
-    const f = sh.getRange(r, col).getFormula();
-    const m = f.match(/HYPERLINK\("([^"]+)"/i);
-    return m ? m[1] : '';
-  };
+  const n = d.length - 1;
+  const L = {};
+  if (n > 0) [11, 13, 15, 17, 21, 31, 33].forEach(c => { L[c] = linksColumna_(sh, c, n); });
+  const cvs = n > 0 ? idsCVColumna_(sh, 8, n, d.slice(1).map(r => r[7])) : [];
+  const link = (r, col) => (L[col] || [])[r - 2] || '';
   const out = [];
   const cMot = d[0].indexOf('Motivo de descarte');
   const cObs = d[0].indexOf('Observaciones');
@@ -4145,7 +4190,7 @@ const link = (r, col) => {
       nota: d[i][4] || '', notaScr: d[i][11] || '', notaComp: d[i][15] || '',
       pretension: m ? m[1].trim() : '', zona: d[i][23] || '',
       tel: d[i][2] || '', dni: String(d[i][3] || ''), mail: d[i][21] || '',
-      resumen: d[i][6] || '', cv: extraerFileId(sh, i + 1, 8) || '',
+      resumen: d[i][6] || '', cv: cvs[i - 1] || '',
       scrLink: link(i + 1, 11), compLink: link(i + 1, 15), informe: link(i + 1, 33),
       scrPDF: link(i + 1, 13), compPDF: link(i + 1, 17), postulacion: link(i + 1, 31), cita: d[i][36] || '', historial: d[i][37] || '', whatsapp: link(i + 1, 21), mailDescarte: d[i][39] || '', fuente: String(d[i][9] || ''), contactado: d[i][40] || '', notaScrEmp: d[i][43] || '', notaPresEmp: d[i][44] || '', notaScrEmp: d[i][43] || '', notaPresEmp: d[i][44] || '', formacion: d[i][22] || '', requisitos: d[i][5] || '', pretNum: (function(){var m=String(d[i][5]||'').match(/Remuneraci[oó]n pretendida:\s*\$?\s*([\d.\s]+)/i);return m?Number(m[1].replace(/[.\s]/g,'')):0;})()
     });
@@ -4274,11 +4319,11 @@ Object.keys(EMPRESAS).forEach(function(emp){
   navHTML+='</optgroup>';
 });
 navHTML+='</select>';
-navHTML+='<button onclick="window.top.location.href=\\'${URL_WEBAPP}?tipo=kanban&perfil=${perfilId}\\'">↻ Actualizar</button>';
+navHTML+='<button title="Volver al inicio (todas las búsquedas)" onclick="window.top.location.href=\\'${URL_WEBAPP}?tipo=inicio\\'">🏠 Inicio</button>';
 navHTML+='<button id="quienBtn" title="Cambiar mi PIN o salir" onclick="blMenuUsuario()">👤 Usuario</button>';
 navHTML+='<div class="dd"><button onclick="ddToggle(this)">📄 Informes ▾</button><div class="ddm"><a onclick="window.open(\\'${URL_WEBAPP}?tipo=procesohtml&perfil=${perfilId}\\',\\'_blank\\')">Informe de proceso (para la empresa)</a><a onclick="if(confirm(\\'¿Generar PDF cliente de esta búsqueda?\\'))window.open(\\'${URL_WEBAPP}?tipo=pdfcliente&perfil=${perfilId}\\',\\'_blank\\')">PDF para el cliente</a></div></div>';
 navHTML+='<div class="dd"><button onclick="ddToggle(this)">📚 Búsqueda ▾</button><div class="ddm">'+(${perfilProt?'true':'false'}?'<a onclick="pedirPerfilPin()">🔒 Perfil del puesto</a>':'<a onclick="window.open(\\'${perfilUrl}\\',\\'_blank\\')">📋 Perfil del puesto</a>')+'<a onclick="window.open(\\'${flyerUrl}\\',\\'_blank\\')">📢 Flyer</a><a onclick="prompt(\\'Link del formulario de postulación (copialo):\\',\\'${URL_WEBAPP}?tipo=postulacion&perfil=${perfilId}\\')">🔗 Link de postulación</a><a onclick="verHistorial()">📜 Historial de la búsqueda</a></div></div>';
-navHTML+='<div class="dd"><button onclick="ddToggle(this)">🧰 Candidatos ▾</button><div class="ddm"><a onclick="descartesMasivo()">✉ Mails de descarte</a><a title="Baja un archivo para importar a los contactos de Google" onclick="bajarContactos(this)">📇 Contactos al celular</a><a onclick="window.top.location.href=\\'${URL_WEBAPP}?tipo=banco&desde=${perfilId}\\'">★ Banco de talento</a><a onclick="copiaAhora()">💾 Copia de seguridad ahora</a><a onclick="abrirPapelera()">🗑 Papelera ('+ELIM.length+')</a></div></div>';
+navHTML+='<div class="dd"><button onclick="ddToggle(this)">🧰 Candidatos ▾</button><div class="ddm"><a onclick="descartesMasivo()">✉ Mails de descarte</a><a title="Baja un archivo para importar a los contactos de Google" onclick="bajarContactos(this)">📇 Contactos al celular</a><a onclick="window.top.location.href=\\'${URL_WEBAPP}?tipo=banco&desde=${perfilId}\\'">★ Banco de talento</a><a onclick="abrirPapelera()">🗑 Papelera ('+ELIM.length+')</a></div></div>';
 document.addEventListener('click',function(e){if(!e.target.closest('.dd'))document.querySelectorAll('.ddm.show').forEach(function(m){m.classList.remove('show');});});
 function ddToggle(b){var m=b.nextElementSibling,ab=m.classList.contains('show');document.querySelectorAll('.ddm.show').forEach(function(x){x.classList.remove('show');});if(!ab)m.classList.add('show');}
 document.getElementById('nav').innerHTML=navHTML;
@@ -5154,8 +5199,7 @@ function verEmpresas(){
   Logger.log(JSON.stringify(emp, null, 2));
 }
 function empresasYPerfiles(){
-  const config = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName('Config');
-  const rows = config.getDataRange().getValues();
+  const rows = configValores_();
   const emp = {};
   const cEst = rows[0].indexOf('estado_busqueda');
   for(let i=1;i<rows.length;i++){
