@@ -168,10 +168,21 @@ header{min-height:86px}
   window.dockMin=function(){var m=false;try{m=localStorage.getItem('bl_dock')==='0';localStorage.setItem('bl_dock',m?'1':'0');}catch(e){}dockPintar();};
   var avPintar0=window.avPintar;window.avPintar=function(){if(avPintar0)avPintar0();dockPintar();};
   window.kpiClickT=function(k){KF=(KF===k)?'':k;pintarKpi();filtrar();};
+  var FILT_IDS=['fNombre','fZona','fForm','fExp','fEstado','fPret'];
+  function ftogPintar(){
+    var b=document.getElementById('ftogK');if(!b)return;
+    var n=FILT_IDS.filter(function(i){var x=document.getElementById(i);return x&&x.value;}).length+(KF&&KF!=='all'?1:0);
+    var f=document.querySelector('.filtros'),ab=f&&f.classList.contains('open');
+    b.className=ab?'on':'';b.innerHTML='🔍 Filtros'+(n?'<b>'+n+'</b>':'')+' <span style="font-size:11px">'+(ab?'▴':'▾')+'</span>';
+    var r=document.getElementById('ftogRes'),cf=document.getElementById('contadorF');if(r)r.textContent=n&&cf?cf.textContent:'';
+  }
+  window.ftogToggle=function(){var f=document.querySelector('.filtros');if(!f)return;f.classList.toggle('open');ftogPintar();if(window.ajustarBoard)setTimeout(ajustarBoard,30);};
   function pintarKpi(){
     var K=[['ctc','w','Falta contactar'],['mov','r','Sin movimiento'],['ffo','r','Falta formulario'],['fet','r','Falta etapa']];
     var e=document.getElementById('kpiT');if(!e)return;
     e.innerHTML=K.map(function(k){var n=DATA.filter(function(c){return kpiOk(k[0],c);}).length;return '<div class="kpT '+k[1]+(KF===k[0]&&k[0]!=='all'?' on':'')+'" title="'+(KF===k[0]?'Quitar filtro':'Ver estos candidatos')+'" onclick="kpiClickT(\''+k[0]+'\')"><b>'+n+'</b><span>'+k[2]+'</span></div>';}).join('');
+    e.insertAdjacentHTML('beforeend','<div class="ftogw"><span id="ftogRes"></span><button id="ftogK" onclick="ftogToggle()"></button></div>');
+    ftogPintar();
     var p=document.getElementById('cntC');if(p)p.textContent=DATA.length+' candidatos';
     dockPintar();
   }
@@ -189,6 +200,7 @@ header{min-height:86px}
     document.querySelectorAll('.col').forEach(function(col){var b=col.querySelector('.col-h b');if(!b)return;b.textContent=col.querySelectorAll('.card:not([style*="none"])').length;});
     var hay=KF&&KF!=='all'||['fNombre','fZona','fForm','fExp','fEstado','fPret'].some(function(i){var x=document.getElementById(i);return x&&x.value;});
     var cf=document.getElementById('contadorF');if(cf)cf.textContent=hay?visibles+' de '+DATA.length+' candidatos':'';
+    ftogPintar();
   };
   var limpiar0=window.limpiarFiltros;window.limpiarFiltros=function(){KF='';limpiar0();pintarKpi();filtrar();};
   window.ajustarBoard=function(){var b=document.getElementById('board');if(!b||b.offsetParent===null)return;b.style.height=Math.max(300,window.innerHeight-b.getBoundingClientRect().top-6)+'px';};
@@ -196,7 +208,6 @@ header{min-height:86px}
   // ---- armado
   var f=document.querySelector('.filtros');
   if(f)f.insertAdjacentHTML('beforebegin','<div id="kpiT"></div>');
-  if(f&&f.firstElementChild)f.firstElementChild.insertAdjacentHTML('afterend','<button id="fTog" onclick="document.querySelector(\'.filtros\').classList.toggle(\'open\')">⚙ Filtros</button>');
   var hd=document.querySelector('header'),h1=hd&&hd.querySelector('h1');
   if(h1)h1.insertAdjacentHTML('afterend','<span class="hdr-pill" id="cntC"></span>');
   var nav=document.getElementById('nav');
@@ -411,7 +422,20 @@ header h1{display:none!important}
 .filtros input{padding:0 12px 0 32px}.filtros select{padding:0 12px}.filtros button,#fTog{padding:0 16px;font-weight:700;color:var(--green);background:#fff}
 #kpiT{display:flex;flex-wrap:wrap;gap:12px;padding:16px 28px 0}
 #kpiT .kpT{flex:0 0 auto;min-width:210px;padding:10px 20px}
-@media(max-width:640px){#kpiT{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:8px 10px 0}#kpiT .kpT{min-width:0;padding:7px 8px}}
+.ftogw{margin-left:auto;display:flex;align-items:center;gap:12px}
+#ftogRes{font-size:12px;font-weight:700;color:#555}
+#ftogK{height:40px;padding:0 18px;border-radius:8px;border:1.5px solid var(--green);background:#fff;color:var(--green);font:700 13px var(--font);cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+#ftogK:hover{background:var(--glight)}#ftogK.on{background:var(--green);color:#fff}
+#ftogK b{background:var(--cream);color:var(--green);border-radius:99px;padding:1px 8px;font-size:12px}
+.filtros{display:none!important}.filtros.open{display:flex!important}
+/* encabezado de la tarjeta con más cuerpo: nombre grande y nota en recuadro */
+.card .top{margin:-14px -14px 10px;padding:12px 34px 11px 14px;border-radius:10px 10px 0 0;background:#EEF2EC;align-items:center;gap:10px}
+.card.cA .top{background:#D8EEDF}.card.cBp .top{background:#E3F4E9}.card.cB .top{background:#FFF1BF}.card.cC .top{background:#FADCDA}
+.card .top b{font-size:18px;line-height:1.2;letter-spacing:-.01em}
+.card .nota{width:42px;height:42px;min-width:42px;padding:0;display:flex;align-items:center;justify-content:center;font-size:22px;border-radius:10px}
+.card .bdg{gap:3px}.card .bdg small{font-size:10px}
+.card .cx{top:10px;right:8px;z-index:3}
+@media(max-width:640px){#kpiT{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:8px 10px 0}#kpiT .kpT{min-width:0;padding:7px 8px}.ftogw{grid-column:1/-1;margin-left:0;justify-content:space-between}.filtros.open{display:grid!important}}
 .board{gap:18px;padding:18px 28px 14px}
 .col-body{padding:12px}
 .card{margin-bottom:14px;padding:14px 14px 12px;border-radius:10px}
@@ -451,12 +475,10 @@ header h1{font-size:15px;line-height:1.25;flex:1 1 100%;min-width:0;display:-web
 #kpiT{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:8px 10px 0}
 .kpT{flex-direction:column;align-items:flex-start;gap:3px;padding:7px 8px;border-left-width:4px}
 .kpT b{font-size:20px}.kpT span{font-size:9px}
-.filtros{display:grid!important;grid-template-columns:1fr 1fr;gap:6px;padding:8px 10px 0}
+.filtros.open{display:grid!important;grid-template-columns:1fr 1fr;gap:6px;padding:8px 10px 0}
 .filtros .fwrap{width:100%;box-sizing:border-box}
 .filtros input,.filtros select{width:100%!important;box-sizing:border-box;padding:8px;font-size:13px}
 .filtros .fwrap input{padding-left:30px}
-.filtros:not(.open)>:not(:first-child):not(#fTog){display:none!important}
-#fTog{display:block!important}
 .rs-dash{grid-template-columns:1fr 1fr;gap:8px}
 .rs-kpi{padding:12px 12px}.rs-kpi .n{font-size:28px}.rs-kpi .l{font-size:10px;margin-top:5px}.rs-kpi .h{display:none}
 .rs-panel{padding:14px 12px}
