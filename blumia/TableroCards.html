@@ -146,14 +146,38 @@ header{min-height:86px}
     if(k==='nue'){return !!c.recMs&&Date.now()-c.recMs<=7*864e5;}
     if(k==='ctc'){return avPendientes([c]).some(function(x){return /^contactar/.test(x.k);});}
     if(k==='mov')return m.t==='act'&&dias(c)>=DIAS_ALERTA&&!/agendad/i.test(c.estado);
+    if(k==='fal'){return avPendientes([c]).some(function(x){return /^(sincargar|falta)/.test(x.k);});}
+    if(k==='scr')return m.t==='act'&&m.lv===1;if(k==='comp')return m.t==='act'&&m.lv===2;if(k==='emp')return m.t==='act'&&m.lv>=3;
     if(k==='res')return m.t==='res';if(k==='desc')return m.t==='desc';return true;
   }
+  // ---- botones flotantes (pendientes y agenda) y tira con las próximas entrevistas
+  function proximas(){var ah=Date.now()-36e5,L=[];DATA.forEach(function(c){var f=avFecha(c.cita);if(f&&f>=ah&&metEstado(c.estado)&&metEstado(c.estado).t==='act')L.push({f:f,c:c});});L.sort(function(a,b){return a.f-b.f;});return L;}
+  function cuando(f){var d=new Date(f),h0=new Date();h0.setHours(0,0,0,0);var dif=Math.floor((new Date(d.getFullYear(),d.getMonth(),d.getDate())-h0)/864e5),hh=('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);return (dif<=0?'Hoy':dif===1?'Mañana':('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2))+' '+hh;}
+  function corto(n){var p=String(n||'').trim().split(/\s+/);return p.length>1?p[0]+' '+p[p.length-1].charAt(0)+'.':p[0]||'';}
+  function etapaDe(c){var e=String(c.estado||'');return /competencia/i.test(e)?'Competencias':/empresa|cliente/i.test(e)?'Empresa':/screening/i.test(e)?'Screening':'Entrevista';}
+  function dockPintar(){
+    var P=(typeof AV_PEND!=='undefined'&&AV_PEND)||[],urg=P.filter(function(x){return x.urg;}).length,L=proximas(),min=false;
+    try{min=localStorage.getItem('bl_dock')==='0';}catch(e){}
+    var d=document.getElementById('dock');
+    if(!d){document.body.insertAdjacentHTML('beforeend','<div id="dock"></div>');d=document.getElementById('dock');}
+    d.className=min?'min':'';
+    d.innerHTML='<button class="dk dkp'+(urg?' u':'')+'" onclick="verAvisos()" title="Avisos pendientes"><span>🔔</span><b>'+P.length+'</b><i>Pendientes</i></button>'
+      +'<button class="dk dka" onclick="abrirAgenda()" title="Próximas entrevistas"><span>📅</span><b>'+L.length+'</b><i>'+(L.length?cuando(L[0].f)+' · '+esc(corto(L[0].c.nombre)):'Sin entrevistas')+'</i></button>'
+      +'<button class="dkt" onclick="dockMin()" title="'+(min?'Mostrar':'Achicar')+'">'+(min?'⌃':'⌄')+'</button>';
+    var st=document.getElementById('agStrip');
+    if(!st){var f=document.querySelector('.filtros');if(f)f.insertAdjacentHTML('afterend','<div id="agStrip"></div>');st=document.getElementById('agStrip');}
+    if(st){st.style.display=L.length?'':'none';st.innerHTML=L.length?'<span class="agt">📅 Próximas</span>'+L.slice(0,3).map(function(x){return '<span class="agc" onclick="ficha('+x.c.fila+')"><b>'+cuando(x.f)+'</b> '+esc(corto(x.c.nombre))+' · '+etapaDe(x.c)+'</span>';}).join('')+(L.length>3?'<span class="agm" onclick="abrirAgenda()">+'+(L.length-3)+' más</span>':''):'';}
+    if(window.ajustarBoard)ajustarBoard();
+  }
+  window.dockMin=function(){var m=false;try{m=localStorage.getItem('bl_dock')==='0';localStorage.setItem('bl_dock',m?'1':'0');}catch(e){}dockPintar();};
+  var avPintar0=window.avPintar;window.avPintar=function(){if(avPintar0)avPintar0();dockPintar();};
   window.kpiClickT=function(k){KF=(KF===k)?'':k;pintarKpi();filtrar();};
   function pintarKpi(){
-    var K=[['all','','Todos'],['act','','En proceso'],['cit','','Citas hoy'],['nue','','Nuevos (7 días)'],['ctc','w','Falta contactar'],['mov','r','Sin movimiento'],['res','g','En reserva'],['desc','r','Descartados']];
+    var K=[['ctc','w','Falta contactar'],['cit','','Citas hoy'],['mov','r','Sin movimiento'],['fal','r','Falta cargar'],['act','','En proceso'],['scr','','Screening'],['comp','','Competencias'],['emp','','Empresa']];
     var e=document.getElementById('kpiT');if(!e)return;
     e.innerHTML=K.map(function(k){var n=DATA.filter(function(c){return kpiOk(k[0],c);}).length;return '<div class="kpT '+k[1]+(KF===k[0]&&k[0]!=='all'?' on':'')+'" title="'+(KF===k[0]?'Quitar filtro':'Ver estos candidatos')+'" onclick="kpiClickT(\''+k[0]+'\')"><b>'+n+'</b><span>'+k[2]+'</span></div>';}).join('');
     var p=document.getElementById('cntC');if(p)p.textContent=DATA.length+' candidatos';
+    dockPintar();
   }
   // el filtro de siempre + el indicador activo; recalcula contadores de columnas
   var filtrar0=window.filtrar;
@@ -314,6 +338,20 @@ header{background:var(--green)}
 .rs-kpi:before{background:var(--teal)}
 .sortable-chosen{box-shadow:0 10px 24px rgba(0,0,0,.28)!important;outline:2px solid var(--cream)}
 .fh{background:var(--mint)}
+#saved{pointer-events:none}
+#dock{position:fixed;right:14px;bottom:14px;z-index:90;display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+.dk{display:flex;align-items:center;gap:8px;border:none;border-radius:99px;padding:9px 16px;font:700 13px Poppins,sans-serif;cursor:pointer;background:var(--green);color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.28)}
+.dk b{background:var(--cream);color:var(--green);border-radius:99px;min-width:24px;padding:0 7px;line-height:22px;text-align:center}
+.dk i{font-style:normal;font-weight:600;opacity:.9;max-width:210px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dk.u{background:#B91C1C}.dk.u b{color:#B91C1C}
+.dkt{border:none;background:rgba(36,61,44,.85);color:#fff;border-radius:99px;width:30px;height:24px;cursor:pointer;font-size:13px;line-height:1}
+#dock.min .dk i{display:none}#dock.min .dk{padding:8px 11px}
+#agStrip{display:flex;gap:8px;align-items:center;padding:8px 16px 0;overflow-x:auto;scrollbar-width:none}
+#agStrip::-webkit-scrollbar{display:none}
+.agt{font-size:12px;font-weight:800;color:var(--green);white-space:nowrap}
+.agc,.agm{background:#fff;border:1px solid var(--line);border-radius:99px;padding:6px 14px;font-size:12px;white-space:nowrap;cursor:pointer;color:#1A1A1A}
+.agc b{color:var(--green)}.agm{color:var(--green);font-weight:700}
+@media(max-width:640px){#dock{right:8px;bottom:10px}.dk{padding:8px 12px;font-size:12px}.dk i{max-width:140px}#agStrip{padding:6px 10px 0}}
 /* nota actual marcada en «Poner nota manual» */
 .nb.on{color:#fff;border-color:transparent}.nb.on.A{background:#1E8E5A}.nb.on.Bp{background:#8BD3A8;color:#14502F}.nb.on.B{background:#F2B705;color:#4A3A00}.nb.on.C{background:#D9534F}
 /* botones de la ficha: todos del mismo tamaño y estilo */
