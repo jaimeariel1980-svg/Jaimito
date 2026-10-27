@@ -103,8 +103,9 @@ document.getElementById('lista').innerHTML=h||'<div class="vacio">Todavía no ha
 function estado(id,cerrar){
   var b=DATOS.filter(function(x){return x.id===id;})[0];if(!b)return;
   var msg=cerrar?'¿Cerrar «'+b.nombre+'»?\n\nLa página de postulación avisa que ya terminó y deja de recibir CVs por mail y por carpeta. Los candidatos y el tablero siguen disponibles. Podés reabrirla cuando quieras.':'¿Reabrir «'+b.nombre+'»? Vuelve a recibir postulaciones y CVs.';
-  if(!confirm(msg))return;
+  blConfirm(msg,function(){
   google.script.run.withSuccessHandler(function(){b.cerrada=!!cerrar;pintar();}).withFailureHandler(function(e){alert((e&&e.message)||e);}).cambiarEstadoBusqueda(id,cerrar?'CERRADA':'ABIERTA');
+  },{si:cerrar?'Cerrar':'Reabrir',peligro:!!cerrar});
 }
 pintar();
 </script>

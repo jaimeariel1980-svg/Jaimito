@@ -186,65 +186,65 @@ function render() {
   const html = `
 <div class="hero">
   <img class="hero-logo" alt="Blumia" src="${LOGO_BLANCO}">
-  <h1><span contenteditable="true">Screening de </span><em id="hero-nombre">${CAND_INICIAL || 'Candidato/a'}</em></h1>
-  <div class="hero-sub" contenteditable="true">${h.posicion || ''} · ${h.empresa || ''}</div>
+  <h1><span>Screening de </span><em id="hero-nombre">${CAND_INICIAL || 'Candidato/a'}</em></h1>
+  <div class="hero-sub">${h.posicion || ''} · ${h.empresa || ''}</div>
   <div class="hero-meta">
-    <div class="hm-item"><div class="hm-label">Empresa</div><div class="hm-val" contenteditable="true">${h.empresa || ''}</div></div>
-    <div class="hm-item"><div class="hm-label">Posición</div><div class="hm-val" contenteditable="true">${h.posicion || ''}</div></div>
-    <div class="hm-item"><div class="hm-label">Ubicación</div><div class="hm-val" contenteditable="true">${h.ubicacion || ''}</div></div>
-    <div class="hm-item"><div class="hm-label">Instancia</div><div class="hm-val" contenteditable="true">${h.instancia || ''}</div></div>
+    <div class="hm-item"><div class="hm-label">Empresa</div><div class="hm-val">${h.empresa || ''}</div></div>
+    <div class="hm-item"><div class="hm-label">Posición</div><div class="hm-val">${h.posicion || ''}</div></div>
+    <div class="hm-item"><div class="hm-label">Ubicación</div><div class="hm-val">${h.ubicacion || ''}</div></div>
+    <div class="hm-item"><div class="hm-label">Instancia</div><div class="hm-val">${h.instancia || ''}</div></div>
   </div>
 </div>
 <div class="wrap">
   <div class="section">
-    <div class="section-label"><span contenteditable="true">Datos del candidato</span></div>
+    <div class="section-label"><span>Datos del candidato</span></div>
     <div class="grid-2" style="margin-bottom:14px">
       <div class="field">
-        <label contenteditable="true">Nombre y Apellido</label>
+        <label>Nombre y apellido</label>
         <input type="text" id="d-nombre" value="${CAND_INICIAL || ''}" placeholder="—" oninput="document.getElementById('hero-nombre').innerText=this.value||'Candidato/a'">
       </div>
       <div class="field">
-        <label contenteditable="true">Entrevistadora</label>
+        <label>Entrevistador/a</label>
         <select id="d-entrevistadora" onchange="window.ENTR_ELEGIDO=this.value"><option value="">— Elegí —</option>>
           ${entrevistadoras.map(e => `<option value="${e}">${e}</option>`).join('')}
         </select>
       </div>
     </div>
     <div class="grid-2" style="margin-bottom:14px">
-      <div class="field"><label contenteditable="true">Empresa Actual</label><input type="text" id="d-empresa" placeholder="—"></div>
-      <div class="field"><label contenteditable="true">Posición Actual</label><input type="text" id="d-posicion" placeholder="—"></div>
+      <div class="field"><label>Empresa actual</label><input type="text" id="d-empresa" placeholder="—"></div>
+      <div class="field"><label>Posición actual</label><input type="text" id="d-posicion" placeholder="—"></div>
     </div>
     <div style="margin-bottom:14px">
-      <div class="field"><label contenteditable="true">Formación</label><input type="text" id="d-formacion" placeholder="Carrera, título, estado"></div>
+      <div class="field"><label>Formación</label><input type="text" id="d-formacion" placeholder="Carrera, título, estado"></div>
     </div>
     <div class="grid-4">
-      <div class="field"><label contenteditable="true">Fecha de Entrevista</label><input type="date" id="d-fecha"></div>
-      <div class="field"><label contenteditable="true">Remuneración Actual</label><input type="text" id="d-rem-actual" placeholder="$"></div>
-      <div class="field"><label contenteditable="true">Remuneración Pretendida</label><input type="text" id="d-rem-pret" placeholder="$"></div>
+      <div class="field"><label>Fecha de la entrevista</label><input type="date" id="d-fecha"></div>
+      <div class="field"><label>Remuneración actual</label><input type="text" id="d-rem-actual" placeholder="$"></div>
+      <div class="field"><label>Remuneración pretendida</label><input type="text" id="d-rem-pret" placeholder="$"></div>
       <div class="field">
-        <label contenteditable="true">Disponibilidad de Ingreso</label>
+        <label>Disponibilidad de ingreso</label>
         <select id="d-disponibilidad"><option value="">—</option><option>Inmediata</option><option>15 días</option><option>30 días</option><option>+30 días</option></select>
       </div>
     </div>
   </div>
   <hr class="section-divider">
   <div class="section">
-    <div class="section-label"><span contenteditable="true">Ajuste al Perfil</span></div>
+    <div class="section-label"><span>Ajuste al perfil</span></div>
     <div id="eval-container"></div>
   </div>
   <hr class="section-divider">
   <div class="section">
-    <div class="section-label"><span contenteditable="true">Validación de Condiciones</span></div>
+    <div class="section-label"><span>Validación de condiciones</span></div>
     <div id="val-container"></div>
   </div>
   <hr class="section-divider">
   <div class="section">
-    <div class="section-label"><span contenteditable="true">Comentario</span></div>
+    <div class="section-label"><span>Comentario</span></div>
     <div class="field"><textarea id="comentario" placeholder="Observaciones relevantes de la entrevista..."></textarea></div>
   </div>
   <hr class="section-divider">
   <div class="section">
-    <div class="section-label"><span contenteditable="true">Resultado Final</span></div>
+    <div class="section-label"><span>Resultado final</span></div>
     <div class="resultado-card">
       <div class="semaforo">
         <div class="semaforo-dot sd-verde" id="dot-verde"></div>
@@ -252,13 +252,13 @@ function render() {
         <div class="semaforo-dot sd-rojo" id="dot-rojo"></div>
       </div>
       <div class="resultado-info">
-        <div class="resultado-tag"><span contenteditable="true">Recomendación</span></div>
+        <div class="resultado-tag"><span>Recomendación</span></div>
         <div class="resultado-titulo" id="res-titulo">—</div>
-        <div class="resultado-desc" id="res-desc" contenteditable="true">Completá la evaluación para obtener la recomendación</div>
+        <div class="resultado-desc" id="res-desc">Completá la evaluación para obtener la recomendación</div>
         <div class="barra-score"><div class="barra-fill" id="barra"></div></div>
       </div>
       <div class="score-aside">
-        <div class="score-aside-label">Score</div>
+        <div class="score-aside-label">Puntaje</div>
         <div class="score-aside-num" id="score-num">—</div>
         <div class="score-aside-max">/ 10</div>
       </div>

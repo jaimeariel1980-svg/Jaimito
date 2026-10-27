@@ -1,0 +1,65 @@
+<script>
+/* Ventanas propias de Blumia (reemplazan alert / confirm / prompt del navegador). Se cargan en Shell.html y quedan disponibles en todas las pantallas.
+   blAlert(msg, fn) · blConfirm(msg, siFn, opts{si,no,peligro}) · blPrompt(msg, valorInicial, okFn, opts{tipo,si}) · blForm(titulo, campos[{id,label,tipo}], okFn, opts)
+   window.alert pasa a usar blAlert (no bloquea: lo que va después de un alert tiene que ir en el callback). */
+(function () {
+  if (window.blAlert) return;
+  var CSS = '.bld-bg{position:fixed;inset:0;background:rgba(17,31,22,.5);z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:16px;font-family:Poppins,Arial,sans-serif}' +
+    '.bld{background:#fff;border-radius:14px;max-width:440px;width:100%;padding:22px 22px 16px;box-shadow:0 18px 50px rgba(0,0,0,.3);color:#1A1A1A}' +
+    '.bld h3{margin:0 0 10px;font-size:16px;color:#243D2C}.bld p{margin:0 0 14px;font-size:14px;line-height:1.5;white-space:pre-line;word-break:break-word}' +
+    '.bld label{text-transform:none;display:block;font-size:12px;font-weight:700;margin:8px 0 4px;color:#555}.bld input{width:100%;box-sizing:border-box;border:1.5px solid #D5E0CE;border-radius:8px;padding:10px 12px;font:inherit;font-size:14px}' +
+    '.bld input:focus{outline:none;border-color:#243D2C;box-shadow:0 0 0 3px rgba(36,61,44,.15)}.bld .er{color:#B91C1C;font-size:12px;font-weight:600;min-height:16px;margin-top:6px}' +
+    '.bld .bt{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}.bld button{font:700 13px Poppins,Arial,sans-serif;border:none;border-radius:8px;padding:10px 18px;cursor:pointer;min-height:40px;width:auto;margin:0}' +
+    '.bld .ok{background:#243D2C;color:#fff}.bld .ok.pel{background:#B91C1C}.bld .no{background:#E3EEDC;color:#243D2C}.bld button:focus-visible{outline:3px solid #F9E7A0;outline-offset:2px}';
+  function abrir(html, alCerrar) {
+    if (!document.getElementById('bldCss')) { var s = document.createElement('style'); s.id = 'bldCss'; s.textContent = CSS; (document.head || document.documentElement).appendChild(s); }
+    var previo = document.activeElement, bg = document.createElement('div');
+    bg.className = 'bld-bg'; bg.innerHTML = '<div class="bld" role="dialog" aria-modal="true">' + html + '</div>';
+    document.body.appendChild(bg);
+    function cerrar(v) { if (bg.parentNode) bg.parentNode.removeChild(bg); document.removeEventListener('keydown', tecla, true); try { if (previo && previo.focus) previo.focus(); } catch (e) { } alCerrar(v); }
+    function tecla(e) {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cerrar(null); }
+      else if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'BUTTON') { e.preventDefault(); bg.querySelector('.ok').click(); }
+    }
+    document.addEventListener('keydown', tecla, true);
+    return { el: bg.firstChild, cerrar: cerrar };
+  }
+  function esc(t) { return String(t == null ? '' : t).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  window.blAlert = function (msg, fn) {
+    var d = abrir('<p>' + esc(msg) + '</p><div class="bt"><button class="ok" type="button">Aceptar</button></div>', function () { if (fn) fn(); });
+    var b = d.el.querySelector('.ok'); b.onclick = function () { d.cerrar(); }; b.focus();
+  };
+  window.blConfirm = function (msg, si, o) {
+    o = o || {};
+    var d = abrir('<p>' + esc(msg) + '</p><div class="bt"><button class="no" type="button">' + esc(o.no || 'Cancelar') + '</button><button class="ok' + (o.peligro ? ' pel' : '') + '" type="button">' + esc(o.si || 'Aceptar') + '</button></div>', function (v) { if (v === true && si) si(); });
+    d.el.querySelector('.no').onclick = function () { d.cerrar(false); };
+    var b = d.el.querySelector('.ok'); b.onclick = function () { d.cerrar(true); }; b.focus();
+  };
+  window.blMenu = function (titulo, texto, opciones) {
+    var d = abrir('<h3>' + esc(titulo) + '</h3>' + (texto ? '<p>' + esc(texto) + '</p>' : '') + '<div class="bt">' + opciones.map(function (o, i) { return '<button class="ok" type="button" data-i="' + i + '">' + esc(o[0]) + '</button>'; }).join('') + '<button class="no" type="button">Cancelar</button></div>', function () { });
+    d.el.querySelector('.no').onclick = function () { d.cerrar(); };
+    [].forEach.call(d.el.querySelectorAll('.ok'), function (b) { b.onclick = function () { var f = opciones[+b.getAttribute('data-i')][1]; d.cerrar(); f(); }; });
+    d.el.querySelector('.ok').focus();
+  };
+  window.blForm = function (titulo, campos, ok, o) {
+    o = o || {};
+    var h = '<h3>' + esc(titulo) + '</h3>' + (o.texto ? '<p>' + esc(o.texto) + '</p>' : '') + campos.map(function (c, i) {
+      return '<label for="bldf' + i + '">' + esc(c.label) + '</label><input id="bldf' + i + '" type="' + (c.tipo || 'text') + '" value="' + esc(c.valor || '') + '"' + (c.max ? ' maxlength="' + c.max + '"' : '') + (c.modo ? ' inputmode="' + c.modo + '"' : '') + ' autocomplete="off">';
+    }).join('') + '<div class="er" id="bldEr" role="alert"></div><div class="bt"><button class="no" type="button">Cancelar</button><button class="ok" type="button">' + esc(o.si || 'Aceptar') + '</button></div>';
+    var d = abrir(h, function () { });
+    d.el.querySelector('.no').onclick = function () { d.cerrar(); };
+    d.el.querySelector('.ok').onclick = function () {
+      var v = [].map.call(d.el.querySelectorAll('input'), function (i) { return i.value; });
+      var r = ok(v);
+      if (r) { d.el.querySelector('#bldEr').textContent = r; return; }
+      d.cerrar();
+    };
+    var p = d.el.querySelector('input'); if (p) p.focus();
+  };
+  window.blPrompt = function (msg, valor, ok, o) {
+    o = o || {};
+    blForm(o.titulo || 'Completá el dato', [{ label: msg, valor: valor || '', tipo: o.tipo }], function (v) { if (!String(v[0]).trim()) return 'Escribí algo para continuar.'; ok(String(v[0]).trim()); }, o);
+  };
+  window.alert = function (m) { window.blAlert(m); };
+})();
+</script>

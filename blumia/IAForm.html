@@ -101,7 +101,7 @@
   function abrirGrabadora(cb){
     var w=window.open('','entrevista_blumia','width=500,height=600');
     if(!w){alert('El navegador bloqueó la ventanita de grabación. Permití las ventanas emergentes para esta página y probá de nuevo.');return false;}
-    if(WREC&&!WREC.closed&&WREC===w&&!confirm('Ya hay una grabación en curso en esa ventanita. Si seguís, se pierde. ¿Empezar de nuevo igual?')){w.focus();return false;}
+    if(WREC&&!WREC.closed&&WREC===w){w.focus();alert('Ya hay una grabación en curso en esa ventanita. Terminala o cerrala antes de empezar otra.');return false;}
     WREC=w;var id=String(Date.now());ENT[id]=cb;w.document.open();w.document.write(POP2.replace('__ID__',id));w.document.close();return true;
   }
   window.__entrevistaLista=function(id,partes){var cb=ENT[id];if(!cb)return;delete ENT[id];cb(partes);};
@@ -128,7 +128,7 @@
       sumaSi(card.querySelector('textarea.note-area'),x.evidencia);
     });
     sumaSi($$('#ta-fort'),r.fortalezas);sumaSi($$('#ta-area'),r.areas);sumaSi($$('#ta-rec'),r.recomendacion);
-    var M={edad:'#inp-edad',localidad:'#inp-localidad',familia:'#inp-familia',formacion:'#inp-formacion',empresaAct:'#inp-empresa-act',puestoAct:'#inp-puesto-act',antig:'#inp-antig',remAct:'#inp-rem-act',remPret:'#inp-rem-pret',disp:'#inp-disp',motivo:'#inp-motivo',movilidad:'#inp-movilidad',referencias:'#inp-referencias'};
+    var M={localidad:'#inp-localidad',formacion:'#inp-formacion',empresaAct:'#inp-empresa-act',puestoAct:'#inp-puesto-act',antig:'#inp-antig',remAct:'#inp-rem-act',remPret:'#inp-rem-pret',disp:'#inp-disp',motivo:'#inp-motivo',movilidad:'#inp-movilidad',referencias:'#inp-referencias'};
     for(var k in M)setSi(M[k],(r.meta||{})[k]);
     var st=$$('#iaSt');if(st){st.style.color='#1A6645';st.textContent='✓ Formulario completado por la IA (lo que ya habías escrito se mantuvo y se le sumó). Revisá todo antes de guardar.';}
     var box=$$('#iaBox');

@@ -330,7 +330,8 @@ function copiar(id,btn){
 
 function generarIA(){
   var b=$('btnIA');
-  if(generado&&!confirm('Se van a reemplazar la bajada, los desafíos, los requisitos y los textos de redes por los que arme la IA. ¿Seguimos?'))return;
+  if(generado&&!window.__flyOk){blConfirm('Se van a reemplazar la bajada, los desafíos, los requisitos y los textos de redes por los que arme la IA. ¿Seguimos?',function(){window.__flyOk=true;generarIA();},{si:'Reemplazar'});return;}
+  window.__flyOk=false;
   b.disabled=true;b.textContent='Redactando…';msg('');
   google.script.run.withSuccessHandler(function(r){
     b.disabled=false;b.textContent='✨ Generar textos';

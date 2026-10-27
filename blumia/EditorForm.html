@@ -51,7 +51,7 @@ function edSync(){
   ED.comps.forEach(function(c,i){c.nombre=g('edc_n'+i);c.descripcion=g('edc_d'+i);c.peso=g('edc_p'+i);c.preguntas=g('edc_q'+i);});
 }
 function edMover(k,i,d){edSync();var a=ED[k],j=i+d;if(j<0||j>=a.length)return;var t=a[i];a[i]=a[j];a[j]=t;edRender();}
-function edBorrar(k,i){edSync();if(!confirm('¿Sacar este elemento? (queda copia en la pestaña Historial_Formularios)'))return;ED[k].splice(i,1);edRender();}
+function edBorrar(k,i){edSync();blConfirm('¿Sacar este elemento? (queda copia en la pestaña Historial_Formularios)',function(){ED[k].splice(i,1);edRender();},{si:'Sacar',peligro:true});}
 function edAgregar(k){edSync();ED[k].push(k==='eval'?{id:'',label:'',peso:1}:k==='val'?{id:'',label:'',opts:'Sí | No'}:{id:'',nombre:'',descripcion:'',peso:1,preguntas:''});edRender();}
 function edBtns(k,i){return '<div style="display:flex;gap:4px"><button class="ed-mini" onclick="edMover(\''+k+'\','+i+',-1)">↑</button><button class="ed-mini" onclick="edMover(\''+k+'\','+i+',1)">↓</button><button class="ed-mini x" onclick="edBorrar(\''+k+'\','+i+')">✕</button></div>';}
 function edRender(){

@@ -122,7 +122,7 @@ header{min-height:86px}
     document.querySelectorAll('.col-body,.dbody').forEach(function(col){new Sortable(col,{group:'kb',animation:150,forceFallback:true,fallbackOnBody:true,delay:300,delayOnTouchOnly:true,touchStartThreshold:10,onChoose:function(){try{navigator.vibrate&&navigator.vibrate(25);}catch(e){}},scroll:true,bubbleScroll:true,scrollSensitivity:80,scrollSpeed:15,onEnd:function(evt){
       var fila=+evt.item.dataset.fila,estado=evt.to.dataset.estado,cc=DATA_ALL.find(function(x){return x.fila===fila;});
       if(cc&&estado)cc.estado=estado;
-      if(estado&&evt.from!==evt.to){google.script.run.withSuccessHandler(function(){toast();if(/^Descartad/i.test(estado))pedirMotivo(fila,true);else{renderBoardN();}}).withFailureHandler(function(e){alert('Error: '+e.message);window.top.location.reload();}).moverEstado(PERFIL,fila,estado,quienSoy());}
+      if(estado&&evt.from!==evt.to){google.script.run.withSuccessHandler(function(){toast();if(/^Descartad/i.test(estado))pedirMotivo(fila,true);else{renderBoardN();}}).withFailureHandler(function(e){blAlert('Error: '+e.message,function(){window.top.location.reload();});}).moverEstado(PERFIL,fila,estado,quienSoy());}
     }});});
   }
   window.renderBoardN=function(){
@@ -247,7 +247,7 @@ header{min-height:86px}
     var waBtn='<button class="mbtn wa" onclick="menuWA('+c.fila+')">💬 WhatsApp ▾</button>';
     var mailBtn=(c.mail&&c.mail!=='Sin dato'&&c.mail.indexOf('@')>-1)?'<a href="https://mail.google.com/mail/?view=cm&to='+esc(c.mail)+'" target="_blank" class="mbtn" style="background:#EA4335;color:#fff">✉ Mail</a>':'';
     var cvBtn=c.cv?'<a href="https://drive.google.com/file/d/'+esc(c.cv)+'/view" target="_blank" class="mbtn alt">📄 Ver CV</a>':'';
-    var genBtn=c.informe?'':'<button class="mbtn gen" onclick="if(confirm(\'Generar informe con IA. Puede tener costo. ¿Continuar?\'))generar('+c.fila+',this)">Generar informe</button>';
+    var genBtn=c.informe?'':'<button class="mbtn gen" onclick="var b=this;blConfirm(\'Generar informe con IA. Puede tener costo. ¿Continuar?\',function(){generar('+c.fila+',b)})">Generar informe</button>';
     var bancoBtn='<button class="mbtn alt" onclick="menuBanco('+c.fila+')">★ Banco</button>';
     var agBtn='<button class="mbtn alt" onclick="panelTog(\'agPanel\')">📅 Agendar</button>';
     
@@ -289,7 +289,7 @@ header{min-height:86px}
   window.agendarC=function(f,b,forzar){
     var t=b.textContent;b.disabled=true;b.textContent='Agendando…';
     google.script.run.withSuccessHandler(function(r){
-      if(r&&r.conflicto){b.disabled=false;b.textContent=t;if(confirm('Ya hay algo en el calendario a esa hora:\n- '+r.eventos.join('\n- ')+'\n\n¿Agendar igual?'))agendarC(f,b,true);return;}
+      if(r&&r.conflicto){b.disabled=false;b.textContent=t;blConfirm('Ya hay algo en el calendario a esa hora:\n- '+r.eventos.join('\n- ')+'\n\n¿Agendar igual?',function(){agendarC(f,b,true);},{si:'Agendar igual'});return;}
       alert('Agendado: '+r.cita+(r.invitado?'\nSe envió la invitación por mail.':'\nEl candidato no tiene mail: avisale por WhatsApp.'));refrescar();
     }).withFailureHandler(fail(b,t)).agendarCitaTablero(PERFIL,f,val('gaTipo'),val('gaFec'),val('gaHor'),val('gaDur'),val('gaLug'),!!forzar,quienSoy());
   };
@@ -463,6 +463,12 @@ header h1{display:none!important}
 .nb,.notarow .nb{border-radius:8px}
 @media(max-width:640px){.rs-tabs{padding:12px 10px 2px}#resumenPage{padding:10px 10px 50px!important}.nav button,.nav .dd>button{height:36px;padding:0 12px!important;font-size:12px}.rs-tab{height:38px;padding:0 14px}.filtros{padding:10px 10px 0}#kpiT{padding:10px 10px 0}.board{gap:12px}}
 </style>
+<style id="a11y">
+button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline:3px solid #5BB5A5!important;outline-offset:2px!important}
+.card:focus-visible{outline-offset:-3px!important}
+.tag,.card .tag,.cita-tag{font-size:11.5px!important}.card .meta{font-size:12px!important}.card .bdg small{font-size:11px!important}
+.kpT span,.acc summary,.acc summary .cnt,.fl,.notatit,.fb .sec,.gl,.obsb .hint,.htit small,.rs-kpi .l{font-size:12px!important}
+</style>
 <style id="mobcss">
 @media(max-width:640px){
 header{position:static;padding:10px 12px;gap:6px 10px;min-height:0}
@@ -519,5 +525,17 @@ header h1{font-size:15px;line-height:1.25;flex:1 1 100%;min-width:0;display:-web
   ag.innerHTML='📅 Agenda'+(hoy?'<span class="agb hoy">'+hoy+'</span>':(prox?'<span class="agb">'+prox+'</span>':''));
   var bell=document.getElementById('avBtn');
   if(bell&&bell.nextSibling)nav.insertBefore(ag,bell.nextSibling);else nav.insertBefore(ag,nav.children[1]||null);
+})();
+</script>
+<script>
+(function(){
+  function fix(){
+    document.querySelectorAll('button[title]:not([aria-label])').forEach(function(b){b.setAttribute('aria-label',b.getAttribute('title'));});
+    document.querySelectorAll('.mx:not([aria-label])').forEach(function(b){b.setAttribute('aria-label','Cerrar');});
+    document.querySelectorAll('.card:not([tabindex])').forEach(function(c){c.setAttribute('tabindex','0');c.setAttribute('role','button');});
+    document.querySelectorAll('.nota:not([aria-label])').forEach(function(n){n.setAttribute('aria-label','Nota '+n.textContent.trim());});
+  }
+  var t=null;new MutationObserver(function(){clearTimeout(t);t=setTimeout(fix,150);}).observe(document.body,{childList:true,subtree:true});fix();
+  document.addEventListener('keydown',function(e){if((e.key==='Enter'||e.key===' ')&&e.target.classList&&e.target.classList.contains('card')){e.preventDefault();e.target.click();}});
 })();
 </script>

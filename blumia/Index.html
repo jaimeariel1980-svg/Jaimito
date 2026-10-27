@@ -6,7 +6,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <base target="_top">
-<title>Evaluación por Competencias | Blumia Consulting</title>
+<title>Evaluación por competencias | Blumia Consulting</title>
 <style>
 :root{
   --bg:#F3F8F1;--bg2:#EEECEA;--white:#FFFFFF;
@@ -145,7 +145,6 @@ html,body{background:var(--bg);font-family:var(--font);color:var(--text);}
   body{background:#fff;}
   [contenteditable="true"]{border-bottom:none!important;}
   .verdict-banner,.sum-cell.sel,.verdict-opt.sel,.hero,.freq-btn.sel,.peso-pill,.guide-box,.star-item,.score-banner{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
-  @media (max-width:900px){.star-grid{grid-template-columns:1fr;}}
 }
 .gbar{position:sticky;bottom:0;z-index:250;display:flex;justify-content:center;padding:14px 16px 16px;background:linear-gradient(to top,rgba(247,245,241,.97) 65%,rgba(247,245,241,0));pointer-events:none}
 .gbar button{pointer-events:auto;background:#243D2C;color:#fff;border:none;border-radius:99px;padding:14px 38px;font:700 15px Poppins,Arial,sans-serif;cursor:pointer;box-shadow:0 6px 20px rgba(36,61,44,.35);letter-spacing:.2px}
@@ -153,6 +152,24 @@ html,body{background:var(--bg);font-family:var(--font);color:var(--text);}
 @media print{.gbar{display:none!important}}
 </style>
 <style id="skin">.tbtn{border-radius:99px}</style>
+<style id="mobcss">
+@media (max-width:900px){
+  .topbar{padding:0 16px;height:56px}.tb-doc,.tb-sep{display:none}.tb-badge{font-size:9px;padding:4px 10px}
+  .hero{padding:28px 18px 26px}.hero-title{font-size:28px}.hero-sub{font-size:14px;margin-bottom:20px}.hero-meta{gap:16px}
+  .meta-strip{padding:18px;grid-template-columns:1fr 1fr;gap:14px}
+  .main{padding:22px 16px 90px}
+  .guide-box{padding:16px}.star-grid{grid-template-columns:1fr 1fr}
+  .comp-card{padding:18px}.comp-header{flex-direction:column;gap:8px}.comp-name{font-size:16px}
+  .freq-row{flex-wrap:wrap}.freq-btn{flex:1 1 calc(50% - 4px);padding:12px 6px;font-size:11px;min-height:44px}
+  .obs-grid{grid-template-columns:1fr}.obs-card{padding:18px}
+  .sum-table{display:block;overflow-x:auto}
+  .score-banner{padding:16px 18px;gap:12px}.score-banner-num{font-size:36px}
+  .verdict-banner{padding:18px}.verdict-opts{flex-direction:column;gap:10px}.verdict-opt{padding:14px;min-height:48px}
+  .mf input,.mf select,.note-area{font-size:16px}.mf input,.mf select{padding:10px 0}
+  .section-title{font-size:17px}.q-box{padding:14px}
+}
+@media (max-width:480px){.meta-strip{grid-template-columns:1fr}.star-grid{grid-template-columns:1fr}.hero-title{font-size:24px}}
+</style>
 </head>
 <body>
 
@@ -160,8 +177,7 @@ html,body{background:var(--bg);font-family:var(--font);color:var(--text);}
   <div class="tb-left">
     <img class="tb-logo" alt="Blumia" src="<?!= LOGO_BLUMIA_VERDE_ ?>">
     <div class="tb-sep"></div>
-    <div class="tb-doc">Guía de Entrevista y Evaluación</div>
-    <div class="edit-hint"><div class="edit-dot"></div>Modo edición</div>
+    <div class="tb-doc">Guía de entrevista y evaluación</div>
   </div>
   <div class="tb-right">
     <div class="tb-badge">Confidencial</div>
@@ -216,31 +232,31 @@ function render() {
     <div class="comp-card" data-comp="${c.id}">
       <button class="btn-del" type="button" onclick="delComp(this)">×</button>
       <div class="comp-header">
-        <div class="comp-name" contenteditable="true">${c.nombre}</div>
+        <div class="comp-name">${c.nombre}</div>
         <div class="peso-pill">Peso <input type="number" min="0" step="0.5" value="${c.peso}" data-peso oninput="actualizarScore()"></div>
       </div>
-      <div class="comp-desc" contenteditable="true">${c.descripcion}</div>
+      <div class="comp-desc">${c.descripcion}</div>
       <div class="q-box">
-        <span class="q-title" contenteditable="true">Preguntas Sugeridas (Metodología STAR)</span>
+        <span class="q-title">Preguntas sugeridas</span>
         <ul class="q-list">
-          ${c.preguntas.map(q => `<li class="q-item" contenteditable="true">${q}</li>`).join('')}
+          ${c.preguntas.map(q => `<li class="q-item">${q}</li>`).join('')}
         </ul>
         <button class="btn-add-q" type="button" onclick="addQ(this)">+ Pregunta</button>
       </div>
       <div class="freq-row">
-        <button class="freq-btn f1" type="button" data-f="1"><span contenteditable="true">No demuestra</span></button>
-        <button class="freq-btn f2" type="button" data-f="2"><span contenteditable="true">Señales de Desarrollo</span></button>
-        <button class="freq-btn f3" type="button" data-f="3"><span contenteditable="true">Demuestra efectividad</span></button>
-        <button class="freq-btn f4" type="button" data-f="4"><span contenteditable="true">Demuestra solidez</span></button>
+        <button class="freq-btn f1" type="button" data-f="1"><span>No demuestra</span></button>
+        <button class="freq-btn f2" type="button" data-f="2"><span>Señales de desarrollo</span></button>
+        <button class="freq-btn f3" type="button" data-f="3"><span>Demuestra efectividad</span></button>
+        <button class="freq-btn f4" type="button" data-f="4"><span>Demuestra solidez</span></button>
       </div>
-      <label class="note-label" contenteditable="true">Notas / Evidencias (Situación, Acción, Resultado)</label>
-      <textarea class="note-area" placeholder="Redacte aquí los hallazgos..."></textarea>
+      <label class="note-label">Notas y evidencias (situación, acción, resultado)</label>
+      <textarea class="note-area" placeholder="Escribí acá los hallazgos…"></textarea>
     </div>
   `).join('');
 
   const sumRowsHTML = comps.map(c => `
     <tr data-comp="${c.id}">
-      <td contenteditable="true">${c.nombre}</td>
+      <td>${c.nombre}</td>
       <td class="peso-col" data-peso-cell>${c.peso}</td>
       <td><div class="sum-cell" data-col="1"></div></td>
       <td><div class="sum-cell" data-col="2"></div></td>
@@ -254,23 +270,21 @@ function render() {
   document.getElementById('app').innerHTML = `
 <div class="hero">
   <img class="hero-logo" alt="Blumia" src="${LOGO_BLANCO}">
-  <div class="hero-eyebrow" contenteditable="true">Blumia Consulting · Proceso de Selección</div>
-  <div class="hero-title" contenteditable="true">Guía de Entrevista y Evaluación</div>
-  <div class="hero-sub" contenteditable="true">${h.posicion || ''} · ${h.empresa || ''}</div>
+  <div class="hero-eyebrow">Blumia Consulting · Proceso de selección</div>
+  <div class="hero-title">Guía de entrevista y evaluación</div>
+  <div class="hero-sub">${h.posicion || ''} · ${h.empresa || ''}</div>
   <div class="hero-meta">
-    <div class="hm-item"><div class="hm-label">Empresa</div><div class="hm-val" contenteditable="true">${h.empresa || ''}</div></div>
+    <div class="hm-item"><div class="hm-label">Empresa</div><div class="hm-val">${h.empresa || ''}</div></div>
     <div class="hm-item"><div class="hm-label">Entrevistado/a</div><div class="hm-val" id="disp-cand">${CAND_INICIAL || '—'}</div></div>
-    <div class="hm-item"><div class="hm-label">Metodología</div><div class="hm-val" contenteditable="true">STAR (A-B-C-D-E)</div></div>
+    <div class="hm-item"><div class="hm-label">Modelo</div><div class="hm-val">Modelo Blumia (A-B-C-D-E)</div></div>
   </div>
 </div>
 
 <div class="meta-strip">
-  <div class="mf"><label>Nombre Entrevistado/a</label><input type="text" placeholder="Nombre completo" id="inp-cand" value="${CAND_INICIAL || ''}"></div>
+  <div class="mf"><label>Nombre de la persona entrevistada</label><input type="text" placeholder="Nombre completo" id="inp-cand" value="${CAND_INICIAL || ''}"></div>
   <div class="mf"><label>Fecha</label><input type="date" id="inp-fecha"></div>
   <div class="mf"><label>Entrevistador/a</label><select id="inp-entre">${entrevOptions}</select></div>
-  <div class="mf"><label>Edad</label><input type="text" placeholder="Ej: 38" id="inp-edad"></div>
   <div class="mf"><label>Localidad</label><input type="text" placeholder="Dónde vive" id="inp-localidad"></div>
-  <div class="mf"><label>Situación familiar</label><input type="text" placeholder="Estado civil, hijos" id="inp-familia"></div>
   <div class="mf"><label>Formación</label><input type="text" placeholder="Carrera, título, estado" id="inp-formacion"></div>
   <div class="mf"><label>Empresa actual</label><input type="text" placeholder="—" id="inp-empresa-act"></div>
   <div class="mf"><label>Puesto actual</label><input type="text" placeholder="—" id="inp-puesto-act"></div>
@@ -294,8 +308,8 @@ function render() {
     </div>
   </div>
   <div class="guide-box">
-    <div class="guide-title">Guía para el Entrevistador</div>
-    <div class="guide-text" contenteditable="true">Cada competencia tiene un peso (editable haciendo click en el número). El peso se aplica al score final.</div>
+    <div class="guide-title">Guía para el entrevistador</div>
+    <div class="guide-text">Cada competencia tiene un peso (podés cambiarlo en el número). El peso se aplica al puntaje final.</div>
     <div class="star-grid">
       <div class="star-item"><span class="star-letter">A: ACCIÓN</span><span class="star-desc">(¿Cómo lo abordaste?)</span></div>
       <div class="star-item"><span class="star-letter">B: PENSAMIENTO</span><span class="star-desc">(¿Por qué elegiste ese enfoque?)</span></div>
@@ -309,7 +323,7 @@ function render() {
   <div class="section">
     <div class="section-head">
       <div class="section-num">01</div>
-      <div class="section-title">Evaluación por Competencias</div>
+      <div class="section-title">Evaluación por competencias</div>
     </div>
     <div class="comp-grid" id="g1">${compCardsHTML}</div>
   </div>
@@ -317,21 +331,21 @@ function render() {
   <div class="section">
     <div class="section-head">
       <div class="section-num">02</div>
-      <div class="section-title">Síntesis y Evaluación Final</div>
+      <div class="section-title">Síntesis y evaluación final</div>
     </div>
     <div class="obs-card">
       <div class="obs-grid">
-        <div><label class="note-label">Fortalezas Principales</label><textarea id="ta-fort" class="note-area" style="min-height:140px" placeholder="•&#10;•&#10;•"></textarea></div>
+        <div><label class="note-label">Fortalezas principales</label><textarea id="ta-fort" class="note-area" style="min-height:140px" placeholder="•&#10;•&#10;•"></textarea></div>
         <div><label class="note-label">Áreas a desarrollar</label><textarea id="ta-area" class="note-area" style="min-height:140px" placeholder="•&#10;•&#10;•"></textarea></div>
       </div>
-      <label class="note-label">Matriz de Evaluación (4 niveles · Score Ponderado)</label>
+      <label class="note-label">Matriz de evaluación (4 niveles · puntaje ponderado)</label>
       <table class="sum-table">
         <thead>
           <tr>
             <th>Competencia</th>
             <th>Peso</th>
             <th>No demuestra</th>
-            <th>Señales Desarrollo</th>
+            <th>Señales de desarrollo</th>
             <th>Demuestra efectividad</th>
             <th>Demuestra solidez</th>
           </tr>
@@ -340,17 +354,17 @@ function render() {
       </table>
       <div class="score-banner">
         <div>
-          <div class="score-banner-label">Score Ponderado Total</div>
+          <div class="score-banner-label">Puntaje ponderado total</div>
           <div class="score-banner-text" id="score-detalle">Completá la matriz arriba para calcular</div>
         </div>
         <div><span class="score-banner-num" id="score-num">—</span><span class="score-banner-max"> / 10</span></div>
       </div>
       <div style="margin-bottom:32px">
-        <label class="note-label">Recomendación y Justificación de Viabilidad</label>
-        <textarea id="ta-rec" class="note-area" style="min-height:120px" placeholder="Redacte la justificación final aquí..."></textarea>
+        <label class="note-label">Recomendación y justificación de viabilidad</label>
+        <textarea id="ta-rec" class="note-area" style="min-height:120px" placeholder="Escribí acá la justificación final…"></textarea>
       </div>
       <div class="verdict-banner">
-        <div class="verdict-title">Ajuste al Rol</div>
+        <div class="verdict-title">Ajuste al rol</div>
         <div class="verdict-sub">Tu juicio profesional tiene prioridad sobre el score automático</div>
         <div class="verdict-opts">
           <button class="verdict-opt adj-alto" type="button"><div class="vdot"></div><span>Alto ajuste</span></button>
@@ -462,13 +476,14 @@ function actualizarScore() {
 }
 
 function delComp(btn) {
-  if (!confirm('¿Eliminar esta competencia?')) return;
-  const card = btn.closest('.comp-card');
-  const compId = card.dataset.comp;
-  card.remove();
-  const tr = document.querySelector('tr[data-comp="' + compId + '"]');
-  if (tr) tr.remove();
-  actualizarScore();
+  blConfirm('¿Eliminar esta competencia?', function() {
+    const card = btn.closest('.comp-card');
+    const compId = card.dataset.comp;
+    card.remove();
+    const tr = document.querySelector('tr[data-comp="' + compId + '"]');
+    if (tr) tr.remove();
+    actualizarScore();
+  }, { si: 'Eliminar', peligro: true });
 }
 
 function addQ(btn) {
@@ -476,7 +491,7 @@ function addQ(btn) {
   const li = document.createElement('li');
   li.className = 'q-item';
   li.setAttribute('contenteditable', 'true');
-  li.textContent = 'Nueva pregunta...';
+  li.textContent = 'Nueva pregunta…';
   ul.appendChild(li);
 }
 
@@ -506,34 +521,43 @@ function congelarValores() {
   document.querySelectorAll('textarea').forEach(t => t.textContent = t.value);
 }
 
+function restaurarTextareas() {
+  document.querySelectorAll('.ta-print').forEach(d => d.remove());
+  document.querySelectorAll('textarea').forEach(t => { t.style.display = ''; });
+}
+
 document.getElementById('btnGuardar').addEventListener('click', function() {
   const cand = (document.getElementById('inp-cand')?.value || '').trim();
   if (!cand) { alert('Falta nombre del entrevistado'); return; }
-  const ESTADO_EF = efCapturar();
-  congelarValores();
-  expandirTextareas();
-  ocultarIA(true);
-  const htmlSnap = '<!DOCTYPE html>' + document.documentElement.outerHTML;
-  ocultarIA(false);
   const ajusteBtn = document.querySelector('.verdict-opt.sel');
   let ponderacion = '';
   if (ajusteBtn) ponderacion = ajusteBtn.classList.contains('adj-alto') ? 'A' : ajusteBtn.classList.contains('adj-mod') ? 'B' : ajusteBtn.classList.contains('adj-bajo') ? 'C' : '';
-  if (!ponderacion && !confirm('No elegiste el «Ajuste al rol» (Alto / Con observaciones / No ajusta): la entrevista se guarda pero la nota de competencias queda sin cargar.\n\n¿Guardar igual?')) return;
   const btn = this;
-  btn.disabled = true;
-  btn.textContent = 'Procesando...';
-  google.script.run
-    .withSuccessHandler(() => {
-      btn.disabled = false;
-      btn.textContent = 'Guardar entrevista';
-      alert('Entrevista guardada ✓' + (ponderacion ? ' · ponderación ' + ponderacion : ''));
-    })
-    .withFailureHandler(err => {
-      btn.disabled = false;
-      btn.textContent = 'Guardar entrevista';
-      alert('Error al guardar: ' + err.message);
-    })
-    .guardarEnPlanilla(cand, htmlSnap, ponderacion, PERFIL_ID, (function(){try{return localStorage.getItem('blumia_quien')||ENTR_INICIAL||'';}catch(e){return ENTR_INICIAL||'';}})(), ESTADO_EF, EDITAR);
+  const guardar = function() {
+    const ESTADO_EF = efCapturar();
+    congelarValores();
+    expandirTextareas();
+    ocultarIA(true);
+    const htmlSnap = '<!DOCTYPE html>' + document.documentElement.outerHTML;
+    ocultarIA(false);
+    restaurarTextareas();
+    btn.disabled = true;
+    btn.textContent = 'Procesando...';
+    google.script.run
+      .withSuccessHandler(() => {
+        btn.disabled = false;
+        btn.textContent = 'Guardar entrevista';
+        alert('Entrevista guardada ✓' + (ponderacion ? ' · ponderación ' + ponderacion : ''));
+      })
+      .withFailureHandler(err => {
+        btn.disabled = false;
+        btn.textContent = 'Guardar entrevista';
+        alert('Error al guardar: ' + err.message);
+      })
+      .guardarEnPlanilla(cand, htmlSnap, ponderacion, PERFIL_ID, (function(){try{return localStorage.getItem('blumia_quien')||ENTR_INICIAL||'';}catch(e){return ENTR_INICIAL||'';}})(), ESTADO_EF, EDITAR);
+  };
+  if (!ponderacion) blConfirm('No elegiste el «Ajuste al rol» (Alto / Con observaciones / No ajusta): la entrevista se guarda pero la nota de competencias queda sin cargar.\n\n¿Guardar igual?', guardar, { si: 'Guardar igual' });
+  else guardar();
 });
 </script>
 </body>
