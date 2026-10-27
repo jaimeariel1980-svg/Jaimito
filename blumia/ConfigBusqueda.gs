@@ -6,7 +6,7 @@ function getConfigBusqueda_(pin, perfilId) {
   const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
   const datos = {};
   CFG_CAMPOS_.forEach(k => { datos[k] = typeof cfg[k] === 'string' ? cfg[k] : (cfg[k] == null ? '' : String(cfg[k])); });
-  return { perfil: perfilPuestoInfo_(cfg), datos: datos, prompt_extra: String(cfg.prompt_extra || ''), preguntas: getPreguntasPostulacion(perfilId), plantillas: listarPlantillas_(ss, perfilId) };
+  return { perfil: perfilPuestoInfo_(cfg), extra: configExtraLeer_(ss, cfg, perfilId), datos: datos, prompt_extra: String(cfg.prompt_extra || ''), preguntas: getPreguntasPostulacion(perfilId), plantillas: listarPlantillas_(ss, perfilId) };
 }
 
 function guardarConfigBusqueda_(pin, perfilId, p, quien) {
@@ -18,16 +18,19 @@ function guardarConfigBusqueda_(pin, perfilId, p, quien) {
   try {
     const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
 
+    const base = p.base || {};
     if (p.datos || p.prompt_extra !== undefined) {
       const sh = ss.getSheetByName('Config');
       const data = sh.getDataRange().getValues();
       const fila = data.findIndex((r, i) => i > 0 && r[0] === perfilId) + 1;
       const antes = {};
-      const poner = (k, v) => {
+      const poner = (k, v, b) => {
         let col = data[0].indexOf(k) + 1;
         if (!col) { col = sh.getLastColumn() + 1; sh.getRange(1, col).setValue(k); data[0][col - 1] = k; }
-        const cel = sh.getRange(fila, col);
-        antes[k] = cel.getValue();
+        const cel = sh.getRange(fila, col), cur = cel.getValue();
+        choqueEdicion_(k, cur, v, b);
+        if (String(cur) === String(v)) return;
+        antes[k] = cur;
         cel.setNumberFormat('@').setValue(v);
       };
       if (p.datos) CFG_CAMPOS_.forEach(k => {
@@ -35,17 +38,26 @@ function guardarConfigBusqueda_(pin, perfilId, p, quien) {
         const v = String(p.datos[k]).replace(/[<>]/g, '').trim();
         if ((k === 'nombre' || k === 'nombre_perfil' || k === 'empresa') && !v) throw new Error('«' + k + '» no puede quedar vacío.');
         if (/^link_/.test(k) && v && !/^https?:\/\//i.test(v)) throw new Error('El link «' + k + '» tiene que empezar con https://');
-        if (k === 'banda_salarial') { const num = String(v).replace(/\D/g, ''); if (v && Number(num) < 1000) throw new Error('La banda salarial va en pesos, por ejemplo 13000000.'); poner(k, num); return; }
-        poner(k, v);
+        if (k === 'banda_salarial') { const num = String(v).replace(/\D/g, ''); if (v && Number(num) < 1000) throw new Error('La banda salarial va en pesos, por ejemplo 13000000.'); poner(k, num, (base.datos || {})[k]); return; }
+        poner(k, v, (base.datos || {})[k]);
       });
       if (p.prompt_extra !== undefined) {
         const t = String(p.prompt_extra).replace(/[<>]/g, '').trim();
         if (t.length < 40) throw new Error('Los requisitos para la IA son muy cortos.');
         if (t.length > 45000) throw new Error('Los requisitos para la IA son demasiado largos.');
-        poner('prompt_extra', t);
+        poner('prompt_extra', t, base.prompt_extra);
       }
       logForm_(ss, quien, perfilId, 'Config', antes);
     }
+    if (p.datos && p.datos.empresa !== undefined) {
+      const shH = ss.getSheetByName('Perfiles_Hero');
+      if (shH) {
+        const dh = shH.getDataRange().getValues(), fh = dh.findIndex((r, i) => i > 0 && r[0] === perfilId) + 1, ch = dh[0].indexOf('empresa') + 1;
+        const ne = String(p.datos.empresa).replace(/[<>]/g, '').trim();
+        if (fh && ch && ne && String(dh[fh - 1][ch - 1]) !== ne) shH.getRange(fh, ch).setNumberFormat('@').setValue(ne);
+      }
+    }
+    if (p.extra) configExtraGuardar_(ss, perfilId, p.extra, base, quien);
 
     if (p.preguntas) {
       const ids = ids_(p.preguntas, 'p');
