@@ -2714,47 +2714,6 @@ function azcuTgProbar(){
   ks.forEach(function(k){ Logger.log(k+' → '+azcuTgApi_('sendMessage', {chat_id:mapa[k], text:'🔔 Prueba de avisos de Azcu. Si ves esto, Telegram funciona.', reply_markup:{inline_keyboard:[[{text:'👉 Abrir Azcu', url:AZCU_WEB}]]}}).code); });
 }
 
-function azcuProbarChatDificil(){
-  var pin = PropertiesService.getScriptProperties().getProperty('AZCU_PIN'), ds = azcuDatos_().filter(function(p){ return p.det && p.det.calle && p.det.numero && p.prop && p.etapa!=='Vendida'; });
-  if(ds.length<2){ Logger.log('Hacen falta al menos 2 propiedades.'); return; }
-  var A = ds[0].dir, B = ds[1].dir, out = [];
-  var convs = [
-    {t:'A Correcciones encadenadas', pasos:[
-      ['Visité '+A+' con Marcos Tejo, le interesó', 'Tarjeta de visita en A, Le interesó'],
-      ['no pará, me equivoqué, era '+B, 'Tarjeta NUEVA en B (no en A)'],
-      ['y en realidad no le interesó, dijo que está caro', 'Tarjeta en B, No le interesó, motivo precio'],
-      ['ponele que vino por la inmobiliaria Bertollo, el colega es Lucía', 'Tarjeta en B con inmobiliaria Bertollo y colega Lucía, manteniendo lo anterior']]},
-    {t:'B Repreguntas', pasos:[
-      ['¿cuánto sale '+A+'?', 'Precio de A'],
-      ['¿y quién es el dueño?', 'Dueño de A (sin que lo nombre otra vez)'],
-      ['pasame el teléfono', 'Teléfono del dueño de A'],
-      ['y la otra?', 'Debe preguntar cuál es "la otra" o aclarar, NO inventar'],
-      ['la de '+B, 'Datos de B']]},
-    {t:'C Charla como IA común / fuera de tema', pasos:[
-      ['¿qué opinás, conviene bajarle el precio a '+A+'?', 'Opinión breve usando datos reales, sin inventar números'],
-      ['explicame cómo funciona una hipoteca UVA', 'Reorientar con simpatía o respuesta muy breve; no hacer un tratado'],
-      ['escribime un mail para un cliente que no me contesta hace una semana', 'Debe poder ayudar o reorientar, sin crear tarjetas ni enviar nada'],
-      ['gracias, sos un genio', 'Respuesta corta y simpática']]},
-    {t:'D Edición y arrepentimiento', pasos:[
-      ['cambiale el precio de '+A+' a 45000', 'Tarjeta de editar precio en A = 45000'],
-      ['no, perdón, 54000', 'Tarjeta NUEVA con 54000 (la anterior queda sin efecto)'],
-      ['mejor dejalo como estaba', 'NO debe armar tarjeta de cambio; debe decir que no hace falta confirmar nada']]},
-    {t:'E Dos pedidos en uno', pasos:[
-      ['pasá '+A+' a reserva y agendá una visita en '+B+' mañana a las 10 con Laura', 'DOS tarjetas: etapa en A y visita en B']]}
-  ];
-  convs.forEach(function(cv){
-    var hist = [];
-    out.push('######## '+cv.t);
-    cv.pasos.forEach(function(pa, i){
-      hist.push({role:'user', content:pa[0]});
-      var t = Date.now(), r;
-      try{ r = azcuChat(pin, hist.slice(), {nombre:'Prueba'}); }catch(e){ r = {texto:'ERROR: '+e.message, acciones:[]}; }
-      hist.push({role:'assistant', content:String(r.texto||'')});
-      out.push((i+1)+') '+pa[0]+'  ['+(Date.now()-t)+' ms]\n   Esperado: '+pa[1]+'\n   Respuesta: '+String(r.texto||'').replace(/\n+/g,' / ').slice(0,350)+'\n   Tarjetas: '+((r.acciones||[]).map(function(x){ return x.tipo+' → '+x.resumen; }).join(' | ')||'ninguna'));
-    });
-  });
-  Logger.log('Modelo: '+azcuModelo_()+'\nA='+A+'  B='+B+'\n\n'+out.join('\n'));
-}
 function azcuProbarVenta(nombre){
   var n = String(nombre||'Ariel Jaime'), d = azcuDestinos_(n, true), url = AZCU_WEB+'?go=novedades';
   Logger.log('Para equipo → '+azcuPush_('🧪 PRUEBA · ✅ Analía marcó como VENDIDA', 'Av. Francia 252 (venta simulada)', url, d.slice(), true, true));
