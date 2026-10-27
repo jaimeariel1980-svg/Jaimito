@@ -105,6 +105,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text)}
   .hero,.pill.active-alto,.pill.active-si,.pill.active-medio,.pill.active-revisar,.pill.active-bajo,.pill.active-no,
   .sd-verde.on,.sd-amarillo.on,.sd-rojo.on,.res-verde,.res-amarillo,.res-rojo{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
+.gbar{position:sticky;bottom:0;z-index:250;display:flex;justify-content:center;padding:14px 16px 16px;background:linear-gradient(to top,rgba(247,245,241,.97) 65%,rgba(247,245,241,0));pointer-events:none}
+.gbar button{pointer-events:auto;background:#243D2C;color:#fff;border:none;border-radius:99px;padding:14px 38px;font:700 15px Poppins,Arial,sans-serif;cursor:pointer;box-shadow:0 6px 20px rgba(36,61,44,.35);letter-spacing:.2px}
+.gbar button:hover{background:#1a2d20}.gbar button:disabled{opacity:.65;cursor:default}
+@media print{.gbar{display:none!important}}
 </style>
 <style id="mobcss">
 @media (max-width:640px){
@@ -141,14 +145,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--text)}
     <div class="tb-sep"></div>
     <div class="tb-doc">Screening Inicial</div>
   </div>
-  <div class="topbar-actions">
-    <button class="btn btn-secondary" onclick="window.print()">Exportar PDF</button>
-    <button class="btn btn-success" id="btn-save-sheet" onclick="enviarALaPlanilla()">Guardar en Planilla</button>
-  </div>
 </nav>
 
 <div id="app"><div class="loading">Cargando perfil...</div></div>
 <div class="toast" id="toast"></div>
+<div class="gbar ia-ui"><button type="button" id="btn-save-sheet" onclick="enviarALaPlanilla()">Guardar entrevista</button></div>
 
 <?!= HtmlService.createHtmlOutputFromFile('IAForm').getContent() ?>
 <?!= HtmlService.createHtmlOutputFromFile('EstadoForm').getContent() ?>
@@ -487,9 +488,9 @@ function enviarALaPlanilla() {
 
   google.script.run
     .withSuccessHandler(() => {
-      showToast('¡Planilla y PDF listos!');
+      showToast('¡Entrevista guardada!');
       btn.innerHTML = '✅ ¡LISTO!';
-      setTimeout(() => { btn.innerHTML = 'Guardar en Planilla'; btn.disabled = false; }, 3000);
+      setTimeout(() => { btn.innerHTML = 'Guardar entrevista'; btn.disabled = false; }, 3000);
     })
     .withFailureHandler(err => {
       alert('Fallo el guardado: ' + err.message);
