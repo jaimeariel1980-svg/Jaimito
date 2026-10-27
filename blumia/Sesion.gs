@@ -6,6 +6,7 @@
 const HOJA_USU_ = 'Usuarios';
 const HOJA_ACC_ = 'Accesos';
 const SES_DIAS_ = 30;
+const USAR_PIN_ = false; // por ahora se ingresa solo con nombre y apellido; con true se vuelve a pedir PIN (los usuarios sin PIN eligen uno en su primer ingreso)
 const ROLES_ = ['Administrador', 'Usuario'];
 const ADMINS_INICIALES_ = ['Ariel Jaime', 'Flavia Jaime'];
 var SES_ = null; // usuario de esta ejecución (lo pone api)
@@ -49,6 +50,7 @@ function usuariosHoja_() {
 }
 
 function nuevaFilaUsuario_(sh, nombre, rol) {
+  if (!USAR_PIN_) { sh.appendRow([nombre, rol, 'SI', '', '', '', new Date().getTime(), '']); usuInvalidar_(); return ''; }
   const sal = 's' + Utilities.getUuid().slice(0, 7), pin = pinAzar_();
   sh.appendRow([nombre, rol, 'SI', sal, hashPin_(sal, pin), pin, new Date().getTime(), '']);
   sh.getRange(sh.getLastRow(), 4, 1, 3).setNumberFormat('@');
@@ -100,13 +102,13 @@ function login(nombre, pin) {
   const cache = CacheService.getScriptCache(), kf = 'lg_' + clave, f = Number(cache.get(kf) || 0);
   if (f >= 5) throw new Error('Demasiados intentos. Probá de nuevo en 15 minutos.');
   const u = leerUsuarios_().find(x => x.clave === clave);
-  const mal = () => { cache.put(kf, String(f + 1), 900); accesoLog_(nombre, 'Ingreso fallido', ''); throw new Error('Nombre o PIN incorrectos.'); };
+  const mal = () => { cache.put(kf, String(f + 1), 900); accesoLog_(nombre, 'Ingreso fallido', ''); throw new Error(USAR_PIN_ ? 'Nombre o PIN incorrectos.' : 'No encontré ese usuario. Escribí tu nombre y apellido como te dieron de alta, o pedile a un administrador que te agregue.'); };
   if (!u || u.activo !== 'SI') mal();
-  if (u.hash && hashPin_(u.sal, String(pin == null ? '' : pin).trim()) !== u.hash) mal();
+  if (USAR_PIN_ && u.hash && hashPin_(u.sal, String(pin == null ? '' : pin).trim()) !== u.hash) mal();
   cache.remove(kf);
   usuariosHoja_().getRange(u.fila, 8).setValue(new Date());
   accesoLog_(u.nombre, 'Ingreso', '');
-  return { token: emitirToken_(u), nombre: u.nombre, rol: u.rol, debeCambiar: !u.hash || !!u.temporal };
+  return { token: emitirToken_(u), nombre: u.nombre, rol: u.rol, debeCambiar: USAR_PIN_ && (!u.hash || !!u.temporal) };
 }
 
 function validarSesion(token) {
@@ -115,6 +117,7 @@ function validarSesion(token) {
 }
 
 function cambiarMiPin(token, nuevo) {
+  if (!USAR_PIN_) throw new Error('Por ahora se ingresa sin PIN.');
   const s = sesionValida_(token);
   const pin = String(nuevo == null ? '' : nuevo).trim();
   if (!/^\d{4,6}$/.test(pin)) throw new Error('El PIN tiene que tener de 4 a 6 números.');
@@ -135,6 +138,7 @@ function doGet(e) {
   Object.keys((e && e.parameter) || {}).forEach(k => { p[k] = String(e.parameter[k]); });
   const tpl = HtmlService.createTemplateFromFile('Shell');
   tpl.params = JSON.stringify(p).replace(/</g, '\\u003c');
+  tpl.usaPin = USAR_PIN_ ? 'true' : 'false';
   return tpl.evaluate().setTitle('Blumia').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL).addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 
@@ -147,7 +151,7 @@ function pagina_(params) {
 function yo_() { return { nombre: SES_.nombre, rol: SES_.rol }; }
 
 function listarUsuarios_() {
-  return leerUsuarios_().map(u => ({ nombre: u.nombre, rol: u.rol, activo: u.activo, pendiente: !u.hash || !!u.temporal }));
+  return leerUsuarios_().map(u => ({ nombre: u.nombre, rol: u.rol, activo: u.activo, pendiente: USAR_PIN_ && (!u.hash || !!u.temporal) }));
 }
 
 function usuarioPorNombre_(nombre) {
@@ -169,6 +173,7 @@ function crearUsuario_(nombre, rol) {
 }
 
 function reiniciarPinUsuario_(nombre) {
+  if (!USAR_PIN_) throw new Error('Por ahora se ingresa sin PIN.');
   const u = usuarioPorNombre_(nombre), sal = 's' + Utilities.getUuid().slice(0, 7), pin = pinAzar_();
   usuariosHoja_().getRange(u.fila, 4, 1, 4).setNumberFormat('@').setValues([[sal, hashPin_(sal, pin), pin, Date.now()]]);
   usuInvalidar_();
