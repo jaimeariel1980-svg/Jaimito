@@ -81,6 +81,13 @@ function doGetPagina_(e) {
     template.editar = e.parameter.editar === '1';
     titulo = 'Evaluación de Competencias | Blumia';
   } else if (tipo === 'postulacion') {
+    let cerrada = false;
+    try { cerrada = estadoBusqueda_(getConfig(perfil)) === 'CERRADA'; } catch (err) { }
+    if (cerrada) {
+      const h = getHeroPostulacion(perfil);
+      return HtmlService.createHtmlOutput('<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Búsqueda cerrada | Blumia</title><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet"></head><body style="margin:0;background:#F3F8F1;font-family:Poppins,sans-serif;color:#243D2C;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;box-sizing:border-box"><div style="max-width:460px;text-align:center;background:#fff;border-radius:16px;padding:36px 28px;box-shadow:0 4px 18px rgba(36,61,44,.12)"><h2 style="margin:0 0 10px">Esta búsqueda ya está cerrada</h2><p style="margin:0 0 6px;line-height:1.5">' + String(h.pos).replace(/[<>&]/g, '') + '</p><p style="margin:14px 0 0;line-height:1.5;font-size:14px">Gracias por tu interés. Podés seguir las próximas búsquedas en <b>blumiaconsulting.com</b>.</p></div></body></html>')
+        .setTitle('Búsqueda cerrada | Blumia').addMetaTag('viewport', 'width=device-width, initial-scale=1').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+    }
     template = HtmlService.createTemplateFromFile('Postulacion');
     const hero = getHeroPostulacion(perfil);
     template.perfil = perfil;
@@ -1153,6 +1160,7 @@ function getPreguntasPostulacion(perfilId) {
 function recibirPostulacion(payload) {
   try {
     const cfg = getConfig(payload.perfil || 'operaciones');
+    if (estadoBusqueda_(cfg) === 'CERRADA') throw new Error('BUSQUEDA_CERRADA');
     const sheet = getSheet(cfg);
 
     const d = payload.datos || {};
@@ -1188,6 +1196,7 @@ function recibirPostulacion(payload) {
     return 'OK';
 
   } catch (err) {
+    if (String(err && err.message) === 'BUSQUEDA_CERRADA') throw new Error('Esta búsqueda ya está cerrada.');
     registrarErrorPostulacion(payload, err);
     throw new Error('No se pudo procesar la postulación'); // dispara el mensaje amable en el form
   }
@@ -2367,10 +2376,12 @@ function unificarScreeningVal_MACS() {
 function perfilesActivos_() {
   const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
   const cfg = ss.getSheetByName('Config').getDataRange().getValues();
+  const cEst = cfg[0].indexOf('estado_busqueda');
   const out = [];
   for (let i = 1; i < cfg.length; i++) {
     const id = cfg[i][0];
     if (!id || id === 'operaciones') continue;
+    if (cEst >= 0 && String(cfg[i][cEst] || '').toUpperCase().trim() === 'CERRADA') continue; // búsqueda cerrada: no recibe CVs por mail ni por carpeta
     out.push({ id: id, nombre: cfg[i][1], prompt: cfg[i][8] || '' });
   }
   return out;
@@ -2403,7 +2414,7 @@ function rutearPorAsunto_(asunto) {
   for (let i = 1; i < data.length; i++) {
     const pid = data[i][0];
     const claves = String(data[i][1] || '').toLowerCase().split('|').map(s => s.trim()).filter(Boolean);
-    if (claves.some(k => a.indexOf(k) !== -1)) return pid;
+    if (claves.some(k => a.indexOf(k) !== -1) && perfilesActivos_().some(p => p.id === pid)) return pid;
   }
   // sin fila en Mail_Routing: si el asunto nombra el puesto (o su id), alcanza
   const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
@@ -5146,10 +5157,12 @@ function empresasYPerfiles(){
   const config = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName('Config');
   const rows = config.getDataRange().getValues();
   const emp = {};
+  const cEst = rows[0].indexOf('estado_busqueda');
   for(let i=1;i<rows.length;i++){
     if(!rows[i][0]) continue;
     const e = rows[i][9] || 'Sin empresa';
-    (emp[e]=emp[e]||[]).push([rows[i][0], rows[i][1]]);
+    const cerr = cEst >= 0 && String(rows[i][cEst]||'').toUpperCase().trim() === 'CERRADA';
+    (emp[e]=emp[e]||[]).push([rows[i][0], rows[i][1] + (cerr ? ' · cerrada' : '')]);
   }
   return emp;
 }

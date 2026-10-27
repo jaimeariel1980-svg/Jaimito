@@ -33,21 +33,24 @@
   window.cfAbrir=function(){
     var p=pin();if(!p)return;
     var bg=document.getElementById('cfBg');bg.classList.add('show');document.getElementById('cfBox').innerHTML='<h2>⚙ Configurar búsqueda</h2><div class="cf-help">Cargando…</div>';
-    google.script.run.withSuccessHandler(function(d){CF=d;render('ia');}).withFailureHandler(function(e){alert(badPin(e));bg.classList.remove('show');}).getConfigBusqueda(p,PERFIL);
+    google.script.run.withSuccessHandler(function(d){CF=d;CF.base=snapBase();render('ia');}).withFailureHandler(function(e){alert(badPin(e));bg.classList.remove('show');}).getConfigBusqueda(p,PERFIL);
   };
+  function snapBase(){return JSON.parse(JSON.stringify({datos:CF.datos,prompt_extra:CF.prompt_extra,hero:CF.extra.hero,estado:CF.extra.estado,cv_ia:CF.extra.cv_ia,mail:CF.extra.mail}));}
   window.cfCerrar=function(){document.getElementById('cfBg').classList.remove('show');};
   window.cfTab=function(t){sync();render(t);};
   function sync(){
     nbSync();fdSync();
     if(!CF)return;var g=function(id){var e=document.getElementById(id);return e?e.value:null;},v;
     if((v=g('cf_ia'))!==null)CF.prompt_extra=v;
+    ['posicion','ubicacion','instancia','entrevistadoras'].forEach(function(k){if((v=g('cfh_'+k))!==null)CF.extra.hero[k]=v;});
+    if((v=g('cfx_estado'))!==null)CF.extra.estado=v;if((v=g('cfx_cvia'))!==null)CF.extra.cv_ia=v;if((v=g('cfx_mail'))!==null)CF.extra.mail=v;
     Object.keys(CF.datos).forEach(function(k){if((v=g('cfd_'+k))!==null)CF.datos[k]=v;});
     CF.preguntas.forEach(function(q,i){if((v=g('cfq_e'+i))!==null){q.etiqueta=v;q.tipo=g('cfq_t'+i);q.opciones=g('cfq_o'+i);q.requerido=g('cfq_r'+i);}});
     CF.plantillas.forEach(function(t,i){if((v=g('cfp_'+i))!==null){t.texto=v;t.alcance=g('cfa_'+i);}});
   }
   function render(tab){
-    var T=[['ia','Requisitos para la IA'],['post','Preguntas de postulación'],['msg','Mensajes'],['dat','Datos de la búsqueda'],['scr','Screening'],['comp','Competencias'],['perfil','Perfil del puesto'],['nueva','➕ Nueva búsqueda'],['usr','Usuarios']];
-    var x='<h2>⚙ Configurar búsqueda · '+esc(CF.datos.nombre||PERFIL)+'</h2><div class="cf-tabs">'+T.map(function(t){return '<button class="cf-tab'+(t[0]===tab?' on':'')+'" onclick="cfTab(\''+t[0]+'\')">'+t[1]+'</button>';}).join('')+'</div>';
+    var T=[['ia','Requisitos para la IA'],['post','Preguntas de postulación'],['msg','Mensajes'],['dat','Datos de la búsqueda'],['scr','Screening'],['comp','Competencias'],['perfil','Perfil del puesto']],T2=[['nueva','➕ Nueva búsqueda'],['usr','Usuarios']];var tb=function(L){return L.map(function(t){return '<button class="cf-tab'+(t[0]===tab?' on':'')+'" onclick="cfTab(\''+t[0]+'\')">'+t[1]+'</button>';}).join('');};
+    var x='<h2>⚙ Configurar</h2><div class="cf-help" style="margin:0 0 4px"><b>Esta búsqueda</b> · '+esc(CF.datos.nombre||PERFIL)+'</div><div class="cf-tabs">'+tb(T)+'</div><div class="cf-help" style="margin:0 0 4px"><b>General</b> · no depende de la búsqueda que tenés abierta</div><div class="cf-tabs">'+tb(T2)+'</div>';
     x+='<div class="cf-sec'+(tab==='ia'?' on':'')+'"><div class="cf-help">Es el texto que la IA usa para <b>puntuar los CVs</b> de esta búsqueda (perfil, experiencia excluyente, deseable, zona, pretensión…). Si cambia el perfil del puesto, actualizalo acá. Vale para los CVs que entren desde ahora; los ya analizados no se recalculan.</div><textarea id="cf_ia" style="min-height:340px">'+esc(CF.prompt_extra)+'</textarea>'+foot('ia')+'</div>';
     x+='<div class="cf-sec'+(tab==='post'?' on':'')+'"><div class="cf-help">Preguntas que se agregan al formulario de postulación de esta búsqueda (además de los datos básicos y el CV). En «Opciones» separá con | (por ejemplo: Básico|Intermedio|Avanzado).</div>';
     CF.preguntas.forEach(function(q,i){x+='<div class="cf-row"><div><label>Pregunta</label><input id="cfq_e'+i+'" value="'+esc(q.etiqueta)+'"></div><div><label>Tipo</label><select id="cfq_t'+i+'"><option value="texto"'+(q.tipo==='texto'?' selected':'')+'>Texto libre</option><option value="select"'+(q.tipo==='select'?' selected':'')+'>Elegir opción</option></select></div><div><label>Opciones (si elige)</label><input id="cfq_o'+i+'" value="'+esc(q.opciones)+'"></div><div><label>Obligatoria</label><select id="cfq_r'+i+'"><option value="SI"'+(q.requerido!=='NO'?' selected':'')+'>Sí</option><option value="NO"'+(q.requerido==='NO'?' selected':'')+'>No</option></select></div><button class="cf-mini x" onclick="cfQuitar('+i+')">✕</button></div>';});
@@ -57,9 +60,17 @@
     x+=foot('msg')+'</div>';
     x+='<div class="cf-sec'+(tab==='dat'?' on':'')+'"><div class="cf-help">Datos de la búsqueda. Los links tienen que empezar con https://. Al guardar se recarga el tablero.</div>';
     Object.keys(ETQ).forEach(function(k){x+='<label>'+ETQ[k]+'</label><input id="cfd_'+k+'" value="'+esc(CF.datos[k])+'">';});
+    var E=CF.extra,H=E.hero;
+    x+='<h3 style="margin:18px 0 4px;font-size:15px">Puesto y proceso</h3><div class="cf-help">Lo que se ve en el formulario de postulación y en las entrevistas.</div>';
+    x+='<label>Nombre del puesto en la postulación</label><input id="cfh_posicion" value="'+esc(H.posicion)+'"><label>Empresa · ubicación (se ve debajo del puesto)</label><input id="cfh_ubicacion" value="'+esc(H.ubicacion)+'"><label>Instancia (etapa de la entrevista)</label><input id="cfh_instancia" value="'+esc(H.instancia)+'"><label>Entrevistadores (separados con coma: Ariel, Analía, Flavia)</label><input id="cfh_entrevistadoras" value="'+esc(H.entrevistadoras)+'">';
+    x+='<h3 style="margin:18px 0 4px;font-size:15px">Estado y CVs</h3>';
+    x+='<label>Estado de la búsqueda</label><select id="cfx_estado"><option value="ABIERTA"'+(E.estado==='ABIERTA'?' selected':'')+'>ABIERTA</option><option value="CERRADA"'+(E.estado==='CERRADA'?' selected':'')+'>CERRADA</option></select><div class="cf-help">Cerrada: la página de postulación avisa que ya terminó, no entran CVs nuevos por mail ni por la carpeta, y en el selector figura «· cerrada». Los candidatos y el tablero siguen disponibles.</div>';
+    x+='<label>Quién lee los CVs</label><select id="cfx_cvia"><option value=""'+(!E.cv_ia?' selected':'')+'>Automático (Claude, ChatGPT en MACS)</option><option value="claude"'+(E.cv_ia==='claude'?' selected':'')+'>Claude</option><option value="openai"'+(E.cv_ia==='openai'?' selected':'')+'>ChatGPT</option></select>';
+    x+='<label>Palabras del asunto del mail para ordenar los CVs de esta búsqueda (separadas con |)</label><input id="cfx_mail" value="'+esc(E.mail)+'"><div class="cf-help">Si el asunto del mail contiene una de estas palabras, el CV va a esta búsqueda. Si lo dejás vacío, igual se ordena cuando el asunto nombra el puesto.</div>';
+    if(E.enlaces&&(E.enlaces.hoja||E.enlaces.carpeta))x+='<h3 style="margin:18px 0 4px;font-size:15px">Dónde está guardado</h3><div class="cf-help">Solo para abrir: esto no se edita desde acá.</div><div style="display:flex;gap:10px;flex-wrap:wrap">'+(E.enlaces.hoja?'<a class="cf-mini" target="_blank" href="'+esc(E.enlaces.hoja)+'">📄 Pestaña de candidatos</a>':'')+(E.enlaces.carpeta?'<a class="cf-mini" target="_blank" href="'+esc(E.enlaces.carpeta)+'">📁 Carpeta en Drive</a>':'')+'</div>';
     x+=foot('dat')+'</div>';
     x+='<div class="cf-sec'+(tab==='perfil'?' on':'')+'"><div class="cf-help">El <b>perfil del puesto</b> es el relevamiento de la búsqueda (organización, puesto, perfil, formación, experiencia, competencias, contratación y proceso). Acá se <b>edita</b>; la versión guardada para consultar sin tocar nada está en el menú <b>📚 Búsqueda → Perfil del puesto</b>.</div>'
-      +(CF.perfil&&CF.perfil.propio?'<p style="margin:10px 0"><b>Última versión guardada:</b> '+(CF.perfil.fecha||'todavía no se guardó ninguna')+'</p><button class="cf-save" onclick="cfPerfilEditar(this)">✏️ Abrir y editar el perfil</button><div class="cf-help" style="margin-top:10px">Se abre acá mismo, abajo. Al terminar tocá «Guardar en el sistema»: cada versión queda guardada con fecha y hora, y se abre siempre la última.</div><div id="cfPerfilFr" style="margin-top:12px"></div>':'<p style="margin:10px 0">Este puesto usa un documento externo como perfil: su link se cambia en la pestaña «Datos de la búsqueda» (campo «link_perfil»).</p>')
+      +(CF.perfil&&CF.perfil.propio?'<p style="margin:10px 0"><b>Última versión guardada:</b> '+(CF.perfil.fecha||'todavía no se guardó ninguna')+'</p><button class="cf-save" onclick="cfPerfilEditar(this)">✏️ Abrir y editar el perfil</button><div class="cf-help" style="margin-top:10px">Se abre acá mismo, abajo. Al terminar tocá «Guardar en el sistema»: cada versión queda guardada con fecha y hora, y se abre siempre la última.</div><div id="cfPerfilFr" style="margin-top:12px"></div>':'<p style="margin:10px 0">Esta búsqueda todavía no tiene el perfil del puesto cargado dentro del sistema. Mientras tanto, el botón «Perfil del puesto» de 📚 Búsqueda abre el link que pongas en «Datos de la búsqueda» (campo de link del perfil).</p>')
       +'<div class="cf-foot"><button class="cf-close" onclick="cfCerrar()">Cerrar</button></div></div>';
     x+='<div class="cf-sec'+(tab==='scr'?' on':'')+'">'+scrHtml()+'</div><div class="cf-sec'+(tab==='comp'?' on':'')+'">'+compHtml()+'</div>';
     x+='<div class="cf-sec'+(tab==='nueva'?' on':'')+'">'+nbHtml()+'</div>';
@@ -77,9 +88,10 @@
     if(t==='ia')d.prompt_extra=CF.prompt_extra;
     if(t==='post')d.preguntas=CF.preguntas;
     if(t==='msg')d.plantillas=CF.plantillas.map(function(x){return {clave:x.clave,texto:x.texto,alcance:x.alcance||'esta'};});
-    if(t==='dat')d.datos=CF.datos;
+    if(t==='dat'){d.datos=CF.datos;d.extra={hero:CF.extra.hero,estado:CF.extra.estado,cv_ia:CF.extra.cv_ia,mail:CF.extra.mail};}
+    d.base=CF.base;
     btn.disabled=true;btn.textContent='Guardando...';
-    google.script.run.withSuccessHandler(function(){btn.disabled=false;btn.textContent='Guardar';alert('Guardado ✓');if(t==='dat')location.reload();})
+    google.script.run.withSuccessHandler(function(){btn.disabled=false;btn.textContent='Guardar';var sb=snapBase();if(t==='dat'){CF.base.datos=sb.datos;CF.base.hero=sb.hero;CF.base.estado=sb.estado;CF.base.cv_ia=sb.cv_ia;CF.base.mail=sb.mail;}if(t==='ia')CF.base.prompt_extra=sb.prompt_extra;alert('Guardado ✓');if(t==='dat')location.reload();})
      .withFailureHandler(function(e){btn.disabled=false;btn.textContent='Guardar';alert('No se guardó: '+badPin(e));})
      .guardarConfigBusqueda(p,PERFIL,d,q);
   };
@@ -99,7 +111,7 @@
   function pesoSel(id,v){return '<select id="'+id+'" style="width:70px">'+[1,2,3].map(function(n){return '<option'+(Number(v)===n?' selected':'')+'>'+n+'</option>';}).join('')+'</select>';}
   function nbHtml(){
     if(NB.creada){var c=NB.creada;return '<div class="cf-pl"><b>✅ Búsqueda creada: '+esc(c.nombre)+'</b><div class="cf-help" style="margin-top:8px">Empresa: '+esc(c.empresa)+'. Ya tiene su pestaña de candidatos, carpetas de Drive, formularios de screening y competencias, y preguntas de postulación.<br><br><b>Falta:</b> pegar los links de agenda en «Datos de la búsqueda» y, si querés, cargar el perfil del puesto. Los CVs que lleguen al mail con el nombre del puesto en el asunto se ordenan solos.</div></div><div class="cf-foot"><button class="cf-close" onclick="nbOtra()">Crear otra</button><button class="cf-save" onclick="window.top.location.href=NB.creada.kanban">Abrir el tablero de la búsqueda</button></div>';}
-    if(!NB.prop)return '<div class="cf-help">Subí el <b>Word</b> con el relevamiento del puesto (o pegá el texto) y la <b>IA de Anthropic</b> arma la búsqueda completa: requisitos para puntuar CVs, criterios de screening, competencias con preguntas y preguntas de postulación. <b>Antes de crear nada lo revisás y lo corregís vos.</b> El archivo no se guarda: solo se lee el texto.</div>'
+    if(!NB.prop)return '<div class="cf-help">Acá se crea una <b>búsqueda nueva</b>; no modifica la que tenés abierta. Subí el <b>Word</b> con el relevamiento del puesto (o pegá el texto) y la <b>IA de Anthropic</b> arma la búsqueda completa: requisitos para puntuar CVs, criterios de screening, competencias con preguntas y preguntas de postulación. <b>Antes de crear nada lo revisás y lo corregís vos.</b> El archivo no se guarda: solo se lee el texto.</div>'
       +'<label>Archivo Word (.docx)</label><input type="file" id="nb_file" accept=".docx,.txt" onchange="nbArchivo(this)">'
       +'<label>…o pegá el texto del relevamiento</label><textarea id="nb_texto" style="min-height:220px" placeholder="Pegá acá el texto o subí el Word">'+esc(NB.texto)+'</textarea>'
       +'<label>Empresa (opcional: si la dejás vacía la propone la IA)</label><input id="nb_emp" value="'+esc(NB.empresa)+'">'
