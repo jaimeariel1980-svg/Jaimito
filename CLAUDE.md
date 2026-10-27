@@ -27,7 +27,7 @@ Ariel y Ever no ven el código: **Claude sabe más de lo técnico y tiene que gu
 - **Autorización del dueño (Ariel):** confía en Claude y en Ever. Claude **mergea sus propios pull requests sin pedir aprobación** después de validar sintaxis y revisar el resultado de Actions/Cloudflare; Ever mergea los suyos. Excepciones: pedir confirmación antes de borrar datos, cambiar permisos o hacer cambios destructivos.
 - Trabajar en una rama, abrir pull request hacia la rama principal `claude/recruitment-automation-google-b1Ric` (no hay `main`).
 - Al hacer Merge: `.github/workflows/apps-script.yml` publica `appscript/` y/o `pami/` con clasp, y Cloudflare publica la web (rama de producción = la principal).
-- Antes de publicar, el workflow compara el Apps Script real contra lo último publicado (`.github/scripts/guardia.py`). Si alguien lo tocó a mano, **frena** y deja la copia real en la rama `sync-azcu` / `sync-pami`. Integrar esos cambios al repo antes de volver a publicar.
+- Antes de publicar, el workflow compara el Apps Script real contra lo último publicado **con éxito** (la rama `publicado-<proyecto>`, que el propio workflow actualiza después de cada `clasp push`; si todavía no existe, contra el commit anterior) con `.github/scripts/guardia.py`. Si alguien lo tocó a mano, **frena** y deja la copia real en la rama `sync-azcu` / `sync-pami`. Integrar esos cambios al repo antes de volver a publicar.
 - Acción manual: Actions → Apps Script → Run workflow (`bajar` copia el real al repo; `publicar` fuerza).
 - Secretos/variables de GitHub ya cargados: `CLASPRC_AZCU`, `CLASPRC_PAMI`, `DEPLOYMENT_AZCU`, `DEPLOYMENT_PAMI`. No imprimirlos ni pedirlos.
 - Los `.json` están ignorados por git salvo `appscript/*.json` y `pami/*.json`.

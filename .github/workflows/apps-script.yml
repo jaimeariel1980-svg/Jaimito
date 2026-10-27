@@ -39,7 +39,9 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             [ "${{ inputs.proyecto }}" = "${{ matrix.id }}" ] && echo "go=1" >> $GITHUB_OUTPUT || echo "go=0" >> $GITHUB_OUTPUT
           else
-            [ -f "${{ matrix.dir }}/appsscript.json" ] && git -c core.quotepath=false diff --name-only HEAD~1 HEAD | grep -q "^${{ matrix.dir }}/" && echo "go=1" >> $GITHUB_OUTPUT || echo "go=0" >> $GITHUB_OUTPUT
+            # se compara contra lo último que se publicó con éxito (rama publicado-<id>); si todavía no existe, contra el commit anterior
+            BASE=$(git rev-parse --verify -q "origin/publicado-${{ matrix.id }}" || true); [ -n "$BASE" ] || BASE=HEAD~1
+            [ -f "${{ matrix.dir }}/appsscript.json" ] && git -c core.quotepath=false diff --name-only "$BASE" HEAD | grep -q "^${{ matrix.dir }}/" && echo "go=1" >> $GITHUB_OUTPUT || echo "go=0" >> $GITHUB_OUTPUT
           fi
       - if: steps.dec.outputs.go == '1'
         uses: actions/setup-node@v4
@@ -66,7 +68,9 @@ jobs:
         if: steps.dec.outputs.go == '1' && github.event_name == 'push'
         run: |
           rm -rf /tmp/real /tmp/prev; mkdir -p /tmp/real /tmp/prev
-          if ! git archive "${{ github.event.before }}" "${{ matrix.dir }}" 2>/dev/null | tar -x -C /tmp/prev; then echo "Sin versión anterior: no se compara."; exit 0; fi
+          # lo esperado en el Apps Script real = lo último publicado con éxito (así un publicar fallido no dispara un falso «modificado a mano»)
+          BASE=$(git rev-parse --verify -q "origin/publicado-${{ matrix.id }}" || true); [ -n "$BASE" ] || BASE="${{ github.event.before }}"
+          if ! git archive "$BASE" "${{ matrix.dir }}" 2>/dev/null | tar -x -C /tmp/prev; then echo "Sin versión anterior: no se compara."; exit 0; fi
           [ -f "/tmp/prev/${{ matrix.dir }}/appsscript.json" ] || { echo "Primera publicación del proyecto: no se compara."; exit 0; }
           cp "${{ matrix.dir }}/.clasp.json" /tmp/real/
           (cd /tmp/real && clasp pull > /dev/null)
@@ -88,5 +92,6 @@ jobs:
         working-directory: ${{ matrix.dir }}
         run: |
           clasp push -f
+          git push -q -f origin "HEAD:refs/heads/publicado-${{ matrix.id }}"   # marca lo último publicado para el chequeo de la próxima vez
           DEP="${{ vars[matrix.depvar] || matrix.depid }}"
           if [ -n "$DEP" ]; then clasp deploy -i "$DEP" -d "GitHub ${{ github.sha }}"; else echo "sin deployment (proyecto con menú)"; fi
