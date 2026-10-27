@@ -82,6 +82,7 @@ header{min-height:86px}
   function fmtForm(f){var t=String(f||'').split(/\s+[—–-]\s+/);var a=t.shift().split(' ').map(function(w,i){return i?w.toLowerCase():w;}).join(' ');return [a].concat(t).join(' · ');}
   function fmtTel(t){var d=String(t||'').replace(/\D/g,'');if(d.length===13&&d.indexOf('549')===0)return '+54 9 '+d.slice(3,6)+' '+d.slice(6,9)+'-'+d.slice(9);if(d.length===10)return d.slice(0,3)+' '+d.slice(3,6)+'-'+d.slice(6);return String(t||'');}
   function fmtMiles(v){var d=String(v==null?'':v).replace(/\D/g,'');return d?Number(d).toLocaleString('es-AR'):String(v||'');}
+  window.fmtMiles=fmtMiles;window.fmtForm=fmtForm;window.fmtTel=fmtTel;window.money=money; // también los usa la ficha, que vive en otro bloque
   window.dias=dias;
   window.cardN=function(c){
     var en=etapaNota(c),n=en[0],ep=en[1],m=metEstado(c.estado)||{t:'act'};
