@@ -257,11 +257,10 @@ header{min-height:86px}
     var ecs=etapas.map(function(e){return '<span class="ec" style="border-bottom-color:'+(COL_N[String(e[1]||'').trim()]||'#C9C5BB')+'">'+nBadge(e[1])+' '+e[0]+'</span>';}).join('');
     var waBtn='<button class="mbtn wa" onclick="menuWA('+c.fila+')">💬 WhatsApp ▾</button>';
     var mailBtn=(c.mail&&c.mail!=='Sin dato'&&c.mail.indexOf('@')>-1)?'<a href="https://mail.google.com/mail/?view=cm&to='+esc(c.mail)+'" target="_blank" class="mbtn" style="background:#EA4335;color:#fff">✉ Mail</a>':'';
-    var cvBtn=c.cv?'<a href="https://drive.google.com/file/d/'+esc(c.cv)+'/view" target="_blank" class="mbtn alt">📄 CV en Drive</a>':'';
+    var cvBtn=c.cv?'<a href="https://drive.google.com/file/d/'+esc(c.cv)+'/view" target="_blank" class="mbtn alt">📄 Ver CV</a>':'';
     var genBtn=c.informe?'':'<button class="mbtn gen" onclick="var b=this;blConfirm(\'Generar informe con IA. Puede tener costo. ¿Continuar?\',function(){generar('+c.fila+',b)})">Generar informe</button>';
     var bancoBtn='<button class="mbtn alt" onclick="menuBanco('+c.fila+')">★ Banco</button>';
     var agBtn='<button class="mbtn alt" onclick="panelTog(\'agPanel\')">📅 Agendar</button>';
-    var cvVer=c.cv?'<button class="mbtn alt" onclick="verCvAca(\''+esc(c.cv)+'\')">👁 Ver el CV acá</button>':'';
     
     var notasEmp=/screening empresa|presencial empresa|avanza a empresa|entrevista empresa|reserva screening empresa|reserva presencial empresa/i.test(c.estado)?['screening-empresa','presencial-empresa'].map(function(ep){return '<div class="notarow"><span>'+(ep==='screening-empresa'?'Emp. screening':'Emp. presencial')+'</span>'+['A','B','C'].map(function(n){return '<button class="nb'+(String(ep==='screening-empresa'?c.notaScrEmp:c.notaPresEmp).trim()===n?' on '+n.replace('+','p'):'')+'" onclick="setNotaEmp('+c.fila+',\''+ep+'\',\''+n+'\',this)">'+n+'</button>';}).join('')+'</div>';}).join(''):'';
     var notas='<div class="notabox"><div class="notatit">Poner nota manual</div>'+['cv','screening','competencias'].map(function(et){return '<div class="notarow"><span>'+({cv:'CV',screening:'Screening',competencias:'Competencias'}[et])+'</span>'+['A','B+','B','C'].map(function(n){return '<button class="nb'+(String({cv:c.nota,screening:c.notaScr,competencias:c.notaComp}[et]||'').trim()===n?' on '+n.replace('+','p'):'')+'" onclick="setNota('+c.fila+',\''+et+'\',\''+n+'\',this)">'+n+'</button>';}).join('')+'</div>';}).join('')+notasEmp+'</div>';
@@ -269,7 +268,7 @@ header{min-height:86px}
       +'<div class="frow"><span class="fl">Registro de contactos</span><span class="fv" id="regCont" style="white-space:pre-line">cargando…</span></div>';
     var h='<div class="fwrap" style="margin:-24px"><div class="fh"><div style="font-size:16px;color:#243D2C"><b>'+esc(c.estado)+'</b></div><div class="ecs">'+ecs+'</div></div>'
       +(al?'<div class="fal">'+al+'</div>':'')
-      +'<div class="fb"><div class="acts">'+waBtn+mailBtn+agBtn+'</div><details class="mas"><summary>Más acciones ▾</summary><div class="acts">'+cvBtn+cvVer+etapaBtn('screening',c.scrPDF,'Screening','📝 Cargar screening')+etapaBtn('competencias',c.compPDF,'Competencias','💼 Cargar competencias')+btn(c.postulacion,'Ver postulación')+btn(c.informe,'Ver informe')+genBtn+bancoBtn+'</div></details>'+agendarHtml(c)+'<div class="edp" id="cvPanel" hidden></div>'
+      +'<div class="fb"><div class="acts">'+waBtn+mailBtn+agBtn+'</div><details class="mas"><summary>Más acciones ▾</summary><div class="acts">'+cvBtn+etapaBtn('screening',c.scrPDF,'Screening','📝 Cargar screening')+etapaBtn('competencias',c.compPDF,'Competencias','💼 Cargar competencias')+btn(c.postulacion,'Ver postulación')+btn(c.informe,'Ver informe')+genBtn+bancoBtn+'</div></details>'+agendarHtml(c)
       +'<div class="fpw"><button class="fpe" title="Editar datos del candidato" onclick="panelTog(\'edPanel\')">✏️</button><div class="fp"><div class="pn"><h4>Contacto</h4>'+row('Teléfono',esc(fmtTel(c.tel)))+row('Email',esc(c.mail))+row('Zona',esc(c.zona))+'</div>'
       +'<div class="pn"><h4>Postulación</h4>'+row('Recibido',esc(c.recibido))+row('Llegó por',esc(c.fuente))+row('Formación',esc(fmtForm(c.formacion)))+row('Pretensión',c.pretension?'$'+fmtMiles(c.pretension):'')+'</div></div></div>'+editarHtml(c)
       +(c.resumen?'<div class="sec">Análisis del CV</div><div class="fres" style="margin:0">'+esc(c.resumen)+'</div>':'')
@@ -289,7 +288,7 @@ header{min-height:86px}
     var hoy=new Date(Date.now()+864e5).toISOString().slice(0,10);
     return '<div class="edp" id="agPanel" hidden><div class="ggrid"><label class="gl">Tipo<select id="gaTipo"><option value="screening">Screening</option><option value="competencias">Competencias</option><option value="empresa-virtual">Empresa (virtual)</option><option value="empresa-presencial">Empresa (presencial)</option></select></label>'+inp('gaFec','Día',hoy,'date')+inp('gaHor','Hora','10:00','time')+'<label class="gl">Duración<select id="gaDur"><option>30</option><option>45</option><option>60</option><option>90</option></select></label>'+inp('gaLug','Lugar / link (opcional)','')+'</div><div class="obsb"><span class="hint">Se crea en el calendario de Blumia y se invita por mail al candidato (si tiene).</span><button class="mbtn sm" onclick="agendarC('+c.fila+',this)">Agendar</button></div></div>';
   }
-  window.panelTog=function(id){var e=document.getElementById(id);if(!e)return;['edPanel','agPanel','cvPanel'].forEach(function(k){var x=document.getElementById(k);if(x&&k!==id)x.hidden=true;});e.hidden=!e.hidden;};
+  window.panelTog=function(id){var e=document.getElementById(id);if(!e)return;['edPanel','agPanel'].forEach(function(k){var x=document.getElementById(k);if(x&&k!==id)x.hidden=true;});e.hidden=!e.hidden;};
   function val(id){var e=document.getElementById(id);return e?e.value:'';}
   function fail(b,t){return function(e){b.disabled=false;b.textContent=t;alert('No se pudo: '+((e&&e.message)||e));};}
   function refrescar(){setTimeout(function(){window.top.location.reload();},300);}
@@ -564,12 +563,6 @@ header h1{font-size:15px;line-height:1.25;flex:1 1 100%;min-width:0;display:-web
 </script>
 <script>
 (function(){
-  window.verCvAca=function(id){
-    var p=document.getElementById('cvPanel');if(!p)return;
-    if(!p.hidden&&p.getAttribute('data-id')===id){p.hidden=true;return;}
-    panelTog('cvPanel');p.hidden=false;
-    if(p.getAttribute('data-id')!==id){p.setAttribute('data-id',id);p.innerHTML='<iframe title="Currículum" src="https://drive.google.com/file/d/'+encodeURIComponent(id)+'/preview" style="width:100%;height:70vh;border:1px solid #ccc;border-radius:8px;background:#fff"></iframe><div style="text-align:right;margin-top:6px"><a href="https://drive.google.com/file/d/'+encodeURIComponent(id)+'/view" target="_blank" style="font-size:12px">Abrir en otra pestaña ↗</a></div>';}
-  };
   window.verEnlaces=function(){
     var L=typeof ENLACES!=='undefined'?ENLACES:[];
     document.getElementById('mtit').textContent='🔗 Enlaces de la búsqueda';
