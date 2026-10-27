@@ -223,7 +223,7 @@ header{min-height:86px}
     var etapaBtn=function(tipo,pdf,nom,nuevo){
       var link=linkForm(tipo);
       if(!pdf)return '<a href="'+esc(link)+'" target="_blank" class="mbtn">'+nuevo+'</a>';
-      return '<span class="bgp"><a href="'+esc(pdf)+'" target="_blank" class="mbtn alt">📄 Ver '+nom+'</a><a href="'+esc(link+'&editar=1')+'" target="_blank" class="mbtn alt ed" title="Editar el formulario de '+nom+' ya cargado">✏️</a></span>';
+      return '<span class="sp"><a href="'+esc(pdf)+'" target="_blank" class="mbtn alt">📄 '+nom+'</a><a href="'+esc(link+'&editar=1')+'" target="_blank" class="mbtn alt ed" title="Editar el formulario de '+nom+' ya cargado">✏️</a></span>';
     };
     var btn=function(u,t){return u?'<a href="'+esc(u)+'" target="_blank" class="mbtn">'+t+'</a>':'';};
     var al='';
@@ -234,41 +234,42 @@ header{min-height:86px}
     if(/^revisar$/i.test(c.estado))al+='<div>⚠ La IA pidió revisar este CV a mano.</div>';
     if(m.t==='act'&&dias(c)>=7&&!/agendad/i.test(c.estado))al+='<div class="r">🕒 '+dias(c)+' días sin movimiento en «'+esc(c.estado)+'».</div>';
     avPendientes([c]).filter(function(x){return x.k.indexOf('sinmov')!==0;}).forEach(function(x){al+='<div class="'+(x.urg?'r':'')+'">'+x.ic+' '+esc(x.txt)+'</div>';});
-    var etapas=[['CV',c.nota],['Screening',c.notaScr],['Competencias',c.notaComp],['Empresa',c.notaScrEmp],['Final',c.notaPresEmp]];
+    var etapas=[['CV',c.nota],['Screening'+(c.scrPDF&&!String(c.notaScr||'').trim()?' · sin nota':''),c.notaScr],['Competencias'+(c.compPDF&&!String(c.notaComp||'').trim()?' · sin nota':''),c.notaComp],['Empresa',c.notaScrEmp],['Final',c.notaPresEmp]];
     var ecs=etapas.map(function(e){return '<span class="ec" style="border-bottom-color:'+(COL_N[String(e[1]||'').trim()]||'#C9C5BB')+'">'+nBadge(e[1])+' '+e[0]+'</span>';}).join('');
     var waBtn='<button class="mbtn wa" onclick="menuWA('+c.fila+')">💬 WhatsApp ▾</button>';
     var mailBtn=(c.mail&&c.mail!=='Sin dato'&&c.mail.indexOf('@')>-1)?'<a href="https://mail.google.com/mail/?view=cm&to='+esc(c.mail)+'" target="_blank" class="mbtn" style="background:#EA4335;color:#fff">✉ Mail</a>':'';
     var cvBtn=c.cv?'<a href="https://drive.google.com/file/d/'+esc(c.cv)+'/view" target="_blank" class="mbtn alt">📄 Ver CV</a>':'';
     var genBtn=c.informe?'':'<button class="mbtn gen" onclick="if(confirm(\'Generar informe con IA. Puede tener costo. ¿Continuar?\'))generar('+c.fila+',this)">Generar informe</button>';
-    var bancoBtn='<button class="mbtn" style="background:#7C3AED" onclick="menuBanco('+c.fila+')">★ Banco de talento</button>';
-    var delBtn='<button class="mbtn" style="background:#B91C1C;color:#fff" onclick="eliminar('+c.fila+')">🗑 Eliminar</button>';
+    var bancoBtn='<button class="mbtn alt" onclick="menuBanco('+c.fila+')">★ Banco</button>';
+    var agBtn='<button class="mbtn alt" onclick="panelTog(\'agPanel\')">📅 Agendar</button>';
+    
     var notasEmp=/screening empresa|presencial empresa|avanza a empresa|entrevista empresa|reserva screening empresa|reserva presencial empresa/i.test(c.estado)?['screening-empresa','presencial-empresa'].map(function(ep){return '<div class="notarow"><span>'+(ep==='screening-empresa'?'Emp. screening':'Emp. presencial')+'</span>'+['A','B','C'].map(function(n){return '<button class="nb'+(String(ep==='screening-empresa'?c.notaScrEmp:c.notaPresEmp).trim()===n?' on '+n.replace('+','p'):'')+'" onclick="setNotaEmp('+c.fila+',\''+ep+'\',\''+n+'\',this)">'+n+'</button>';}).join('')+'</div>';}).join(''):'';
     var notas='<div class="notabox"><div class="notatit">Poner nota manual</div>'+['cv','screening','competencias'].map(function(et){return '<div class="notarow"><span>'+({cv:'CV',screening:'Screening',competencias:'Competencias'}[et])+'</span>'+['A','B+','B','C'].map(function(n){return '<button class="nb'+(String({cv:c.nota,screening:c.notaScr,competencias:c.notaComp}[et]||'').trim()===n?' on '+n.replace('+','p'):'')+'" onclick="setNota('+c.fila+',\''+et+'\',\''+n+'\',this)">'+n+'</button>';}).join('')+'</div>';}).join('')+notasEmp+'</div>';
     var contacto=(c.contactado?'<div class="frow"><span class="fl">Último contacto</span><span class="fv">'+esc(c.contactado)+' <a href="#" onclick="borrarMarca('+c.fila+');return false" style="color:#aaa;font-size:11px;text-decoration:none;margin-left:6px">✕ borrar</a></span></div>':'')
       +'<div class="frow"><span class="fl">Registro de contactos</span><span class="fv" id="regCont" style="white-space:pre-line">cargando…</span></div>';
     var h='<div class="fwrap" style="margin:-24px"><div class="fh"><div style="font-size:13px;color:#444"><b>'+esc(c.estado)+'</b></div><div class="ecs">'+ecs+'</div></div>'
       +(al?'<div class="fal">'+al+'</div>':'')
-      +'<div class="fb"><div class="mbtns" style="margin-top:10px">'+waBtn+mailBtn+cvBtn+etapaBtn('screening',c.scrPDF,'screening','📝 Formulario screening')+etapaBtn('competencias',c.compPDF,'competencias','💼 Formulario competencias')+btn(c.postulacion,'Ver postulación')+btn(c.informe,'Ver informe')+genBtn+'</div>'
-      +'<div class="fp"><div class="pn"><h4>Contacto</h4>'+row('Teléfono',esc(c.tel))+row('Email',esc(c.mail))+row('Zona',esc(c.zona))+'</div>'
-      +'<div class="pn"><h4>Postulación</h4>'+row('Recibido',esc(c.recibido))+row('Llegó por',esc(c.fuente))+row('Formación',esc(c.formacion))+row('Pretensión',c.pretension?'$'+esc(c.pretension):'')+'</div></div>'
+      +'<div class="fb"><div class="acts">'+waBtn+mailBtn+cvBtn+etapaBtn('screening',c.scrPDF,'Screening','📝 Screening')+etapaBtn('competencias',c.compPDF,'Competencias','💼 Competencias')+btn(c.postulacion,'Ver postulación')+btn(c.informe,'Ver informe')+genBtn+agBtn+bancoBtn+'</div>'+agendarHtml(c)
+      +'<div class="fpw"><button class="fpe" title="Editar datos del candidato" onclick="panelTog(\'edPanel\')">✏️</button><div class="fp"><div class="pn"><h4>Contacto</h4>'+row('Teléfono',esc(c.tel))+row('Email',esc(c.mail))+row('Zona',esc(c.zona))+'</div>'
+      +'<div class="pn"><h4>Postulación</h4>'+row('Recibido',esc(c.recibido))+row('Llegó por',esc(c.fuente))+row('Formación',esc(c.formacion))+row('Pretensión',c.pretension?'$'+esc(c.pretension):'')+'</div></div></div>'+editarHtml(c)
       +(c.resumen?'<div class="sec">Análisis del CV</div><div class="fres" style="margin:0">'+esc(c.resumen)+'</div>':'')
       +'<div class="sec">Calificaciones</div>'+notas
       +((c.cita||c.historial)?'<div class="sec">Entrevistas (calendario)</div>'+row('Cita agendada',esc(c.cita))+(c.historial?'<div style="white-space:pre-line;font-size:13px">'+esc(c.historial)+'</div>':''):'')
       +'<div class="sec">Contacto con el candidato</div>'+contacto
-      +'<div class="sec">Gestión</div>'+gestionHtml(c)+'<label style="font-size:11px;font-weight:800;color:#555;text-transform:uppercase">Observaciones (ampliá cualquier dato)</label><textarea id="gObs" rows="3">'+esc(c.obs||'')+'</textarea><div class="mbtns"><button class="mbtn" id="gObsB" onclick="guardarObs('+c.fila+',this)">Guardar observaciones</button>'+bancoBtn+delBtn+'</div>'
-      +'<div class="sec">Historial</div><div id="histCand" style="font-size:13px">cargando…</div></div></div>';
+      +'<div class="sec">Observaciones</div><textarea id="gObs" rows="3" placeholder="Ampliá cualquier dato del candidato">'+esc(c.obs||'')+'</textarea><div class="obsb"><button class="mbtn sm" id="gObsB" onclick="guardarObs('+c.fila+',this)">Guardar</button></div>'
+      +'<div class="sec">Historial</div><div id="histCand" style="font-size:13px">cargando…</div><div class="fdel"><button title="Eliminar a este candidato" onclick="eliminar('+c.fila+')">🗑 Eliminar candidato</button></div></div></div>';
     document.getElementById('mtit').textContent=c.nombre;document.getElementById('mbody').innerHTML=h;document.getElementById('modal').classList.add('show');
     cargarRegCont(f);cargarHist(f);
   };
   function inp(id,l,v,t){return '<label class="gl">'+l+'<input id="'+id+'" type="'+(t||'text')+'" value="'+esc(v||'')+'"></label>';}
-  function gestionHtml(c){
-    var f=c.fila;
-    var an=[['screening',c.notaScr,'Screening'],['competencias',c.notaComp,'Competencias'],['screening-empresa',c.notaScrEmp,'Emp. screening'],['presencial-empresa',c.notaPresEmp,'Emp. final']].filter(function(e){return String(e[1]||'').trim();}).map(function(e){return '<button class="mbtn alt" onclick="anularEt('+f+',\''+e[0]+'\',\''+e[2]+'\')">↺ Anular '+e[2]+'</button>';}).join('');
-    var hoy=new Date(Date.now()+864e5).toISOString().slice(0,10);
-    return '<details class="gdet"><summary>✏️ Editar datos del candidato</summary><div class="ggrid">'+inp('gdNom','Nombre',c.nombre)+inp('gdTel','Teléfono',c.tel)+inp('gdDni','DNI',c.dni)+inp('gdMail','Mail',c.mail==='Sin dato'?'':c.mail)+inp('gdFor','Formación',c.formacion)+inp('gdZon','Zona',c.zona)+inp('gdPre','Pretensión ($)',c.pretension)+'</div><div class="mbtns"><button class="mbtn" onclick="guardarDatosC('+f+',this)">Guardar datos</button></div></details>'
-      +'<details class="gdet"><summary>📅 Agendar entrevista</summary><div class="ggrid"><label class="gl">Tipo<select id="gaTipo"><option value="screening">Screening</option><option value="competencias">Competencias</option><option value="empresa-virtual">Empresa (virtual)</option><option value="empresa-presencial">Empresa (presencial)</option></select></label>'+inp('gaFec','Día',hoy,'date')+inp('gaHor','Hora','10:00','time')+'<label class="gl">Duración<select id="gaDur"><option>30</option><option>45</option><option>60</option><option>90</option></select></label>'+inp('gaLug','Lugar / link (opcional)','')+'</div><div class="mbtns"><button class="mbtn" onclick="agendarC('+f+',this)">Agendar y avisar al candidato</button></div><div style="font-size:11px;color:#777;margin-top:4px">Se crea en el calendario de Blumia y se invita por mail al candidato (si tiene).</div></details>'
-      +(an?'<div class="mbtns" style="margin:8px 0">'+an+'</div>':'');
+  function editarHtml(c){
+    return '<div class="edp" id="edPanel" hidden><div class="ggrid">'+inp('gdNom','Nombre',c.nombre)+inp('gdTel','Teléfono',c.tel)+inp('gdDni','DNI',c.dni)+inp('gdMail','Mail',c.mail==='Sin dato'?'':c.mail)+inp('gdFor','Formación',c.formacion)+inp('gdZon','Zona',c.zona)+inp('gdPre','Pretensión ($)',c.pretension)+'</div><div class="obsb"><button class="mbtn sm" onclick="guardarDatosC('+c.fila+',this)">Guardar</button></div></div>';
   }
+  function agendarHtml(c){
+    var hoy=new Date(Date.now()+864e5).toISOString().slice(0,10);
+    return '<div class="edp" id="agPanel" hidden><div class="ggrid"><label class="gl">Tipo<select id="gaTipo"><option value="screening">Screening</option><option value="competencias">Competencias</option><option value="empresa-virtual">Empresa (virtual)</option><option value="empresa-presencial">Empresa (presencial)</option></select></label>'+inp('gaFec','Día',hoy,'date')+inp('gaHor','Hora','10:00','time')+'<label class="gl">Duración<select id="gaDur"><option>30</option><option>45</option><option>60</option><option>90</option></select></label>'+inp('gaLug','Lugar / link (opcional)','')+'</div><div class="obsb"><span class="hint">Se crea en el calendario de Blumia y se invita por mail al candidato (si tiene).</span><button class="mbtn sm" onclick="agendarC('+c.fila+',this)">Agendar</button></div></div>';
+  }
+  window.panelTog=function(id){var e=document.getElementById(id);if(!e)return;['edPanel','agPanel'].forEach(function(k){var x=document.getElementById(k);if(x&&k!==id)x.hidden=true;});e.hidden=!e.hidden;};
   function val(id){var e=document.getElementById(id);return e?e.value:'';}
   function fail(b,t){return function(e){b.disabled=false;b.textContent=t;alert('No se pudo: '+((e&&e.message)||e));};}
   function refrescar(){setTimeout(function(){window.top.location.reload();},300);}
@@ -276,10 +277,6 @@ header{min-height:86px}
     var d={nombre:val('gdNom'),tel:val('gdTel'),dni:val('gdDni'),mail:val('gdMail'),formacion:val('gdFor'),zona:val('gdZon'),pretension:val('gdPre')},t=b.textContent;
     b.disabled=true;b.textContent='Guardando…';
     google.script.run.withSuccessHandler(function(r){toast();refrescar();}).withFailureHandler(fail(b,t)).guardarDatosCandidato(PERFIL,f,d,quienSoy());
-  };
-  window.anularEt=function(f,et,nom){
-    if(!confirm('¿Anular la nota de '+nom+'? Se borra la nota y el candidato vuelve a la etapa anterior. El PDF queda en Drive.'))return;
-    google.script.run.withSuccessHandler(function(r){toast();refrescar();}).withFailureHandler(function(e){alert('No se pudo: '+((e&&e.message)||e));}).anularEtapa(PERFIL,f,et,quienSoy());
   };
   window.agendarC=function(f,b,forzar){
     var t=b.textContent;b.disabled=true;b.textContent='Agendando…';
@@ -306,7 +303,7 @@ header{min-height:86px}
   window.copiaAhora=function(){google.script.run.withSuccessHandler(function(r){alert('Copia hecha ('+r.fecha+'). Está en Drive, carpeta «Copias de seguridad Blumia». También se hace sola todos los días.');}).withFailureHandler(function(e){alert('No se pudo: '+((e&&e.message)||e));}).copiaAhoraBlumia('sesion');};
   window.guardarObs=function(f,b){
     var t=document.getElementById('gObs').value;b.disabled=true;b.textContent='Guardando…';
-    google.script.run.withSuccessHandler(function(r){b.disabled=false;b.textContent='Guardar observaciones';var c=DATA_ALL.find(function(x){return x.fila===f;});if(c)c.obs=r.obs;toast();}).withFailureHandler(function(e){b.disabled=false;b.textContent='Guardar observaciones';alert('Error: '+e.message);}).guardarObservaciones(PERFIL,f,t,quienSoy());
+    google.script.run.withSuccessHandler(function(r){b.disabled=false;b.textContent='Guardar';var c=DATA_ALL.find(function(x){return x.fila===f;});if(c)c.obs=r.obs;toast();}).withFailureHandler(function(e){b.disabled=false;b.textContent='Guardar';alert('Error: '+e.message);}).guardarObservaciones(PERFIL,f,t,quienSoy());
   };
 })();
 </script>
@@ -351,6 +348,22 @@ header{background:var(--green)}
 @media(max-width:640px){#dock{right:8px;bottom:10px}.dk{padding:8px 12px;font-size:12px}.dk i{max-width:140px}#agStrip{padding:6px 10px 0}}
 /* nota actual marcada en «Poner nota manual» */
 .nb.on{color:#fff;border-color:transparent}.nb.on.A{background:#1E8E5A}.nb.on.Bp{background:#8BD3A8;color:#14502F}.nb.on.B{background:#F2B705;color:#4A3A00}.nb.on.C{background:#D9534F}
+/* ficha: acciones chicas y centradas, lápiz en datos, guardar chico, eliminar en el margen inferior */
+.acts{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:14px 0 6px}
+#mbody .acts .mbtn{display:inline-flex;align-items:center;justify-content:center;min-height:0;margin:0;padding:8px 16px;font-size:12px;font-weight:700;border-radius:99px;background:var(--green)!important;color:#fff!important;border:1.5px solid var(--green)!important;text-decoration:none;white-space:nowrap}
+#mbody .acts .mbtn.alt{background:#fff!important;color:var(--green)!important}
+#mbody .acts .mbtn.gen{background:var(--cream)!important;color:var(--green)!important;border-color:var(--cream)!important}
+#mbody .acts .mbtn.wa{background:#25D366!important;border-color:#25D366!important;color:#fff!important}
+.acts .sp{display:inline-flex}
+#mbody .acts .sp .mbtn:first-child{border-radius:99px 0 0 99px;border-right-width:0}
+#mbody .acts .sp .mbtn.ed{border-radius:0 99px 99px 0;padding:8px 12px}
+.mbk{margin:0 12px 0 auto;background:rgba(255,255,255,.16);color:#fff;border:1px solid rgba(255,255,255,.45);border-radius:99px;padding:6px 14px;font:700 12px var(--font);cursor:pointer}.mbk:hover{background:rgba(255,255,255,.3)}
+.fpw{position:relative}.fpe{position:absolute;top:-6px;right:-6px;z-index:2;width:30px;height:30px;border-radius:50%;border:1.5px solid var(--line);background:#fff;cursor:pointer;font-size:13px;line-height:1;padding:0}.fpe:hover{border-color:var(--green)}
+.edp{border:1px solid var(--line);border-radius:12px;background:#fff;padding:6px 12px 12px;margin:8px 0}.edp[hidden]{display:none}
+.obsb{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:8px}.obsb .hint{font-size:11px;color:#777;flex:1}
+#mbody .mbtn.sm{padding:7px 20px;font-size:12px;border-radius:99px;background:var(--green);color:#fff;border:none;min-height:0;width:auto}
+.fdel{display:flex;justify-content:flex-end;margin-top:26px;padding-top:12px;border-top:1px solid var(--glight)}
+.fdel button{background:none;border:none;color:#B91C1C;font:600 12px var(--font);cursor:pointer;padding:6px 10px;border-radius:99px}.fdel button:hover{background:#FDE2E2}
 /* botones de la ficha: todos del mismo tamaño y estilo */
 #mbody .mbtns{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
 #mbody .mbtns .mbtn{display:flex;align-items:center;justify-content:center;width:100%;min-height:42px;margin:0;padding:10px 12px;box-sizing:border-box;text-align:center;font-size:13px;font-weight:700;border-radius:99px;background:var(--green)!important;color:#fff!important;border:1.5px solid var(--green)!important}

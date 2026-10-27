@@ -381,7 +381,7 @@ function procesarScreening_(data) {
   guardarEstadoEval_(cfg, data.perfil || 'operaciones', data.nombre, 'screening', data.estado, data.resultado, data.entrevistador);
   try {
     const folder = DriveApp.getFolderById(cfg.folder_pdf_screening);
-    const blob = Utilities.newBlob(data.htmlFull, 'text/html', 'Screening_' + data.nombre.replace(/\s+/g, '_') + '.html');
+    const blob = Utilities.newBlob(logoParaPdf_(data.htmlFull), 'text/html', 'Screening_' + data.nombre.replace(/\s+/g, '_') + '.html');
     const pdf = folder.createFile(blob.getAs('application/pdf'));
     const celdaM = sheet.getRange(fila, 13);
     celdaM.clearFormat();
@@ -402,6 +402,11 @@ function llenarColumnaO(perfilId) {
       sheet.getRange(i + 1, 15).setFormula('=HYPERLINK("' + url + '";"Evaluar competencias")');
     }
   }
+}
+
+/** El conversor HTML→PDF de Apps Script no siempre dibuja imágenes embebidas: el logo del encabezado se pide por URL pública (Cloudflare, azcubot/netlify). */
+function logoParaPdf_(html) {
+  return String(html || '').replace(/(<img[^>]*class="hero-logo"[^>]*?src=")data:image\/[a-z]+;base64,[^"]+(")/, '$1https://azcubot.pages.dev/blumia-logo-blanco.png$2');
 }
 
 function guardarEnPlanilla_(nombreCandidato, htmlContent, ajustePonderacion, perfilId, quien, estadoJSON, editar) {
@@ -441,7 +446,7 @@ function guardarEnPlanilla_(nombreCandidato, htmlContent, ajustePonderacion, per
     const folder = DriveApp.getFolderById(cfg.folder_pdf_competencias);
     console.log("htmlContent tipo: " + typeof htmlContent);
     console.log("htmlContent valor: " + htmlContent);
-    const blob = Utilities.newBlob(htmlContent, MimeType.HTML, 'temp.html');
+    const blob = Utilities.newBlob(logoParaPdf_(htmlContent), MimeType.HTML, 'temp.html');
     const pdf = folder.createFile(blob.getAs(MimeType.PDF).setName('Competencias_' + nombreCandidato + '.pdf'));
     
     const notaAntesComp = String(sheet.getRange(fila, 16).getValue() || '').trim();
@@ -4558,7 +4563,7 @@ function avPintar(){var b=document.getElementById('avCnt');if(!b)return;var n=AV
 function avAbrir(f){if(DATA.some(function(x){return x.fila===f;}))ficha(f);else cerrar();}
 function verAvisos(){
   avLS('sinver',0);avPintar();
-  var item=function(x,nov){return '<div class="frow" style="cursor:pointer;align-items:flex-start" onclick="avAbrir('+x.f+')"><span class="fv"><b>'+x.ic+' '+avEsc(x.n)+'</b><br><small>'+avEsc(x.txt)+(nov?' · '+x.h:'')+'</small></span></div>';};
+  var item=function(x,nov){return '<div style="cursor:pointer;display:block;text-align:left;padding:10px 6px;border-bottom:1px solid #eee" onclick="avAbrir('+x.f+')"><div style="font-weight:700;font-size:14px">'+x.ic+' '+avEsc(x.n)+'</div><div style="font-size:12px;color:#555;margin-top:2px">'+avEsc(x.txt)+(nov?' · '+x.h:'')+'</div></div>';};
   document.getElementById('mtit').textContent='🔔 Avisos';
   document.getElementById('mbody').innerHTML='<div style="font-weight:800;color:#B91C1C;margin:2px 0 6px">Pendientes ('+AV_PEND.length+')</div>'+(AV_PEND.length?AV_PEND.map(function(x){return item(x,false);}).join(''):'<div style="color:#777;font-size:14px">No hay pendientes. 👌</div>')+'<div style="font-weight:800;color:#1A6645;margin:16px 0 6px">Novedades</div>'+(AV_NOV.length?AV_NOV.slice(0,40).map(function(x){return item(x,true);}).join(''):'<div style="color:#777;font-size:14px">Sin novedades desde la última visita.</div>');
   document.getElementById('modal').classList.add('show');
