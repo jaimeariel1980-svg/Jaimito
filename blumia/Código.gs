@@ -4195,7 +4195,7 @@ function doGetKanban_(perfilId) {
   lapT_('Leer los candidatos (' + (d.length - 1) + ' filas)');
   const n = d.length - 1;
   const L = {};
-  if (n > 0) [11, 13, 15, 17, 31, 33].forEach(c => { L[c] = linksColumna_(sh, c, n, d.slice(1).map(r => r[c - 1])); });
+  if (n > 0) [13, 17, 31, 33].forEach(c => { L[c] = linksColumna_(sh, c, n, d.slice(1).map(r => r[c - 1])); });
   const cvs = n > 0 ? idsCVColumna_(sh, 8, n, d.slice(1).map(r => r[7])) : [];
   lapT_('Leer los links de cada candidato');
   const link = (r, col) => (L[col] || [])[r - 2] || '';
@@ -4216,7 +4216,7 @@ function doGetKanban_(perfilId) {
       pretension: m ? m[1].trim() : '', zona: d[i][23] || '',
       tel: d[i][2] || '', dni: String(d[i][3] || ''), mail: d[i][21] || '',
       resumen: d[i][6] || '', cv: cvs[i - 1] || '',
-      scrLink: link(i + 1, 11), compLink: link(i + 1, 15), informe: link(i + 1, 33),
+      informe: link(i + 1, 33),
       scrPDF: link(i + 1, 13), compPDF: link(i + 1, 17), postulacion: link(i + 1, 31), cita: d[i][36] || '', historial: d[i][37] || '', mailDescarte: d[i][39] || '', fuente: String(d[i][9] || ''), contactado: d[i][40] || '', notaScrEmp: d[i][43] || '', notaPresEmp: d[i][44] || '', notaScrEmp: d[i][43] || '', notaPresEmp: d[i][44] || '', formacion: d[i][22] || '', requisitos: d[i][5] || '', pretNum: (function(){var m=String(d[i][5]||'').match(/Remuneraci[oó]n pretendida:\s*\$?\s*([\d.\s]+)/i);return m?Number(m[1].replace(/[.\s]/g,'')):0;})()
     });
   }

@@ -146,6 +146,10 @@ html,body{background:var(--bg);font-family:var(--font);color:var(--text);}
   .verdict-banner,.sum-cell.sel,.verdict-opt.sel,.hero,.freq-btn.sel,.peso-pill,.guide-box,.star-item,.score-banner{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
   @media (max-width:900px){.star-grid{grid-template-columns:1fr;}}
 }
+.gbar{position:sticky;bottom:0;z-index:250;display:flex;justify-content:center;padding:14px 16px 16px;background:linear-gradient(to top,rgba(247,245,241,.97) 65%,rgba(247,245,241,0));pointer-events:none}
+.gbar button{pointer-events:auto;background:#243D2C;color:#fff;border:none;border-radius:99px;padding:14px 38px;font:700 15px Poppins,Arial,sans-serif;cursor:pointer;box-shadow:0 6px 20px rgba(36,61,44,.35);letter-spacing:.2px}
+.gbar button:hover{background:#1a2d20}.gbar button:disabled{opacity:.65;cursor:default}
+@media print{.gbar{display:none!important}}
 </style>
 <style id="skin">.tbtn{border-radius:99px}</style>
 </head>
@@ -160,12 +164,12 @@ html,body{background:var(--bg);font-family:var(--font);color:var(--text);}
   </div>
   <div class="tb-right">
     <div class="tb-badge">Confidencial</div>
-    <button id="btnDescargar" class="tbtn tbtn-light" type="button">Descargar HTML</button>
-    <button id="btnGuardar" class="tbtn tbtn-dark" type="button">Guardar PDF</button>
   </div>
 </nav>
 
 <div id="app"><div class="loading">Cargando perfil...</div></div>
+
+<div class="gbar ia-ui"><button type="button" id="btnGuardar">Guardar entrevista</button></div>
 
 <?!= HtmlService.createHtmlOutputFromFile('IAForm').getContent() ?>
 <?!= HtmlService.createHtmlOutputFromFile('EstadoForm').getContent() ?>
@@ -499,21 +503,6 @@ function congelarValores() {
   document.querySelectorAll('textarea').forEach(t => t.textContent = t.value);
 }
 
-document.getElementById('btnDescargar').addEventListener('click', function() {
-  congelarValores();
-  ocultarIA(true);
-  const htmlContent = '<!DOCTYPE html>' + document.documentElement.outerHTML;
-  ocultarIA(false);
-  const blob = new Blob([htmlContent], { type: 'text/html' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  const cand = (document.getElementById('inp-cand')?.value || 'Entrevistado').trim();
-  a.href = url;
-  a.download = 'Evaluacion_' + cand.replace(/\s+/g, '_') + '.html';
-  a.click();
-  URL.revokeObjectURL(url);
-});
-
 document.getElementById('btnGuardar').addEventListener('click', function() {
   const cand = (document.getElementById('inp-cand')?.value || '').trim();
   if (!cand) { alert('Falta nombre del entrevistado'); return; }
@@ -537,12 +526,12 @@ document.getElementById('btnGuardar').addEventListener('click', function() {
   google.script.run
     .withSuccessHandler(() => {
       btn.disabled = false;
-      btn.textContent = 'Guardar PDF';
-      alert('PDF generado y ponderación (' + ponderacion + ') enviada a la columna P.');
+      btn.textContent = 'Guardar entrevista';
+      alert('Entrevista guardada ✓' + (ponderacion ? ' · ponderación ' + ponderacion : ''));
     })
     .withFailureHandler(err => {
       btn.disabled = false;
-      btn.textContent = 'Guardar PDF';
+      btn.textContent = 'Guardar entrevista';
       alert('Error al guardar: ' + err.message);
     })
     .guardarEnPlanilla(cand, htmlSnap, ponderacion, PERFIL_ID, (function(){try{return localStorage.getItem('blumia_quien')||ENTR_INICIAL||'';}catch(e){return ENTR_INICIAL||'';}})(), ESTADO_EF, EDITAR);

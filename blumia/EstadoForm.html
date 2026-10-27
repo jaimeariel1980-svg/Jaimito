@@ -21,7 +21,7 @@
   };
   function cartel(t,c){
     var d=document.createElement('div');d.id='efBanner';d.className='ia-ui';
-    d.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:9998;background:'+c+';color:#fff;padding:10px 18px;border-radius:99px;font:700 13px Poppins,Arial,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.25);max-width:92vw;text-align:center';
+    d.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:84px;z-index:9998;background:'+c+';color:#fff;padding:10px 18px;border-radius:99px;font:700 13px Poppins,Arial,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.25);max-width:92vw;text-align:center';
     d.textContent=t;document.body.appendChild(d);setTimeout(function(){if(d.parentNode)d.style.opacity='.85';},100);
   }
   function listo(){return typeof DATOS!=='undefined'&&DATOS&&(document.getElementById('d-nombre')||document.getElementById('inp-cand'));}
