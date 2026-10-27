@@ -1,4 +1,4 @@
-const CFG_CAMPOS_ = ['nombre', 'nombre_perfil', 'empresa', 'empresa_candidatos', 'logo_cliente', 'preguntas_base', 'banda_salarial', 'link_screening', 'link_competencias', 'link_empresa_virtual', 'link_empresa_presencial', 'link_flyer', 'link_perfil'];
+const CFG_CAMPOS_ = ['nombre', 'nombre_perfil', 'empresa', 'empresa_candidatos', 'logo_cliente', 'preguntas_base', 'datos_internos', 'banda_salarial', 'link_screening', 'link_competencias', 'link_empresa_virtual', 'link_empresa_presencial', 'link_flyer', 'link_perfil'];
 
 function getConfigBusqueda_(pin, perfilId) {
   pinValido_(pin);
@@ -38,6 +38,11 @@ function guardarConfigBusqueda_(pin, perfilId, p, quien) {
         const v = String(p.datos[k]).replace(/[<>]/g, '').trim();
         if ((k === 'nombre' || k === 'nombre_perfil' || k === 'empresa') && !v) throw new Error('«' + k + '» no puede quedar vacío.');
         if ((/^link_/.test(k) || k === 'logo_cliente') && v && !/^https?:\/\//i.test(v)) throw new Error('El link «' + k + '» tiene que empezar con https://');
+        if (k === 'datos_internos') {
+          const u = v.toUpperCase();
+          if (u !== 'SI' && u !== 'NO') throw new Error('«Edad y situación familiar» tiene que ser Sí o No.');
+          poner(k, u, (base.datos || {})[k]); return;
+        }
         if (k === 'preguntas_base') {
           const L = v.toLowerCase().split(',').map(x => x.trim()).filter(Boolean);
           if (L.some(x => x !== 'ninguna' && PREG_BASE_.indexOf(x) < 0)) throw new Error('Alguna pregunta fija no es válida.');
