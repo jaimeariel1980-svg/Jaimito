@@ -45,12 +45,24 @@ function inicioHTML_() {
     .replace('%%LOGO%%', () => JSON.stringify(LOGO_BLUMIA_))
     .replace('%%ASSETS%%', () => JSON.stringify(INICIO_ASSETS_))
     .replace('</body>', () => admin + '</body>');
-  return HtmlService.createHtmlOutput(html).setTitle('Blumia · Inicio')
+  return HtmlService.createHtmlOutput(html).setTitle('Blumia · Atracción y Selección')
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 
-function copiaInfo_() { return { ultima: PropertiesService.getScriptProperties().getProperty('ULTIMA_COPIA_BLUMIA') || '' }; }
+function copiaInfo_() {
+  const out = { ultima: PropertiesService.getScriptProperties().getProperty('ULTIMA_COPIA_BLUMIA') || '', copias: [] };
+  try {
+    const it = DriveApp.getFoldersByName(COPIAS_CARPETA_);
+    if (it.hasNext()) {
+      const fs = it.next().getFiles(), L = [];
+      while (fs.hasNext()) { const f = fs.next(); if (/^Blumia · copia /.test(f.getName())) L.push({ nombre: f.getName().replace(/^Blumia · copia /, ''), t: f.getDateCreated().getTime(), url: f.getUrl() }); }
+      L.sort((a, b) => b.t - a.t);
+      out.copias = L.slice(0, 14).map(x => ({ nombre: x.nombre, url: x.url }));
+    }
+  } catch (e) { }
+  return out;
+}
 
 function listarAccesos_() {
   const sh = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName(HOJA_ACC_);
@@ -64,20 +76,12 @@ function listarAccesos_() {
 
 // ⏱ Velocidad (Administración): cuánto tarda cada paso de armar el tablero de una búsqueda, para saber dónde se va el tiempo
 function diagnosticoVelocidad_(perfilId) {
-  const pasos = [], t0 = Date.now();
-  let t = t0;
-  const lap = n => { const x = Date.now(); pasos.push({ n: n, ms: x - t }); t = x; };
-  CFG_MEMO_ = {};
-  let filas = 0, kb = 0;
+  CFG_MEMO_ = {}; TIMING_ = []; TIMING_T_ = Date.now();
+  const t0 = TIMING_T_;
+  let kb = 0, pasos = [];
   try {
-    configValores_(); lap('Leer la pestaña Config');
-    const cfg = getConfig(perfilId), sh = getSheet(cfg); lap('Abrir la pestaña de candidatos');
-    const d = sh.getDataRange().getValues(); filas = d.length - 1; lap('Leer los candidatos (' + filas + ' filas)');
-    if (filas > 0) { [11, 13, 15, 17, 21, 31, 33].forEach(c => linksColumna_(sh, c, filas)); idsCVColumna_(sh, 8, filas, d.slice(1).map(r => r[7])); }
-    lap('Leer los links de cada candidato (8 columnas)');
-    ultimosMovimientos_(sh.getName()); lap('Leer el historial de movimientos');
-    previosDeFilas_(perfilId, d.slice(1)); lap('Buscar si ya se postularon a otra búsqueda');
-    kb = Math.round(kanbanHTML_(perfilId).getContent().length / 1024); lap('Armar el tablero completo (incluye lo anterior)');
-  } finally { CFG_MEMO_ = null; }
-  return { pasos: pasos, total: Date.now() - t0, filas: filas, kb: kb };
+    kb = Math.round(kanbanHTML_(perfilId).getContent().length / 1024);
+    lapT_('Convertir la página a texto');
+  } finally { pasos = TIMING_ || []; TIMING_ = null; CFG_MEMO_ = null; }
+  return { pasos: pasos, total: Date.now() - t0, kb: kb, kbDatos: KANBAN_KB_ };
 }

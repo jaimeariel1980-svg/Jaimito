@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Blumia · Inicio</title>
+<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Blumia · Atracción y Selección</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{--deep:#0D3F29;--green:#243D2C;--glight:#E3EEDC;--bg:#F3F8F1;--line:#D5E0CE;--cream:#FBE794;--pink:#F9BDBB;--teal:#5BB5A5;--font:'Poppins',sans-serif}
@@ -7,11 +7,18 @@ body{font-family:var(--font);background:var(--bg);color:#1A1A1A;font-size:14px}
 .hero{background:var(--deep);color:#fff;position:relative;overflow:hidden;padding:20px 28px 34px;min-height:300px}
 .top{display:flex;align-items:center;justify-content:space-between;position:relative;z-index:2}
 .top img{height:38px}
-.top button{padding:8px 16px;border-radius:22px;font:600 13px var(--font);color:#fff;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);cursor:pointer}
-.top button:hover{background:rgba(255,255,255,.26)}
+.top .r{display:flex;gap:10px;align-items:center;position:relative}
+.top .gear{width:40px;height:40px;border-radius:50%;font-size:18px;color:#fff;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.3);cursor:pointer;display:none}
+.top .gear:hover{background:rgba(255,255,255,.26)}
+.top .avt{width:40px;height:40px;border-radius:50%;font:800 14px var(--font);color:var(--deep);background:var(--cream);border:none;cursor:pointer}
+.top .avt:hover{background:#f6dc72}
+.menu{position:absolute;right:0;top:48px;background:#fff;color:var(--deep);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.28);padding:6px;min-width:210px;display:none;z-index:5}
+.menu.show{display:block}
+.menu button{display:block;width:100%;text-align:left;border:none;background:none;padding:10px 14px;border-radius:10px;font:600 13px var(--font);color:var(--deep);cursor:pointer}
+.menu button:hover{background:var(--glight)}
 .ht{position:relative;z-index:2;max-width:620px;margin-top:34px}
-.ht h1{font-size:38px;font-weight:800;line-height:1.1;letter-spacing:-.5px}
-.ht h1 em{font-style:normal;color:var(--cream)}
+.ht .hi{font-size:16px;color:#cfe3d4;font-weight:500}.ht .hi em{font-style:normal;color:var(--cream);font-weight:700}
+.ht h1{font-size:38px;font-weight:800;line-height:1.1;letter-spacing:-.5px;margin-top:6px}
 .ht p{margin-top:10px;font-size:15px;color:#cfe3d4;max-width:460px}
 .stats{display:flex;gap:26px;margin-top:20px}
 .stats b{display:block;font-size:26px;font-weight:800;color:var(--cream);line-height:1}
@@ -21,13 +28,8 @@ body{font-family:var(--font);background:var(--bg);color:#1A1A1A;font-size:14px}
 .cta .pri{background:var(--cream);color:var(--deep);border:none}.cta .pri:hover{background:#f6dc72}
 .cta .sec{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.55)}.cta .sec:hover{background:rgba(255,255,255,.14)}
 .sq{position:absolute;z-index:1;pointer-events:none}
-.s1{right:3%;top:-12px;height:300px;opacity:.95}
-.s2{right:20%;bottom:-70px;height:210px;opacity:.9;transform:rotate(-8deg)}
+.s2{right:60px;bottom:-40px;height:360px;opacity:.95;transform:rotate(3deg)}
 main{max-width:1100px;margin:0 auto;padding:26px 18px 50px}
-.adm{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:28px;padding:12px 14px;background:#fff;border:1px solid var(--line);border-radius:16px}
-.adm span{font-size:12px;font-weight:700;color:#666;margin-right:4px}
-.adm button{padding:8px 16px;border-radius:20px;font:600 13px var(--font);cursor:pointer;border:1px solid var(--line);background:var(--bg);color:var(--green)}
-.adm button:hover{background:var(--glight);border-color:var(--green)}
 .emp{margin-bottom:30px}
 .emp h2{font-size:18px;font-weight:800;color:var(--deep);margin-bottom:12px;display:flex;align-items:center;gap:10px}
 .emp h2 span{background:var(--cream);color:var(--deep);border-radius:14px;padding:3px 12px;font-size:12px;font-weight:700}
@@ -44,17 +46,16 @@ main{max-width:1100px;margin:0 auto;padding:26px 18px 50px}
 details.cerr{margin-top:12px}details.cerr summary{cursor:pointer;color:#666;font-weight:700;margin:4px 0 12px}
 .vacio{background:#fff;border:1px dashed var(--line);border-radius:18px;padding:34px;text-align:center;color:#666}
 footer{text-align:center;color:#888;font-size:12px;padding:10px 0 30px}
-@media(max-width:640px){.hero{padding:16px 16px 28px;min-height:260px}.ht{margin-top:26px}.ht h1{font-size:28px}.s1{right:-30px;height:230px;opacity:.55}.s2{display:none}.stats{gap:20px}.cta button,.cta a{flex:1 1 100%;text-align:center}.grid{grid-template-columns:1fr}.top img{height:32px}}
+@media(max-width:640px){.hero{padding:16px 16px 28px;min-height:260px}.ht{margin-top:26px}.ht h1{font-size:26px}.s2{right:-50px;bottom:-60px;height:250px;opacity:.45}.stats{gap:20px}.cta button,.cta a{flex:1 1 100%;text-align:center}.grid{grid-template-columns:1fr}.top img{height:32px}}
 </style></head><body>
 <section class="hero">
-  <div class="top"><img id="lg" alt="Blumia"><button id="quienBtn" onclick="blMenuUsuario()">👤 Usuario</button></div>
-  <div class="ht"><h1 id="hola">Hola</h1><p>Elegí una búsqueda para ver a sus candidatos.</p>
+  <div class="top"><img id="lg" alt="Blumia"><div class="r"><button class="gear" id="gear" title="Administración" onclick="menuAdm(event)">⚙</button><div class="menu" id="menu"></div><button class="avt" id="quienBtn" onclick="blMenuUsuario()">·</button></div></div>
+  <div class="ht"><div class="hi" id="hola">Hola</div><h1>Atracción y Selección</h1><p>Elegí una búsqueda para ver a sus candidatos.</p>
     <div class="stats"><div><b id="stA">0</b><span>búsquedas abiertas</span></div><div><b id="stC">0</b><span>candidatos</span></div></div>
     <div class="cta" id="cta"></div></div>
-  <img class="sq s1" id="s1" alt=""><img class="sq s2" id="s2" alt="">
+  <img class="sq s2" id="s2" alt="">
 </section>
 <main>
-  <div class="adm" id="adm" style="display:none"><span>Administración</span></div>
   <div id="lista"></div>
 </main>
 <footer>Blumia Consulting · Confidencial</footer>
@@ -65,11 +66,11 @@ var LOGO=%%LOGO%%;
 var AS=%%ASSETS%%;
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
 function ir(id){window.top.location.href=URL_APP+'?tipo=kanban&perfil='+encodeURIComponent(id);}
-document.getElementById('lg').src=LOGO;document.getElementById('s1').src=AS.s1;document.getElementById('s2').src=AS.s2;
+document.getElementById('lg').src=LOGO;document.getElementById('s2').src=AS.s2;
 var esAdmin=(typeof blRol==='function')&&blRol()==='Administrador';
 var nom='';try{nom=(typeof blNombre==='function'&&blNombre())||localStorage.getItem('blumia_quien')||'';}catch(e){}
 document.getElementById('hola').innerHTML=nom?'Hola, <em>'+esc(nom.split(' ')[0])+'</em>':'Hola';
-if(nom)document.getElementById('quienBtn').textContent='👤 '+nom;
+var pn=nom.trim().split(/\s+/).filter(Boolean);document.getElementById('quienBtn').textContent=pn.length?(pn[0].charAt(0)+(pn.length>1?pn[pn.length-1].charAt(0):'')).toUpperCase():'👤';document.getElementById('quienBtn').title=(nom||'Usuario')+' · tocá para salir';
 var abiertas=DATOS.filter(function(b){return !b.cerrada;});
 document.getElementById('stA').textContent=abiertas.length;
 document.getElementById('stC').textContent=abiertas.reduce(function(a,b){return a+(b.n||0);},0);
@@ -77,7 +78,9 @@ var cta='';
 if(esAdmin)cta+='<button class="pri" onclick="adAbrir(\'nueva\')">➕ Nueva búsqueda</button>';
 cta+='<a class="sec" href="#" onclick="window.top.location.href=URL_APP+\'?tipo=banco\';return false">★ Banco de talento</a>';
 document.getElementById('cta').innerHTML=cta;
-if(esAdmin){var a=document.getElementById('adm');a.style.display='';a.innerHTML+='<button onclick="adAbrir(\'usr\')">👥 Usuarios</button><button onclick="adAbrir(\'copia\')">💾 Copia de seguridad</button><button onclick="adAbrir(\'acc\')">📜 Accesos</button><button onclick="adAbrir(\'vel\')">⏱ Velocidad</button>';}
+if(esAdmin){document.getElementById('gear').style.display='inline-block';document.getElementById('menu').innerHTML='<button onclick="adAbrir(\'usr\')">👥 Usuarios</button><button onclick="adAbrir(\'copia\')">💾 Copias de seguridad</button><button onclick="adAbrir(\'acc\')">📜 Accesos</button><button onclick="adAbrir(\'vel\')">⏱ Velocidad</button>';}
+function menuAdm(e){e.stopPropagation();document.getElementById('menu').classList.toggle('show');}
+document.addEventListener('click',function(){var m=document.getElementById('menu');if(m)m.classList.remove('show');});
 var k=0;
 function tarjeta(b){var av=(k%2===0)?AS.by:AS.bp;return '<div class="card'+(b.cerrada?' cerr':'')+'" onclick="ir(\''+esc(b.id)+'\')"><img src="'+av+'" alt=""><div class="t"><b>'+esc(b.nombre)+(b.cerrada?'<span class="tag">cerrada</span>':'')+'</b><small>'+b.n+' candidato'+(b.n===1?'':'s')+'</small></div><span class="go">›</span></div>';}
 var por={};DATOS.forEach(function(b){(por[b.empresa]=por[b.empresa]||[]).push(b);});
