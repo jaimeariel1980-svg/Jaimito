@@ -39,7 +39,7 @@
   window.cfCerrar=function(){document.getElementById('cfBg').classList.remove('show');};
   window.cfTab=function(t){sync();render(t);};
   function sync(){
-    nbSync();fdSync();
+    fdSync();
     if(!CF)return;var g=function(id){var e=document.getElementById(id);return e?e.value:null;},v;
     if((v=g('cf_ia'))!==null)CF.prompt_extra=v;
     ['posicion','ubicacion','instancia','entrevistadoras'].forEach(function(k){if((v=g('cfh_'+k))!==null)CF.extra.hero[k]=v;});
@@ -49,8 +49,8 @@
     CF.plantillas.forEach(function(t,i){if((v=g('cfp_'+i))!==null){t.texto=v;t.alcance=g('cfa_'+i);}});
   }
   function render(tab){
-    var T=[['ia','Requisitos para la IA'],['post','Preguntas de postulación'],['msg','Mensajes'],['dat','Datos de la búsqueda'],['scr','Screening'],['comp','Competencias'],['perfil','Perfil del puesto']],T2=[['nueva','➕ Nueva búsqueda'],['usr','Usuarios']];var tb=function(L){return L.map(function(t){return '<button class="cf-tab'+(t[0]===tab?' on':'')+'" onclick="cfTab(\''+t[0]+'\')">'+t[1]+'</button>';}).join('');};
-    var x='<h2>⚙ Configurar</h2><div class="cf-help" style="margin:0 0 4px"><b>Esta búsqueda</b> · '+esc(CF.datos.nombre||PERFIL)+'</div><div class="cf-tabs">'+tb(T)+'</div><div class="cf-help" style="margin:0 0 4px"><b>General</b> · no depende de la búsqueda que tenés abierta</div><div class="cf-tabs">'+tb(T2)+'</div>';
+    var T=[['ia','Requisitos para la IA'],['post','Preguntas de postulación'],['msg','Mensajes'],['dat','Datos de la búsqueda'],['scr','Screening'],['comp','Competencias'],['perfil','Perfil del puesto']];var tb=function(L){return L.map(function(t){return '<button class="cf-tab'+(t[0]===tab?' on':'')+'" onclick="cfTab(\''+t[0]+'\')">'+t[1]+'</button>';}).join('');};
+    var x='<h2>⚙ Configurar esta búsqueda</h2><div class="cf-help" style="margin:0 0 6px">'+esc(CF.datos.nombre||PERFIL)+' · para crear búsquedas nuevas o manejar usuarios usá la pantalla de Inicio (🏠).</div><div class="cf-tabs">'+tb(T)+'</div>';
     x+='<div class="cf-sec'+(tab==='ia'?' on':'')+'"><div class="cf-help">Es el texto que la IA usa para <b>puntuar los CVs</b> de esta búsqueda (perfil, experiencia excluyente, deseable, zona, pretensión…). Si cambia el perfil del puesto, actualizalo acá. Vale para los CVs que entren desde ahora; los ya analizados no se recalculan.</div><textarea id="cf_ia" style="min-height:340px">'+esc(CF.prompt_extra)+'</textarea>'+foot('ia')+'</div>';
     x+='<div class="cf-sec'+(tab==='post'?' on':'')+'"><div class="cf-help">Preguntas que se agregan al formulario de postulación de esta búsqueda (además de los datos básicos y el CV). En «Opciones» separá con | (por ejemplo: Básico|Intermedio|Avanzado).</div>';
     CF.preguntas.forEach(function(q,i){x+='<div class="cf-row"><div><label>Pregunta</label><input id="cfq_e'+i+'" value="'+esc(q.etiqueta)+'"></div><div><label>Tipo</label><select id="cfq_t'+i+'"><option value="texto"'+(q.tipo==='texto'?' selected':'')+'>Texto libre</option><option value="select"'+(q.tipo==='select'?' selected':'')+'>Elegir opción</option></select></div><div><label>Opciones (si elige)</label><input id="cfq_o'+i+'" value="'+esc(q.opciones)+'"></div><div><label>Obligatoria</label><select id="cfq_r'+i+'"><option value="SI"'+(q.requerido!=='NO'?' selected':'')+'>Sí</option><option value="NO"'+(q.requerido==='NO'?' selected':'')+'>No</option></select></div><button class="cf-mini x" onclick="cfQuitar('+i+')">✕</button></div>';});
@@ -73,10 +73,7 @@
       +(CF.perfil&&CF.perfil.propio?'<p style="margin:10px 0"><b>Última versión guardada:</b> '+(CF.perfil.fecha||'todavía no se guardó ninguna')+'</p><button class="cf-save" onclick="cfPerfilEditar(this)">✏️ Abrir y editar el perfil</button><div class="cf-help" style="margin-top:10px">Se abre acá mismo, abajo. Al terminar tocá «Guardar en el sistema»: cada versión queda guardada con fecha y hora, y se abre siempre la última.</div><div id="cfPerfilFr" style="margin-top:12px"></div>':'<p style="margin:10px 0">Esta búsqueda todavía no tiene el perfil del puesto dentro del sistema (hoy usa un link a un documento externo, si lo cargaste en «Datos de la búsqueda»).</p><button class="cf-save" onclick="cfPerfilCrear(this)">Crear el perfil del puesto de esta búsqueda</button><div class="cf-help" style="margin-top:10px">Queda un formulario en blanco para completar a mano o con «✨ Completar con IA desde un Word».</div>')
       +'<div class="cf-foot"><button class="cf-close" onclick="cfCerrar()">Cerrar</button></div></div>';
     x+='<div class="cf-sec'+(tab==='scr'?' on':'')+'">'+scrHtml()+'</div><div class="cf-sec'+(tab==='comp'?' on':'')+'">'+compHtml()+'</div>';
-    x+='<div class="cf-sec'+(tab==='nueva'?' on':'')+'">'+nbHtml()+'</div>';
-    x+='<div class="cf-sec'+(tab==='usr'?' on':'')+'"><div class="cf-help">Quién puede entrar al tablero. Los <b>administradores</b> configuran las búsquedas y manejan los usuarios; los <b>usuarios</b> trabajan con los candidatos. Por ahora se entra solo con nombre y apellido (sin PIN): escribí el nombre completo como lo va a poner la persona.</div><div id="cfUsr">Cargando…</div><div class="cf-foot"><button class="cf-close" onclick="cfCerrar()">Cerrar</button></div></div>';
     document.getElementById('cfBox').innerHTML=x;
-    if(tab==='usr')cfUsuarios();
     if((tab==='scr'||tab==='comp')&&!FD&&!FDcarga){FDcarga=true;google.script.run.withSuccessHandler(function(d){FD=d;FDcarga=false;render(tab);}).withFailureHandler(function(e){FDcarga=false;alert(badPin(e));}).getDatosPerfil(PERFIL);}
   }
   function foot(t){return '<div class="cf-foot"><button class="cf-close" onclick="cfCerrar()">Cerrar</button><button class="cf-save" onclick="cfGuardar(\''+t+'\',this)">Guardar</button></div>';}
@@ -97,100 +94,8 @@
   };
   window.cfPerfilEditar=function(b){b.disabled=true;google.script.run.withSuccessHandler(function(u){b.disabled=false;var d=document.getElementById('cfPerfilFr');if(!d){window.open(u,'_blank');return;}d.innerHTML='<iframe src="'+esc(u)+'" style="width:100%;height:78vh;border:1px solid #ccc;border-radius:8px;background:#fff"></iframe><div style="text-align:right;margin-top:6px"><a href="'+esc(u)+'" target="_blank" style="font-size:12px">Abrir en pantalla completa ↗</a></div>';}).withFailureHandler(function(e){b.disabled=false;alert((e&&e.message)||e);}).linkPerfilConPin(PERFIL,'sesion','editar');};
 
-  var NB={texto:'',empresa:'',prop:null,creada:null,ocupado:false};
   function g(id){var e=document.getElementById(id);return e?e.value:null;}
-  function nbSync(){
-    var v;if((v=g('nb_texto'))!==null)NB.texto=v;if((v=g('nb_emp'))!==null)NB.empresa=v;
-    var p=NB.prop;if(!p||g('nb_nombre')===null)return;
-    p.nombre=g('nb_nombre');p.empresa=g('nb_empresa');p.ubicacion=g('nb_ubic');p.banda_salarial=g('nb_banda');p.prompt_extra=g('nb_prompt');
-    p.screening_eval.forEach(function(e,i){e.criterio=g('nb_ec'+i);e.peso=g('nb_ep'+i);});
-    p.screening_val.forEach(function(e,i){e.pregunta=g('nb_vp'+i);e.opciones=g('nb_vo'+i);});
-    p.competencias.forEach(function(c,i){c.nombre=g('nb_cn'+i);c.descripcion=g('nb_cd'+i);c.peso=g('nb_cp'+i);c.preguntas=String(g('nb_cq'+i)||'').split('\n').map(function(q){return q.trim();}).filter(Boolean);});
-    p.links=p.links||{};['link_screening','link_competencias','link_empresa_virtual','link_empresa_presencial'].forEach(function(k){var v2=g('nb_'+k);if(v2!==null)p.links[k]=v2.trim();});
-    p.postulacion.forEach(function(q,i){q.etiqueta=g('nb_qe'+i);q.tipo=g('nb_qt'+i);q.opciones=g('nb_qo'+i);q.requerido=g('nb_qr'+i);});
-  }
-  function pesoSel(id,v){return '<select id="'+id+'" style="width:70px">'+[1,2,3].map(function(n){return '<option'+(Number(v)===n?' selected':'')+'>'+n+'</option>';}).join('')+'</select>';}
-  function nbHtml(){
-    if(NB.creada){var c=NB.creada;return '<div class="cf-pl"><b>✅ Búsqueda creada: '+esc(c.nombre)+'</b><div class="cf-help" style="margin-top:8px">Empresa: '+esc(c.empresa)+'. Ya tiene su pestaña de candidatos, carpetas de Drive, formularios de screening y competencias, y preguntas de postulación.<br><br>'+(c.perfil&&c.perfil.ok?'<b>Perfil del puesto:</b> la IA completó '+c.perfil.campos+' campos con el Word. <b>Revisalo</b> antes de usarlo.'+((c.perfil.avisos||[]).length?'<ul style="margin:6px 0 0 18px">'+c.perfil.avisos.map(function(a){return '<li>'+esc(a)+'</li>';}).join('')+'</ul>':''):'<b>Perfil del puesto:</b> no se pudo armar solo ('+esc((c.perfil&&c.perfil.error)||'sin detalle')+'). Abrilo con el botón y usá «✨ Completar con IA desde un Word».')+'<br><br>Los CVs que lleguen al mail con el nombre del puesto en el asunto se ordenan solos.</div></div><div id="nbPerfilFr" style="margin-top:10px"></div><div class="cf-foot"><button class="cf-close" onclick="nbOtra()">Crear otra</button><button class="cf-close" onclick="nbVerPerfil(this)">✏️ Revisar el perfil del puesto</button><button class="cf-save" onclick="window.top.location.href=NB.creada.kanban">Abrir el tablero de la búsqueda</button></div>';}
-    if(!NB.prop)return '<div class="cf-help">Acá se crea una <b>búsqueda nueva</b>; no modifica la que tenés abierta. Subí el <b>Word</b> con el relevamiento del puesto (o pegá el texto) y la <b>IA de Anthropic</b> arma la búsqueda completa: requisitos para puntuar CVs, criterios de screening, competencias con preguntas y preguntas de postulación. <b>Antes de crear nada lo revisás y lo corregís vos.</b> El archivo no se guarda: solo se lee el texto.</div>'
-      +'<label>Archivo Word (.docx)</label><input type="file" id="nb_file" accept=".docx,.txt" onchange="nbArchivo(this)">'
-      +'<label>…o pegá el texto del relevamiento</label><textarea id="nb_texto" style="min-height:220px" placeholder="Pegá acá el texto o subí el Word">'+esc(NB.texto)+'</textarea>'
-      +'<label>Empresa (opcional: si la dejás vacía la propone la IA)</label><input id="nb_emp" value="'+esc(NB.empresa)+'">'
-      +'<div class="cf-foot"><button class="cf-save" id="nb_go" onclick="nbAnalizar(this)"'+(NB.ocupado?' disabled':'')+'>🤖 Analizar con IA</button></div>';
-    var p=NB.prop,x='<div class="cf-help"><b>Revisá todo antes de crear.</b> La IA se equivoca y esto después se usa para evaluar personas.'+(p.avisos&&p.avisos.length?'<br><br><b>La IA avisa:</b><ul style="margin:4px 0 0 18px">'+p.avisos.map(function(a){return '<li>'+esc(a)+'</li>';}).join('')+'</ul>':'')+'</div>';
-    x+='<label>Nombre del puesto</label><input id="nb_nombre" value="'+esc(p.nombre)+'"><label>Empresa (agrupa las búsquedas en el tablero)</label><input id="nb_empresa" value="'+esc(p.empresa)+'"><label>Ubicación / modalidad</label><input id="nb_ubic" value="'+esc(p.ubicacion)+'"><label>Banda salarial de referencia en $ (opcional)</label><input id="nb_banda" value="'+esc(p.banda_salarial)+'">';
-    x+='<label>Requisitos para que la IA puntúe los CVs (tiene que terminar con el bloque NIVEL_AJUSTE)</label><textarea id="nb_prompt" style="min-height:300px">'+esc(p.prompt_extra)+'</textarea>';
-    x+='<h3 style="margin:16px 0 4px;font-size:15px">Screening · criterios con peso</h3>';
-    p.screening_eval.forEach(function(e,i){x+='<div class="cf-pl" style="display:flex;gap:8px;align-items:center"><input id="nb_ec'+i+'" value="'+esc(e.criterio)+'">'+pesoSel('nb_ep'+i,e.peso)+'<button class="cf-mini x" onclick="nbQuitar(\'screening_eval\','+i+')">✕</button></div>';});
-    x+='<button class="cf-add" onclick="nbAgregar(\'screening_eval\')">+ Criterio</button>';
-    x+='<h3 style="margin:16px 0 4px;font-size:15px">Screening · datos a validar (opciones con |)</h3>';
-    p.screening_val.forEach(function(e,i){x+='<div class="cf-pl" style="display:flex;gap:8px;align-items:center"><input id="nb_vp'+i+'" value="'+esc(e.pregunta)+'"><input id="nb_vo'+i+'" value="'+esc(e.opciones)+'" style="width:200px"><button class="cf-mini x" onclick="nbQuitar(\'screening_val\','+i+')">✕</button></div>';});
-    x+='<button class="cf-add" onclick="nbAgregar(\'screening_val\')">+ Dato</button>';
-    x+='<h3 style="margin:16px 0 4px;font-size:15px">Competencias (una pregunta por línea)</h3>';
-    p.competencias.forEach(function(c,i){x+='<div class="cf-pl"><div style="display:flex;gap:8px;align-items:center"><input id="nb_cn'+i+'" value="'+esc(c.nombre)+'">'+pesoSel('nb_cp'+i,c.peso)+'<button class="cf-mini x" onclick="nbQuitar(\'competencias\','+i+')">✕</button></div><label>Descripción</label><input id="nb_cd'+i+'" value="'+esc(c.descripcion)+'"><label>Preguntas de entrevista</label><textarea id="nb_cq'+i+'" style="min-height:80px">'+esc((c.preguntas||[]).join('\n'))+'</textarea></div>';});
-    x+='<button class="cf-add" onclick="nbAgregar(\'competencias\')">+ Competencia</button>';
-    x+='<h3 style="margin:16px 0 4px;font-size:15px">Preguntas de postulación</h3>';
-    p.postulacion.forEach(function(q,i){x+='<div class="cf-row"><div><label>Pregunta</label><input id="nb_qe'+i+'" value="'+esc(q.etiqueta)+'"></div><div><label>Tipo</label><select id="nb_qt'+i+'"><option value="texto"'+(q.tipo==='texto'?' selected':'')+'>Texto libre</option><option value="select"'+(q.tipo==='select'?' selected':'')+'>Elegir opción</option></select></div><div><label>Opciones (con |)</label><input id="nb_qo'+i+'" value="'+esc(q.opciones)+'"></div><div><label>Obligatoria</label><select id="nb_qr'+i+'"><option'+(q.requerido!=='NO'?' selected':'')+'>SI</option><option'+(q.requerido==='NO'?' selected':'')+'>NO</option></select></div><button class="cf-mini x" onclick="nbQuitar(\'postulacion\','+i+')">✕</button></div>';});
-    x+='<button class="cf-add" onclick="nbAgregar(\'postulacion\')">+ Pregunta</button>';
-    var Lk=p.links||{};
-    x+='<h3 style="margin:16px 0 4px;font-size:15px">Links de agenda (opcional)</h3><div class="cf-help">Los links de tus calendarios para que el candidato elija horario (Calendly o Google Calendar). Si todavía no los tenés, dejalos vacíos y cargalos después en «Datos de la búsqueda».</div><label>Screening</label><input id="nb_link_screening" value="'+esc(Lk.link_screening)+'" placeholder="https://"><label>Entrevista de competencias</label><input id="nb_link_competencias" value="'+esc(Lk.link_competencias)+'" placeholder="https://"><label>Entrevista con la empresa · virtual</label><input id="nb_link_empresa_virtual" value="'+esc(Lk.link_empresa_virtual)+'" placeholder="https://"><label>Entrevista con la empresa · presencial</label><input id="nb_link_empresa_presencial" value="'+esc(Lk.link_empresa_presencial)+'" placeholder="https://">';
-    x+='<div class="cf-foot"><button class="cf-close" onclick="nbVolver()">← Volver al texto</button><button class="cf-save" id="nb_crear" onclick="nbCrear(this)">✅ Crear la búsqueda</button></div>';
-    return x;
-  }
-  var NB_VACIO={screening_eval:{criterio:'',peso:1},screening_val:{pregunta:'',opciones:'Sí|No'},competencias:{nombre:'',descripcion:'',peso:1,preguntas:[]},postulacion:{etiqueta:'',tipo:'texto',opciones:'',requerido:'SI'}};
-  window.nbAgregar=function(k){sync();NB.prop[k].push(JSON.parse(JSON.stringify(NB_VACIO[k])));render('nueva');};
-  window.nbQuitar=function(k,i){sync();NB.prop[k].splice(i,1);render('nueva');};
-  window.nbVolver=function(){sync();if(!confirm('¿Volver al texto? Se pierden las correcciones que hiciste a la propuesta.'))return;NB.prop=null;render('nueva');};
-  window.nbVerPerfil=function(b){b.disabled=true;google.script.run.withSuccessHandler(function(u){b.disabled=false;var d=document.getElementById('nbPerfilFr');if(d)d.innerHTML='<iframe src="'+esc(u)+'" style="width:100%;height:78vh;border:1px solid #ccc;border-radius:8px;background:#fff"></iframe>';}).withFailureHandler(function(e){b.disabled=false;alert((e&&e.message)||e);}).linkPerfilConPin(NB.creada.id,'sesion','editar');};
   window.cfPerfilCrear=function(b){if(!confirm('Se va a crear el perfil del puesto de esta búsqueda (formulario en blanco). Si tenía un link a un documento externo, el botón «Perfil del puesto» de 📚 Búsqueda pasa a abrir este formulario. ¿Seguir?'))return;b.disabled=true;google.script.run.withSuccessHandler(function(){CF.perfil={propio:true,fecha:''};render('perfil');}).withFailureHandler(function(e){b.disabled=false;alert((e&&e.message)||e);}).activarPerfilPuesto(pin(),PERFIL);};
-  window.nbOtra=function(){NB={texto:'',empresa:'',prop:null,creada:null,ocupado:false};render('nueva');};
-  function xmlATexto(xml){
-    xml=xml.replace(/<w:tab\/>/g,'\t').replace(/<w:(br|cr)\/>/g,'\n').replace(/<\/w:p>\s*<\/w:tc>/g,' | ').replace(/<\/w:tr>/g,'\n').replace(/<\/w:p>/g,'\n').replace(/<[^>]+>/g,'');
-    var ta=document.createElement('textarea');xml=xml.replace(/&(#x?[0-9a-fA-F]+|amp|lt|gt|quot|apos);/g,function(m){ta.innerHTML=m;return ta.value;});
-    return xml.replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
-  }
-  function docxTexto(file){
-    return file.arrayBuffer().then(function(ab){
-      var buf=new Uint8Array(ab),dv=new DataView(ab),e=buf.length-22;
-      while(e>=0&&dv.getUint32(e,true)!==0x06054b50)e--;
-      if(e<0)throw new Error('No parece un archivo Word (.docx). Si es un .doc viejo, guardalo como .docx o pegá el texto.');
-      var n=dv.getUint16(e+10,true),off=dv.getUint32(e+16,true);
-      for(var i=0;i<n;i++){
-        if(dv.getUint32(off,true)!==0x02014b50)break;
-        var meth=dv.getUint16(off+10,true),csz=dv.getUint32(off+20,true),nl=dv.getUint16(off+28,true),xl=dv.getUint16(off+30,true),cl=dv.getUint16(off+32,true),lho=dv.getUint32(off+42,true);
-        var name=new TextDecoder().decode(buf.subarray(off+46,off+46+nl));
-        if(name==='word/document.xml'){
-          var st=lho+30+dv.getUint16(lho+26,true)+dv.getUint16(lho+28,true),data=buf.subarray(st,st+csz);
-          if(meth===0)return xmlATexto(new TextDecoder().decode(data));
-          if(typeof DecompressionStream==='undefined')throw new Error('Este navegador no puede leer el Word: pegá el texto en el cuadro.');
-          return new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text().then(xmlATexto);
-        }
-        off+=46+nl+xl+cl;
-      }
-      throw new Error('No encontré el contenido del Word. Pegá el texto en el cuadro.');
-    });
-  }
-  window.nbArchivo=function(inp){
-    var f=inp.files&&inp.files[0];if(!f)return;
-    var done=function(t){NB.texto=t;render('nueva');if(t.length<200)alert('Del archivo salió muy poco texto ('+t.length+' caracteres). Revisá o pegá el texto a mano.');};
-    var fail=function(e){alert((e&&e.message)||e);};
-    if(/\.txt$/i.test(f.name)){f.text().then(done,fail);return;}
-    docxTexto(f).then(done,fail);
-  };
-  window.nbAnalizar=function(btn){
-    nbSync();if((NB.texto||'').trim().length<200){alert('Falta el texto del relevamiento (mínimo 200 caracteres).');return;}
-    btn.disabled=true;btn.textContent='La IA está leyendo… (puede tardar 1 minuto)';
-    google.script.run.withSuccessHandler(function(p){NB.prop=p;render('nueva');}).withFailureHandler(function(e){btn.disabled=false;btn.textContent='🤖 Analizar con IA';alert('No se pudo analizar: '+badPin(e));}).proponerBusquedaIA(pin(),NB.texto,NB.empresa);
-  };
-  window.nbCrear=function(btn){
-    sync();var q=quien();var p=NB.prop;
-    var falta=!p.nombre.trim()?'el nombre del puesto':!p.empresa.trim()?'la empresa':null;
-    if(falta){alert('Falta '+falta+'.');return;}
-    if(!confirm('Se va a crear la búsqueda «'+p.nombre+'» ('+p.empresa+') con carpetas de Drive, pestaña de candidatos y formularios. ¿Crear?'))return;
-    btn.disabled=true;btn.textContent='Creando… (con el perfil del puesto puede tardar un par de minutos)';
-    google.script.run.withSuccessHandler(function(r){NB.creada=r;render('nueva');}).withFailureHandler(function(e){btn.disabled=false;btn.textContent='✅ Crear la búsqueda';alert('No se creó: '+badPin(e));}).crearBusquedaIA(pin(),p,q,NB.texto);
-  };
-
   var FD=null,FDcarga=false;
   function fdSync(){
     if(!FD||g('fd_a')===null)return;var v;
@@ -229,31 +134,6 @@
     btn.disabled=true;btn.textContent='Guardando...';
     google.script.run.withSuccessHandler(function(){btn.disabled=false;btn.textContent='Guardar';FD=null;alert('Guardado ✓');render(t);}).withFailureHandler(function(e){btn.disabled=false;btn.textContent='Guardar';alert('No se guardó: '+badPin(e));}).guardarFormularioPerfil(pin(),PERFIL,p,q);
   };
-  function uErr(e){alert((e&&e.message)||e);}
-  window.cfUsuarios=function(){
-    var d=document.getElementById('cfUsr');if(!d)return;
-    google.script.run.withSuccessHandler(function(L){
-      var x='<table style="width:100%;border-collapse:collapse;font-size:13px">';
-      L.forEach(function(u,i){
-        x+='<tr style="border-bottom:1px solid #eee"><td style="padding:8px 4px"><b>'+esc(u.nombre)+'</b><br><small style="color:'+(u.activo==='SI'?(u.pendiente?'#9A7500':'#1E6B47'):'#B91C1C')+'">'+(u.activo==='SI'?(u.pendiente?'PIN temporal sin cambiar':'Activo'):'Bloqueado')+'</small></td>'
-         +'<td><select onchange="cfRolU('+i+',this.value)"><option'+(u.rol==='Administrador'?' selected':'')+'>Administrador</option><option'+(u.rol==='Usuario'?' selected':'')+'>Usuario</option></select></td>'
-         +'<td style="text-align:right;white-space:nowrap">'+(window.blUsaPin?'<button class="cf-mini" onclick="cfPinU('+i+')">Reiniciar PIN</button> ':'')+'<button class="cf-mini'+(u.activo==='SI'?' x':'')+'" onclick="cfActU('+i+','+(u.activo==='SI'?'false':'true')+')">'+(u.activo==='SI'?'Bloquear':'Habilitar')+'</button></td></tr>';
-      });
-      x+='</table><div class="cf-pl" style="margin-top:14px"><b>Agregar usuario</b><label>Nombre y apellido</label><input id="cfuN" placeholder="Ej: Analía Pérez"><label>Rol</label><select id="cfuR"><option>Usuario</option><option>Administrador</option></select><div class="cf-foot"><button class="cf-save" onclick="cfCrearU(this)">Crear usuario</button></div></div>';
-      d.innerHTML=x;d._L=L;
-    }).withFailureHandler(function(e){d.innerHTML='<div style="color:#B91C1C">'+esc((e&&e.message)||e)+'</div>';}).listarUsuarios();
-  };
-  function uL(i){var d=document.getElementById('cfUsr');return d&&d._L&&d._L[i];}
-  window.cfCrearU=function(b){
-    var n=document.getElementById('cfuN').value,r=document.getElementById('cfuR').value;b.disabled=true;
-    google.script.run.withSuccessHandler(function(x){b.disabled=false;alert('Usuario creado: '+x.nombre+(x.pin?'\nPIN temporal: '+x.pin+'\n\nPasale este PIN. Al entrar elige el suyo.':'\n\nYa puede entrar con su nombre y apellido.'));cfUsuarios();}).withFailureHandler(function(e){b.disabled=false;uErr(e);}).crearUsuario(n,r);
-  };
-  window.cfPinU=function(i){var u=uL(i);if(!u||!confirm('¿Reiniciar el PIN de '+u.nombre+'? Se cierra su sesión y recibe un PIN temporal.'))return;
-    google.script.run.withSuccessHandler(function(x){alert('PIN temporal de '+x.nombre+': '+x.pin+'\n\nPasáselo: al entrar elige el suyo.');cfUsuarios();}).withFailureHandler(uErr).reiniciarPinUsuario(u.nombre);};
-  window.cfActU=function(i,a){var u=uL(i);if(!u||(!a&&!confirm('¿Bloquear a '+u.nombre+'? No va a poder entrar.')))return;
-    google.script.run.withSuccessHandler(function(){cfUsuarios();}).withFailureHandler(function(e){uErr(e);cfUsuarios();}).activarUsuario(u.nombre,a);};
-  window.cfRolU=function(i,r){var u=uL(i);if(!u)return;
-    google.script.run.withSuccessHandler(function(){cfUsuarios();}).withFailureHandler(function(e){uErr(e);cfUsuarios();}).cambiarRolUsuario(u.nombre,r);};
   var nav=document.getElementById('nav');
   if(nav&&(typeof blRol!=='function'||blRol()==='Administrador'))nav.insertAdjacentHTML('beforeend','<button onclick="cfAbrir()">⚙ Configurar</button>');
 })();
