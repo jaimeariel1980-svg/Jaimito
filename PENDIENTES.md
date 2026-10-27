@@ -99,7 +99,7 @@ Hecha con el código real y 37 fichas de ejemplo; el modelo real (`gpt-4o-mini`)
 
 ## Chat de Azcu: modelo y pruebas (27/10)
 - ✅ (HECHO 27/10) Instrucciones sin la lista de propiedades (−8.000 tokens por mensaje); ficha pegada solo si piden info; trampa «dijo que dejó una tarjeta y no la armó» (reintenta); «la otra» sin contexto pregunta por código; «no figura» sin consultar reintenta con ficha_propiedad; una tarjeta por visita con inmobiliaria/colega; modelo `gpt-4.1-mini` (propiedad `AZCU_MODELO`, respaldo automático a `gpt-4o-mini`).
-- 🟠 Botón «Deshacer» en tarjetas ya confirmadas (hoy solo se corrige a mano o desde la Papelera). Quién: Claude.
-- 🟠 Tarjetas pendientes viejas siguen confirmables cuando se arma una nueva (hay que taparlas en la pantalla). Quién: Claude.
-- 🟠 Búsqueda de dirección por palabra completa (450 vs 4500). Quién: Claude.
+- ✅ (HECHO 27/10) Botón «↩ Deshacer» en tarjetas confirmadas de cargar interacción, etapa y edición de datos. Falta para agendar visita y propuesta (se cancelan a mano). Quién: Claude.
+- ✅ (HECHO 27/10) Tarjetas pendientes del mismo tipo quedan «Reemplazada» al armarse una nueva.
+- ✅ (HECHO 27/10) Búsqueda de dirección por palabra completa (450 vs 4500).
 - 🟡 Prueba fija del chat: ejecutar `azcuProbarChatDificil` (Apps Script) después de cada cambio del chat o del modelo; solo propone, no guarda nada. Sacarla cuando Ariel diga.

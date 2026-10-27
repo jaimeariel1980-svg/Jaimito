@@ -158,9 +158,10 @@ function azcuParecidas_(texto){
 }
 function azcuHerrBuscar_(a, fresco){
   var q = azcuSinAc_(a.texto), tk = azcuTokens_(a.texto), ds = azcuDatos_(!!fresco);
-  var r = ds.filter(function(p){ return azcuSinAc_([p.id,p.dir,p.prop,p.tipo].join(' ')).indexOf(q)>=0; });
+  var reQ = /\d/.test(q) ? new RegExp('(?<![0-9])'+q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?![0-9])') : null;
+  var r = ds.filter(function(p){ var hz = azcuSinAc_([p.id,p.dir,p.prop,p.tipo].join(' ')); return reQ ? reQ.test(hz) : hz.indexOf(q)>=0; });
   if(!r.length && tk.length){
-    r = ds.filter(function(p){ var h = ' '+azcuTokens_([p.id,p.dir,p.prop,p.tipo].join(' '), true).join(' ')+' '; return tk.every(function(w){ return h.indexOf(w)>=0; }); });
+    r = ds.filter(function(p){ var h = ' '+azcuTokens_([p.id,p.dir,p.prop,p.tipo].join(' '), true).join(' ')+' '; return tk.every(function(w){ return /^\d+$/.test(w) ? h.indexOf(' '+w+' ')>=0 : h.indexOf(w)>=0; }); });
   }
   if(!r.length && !fresco) return azcuHerrBuscar_(a, true);
   return r.slice(0,20).map(azcuCorta_);
@@ -1199,7 +1200,12 @@ function azcuEjecutar_(pin, accion){
   if(tipo==='cargar'){
     if(AZCU_VIAS.indexOf(d.via)<0 || AZCU_RESULTADOS.indexOf(d.resultado)<0) throw new Error('Datos inválidos');
     registrarInteraccion(p.id, {fecha:hoy, via:d.via, interesado:d.interesado, tel:d.tel, resultado:d.resultado, prox:d.prox, obs:d.obs, inmob:d.inmob||'', colega:d.colega||'', vendedor:(p.vendedor||quien), cargo:quien});
-    return {ok:true, mensaje:'Listo, quedó cargado en el historial de '+p.dir+'.'};
+    var ud = null;
+    try{
+      var sg = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento'), ln = sg.getLastRow(), vv = sg.getRange(Math.max(2, ln-19), 1, Math.min(20, ln-1), 4).getValues(), q2;
+      for(q2=vv.length-1;q2>=0;q2--) if(String(vv[q2][0]).trim()===String(p.id).trim() && String(vv[q2][3]).trim()===String(d.interesado||'').trim()){ ud = {tipo:'elimint', datos:{id:p.id, fila:Math.max(2, ln-19)+q2, huella:String(d.interesado||'').trim()}}; break; }
+    }catch(eU){}
+    return {ok:true, mensaje:'Listo, quedó cargado en el historial de '+p.dir+'.', deshacer:ud};
   }
   if(tipo==='agendar'){
     var ini = new Date(d.fecha+'T'+d.hora+':00-03:00');
@@ -1216,15 +1222,17 @@ function azcuEjecutar_(pin, accion){
   }
   if(tipo==='etapa'){
     if(AZCU_ETAPAS.indexOf(d.etapa)<0) throw new Error('Etapa inválida');
+    var etPrev = p.etapa;
     guardarPropiedad(p.id, d.motivo ? {etapa:d.etapa, motivo:d.motivo, quien:quien} : {etapa:d.etapa, quien:quien});
-    return {ok:true, mensaje:p.dir+' ahora está en '+d.etapa+'.'};
+    return {ok:true, mensaje:p.dir+' ahora está en '+d.etapa+'.', deshacer:(etPrev && etPrev!==d.etapa && AZCU_ETAPAS.indexOf(etPrev)>=0) ? {tipo:'etapa', datos:{id:p.id, etapa:etPrev, dir:p.dir}} : null};
   }
   if(tipo==='campos'){
     var ok = {}, perm = Object.keys(AZCU_MAPC_).map(function(k){ return AZCU_MAPC_[k]; });
     Object.keys(d.campos||{}).forEach(function(k){ if(perm.indexOf(k)>=0) ok[k] = d.campos[k]; });
     if(!Object.keys(ok).length) throw new Error('Sin cambios válidos');
+    var prevC = {}; Object.keys(ok).forEach(function(k){ prevC[k] = p[k]===undefined || p[k]===null ? '' : p[k]; });
     guardarPropiedad(p.id, ok);
-    return {ok:true, mensaje:'Datos actualizados en '+p.dir+'.'};
+    return {ok:true, mensaje:'Datos actualizados en '+p.dir+'.', deshacer:{tipo:'campos', datos:{id:p.id, campos:prevC, dir:p.dir}}};
   }
   if(tipo==='doc'){
     if(Object.keys(p.papeles||{}).indexOf(d.documento)<0) throw new Error('Documento inválido');
