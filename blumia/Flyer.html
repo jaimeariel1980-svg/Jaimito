@@ -32,7 +32,7 @@ textarea{width:100%;border:1.5px solid var(--l);border-radius:8px;padding:8px 10
 #msg{font-size:12px;margin-top:8px;min-height:16px;color:var(--gf);font-weight:600}
 #main{flex:1;min-width:0}
 #vwrap{width:100%;overflow:hidden}
-#stage{transform-origin:top left;width:1080px}
+#stage{transform-origin:top left}
 /* ---- el flyer (1080 px de ancho) ---- */
 #flyer{width:1080px;height:1920px;position:relative;overflow:hidden;background:#F7F5F1;font-family:'Plus Jakarta Sans',sans-serif;--s:1;--k:1;--tc:#1A1A1A;--ac:#1A6645;box-shadow:0 8px 40px rgba(0,0,0,.25)}
 #ph{position:absolute;top:0;left:0;width:100%;height:72%;background:linear-gradient(160deg,#1A6645 0%,#2F7A56 55%,#7FB08F 100%)}
@@ -58,7 +58,27 @@ textarea{width:100%;border:1.5px solid var(--l);border-radius:8px;padding:8px 10
 #fTxt{font-size:calc(34px*var(--k));font-weight:600;line-height:1.35;color:#F7F5F1}
 #arrow{font-size:calc(60px*var(--k));font-weight:800;line-height:1;color:#F4D03F;margin:6px 0}
 #fMail{font-size:calc(34px*var(--k));font-weight:700;color:#F7F5F1;white-space:nowrap}
+#guiaT,#guiaB{position:absolute;left:0;width:100%;background:rgba(240,96,93,.28);border:2px dashed rgba(240,96,93,.9);z-index:50;display:none;pointer-events:none;color:#fff;font:700 22px Poppins,sans-serif;text-align:center;padding-top:8px}
+#guiaT{top:0;height:250px}#guiaB{bottom:0;height:250px;padding-top:0;padding-bottom:8px;display:none;align-items:flex-end;justify-content:center}
+.exporting #guiaT,.exporting #guiaB{display:none!important}
+#flyer.f-st #foot{padding-bottom:var(--safeB,0px)}
+/* LinkedIn apaisado: texto a la izquierda, foto a la derecha, pie finito */
+#flyer.f-ls #cont{left:44px;right:auto;width:700px}
+#flyer.f-ls #baj,#flyer.f-ls #secR{display:none}
+#flyer.f-ls #iD .item:nth-child(n+4){display:none}
+#flyer.f-ls #bucle{top:-20px;right:-300px;width:640px}
+#flyer.f-ls #foot{padding:0 44px;gap:20px}
+#flyer.f-ls #fcol{display:flex;align-items:center;gap:22px;width:100%}
+#flyer.f-ls #arrow{display:none}
+#flyer.f-ls #fTxt{font-size:22px;flex:none;line-height:1.2}
+#flyer.f-ls #fMail{font-size:28px;margin-left:auto}
+#flyer.f-ls #qrbox{position:absolute;right:40px;bottom:calc(100% + 18px)}
+#flyer.f-ls #qrCap{font-size:15px;margin-top:6px;color:#1A1A1A}
+#flyer.f-ls #qrImg{padding:8px;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.2)}
 #flyer.noqr #qrbox{display:none}
+#flyer.noqr #arrow{display:none}
+#flyer.f-ls:not(.noqr) #fTxt{display:none}
+#flyer.f-ls:not(.noqr) #fMail{margin-left:0}
 #flyer.noqr #fcol{text-align:center}
 .exporting [contenteditable]{outline:none!important;background:transparent!important}
 [contenteditable]{outline:none}
@@ -76,8 +96,11 @@ body:not(.exporting) [contenteditable]:focus{background:rgba(255,255,255,.85);co
   <div id="avisoIA" class="aviso" style="display:none">Todavía no generaste los textos: tocá «✨ Generar textos» o escribí directo sobre el flyer.</div>
 
   <div class="sec"><h3>Formato</h3>
-    <div class="row"><button class="bt" id="fSt">📱 Historia 1080×1920</button><button class="bt" id="fLi">🖼 Post 1080×1350</button></div>
-    <div class="nota">El de 1350 sirve para LinkedIn y WhatsApp.</div></div>
+    <button class="bt full" id="fSt" style="margin-bottom:6px">📱 Historia a pantalla completa · 9:16</button>
+    <button class="bt full" id="fLi" style="margin-bottom:6px">🖼 Post vertical · 4:5</button>
+    <button class="bt full" id="fLs">💻 LinkedIn apaisado · 1,91:1</button>
+    <div class="nota" id="fNota" style="margin-top:6px"></div>
+    <label class="chk" id="guiaW" style="margin-top:6px"><input type="checkbox" id="guia"> Mostrar lo que tapa Instagram (guía)</label></div>
 
   <div class="sec"><h3>Textos con IA</h3>
     <label class="chk"><input type="checkbox" id="mostrarEmp"> Nombrar a la empresa en el flyer</label>
@@ -129,14 +152,14 @@ body:not(.exporting) [contenteditable]:focus{background:rgba(255,255,255,.85);co
 
 <div id="main"><div id="vwrap"><div id="stage">
 <div id="flyer">
-  <div id="ph"></div><img id="bg" alt=""><div id="ov"></div>
+  <div id="ph"></div><img id="bg" alt=""><div id="ov"></div><div id="guiaT">Acá Instagram pone tu perfil</div><div id="guiaB">Acá Instagram pone «Enviar mensaje»</div>
   <img id="bucle" alt=""><img id="logo" alt=""><img id="logoCli" alt="">
   <div id="cont">
     <div class="badge" id="badge" contenteditable="true"></div>
     <h1 id="tit"><span id="busc" contenteditable="true"></span><br><em id="cargo" contenteditable="true"></em></h1>
     <p id="baj" contenteditable="true"></p>
-    <div class="secbox"><div class="sectit" id="titD" contenteditable="true"></div><div id="iD"></div></div>
-    <div class="secbox"><div class="sectit" id="titR" contenteditable="true"></div><div id="iR"></div></div>
+    <div class="secbox" id="secD"><div class="sectit" id="titD" contenteditable="true"></div><div id="iD"></div></div>
+    <div class="secbox" id="secR"><div class="sectit" id="titR" contenteditable="true"></div><div id="iR"></div></div>
   </div>
   <div id="foot">
     <div id="qrbox"><img id="qrImg" alt=""><p id="qrCap" contenteditable="true"></p></div>
@@ -151,19 +174,25 @@ body:not(.exporting) [contenteditable]:focus{background:rgba(255,255,255,.85);co
 var DATOS=%%DATOS%%;
 var ASSETS=%%ASSETS%%;
 var $=function(i){return document.getElementById(i)};
-var FMT={st:{H:1920,foot:380,k:1,minTop:380,qr:220},li:{H:1350,foot:300,k:.9,minTop:290,qr:170}};
+var FMT={
+  st:{W:1080,H:1920,foot:600,footN:440,safeB:250,k:1,minTop:372,qr:220,logoT:262,bucT:110,gap:36,nom:'historia',
+      nota:'Pantalla completa en Instagram (historias), estados de WhatsApp y TikTok. Ojo: el QR no se puede escanear desde el mismo celular; en historias conviene sin QR y pegar el link con el sticker «Link».'},
+  li:{W:1080,H:1350,foot:300,footN:250,safeB:0,k:.9,minTop:290,qr:170,logoT:44,bucT:40,gap:36,nom:'post-vertical',
+      nota:'Vertical 4:5: es el que más lugar ocupa en el feed de LinkedIn e Instagram, y se ve bien en el chat de WhatsApp.'},
+  ls:{W:1200,H:627,foot:84,footN:84,safeB:0,k:.85,minTop:112,qr:120,logoT:30,bucT:-20,gap:30,nom:'linkedin-apaisado',
+      nota:'Formato de LinkedIn 1,91:1 (1200×627): muestra solo el título y 3 desafíos para que se lea grande en el celular. La bajada y los requisitos van en el texto del posteo.'}};
 var generado=false,sucio=false;
 var S=null;
 
 function porDefecto(){
   var emp=DATOS.empresa==='MACS';
   var nombre=emp?DATOS.empresa:DATOS.empresaNeutral;
-  return {fmt:'st',qr:true,qrUrl:DATOS.linkPostulacion,mostrarEmpresa:emp,bg:'',cli:'',colT:'#1A1A1A',colA:'#1A6645',logoOsc:false,
+  return {fmt:'st',qr:false,guia:false,qrUrl:DATOS.linkPostulacion,mostrarEmpresa:emp,bg:'',cli:'',colT:'#1A1A1A',colA:'#1A6645',logoOsc:false,
     ov:60,px:50,py:50,zoom:100,ts:100,logoH:110,cliH:80,bucOn:true,bucOp:100,
     txt:{badge:[DATOS.ubicacion,DATOS.instancia].filter(Boolean).join(' · ')||'Presencial',busc:'Buscamos',cargo:DATOS.puesto,
       baj:nombre.charAt(0).toUpperCase()+nombre.slice(1)+' busca incorporar a su equipo a: '+DATOS.puesto+'.',
       titD:'Principales desafíos',titR:'Requisitos',
-      form:'Te invitamos a postularte escaneando el QR o ingresando al enlace de la descripción.',qrCap:'Escaneá para postularte',mail:DATOS.mail},
+      form:'Postulate enviando tu CV a:',qrCap:'Escaneá para postularte',mail:DATOS.mail},
     iD:['Completá los principales desafíos del puesto.'],iR:['Completá los requisitos del puesto.'],
     social:{linkedin:'',instagram:'',whatsapp:''}};
 }
@@ -179,28 +208,32 @@ function getItems(id){var o=[];var s=$(id).querySelectorAll('.item span');for(va
 function makeQr(u){var im=$('qrImg');if(!u){im.removeAttribute('src');return}try{var q=qrcode(0,'M');q.addData(u);q.make();im.src=q.createDataURL(8,2)}catch(e){im.removeAttribute('src')}}
 
 function aplicar(){
-  var f=FMT[S.fmt],fl=$('flyer');
-  fl.style.height=f.H+'px';fl.style.setProperty('--k',f.k);
-  fl.style.setProperty('--tc',S.colT);fl.style.setProperty('--ac',S.colA);
-  fl.className=S.qr?'':'noqr';
-  $('foot').style.height=f.foot+'px';
-  $('cont').style.bottom=(f.foot+36)+'px';
+  if(!FMT[S.fmt])S.fmt='st';
+  var f=FMT[S.fmt],fl=$('flyer'),fh=S.qr?f.foot:f.footN;
+  fl.style.width=f.W+'px';fl.style.height=f.H+'px';fl.style.setProperty('--k',f.k);$('stage').style.width=f.W+'px';
+  fl.style.setProperty('--tc',S.colT);fl.style.setProperty('--ac',S.colA);fl.style.setProperty('--safeB',f.safeB+'px');
+  fl.className='f-'+S.fmt+(S.qr?'':' noqr');
+  $('foot').style.height=fh+'px';
+  $('cont').style.bottom=(fh+f.gap)+'px';
   var q=$('qrImg');q.style.width=f.qr+'px';q.style.height=f.qr+'px';
+  $('guiaT').style.display=(S.guia&&S.fmt==='st')?'block':'none';$('guiaB').style.display=(S.guia&&S.fmt==='st')?'flex':'none';
   // fondo: tamaño y posición
-  var z=S.zoom/100,w=1080*z,h=f.H*z,bg=$('bg');
-  bg.style.width=w+'px';bg.style.height=h+'px';bg.style.left=((1080-w)*S.px/100)+'px';bg.style.top=((f.H-h)*S.py/100)+'px';
+  var z=S.zoom/100,w=f.W*z,h=f.H*z,bg=$('bg');
+  bg.style.width=w+'px';bg.style.height=h+'px';bg.style.left=((f.W-w)*S.px/100)+'px';bg.style.top=((f.H-h)*S.py/100)+'px';
   if(S.bg){bg.src=S.bg;bg.style.display='block';$('ph').style.display='none'}else{bg.removeAttribute('src');bg.style.display='none';$('ph').style.display='block'}
-  var v=S.ov;$('ov').style.background='linear-gradient(to bottom,rgba(247,245,241,0) 0%,rgba(247,245,241,'+(v*.004)+') 25%,rgba(247,245,241,'+(v*.01)+') 42%,rgba(247,245,241,'+(v*.015)+') 55%,rgba(247,245,241,1) 68%,rgba(247,245,241,1) 100%)';
-  $('logo').src=S.logoOsc?ASSETS.logoOsc:ASSETS.logo;$('logo').style.height=S.logoH+'px';
-  var cl=$('logoCli');if(S.cli){cl.src=S.cli;cl.style.display='block';cl.style.height=S.cliH+'px'}else{cl.removeAttribute('src');cl.style.display='none'}
-  var bu=$('bucle');bu.src=ASSETS.bucle;bu.style.display=S.bucOn?'block':'none';bu.style.opacity=S.bucOp/100;
+  var v=S.ov;
+  if(S.fmt==='ls')$('ov').style.background='linear-gradient(to right,rgba(247,245,241,1) 0%,rgba(247,245,241,1) 46%,rgba(247,245,241,'+(v*.006)+') 62%,rgba(247,245,241,0) 80%)';
+  else $('ov').style.background='linear-gradient(to bottom,rgba(247,245,241,0) 0%,rgba(247,245,241,'+(v*.004)+') 25%,rgba(247,245,241,'+(v*.01)+') 42%,rgba(247,245,241,'+(v*.015)+') 55%,rgba(247,245,241,1) 68%,rgba(247,245,241,1) 100%)';
+  $('logo').src=(S.logoOsc||S.fmt==='ls')?ASSETS.logoOsc:ASSETS.logo;var lh=S.fmt==='ls'?Math.round(S.logoH*.62):S.fmt==='st'?Math.round(S.logoH*.75):S.logoH;$('logo').style.height=lh+'px';$('logo').style.top=f.logoT+'px';$('logoCli').style.top=f.logoT+'px';
+  var cl=$('logoCli');if(S.cli){cl.src=S.cli;cl.style.display='block';cl.style.height=(S.fmt==='ls'?Math.round(S.cliH*.7):S.cliH)+'px'}else{cl.removeAttribute('src');cl.style.display='none'}
+  var bu=$('bucle');bu.src=ASSETS.bucle;bu.style.display=S.bucOn?'block':'none';bu.style.opacity=S.bucOp/100;bu.style.top=f.bucT+'px';
   makeQr(S.qr?S.qrUrl:'');
   pintarPanel();
   ajustar();vista();
 }
 
 function pintarPanel(){
-  $('fSt').classList.toggle('on',S.fmt==='st');$('fLi').classList.toggle('on',S.fmt==='li');
+  $('fSt').classList.toggle('on',S.fmt==='st');$('fLi').classList.toggle('on',S.fmt==='li');$('fLs').classList.toggle('on',S.fmt==='ls');$('fNota').textContent=FMT[S.fmt].nota;$('guia').checked=!!S.guia;$('guiaW').style.display=S.fmt==='st'?'flex':'none';
   $('logoC').classList.toggle('on',!S.logoOsc);$('logoO').classList.toggle('on',S.logoOsc);
   $('mostrarEmp').checked=!!S.mostrarEmpresa;$('conQr').checked=!!S.qr;$('bucOn').checked=!!S.bucOn;$('qrUrl').value=S.qrUrl||'';
   var m={sOv:['ov','vOv','%'],sZ:['zoom','vZ','%'],sPx:['px','vPx','%'],sPy:['py','vPy','%'],sLg:['logoH','vLg','px'],sCl:['cliH','vCl','px'],sBo:['bucOp','vBo','%'],sTs:['ts','vTs','%']};
@@ -235,7 +268,7 @@ function ajustar(){
 }
 
 function vista(){
-  var vw=$('vwrap'),W=vw.clientWidth||1080,sc=Math.min(1,W/1080);
+  var vw=$('vwrap'),fw=FMT[S.fmt].W,W=vw.clientWidth||fw,sc=Math.min(1,W/fw);
   $('stage').style.transform='scale('+sc+')';vw.style.height=(FMT[S.fmt].H*sc)+'px';
 }
 window.addEventListener('resize',vista);
@@ -253,12 +286,14 @@ function aJpeg(file,max,png,cb){
 function cableado(){
   $('fSt').onclick=function(){leerTextos();S.fmt='st';aplicar();marcar()};
   $('fLi').onclick=function(){leerTextos();S.fmt='li';aplicar();marcar()};
+  $('fLs').onclick=function(){leerTextos();S.fmt='ls';aplicar();marcar()};
+  $('guia').onchange=function(){S.guia=this.checked;aplicar()};
   $('logoC').onclick=function(){S.logoOsc=false;aplicar();marcar()};
   $('logoO').onclick=function(){S.logoOsc=true;aplicar();marcar()};
   $('mostrarEmp').onchange=function(){S.mostrarEmpresa=this.checked;marcar()};
   $('conQr').onchange=function(){
     leerTextos();S.qr=this.checked;
-    var CQ='Te invitamos a postularte escaneando el QR o ingresando al enlace de la descripción.',SQ='Te invitamos a postularte enviando tu CV o ingresando al enlace de la descripción.';
+    var CQ='Te invitamos a postularte escaneando el QR o ingresando al enlace de la descripción.',SQ='Postulate enviando tu CV a:';
     if(S.qr&&S.txt.form===SQ)S.txt.form=CQ;else if(!S.qr&&S.txt.form===CQ)S.txt.form=SQ;
     pintarTextos();aplicar();marcar()};
   $('bucOn').onchange=function(){S.bucOn=this.checked;aplicar();marcar()};
@@ -323,9 +358,9 @@ function descargar(){
   var st=$('stage'),tr=st.style.transform;st.style.transform='none';
   var fin=function(){st.style.transform=tr;document.body.classList.remove('exporting');b.disabled=false;b.textContent='⬇ Descargar imagen (PNG)'};
   setTimeout(function(){
-    html2canvas($('flyer'),{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#F7F5F1',width:1080,height:f.H,windowWidth:1080,windowHeight:f.H,scrollX:0,scrollY:0}).then(function(c){
+    html2canvas($('flyer'),{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#F7F5F1',width:f.W,height:f.H,windowWidth:f.W,windowHeight:f.H,scrollX:0,scrollY:0}).then(function(c){
       fin();
-      var url=c.toDataURL('image/png'),nom='flyer-'+DATOS.puesto.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'-'+S.fmt+'.png';
+      var url=c.toDataURL('image/png'),nom='flyer-'+DATOS.puesto.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'-'+f.nom+'.png';
       $('resImg').src=url;$('resA').href=url;$('resA').setAttribute('download',nom);$('resN').textContent='Si no se descargó sola, tocá «Descargar» o mantené apretada la imagen para guardarla.';$('res').classList.add('show');
       try{var a=document.createElement('a');a.href=url;a.download=nom;document.body.appendChild(a);a.click();a.remove()}catch(e){}
     }).catch(function(e){fin();msg('No se pudo armar la imagen: '+((e&&e.message)||e),false)});
