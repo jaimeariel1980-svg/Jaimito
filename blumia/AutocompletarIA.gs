@@ -63,7 +63,7 @@ function promptAnalisisEntrevista_(hero, nombre, comps) {
     '- Si hubo contradicciones o dudas en lo que contó, anotalas como hecho.\n' +
     'EJEMPLO DE FORMATO (inventado, NO uses su contenido): MAL → «Demuestra capacidad de negociación con clientes.» BIEN → «Contó que en 2022, en su rol en Constructora Norte, renegoció con el cliente principal un contrato por USD 400 mil que estaba en riesgo: armó una propuesta con precios escalonados, la presentó al gerente de compras y logró renovarlo por dos años con una mejora del 8 % en el margen. Mencionó que desde entonces prepara siempre una alternativa de precios antes de cada reunión.»\n\n' +
     'REGLAS GENERALES: tono objetivo y neutral, sin adjetivos elogiosos. No interpretes ni deduzcas rasgos o motivaciones: informá hechos. Los datos de la persona (meta) completalos SOLO si los dijo explícitamente; si no, dejá "". «fortalezas» y «areas»: viñetas cortas que empiecen con «• » y se basen en hechos y ejemplos concretos de la entrevista (no en generalidades). «recomendacion»: 3 a 5 oraciones DESCRIPTIVAS con lo observado (cómo se desenvolvió, cuáles fueron sus ejemplos más sólidos y qué no surgió) y, solo si las hubo, alertas concretas dichas como hecho; coherente con los niveles que asignaste; sin decidir si contratar o descartar.\n' +
-    'Devolvé SOLO un JSON válido, sin texto antes ni después, con este formato: {"comps":[{"id":"","nivel":0,"evidencia":""}],"fortalezas":"","areas":"","recomendacion":"","meta":{"localidad":"","formacion":"","empresaAct":"","puestoAct":"","antig":"","remAct":"","remPret":"","disp":"","motivo":"","movilidad":"","referencias":""}}';
+    'Devolvé SOLO un JSON válido, sin texto antes ni después, con este formato: {"comps":[{"id":"","nivel":0,"evidencia":""}],"fortalezas":"","areas":"","recomendacion":"","meta":{"edad":"","localidad":"","familia":"","formacion":"","empresaAct":"","puestoAct":"","antig":"","remAct":"","remPret":"","disp":"","motivo":"","movilidad":"","referencias":""}}';
 }
 
 function extraerJSON_(txt) {
@@ -90,7 +90,7 @@ function analizarEntrevista_(pin, perfilId, cand, compsJson, heroJson, texto) {
   (r.comps || []).forEach(c => {
     if (comps.some(x => x.id === String(c.id))) out.comps.push({ id: String(c.id), nivel: Math.max(0, Math.min(4, Math.round(Number(c.nivel) || 0))), evidencia: cortar(c.evidencia, 1800) });
   });
-  ['localidad', 'formacion', 'empresaAct', 'puestoAct', 'antig', 'remAct', 'remPret', 'disp', 'motivo', 'movilidad', 'referencias'].forEach(f => { out.meta[f] = cortar((r.meta || {})[f], 200); });
+  ['edad', 'localidad', 'familia', 'formacion', 'empresaAct', 'puestoAct', 'antig', 'remAct', 'remPret', 'disp', 'motivo', 'movilidad', 'referencias'].forEach(f => { out.meta[f] = cortar((r.meta || {})[f], 200); });
   try { cache.put(kA, JSON.stringify({ texto: texto.slice(0, 40000), resultado: out }), 21600); } catch (e) { }
   return JSON.stringify(out);
 }

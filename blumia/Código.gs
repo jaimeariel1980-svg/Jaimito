@@ -73,6 +73,7 @@ function getDatosPerfil_(perfilId) {
       peso: Number(r.peso) || 1,
       preguntas: String(r.preguntas || '').split('|').map(s => s.trim()).filter(Boolean)
     })),
+    datosInternos: String(cfg.datos_internos || '').toUpperCase() !== 'NO',
     entrevistadoras: String(hero.entrevistadoras || entrevistadoresDefault_().join(',')).split(',').map(s => s.trim()).filter(Boolean)
   };
 }
@@ -305,7 +306,7 @@ Devolvé SOLO JSON válido con este formato:
   "localidad": "Ciudad/localidad textual del CV",
   "nivel_ajuste": "A/B+/B/C",
   "justificacion": "Una sola oración corta explicando el porqué de la nota",
-  "requisitos": { "zona": "", "liderazgo": "", "formacion": "", "exp_rubro": "" },
+  "requisitos": { "zona": "", "liderazgo": "", "formacion": "", "edad": "", "exp_rubro": "" },
   "resumen_experiencia": "3-4 oraciones narrativas"
 }
 REGLAS:
@@ -850,7 +851,7 @@ Devolvé SOLO JSON válido con este formato:
   "nombre": "Nombre Real", "telefono": "Numero", "dni": "Solo numeros", "localidad": "Ciudad/localidad textual declarada o del CV",
   "nivel_ajuste": "A/B+/B/C",
   "justificacion": "Una sola oración corta explicando el porqué de la nota",
-  "requisitos": { "zona": "", "liderazgo": "", "formacion": "", "exp_rubro": "" },
+  "requisitos": { "zona": "", "liderazgo": "", "formacion": "", "edad": "", "exp_rubro": "" },
   "resumen_experiencia": "3-4 oraciones narrativas, atributos/actitud, sin repetir el checklist"
 }
 REGLAS DE LA NOTA (nivel_ajuste):
@@ -975,7 +976,7 @@ function verLinks() {
 }
 function formatearRequisitos(req, localidad) {
   if (!req || typeof req !== 'object') return 'Error';
-  const labels = { zona: 'Zona', liderazgo: 'Liderazgo', formacion: 'Formación', exp_rubro: 'Exp. rubro' };
+  const labels = { zona: 'Zona', liderazgo: 'Liderazgo', formacion: 'Formación', edad: 'Edad', exp_rubro: 'Exp. rubro' };
   return Object.keys(labels).map(k => {
     let val = req[k] || 'N/D';
     if (k === 'zona' && localidad && String(localidad).trim()) val = val + ' (' + String(localidad).trim() + ')';
@@ -1493,8 +1494,8 @@ function generarInformeCandidato_(perfilId, fila) {
 
   const promptSistema = 'Sos consultor senior de Blumia Consulting. Analizá las fuentes del candidato "' + nombre + '" (posición: ' + posicion + ', cliente ' + empresaInforme_(cfg) + ') y devolvé SOLO un JSON válido, sin texto adicional ni markdown, con esta estructura exacta:\n' +
 '{\n' +
-'  "localidad": "", "formacion": "", "ultimo_empleo": "",\n' +
-'  "pretension": "", "telefono": "", "email": "",\n' +
+'  "edad": "", "localidad": "", "formacion": "", "ultimo_empleo": "",\n' +
+'  "pretension": "", "familia": "", "telefono": "", "email": "",\n' +
 '  "movilidad": "", "disponibilidad": "",\n' +
 '  "herramientas": "Excel, Power BI, IA u otras que surjan del screening; vacío si no hay",\n' +
 '  "perfil": "Un párrafo de trayectoria y perfil (4-5 oraciones).",\n' +
@@ -1510,7 +1511,7 @@ function generarInformeCandidato_(perfilId, fila) {
 '- Evidencias CORTAS (1-2 oraciones).\n' +
 '- El recorrido laboral va ordenado del empleo MÁS RECIENTE al más antiguo (el último empleo primero).\n' +
 '- NUNCA menciones al entrevistador ni digas "no se registró evidencia". Si no hay un ejemplo concreto, describí el nivel demostrado en general, sin forzar un ejemplo y sin señalar la ausencia como aspecto a mejorar.\n' +
-'- IMPORTANTE: buscá con atención en TODAS las fuentes (CV, screening y sobre todo COMPETENCIAS) los datos de contacto y laborales: teléfono, email, localidad, movilidad, disponibilidad, pretensión. Estos datos suelen figurar en el formulario de competencias o screening. Extraelos aunque estén en medio del texto.\n' +
+'- IMPORTANTE: buscá con atención en TODAS las fuentes (CV, screening y sobre todo COMPETENCIAS) los datos personales: edad, composición familiar, teléfono, email, localidad, movilidad, disponibilidad, pretensión. Estos datos suelen figurar en el formulario de competencias o screening. Extraelos aunque estén en medio del texto.\n' +
 '- No inventes hechos ni datos que no estén en las fuentes; si un dato realmente no aparece en ninguna fuente, dejá el campo vacío "".\n' +
 '- La conclusión NUNCA dice "apto para presentar al cliente" ni recomienda avanzar; es analítica.';
 
@@ -1522,10 +1523,11 @@ function generarInformeCandidato_(perfilId, fila) {
   try { d = JSON.parse(raw); } catch(e){ throw new Error('Claude no devolvió JSON válido: ' + raw.substring(0,200)); }
 
   const NIVEL_TXT = {1:'No demuestra',2:'Señales de desarrollo',3:'Demuestra efectividad',4:'Demuestra solidez'};
+  const internos = String(cfg.datos_internos || '').toUpperCase() !== 'NO'; // Edad y Composición familiar: uso interno, se pueden ocultar por búsqueda (⚙ Configurar → Datos)
   const dato = (l,v) => '<div class="dl">'+l+'</div><div class="dv">'+(v && String(v).trim() ? v : 'Sin dato')+'</div>';
   const datosHTML = [
-    dato('Localidad', d.localidad), dato('Formación', d.formacion),
-    dato('Último empleo', d.ultimo_empleo), dato('Pretensión', d.pretension),
+    internos ? dato('Edad', d.edad) : '', dato('Localidad', d.localidad), dato('Formación', d.formacion),
+    dato('Último empleo', d.ultimo_empleo), dato('Pretensión', d.pretension), internos ? dato('Composición familiar', d.familia) : '',
     dato('Teléfono', d.telefono), dato('Email', d.email), dato('Movilidad', d.movilidad),
     dato('Disponibilidad', d.disponibilidad), dato('Herramientas', d.herramientas)
   ].filter(Boolean).join('');
