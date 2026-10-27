@@ -17,6 +17,7 @@
 body{font-family:var(--font);background:var(--bg);color:var(--text)}
 .wrap{max-width:900px;margin:0 auto;padding:36px 52px 60px}
 .topbar{background:rgba(247,245,241,0.97);backdrop-filter:blur(20px);border-bottom:1px solid var(--line);padding:0 52px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.tb-logo{height:30px;display:block}.hero-logo{height:30px;display:block;margin-bottom:22px}
 .tb-brand{font-weight:800;font-size:20px;letter-spacing:-0.04em;color:var(--green)}
 .tb-sep{width:1px;height:24px;background:var(--line)}
 .tb-doc{font-size:13px;font-weight:600;color:var(--mid)}
@@ -138,10 +139,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text)}
 <body>
 <nav class="topbar">
   <div class="tb-left">
-    <div style="background:var(--green);padding:8px 18px;display:flex;flex-direction:column;justify-content:center;border-radius:2px;line-height:1;font-family:var(--font)">
-      <span style="color:#fff;font-weight:800;font-size:18px;letter-spacing:-0.04em">Blumia</span>
-      <span style="color:#fff;font-weight:400;font-size:8px;letter-spacing:0.18em;text-transform:uppercase;margin-top:2px;font-family:var(--font)">Consulting</span>
-    </div>
+    <img class="tb-logo" alt="Blumia" src="<?!= LOGO_BLUMIA_VERDE_ ?>">
     <div class="tb-sep"></div>
     <div class="tb-doc">Screening Inicial</div>
   </div>
@@ -156,6 +154,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text)}
 <script>window.EDIT_TIPO='screening';</script>
 <?!= HtmlService.createHtmlOutputFromFile('EditorForm').getContent() ?>
 <script>
+const LOGO_BLANCO = '<?!= LOGO_BLUMIA_ ?>';
 const PERFIL_ID = '<?= perfil ?>';
 const EDITAR = '<?= editar ?>' === 'true'; window.EDITAR = EDITAR; window.EF_TIPO = 'screening';
 const CAND_INICIAL = '<?= candidato ?>';
@@ -186,6 +185,7 @@ function render() {
   const entrevistadoras = DATOS.entrevistadoras;
   const html = `
 <div class="hero">
+  <img class="hero-logo" alt="Blumia" src="${LOGO_BLANCO}">
   <h1><span contenteditable="true">Screening de </span><em id="hero-nombre">${CAND_INICIAL || 'Candidato/a'}</em></h1>
   <div class="hero-sub" contenteditable="true">${h.posicion || ''} · ${h.empresa || ''}</div>
   <div class="hero-meta">
