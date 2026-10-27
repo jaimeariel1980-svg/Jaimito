@@ -133,7 +133,10 @@ function cambiarMiPin(token, nuevo) {
 function doGet(e) {
   const t = e && e.parameter && e.parameter.tipo;
   if (t === 'postulacion' || t === 'perfilpuesto') return doGetPagina_(e); // pública / con acceso temporal propio
-  try { usuariosHoja_(); } catch (err) { } // la primera vez crea la pestaña «Usuarios» con los administradores y sus PIN temporales
+  try {
+    const cache = CacheService.getScriptCache();
+    if (!cache.get('usu_ok')) { usuariosHoja_(); cache.put('usu_ok', '1', 3600); } // la primera vez crea la pestaña «Usuarios» con los administradores y sus PIN temporales (después no se vuelve a leer en cada carga)
+  } catch (err) { }
   const p = {};
   Object.keys((e && e.parameter) || {}).forEach(k => { p[k] = String(e.parameter[k]); });
   const tpl = HtmlService.createTemplateFromFile('Shell');
@@ -241,6 +244,7 @@ function registroApi_() {
     crearBusquedaIA: { f: crearBusquedaIA_, admin: true },
     activarPerfilPuesto: { f: activarPerfilPuesto_, admin: true },
     copiaInfo: { f: copiaInfo_, admin: true },
+    diagnosticoVelocidad: { f: diagnosticoVelocidad_, admin: true },
     listarAccesos: { f: listarAccesos_, admin: true },
     guardarDatosCandidato: { f: guardarDatosCandidato_ },
     guardarEnPlanilla: { f: guardarEnPlanilla_ },

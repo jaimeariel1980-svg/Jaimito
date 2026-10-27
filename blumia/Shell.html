@@ -46,8 +46,8 @@ window.blRun = chain(null, null);
 window.blToken = function () { return TOK; };
 window.blRol = function () { return ROL; };
 window.blNombre = function () { return NOM; };
-function sesionVencida(m) { ls('bl_tok', null); alert(E({ message: m })); try { window.top.location.reload(); } catch (e) { location.reload(); } }
-window.blSalir = function () { if (!confirm('Estás como ' + NOM + '. ¿Salir y cambiar de usuario?')) return; ls('bl_tok', null); ls('blumia_quien', null); try { window.top.location.reload(); } catch (e) { location.reload(); } };
+function sesionVencida(m) { ls('bl_tok', null); ls('bl_rol', null); alert(E({ message: m })); try { window.top.location.reload(); } catch (e) { location.reload(); } }
+window.blSalir = function () { if (!confirm('Estás como ' + NOM + '. ¿Salir y cambiar de usuario?')) return; ls('bl_tok', null); ls('bl_rol', null); ls('blumia_quien', null); try { window.top.location.reload(); } catch (e) { location.reload(); } };
 window.blCambiarPin = function () {
   var a = prompt('Elegí tu PIN nuevo (4 a 6 números):'); if (!a) return;
   var b = prompt('Repetí el PIN nuevo:'); if (a !== b) { alert('No coinciden.'); return; }
@@ -59,7 +59,7 @@ window.blMenuUsuario = function () {
   if (o === '1') blCambiarPin(); else if (o === '2') blSalir();
 };
 
-function guardarSesion(r) { TOK = r.token; NOM = r.nombre; ROL = r.rol; ls('bl_tok', TOK); ls('blumia_quien', NOM); }
+function guardarSesion(r) { TOK = r.token; NOM = r.nombre; ROL = r.rol; ls('bl_tok', TOK); ls('blumia_quien', NOM); ls('bl_rol', ROL); }
 function formLogin(texto) {
   $('v').innerHTML = '<h1>Ingresá</h1><p class="s">' + (texto || (USA_PIN ? 'Con tu nombre y apellido y tu PIN.' : 'Con tu nombre y apellido.')) + '</p><label>Nombre y apellido</label><input id="n" autocomplete="name" value="' + (ls('bl_ult') || '').replace(/"/g, '') + '">' + (USA_PIN ? '<label>PIN</label><input id="p" type="password" inputmode="numeric" maxlength="6" autocomplete="current-password">' : '') + '<div class="er" id="er"></div><button id="b" onclick="entrar()">Entrar</button>' + (USA_PIN ? '<p class="s" style="margin:12px 0 0">¿Primer ingreso? Tu PIN temporal te lo da un administrador (también está en la planilla, pestaña Usuarios).</p>' : '<p class="s" style="margin:12px 0 0">Si no podés entrar, pedile a un administrador que te dé de alta.</p>');
   $('n').onkeydown = function (e) { if (e.key === 'Enter') entrar(); };
@@ -87,14 +87,21 @@ function guardarPin() {
 }
 function cargar() {
   $('v').innerHTML = '<div class="cg"><div class="sp"></div>Cargando…</div>';
-  blRun.withSuccessHandler(function (html) { document.open(); document.write(html); document.close(); })
+  blRun.withSuccessHandler(function (html) { document.open(); document.write(html); document.close(); refrescarSesion(); })
     .withFailureHandler(function (e) { $('v').innerHTML = '<div class="er" style="min-height:0">No se pudo abrir: ' + E(e) + '</div><button onclick="cargar()">Reintentar</button>'; })
     .pagina(PARAMS);
+}
+// actualiza en segundo plano el nombre y el rol (la página ya se pidió con la sesión: el servidor la verifica en cada pedido)
+function refrescarSesion() {
+  R0.withSuccessHandler(function (r) { NOM = r.nombre; ROL = r.rol; ls('blumia_quien', NOM); ls('bl_rol', ROL); }).withFailureHandler(function () { }).validarSesion(TOK);
 }
 (function () {
   var t = ls('bl_tok');
   if (!t) { formLogin(); return; }
   TOK = t;
+  // con la sesión ya conocida se pide la página directo (una vuelta al servidor menos); si el token venció, la propia página lo avisa
+  var n0 = ls('blumia_quien'), r0 = ls('bl_rol');
+  if (n0 && r0) { NOM = n0; ROL = r0; cargar(); return; }
   R0.withSuccessHandler(function (r) { NOM = r.nombre; ROL = r.rol; ls('blumia_quien', NOM); cargar(); })
     .withFailureHandler(function () { TOK = ''; ls('bl_tok', null); formLogin('Tu sesión venció. Ingresá de nuevo.'); }).validarSesion(t);
 })();
