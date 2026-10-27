@@ -204,13 +204,6 @@ header{min-height:86px}
   var hd=document.querySelector('header'),h1=hd&&hd.querySelector('h1');
   if(h1)h1.insertAdjacentHTML('afterend','<span class="hdr-pill" id="cntC"></span>');
   var nav=document.getElementById('nav');
-  if(nav)nav.insertAdjacentHTML('beforeend','<button class="hdr-cta" onclick="linkPostulacionT()">🔗 Link postulación</button>');
-  // un solo acceso al link de postulación: el botón de la barra (se saca el del menú 📚 Búsqueda)
-  var dupl=document.querySelector('.ddm a[onclick*="tipo=postulacion"]');if(dupl)dupl.remove();
-  window.linkPostulacionT=function(){
-    var u=(typeof URL_APP==='string'?URL_APP:'')+'?tipo=postulacion&perfil='+encodeURIComponent(PERFIL);
-    try{navigator.clipboard.writeText(u).then(function(){toast('Link copiado');},function(){prompt('Link de postulación (copialo):',u);});}catch(e){prompt('Link de postulación (copialo):',u);}
-  };
   renderBoardN();
   var rp=document.getElementById('resumenPage'),kk=document.getElementById('kpiT');if(rp&&kk&&rp.style.display==='block')kk.style.display='none';
   setTimeout(ajustarBoard,300);setTimeout(ajustarBoard,1500);
