@@ -61,7 +61,7 @@ footer{text-align:center;color:#5E5E5E;font-size:12px;padding:10px 0 30px}
 </head><body>
 <section class="hero">
   <div class="sq aro"></div>
-  <img class="sq s2" id="s2" alt="">
+  
   <div class="in">
   <div class="top"><img id="lg" alt="Blumia"><div class="r"><button class="gear" id="gear" title="Administración" onclick="menuAdm(event)">⚙</button><div class="menu" id="menu"></div><button class="avt" id="quienBtn" onclick="blMenuUsuario()">·</button></div></div>
   <div class="ht"><div class="hi" id="hola">Hola</div><h1>Atracción y Elección</h1><p>Elegí una búsqueda para ver a sus candidatos.</p>
@@ -80,7 +80,7 @@ var LOGO=%%LOGO%%;
 var AS=%%ASSETS%%;
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
 function ir(id){window.top.location.href=URL_APP+'?tipo=kanban&perfil='+encodeURIComponent(id);}
-document.getElementById('lg').src=LOGO;document.getElementById('s2').src=AS.s2;
+document.getElementById('lg').src=LOGO;
 var esAdmin=(typeof blRol==='function')&&blRol()==='Administrador';
 var nom='';try{nom=(typeof blNombre==='function'&&blNombre())||localStorage.getItem('blumia_quien')||'';}catch(e){}
 document.getElementById('hola').innerHTML=nom?'Hola, <em>'+esc(nom.split(' ')[0])+'</em>':'Hola';
