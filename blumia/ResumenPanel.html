@@ -108,12 +108,13 @@
     return '<div class="rs-dw"><svg viewBox="0 0 140 140"><g>'+paths+'</g><circle cx="70" cy="70" r="'+(r-1)+'" fill="#fff"></circle><text x="70" y="74" text-anchor="middle" style="font-size:27px;font-weight:800;fill:#0F3F27">'+centro+'</text><text x="70" y="89" text-anchor="middle" style="font-size:8.5px;fill:#666;font-weight:700">'+sub+'</text></svg><div class="rs-leg">'+leg+'</div></div>';
   }
   function kpi(n,l,c,k){return '<div class="rs-kpi '+c+'" data-k="'+k+'"><div class="n">'+n+'</div><div class="l">'+l+'</div><div class="h">ver detalle ›</div></div>';}
-  function motivosSegs(){
+  function motivosHtml(){
     var cn={},sin=0;L.forEach(function(x){if(x.t!=='desc')return;var m=String(x.c.motivo||'').trim();if(!m){sin++;return;}m.split(/;\s*/).forEach(function(z){z=z.replace(/^Otro: .*/,'Otro');cn[z]=(cn[z]||0)+1;});});
     var ks=Object.keys(cn).sort(function(a,b){return cn[b]-cn[a];});
-    var out=ks.map(function(k,i){return {l:k,v:cn[k],c:PAL[i%PAL.length],k:'mot:'+k};});
-    if(sin)out.push({l:'Sin motivo cargado',v:sin,c:'#E0A800',k:'mot:'});
-    return out;
+    if(!ks.length&&!sin)return '';
+    return '<div style="margin-top:14px"><div style="font-size:12px;font-weight:800;color:#243D2C;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Motivos de descarte</div><div class="rs-leg" style="justify-content:flex-start">'
+      +ks.map(function(k){return '<div class="rs-lb" data-k="mot:'+esc(k)+'"><div class="t">'+esc(k)+'</div><div class="p">'+cn[k]+'</div></div>';}).join('')
+      +(sin?'<div class="rs-lb" data-k="mot:" style="border-color:#E0A800"><div class="t">Sin motivo cargado</div><div class="p">'+sin+'</div></div>':'')+'</div></div>';
   }
   function kpiMini(n,l,k){return '<div class="rs-kpi" data-k="'+k+'"><div class="n" style="font-size:30px">'+n+'</div><div class="l">'+l+'</div></div>';}
   function pintar(){
@@ -127,8 +128,7 @@
     var notas={},fuentes={};L.forEach(function(y){var nt=String(y.c.nota||'').trim()||'Sin nota';notas[nt]=(notas[nt]||0)+1;var fu=String(y.c.fuente||'').trim()||'Sin dato';fuentes[fu]=(fuentes[fu]||0)+1;});
     var NS=['A','B+','B','C','Sin nota'].filter(function(k){return notas[k];}).map(function(k){return {l:k==='Sin nota'?k:'Nota '+k,v:notas[k],c:NC[k],k:'nota:'+k};});
     var FS=Object.keys(fuentes).sort(function(a,b){return fuentes[b]-fuentes[a];}).map(function(k,i){return {l:k,v:fuentes[k],c:PAL[i%PAL.length],k:'fu:'+k};});
-    var MS=motivosSegs();
-    x+='<div class="rs-panel"><div class="rs-row3"><div><h3>Dónde está cada candidato</h3>'+dona(ES,n,n,'candidatos')+'</div><div><h3>Calidad de los CVs</h3>'+dona(NS,n,pct(notas['A']||0,n),'con nota A')+'</div><div><h3>De dónde llegan</h3>'+dona(FS,n,FS.length,FS.length===1?'canal':'canales')+'</div>'+(MS.length?'<div><h3>Motivos de descarte</h3>'+dona(MS,desc,desc,desc===1?'descartado':'descartados')+'</div>':'')+'</div></div>';
+    x+='<div class="rs-panel"><div class="rs-row3"><div><h3>Dónde está cada candidato</h3>'+dona(ES,n,n,'candidatos')+'</div><div><h3>Calidad de los CVs</h3>'+dona(NS,n,pct(notas['A']||0,n),'con nota A')+'</div><div><h3>De dónde llegan</h3>'+dona(FS,n,FS.length,FS.length===1?'canal':'canales')+'</div>'+'</div>'+motivosHtml()+'</div>';
     document.getElementById('resumenPage').innerHTML=x;
   }
   function ver(v){
