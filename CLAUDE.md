@@ -13,6 +13,9 @@ Ariel y Ever no ven el código: **Claude sabe más de lo técnico y tiene que gu
 - **Ser consultor, no solo ejecutor (pedido de Ariel, 24/10):** al cerrar cada tarea agregar **«Lo que veo también»** con hasta 3 cosas que nadie pidió (riesgos, mejoras, auditorías o pendientes); si no hay nada, decirlo. Todo lo detectado y no resuelto se anota en `PENDIENTES.md` (con prioridad y quién lo hace) para que no se pierda entre chats; si Ariel pregunta «¿qué tenemos anotado?», leerlo y resumirlo. Hay una revisión semanal programada que audita el repo y trae recomendaciones.
 - **Cuando Ariel dice «charlemos», «a ver», «estoy pensando» o similar, no tocar código ni publicar nada hasta que diga «dale».** Opinar y esperar.
 
+## Orden y coherencia visual (pedido de Ariel, 28/10: no tiene que recordarlo cada vez)
+En toda pantalla nueva o tocada, revisar **antes de entregar**: (1) mismos nombres y mismo orden de etapas que el tablero (Análisis de CV · Screening · Competencias · Entrevista empresa · En reserva · Descartados; no existe «Screening empresa» ni «Entrevista final»); (2) elementos del mismo tipo con el mismo tamaño y alineados en grilla pareja, sin huérfanos en una fila suelta (6 → 3×2, 4 → 4×1); (3) mismos textos y colores en todas las vistas (Resumen, tarjetas, ficha, informes); (4) probar a ancho de compu y de celular.
+
 ## Qué hay en el repo
 | Carpeta | Qué es | Dónde se publica |
 |---|---|---|
