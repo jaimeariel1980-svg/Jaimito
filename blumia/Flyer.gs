@@ -67,9 +67,9 @@ function flyerSocial_(perfilId) {
   let s = {};
   try { s = (JSON.parse(d.guardado || '{}').social) || {}; } catch (e) { }
   const rep = t => String(t || '').replace(/\[LINK\]/g, d.linkPostulacion);
-  let imagen = '';
-  try { const it = carpetaPerfil_(getConfig(perfilId)).getFilesByName(FLYER_IMAGEN_); if (it.hasNext()) imagen = it.next().getUrl(); } catch (e) { }
-  return { linkedin: rep(s.linkedin), instagram: rep(s.instagram), whatsapp: rep(s.whatsapp), link: d.linkPostulacion, fecha: d.fecha, imagen: imagen };
+  let imagen = '', imagenId = '';
+  try { const it = carpetaPerfil_(getConfig(perfilId)).getFilesByName(FLYER_IMAGEN_); if (it.hasNext()) { const fi = it.next(); imagen = fi.getUrl(); imagenId = fi.getId(); } } catch (e) { }
+  return { linkedin: rep(s.linkedin), instagram: rep(s.instagram), whatsapp: rep(s.whatsapp), link: d.linkPostulacion, fecha: d.fecha, imagen: imagen, imagenId: imagenId };
 }
 
 function flyerGuardar_(perfilId, json) {
