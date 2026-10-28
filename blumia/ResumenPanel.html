@@ -13,6 +13,7 @@
 .rs-kpi .h{font-size:11px;color:#243D2C;margin-top:4px}
 .rs-kpi.y:before{background:#E0A800}.rs-kpi.y .n{color:#8a6500}
 .rs-kpi.r:before{background:#D9534F}.rs-kpi.r .n{color:#B91C1C}
+.rs-kpi.act{background:#FDF6DC;border-color:#E8D48A}.rs-kpi.act:before{background:#E0A800}.rs-kpi.act:after{content:'PARA ACTUAR';position:absolute;top:10px;right:10px;font-size:9px;font-weight:800;letter-spacing:.6px;color:#7A5A00;background:#F9E7A0;border-radius:99px;padding:2px 8px}
 .rs-kpi.g:before{background:#8e95a0}.rs-kpi.g .n{color:#444}
 .rs-panel{background:#fff;border:1px solid #e3e0d9;border-radius:12px;padding:20px 22px;margin-bottom:14px}
 .rs-panel h3{margin:0 0 12px;font-size:14px;text-transform:uppercase;letter-spacing:.8px;color:#243D2C;font-weight:800}
@@ -120,7 +121,7 @@
     var n=L.length,g=function(k){return grupo(k).l.length;},h0=inicioDia(),pr=g('prox'),hoy=L.filter(function(x){return citaEn(x,h0,h0+864e5);}).length;
     var cv=n,scr=g('scr'),comp=g('comp'),emp=g('emp'),res=g('res'),desc=g('desc'),dcv=g('dcv'),dpost=g('dpost'),dcomp=g('dcomp');
     var pend=(typeof AV_PEND!=='undefined'&&AV_PEND)||[],nov=(typeof AV_NOV!=='undefined'&&AV_NOV)||[],urg=pend.filter(function(a){return a.urg;}).length;
-    var x='<div class="rs-dash">'+kpi(cv,'CVs recibidos','','all')+kpi(scr,'Pasaron por screening','','scr')+kpi(comp,'Pasaron por competencias','','comp')+kpi(emp,'Avanzan a empresa','','emp')+kpi(res,'En reserva','g','res')+kpi(desc,'Descartados','r','desc')+kpi(g('sinc'),'Sin contactar','y','sinc')+kpi(pr,'Entrevistas próx. 7 días'+(hoy?' ('+hoy+' hoy)':''),'','prox')+'</div>';
+    var x='<div class="rs-dash">'+kpi(cv,'CVs recibidos','','all')+kpi(scr,'Pasaron por screening','','scr')+kpi(comp,'Pasaron por competencias','','comp')+kpi(emp,'Avanzan a empresa','','emp')+kpi(res,'En reserva','g','res')+kpi(desc,'Descartados','r','desc')+kpi(g('sinc'),'Sin contactar','y act','sinc')+kpi(pr,'Entrevistas próx. 7 días'+(hoy?' ('+hoy+' hoy)':''),'act','prox')+'</div>';
     var ES=[0,1,2,3,4].map(function(i){return {l:['Análisis de CV','Screening','Competencias','Screening empresa','Entrevista final'][i],v:g('et:'+i),c:[COLS.cv,COLS.scr,COLS.comp,COLS.semp,COLS.fin][i],k:'et:'+i};});
     ES.push({l:'En reserva',v:res,c:COLS.res,k:'res'});ES.push({l:'Descartados',v:desc,c:COLS.desc,k:'desc'});
     var notas={},fuentes={};L.forEach(function(y){var nt=String(y.c.nota||'').trim()||'Sin nota';notas[nt]=(notas[nt]||0)+1;var fu=String(y.c.fuente||'').trim()||'Sin dato';fuentes[fu]=(fuentes[fu]||0)+1;});
