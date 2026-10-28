@@ -235,6 +235,12 @@ header{min-height:86px}
   function nBadge(n,fut){n=String(n||'').trim();var k=n==='A'?'nA':n==='B+'?'nBp':n==='B'?'nB':n==='C'?'nC':'';return n?'<span class="nota '+k+'">'+esc(n)+'</span>':fut?'<span style="color:#8A8A80;font-size:11px">—</span>':'<span style="color:#555;font-size:11px">sin nota</span>';}
   var COL_N={'A':'#1E8E5A','B+':'#8BD3A8','B':'#F2B705','C':'#D9534F'};
   function row(l,v){return v?'<div class="frow"><span class="fl">'+l+'</span><span class="fv">'+v+'</span></div>':'';}
+  window.menuContacto=function(f){
+    var c=DATA.find(function(x){return x.fila===f;});if(!c)return;
+    var okMail=c.mail&&c.mail!=='Sin dato'&&c.mail.indexOf('@')>-1;
+    if(!okMail){menuWA(f);return;}
+    blMenu('Contactar a '+c.nombre,'',[['💬 WhatsApp',function(){menuWA(f);}],['✉ Mail',function(){window.open('https://mail.google.com/mail/?view=cm&to='+encodeURIComponent(c.mail),'_blank');}]]);
+  };
   window.ficha=function(f){
     var c=DATA.find(function(x){return x.fila===f;});if(!c)return;
     var m=metEstado(c.estado)||{t:'act'};
@@ -257,8 +263,7 @@ header{min-height:86px}
     var st=String(c.estado||''),ei=/sin screening/i.test(st)?0:/final|cliente|contratad|presencial empresa/i.test(st)?4:/empresa/i.test(st)?3:/competencia/i.test(st)?2:/screening|agendad/i.test(st)?1:0;
     if(c.notaPresEmp)ei=Math.max(ei,4);else if(c.notaScrEmp)ei=Math.max(ei,3);else if(c.notaComp||c.compPDF)ei=Math.max(ei,2);else if(c.notaScr||c.scrPDF)ei=Math.max(ei,1);
     var ecs=etapas.map(function(e,i){return '<span class="ec" style="border-bottom-color:'+(COL_N[String(e[1]||'').trim()]||'#C9C5BB')+'">'+nBadge(e[1],i>ei)+' '+e[0]+'</span>';}).join('');
-    var waBtn='<button class="mbtn wa" onclick="menuWA('+c.fila+')">💬 WhatsApp ▾</button>';
-    var mailBtn=(c.mail&&c.mail!=='Sin dato'&&c.mail.indexOf('@')>-1)?'<a href="https://mail.google.com/mail/?view=cm&to='+esc(c.mail)+'" target="_blank" class="mbtn">✉ Mail</a>':'';
+    var contBtn='<button class="mbtn wa" onclick="menuContacto('+c.fila+')">💬 Contacto ▾</button>';
     var cvBtn=c.cv?'<a href="https://drive.google.com/file/d/'+esc(c.cv)+'/view" target="_blank" class="mbtn alt">📄 Ver CV</a>':'';
     var genBtn=c.informe?'':'<button class="mbtn gen" onclick="var b=this;blConfirm(\'Generar informe con IA. Puede tener costo. ¿Continuar?\',function(){generar('+c.fila+',b)})">Generar informe</button>';
     var bancoBtn='<button class="mbtn alt" onclick="menuBanco('+c.fila+')">★ Banco</button>';
@@ -270,7 +275,7 @@ header{min-height:86px}
       +'<div class="frow"><span class="fl">Registro de contactos</span><span class="fv" id="regCont" style="white-space:pre-line">cargando…</span></div>';
     var h='<div class="fwrap" style="margin:-24px"><div class="fh"><div style="font-size:16px;color:#243D2C"><b>'+esc(c.estado)+'</b></div><div class="ecs">'+ecs+'</div></div>'
       +(al?'<div class="fal">'+al+'</div>':'')
-      +'<div class="fb"><div class="acts">'+waBtn+mailBtn+agBtn+'</div><details class="mas"><summary>Más acciones ▾</summary><div class="acts">'+cvBtn+etapaBtn('screening',c.scrPDF,'Screening','📝 Cargar screening')+etapaBtn('competencias',c.compPDF,'Competencias','💼 Cargar competencias')+btn(c.postulacion,'Ver postulación')+btn(c.informe,'Ver informe')+genBtn+bancoBtn+'</div></details>'+agendarHtml(c)
+      +'<div class="fb"><div class="acts all">'+contBtn+cvBtn+agBtn+'<button class="mbtn alt mas-t" onclick="var b=this.nextElementSibling;b.classList.toggle(\'show\');this.textContent=b.classList.contains(\'show\')?\'Menos opciones ▴\':\'Más opciones ▾\'">Más opciones ▾</button><div class="mas-b">'+etapaBtn('screening',c.scrPDF,'Screening','📝 Cargar screening')+etapaBtn('competencias',c.compPDF,'Competencias','💼 Cargar competencias')+btn(c.postulacion,'📄 Ver postulación')+btn(c.informe,'📄 Ver informe')+genBtn+bancoBtn+'</div></div>'+agendarHtml(c)
       +'<div class="fpw"><button class="fpe" title="Editar datos del candidato" onclick="panelTog(\'edPanel\')">✏️</button><div class="fp"><div class="pn"><h4>Contacto</h4>'+row('Teléfono',esc(fmtTel(c.tel)))+row('Email',esc(c.mail))+row('Zona',esc(c.zona))+'</div>'
       +'<div class="pn"><h4>Postulación</h4>'+row('Recibido',esc(c.recibido))+row('Llegó por',esc(c.fuente))+row('Formación',esc(fmtForm(c.formacion)))+row('Pretensión',c.pretension?'$'+fmtMiles(c.pretension):'')+'</div></div></div>'+editarHtml(c)
       +(c.resumen?'<div class="sec">Análisis del CV</div><div class="fres" style="margin:0">'+esc(c.resumen)+'</div>':'')
@@ -467,6 +472,10 @@ header h1{display:none!important}
 #mbody .acts .mbtn.alt{background:var(--mint)!important;color:var(--green)!important;border:1.5px solid var(--line)!important}
 #mbody .acts .mbtn:hover{border-color:var(--green)!important}
 #mbody .acts .mbtn.wa{background:var(--green)!important;color:#fff!important;border-color:var(--green)!important}
+#modal .modal-h{background-image:radial-gradient(circle at 93% 50%,rgba(255,255,255,0) 34px,rgba(255,255,255,.08) 35px,rgba(255,255,255,.08) 70px,rgba(255,255,255,0) 71px),radial-gradient(circle at 80% 120%,rgba(255,255,255,0) 40px,rgba(255,255,255,.05) 41px,rgba(255,255,255,.05) 62px,rgba(255,255,255,0) 63px)}
+#mbody .acts.all{grid-template-columns:repeat(4,1fr)}
+.mas-b{display:contents}.mas-t{display:none!important}
+@media(max-width:640px){#mbody .acts.all{grid-template-columns:repeat(2,1fr)}#mbody .acts.all .mas-t{display:flex!important;grid-column:1/-1}.mas-b{display:none}.mas-b.show{display:contents}}
 details.mas{text-align:left}
 #mbody .acts .mbtn.gen{background:var(--cream)!important;border-color:var(--cream)!important}
 #mbody .acts .sp{display:flex}
