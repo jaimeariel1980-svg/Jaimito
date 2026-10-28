@@ -23,6 +23,7 @@ function azcuPruebasBot(){
   var seg2 = f.reduce(function(a,x){ return a+(+x[7]||0); }, 0), ll2 = f.reduce(function(a,x){ return a+(+x[6]||0); }, 0);
   sh.appendRow([run, '', 'RESUMEN', '✅ '+c['✅']+'  🟡 '+c['🟡']+'  ❌ '+c['❌'], '', '', ll2, Math.round(seg2), '', 'Promedio '+(f.length ? Math.round(seg2/f.length*10)/10 : 0)+' s y '+(f.length ? Math.round(ll2/f.length*10)/10 : 0)+' llamadas por frase']);
   P.deleteProperty('AZCU_PRUEBAS_I'); P.deleteProperty('AZCU_PRUEBAS_ID'); P.setProperty('AZCU_PRUEBAS', 'NO');
+  f.filter(function(x){ return String(x[8]).charAt(0)!=='✅'; }).forEach(function(x){ Logger.log(x[8]+' #'+x[1]+' «'+x[2]+'» → '+x[9]+'\n   Respuesta: '+String(x[4]).replace(/\n+/g,' / ').slice(0,260)+(x[5] ? '\n   Tarjetas: '+String(x[5]).slice(0,200) : '')); });
   Logger.log('Listo ('+run+'): ✅ '+c['✅']+'  🟡 '+c['🟡']+'  ❌ '+c['❌']+'. Detalle en la pestaña Pruebas_Bot de la planilla Maestra.');
 }
 
