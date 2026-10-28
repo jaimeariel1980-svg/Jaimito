@@ -120,6 +120,7 @@ function azcuPedidas_(texto){
   }catch(eC){}
   return out;
 }
+function azcuIdsEn_(texto){ return String(texto||'').match(/\b[A-Z]{2,4}-[A-Z]?\d[A-Z0-9-]*\b/g) || []; }
 function azcuCallesEnTexto_(texto){
   var T = ' '+azcuTokens_(texto, true).join(' ')+' ', cs = {}, out = [];
   azcuDatos_().forEach(function(p){ azcuTokens_((p.det&&p.det.calle)||'', true).forEach(function(x){ if(x.length>=4 && !/^\d+$/.test(x) && !AZCU_NOCALLE_[x]) cs[x] = 1; }); });
@@ -1014,7 +1015,7 @@ function azcuChat(pin, mensajes, ctx){
   ctx = ctx || {};
   try{ var lm = (mensajes||[]).length ? mensajes[mensajes.length-1] : null, cr = lm && lm.role==='user' ? azcuCalc_(lm.content) : null; if(cr) return {texto:cr.texto, acciones:[], adjuntos:[], panel:null}; }catch(e){}
   try{ var lu = (mensajes||[]).length ? mensajes[mensajes.length-1] : null; if(lu && lu.role==='user' && /^\s*(y\s+)?(la|el|lo)\s+otr[ao]s?\s*[?!.]*\s*$/i.test(String(lu.content||''))) return {texto:'¿A cuál te referís con «la otra»? Decime la dirección o el código y te la paso.', acciones:[], adjuntos:[], panel:null}; }catch(eO){}
-  var pedUlt = [], calTx = [], pistaCalle = '';
+  var pedUlt = [], calTx = [], pistaCalle = '', pistaCalleIds = [];
   try{ var txP = (mensajes||[]).length && mensajes[mensajes.length-1].role==='user' ? String(mensajes[mensajes.length-1].content||'') : ''; if(txP){ var scx = azcuSinCoincidencia_(txP); if(scx) return scx; pedUlt = azcuPedidas_(txP); } }catch(eP){}
   try{
     if(txP && !pedUlt.length){
@@ -1022,6 +1023,7 @@ function azcuChat(pin, mensajes, ctx){
       if(calTx.length){
         if(ctx.fichaId){ var pf = azcuProp_(ctx.fichaId), tf = pf ? azcuTokens_(pf.dir, true) : []; if(pf && !calTx.some(function(c){ return tf.indexOf(c)>=0; })) ctx = Object.assign({}, ctx, {fichaId:''}); }
         var cd0 = azcuDatos_().filter(function(p){ var tk = azcuTokens_((p.det&&p.det.calle)||'', true); return calTx.some(function(c){ return tk.indexOf(c)>=0; }); });
+        pistaCalleIds = cd0.map(function(x){ return x.id; });
         if(cd0.length) pistaCalle = 'DATO VERIFICADO POR EL SISTEMA: el usuario nombra la calle '+calTx.join(', ')+' sin número. Propiedades de esa calle: '+cd0.slice(0,10).map(function(p){ return p.id+' ('+p.dir+')'; }).join('; ')+(cd0.length>10 ? ' y '+(cd0.length-10)+' más' : '')+'. '+(cd0.length===1 ? 'Es esa; usá ese id.' : 'Si no queda claro cuál, preguntá número o piso.')+' NO uses la ficha abierta ni otra propiedad.';
       }
     }
@@ -1051,6 +1053,21 @@ function azcuChat(pin, mensajes, ctx){
     if(cd.length===1) pista = 'DATO VERIFICADO POR EL SISTEMA: el usuario nombra la propiedad '+cd[0].id+' ('+cd[0].dir+'). Usá ese id directamente; NO digas que no la encontrás.';
     else if(cd.length>1) pista = 'DATO VERIFICADO POR EL SISTEMA: en esa dirección hay '+cd.length+' unidades: '+cd.slice(0,12).map(function(p){ return p.id+' ('+p.dir+')'; }).join('; ')+'. Si falta saber cuál, preguntá piso/dpto; NO digas que no la encontrás.';
   }catch(ePista){}
+  var vistos = {};
+  try{
+    if(ctx.fichaId) vistos[ctx.fichaId] = 1;
+    (mensajes||[]).forEach(function(m){ azcuIdsEn_(m.content).forEach(function(x){ vistos[x] = 1; }); });
+    if(!pista && !pedUlt.length && !calTx.length){
+      var ms = (mensajes||[]).slice(0,-1).reverse().slice(0,6), pc = [], q3;
+      for(q3=0;q3<ms.length && !pc.length;q3++) pc = azcuDirEnTexto_(String(ms[q3].content||''));
+      if(pc.length && pc.length<=3){
+        pc.forEach(function(x){ vistos[x.id] = 1; });
+        pista = 'PROPIEDAD DE LA CONVERSACIÓN (verificada por el sistema): '+pc.map(function(x){ return x.id+' ('+x.dir+')'; }).join('; ')+'. Si el último mensaje no nombra otra propiedad, preguntas como «en la ficha?», «¿y el dueño?» o «¿y el precio?» se refieren a ESA (tiene prioridad sobre la ficha abierta): usá ese id, no busques ni uses otra.';
+      }
+    }
+    if(pistaCalleIds) pistaCalleIds.forEach(function(x){ vistos[x] = 1; });
+    (typeof cd!=='undefined' && cd ? cd : []).forEach(function(x){ vistos[x.id] = 1; });
+  }catch(eV){}
   var msgs = [{role:'system', content:azcuSistema_(ctx)}].concat(pista ? [{role:'system', content:pista}] : []).concat((mensajes||[]).slice(-12).map(function(m){ return {role:m.role==='assistant'?'assistant':'user', content:String(m.content||'')}; }));
   var tools = azcuTools_(), acciones = [], adj = [], panel = null, i;
   var mapa = {proponer_cargar_interaccion:'cargar', proponer_agendar_visita:'agendar', proponer_visita_externa:'visitaext', proponer_cancelar_visita:'cancelvis', proponer_restaurar:'restaurar', proponer_registrar_propuesta:'propuesta', proponer_cambiar_etapa:'etapa', proponer_editar_campos:'campos', proponer_marcar_documento:'doc', proponer_borrar_documento:'borrardoc', proponer_editar_interaccion:'editarint', proponer_eliminar_interaccion:'elimint', proponer_eliminar_propiedad:'elimprop', proponer_enviar_reporte:'reporte'};
@@ -1078,7 +1095,8 @@ function azcuChat(pin, mensajes, ctx){
       try{
         var pgd = null;
         if(pedUlt.length && args.id && n!=='buscar_propiedades' && !/^EXT-/i.test(String(args.id)) && /^(ficha_propiedad|datos_tecnicos|captacion_formulario|abrir_enlace|enviar_whatsapp|generar_pdf|proponer_)/.test(n)){ pgd = azcuProp_(args.id); if(pgd && azcuPedidaCoincide_(pedUlt, pgd)) pgd = null; }
-        if(pgd){ res = {error:'La propiedad '+pgd.id+' ('+pgd.dir+') NO coincide con la dirección que pidió el usuario ('+pedUlt.map(function(q){ return q.raw; }).join(' / ')+'). No des datos de esa propiedad ni armes tarjeta: decile que no encontraste esa dirección exacta y preguntale cuál quiso decir.'}; }
+        if(!pgd && args.id && n!=='buscar_propiedades' && !/^EXT-/i.test(String(args.id)) && !vistos[String(args.id)] && /^(ficha_propiedad|datos_tecnicos|captacion_formulario|abrir_enlace|enviar_whatsapp|generar_pdf|proponer_)/.test(n)){ res = {error:'Ese id no salió de una búsqueda ni de la conversación. Usá buscar_propiedades con la dirección que dijo el usuario y usá el id que devuelva; no inventes ids.'}; }
+        else if(pgd){ res = {error:'La propiedad '+pgd.id+' ('+pgd.dir+') NO coincide con la dirección que pidió el usuario ('+pedUlt.map(function(q){ return q.raw; }).join(' / ')+'). No des datos de esa propiedad ni armes tarjeta: decile que no encontraste esa dirección exacta y preguntale cuál quiso decir.'}; }
         else if(n==='buscar_propiedades'){ res = azcuHerrBuscar_(args); if(res.length===1 && !directo && !esAcc && !args.puntual){ directo = azcuFmtFicha_(res[0].id); adj.push.apply(adj, azcuBtnsFicha_(res[0].id)); } if(!res.length){ var vxe = azcuBuscarVisExt_(args.texto); if(vxe.length) res = {propiedades_del_sistema:[], posibles_visitas_con_otra_inmobiliaria:vxe, nota:'No es una propiedad de Azcuénaga: son visitas con otra inmobiliaria. Para cargar el resultado usá proponer_visita_externa con el codigo_externa; para corregir o borrar usá proponer_editar_interaccion o proponer_eliminar_interaccion (id = codigo_externa, con su fila); para cancelar, proponer_cancelar_visita.'}; else { var par = azcuParecidas_(args.texto); if(par.length) res = {propiedades_del_sistema:[], sin_coincidencia_exacta:true, parecidas:par, nota:'NO hay ninguna propiedad con esa calle y ese número a la vez. No des precio ni ningún otro dato de las parecidas como si fueran la que pidió el usuario: decile que no encontrás esa dirección y preguntale si se refería a alguna de las parecidas, nombrándolas con su dirección completa.'}; } } }
         else if(n==='consultas_whatsapp') res = azcuHerrConsWS_(args);
         else if(n==='ficha_propiedad'){ res = azcuHerrFicha_(args); if(!args.puntual && !res.error && !directo && !esAcc){ directo = azcuFmtFicha_(args.id); adj.push.apply(adj, azcuBtnsFicha_(args.id)); } }
@@ -1124,6 +1142,7 @@ function azcuChat(pin, mensajes, ctx){
         } else res = {error:'Herramienta desconocida'};
       }catch(e){ res = {error:String(e.message||e)}; }
       if(res && res.error){ try{ Logger.log('azcuChat herramienta '+n+' con error: '+res.error+' · args='+JSON.stringify(args).slice(0,400)); }catch(eL){} }
+      try{ azcuIdsEn_(JSON.stringify(res)).forEach(function(x){ vistos[x] = 1; }); }catch(eI){}
       if(!mapa[n] || (res && res.error)) solo = false;
       msgs.push({role:'tool', tool_call_id:tc.id, content:JSON.stringify(res).slice(0,24000)});
     });
