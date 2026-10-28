@@ -144,3 +144,5 @@ Hecha con el código real y 37 fichas de ejemplo; el modelo real (`gpt-4o-mini`)
 - 🟡 Diseño: `appscript/Tablero.html` y `azcubot/Tablero.html` siguen con ~75 líneas de diferencia (punto 23); archivos viejos en `azcubot/` (punto 25); el robot flotante sigue tapando contenido al pie en celular (el scroll deja pasar, hay 110 px de margen).
 
 - Blumia (28/10): «Guardar en Drive» del flyer guarda también la imagen (JPG con link de lectura para quien tenga el link) y el menú Búsqueda → «📢 Ver y enviar flyer» muestra la imagen ya hecha con «Enviar por WhatsApp» (texto + link de la imagen); el flyer se edita solo en ⚙ Configurar → Flyer y textos (`flyerImagen_`); en la pantalla del flyer sigue el botón de compartir. Probar en un celular real. Prioridad baja · Claude.
+
+- ✅ 3ª corrida de pruebas (28/10 15:12): ✅ 46 · 🟡 1 · ❌ 1, 1,9 s y 1,3 llamadas por frase. El ❌ («mandale la encuesta» armaba una interacción) se corrigió: ahí se saca `proponer_cargar_interaccion`. La 🟡 es la respuesta a «UVA o tradicional» (506 caracteres): se arregla con la reescritura del prompt (pendiente de OK de Ariel).

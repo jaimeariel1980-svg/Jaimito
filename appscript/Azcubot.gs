@@ -1106,6 +1106,13 @@ function azcuChat(pin, mensajes, ctx){
       msgs.push({role:'system', content:'El usuario pide REDACTAR un texto: respondé solo con el texto listo para copiar. No cambies datos ni armes tarjetas.'});
     }
   }catch(eRd){}
+  try{
+    var txE = (mensajes||[]).length && mensajes[mensajes.length-1].role==='user' ? String(mensajes[mensajes.length-1].content||'') : '';
+    if(/encuesta/i.test(txE) && /\b(mand|envi|pas[aá]me|pas[aá]le|compart)/i.test(txE) && !/\b(carg|registr|anot)/i.test(txE)){
+      tools = tools.filter(function(t0){ return t0.function.name!=='proponer_cargar_interaccion'; });
+      msgs.push({role:'system', content:'El usuario pide MANDAR la encuesta de satisfacción: usá enviar_whatsapp (tipo encuesta) o abrir_enlace con el id de la propiedad. NO cargues ninguna interacción.'});
+    }
+  }catch(eEn){}
   var mapa = {proponer_cargar_interaccion:'cargar', proponer_agendar_visita:'agendar', proponer_visita_externa:'visitaext', proponer_cancelar_visita:'cancelvis', proponer_restaurar:'restaurar', proponer_registrar_propuesta:'propuesta', proponer_cambiar_etapa:'etapa', proponer_editar_campos:'campos', proponer_marcar_documento:'doc', proponer_borrar_documento:'borrardoc', proponer_editar_interaccion:'editarint', proponer_eliminar_interaccion:'elimint', proponer_eliminar_propiedad:'elimprop', proponer_enviar_reporte:'reporte'};
   var directo = null, ult = (mensajes||[]).length ? mensajes[mensajes.length-1] : null, esAcc = !!(ult && /carg|agend|registr|propuesta|cambi|pas[aá] a|edit|borr|elimin|marc|sub[ií]|envi|mand|record|avis|visita|document|papeles|falta|cu[aá]nto|cu[aá]ndo|qui[eé]n|tel[eé]fono|mail|historial|interacci/i.test(String(ult.content||'')) && !/^(info|datos|ficha|contame)/i.test(String(ult.content||'').trim()));
   var txU = String((ult && ult.content)||''), pideFicha = (/info|datos|ficha|contame|cont[aá] de|completo|detalle|mostr[aá]|pasame|todo (de|sobre)/i.test(txU) && !/\b(tampoco|figura|aparece|est[aá]|hay|tiene|falta|dice)\b/i.test(txU)) || (txU.split(/\s+/).length<=6 && pedUlt.length>0 && cd.length>0);
