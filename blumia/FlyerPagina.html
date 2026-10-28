@@ -373,29 +373,37 @@ function generarIA(){
 
 function guardar(){
   leerTextos();var b=$('btnSave');b.disabled=true;b.textContent='Guardando…';
-  google.script.run.withSuccessHandler(function(r){b.disabled=false;b.textContent='💾 Guardar en Drive';sucio=false;msg('Guardado.');$('fechaG').textContent='Último guardado: '+r.fecha})
-    .withFailureHandler(function(e){b.disabled=false;b.textContent='💾 Guardar en Drive';msg((e&&e.message)||String(e),false)}).flyerGuardar(DATOS.perfil,JSON.stringify(S));
+  var listo=function(r){b.disabled=false;b.textContent='💾 Guardar en Drive';sucio=false;msg('Guardado.');$('fechaG').textContent='Último guardado: '+r.fecha};
+  var err=function(e){b.disabled=false;b.textContent='💾 Guardar en Drive';msg((e&&e.message)||String(e),false)};
+  google.script.run.withSuccessHandler(function(r){
+    capturar(function(c,url){google.script.run.withSuccessHandler(function(){listo(r);msg('Guardado. Ya se puede enviar por WhatsApp desde el menú Búsqueda.')}).withFailureHandler(function(e){listo(r);msg('Se guardó el diseño, pero no la imagen para enviar: '+((e&&e.message)||e),false)}).flyerImagen(DATOS.perfil,url)},function(m){listo(r);msg('Se guardó el diseño, pero no la imagen para enviar: '+m,false)},1.5,'image/jpeg',0.88);
+  }).withFailureHandler(err).flyerGuardar(DATOS.perfil,JSON.stringify(S));
 }
 
-function descargar(modo){
-  if(typeof html2canvas!=='function'){msg('No se pudo cargar la herramienta de imagen. Revisá la conexión y recargá.',false);return}
-  leerTextos();var b=$(modo==='wa'?'btnWa':'btnPng'),tb=b.textContent,f=FMT[S.fmt];b.disabled=true;b.textContent='Armando la imagen…';
+function capturar(ok,fallo,escala,tipo,q){
+  if(typeof html2canvas!=='function'){fallo('No se pudo cargar la herramienta de imagen. Revisá la conexión y recargá.');return}
+  var f=FMT[S.fmt];
   if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
   document.body.classList.add('exporting');
   var st=$('stage'),tr=st.style.transform;st.style.transform='none';
-  var fin=function(){st.style.transform=tr;document.body.classList.remove('exporting');b.disabled=false;b.textContent=tb};
+  var fin=function(){st.style.transform=tr;document.body.classList.remove('exporting')};
   (document.fonts&&document.fonts.ready||Promise.resolve()).then(function(){setTimeout(function(){
-    html2canvas($('flyer'),{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#EEF7EE',width:f.W,height:f.H,windowWidth:f.W,windowHeight:f.H,scrollX:0,scrollY:0}).then(function(c){
-      fin();
-      var url=c.toDataURL('image/png'),nom='flyer-'+DATOS.puesto.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'-'+f.nom+'.png';
-      if(modo==='wa'){c.toBlob(function(bl){var tx=$('tWa').value||'';var fl=null;try{fl=new File([bl],nom,{type:'image/png'})}catch(e){}
-        if(fl&&navigator.canShare&&navigator.canShare({files:[fl]})){navigator.share({files:[fl],text:tx}).catch(function(){})}
-        else{var a=document.createElement('a');a.href=url;a.download=nom;document.body.appendChild(a);a.click();a.remove();window.open('https://wa.me/?text='+encodeURIComponent(tx),'_blank');msg('Se bajó la imagen y se abrió WhatsApp con el texto: adjuntá la imagen del flyer al chat.',true)}
-      },'image/png');return}
-      $('resImg').src=url;$('resA').href=url;$('resA').setAttribute('download',nom);$('resN').textContent='Si no se descargó sola, tocá «Descargar» o mantené apretada la imagen para guardarla.';$('res').classList.add('show');
-      try{var a=document.createElement('a');a.href=url;a.download=nom;document.body.appendChild(a);a.click();a.remove()}catch(e){}
-    }).catch(function(e){fin();msg('No se pudo armar la imagen: '+((e&&e.message)||e),false)});
+    html2canvas($('flyer'),{scale:escala,useCORS:true,allowTaint:true,backgroundColor:'#EEF7EE',width:f.W,height:f.H,windowWidth:f.W,windowHeight:f.H,scrollX:0,scrollY:0}).then(function(c){fin();ok(c,c.toDataURL(tipo,q),f)}).catch(function(e){fin();fallo('No se pudo armar la imagen: '+((e&&e.message)||e))});
   },80)});
+}
+
+function descargar(modo){
+  leerTextos();var b=$(modo==='wa'?'btnWa':'btnPng'),tb=b.textContent;b.disabled=true;b.textContent='Armando la imagen…';
+  capturar(function(c,url,f){
+    b.disabled=false;b.textContent=tb;
+    var nom='flyer-'+DATOS.puesto.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'-'+f.nom+'.png';
+    if(modo==='wa'){c.toBlob(function(bl){var tx=$('tWa').value||'';var fl=null;try{fl=new File([bl],nom,{type:'image/png'})}catch(e){}
+      if(fl&&navigator.canShare&&navigator.canShare({files:[fl]})){navigator.share({files:[fl],text:tx}).catch(function(){})}
+      else{var a=document.createElement('a');a.href=url;a.download=nom;document.body.appendChild(a);a.click();a.remove();window.open('https://wa.me/?text='+encodeURIComponent(tx),'_blank');msg('Se bajó la imagen y se abrió WhatsApp con el texto: adjuntá la imagen del flyer al chat.',true)}
+    },'image/png');return}
+    $('resImg').src=url;$('resA').href=url;$('resA').setAttribute('download',nom);$('resN').textContent='Si no se descargó sola, tocá «Descargar» o mantené apretada la imagen para guardarla.';$('res').classList.add('show');
+    try{var a=document.createElement('a');a.href=url;a.download=nom;document.body.appendChild(a);a.click();a.remove()}catch(e){}
+  },function(m){b.disabled=false;b.textContent=tb;msg(m,false)},2,'image/png');
 }
 
 cargarEstado();cableado();pintarTextos();aplicar();
