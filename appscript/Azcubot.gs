@@ -974,11 +974,13 @@ function azcuSistema_(ctx){
   ].join('\n');
 }
 
+var AZCU_NLLAM_ = 0;
 function azcuOpenAI_(messages, tools){
   var key = _openAiApiKey();
   if(!key) throw new Error('Falta configurar OPENAI_API_KEY en las propiedades del script');
   var mod = azcuModelo_(), r;
   for(var k=0;k<2;k++){
+    AZCU_NLLAM_++;
     r = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {
       method:'post', contentType:'application/json', headers:{Authorization:'Bearer '+key}, muteHttpExceptions:true,
       payload:JSON.stringify({model:mod, messages:messages, tools:tools, tool_choice:'auto', temperature:0.1, max_tokens:900})
