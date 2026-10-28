@@ -1118,7 +1118,7 @@ function cargarForm(id, nombre, tel){
   const p=DATA.find(x=>x.id===id);
   const hoy=new Date().toISOString().slice(0,10);
   const nom=nombre?decodeURIComponent(nombre):'';const t=tel?decodeURIComponent(tel):'';
-  const resOpts=RES_OPC.map(o=>'<option>'+o+'</option>').join('');
+  const resOpts=RES_OPC.concat(['Visita cancelada','Reprogramar visita']).map(o=>'<option>'+o+'</option>').join('');
   document.getElementById('dlg').innerHTML=
   '<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">Cargar interacción</div><div class="sub">'+p.id+' · '+p.dir+'</div></div>'+
   '<div class="fb"><div style="font-size:12px;color:var(--gris);margin-bottom:8px">Lo que ya pasó con un interesado: visita realizada, consulta, llamada, WhatsApp o mail.</div><div class="form">'+
@@ -1126,7 +1126,9 @@ function cargarForm(id, nombre, tel){
     '<label>Vía<select id="cf_via"><option>WhatsApp</option><option value="Visita">Visita realizada</option><option>Llamada</option><option>Mail</option></select></label>'+
     '<label>Interesado<input id="cf_cli" value="'+nom.replace(/"/g,'&quot;')+'" placeholder="Nombre y apellido"></label>'+
     '<label>Teléfono<input id="cf_tel" value="'+t+'" placeholder="+54 341 ..."></label>'+
-    '<label>Resultado<select id="cf_res">'+resOpts+'</select></label>'+
+    '<label>Resultado<select id="cf_res" onchange="cfResTog()">'+resOpts+'</select></label>'+
+    '<label id="cf_rpl" style="display:none">Nueva fecha y hora de la visita<input id="cf_cuando" type="datetime-local"></label>'+
+    '<div id="cf_rpn" style="display:none;grid-column:1/-1;font-size:12px;color:var(--gris)">Actúa sobre la visita agendada de este interesado: no crea una fila nueva. Anotá el motivo en Observaciones.</div>'+
     '<label>Próximo paso<input id="cf_prox" placeholder="Ej: coordinar visita"></label>'+
     '<label style="grid-column:1/-1">Observaciones<textarea id="cf_obs" rows="2" placeholder="Comentarios..."></textarea></label>'+
   '</div>'+
@@ -1167,12 +1169,14 @@ function _vend(id){
   if(!n){ try{ n=(prompt('Esta propiedad no tiene vendedor asignado. ¿Con qué nombre cargás esto? (el mismo que usás en Azcu)')||'').trim(); if(n) localStorage.setItem('azcu_nombre',n); }catch(e){} }
   return n;
 }
+function cfResTog(){var r=(document.getElementById('cf_res')||{}).value||'',c=/^Visita cancelada$|^Reprogramar/.test(r);var a=document.getElementById('cf_rpl'),b=document.getElementById('cf_rpn');if(a)a.style.display=/^Reprogramar/.test(r)?'':'none';if(b)b.style.display=c?'':'none';}
 function guardarConsulta(id){
   const g=x=>document.getElementById(x)?document.getElementById(x).value:'';
   const datos={ fecha:_fechaAr(g('cf_fecha')), via:g('cf_via'), interesado:g('cf_cli'),
     tel:g('cf_tel'), resultado:g('cf_res'), prox:g('cf_prox'), obs:g('cf_obs'), vendedor:_vend(id), cargo:_yo() };
   if(!datos.interesado){ alert('Poné al menos el nombre del interesado'); return; }
-  if(/rechaz|no le interes/i.test(datos.resultado)&&!String(datos.obs||'').trim()){ alert('Anotá el motivo en Observaciones: queda registrado.'); return; }
+  if(/rechaz|no le interes|^Visita cancelada$/i.test(datos.resultado)&&!String(datos.obs||'').trim()){ alert('Anotá el motivo en Observaciones: queda registrado.'); return; }
+  if(/^Reprogramar/.test(datos.resultado)){ const c=g('cf_cuando'); if(!c){ alert('Poné la fecha y hora nueva de la visita'); return; } datos.cuando=new Date(c).toISOString(); }
   const btn=document.getElementById('cf_btn'); if(btn){btn.textContent='Guardando…';btn.disabled=true;}
   google.script.run
     .withSuccessHandler(function(){ if(/Propuesta aceptada/i.test(datos.resultado)){google.script.run.guardarPropiedad(id,{etapa:'Reserva',quien:_yo()});festejar(null,'reserva');} closeDL(); recargar(id); })
@@ -1945,7 +1949,7 @@ function visFiltrar(per,vend){
   return VIS.filter(function(x){
     if(vend&&_vN(x.v||x.c)!==_vN(vend))return false;
     if(x.e==='c'&&per!=='canc'&&per!=='todas')return false;
-    if(per==='canc')return x.e==='c';
+    if(per==='canc')return x.e==='c'&&!x.rp;
     if(per==='hoy')return x.d===h;
     if(per==='sem')return x.d>=s[0]&&x.d<=s[1];
     if(per==='prox')return x.d>=h&&x.e==='a';
@@ -1972,7 +1976,7 @@ function visAbrir(per,vend){
   l.forEach(function(x){
     var d=new Date(x.d+'T12:00:00'),k=x.d===h?'Hoy':x.d===_vIso(man)?'Mañana':x.d===_vIso(ayer)?'Ayer':d.toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'});
     if(k!==last){html+='<div style="margin:12px 0 5px;font-size:12px;font-weight:700;color:var(--gris);text-transform:uppercase;letter-spacing:.04em">'+_vE(k)+'</div>';last=k;}
-    var bd=x.e==='a'?['Agendada','#eaf1ff','#2b4a8b']:x.e==='p'?['Falta resultado','#fff1e0','#b4620a']:x.e==='c'?['Cancelada','#eee','#666']:[x.res||'Realizada','#e9f6ee','#2e7d4f'];
+    var bd=x.e==='a'?['Agendada','#eaf1ff','#2b4a8b']:x.e==='p'?['Falta resultado','#fff1e0','#b4620a']:x.e==='c'?[x.rp?'Reprogramada':'Cancelada','#eee','#666']:[x.res||'Realizada','#e9f6ee','#2e7d4f'];
     html+='<div onclick="visDet('+x.f+')" style="display:flex;gap:10px;padding:9px 10px;border-radius:10px;margin-bottom:4px;cursor:pointer;background:#f6f8fc'+(x.e==='c'?';opacity:.65':'')+'"><div style="min-width:44px;font-weight:700;color:#2b4a8b;font-size:13px">'+(x.h||'—')+'</div><div style="min-width:0;flex:1"><div style="font-size:13.5px;font-weight:700">'+(x.x?'🏢 ':'🏠 ')+_vE(x.dir)+(x.x?' <span style="background:#fff1e0;color:#b4620a;border-radius:6px;padding:1px 6px;font-size:10px;font-weight:700;vertical-align:middle;white-space:nowrap">OTRA INMOBILIARIA</span>':(x.im||x.co?' <span style="background:#e8f0ff;color:#2b4a8b;border-radius:6px;padding:1px 6px;font-size:10px;font-weight:700;vertical-align:middle;white-space:nowrap">🤝 POR OTRA INMOBILIARIA</span>':''))+'</div><div style="font-size:12px;color:var(--gris)">'+((x.im||x.co)?_vE(x.im||'')+(x.co?(x.im?' · ':'')+'colega '+_vE(x.co):'')+' · ':'')+_vE(x.cli||'—')+(x.v||x.c?' · 👤 '+_vE(x.v||x.c):'')+'</div></div><span style="align-self:center;background:'+bd[1]+';color:'+bd[2]+';border-radius:8px;padding:2px 8px;font-size:11px;font-weight:700;white-space:nowrap">'+_vE(bd[0])+'</span></div>';
   });
   if(!l.length)html+='<div style="color:var(--gris);padding:18px 0;text-align:center">No hay visitas en esta vista.</div>';
@@ -1983,7 +1987,7 @@ function visDet(f){
   var x=VIS.filter(function(v){return +v.f===+f;})[0];if(!x){visAbrir();return;}
   var row=function(a,b){return b?'<tr><td style="color:var(--gris);width:34%">'+a+'</td><td>'+b+'</td></tr>':'';};
   var lk=x.lk?(/^https?:\/\//i.test(x.lk)?'<a href="'+_vE(x.lk)+'" target="_blank" rel="noopener">'+_vE(x.lk)+'</a>':_vE(x.lk)):'';
-  var est=x.e==='a'?'Agendada':x.e==='p'?'Ya pasó · falta cargar el resultado':x.e==='c'?'Cancelada':(x.res||'Realizada'),pend=x.e==='a'||x.e==='p';
+  var est=x.e==='a'?'Agendada':x.e==='p'?'Ya pasó · falta cargar el resultado':x.e==='c'?(x.rp?'Reprogramada':'Cancelada'):(x.res||'Realizada'),pend=x.e==='a'||x.e==='p';
   document.getElementById('dlg').innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">'+(x.x?'🏢 ':'🏠 ')+_vE(x.dir)+'</div><div class="sub">'+(x.x?'Visita con otra inmobiliaria':'Visita a una propiedad nuestra')+'</div></div><div class="fb"><table>'+row('Fecha',x.d.split('-').reverse().join('/')+(x.h?' · '+x.h:''))+row('Estado',_vE(est))+row('Inmobiliaria',_vE(x.im))+row('Colega',_vE(x.co))+row('Interesado',_vE(x.cli))+row('Teléfono',_vE(x.tel))+row('Vendedor',_vE(x.v||x.c))+row('Precio',_vE(x.pr))+row('Ficha',lk)+row('Detalle',_vE(x.obs).replace(/\n/g,'<br>'))+'</table><div class="dlbtns">'+((!x.x||x.fi)?'<button class="btn p" onclick="closeDL();ficha(\''+_vE(x.id)+'\')">🏠 Abrir ficha</button>':'')+(x.x?'<button class="btn s" onclick="visEditar('+x.f+')">✏️ Editar</button>':'')+(pend?'<button class="btn g" onclick="'+(x.x?'visExtForm(\''+_vE(x.id)+'\')':'closeDL();cargarForm(\''+_vE(x.id)+'\')')+'">✅ Cargar resultado</button><button class="btn s" onclick="visCancelar('+x.f+')">🚫 Cancelar visita</button>':'')+'<button class="btn s" onclick="visBorrar('+x.f+')">🗑 Borrar</button><button class="btn s" onclick="visAbrir()">‹ Volver</button></div></div>';
   document.getElementById('ov2').classList.add('on');
 }
@@ -2031,7 +2035,7 @@ function visEditar(f){
   document.getElementById('dlg').innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">Editar visita</div><div class="sub">🏢 '+_vE(x.dir)+' · '+x.d.split('-').reverse().join('/')+(x.h?' '+x.h:'')+'</div></div><div class="fb"><div class="form">'+
     inp('vd_dir','Dirección *',x.dir)+inp('vd_im','Inmobiliaria',x.im)+inp('vd_co','Colega de la otra inmobiliaria',x.co)+inp('vd_cli','Interesado (nuestro cliente) *',x.cli)+inp('vd_tel','Teléfono',x.tel)+inp('vd_pr','Precio',x.pr)+inp('vd_lk','Link de la ficha',x.lk,'style="grid-column:1/-1"')+rs+
     '<label style="grid-column:1/-1">Observaciones<textarea id="vd_obs" rows="3">'+_vE(x.obs)+'</textarea></label></div>'+
-    '<div style="font-size:11px;color:var(--gris);margin-top:6px">Para cambiar el día o la hora de una visita agendada: cancelala y agendá otra.</div>'+
+    '<div style="font-size:11px;color:var(--gris);margin-top:6px">Para cambiar el día o la hora de una visita agendada: Cargar interacción → Resultado → «Reprogramar visita».</div>'+
     '<div class="dlbtns"><button class="btn g" id="vd_btn" onclick="visEditarGuardar('+x.f+')">Guardar</button><button class="btn s" onclick="visDet('+x.f+')">Cancelar</button></div></div>';
   document.getElementById('ov2').classList.add('on');
 }
@@ -2063,7 +2067,7 @@ function visPropiaOpc(id){
 function visExtForm(cod){
   var x=cod?VIS.filter(function(v){return v.id===cod;}).sort(function(a,b){return a.d<b.d?1:-1;})[0]:null,n=new Date(),loc=new Date(n.getTime()-n.getTimezoneOffset()*60000).toISOString().slice(0,16),hoy=_vIso(n),yo=_yo();
   var vn=_visVends();if(yo&&!vn.some(function(v){return _vN(v)===_vN(yo);}))vn.push(yo);
-  var RES2=['Solo consulta','Le interesó','No le interesó','Hizo una propuesta','Propuesta aceptada','Propuesta rechazada','No responde'];
+  var RES2=['Solo consulta','Le interesó','No le interesó','Hizo una propuesta','Propuesta aceptada','Propuesta rechazada','No responde'].concat(x?['Visita cancelada','Reprogramar visita']:[]);
   var inp=function(id,l,ph,v,ex){return '<label '+(ex||'')+'>'+l+'<input id="'+id+'" placeholder="'+(ph||'')+'" value="'+_vE(v||'')+'"></label>';};
   document.getElementById('dlg').innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">'+(x?'Resultado de la visita':'Visita con otra inmobiliaria')+'</div><div class="sub">'+(x?_vE('🏢 '+x.dir):'Propiedad ajena: no se guarda como propiedad, queda solo la visita')+'</div></div><div class="fb"><div class="form">'+
     (x?'':'<label>¿Ya la hiciste?<select id="ve_est" onchange="visExtTog()"><option value="agendar">📅 No, la agendo</option><option value="hecha">✅ Sí, ya la hice</option></select></label>')+
@@ -2071,21 +2075,23 @@ function visExtForm(cod){
     inp('ve_cli','Interesado (nuestro cliente) *','Nombre',x&&x.cli)+inp('ve_tel','Teléfono','+54 341 ...',x&&x.tel)+
     (x?'':'<label class="ve-ag">Fecha y hora<input id="ve_cuando" type="datetime-local" value="'+loc+'"></label>')+
     '<label class="ve-ya" style="display:'+(x?'':'none')+'">Fecha<input id="ve_fecha" type="date" value="'+hoy+'"></label>'+
-    '<label class="ve-ya" style="display:'+(x?'':'none')+'">Resultado<select id="ve_res">'+RES2.map(function(r){return '<option>'+r+'</option>';}).join('')+'</select></label>'+
+    '<label class="ve-ya" style="display:'+(x?'':'none')+'">Resultado<select id="ve_res" onchange="visExtRp()">'+RES2.map(function(r){return '<option>'+r+'</option>';}).join('')+'</select></label>'+
+    '<label id="ve_rpl" style="display:none">Nueva fecha y hora<input id="ve_rp" type="datetime-local" value="'+loc+'"></label>'+
     (x?'':'<label class="ve-ag">Email del cliente (opc.)<input id="ve_mail" type="email" placeholder="le llega la invitación"></label>'+inp('ve_lk','Link de la ficha (Tokko, ZonaProp…)','https://…')+inp('ve_pr','Precio','Ej: U$S 85.000')+'<label>Tipo de propiedad<select id="ve_tipo"><option value="">—</option>'+TIPOS.map(function(t){return '<option>'+t+'</option>';}).join('')+'</select></label>')+
     '<label>Vendedor<select id="ve_vend">'+vn.map(function(v){return '<option '+(_vN(v)===_vN(yo)?'selected':'')+'>'+_vE(v)+'</option>';}).join('')+'</select></label>'+
     '<label style="grid-column:1/-1">Observaciones<textarea id="ve_obs" rows="3" placeholder="Qué pasó, qué dijo, qué quiere…"></textarea></label></div>'+
     '<div class="dlbtns"><button class="btn g" id="ve_btn" onclick="visExtGuardar(\''+(x?_vE(x.id):'')+'\')">Guardar</button><button class="btn s" onclick="visAbrir()">Cancelar</button></div></div>';
   document.getElementById('ov2').classList.add('on');
 }
+function visExtRp(){var e=document.getElementById('ve_res'),l=document.getElementById('ve_rpl');if(l)l.style.display=e&&/^Reprogramar/.test(e.value)?'':'none';}
 function visExtTog(){var e=document.getElementById('ve_est'),ya=e&&e.value==='hecha';[].forEach.call(document.querySelectorAll('.ve-ag'),function(l){l.style.display=ya?'none':'';});[].forEach.call(document.querySelectorAll('.ve-ya'),function(l){l.style.display=ya?'':'none';});}
 function visExtGuardar(cod){
   var g=function(i){var e=document.getElementById(i);return e?e.value.trim():'';},fijo=!!cod,ya=fijo||g('ve_est')==='hecha';
   var o={dir:g('ve_dir'),inmob:g('ve_im'),colega:g('ve_co'),link:g('ve_lk'),precio:g('ve_pr'),tipo:g('ve_tipo'),interesado:g('ve_cli'),tel:g('ve_tel'),mail:g('ve_mail'),obs:g('ve_obs'),vendedor:g('ve_vend'),quien:_yo(),codigo:cod||''};
   if(!fijo&&!o.dir){alert('Poné la dirección de la propiedad');return;}
   if(!o.interesado){alert('Poné el nombre del cliente');return;}
-  if(ya&&/rechaz|no le interes/i.test(g('ve_res'))&&!o.obs){alert('Anotá el motivo en Observaciones: queda registrado.');return;}
-  if(ya){var f=g('ve_fecha');if(f)o.fecha=f.split('-').reverse().join('/');o.resultado=g('ve_res')||'Visita';}
+  if(ya&&/rechaz|no le interes|^Visita cancelada$/i.test(g('ve_res'))&&!o.obs){alert('Anotá el motivo en Observaciones: queda registrado.');return;}
+  if(ya){var f=g('ve_fecha');if(f)o.fecha=f.split('-').reverse().join('/');o.resultado=g('ve_res')||'Visita';if(/^Reprogramar/.test(o.resultado)){var rp=g('ve_rp');if(!rp){alert('Poné la fecha y hora nueva');return;}o.cuando=new Date(rp).toISOString();}}
   else{var c=g('ve_cuando');if(!c){alert('Poné la fecha y hora');return;}o.cuando=new Date(c).toISOString();}
   var b=document.getElementById('ve_btn');if(b){b.textContent='Guardando…';b.disabled=true;}
   google.script.run.withSuccessHandler(function(){VIS=[];VIS_F.per=ya?'real':'prox';visLoad(function(){visAbrir();});novLoad();}).withFailureHandler(function(e){alert('Error: '+(e&&e.message?e.message:e));if(b){b.textContent='Guardar';b.disabled=false;}}).registrarVisitaExterna(o);

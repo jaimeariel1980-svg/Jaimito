@@ -1310,7 +1310,7 @@ function enviarReportePropietario(codigo, logoDataUri, resumenCustom, ownerCusto
   var segMap = leerSeguimiento_();
   var seg = segMap[codigo] || [];
   var cons = seg.length;
-  var vis = seg.filter(function(s) { return !/cancelad/i.test(s.res) && (/visita/i.test(s.tipo) || /visitó|oferta/i.test(s.res)); }).length;
+  var vis = seg.filter(function(s) { return !/cancelad|reprogramad/i.test(s.res) && (/visita/i.test(s.tipo) || /visitó|oferta/i.test(s.res)); }).length;
   var ofertas = seg.filter(function(s) { return /propuesta|oferta/i.test(s.res); }).length;
   var hoy = new Date();
   var dias = null;
@@ -1813,7 +1813,7 @@ function _sincFichasExt_(forzar){
     var g = porDir[nd] = porDir[nd] || {cod:cod, filas:[], interes:false, inm:'', col:'', link:'', pre:'', tipo:'', vend:'', dir:''};
     g.filas.push(i);
     var res = String(v[i][5]).trim();
-    if(/Le interesó|Le intereso|propuesta/i.test(res) && !/no le|rechaz|cancelad/i.test(res)) g.interes = true;
+    if(/Le interesó|Le intereso|propuesta/i.test(res) && !/no le|rechaz|cancelad|reprogramad/i.test(res)) g.interes = true;
     g.inm = g.inm||String(v[i][11]||'').trim(); g.col = g.col||String(v[i][15]||'').trim(); g.link = g.link||String(v[i][13]||'').trim(); g.pre = g.pre||String(v[i][14]||'').trim(); g.tipo = g.tipo||String(v[i][16]||'').trim(); g.vend = g.vend||String(v[i][9]||'').trim(); g.dir = g.dir||String(v[i][12]||'').trim();
   }
   var mae = hojaMaestra_();
@@ -1883,7 +1883,7 @@ function getDatosRaw_(){
     var docExtra=gv('Docs exigidos (extra)').split(';').map(function(x){return x.trim();}).filter(Boolean);
     var seg=segMap[id]||[];
     var cons=seg.length;
-    var vis=seg.filter(function(s){return !/cancelad/i.test(s.res)&&(/visita/i.test(s.tipo)||/visitó|oferta/i.test(s.res));}).length;
+    var vis=seg.filter(function(s){return !/cancelad|reprogramad/i.test(s.res)&&(/visita/i.test(s.tipo)||/visitó|oferta/i.test(s.res));}).length;
     var dias=null;
     seg.forEach(function(s){ if(s._d){ var dd=Math.floor((hoy-s._d)/86400000); if(dd>=0&&(dias===null||dd<dias))dias=dd; } });
     var segOut=seg.map(function(s){return {_row:s._row,fecha:s.fecha,tipo:s.tipo,cli:s.cli,tel:s.tel,res:s.res,prox:s.prox,obs:s.obs,fechaProx:s.fechaProx,vend:s.vend||'',cargo:s.cargo||''};});
@@ -2195,7 +2195,38 @@ function guardarPropiedad(codigo, cambios){
 function _audit_(tipo, texto, dir, quien){ try{ if(typeof azcuAudit_==='function') azcuAudit_(tipo, texto, dir, quien); }catch(e){} }
 function _dirDe_(mae, fila, head){ try{ var r=mae.getRange(fila,1,1,head.length).getValues()[0], g=function(n){ var i=head.indexOf(n); return i>-1?r[i]:''; }; return _dirTexto_(g('Calle'),g('Número'),g('Piso'),g('Departamento'),g('Pasillo')); }catch(e){ return ''; } }
 function _invalidaNovedades_(){ try{ var c=CacheService.getScriptCache(); c.remove('azmov_90'); c.remove('azmov_30'); c.remove('azvis_60_60'); }catch(e){} try{ if(typeof azcuLimpiarCache_==='function') azcuLimpiarCache_(); }catch(e){} }
+function _visitaAgendadaDe_(codigo, cli){
+  var seg = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento');
+  if(!seg) throw new Error('No existe la pestaña Seguimiento');
+  var v = seg.getDataRange().getValues(), out = [], i;
+  for(i=1;i<v.length;i++) if(String(v[i][0]).trim()===codigo && String(v[i][5]).trim()==='Visita agendada') out.push({fila:i+1, r:v[i], cli:String(v[i][3]||'').trim(), prox:String(v[i][6]||'').trim()});
+  var n = _ndir_(cli), t = n.split(' ')[0];
+  if(n){
+    var f = out.filter(function(x){ var c = _ndir_(x.cli); return c===n || (t.length>2 && c.indexOf(t)>-1); });
+    if(!f.length) throw new Error('No hay una visita agendada de '+cli+' en esta propiedad. Revisá el nombre o cargala desde 🗓 Visitas.');
+    out = f;
+  }
+  if(!out.length) throw new Error('Esta propiedad no tiene visitas agendadas.');
+  if(out.length>1) throw new Error('Hay '+out.length+' visitas agendadas ('+out.map(function(x){ return (x.cli||'—')+' '+x.prox.replace(/^Visita\s+/,''); }).join(' · ')+'). Poné el nombre completo del cliente.');
+  return out[0];
+}
+function _cancelarOReprogramar_(codigo, datos){
+  var rep = /reprogram/i.test(String(datos.resultado||'')), mot = String(datos.obs||'').trim(), q = String(datos.cargo||datos.quien||'').trim();
+  if(!rep && !mot) throw new Error('Anotá el motivo en Observaciones: queda registrado.');
+  var vs = _visitaAgendadaDe_(codigo, datos.interesado), r = vs.r, ext = /^EXT-/.test(codigo), tz = 'GMT-3';
+  if(!rep){ cancelarVisita(vs.fila, mot, q); return {ok:true, cancelada:true}; }
+  var ini = new Date(datos.cuando); if(!datos.cuando || isNaN(ini.getTime())) throw new Error('Poné la fecha y hora nueva de la visita');
+  var nuevo = 'Visita '+Utilities.formatDate(ini, tz, 'dd/MM/yyyy HH:mm');
+  if(nuevo===vs.prox) throw new Error('Es la misma fecha y hora que ya tiene agendada.');
+  var base = {cuando:datos.cuando, interesado:String(r[3]||'').trim(), tel:String(r[4]||''), obs:mot ? 'Reprogramada: '+mot : 'Reprogramada', vendedor:String(r[9]||''), quien:q, inmob:String(r[11]||''), colega:String(r[15]||'')};
+  var rn = ext ? registrarVisitaExterna({codigo:codigo, cuando:datos.cuando, interesado:base.interesado, tel:base.tel, obs:base.obs, vendedor:base.vendedor, quien:q, inmob:base.inmob, colega:base.colega, mail:datos.mail||''})
+               : agendarVisita(codigo, {cuando:datos.cuando, interesado:base.interesado, tel:base.tel, obs:base.obs, vendedor:base.vendedor, quien:q, inmob:base.inmob, colega:base.colega, mail:datos.mail||'', dir:(typeof azcuMapaDirs_==='function' ? (azcuMapaDirs_()[codigo]||'') : '')});
+  if(rn && rn.duplicada) throw new Error('Ya hay una visita de ese cliente en esa fecha y hora.');
+  cancelarVisita(vs.fila, 'pasó al '+Utilities.formatDate(ini, tz, 'dd/MM HH:mm')+(mot ? ' · '+mot : ''), q, true);
+  return {ok:true, reprogramada:true};
+}
 function registrarInteraccion(codigo, datos){
+  if(/^(Visita cancelada|Reprogramar visita)$/i.test(String((datos||{}).resultado||'').trim())) return _cancelarOReprogramar_(String(codigo).trim(), datos);
   var ss=SpreadsheetApp.openById(MAESTRO_ID);
   var seg=ss.getSheetByName('Seguimiento');
   if(!seg)throw new Error('No existe la pestaña Seguimiento');
@@ -2599,15 +2630,15 @@ function agendarVisita(codigo, datos){
   return {ok:true, eventId:ev.getId()};
 }
 
-function cancelarVisita(filaSeg, motivo, quien){
+function cancelarVisita(filaSeg, motivo, quien, reprog){
   var seg = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento');
   if(!seg || !filaSeg || filaSeg<2 || filaSeg>seg.getLastRow()) throw new Error('Esa visita ya no existe');
   var r = seg.getRange(filaSeg, 1, 1, Math.min(Math.max(seg.getLastColumn(),11),16)).getValues()[0];
   if(String(r[5]).trim()!=='Visita agendada') throw new Error('Esa visita ya no está agendada');
   var m = String(r[6]).match(/^Visita\s+(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})/), cod = String(r[0]).trim(), ext = /^EXT-/.test(cod), cli = String(r[3]||'').trim();
   var q = String(quien||'').trim(), mot = String(motivo||'').trim().slice(0,300), hoy = Utilities.formatDate(new Date(), 'GMT-3', 'dd/MM/yyyy'), previo = String(r[8]||'').trim();
-  seg.getRange(filaSeg, 6).setValue('Visita cancelada');
-  seg.getRange(filaSeg, 9).setValue('🚫 Cancelada el '+hoy+(q?' por '+q:'')+(mot?': '+mot:'')+(previo?' · '+previo:''));
+  seg.getRange(filaSeg, 6).setValue(reprog ? 'Visita reprogramada' : 'Visita cancelada');
+  seg.getRange(filaSeg, 9).setValue((reprog ? '🔁 Reprogramada el ' : '🚫 Cancelada el ')+hoy+(q?' por '+q:'')+(mot?': '+mot:'')+(previo?' · '+previo:''));
   var borrado = false;
   try{
     if(m){
@@ -2618,7 +2649,7 @@ function cancelarVisita(filaSeg, motivo, quien){
     }
   }catch(e){ Logger.log('Cancelar visita - Calendar: '+e.message); }
   var dir = ext ? '🏢 '+String(r[12]||'').trim() : (typeof azcuMapaDirs_==='function' ? (azcuMapaDirs_()[cod]||'') : '');
-  _audit_('cancelvis', '🚫 Canceló la visita de '+(cli||'—')+(m ? ' ('+m[1]+'/'+m[2]+' '+m[4]+':'+m[5]+')' : ''), dir, q);
+  _audit_('cancelvis', (reprog ? '🔁 Reprogramó la visita de ' : '🚫 Canceló la visita de ')+(cli||'—')+(m ? ' ('+m[1]+'/'+m[2]+' '+m[4]+':'+m[5]+')' : ''), dir, q);
   _invalidaNovedades_();
   return {ok:true, calendar:borrado};
 }
@@ -2650,6 +2681,7 @@ function registrarVisitaExterna(datos){
   datos = datos||{};
   var cli = String(datos.interesado||'').trim(), dir = String(datos.dir||'').trim(), inmob = String(datos.inmob||'').trim(), link = String(datos.link||'').trim(), precio = String(datos.precio||'').trim(), colega = String(datos.colega||'').trim(), tipo = String(datos.tipo||'').trim(), codigo = String(datos.codigo||'').trim(), explicito = !!codigo, i;
   if(!cli) throw new Error('Falta el nombre del cliente');
+  if(codigo && /^(Visita cancelada|Reprogramar visita)$/i.test(String(datos.resultado||'').trim())) return _cancelarOReprogramar_(codigo, datos);
   var seg = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento');
   if(!seg) throw new Error('No existe la pestaña Seguimiento');
   SEG_EXT_.forEach(function(n, k){ var c = seg.getRange(1, 11+k); if(!String(c.getValue()).trim()) c.setValue(n); });
