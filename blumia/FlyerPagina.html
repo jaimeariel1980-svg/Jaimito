@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Flyer | Blumia</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+%%FUENTE%%
 <style>
-:root{--g:#243D2C;--gf:#1A6645;--m:#E3EEDC;--l:#D5E0CE;--bg:#F3F8F1;--c:#FBE794;--coral:#F0605D;--font:'Poppins',sans-serif}
+:root{--g:#0F3F27;--gf:#0F3F27;--m:#E3EEDC;--l:#D5E0CE;--bg:#EEF7EE;--c:#FEE795;--coral:#F0605D;--font:'Poppins',sans-serif}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:var(--font);background:var(--bg);color:#1A1A1A;display:flex;gap:24px;padding:20px;align-items:flex-start;min-height:100vh}
 #panel{width:340px;flex:none;background:#fff;border:1px solid var(--l);border-radius:14px;padding:16px;position:sticky;top:20px;max-height:calc(100vh - 40px);overflow-y:auto}
@@ -34,10 +35,11 @@ textarea{width:100%;border:1.5px solid var(--l);border-radius:8px;padding:8px 10
 #vwrap{width:100%;overflow:hidden}
 #stage{transform-origin:top left}
 /* ---- el flyer (1080 px de ancho) ---- */
-#flyer{width:1080px;height:1920px;position:relative;overflow:hidden;background:#F7F5F1;font-family:'Plus Jakarta Sans',sans-serif;--s:1;--k:1;--tc:#1A1A1A;--ac:#1A6645;box-shadow:0 8px 40px rgba(0,0,0,.25)}
-#ph{position:absolute;top:0;left:0;width:100%;height:72%;background:linear-gradient(160deg,#1A6645 0%,#2F7A56 55%,#7FB08F 100%)}
+#flyer{width:1080px;height:1920px;position:relative;overflow:hidden;background:#EEF7EE;font-family:'PP Pangram Sans','Poppins',sans-serif;--s:1;--k:1;--tc:#0F3F27;--ac:#0F3F27;--fc:#0F3F27;--fc2:#2F6B4A;--ft:#EEF7EE;box-shadow:0 8px 40px rgba(0,0,0,.25)}
+#ph{position:absolute;top:0;left:0;width:100%;height:72%;background:linear-gradient(160deg,var(--fc) 0%,var(--fc2) 100%)}
 #bg{position:absolute;object-fit:cover}
 #ov{position:absolute;inset:0;pointer-events:none}
+#aro{position:absolute;top:-170px;left:-170px;width:560px;height:560px;border-radius:50%;border:84px solid #B4E1E0;opacity:.45;z-index:4;pointer-events:none;display:none}
 #bucle{position:absolute;top:40px;right:-180px;width:900px;z-index:5;pointer-events:none}
 #logo{position:absolute;top:44px;left:52px;z-index:10}
 #logoCli{position:absolute;top:44px;right:52px;z-index:10;display:none}
@@ -50,15 +52,15 @@ textarea{width:100%;border:1.5px solid var(--l);border-radius:8px;padding:8px 10
 .sectit{font-weight:800;color:var(--ac);font-size:calc(36px*var(--k)*var(--s));margin-bottom:.3em}
 .item{display:flex;gap:14px;align-items:flex-start;font-weight:500;line-height:1.35;margin-bottom:.3em;font-size:calc(28px*var(--k)*var(--s));color:var(--tc)}
 .item i{font-style:normal;font-weight:700;color:var(--ac);flex:none}
-#foot{position:absolute;left:0;bottom:0;width:100%;background:#1A6645;z-index:7;display:flex;align-items:center;gap:50px;padding:0 80px}
+#foot{position:absolute;left:0;bottom:0;width:100%;background:var(--fc);z-index:7;display:flex;align-items:center;gap:50px;padding:0 80px}
 #qrbox{flex:none;text-align:center}
 #qrImg{background:#fff;padding:12px;border-radius:10px;display:block;margin:0 auto}
-#qrCap{font-size:22px;font-weight:700;color:#F7F5F1;margin-top:10px}
+#qrCap{font-size:22px;font-weight:700;color:var(--ft);margin-top:10px}
 #fcol{flex:1;min-width:0}
-#fTxt{font-size:calc(34px*var(--k));font-weight:600;line-height:1.35;color:#F7F5F1}
-#arrow{font-size:calc(60px*var(--k));font-weight:800;line-height:1;color:#F4D03F;margin:6px 0}
+#fTxt{font-size:calc(34px*var(--k));font-weight:600;line-height:1.35;color:var(--ft)}
+#arrow{font-size:calc(60px*var(--k));font-weight:800;line-height:1;color:var(--ac2,#FEE795);margin:6px 0}
 #fcol:has(#fMail:empty) #arrow{display:none}
-#fMail{font-size:calc(34px*var(--k));font-weight:700;color:#F7F5F1;white-space:nowrap}
+#fMail{font-size:calc(34px*var(--k));font-weight:700;color:var(--ft);white-space:nowrap}
 #guiaT,#guiaB{position:absolute;left:0;width:100%;background:rgba(240,96,93,.28);border:2px dashed rgba(240,96,93,.9);z-index:50;display:none;pointer-events:none;color:#fff;font:700 22px Poppins,sans-serif;text-align:center;padding-top:8px}
 #guiaT{top:0;height:250px}#guiaB{bottom:0;height:250px;padding-top:0;padding-bottom:8px;display:none;align-items:flex-end;justify-content:center}
 .exporting #guiaT,.exporting #guiaB{display:none!important}
@@ -122,12 +124,15 @@ input[type=range]{accent-color:#243D2C}
     <label class="lb">Tamaño del logo <b id="vLg">110px</b></label><input type="range" id="sLg" aria-label="Tamaño del logo" min="60" max="200" value="110">
     <div class="row" style="margin-top:8px"><label class="bt" for="inCli" style="flex:2">🏷 Logo del cliente</label><button class="bt" id="quitCli">Quitar</button></div><input type="file" id="inCli" accept="image/*" style="display:none">
     <label class="lb">Tamaño logo cliente <b id="vCl">80px</b></label><input type="range" id="sCl" aria-label="Tamaño del logo del cliente" min="40" max="200" value="80">
-    <label class="chk" style="margin-top:8px"><input type="checkbox" id="bucOn"> Mostrar la cinta amarilla</label>
-    <label class="lb">Opacidad de la cinta <b id="vBo">100%</b></label><input type="range" id="sBo" aria-label="Opacidad del trazo de fondo" min="10" max="100" value="100"></div>
+    <label class="chk" style="margin-top:8px"><input type="checkbox" id="bucOn"> Mostrar la cinta de marca</label>
+    <label class="lb">Color de la cinta y del aro</label><div class="dots" id="cB"><span class="dot" data-c="#FEE795" style="background:#FEE795"></span><span class="dot" data-c="#B4E1E0" style="background:#B4E1E0"></span><span class="dot" data-c="#F9BDBB" style="background:#F9BDBB"></span><span class="dot" data-c="#FBC67B" style="background:#FBC67B"></span><span class="dot" data-c="#CDE7CE" style="background:#CDE7CE"></span><span class="dot" data-c="#FFFFFF" style="background:#FFFFFF"></span></div>
+    <label class="lb">Opacidad de la cinta <b id="vBo">100%</b></label><input type="range" id="sBo" aria-label="Opacidad del trazo de fondo" min="10" max="100" value="100">
+    <label class="chk" style="margin-top:8px"><input type="checkbox" id="aroOn"> Mostrar el aro de marca</label></div>
 
   <div class="sec"><h3>Colores y tamaño</h3>
-    <label class="lb">Título y textos</label><div class="dots" id="cT"><span class="dot" data-c="#1A1A1A" style="background:#1A1A1A"></span><span class="dot" data-c="#FFFFFF" style="background:#fff"></span><span class="dot" data-c="#1A6645" style="background:#1A6645"></span><span class="dot" data-c="#F7F5F1" style="background:#F7F5F1"></span></div>
-    <label class="lb" style="margin-top:8px">Acento (cargo, títulos, tildes)</label><div class="dots" id="cA"><span class="dot" data-c="#1A6645" style="background:#1A6645"></span><span class="dot" data-c="#5BB5A5" style="background:#5BB5A5"></span><span class="dot" data-c="#FBC67B" style="background:#FBC67B"></span><span class="dot" data-c="#FFFFFF" style="background:#fff"></span></div>
+    <label class="lb">Paleta de marca: color de base (fondo y pie)</label><div class="dots" id="cF"><span class="dot" data-c="#0F3F27" style="background:#0F3F27"></span><span class="dot" data-c="#B4E1E0" style="background:#B4E1E0"></span><span class="dot" data-c="#F9BDBB" style="background:#F9BDBB"></span><span class="dot" data-c="#FEE795" style="background:#FEE795"></span><span class="dot" data-c="#FBC67B" style="background:#FBC67B"></span><span class="dot" data-c="#CDE7CE" style="background:#CDE7CE"></span></div>
+    <label class="lb" style="margin-top:8px">Título y textos</label><div class="dots" id="cT"><span class="dot" data-c="#0F3F27" style="background:#0F3F27"></span><span class="dot" data-c="#1A1A1A" style="background:#1A1A1A"></span><span class="dot" data-c="#FFFFFF" style="background:#FFFFFF"></span><span class="dot" data-c="#EEF7EE" style="background:#EEF7EE"></span></div>
+    <label class="lb" style="margin-top:8px">Acento (cargo, títulos, tildes)</label><div class="dots" id="cA"><span class="dot" data-c="#0F3F27" style="background:#0F3F27"></span><span class="dot" data-c="#FBC67B" style="background:#FBC67B"></span><span class="dot" data-c="#F9BDBB" style="background:#F9BDBB"></span><span class="dot" data-c="#B4E1E0" style="background:#B4E1E0"></span><span class="dot" data-c="#FEE795" style="background:#FEE795"></span><span class="dot" data-c="#FFFFFF" style="background:#FFFFFF"></span></div>
     <label class="lb" style="margin-top:8px">Tamaño del texto <b id="vTs">100%</b></label><input type="range" id="sTs" aria-label="Tamaño del texto" min="70" max="130" value="100">
     <div class="nota">Si el texto no entra, se achica solo.</div></div>
 
@@ -155,7 +160,7 @@ input[type=range]{accent-color:#243D2C}
 <div id="main"><div id="vwrap"><div id="stage">
 <div id="flyer">
   <div id="ph"></div><img id="bg" alt=""><div id="ov"></div><div id="guiaT">Acá Instagram pone tu perfil</div><div id="guiaB">Acá Instagram pone «Enviar mensaje»</div>
-  <img id="bucle" alt=""><img id="logo" alt=""><img id="logoCli" alt="">
+  <div id="aro"></div><img id="bucle" alt=""><img id="logo" alt=""><img id="logoCli" alt="">
   <div id="cont">
     <div class="badge" id="badge" contenteditable="true"></div>
     <h1 id="tit"><span id="busc" contenteditable="true"></span><br><em id="cargo" contenteditable="true"></em></h1>
@@ -189,7 +194,7 @@ var S=null;
 function porDefecto(){
   var emp=DATOS.empresa==='MACS';
   var nombre=emp?DATOS.empresa:DATOS.empresaNeutral;
-  return {fmt:'st',qr:false,guia:false,qrUrl:DATOS.linkPostulacion,mostrarEmpresa:emp,bg:'',cli:'',colT:'#1A1A1A',colA:'#1A6645',logoOsc:false,
+  return {fmt:'st',qr:false,guia:false,qrUrl:DATOS.linkPostulacion,mostrarEmpresa:emp,bg:'',cli:'',colT:'#0F3F27',colA:'#0F3F27',colF:'#0F3F27',colB:'#FEE795',aro:false,logoOsc:false,
     ov:60,px:50,py:50,zoom:100,ts:100,logoH:110,cliH:80,bucOn:true,bucOp:100,
     txt:{badge:[DATOS.ubicacion].filter(Boolean).join(' · ')||'Presencial',busc:'Buscamos',cargo:DATOS.puesto,
       baj:nombre.charAt(0).toUpperCase()+nombre.slice(1)+' busca sumar a su equipo una persona para el puesto de '+DATOS.puesto+'.',
@@ -202,6 +207,7 @@ function porDefecto(){
 function cargarEstado(){
   S=porDefecto();
   if(DATOS.guardado){try{var g=JSON.parse(DATOS.guardado);for(var k in g){if(k==='txt'){for(var t in g.txt)S.txt[t]=g.txt[t]}else S[k]=g[k]}generado=true}catch(e){}}
+  if(S.colA==='#1A6645')S.colA='#0F3F27';if(S.colT==='#1A1A1A'&&!DATOS.guardado)S.colT='#0F3F27';
 }
 
 function setItems(id,arr){var c=$(id);c.innerHTML='';arr.forEach(function(t){var d=document.createElement('div');d.className='item';var i=document.createElement('i');i.textContent='✓';var s=document.createElement('span');s.setAttribute('contenteditable','true');s.textContent=t;d.appendChild(i);d.appendChild(s);c.appendChild(d)})}
@@ -209,6 +215,15 @@ function getItems(id){var o=[];var s=$(id).querySelectorAll('.item span');for(va
 
 function makeQr(u){var im=$('qrImg');if(!u){im.removeAttribute('src');return}try{var q=qrcode(0,'M');q.addData(u);q.make();im.src=q.createDataURL(8,2)}catch(e){im.removeAttribute('src')}}
 
+var TINTES={};
+function tinte(col,cb){
+  if(!col||col==='#FEE795'){cb(ASSETS.bucle);return}
+  if(TINTES[col]){cb(TINTES[col]);return}
+  var im=new Image();im.onload=function(){var c=document.createElement('canvas');c.width=im.naturalWidth;c.height=im.naturalHeight;var x=c.getContext('2d');x.drawImage(im,0,0);
+    try{var d=x.getImageData(0,0,c.width,c.height),n=parseInt(col.slice(1),16),r=n>>16,g=(n>>8)&255,b=n&255,p=d.data;for(var i=0;i<p.length;i+=4){if(p[i+3]>0){p[i]=r;p[i+1]=g;p[i+2]=b}}x.putImageData(d,0,0);TINTES[col]=c.toDataURL('image/png');cb(TINTES[col])}catch(e){cb(ASSETS.bucle)}};
+  im.src=ASSETS.bucle;
+}
+function mezcla(a,b,t){var A=parseInt(a.slice(1),16),B=parseInt(b.slice(1),16),f=function(sh){var x=(A>>sh)&255,y=(B>>sh)&255;return Math.round(x+(y-x)*t)};return'#'+((1<<24)+(f(16)<<16)+(f(8)<<8)+f(0)).toString(16).slice(1)}
 function aplicar(){
   if(!FMT[S.fmt])S.fmt='st';
   var f=FMT[S.fmt],fl=$('flyer'),fh=S.qr?f.foot:f.footN;
@@ -224,11 +239,14 @@ function aplicar(){
   bg.style.width=w+'px';bg.style.height=h+'px';bg.style.left=((f.W-w)*S.px/100)+'px';bg.style.top=((f.H-h)*S.py/100)+'px';
   if(S.bg){bg.src=S.bg;bg.style.display='block';$('ph').style.display='none'}else{bg.removeAttribute('src');bg.style.display='none';$('ph').style.display='block'}
   var v=S.ov;
-  if(S.fmt==='ls')$('ov').style.background='linear-gradient(to right,rgba(247,245,241,1) 0%,rgba(247,245,241,1) 46%,rgba(247,245,241,'+(v*.006)+') 62%,rgba(247,245,241,0) 80%)';
-  else $('ov').style.background='linear-gradient(to bottom,rgba(247,245,241,0) 0%,rgba(247,245,241,'+(v*.004)+') 25%,rgba(247,245,241,'+(v*.01)+') 42%,rgba(247,245,241,'+(v*.015)+') 55%,rgba(247,245,241,1) 68%,rgba(247,245,241,1) 100%)';
+  if(S.fmt==='ls')$('ov').style.background='linear-gradient(to right,rgba(238,247,238,1) 0%,rgba(238,247,238,1) 46%,rgba(238,247,238,'+(v*.006)+') 62%,rgba(238,247,238,0) 80%)';
+  else $('ov').style.background='linear-gradient(to bottom,rgba(238,247,238,0) 0%,rgba(238,247,238,'+(v*.004)+') 25%,rgba(238,247,238,'+(v*.01)+') 42%,rgba(238,247,238,'+(v*.015)+') 55%,rgba(238,247,238,1) 68%,rgba(238,247,238,1) 100%)';
   $('logo').src=(S.logoOsc||S.fmt==='ls')?ASSETS.logoOsc:ASSETS.logo;var lh=S.fmt==='ls'?Math.round(S.logoH*.62):S.fmt==='st'?Math.round(S.logoH*.75):S.logoH;$('logo').style.height=lh+'px';$('logo').style.top=f.logoT+'px';$('logoCli').style.top=f.logoT+'px';
   var cl=$('logoCli');if(S.cli){cl.src=S.cli;cl.style.display='block';cl.style.height=(S.fmt==='ls'?Math.round(S.cliH*.7):S.cliH)+'px'}else{cl.removeAttribute('src');cl.style.display='none'}
-  var bu=$('bucle');bu.src=ASSETS.bucle;bu.style.display=S.bucOn?'block':'none';bu.style.opacity=S.bucOp/100;bu.style.top=f.bucT+'px';
+  var bu=$('bucle');tinte(S.colB,function(u){bu.src=u});bu.style.display=S.bucOn?'block':'none';bu.style.opacity=S.bucOp/100;bu.style.top=f.bucT+'px';
+  var ar=$('aro');ar.style.display=S.aro?'block':'none';ar.style.borderColor=S.colB;
+  var lum=function(h){var n=parseInt(h.slice(1),16),r=n>>16,g=(n>>8)&255,b=n&255;return(.299*r+.587*g+.114*b)/255};
+  var fc=S.colF||'#0F3F27',cl=lum(fc)>.62;fl.style.setProperty('--fc',fc);fl.style.setProperty('--fc2',mezcla(fc,cl?'#FFFFFF':'#7FB08F',cl?.5:.45));fl.style.setProperty('--ft',cl?'#0F3F27':'#EEF7EE');fl.style.setProperty('--ac2',cl?'#0F3F27':'#FEE795');
   makeQr(S.qr?S.qrUrl:'');
   pintarPanel();
   ajustar();vista();
@@ -242,6 +260,8 @@ function pintarPanel(){
   for(var id in m){$(id).value=S[m[id][0]];$(m[id][1]).textContent=S[m[id][0]]+m[id][2]}
   var d=document.querySelectorAll('#cT .dot');for(var i=0;i<d.length;i++)d[i].classList.toggle('on',d[i].getAttribute('data-c')===S.colT);
   d=document.querySelectorAll('#cA .dot');for(var i=0;i<d.length;i++)d[i].classList.toggle('on',d[i].getAttribute('data-c')===S.colA);
+  d=document.querySelectorAll('#cF .dot');for(var i=0;i<d.length;i++)d[i].classList.toggle('on',d[i].getAttribute('data-c')===S.colF);
+  d=document.querySelectorAll('#cB .dot');for(var i=0;i<d.length;i++)d[i].classList.toggle('on',d[i].getAttribute('data-c')===S.colB);$('aroOn').checked=!!S.aro;
   $('avisoIA').style.display=generado?'none':'block';
 }
 
@@ -304,6 +324,9 @@ function cableado(){
   Object.keys(sl).forEach(function(id){$(id).oninput=function(){S[sl[id]]=Number(this.value);leerTextos();aplicar();marcar()}});
   var dt=document.querySelectorAll('#cT .dot');for(var i=0;i<dt.length;i++)dt[i].onclick=function(){S.colT=this.getAttribute('data-c');aplicar();marcar()};
   dt=document.querySelectorAll('#cA .dot');for(var i=0;i<dt.length;i++)dt[i].onclick=function(){S.colA=this.getAttribute('data-c');aplicar();marcar()};
+  dt=document.querySelectorAll('#cF .dot');for(var i=0;i<dt.length;i++)dt[i].onclick=function(){S.colF=this.getAttribute('data-c');aplicar();marcar()};
+  dt=document.querySelectorAll('#cB .dot');for(var i=0;i<dt.length;i++)dt[i].onclick=function(){S.colB=this.getAttribute('data-c');aplicar();marcar()};
+  $('aroOn').onchange=function(){S.aro=this.checked;aplicar();marcar()};
   $('inBg').onchange=function(e){var f=e.target.files[0];if(!f)return;aJpeg(f,1800,false,function(u){S.bg=u;S.zoom=100;S.px=50;S.py=50;aplicar();marcar()});this.value=''};
   $('quitBg').onclick=function(){S.bg='';aplicar();marcar()};
   $('inCli').onchange=function(e){var f=e.target.files[0];if(!f)return;aJpeg(f,600,true,function(u){S.cli=u;aplicar();marcar()});this.value=''};
@@ -360,14 +383,14 @@ function descargar(){
   document.body.classList.add('exporting');
   var st=$('stage'),tr=st.style.transform;st.style.transform='none';
   var fin=function(){st.style.transform=tr;document.body.classList.remove('exporting');b.disabled=false;b.textContent='⬇ Descargar imagen (PNG)'};
-  setTimeout(function(){
-    html2canvas($('flyer'),{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#F7F5F1',width:f.W,height:f.H,windowWidth:f.W,windowHeight:f.H,scrollX:0,scrollY:0}).then(function(c){
+  (document.fonts&&document.fonts.ready||Promise.resolve()).then(function(){setTimeout(function(){
+    html2canvas($('flyer'),{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#EEF7EE',width:f.W,height:f.H,windowWidth:f.W,windowHeight:f.H,scrollX:0,scrollY:0}).then(function(c){
       fin();
       var url=c.toDataURL('image/png'),nom='flyer-'+DATOS.puesto.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'-'+f.nom+'.png';
       $('resImg').src=url;$('resA').href=url;$('resA').setAttribute('download',nom);$('resN').textContent='Si no se descargó sola, tocá «Descargar» o mantené apretada la imagen para guardarla.';$('res').classList.add('show');
       try{var a=document.createElement('a');a.href=url;a.download=nom;document.body.appendChild(a);a.click();a.remove()}catch(e){}
     }).catch(function(e){fin();msg('No se pudo armar la imagen: '+((e&&e.message)||e),false)});
-  },80);
+  },80)});
 }
 
 cargarEstado();cableado();pintarTextos();aplicar();
