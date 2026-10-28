@@ -4,7 +4,7 @@
 .rs-tab.on{background:#243D2C;color:#fff;border-color:#243D2C}
 #resumenPage{display:none;max-width:1500px;margin:0 auto;padding:14px 16px 50px;color:#1a1a1a}
 #resumenPage [data-k]{cursor:pointer}
-.rs-dash{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:14px}
+.rs-dash{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}@media(min-width:1300px){.rs-dash{grid-template-columns:repeat(8,1fr)}}@media(max-width:640px){.rs-dash{grid-template-columns:repeat(2,1fr)}}
 .rs-kpi{background:#fff;border:1px solid #e3e0d9;border-radius:14px;padding:20px 18px;position:relative;overflow:hidden;transition:.12s}
 .rs-kpi:before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:#243D2C}
 .rs-kpi:hover{box-shadow:0 4px 14px rgba(26,102,69,.18);transform:translateY(-1px)}
@@ -107,13 +107,12 @@
     return '<div class="rs-dw"><svg viewBox="0 0 140 140"><g>'+paths+'</g><circle cx="70" cy="70" r="'+(r-1)+'" fill="#fff"></circle><text x="70" y="74" text-anchor="middle" style="font-size:27px;font-weight:800;fill:#243D2C">'+centro+'</text><text x="70" y="89" text-anchor="middle" style="font-size:8.5px;fill:#666;font-weight:700">'+sub+'</text></svg><div class="rs-leg">'+leg+'</div></div>';
   }
   function kpi(n,l,c,k){return '<div class="rs-kpi '+c+'" data-k="'+k+'"><div class="n">'+n+'</div><div class="l">'+l+'</div><div class="h">ver detalle ›</div></div>';}
-  function motivosHtml(){
+  function motivosSegs(){
     var cn={},sin=0;L.forEach(function(x){if(x.t!=='desc')return;var m=String(x.c.motivo||'').trim();if(!m){sin++;return;}m.split(/;\s*/).forEach(function(z){z=z.replace(/^Otro: .*/,'Otro');cn[z]=(cn[z]||0)+1;});});
     var ks=Object.keys(cn).sort(function(a,b){return cn[b]-cn[a];});
-    if(!ks.length&&!sin)return '';
-    return '<div style="margin-top:14px"><div style="font-size:12px;font-weight:800;color:#243D2C;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Motivos de descarte</div><div class="rs-leg" style="justify-content:flex-start">'
-      +ks.map(function(k){return '<div class="rs-lb" data-k="mot:'+esc(k)+'"><div class="t">'+esc(k)+'</div><div class="p">'+cn[k]+'</div></div>';}).join('')
-      +(sin?'<div class="rs-lb" data-k="mot:" style="border-color:#E0A800"><div class="t">Sin motivo cargado</div><div class="p">'+sin+'</div></div>':'')+'</div></div>';
+    var out=ks.map(function(k,i){return {l:k,v:cn[k],c:PAL[i%PAL.length],k:'mot:'+k};});
+    if(sin)out.push({l:'Sin motivo cargado',v:sin,c:'#E0A800',k:'mot:'});
+    return out;
   }
   function kpiMini(n,l,k){return '<div class="rs-kpi" data-k="'+k+'"><div class="n" style="font-size:30px">'+n+'</div><div class="l">'+l+'</div></div>';}
   function pintar(){
@@ -121,14 +120,14 @@
     var n=L.length,g=function(k){return grupo(k).l.length;},h0=inicioDia(),pr=g('prox'),hoy=L.filter(function(x){return citaEn(x,h0,h0+864e5);}).length;
     var cv=n,scr=g('scr'),comp=g('comp'),emp=g('emp'),res=g('res'),desc=g('desc'),dcv=g('dcv'),dpost=g('dpost'),dcomp=g('dcomp');
     var pend=(typeof AV_PEND!=='undefined'&&AV_PEND)||[],nov=(typeof AV_NOV!=='undefined'&&AV_NOV)||[],urg=pend.filter(function(a){return a.urg;}).length;
-    var x='<div class="rs-dash">'+kpi(cv,'CVs recibidos','','all')+kpi(scr,'Pasaron por screening','','scr')+kpi(comp,'Pasaron por competencias','','comp')+kpi(emp,'Avanzan a empresa','','emp')+kpi(res,'En reserva','g','res')+kpi(desc,'Descartados','r','desc')+'</div>';
-    x+='<div class="rs-dash" style="grid-template-columns:repeat(auto-fill,minmax(180px,240px))">'+kpi(g('sinc'),'Sin contactar','y','sinc')+kpi(pr,'Entrevistas próx. 7 días'+(hoy?' ('+hoy+' hoy)':''),'','prox')+'</div>';
+    var x='<div class="rs-dash">'+kpi(cv,'CVs recibidos','','all')+kpi(scr,'Pasaron por screening','','scr')+kpi(comp,'Pasaron por competencias','','comp')+kpi(emp,'Avanzan a empresa','','emp')+kpi(res,'En reserva','g','res')+kpi(desc,'Descartados','r','desc')+kpi(g('sinc'),'Sin contactar','y','sinc')+kpi(pr,'Entrevistas próx. 7 días'+(hoy?' ('+hoy+' hoy)':''),'','prox')+'</div>';
     var ES=[0,1,2,3,4].map(function(i){return {l:['Análisis de CV','Screening','Competencias','Screening empresa','Entrevista final'][i],v:g('et:'+i),c:[COLS.cv,COLS.scr,COLS.comp,COLS.semp,COLS.fin][i],k:'et:'+i};});
     ES.push({l:'En reserva',v:res,c:COLS.res,k:'res'});ES.push({l:'Descartados',v:desc,c:COLS.desc,k:'desc'});
     var notas={},fuentes={};L.forEach(function(y){var nt=String(y.c.nota||'').trim()||'Sin nota';notas[nt]=(notas[nt]||0)+1;var fu=String(y.c.fuente||'').trim()||'Sin dato';fuentes[fu]=(fuentes[fu]||0)+1;});
     var NS=['A','B+','B','C','Sin nota'].filter(function(k){return notas[k];}).map(function(k){return {l:k==='Sin nota'?k:'Nota '+k,v:notas[k],c:NC[k],k:'nota:'+k};});
     var FS=Object.keys(fuentes).sort(function(a,b){return fuentes[b]-fuentes[a];}).map(function(k,i){return {l:k,v:fuentes[k],c:PAL[i%PAL.length],k:'fu:'+k};});
-    x+='<div class="rs-panel"><div class="rs-row3"><div><h3>Dónde está cada candidato</h3>'+dona(ES,n,n,'candidatos')+'</div><div><h3>Calidad de los CVs</h3>'+dona(NS,n,pct(notas['A']||0,n),'con nota A')+'</div><div><h3>De dónde llegan</h3>'+dona(FS,n,FS.length,FS.length===1?'canal':'canales')+'</div></div>'+motivosHtml()+'</div>';
+    var MS=motivosSegs();
+    x+='<div class="rs-panel"><div class="rs-row3"><div><h3>Dónde está cada candidato</h3>'+dona(ES,n,n,'candidatos')+'</div><div><h3>Calidad de los CVs</h3>'+dona(NS,n,pct(notas['A']||0,n),'con nota A')+'</div><div><h3>De dónde llegan</h3>'+dona(FS,n,FS.length,FS.length===1?'canal':'canales')+'</div>'+(MS.length?'<div><h3>Motivos de descarte</h3>'+dona(MS,desc,desc,desc===1?'descartado':'descartados')+'</div>':'')+'</div></div>';
     document.getElementById('resumenPage').innerHTML=x;
   }
   function ver(v){
