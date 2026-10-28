@@ -26,7 +26,7 @@ function azcuTokens_(x, todo){
 function azcuDirEnTexto_(texto){
   var T = ' '+azcuTokens_(texto, true).join(' ')+' ', out = [];
   azcuDatos_().forEach(function(p){
-    var d = p.det || {}, c = azcuTokens_(d.calle, true), n = azcuTokens_(d.numero, true);
+    var d = p.det || {}, c = azcuTokens_(d.calle, true).filter(function(w){ return !AZCU_PREF_[w]; }), n = azcuTokens_(d.numero, true);
     if(!c.length || !n.length) return;
     if(c.concat(n).every(function(w){ return T.indexOf(' '+w+' ')>=0; })) out.push(p);
   });
@@ -101,6 +101,7 @@ function azcuReq_(p){ return Array.isArray(p.req) ? p.req : Object.keys(p.papele
 function azcuFalta_(p){ return azcuReq_(p).filter(function(k){ return !p.papeles[k]; }); }
 function azcuCorta_(p){ return {id:p.id, direccion:p.dir, tipo:p.tipo, etapa:p.etapa, precio:p.precio, propietario:p.prop}; }
 
+var AZCU_PREF_ = {bv:1,bvd:1,bulevar:1,boulevard:1,av:1,avda:1,avenida:1,pje:1,pasaje:1,calle:1,diag:1,diagonal:1};
 var AZCU_NOCALLE_ = {las:1,la:1,los:1,hs:1,hora:1,horas:1,dia:1,mes:1,piso:1,dpto:1,depto:1,departamento:1,ano:1,anos:1,usd:1,pesos:1,precio:1,monto:1,valor:1,dolares:1,m2:1,metros:1,mts:1,ambientes:1,dormitorios:1,visitas:1,consultas:1,calle:1,casa:1,propiedad:1,ficha:1,de:1,del:1,por:1,con:1,al:1,en:1,el:1,un:1,una:1,que:1,para:1,mas:1,ver:1,datos:1,dato:1,info:1,informacion:1,contame:1,conta:1,decime:1,dame:1,pasame:1,mandame:1,mostrame:1,cuanto:1,sale:1,cuesta:1,quiero:1,necesito:1,saber:1,tenes:1,busca:1,buscame:1,mail:1,telefono:1,propietario:1,dueno:1,vendedor:1,etapa:1,estado:1,historial:1,documentos:1,papeles:1,podes:1,decir:1,favor:1,hola:1};
 function azcuPedidas_(texto){
   var t = azcuSinAc_(texto).replace(/\b\d{1,2}\s*[:.]\s*\d{2}\b/g,' ').replace(/\b(\d)\.(\d{3})\b/g,'$1$2').replace(/\b\d{6,}\b/g,' ').replace(/[°º]/g,'').replace(/[,;¿?¡!()"]/g,' ').split(/\s+/).filter(Boolean), out = [], i, j, w, x, pos, prev, TR = {nro:1,numero:1,num:1,n:1,al:1,altura:1};
@@ -123,7 +124,7 @@ function azcuPedidas_(texto){
 function azcuIdsEn_(texto){ return String(texto||'').match(/\b[A-Z]{2,4}-[A-Z]?\d[A-Z0-9-]*\b/g) || []; }
 function azcuCallesEnTexto_(texto){
   var T = ' '+azcuTokens_(texto, true).join(' ')+' ', cs = {}, out = [];
-  azcuDatos_().forEach(function(p){ azcuTokens_((p.det&&p.det.calle)||'', true).forEach(function(x){ if(x.length>=4 && !/^\d+$/.test(x) && !AZCU_NOCALLE_[x]) cs[x] = 1; }); });
+  azcuDatos_().forEach(function(p){ azcuTokens_((p.det&&p.det.calle)||'', true).forEach(function(x){ if(x.length>=4 && !/^\d+$/.test(x) && !AZCU_NOCALLE_[x] && !AZCU_PREF_[x]) cs[x] = 1; }); });
   Object.keys(cs).forEach(function(c){ if(T.indexOf(' '+c+' ')>=0) out.push(c); });
   return out;
 }
@@ -725,6 +726,7 @@ function azcuTools_(){
     t('encuestas','Encuestas de satisfacción: sin id lista todas; con id trae la completa de esa propiedad.',{id:S}),
     t('documentos_faltantes','Documentos que faltan en TODAS las propiedades abiertas, en una sola consulta.',{}),
     t('atrasos','Atrasos y obligaciones vencidas del equipo: visitas sin informe, propuestas sin respuesta, plazos vencidos, papeles en reserva, propiedades sin movimiento, captaciones estancadas, propiedades sin vendedor. Para el gerente trae todos agrupados por vendedor; para un vendedor, solo los suyos (o pasá solo_mios=true).',{solo_mios:{type:'boolean'}}),
+    t('calcular','Hace una cuenta. expresion: solo números, + - * / y paréntesis, con punto decimal; el porcentaje va como multiplicación, ej. 4% de 95000 = "95000*4/100". Usala siempre que haya que sumar, restar, multiplicar o calcular comisiones, porcentajes o totales.',{expresion:S},['expresion']),
     t('alertas','Alertas de hoy: papeles, sin movimiento, propuestas sin respuesta, visitas de hoy, seguimientos.',{}),
     t('resumen_cartera','Números generales de la cartera.',{}),
     t('abrir_enlace','Deja en el chat botones para abrir un enlace, mandarlo por WhatsApp y copiarlo. El formulario_captacion NO necesita id (sirve para un cliente nuevo).',{cual:{type:'string',enum:['tablero','procedimiento_ventas','formulario_captacion','generador_documentos','encuesta','carpeta_drive','link_tokko','ubicacion']}, id:S, telefono:S},['cual']),
@@ -878,6 +880,7 @@ function azcuValidarAccion_(tipo, a){
   if(tipo==='cargar'){
     if(AZCU_VIAS.indexOf(a.via)<0 || AZCU_RESULTADOS.indexOf(a.resultado)<0) return {error:'Vía o resultado inválidos.'};
     if(/rechaz|no le interes/i.test(a.resultado||'') && !String(a.observaciones||'').trim()) return {error:'Falta el motivo (por qué se rechazó o no le interesó): preguntalo en una línea; queda registrado.'};
+    if(!String(a.interesado||'').trim() || /^(no figura|desconocido|sin dato|n\/?a|sin nombre)$/i.test(String(a.interesado).trim())) return {error:'Falta el nombre del interesado: preguntalo en una línea (no pongas «no figura»).'};
     datos.interesado = a.interesado||''; datos.tel = String(a.telefono||'').replace(/[^0-9]/g,''); datos.via = a.via; datos.resultado = a.resultado; datos.prox = a.proximo_paso||''; datos.obs = a.observaciones||''; datos.inmob = a.inmobiliaria||''; datos.colega = a.colega||'';
     resumen = 'Cargar en '+p.dir+': '+datos.interesado+' · '+datos.via+' · '+datos.resultado+(datos.prox?' · próximo paso: '+datos.prox:'')+(datos.inmob?' · viene por '+datos.inmob+(datos.colega?' (colega '+datos.colega+')':''):'')+(datos.obs?' · detalle: '+datos.obs:'');
   } else if(tipo==='agendar'){
@@ -892,6 +895,7 @@ function azcuValidarAccion_(tipo, a){
     if(a.etapa==='Suspendida') a.etapa = 'Baja';
     if(AZCU_ETAPAS.indexOf(a.etapa)<0) return {error:'Etapa inválida.'};
     if(a.etapa==='Baja' && !String(a.motivo||'').trim()) return {error:'Falta el motivo de la baja. Preguntalo.'};
+    if(azcuSinAc_(p.etapa)===azcuSinAc_(a.etapa)) return {error:'Esa propiedad ya está en '+p.etapa+'. Avisale al usuario, no armes tarjeta.'};
     datos.etapa = a.etapa; datos.motivo = String(a.motivo||'').trim().slice(0,300); resumen = 'Pasar '+p.dir+' de '+p.etapa+' a '+a.etapa+(datos.motivo ? ' · motivo: '+datos.motivo : '');
   } else if(tipo==='campos'){
     datos.campos = {}; var partes = [];
@@ -942,7 +946,7 @@ function azcuSistema_(ctx){
     'Sos Azcu, el asistente interno de Azcuénaga Inmobiliaria: cálido, confiable y atento, una casita-robot simpática. Hablás con un compañero del equipo (su nombre va al final).',
     'TONO: coloquial, cercano y con buena onda (vos, che, dale), pero prolijo. Como un colega que te da una mano. Respuestas cortas en charla normal; PERO cuando pidan listas, datos, detalle, resúmenes de la cartera, documentos faltantes, interacciones o cualquier información, dala COMPLETA: todos los ítems, sin resumir, sin recortar y sin «y N más» (si son muchos, listalos igual). Sin encabezados; podés usar **negrita** y listas con guiones.',
     'QUÉ HACÉS: respondés sobre todo lo del tablero (propiedades, etapas, documentos, propietarios, historial, encuestas, alertas) y hacés lo mismo que el bot de Telegram: cargar consultas/visitas, agendar visitas, cambiar etapas, editar precio/observaciones y enviar el reporte al propietario.',
-    'USO DE DATOS (REGLA CRÍTICA): NUNCA inventes, supongas ni completes de memoria nombres, teléfonos, DNI, mails, precios, fechas, montos, direcciones, estados, cantidades ni resultados. Todo dato que digas tiene que salir de lo que devolvió una herramienta en esta conversación o de lo que dijo el usuario. Si no lo tenés, la herramienta no lo devolvió, vino vacío o dio error, decí claramente "no tengo ese dato" o "no figura cargado" y ofrecé buscarlo o cargarlo; no lo rellenes ni lo estimes. Si un dato es dudoso o hay varias coincidencias, preguntá antes de afirmar. No hagas cuentas de cabeza: para totales o porcentajes usá solo cifras que devolvió una herramienta o decile que use la calculadora. Si dudás de algo, decilo en vez de afirmarlo. Para consultar usá las herramientas (buscar_propiedades, ficha_propiedad, ultimas_interacciones, alertas, resumen_cartera).',
+    'USO DE DATOS (REGLA CRÍTICA): NUNCA inventes, supongas ni completes de memoria nombres, teléfonos, DNI, mails, precios, fechas, montos, direcciones, estados, cantidades ni resultados. Todo dato que digas tiene que salir de lo que devolvió una herramienta en esta conversación o de lo que dijo el usuario. Si no lo tenés, la herramienta no lo devolvió, vino vacío o dio error, decí claramente "no tengo ese dato" o "no figura cargado" y ofrecé buscarlo o cargarlo; no lo rellenes ni lo estimes. Si un dato es dudoso o hay varias coincidencias, preguntá antes de afirmar. No hagas cuentas de cabeza: para cualquier cuenta (comisiones, porcentajes, totales) usá la herramienta calcular y decí el resultado. Datos personales de los propietarios (DNI, fecha de nacimiento, domicilio, mail): no los muestres salvo que los pidan puntualmente; ante «el dueño» alcanza con el nombre y el teléfono. Si dudás de algo, decilo en vez de afirmarlo. Para consultar usá las herramientas (buscar_propiedades, ficha_propiedad, ultimas_interacciones, alertas, resumen_cartera).',
     'CAMBIOS: para escribir datos usá SIEMPRE las herramientas proponer_*: eso arma una tarjeta que el usuario confirma con un botón. Nunca digas que algo ya está hecho: decí que dejaste la tarjeta para confirmar. Inferí lo que puedas del mensaje y preguntá solo lo indispensable (propiedad, quién, resultado / fecha y hora).',
     'CARGA ÁGIL: NUNCA frenes la tarjeta para pedir datos opcionales (teléfono, próximo paso, mail, precio, link): armala YA; el sistema agrega solo, debajo de la tarjeta, la pregunta por los datos opcionales que faltan, no la repitas vos. Si el usuario responde con esos datos, armá una tarjeta NUEVA con TODO lo que contó antes (mensajes anteriores) más lo nuevo; si dice que no o que así está bien, decile que confirme la tarjeta, sin armar otra. OBSERVACIONES es lo más importante: es el detalle de lo que pasó. Siempre completá observaciones con TODO lo que el usuario contó (comentarios del interesado, objeciones, ofertas, impresiones, lo que quiere), fiel y sin recortar, en 1ª persona neutra; no las omitas aunque el usuario no las marque. Si no contó ningún detalle, preguntá una sola vez "¿Algún detalle de lo que pasó?" antes de armar la tarjeta. Si el usuario ya dio propiedad, quién y cómo resultó, armá la tarjeta YA. Si dice que visitó o vino, la vía es Visita. Si falta algo obligatorio (propiedad, quién, vía o resultado) preguntá SOLO eso, en una línea corta. Ejemplo: "Mendoza 7201, Marcos Tejo, le interesó" → tarjeta directa.',
     'EFICIENCIA: usá la menor cantidad de llamadas posible. Para documentos faltantes de varias propiedades usá documentos_faltantes (una sola llamada). Si necesitás varias fichas, pedilas todas juntas en la misma vuelta. Respondé directo, sin vueltas.',
@@ -978,18 +982,22 @@ var AZCU_NLLAM_ = 0;
 function azcuOpenAI_(messages, tools){
   var key = _openAiApiKey();
   if(!key) throw new Error('Falta configurar OPENAI_API_KEY en las propiedades del script');
-  var mod = azcuModelo_(), r;
-  for(var k=0;k<2;k++){
+  var mod = azcuModelo_(), r, k, cod;
+  for(k=0;k<4;k++){
     AZCU_NLLAM_++;
     r = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {
       method:'post', contentType:'application/json', headers:{Authorization:'Bearer '+key}, muteHttpExceptions:true,
-      payload:JSON.stringify({model:mod, messages:messages, tools:tools, tool_choice:'auto', temperature:0.1, max_tokens:900})
+      payload:JSON.stringify({model:mod, messages:messages, tools:tools, tool_choice:'auto', temperature:0.1, max_tokens:1600})
     });
-    if(r.getResponseCode()>=200 && r.getResponseCode()<300) break;
-    if(k===0 && mod!==AZCU_MODEL && r.getResponseCode()<500 && r.getResponseCode()!==429){ try{ Logger.log('azcuOpenAI_: '+mod+' falló ('+r.getResponseCode()+'), uso '+AZCU_MODEL); }catch(e){} mod = AZCU_MODEL; continue; }
-    throw new Error('OpenAI '+r.getResponseCode()+': '+r.getContentText().slice(0,200));
+    cod = r.getResponseCode();
+    if(cod>=200 && cod<300) break;
+    if(cod===429 || cod>=500){ if(k<3){ Utilities.sleep(1200*(k+1)); continue; } }
+    else if(mod!==AZCU_MODEL){ try{ Logger.log('azcuOpenAI_: '+mod+' falló ('+cod+'), uso '+AZCU_MODEL); }catch(e){} mod = AZCU_MODEL; continue; }
+    throw new Error('OpenAI '+cod+': '+r.getContentText().slice(0,200));
   }
-  return JSON.parse(r.getContentText()).choices[0].message;
+  var ch = JSON.parse(r.getContentText()).choices[0], m = ch.message;
+  if(ch.finish_reason==='length' && !(m.tool_calls && m.tool_calls.length)) m.content = String(m.content||'')+'\n\n(La respuesta era muy larga y se cortó acá. Pedime que siga y te paso el resto.)';
+  return m;
 }
 
 function azcuProg_(ctx, texto){ try{ if(ctx && ctx.reqId) azcuPut_(ctx.reqId+'p', {progress:texto}); }catch(e){} }
@@ -1016,7 +1024,7 @@ function azcuChat(pin, mensajes, ctx){
   azcuPin_(pin);
   ctx = ctx || {};
   try{ var lm = (mensajes||[]).length ? mensajes[mensajes.length-1] : null, cr = lm && lm.role==='user' ? azcuCalc_(lm.content) : null; if(cr) return {texto:cr.texto, acciones:[], adjuntos:[], panel:null}; }catch(e){}
-  try{ var lu = (mensajes||[]).length ? mensajes[mensajes.length-1] : null; if(lu && lu.role==='user' && /^\s*(y\s+)?(la|el|lo)\s+otr[ao]s?\s*[?!.]*\s*$/i.test(String(lu.content||''))) return {texto:'¿A cuál te referís con «la otra»? Decime la dirección o el código y te la paso.', acciones:[], adjuntos:[], panel:null}; }catch(eO){}
+  try{ var lu = (mensajes||[]).length ? mensajes[mensajes.length-1] : null; if(lu && lu.role==='user' && /^\s*(y\s+)?(la|el|lo)\s+otr[ao]s?\s*[?!.]*\s*$/i.test(String(lu.content||'')) && !(mensajes||[]).slice(-7,-1).some(function(m0){ var t0 = String(m0.content||''); return azcuIdsEn_(t0).length || azcuDirEnTexto_(t0).length; })) return {texto:'¿A cuál te referís con «la otra»? Decime la dirección o el código y te la paso.', acciones:[], adjuntos:[], panel:null}; }catch(eO){}
   var pedUlt = [], calTx = [], pistaCalle = '', pistaCalleIds = [];
   try{ var txP = (mensajes||[]).length && mensajes[mensajes.length-1].role==='user' ? String(mensajes[mensajes.length-1].content||'') : ''; if(txP){ var scx = azcuSinCoincidencia_(txP); if(scx) return scx; pedUlt = azcuPedidas_(txP); } }catch(eP){}
   try{
@@ -1053,6 +1061,7 @@ function azcuChat(pin, mensajes, ctx){
     if(!cd.length && /\d{2,5}/.test(ut) && /[a-zñáéíóú]{3,}/i.test(ut)){ azcuDatos_(true); cd = azcuDirEnTexto_(ut); }
     if(!pedUlt.length || !cd.every(function(p){ return azcuPedidaCoincide_(pedUlt, p); })) cd = [];
     if(cd.length===1) pista = 'DATO VERIFICADO POR EL SISTEMA: el usuario nombra la propiedad '+cd[0].id+' ('+cd[0].dir+'). Usá ese id directamente; NO digas que no la encontrás.';
+    else if(cd.length>1 && !cd.every(function(x){ return azcuSinAc_((x.det&&x.det.calle)||'')+'|'+((x.det&&x.det.numero)||'')===azcuSinAc_((cd[0].det&&cd[0].det.calle)||'')+'|'+((cd[0].det&&cd[0].det.numero)||''); })) pista = 'DATO VERIFICADO POR EL SISTEMA: el usuario nombra '+cd.length+' propiedades distintas: '+cd.slice(0,8).map(function(p){ return p.id+' ('+p.dir+')'; }).join('; ')+'. Resolvé cada una con su id y respondé por cada una; NO preguntes piso ni dpto.';
     else if(cd.length>1) pista = 'DATO VERIFICADO POR EL SISTEMA: en esa dirección hay '+cd.length+' unidades: '+cd.slice(0,12).map(function(p){ return p.id+' ('+p.dir+')'; }).join('; ')+'. Si falta saber cuál, preguntá piso/dpto; NO digas que no la encontrás.';
   }catch(ePista){}
   var vistos = {};
@@ -1072,6 +1081,13 @@ function azcuChat(pin, mensajes, ctx){
   }catch(eV){}
   var msgs = [{role:'system', content:azcuSistema_(ctx)}].concat(pista ? [{role:'system', content:pista}] : []).concat((mensajes||[]).slice(-12).map(function(m){ return {role:m.role==='assistant'?'assistant':'user', content:String(m.content||'')}; }));
   var tools = azcuTools_(), acciones = [], adj = [], panel = null, i;
+  try{
+    var txR = (mensajes||[]).length && mensajes[mensajes.length-1].role==='user' ? String(mensajes[mensajes.length-1].content||'') : '';
+    if(/\b(redact|escrib[ií]me|escrib[ií] un|armame un|haceme un|preparame un|borrador)/i.test(txR) && /\b(mail|correo|mensaje|whatsapp|texto|carta|respuesta|aviso)\b/i.test(txR)){
+      tools = tools.filter(function(t0){ return !/^proponer_/.test(t0.function.name); });
+      msgs.push({role:'system', content:'El usuario pide REDACTAR un texto: respondé solo con el texto listo para copiar. No cambies datos ni armes tarjetas.'});
+    }
+  }catch(eRd){}
   var mapa = {proponer_cargar_interaccion:'cargar', proponer_agendar_visita:'agendar', proponer_visita_externa:'visitaext', proponer_cancelar_visita:'cancelvis', proponer_restaurar:'restaurar', proponer_registrar_propuesta:'propuesta', proponer_cambiar_etapa:'etapa', proponer_editar_campos:'campos', proponer_marcar_documento:'doc', proponer_borrar_documento:'borrardoc', proponer_editar_interaccion:'editarint', proponer_eliminar_interaccion:'elimint', proponer_eliminar_propiedad:'elimprop', proponer_enviar_reporte:'reporte'};
   var directo = null, ult = (mensajes||[]).length ? mensajes[mensajes.length-1] : null, esAcc = !!(ult && /carg|agend|registr|propuesta|cambi|pas[aá] a|edit|borr|elimin|marc|sub[ií]|envi|mand|record|avis|visita|document|papeles|falta|cu[aá]nto|cu[aá]ndo|qui[eé]n|tel[eé]fono|mail|historial|interacci/i.test(String(ult.content||'')) && !/^(info|datos|ficha|contame)/i.test(String(ult.content||'').trim()));
   var txU = String((ult && ult.content)||''), pideFicha = (/info|datos|ficha|contame|cont[aá] de|completo|detalle|mostr[aá]|pasame|todo (de|sobre)/i.test(txU) && !/\b(tampoco|figura|aparece|est[aá]|hay|tiene|falta|dice)\b/i.test(txU)) || (txU.split(/\s+/).length<=6 && pedUlt.length>0 && cd.length>0);
@@ -1100,6 +1116,7 @@ function azcuChat(pin, mensajes, ctx){
         if(!pgd && args.id && n!=='buscar_propiedades' && !/^EXT-/i.test(String(args.id)) && !vistos[String(args.id)] && /^(ficha_propiedad|datos_tecnicos|captacion_formulario|abrir_enlace|enviar_whatsapp|generar_pdf|proponer_)/.test(n)){ res = {error:'Ese id no salió de una búsqueda ni de la conversación. Usá buscar_propiedades con la dirección que dijo el usuario y usá el id que devuelva; no inventes ids.'}; }
         else if(pgd){ res = {error:'La propiedad '+pgd.id+' ('+pgd.dir+') NO coincide con la dirección que pidió el usuario ('+pedUlt.map(function(q){ return q.raw; }).join(' / ')+'). No des datos de esa propiedad ni armes tarjeta: decile que no encontraste esa dirección exacta y preguntale cuál quiso decir.'}; }
         else if(n==='buscar_propiedades'){ res = azcuHerrBuscar_(args); if(res.length===1 && !directo && !esAcc && !args.puntual){ directo = azcuFmtFicha_(res[0].id); adj.push.apply(adj, azcuBtnsFicha_(res[0].id)); } if(!res.length){ var vxe = azcuBuscarVisExt_(args.texto); if(vxe.length) res = {propiedades_del_sistema:[], posibles_visitas_con_otra_inmobiliaria:vxe, nota:'No es una propiedad de Azcuénaga: son visitas con otra inmobiliaria. Para cargar el resultado usá proponer_visita_externa con el codigo_externa; para corregir o borrar usá proponer_editar_interaccion o proponer_eliminar_interaccion (id = codigo_externa, con su fila); para cancelar, proponer_cancelar_visita.'}; else { var par = azcuParecidas_(args.texto); if(par.length) res = {propiedades_del_sistema:[], sin_coincidencia_exacta:true, parecidas:par, nota:'NO hay ninguna propiedad con esa calle y ese número a la vez. No des precio ni ningún otro dato de las parecidas como si fueran la que pidió el usuario: decile que no encontrás esa dirección y preguntale si se refería a alguna de las parecidas, nombrándolas con su dirección completa.'}; } } }
+        else if(n==='calcular') res = azcuHerrCalcular_(args);
         else if(n==='consultas_whatsapp') res = azcuHerrConsWS_(args);
         else if(n==='ficha_propiedad'){ res = azcuHerrFicha_(args); if(!args.puntual && !res.error && !directo && !esAcc){ directo = azcuFmtFicha_(args.id); adj.push.apply(adj, azcuBtnsFicha_(args.id)); } }
         else if(n==='datos_tecnicos'){ res = azcuHerrFicha_({id:args.id}); if(!res.error){ directo = azcuFmtFicha_(args.id, 'tec'); } }
@@ -2178,11 +2195,18 @@ function revisarTextoIA(texto, datos, modo){
   return {texto:String(o.texto||texto), avisos:(o.avisos||[]).map(String).slice(0,6)};
 }
 
+function azcuHerrCalcular_(a){
+  var e = String((a && a.expresion) || '').replace(/,/g, '.').replace(/[×x]/g, '*').replace(/÷/g, '/').replace(/\s+/g, '');
+  if(!e || e.length>100) return {error:'Expresión vacía o muy larga.'};
+  if(/%/.test(e)) return {error:'Escribí el porcentaje como multiplicación, ej. 95000*4/100.'};
+  if(!/^[\d+\-*\/().]+$/.test(e) || /\*\*/.test(e)) return {error:'Solo números y + - * / ( ).'};
+  try{ var v = Function('"use strict";return ('+e+')')(); if(typeof v!=='number' || !isFinite(v)) return {error:'No se puede calcular.'}; var r = Math.round(v*100)/100; return {resultado:r, formato:r.toLocaleString('es-AR', {maximumFractionDigits:2})}; }catch(x){ return {error:'No pude calcular esa expresión.'}; }
+}
 function azcuCalc_(raw){
   var s = String(raw||'').toLowerCase().normalize ? String(raw||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'') : String(raw||'').toLowerCase();
   s = s.replace(/[¿?¡!]/g,' ').trim();
   if(!s || s.length>140) return null;
-  if(/\b\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4}\b/.test(s) || /\d{5,}\s*-\s*\d|\b\d{4}\s+\d{2}-\d{4}\b/.test(s)) return null;
+  if(/\b\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4}\b/.test(s) || /\d{5,}\s*-\s*\d|\b\d{4}\s+\d{2}-\d{4}\b/.test(s) || /\b\d{2,4}\s*-\s*\d{6,8}\b/.test(s) || /^[\d\s()+\-]+$/.test(s) && (s.match(/\d/g)||[]).length>=8) return null;
   var mon = /u\$s|us\$|usd|dolar|dolares|dolar(es)?\b|u\$d/.test(s) ? 'U$S ' : (/\$|peso/.test(s) ? '$ ' : '');
   s = s.replace(/u\$s|us\$|u\$d|usd|dolares|dolar|pesos|peso|\$/g,' ');
   s = s.replace(/\b(cuanto|cuantos)\s+(es|son|da|dan|seria|serian|queda|quedan|sale|salen|me da)\b/g,' ').replace(/\b(calcula(me)?|calcular|resultado|cuenta|cuanto|decime|dame|haceme|hace|resolve|resolveme|sumame|restame)\b/g,' ');
