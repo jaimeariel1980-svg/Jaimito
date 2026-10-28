@@ -71,6 +71,7 @@ select:focus{outline:none;border-color:var(--accent);}
 .gar-add:hover{background:#f0f5f1;}
 .hide{display:none;}
 @media(max-width:640px){.fields,.docs{grid-template-columns:1fr;}.steps{flex-direction:column;}}
+@media(max-width:520px){.top{padding:12px 14px;gap:10px;flex-wrap:wrap}.top .est{display:none}.top h1{font-size:14px;padding-left:12px}}
 </style>
 </head>
 <body>
@@ -321,6 +322,7 @@ function aCanvas(dataUri, cb){
   img.src = dataUri;
 }
 function cargarImagenes(){
+  var tl0=document.getElementById('topLogo'); if(tl0 && LOGO_FALLBACK){ tl0.src=LOGO_FALLBACK; tl0.style.display='block'; document.getElementById('brandTxt').style.display='none'; }
   google.script.run
     .withSuccessHandler(function(img){
       if(!img) img = {};
@@ -783,7 +785,7 @@ function membrete(doc){
     doc.text('Administración "Azcuenaga"', 56, 52);
   }
   doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(90,110,150);
-  doc.text('Mendoza 4873 - Rosario', 539, 44, {align:'right'});
+  doc.text('Mendoza 4873 · Rosario', 539, 44, {align:'right'});
   doc.text('Santa Fe, Argentina', 539, 55, {align:'right'});
   doc.setTextColor(0,0,0);
   doc.setDrawColor(azul[0],azul[1],azul[2]); doc.setLineWidth(1.2);
