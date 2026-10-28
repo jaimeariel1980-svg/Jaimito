@@ -8,6 +8,7 @@
 
 const FLYER_ARCHIVO_ = 'Flyer - datos.json';
 const FLYER_MAX_BYTES_ = 4 * 1024 * 1024;
+const FLYER_IMAGEN_ = 'Flyer - imagen.jpg';
 
 function flyerHero_(perfilId) {
   try {
@@ -66,7 +67,9 @@ function flyerSocial_(perfilId) {
   let s = {};
   try { s = (JSON.parse(d.guardado || '{}').social) || {}; } catch (e) { }
   const rep = t => String(t || '').replace(/\[LINK\]/g, d.linkPostulacion);
-  return { linkedin: rep(s.linkedin), instagram: rep(s.instagram), whatsapp: rep(s.whatsapp), link: d.linkPostulacion, fecha: d.fecha };
+  let imagen = '', imagenId = '';
+  try { const it = carpetaPerfil_(getConfig(perfilId)).getFilesByName(FLYER_IMAGEN_); if (it.hasNext()) { const fi = it.next(); imagen = fi.getUrl(); imagenId = fi.getId(); } } catch (e) { }
+  return { linkedin: rep(s.linkedin), instagram: rep(s.instagram), whatsapp: rep(s.whatsapp), link: d.linkPostulacion, fecha: d.fecha, imagen: imagen, imagenId: imagenId };
 }
 
 function flyerGuardar_(perfilId, json) {
@@ -78,6 +81,19 @@ function flyerGuardar_(perfilId, json) {
   if (f) f.setContent(txt); else carpetaPerfil_(cfg).createFile(FLYER_ARCHIVO_, txt, MimeType.PLAIN_TEXT);
   try { registrarHistorial_(cfg.hoja_nombre || perfilId, '(búsqueda)', 'Flyer', 'Diseño del flyer guardado', QUIEN_); } catch (e) { }
   return { fecha: Utilities.formatDate(new Date(), 'America/Argentina/Buenos_Aires', 'dd/MM/yyyy HH:mm') };
+}
+
+// Guarda la imagen terminada del flyer (JPG) en la carpeta de la búsqueda con link de lectura, para enviarla por WhatsApp sin abrir el editor
+function flyerImagen_(perfilId, base64) {
+  const cfg = getConfig(perfilId);
+  const b64 = String(base64 || '').replace(/^data:image\/jpeg;base64,/, '');
+  if (b64.length < 100 || b64.length > 12 * 1024 * 1024) throw new Error('La imagen del flyer no es válida o es demasiado grande.');
+  const carpeta = carpetaPerfil_(cfg);
+  const it = carpeta.getFilesByName(FLYER_IMAGEN_);
+  while (it.hasNext()) it.next().setTrashed(true);
+  const f = carpeta.createFile(Utilities.newBlob(Utilities.base64Decode(b64), 'image/jpeg', FLYER_IMAGEN_));
+  f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return { imagen: f.getUrl() };
 }
 
 // Valores cargados en el perfil del puesto (relevamiento) como texto «campo: valor», para que la IA tenga de dónde sacar desafíos y requisitos
