@@ -34,7 +34,7 @@
   --green:   #1A6645;
   --green2:  #238055;
   --glight:  #E6F2EC;
-  --orange:  #E8501A;
+  --orange:  #2F7F6F;
   --font:    'Poppins', 'Plus Jakarta Sans', sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -837,7 +837,7 @@ function aplicarDatos(d){
 }
 function avisoSistema(t,ok){
   var d=document.createElement('div');d.textContent=t;
-  d.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:'+(ok?'#1A6645':'#E8501A')+';color:#fff;padding:12px 22px;border-radius:8px;font:600 13px sans-serif;z-index:99999;box-shadow:0 4px 14px rgba(0,0,0,.25)';
+  d.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:'+(ok?'#1A6645':'#C0391B')+';color:#fff;padding:12px 22px;border-radius:8px;font:600 13px sans-serif;z-index:99999;box-shadow:0 4px 14px rgba(0,0,0,.25)';
   document.body.appendChild(d);setTimeout(function(){d.remove();},3500);
 }
 function guardarSistema(){
