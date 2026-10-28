@@ -18,6 +18,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text)}
 .wrap{max-width:900px;margin:0 auto;padding:36px 52px 60px}
 .topbar{background:rgba(247,245,241,0.97);backdrop-filter:blur(20px);border-bottom:1px solid var(--line);padding:0 52px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
 .tb-logo{height:30px;display:block}.hero-logo{height:30px;display:none;margin-bottom:22px}@media print{.hero-logo{display:block}}
+.hero::after{content:'';position:absolute;right:-60px;top:-60px;width:320px;height:320px;border-radius:50%;border:60px solid rgba(255,255,255,0.06);pointer-events:none}
 .tb-brand{font-weight:800;font-size:20px;letter-spacing:-0.04em;color:var(--green)}
 .tb-sep{width:1px;height:24px;background:var(--line)}
 .tb-doc{font-size:13px;font-weight:600;color:var(--mid)}
