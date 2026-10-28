@@ -266,7 +266,7 @@ header{min-height:86px}
     var contBtn='<button class="mbtn wa" onclick="menuContacto('+c.fila+')">💬 Contacto ▾</button>';
     var cvBtn=c.cv?'<a href="https://drive.google.com/file/d/'+esc(c.cv)+'/view" target="_blank" class="mbtn alt">📄 Ver CV</a>':'';
     var genBtn=c.informe?'':'<button class="mbtn gen" onclick="var b=this;blConfirm(\'Generar informe con IA. Puede tener costo. ¿Continuar?\',function(){generar('+c.fila+',b)})">Generar informe</button>';
-    var bancoBtn='<button class="mbtn alt" onclick="menuBanco('+c.fila+')">★ Banco</button>';
+    var bancoBtn='<button class="mbtn alt" onclick="menuBanco('+c.fila+')">★ Enviar a banco</button>';
     var agBtn='<button class="mbtn alt" onclick="panelTog(\'agPanel\')">📅 Agendar</button>';
     
     var notasEmp=/screening empresa|presencial empresa|avanza a empresa|entrevista empresa|reserva screening empresa|reserva presencial empresa/i.test(c.estado)?['screening-empresa','presencial-empresa'].map(function(ep){return '<div class="notarow"><span>'+(ep==='screening-empresa'?'Emp. screening':'Emp. presencial')+'</span>'+['A','B','C'].map(function(n){return '<button class="nb'+(String(ep==='screening-empresa'?c.notaScrEmp:c.notaPresEmp).trim()===n?' on '+n.replace('+','p'):'')+'" onclick="setNotaEmp('+c.fila+',\''+ep+'\',\''+n+'\',this)">'+n+'</button>';}).join('')+'</div>';}).join(''):'';
