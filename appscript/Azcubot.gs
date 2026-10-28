@@ -977,7 +977,7 @@ function azcuOpenAI_(messages, tools){
     AZCU_NLLAM_++;
     r = UrlFetchApp.fetch('https://api.openai.com/v1/chat/completions', {
       method:'post', contentType:'application/json', headers:{Authorization:'Bearer '+key}, muteHttpExceptions:true,
-      payload:JSON.stringify({model:mod, messages:messages, tools:tools, tool_choice:'auto', temperature:0.1, max_tokens:1600})
+      payload:JSON.stringify({model:mod, messages:messages, tools:tools, tool_choice:'auto', temperature:azcuTemp_(), max_tokens:1600})
     });
     cod = r.getResponseCode();
     if(cod>=200 && cod<300) break;
@@ -1087,7 +1087,7 @@ function azcuChat(pin, mensajes, ctx){
     if(pistaCalleIds) pistaCalleIds.forEach(function(x){ vistos[x] = 1; });
     (typeof cd!=='undefined' && cd ? cd : []).forEach(function(x){ vistos[x.id] = 1; });
   }catch(eV){}
-  var msgs = [{role:'system', content:azcuSistema_(ctx)}].concat(pista ? [{role:'system', content:pista}] : []).concat((mensajes||[]).slice(-12).map(function(m){ return {role:m.role==='assistant'?'assistant':'user', content:String(m.content||'')}; }));
+  var msgs = [{role:'system', content:(azcuPromptNuevo_() ? azcuSistemaNuevo_(ctx) : azcuSistema_(ctx))}].concat(pista ? [{role:'system', content:pista}] : []).concat((mensajes||[]).slice(-12).map(function(m){ return {role:m.role==='assistant'?'assistant':'user', content:String(m.content||'')}; }));
   var tools = azcuTools_(), acciones = [], adj = [], panel = null, i;
   try{
     var txR = (mensajes||[]).length && mensajes[mensajes.length-1].role==='user' ? String(mensajes[mensajes.length-1].content||'') : '';
