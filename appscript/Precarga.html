@@ -1935,5 +1935,23 @@ var EdPDF=(function(){
 })();
 </script>
 
+<script>
+/* accesibilidad: asocia cada <label> del formulario con su campo (id + for) y da nombre a los selectores sin etiqueta */
+(function(){
+  var n = 0;
+  function etiquetar(raiz){
+    (raiz || document).querySelectorAll('input,select,textarea').forEach(function(c){
+      if(c.type==='hidden' || c.type==='file' || c.closest('label') || c.getAttribute('aria-label') || c.getAttribute('aria-labelledby')) return;
+      if(c.id && document.querySelector('label[for="'+c.id+'"]')) return;
+      var fld = c.closest('.field,.fld,.grp'), lb = fld ? fld.querySelector('label') : null;
+      if(lb && !lb.getAttribute('for')){ if(!c.id) c.id = 'f_'+(++n); lb.setAttribute('for', c.id); return; }
+      var t = (lb && lb.textContent || c.getAttribute('placeholder') || c.getAttribute('title') || c.name || '').replace(/\s+/g,' ').replace(/\(opcional[^)]*\)/,'').trim();
+      if(t) c.setAttribute('aria-label', t);
+    });
+  }
+  function ini(){ etiquetar(); try{ new MutationObserver(function(m){ m.forEach(function(x){ x.addedNodes.forEach(function(nd){ if(nd.nodeType===1) etiquetar(nd.parentNode||document); }); }); }).observe(document.body,{childList:true,subtree:true}); }catch(e){} }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', ini); else ini();
+})();
+</script>
 </body>
 </html>
