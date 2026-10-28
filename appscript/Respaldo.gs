@@ -46,14 +46,17 @@ function azcuFeedback(pin, nombre, pregunta, respuesta){
 
 function azcuErroresDiario(){
   try{
-    var sh = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Errores');
-    if(!sh || sh.getLastRow()<2) return;
-    var desde = Date.now() - 24*3600000, g = {}, n = 0, v = sh.getRange(2, 1, sh.getLastRow()-1, 3).getValues();
-    v.forEach(function(r){ var t = r[0] instanceof Date ? r[0].getTime() : 0; if(t >= desde){ n++; var k = r[1]+': '+String(r[2]).slice(0, 90); g[k] = (g[k]||0)+1; } });
-    if(!n) return;
-    var top = Object.keys(g).sort(function(a,b){ return g[b]-g[a]; }).slice(0, 2).map(function(k){ return k+(g[k]>1 ? ' (x'+g[k]+')' : ''); }).join(' · ');
+    var ss = SpreadsheetApp.openById(MAESTRO_ID), desde = Date.now() - 24*3600000, g = {}, n = 0, nd = 0, top = '', sh = ss.getSheetByName('Errores'), sf = ss.getSheetByName('Chat_Fallas');
+    if(sh && sh.getLastRow()>1){
+      sh.getRange(2, 1, sh.getLastRow()-1, 3).getValues().forEach(function(r){ var t = r[0] instanceof Date ? r[0].getTime() : 0; if(t >= desde){ n++; var k = r[1]+': '+String(r[2]).slice(0, 90); g[k] = (g[k]||0)+1; } });
+      top = Object.keys(g).sort(function(a,b){ return g[b]-g[a]; }).slice(0, 2).map(function(k){ return k+(g[k]>1 ? ' (x'+g[k]+')' : ''); }).join(' · ');
+    }
+    if(sf && sf.getLastRow()>1) sf.getRange(2, 1, sf.getLastRow()-1, 1).getValues().forEach(function(r){ if(r[0] instanceof Date && r[0].getTime() >= desde) nd++; });
+    if(!n && !nd) return;
     var dest = []; azcuGerentes_().forEach(function(nm){ azcuDestinos_(nm, true).forEach(function(d){ if(dest.indexOf(d)<0) dest.push(d); }); });
-    if(dest.length) azcuPush_('⚠️ Azcu tuvo '+n+(n===1 ? ' error' : ' errores')+' en las últimas 24 h', top+'. Detalle en la pestaña Errores.', AZCU_WEB, dest, true, true);
+    var tit = n ? '⚠️ Azcu tuvo '+n+(n===1 ? ' error' : ' errores')+' en las últimas 24 h' : '👎 El chat de Azcu tuvo '+nd+(nd===1 ? ' respuesta marcada' : ' respuestas marcadas')+' en las últimas 24 h';
+    var cuerpo = (n ? top+'. Detalle en la pestaña Errores.' : '')+(n && nd ? ' ' : '')+(nd ? (n ? 'Además ' : '')+nd+' 👎 en el chat (pestaña Chat_Fallas).' : (n ? '' : ''));
+    if(dest.length) azcuPush_(tit, cuerpo || 'Detalle en la pestaña Chat_Fallas.', AZCU_WEB, dest, true, true);
   }catch(e){ Logger.log('azcuErroresDiario: '+e); }
 }
 

@@ -1138,6 +1138,7 @@ function cargarForm(id, nombre, tel){
 setTimeout(function(){_pintaVend();var n='';try{n=(localStorage.getItem('azcu_nombre')||'').trim();}catch(e){}if(!n)setTimeout(_yo,1500);},400);
 function _vendNombres(){var s={};try{var n=(localStorage.getItem('azcu_nombre')||'').trim();if(n)s[n]=1;}catch(e){}(DATA||[]).forEach(x=>{if(x.vendedor)s[x.vendedor]=1;});return Object.keys(s);}
 function avisosTelegram(){var n=_yo();if(!n)return;google.script.run.withSuccessHandler(function(r){if(r&&r.ok&&r.url){alert(r.msg);window.open(r.url,'_blank');}else alert((r&&r.msg)||'Sin respuesta');}).withFailureHandler(function(e){alert('Error: '+(e&&e.message?e.message:e));}).telegramEnlaceTb(n);}
+var SOPORTE_WA='',SOPORTE_MAIL='azcuenagaventas@gmail.com';
 function cfgAbrir(){
   var dl=document.getElementById('dlg');if(!dl)return;
   var sec=function(h,d){return '<h3 class="sec" style="margin:14px 0 4px">'+h+'</h3>'+(d?'<div style="font-size:12px;color:var(--gris);margin-bottom:6px">'+d+'</div>':'');};
@@ -1153,6 +1154,9 @@ function cfgAbrir(){
    +'<button id="avibtn" class="btn s" '+bt+' style="display:none;width:100%;margin:3px 0;text-align:left" onclick="probarAviso()">🔔 Probar aviso</button>'
    +sec('Datos','')
    +'<button class="btn s" '+bt+' onclick="closeDL();descargar()">🖨 Descargar o imprimir el tablero (PDF)</button>'
+   +sec('¿Necesitás ayuda?','Respondemos en el día hábil.')
+   +(SOPORTE_WA?'<a class="btn s" '+bt+' target="_blank" rel="noopener" href="https://wa.me/'+SOPORTE_WA+'?text='+encodeURIComponent('Hola, necesito ayuda con Azcu')+'">💬 Escribir por WhatsApp</a>':'')
+   +'<a class="btn s" '+bt+' href="mailto:'+SOPORTE_MAIL+'?subject='+encodeURIComponent('Ayuda con Azcu')+'">✉️ Escribir por mail</a>'
    +'</div>';
   document.getElementById('ov2').classList.add('on');
   _pintaSnd();_pintaVend();
