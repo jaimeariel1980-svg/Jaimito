@@ -1430,42 +1430,6 @@ function alertaSemanalDocumentacionPendiente() {
   });
 }
 
-/**
- * UTILITARIO MANUAL — correr una sola vez desde el editor de Apps Script
- * (Ejecutar > recalcularEstadosDocumentacion) para recalcular, fila por
- * fila, el estado de todos los "Doc: ..." usando la resolución
- * determinística de carpeta (en vez del valor viejo/cacheado leído de
- * "Carpeta Drive (URL)"). Salta las filas migradas (MIG-*) porque esas
- * propiedades no tienen carpeta creada por este mecanismo.
- */
-function recalcularEstadosDocumentacion() {
-  const sheet = _getSheet();
-  const lastRow = sheet.getLastRow();
-  if (lastRow < 2) return;
-
-  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  const idxCodigo = headers.indexOf('Código de Precarga');
-  const codigos = sheet.getRange(2, idxCodigo + 1, lastRow - 1, 1).getValues();
-
-  let actualizados = 0;
-  codigos.forEach((fila, i) => {
-    const codigoPrecarga = fila[0];
-    if (!codigoPrecarga || String(codigoPrecarga).indexOf('MIG-') === 0) return;
-
-    const estadoDocs = calcularEstadoDocumentacion(codigoPrecarga);
-    if (!estadoDocs) return;
-
-    const numeroFila = i + 2;
-    CONFIG.DOCUMENTOS.forEach(d => {
-      const col = headers.indexOf('Doc: ' + d.label) + 1;
-      if (col) sheet.getRange(numeroFila, col).setValue(estadoDocs[d.key] || 'Pendiente');
-    });
-    actualizados++;
-  });
-
-  Logger.log('Filas actualizadas: ' + actualizados);
-}
-
 // ---------------------------------------------------------------------------
 // INFORME DE CARGA TOKKO (PDF con la información en el mismo orden del
 // formulario de carga de Tokko, para el botón "Generar informe carga Tokko"
@@ -1911,77 +1875,6 @@ function testGetDatos(){
   Logger.log('Propiedades leídas: '+d.length);
   Logger.log('Primera: '+JSON.stringify(d[0],null,2));
   Logger.log('Docs de la primera: '+JSON.stringify(d[0]?d[0].papeles:{}));
-}
-function corregirMigracion(){
-  var ID_VENTAS='16-xykemcOS78QxNymU5Se7RGLwZqvxvXvZ1guhzUECQ';
-  var ID_MAESTRO='1EwTv5hpxMCDHi4K47eCrhoKxxnk-FStulSeiEf6myl0';
-
-  var ms=SpreadsheetApp.openById(ID_MAESTRO).getSheets(), mae=null;
-  for(var j=0;j<ms.length;j++){
-    if(ms[j].getRange(1,1,1,ms[j].getLastColumn()).getValues()[0].join('|').indexOf('Código de Precarga')>-1){mae=ms[j];break;}
-  }
-  if(!mae)throw new Error('No encontré la pestaña maestra');
-  if(mae.getLastRow()>1){
-    var cods=mae.getRange(2,1,mae.getLastRow()-1,1).getValues();
-    for(var i=cods.length-1;i>=0;i--){ if((''+cods[i][0]).indexOf('MIG-')===0) mae.deleteRow(i+2); }
-  }
-
-  var sv=SpreadsheetApp.openById(ID_VENTAS).getSheets(), base=null, hdr=0;
-  for(var k=0;k<sv.length;k++){
-    var nf=Math.min(6, sv[k].getLastRow());
-    if(nf<1)continue;
-    var top=sv[k].getRange(1,1,nf,sv[k].getLastColumn()).getValues();
-    for(var rr=0;rr<top.length;rr++){
-      var line=top[rr].join('|').toLowerCase();
-      if(line.indexOf('propietario')>-1 && line.indexOf('estado')>-1 && line.indexOf('direcc')>-1){ base=sv[k]; hdr=rr; break; }
-    }
-    if(base)break;
-  }
-  if(!base)throw new Error('No encontré la BASE con Propietario');
-
-  var all=base.getDataRange().getValues();
-  var vh=all[hdr];
-  function col(n){for(var x=0;x<vh.length;x++){if((''+vh[x]).toLowerCase().indexOf(n.toLowerCase())>-1)return x;}return -1;}
-  var cId=col('ID'),cDir=col('Direcc'),cTipo=col('Tipo'),cProp=col('Propietario'),cPrecio=col('Precio'),cEstado=col('Estado'),cObs=col('Observ');
-
-  var mh=mae.getRange(1,1,1,mae.getLastColumn()).getValues()[0];
-  function idx(n){return mh.indexOf(n);}
-  var em={'en venta':'Publicada','reservada':'Reserva','vendida':'Vendida','suspendida':'Baja','alquilada':'Publicada'};
-  var nuevas=[];
-  for(var r=hdr+1;r<all.length;r++){
-    var row=all[r];
-    var id=(cId>-1?row[cId]:'')||'';
-    var dir=(cDir>-1?row[cDir]:'')||'';
-    if(!id && !dir)continue;
-    if((''+id).toLowerCase().indexOf('id')===0)continue;
-
-    var d=(''+dir).trim(), calle=d, num='';
-    var m=d.match(/^(.*?)[\s,\.]*(\d+)\s*$/);
-    if(m){calle=m[1].trim();num=m[2];}
-    var dl=d.toLowerCase(), ciudad='Rosario';
-    if(dl.indexOf('funes')>-1)ciudad='Funes'; else if(dl.indexOf('ibarluce')>-1)ciudad='Ibarlucea';
-
-    var precioRaw=(''+(cPrecio>-1?row[cPrecio]:''));
-    var precioNum=precioRaw.replace(/\.\d{2}$/,'').replace(/[^\d]/g,'');
-    var moneda= precioNum? 'USD' : '';
-
-    var estado=((cEstado>-1?row[cEstado]:'')||'').toString().trim().toLowerCase();
-
-    var fila=new Array(mh.length).fill('');
-    function set(n,v){var p=idx(n);if(p>-1)fila[p]=v;}
-    set('Código de Precarga','MIG-'+id);
-    set('Fecha de creación',Utilities.formatDate(new Date(),'GMT-3','dd/MM/yyyy'));
-    set('Dueño 1 - Nombre y Apellido',((cProp>-1?row[cProp]:'')||'').toString().trim());
-    set('Calle',calle); set('Número',num); set('Ciudad',ciudad);
-    set('Tipo de propiedad',((cTipo>-1?row[cTipo]:'')||'').toString().trim());
-    set('Precio',precioNum); set('Moneda',moneda); set('Tipo de operación','Venta');
-    set('Etapa',em[estado]||'Publicada');
-    set('Estado de la propiedad','Migrado - revisar'); set('Origen','Propia');
-    set('Observaciones comerciales','Migrado '+id+'. Dir original: "'+d+'". '+((cObs>-1?row[cObs]:'')||''));
-    nuevas.push(fila);
-  }
-  if(nuevas.length)mae.getRange(mae.getLastRow()+1,1,nuevas.length,mh.length).setValues(nuevas);
-  SpreadsheetApp.getUi().alert('Migración corregida.\nMigradas ahora: '+nuevas.length);
 }
 // 1) % de Tokko (corregido: decimales -> %)
 function llenarTokko(){
