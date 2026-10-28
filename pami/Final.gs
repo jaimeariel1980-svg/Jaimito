@@ -112,7 +112,7 @@ function getRankingContratados(k) {
   const filas = hoja_('Candidatos').getDataRange().getValues().slice(1), por = evalsPorId_();
   const g = (...a) => a.map(x => String(x == null ? '' : x).trim()).find(Boolean) || '';
   const AN = { 'menos de 1 año': 0.5, '1 a 3 años': 2, '3 a 5 años': 4, 'más de 5 años': 6 };
-  const lista = [];
+  const pesos = pesosFinal_(), lista = [];
   filas.forEach(r => {
     if (!r[COL.nombre - 1] || String(r[COL.estado - 1]).trim() !== 'Contratado') return;
     const id = String(r[COL.id - 1]), ev = por[id] || {};
@@ -121,8 +121,8 @@ function getRankingContratados(k) {
     const comp = partes.competencias ? partes.competencias.puntaje : null, tec = partes.tecnica ? partes.tecnica.puntaje : null;
     const nota = (celda, p) => notaLetra_(celda) || (p ? p.nota : '');
     const nC = nota(r[COL.notaComp - 1], partes.competencias), nT = nota(r[COL.notaP2 - 1], partes.tecnica), nS = nota(r[COL.notaScr - 1], partes.screening), nCV = notaLetra_(r[COL.ajuste - 1]);
-    const vals = [comp, tec].filter(v => v != null);
-    const promedio = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 100) / 100 : null;
+    const wc = pesos.competencias > 0 ? pesos.competencias : 1, wt = pesos.tecnica > 0 ? pesos.tecnica : 1;
+    const promedio = comp != null && tec != null ? Math.round((comp * wc + tec * wt) / (wc + wt) * 100) / 100 : (comp != null ? comp : (tec != null ? tec : null));
     let resp = [];
     try { resp = JSON.parse(r[COL.resp - 1] || '[]'); } catch (e) { }
     const an = (resp.find(x => /años de experiencia/i.test(String(x.q || ''))) || {}).a || '';
@@ -141,5 +141,6 @@ function getRankingContratados(k) {
     lista.push({ nombre: String(r[COL.nombre - 1]), policlinico: poliEf_(r), busq: String(r[COL.busq - 1] || ''), edad: edad, formacion: form, cat: cat, anios: String(an), aniosN: AN[String(an).toLowerCase()] != null ? AN[String(an).toLowerCase()] : null, gremios: gremios, otro: otro, turno: String(r[COL.turno - 1] || '').replace(/;\s*/g, ' · '), cv: nCV, scr: nS, comp: comp, tec: tec, nC: nC, nT: nT, promedio: promedio, flags: flags, parrafo: parrafo });
   });
   lista.sort((a, b) => (b.promedio == null ? -1 : b.promedio) - (a.promedio == null ? -1 : a.promedio) || (b.tec || 0) - (a.tec || 0) || (b.comp || 0) - (a.comp || 0) || a.nombre.localeCompare(b.nombre));
-  return JSON.stringify({ lista: lista, fecha: fmt_(new Date(), 'dd/MM/yyyy') });
+  const sp = (pesos.competencias > 0 ? pesos.competencias : 1) + (pesos.tecnica > 0 ? pesos.tecnica : 1);
+  return JSON.stringify({ lista: lista, fecha: fmt_(new Date(), 'dd/MM/yyyy'), pesoComp: Math.round((pesos.competencias > 0 ? pesos.competencias : 1) / sp * 100), pesoTec: Math.round((pesos.tecnica > 0 ? pesos.tecnica : 1) / sp * 100) });
 }
