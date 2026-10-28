@@ -111,3 +111,5 @@ Hecha con el código real y 37 fichas de ejemplo; el modelo real (`gpt-4o-mini`)
 - ✅ (HECHO 27/10) Búsqueda de dirección por palabra completa (450 vs 4500).
 - 🟡 Prueba fija del chat: ejecutar `azcuProbarChatDificil` (Apps Script) después de cada cambio del chat o del modelo; solo propone, no guarda nada. Sacarla cuando Ariel diga.
 - ✅ **Workflow: el guardia daba falso positivo tras un publicar fallido** (27/10): arreglado. Ahora `apps-script.yml` compara contra la rama `publicado-<proyecto>` (se actualiza sola después de cada `clasp push` exitoso) y, si no existe, contra el commit anterior; además el paso «Decidir» usa la misma base, así que los cambios que quedaron sin publicar por una falla se publican en el próximo push aunque ese push no toque la carpeta. Verificar en el primer merge que toque `blumia/` que el run termine en verde y que aparezca la rama `publicado-blumia`.
+
+- 🟡 (28/10, Analía) Campo «alquilado hasta / vencimiento del contrato» no existe en la ficha: el chat contesta «no figura». Evaluar agregarlo (cambia la planilla y la ficha). Quién: Ariel decide, Claude hace.

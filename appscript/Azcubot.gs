@@ -120,6 +120,12 @@ function azcuPedidas_(texto){
   }catch(eC){}
   return out;
 }
+function azcuCallesEnTexto_(texto){
+  var T = ' '+azcuTokens_(texto, true).join(' ')+' ', cs = {}, out = [];
+  azcuDatos_().forEach(function(p){ azcuTokens_((p.det&&p.det.calle)||'', true).forEach(function(x){ if(x.length>=4 && !/^\d+$/.test(x) && !AZCU_NOCALLE_[x]) cs[x] = 1; }); });
+  Object.keys(cs).forEach(function(c){ if(T.indexOf(' '+c+' ')>=0) out.push(c); });
+  return out;
+}
 function azcuPedidaCoincide_(ped, p){
   if(!ped || !ped.length || !p) return true;
   var tk = azcuTokens_(p.dir||'', true), nums = tk.filter(function(x){ return /^\d+$/.test(x); }).map(function(x){ return String(+x); }), pal = tk.filter(function(x){ return !/^\d+$/.test(x); });
@@ -1008,8 +1014,18 @@ function azcuChat(pin, mensajes, ctx){
   ctx = ctx || {};
   try{ var lm = (mensajes||[]).length ? mensajes[mensajes.length-1] : null, cr = lm && lm.role==='user' ? azcuCalc_(lm.content) : null; if(cr) return {texto:cr.texto, acciones:[], adjuntos:[], panel:null}; }catch(e){}
   try{ var lu = (mensajes||[]).length ? mensajes[mensajes.length-1] : null; if(lu && lu.role==='user' && /^\s*(y\s+)?(la|el|lo)\s+otr[ao]s?\s*[?!.]*\s*$/i.test(String(lu.content||''))) return {texto:'¿A cuál te referís con «la otra»? Decime la dirección o el código y te la paso.', acciones:[], adjuntos:[], panel:null}; }catch(eO){}
-  var pedUlt = [];
+  var pedUlt = [], calTx = [], pistaCalle = '';
   try{ var txP = (mensajes||[]).length && mensajes[mensajes.length-1].role==='user' ? String(mensajes[mensajes.length-1].content||'') : ''; if(txP){ var scx = azcuSinCoincidencia_(txP); if(scx) return scx; pedUlt = azcuPedidas_(txP); } }catch(eP){}
+  try{
+    if(txP && !pedUlt.length){
+      calTx = azcuCallesEnTexto_(txP);
+      if(calTx.length){
+        if(ctx.fichaId){ var pf = azcuProp_(ctx.fichaId), tf = pf ? azcuTokens_(pf.dir, true) : []; if(pf && !calTx.some(function(c){ return tf.indexOf(c)>=0; })) ctx = Object.assign({}, ctx, {fichaId:''}); }
+        var cd0 = azcuDatos_().filter(function(p){ var tk = azcuTokens_((p.det&&p.det.calle)||'', true); return calTx.some(function(c){ return tk.indexOf(c)>=0; }); });
+        if(cd0.length) pistaCalle = 'DATO VERIFICADO POR EL SISTEMA: el usuario nombra la calle '+calTx.join(', ')+' sin número. Propiedades de esa calle: '+cd0.slice(0,10).map(function(p){ return p.id+' ('+p.dir+')'; }).join('; ')+(cd0.length>10 ? ' y '+(cd0.length-10)+' más' : '')+'. '+(cd0.length===1 ? 'Es esa; usá ese id.' : 'Si no queda claro cuál, preguntá número o piso.')+' NO uses la ficha abierta ni otra propiedad.';
+      }
+    }
+  }catch(eCa){}
   try{
     var txT = (mensajes||[]).length && mensajes[mensajes.length-1].role==='user' ? String(mensajes[mensajes.length-1].content||'') : '';
     if(txT && /datos t[eé]cnicos|detalles t[eé]cnicos|m[aá]s detalles|m[aá]s datos|ver detalles/i.test(txT)){
@@ -1027,7 +1043,7 @@ function azcuChat(pin, mensajes, ctx){
         return {texto:(cual3==='ubicacion' ? 'Listo, la ubicación' : cual3==='encuesta' ? 'Listo, la encuesta' : 'Listo, la ficha')+(p3 ? ' de **'+p3.dir+'**' : '')+'. Elegí qué hacer 👇', acciones:[], adjuntos:adj3, panel:null}; }
     }
   }catch(e){}
-  var pista = '';
+  var pista = pistaCalle;
   try{
     var ut = (mensajes||[]).length && mensajes[mensajes.length-1].role==='user' ? String(mensajes[mensajes.length-1].content||'') : '', cd = ut ? azcuDirEnTexto_(ut) : [];
     if(!cd.length && /\d{2,5}/.test(ut) && /[a-zñáéíóú]{3,}/i.test(ut)){ azcuDatos_(true); cd = azcuDirEnTexto_(ut); }
