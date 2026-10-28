@@ -1025,6 +1025,15 @@ function azcuChat(pin, mensajes, ctx){
   ctx = ctx || {};
   try{ var lm = (mensajes||[]).length ? mensajes[mensajes.length-1] : null, cr = lm && lm.role==='user' ? azcuCalc_(lm.content) : null; if(cr) return {texto:cr.texto, acciones:[], adjuntos:[], panel:null}; }catch(e){}
   try{ var lu = (mensajes||[]).length ? mensajes[mensajes.length-1] : null; if(lu && lu.role==='user' && /^\s*(y\s+)?(la|el|lo)\s+otr[ao]s?\s*[?!.]*\s*$/i.test(String(lu.content||'')) && !(mensajes||[]).slice(-7,-1).some(function(m0){ var t0 = String(m0.content||''); return azcuIdsEn_(t0).length || azcuDirEnTexto_(t0).length; })) return {texto:'¿A cuál te referís con «la otra»? Decime la dirección o el código y te la paso.', acciones:[], adjuntos:[], panel:null}; }catch(eO){}
+  try{
+    var lt = (mensajes||[]).length ? mensajes[mensajes.length-1] : null, tD = lt && lt.role==='user' ? String(lt.content||'') : '';
+    if(tD && /\b(papeles|documentos|docs|documentaci[oó]n)\b.*\bfalt|\bfalt\w*\b.*\b(papeles|documentos|docs|documentaci[oó]n)\b/i.test(tD) && /\b(cartera|toda|todas|todo|todos|propiedades)\b/i.test(tD)){
+      var fd = azcuHerrDocs_();
+      if(!fd.length) return {texto:'No falta ningún papel obligatorio en las propiedades abiertas. 👌', acciones:[], adjuntos:[], panel:null};
+      fd.sort(function(a,b){ return b.faltan.length-a.faltan.length; });
+      return {texto:'Faltan papeles en **'+fd.length+'** propiedades:\n'+fd.map(function(x){ return '- **'+x.direccion+'**: '+x.faltan.join(', '); }).join('\n'), acciones:[], adjuntos:[], panel:null};
+    }
+  }catch(eDo){}
   var pedUlt = [], calTx = [], pistaCalle = '', pistaCalleIds = [];
   try{ var txP = (mensajes||[]).length && mensajes[mensajes.length-1].role==='user' ? String(mensajes[mensajes.length-1].content||'') : ''; if(txP){ var scx = azcuSinCoincidencia_(txP); if(scx) return scx; pedUlt = azcuPedidas_(txP); } }catch(eP){}
   try{
@@ -1060,6 +1069,15 @@ function azcuChat(pin, mensajes, ctx){
     var ut = (mensajes||[]).length && mensajes[mensajes.length-1].role==='user' ? String(mensajes[mensajes.length-1].content||'') : '', cd = ut ? azcuDirEnTexto_(ut) : [];
     if(!cd.length && /\d{2,5}/.test(ut) && /[a-zñáéíóú]{3,}/i.test(ut)){ azcuDatos_(true); cd = azcuDirEnTexto_(ut); }
     if(!pedUlt.length || !cd.every(function(p){ return azcuPedidaCoincide_(pedUlt, p); })) cd = [];
+    var kD = function(x){ return azcuSinAc_((x.det&&x.det.calle)||'')+'|'+String((x.det&&x.det.numero)||'').replace(/^0+/,''); };
+    if(cd.length>1 && cd.every(function(x){ return kD(x)===kD(cd[0]); })){
+      if(/\b(piso|dpto|depto|departamento|unidad|planta|pb)\b|\b\d{1,2}\s*[°º]\s*[a-z0-9]?\b/i.test(ut)){
+        var tkU = ' '+azcuTokens_(ut, true).join(' ')+' ', fU = cd.filter(function(x){ return azcuTokens_(x.dir, true).every(function(w){ return tkU.indexOf(' '+w+' ')>=0; }); });
+        if(fU.length===1) cd = fU;
+      } else {
+        return {texto:'Hay '+cd.length+' unidades en **'+String(cd[0].det.calle).trim()+' '+cd[0].det.numero+'**. ¿Cuál querés? 👇', acciones:[], adjuntos:cd.slice(0,8).map(function(x){ return {k:'b', label:x.dir, act:'ask', id:ut+' ('+x.dir+')'}; }), panel:null};
+      }
+    }
     if(cd.length===1) pista = 'DATO VERIFICADO POR EL SISTEMA: el usuario nombra la propiedad '+cd[0].id+' ('+cd[0].dir+'). Usá ese id directamente; NO digas que no la encontrás.';
     else if(cd.length>1 && !cd.every(function(x){ return azcuSinAc_((x.det&&x.det.calle)||'')+'|'+((x.det&&x.det.numero)||'')===azcuSinAc_((cd[0].det&&cd[0].det.calle)||'')+'|'+((cd[0].det&&cd[0].det.numero)||''); })) pista = 'DATO VERIFICADO POR EL SISTEMA: el usuario nombra '+cd.length+' propiedades distintas: '+cd.slice(0,8).map(function(p){ return p.id+' ('+p.dir+')'; }).join('; ')+'. Resolvé cada una con su id y respondé por cada una; NO preguntes piso ni dpto.';
     else if(cd.length>1) pista = 'DATO VERIFICADO POR EL SISTEMA: en esa dirección hay '+cd.length+' unidades: '+cd.slice(0,12).map(function(p){ return p.id+' ('+p.dir+')'; }).join('; ')+'. Si falta saber cuál, preguntá piso/dpto; NO digas que no la encontrás.';

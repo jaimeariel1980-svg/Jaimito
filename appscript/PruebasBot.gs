@@ -68,7 +68,7 @@ function azcuPruebasLista_(T){
   add('gracias genia','Una línea, sin herramientas.',{t:[],max:180});
   add('cuánto sale {A1}?','Da el precio, sin ficha completa.',{t:[],no:'Datos y operaci',max:420});
   add('precio de {X2}','«No encuentro», ofrece parecidas, no inventa precio.',{t:[],tx:'no encuentro|no (la )?encontr|no hay|parecid',no:'\\d{2,3}\\.\\d{3}'});
-  add('contame de {D}','Pregunta cuál unidad.',{t:[],tx:'piso|dpto|depto|unidad|cu[aá]l'});
+  add('contame de {D}','Pregunta cuál unidad (por código, con botones).',{t:[],tx:'unidades|cu[aá]l',no:'Datos y operaci',adj:true});
   add('qué precio tienen {A3} y {A4}?','Da los dos precios, sin preguntar piso.',{t:[],no:'cu[aá]l (es|de)|qu[eé] piso|qu[eé] dpto'});
   add('{BV} qué etapa tiene?','La encuentra y dice la etapa.',{t:[],tx:'etapa|publicad|captaci|reserva|vendid|baja'});
   add('tenés algo en {C1}?','Lista las propiedades de la calle.',{t:[],tx:'{C1}'});
@@ -89,7 +89,7 @@ function azcuPruebasLista_(T){
   add('Ana Gómez hizo una oferta de 90 mil por {A2}','Tarjeta de propuesta con el monto.',{t:['propuesta'],cr:'90'});
   add('rechazaron la propuesta de {A2}','Pide el motivo antes de armar la tarjeta.',{t:[],tx:'motivo|por qu[eé]'});
   add('aceptaron la propuesta de {A2}','Pregunta de quién es la propuesta, o arma la tarjeta y aclara que pasa a Reserva.',{tx:'reserva|qui[eé]n|nombre|cliente'});
-  add('pasá {A3} a publicada','Tarjeta de cambio de etapa.',{t:['etapa']});
+  add('pasá {A3} a publicada','Tarjeta de cambio de etapa, o avisa que ya está en Publicada.',{tx:'ya est[aá]|publicad'});
   add('bajale el precio a {A2} a 62 mil dólares','Tarjeta de editar precio con 62.000.',{t:['campos'],cr:'62'});
   add('se cayó la visita de mañana en {A4}','La ubica y arma la tarjeta de cancelar (o dice que no hay).',{tx:'visita|no (encuentro|hay|figura)'});
   add('recordame mañana a las 9 llamar a Juan','Recordatorio personal.',{skip:'Crea el recordatorio sin tarjeta: probar a mano.'});
@@ -109,7 +109,7 @@ function azcuPruebasLista_(T){
   add('haceme el pdf de la ficha de {A1}','PDF de esa ficha.',{skip:'Genera un archivo en Drive: probar a mano.'});
   add('qué es mejor, crédito hipotecario UVA o tradicional?','Máximo 3 líneas, sin listas.',{t:[],max:450,no:'^\\s*1\\.'});
   add('redactame un mail para el dueño de {A2} contándole que bajamos el precio','Mail completo con el dato real.',{t:[],tx:'asunto|estimad|hola|saludos'});
-  add('recuperá la visita que borré ayer','Mira la Papelera.',{tx:'papelera|restaur|no (hay|encuentro|figura)'});
+  add('recuperá la visita que borré ayer','Mira la Papelera y pregunta cuál (o arma la tarjeta de restaurar).',{tx:'papelera|restaur|recuper|borrad|no (hay|encuentro|figura)'});
   add('dame info de {TIPEO}','Tolera el tipeo.',{t:[]});
   add('che q onda la de {C2}?','Entiende la calle pedida.',{t:[],tx:'{C2}'});
   add('cargame que hoy vinieron 3 personas a ver {A3}: Ana (le gustó), Pedro (no le interesó, caro) y Luis (va a hacer una oferta)','Una tarjeta por persona.',{n:3});
