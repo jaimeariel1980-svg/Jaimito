@@ -146,3 +146,5 @@ Hecha con el código real y 37 fichas de ejemplo; el modelo real (`gpt-4o-mini`)
 - Blumia (28/10): «Guardar en Drive» del flyer guarda también la imagen (JPG con link de lectura para quien tenga el link) y el menú Búsqueda → «📢 Ver y enviar flyer» muestra la imagen ya hecha con «Enviar por WhatsApp» (texto + link de la imagen); el flyer se edita solo en ⚙ Configurar → Flyer y textos (`flyerImagen_`); en la pantalla del flyer sigue el botón de compartir. Probar en un celular real. Prioridad baja · Claude.
 
 - ✅ 3ª corrida de pruebas (28/10 15:12): ✅ 46 · 🟡 1 · ❌ 1, 1,9 s y 1,3 llamadas por frase. El ❌ («mandale la encuesta» armaba una interacción) se corrigió: ahí se saca `proponer_cargar_interaccion`. La 🟡 es la respuesta a «UVA o tradicional» (506 caracteres): se arregla con la reescritura del prompt (pendiente de OK de Ariel).
+
+- Blumia (28/10): velocidad del tablero ≈ 5,6 s de punta a punta (servidor 2,4 s + 1,8 s de Google). Ariel dijo que NO al cache del tablero armado (60–90 s con invalidación). Si vuelve a pedir más velocidad, esa es la única palanca grande. Cargar la banda salarial en Config de cada búsqueda ahorra ~0,24 s. Prioridad baja · Claude.
