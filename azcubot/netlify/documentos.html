@@ -1,9 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Generador de documentos — Azcuénaga</title>
 <script>(function(){
 var API='https://script.google.com/macros/s/AKfycbwSxs5t-4WBhtqQtyLNhYPjUOo7EwW5dMk7R0AwinIFPG3lYyXtmlvNKShS_sEzcGiR/exec';
 function ls(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); }catch(e){ return null; } }
@@ -92,12 +89,17 @@ window.google = window.google || {};
 window.google.script = {run: mk({}), host:{close:function(){}, setHeight:function(){}, setWidth:function(){}}};
 })();
 </script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Generador de documentos — Azcuénaga</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 :root{
   --bg:#f2f4f7; --panel:#fff; --ink:#1a2332; --mid:#5a6472; --line:#dde3ea;
   --accent:#1a3a6b; --accent2:#264e8a; --markbg:#eef3fa; --autobg:#eef3fa;
-  --sans:'Segoe UI',system-ui,-apple-system,sans-serif;
+  --sans:'Inter','Segoe UI',system-ui,-apple-system,sans-serif;
   --serif:'Georgia','Times New Roman',serif;
 }
 *{box-sizing:border-box;margin:0;padding:0;}

@@ -1267,5 +1267,7 @@ if(!window.festejar) window.festejar = function(msg,tipo){
 <style id="azbfix">
 .azb-chips{-webkit-mask-image:linear-gradient(90deg,#000 86%,transparent);mask-image:linear-gradient(90deg,#000 86%,transparent);padding-right:30px}
 .azb-tip{pointer-events:none}
+body.azb-modal .azb-fab,body.azb-modal .azb-tip{display:none!important}
 .azb-err{color:#d1495b;font-size:13.5px;font-weight:600;margin:10px 0 0;text-align:center;line-height:1.35}
 </style>
+<script>(function(){function f(){try{document.body.classList.toggle('azb-modal',!!document.querySelector('.ov.on'));}catch(e){}}try{var o=new MutationObserver(f);[].forEach.call(document.querySelectorAll('.ov'),function(n){o.observe(n,{attributes:true,attributeFilter:['class']});});}catch(e){}f();})();</script>
