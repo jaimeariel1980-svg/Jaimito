@@ -68,6 +68,10 @@ Lo mantiene Claude. Prioridad: 🔴 urgente · 🟠 importante · 🟡 cuando se
 - 🟡 Avisos: decidir en una semana si Telegram pasa a ser el canal principal (hoy salen por OneSignal y Telegram a la vez, con posibles duplicados). Para escalar a clientes: evaluar WhatsApp (API de Meta o ManyChat) y, más adelante, app nativa. — *Ariel + Claude*
 - 🟡 Cargar el mail de cada persona en Usuarios solo si se vuelve a activar el envío por mail. — *Ariel*
 
+## Azcu como producto replicable (28/10, Ariel: «Azcuénaga es el conejillo de indias; la idea es replicarlo en otras inmobiliarias, por ahora queda para después»)
+- 🟡 **Hacer Azcu configurable por cliente** (como Blumia): hoy hay datos de Azcuénaga escritos en el código (~30 «Rosario», 11 «Mendoza 4873», el ID de la planilla Maestra en 6 lugares, `AZCU_KB`, logos y textos), y documentos obligatorios que solo existen en Santa Fe (EPE Luz, Aguas Santafesinas, API Provincial). Pasar todo eso a una pestaña de configuración (nombre, dirección, ciudad, logo, colores, documentos obligatorios por provincia, texto «sobre la empresa» del bot) y armar una planilla modelo vacía para dar de alta un cliente nuevo. No empezar hasta que Ariel lo pida. — *Claude, cuando Ariel diga*
+- 🟠 **Auditoría «producto vendible» de Azcu en curso** (28/10): (1) probar respuestas reales del bot con un set de ~50 frases, (2) recorridos completos (Precarga, Documentos, Encuesta, avisos y Telegram, dictado), (3) velocidad y costo mensual de OpenAI, (5) aviso de privacidad (Ley 25.326) donde se cargan datos de propietarios y clientes, (6) lo que pide un cliente que paga: copia de seguridad automática, aviso si algo se cae, manual/video corto, soporte. La primera auditoría (bot, diseño, código; 27 puntos) ya se le pasó a la sesión de Azcu. — *Claude*
+
 ## Auditorías que faltan
 - 🟠 **Funcional** (flujos de punta a punta, errores, diferencias entre copias), **diseño y uso en celular**, **rendimiento** y **estructura del código**. — *Claude*
 
