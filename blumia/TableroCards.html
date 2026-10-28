@@ -273,7 +273,7 @@ header{min-height:86px}
     var notas='<div class="notabox"><div class="notatit">Poner nota manual</div>'+['cv','screening','competencias'].map(function(et){return '<div class="notarow"><span>'+({cv:'CV',screening:'Screening',competencias:'Competencias'}[et])+'</span>'+['A','B+','B','C'].map(function(n){return '<button class="nb'+(String({cv:c.nota,screening:c.notaScr,competencias:c.notaComp}[et]||'').trim()===n?' on '+n.replace('+','p'):'')+'" onclick="setNota('+c.fila+',\''+et+'\',\''+n+'\',this)">'+n+'</button>';}).join('')+'</div>';}).join('')+notasEmp+'</div>';
     var contacto=(c.contactado?'<div class="frow"><span class="fl">Último contacto</span><span class="fv">'+esc(c.contactado)+' <a href="#" onclick="borrarMarca('+c.fila+');return false" style="color:#aaa;font-size:11px;text-decoration:none;margin-left:6px">✕ borrar</a></span></div>':'')
       +'<div class="frow"><span class="fl">Registro de contactos</span><span class="fv" id="regCont" style="white-space:pre-line">cargando…</span></div>';
-    var h='<div class="fwrap" style="margin:-24px"><div class="fh"><div style="font-size:16px;color:#243D2C"><b>'+esc(c.estado)+'</b></div><div class="ecs">'+ecs+'</div></div>'
+    var h='<div class="fwrap" style="margin:-24px"><div class="fh"><div style="font-size:16px;color:#0F3F27"><b>'+esc(c.estado)+'</b></div><div class="ecs">'+ecs+'</div></div>'
       +(al?'<div class="fal">'+al+'</div>':'')
       +'<div class="fb"><div class="acts all">'+contBtn+cvBtn+agBtn+'<button class="mbtn alt mas-t" onclick="var b=this.nextElementSibling;b.classList.toggle(\'show\');this.textContent=b.classList.contains(\'show\')?\'Menos opciones ▴\':\'Más opciones ▾\'">Más opciones ▾</button><div class="mas-b">'+etapaBtn('screening',c.scrPDF,'Screening','📝 Cargar screening')+etapaBtn('competencias',c.compPDF,'Competencias','💼 Cargar competencias')+btn(c.postulacion,'📄 Ver postulación')+btn(c.informe,'📄 Ver informe')+genBtn+bancoBtn+'</div></div>'+agendarHtml(c)
       +'<div class="fpw"><button class="fpe" title="Editar datos del candidato" onclick="panelTog(\'edPanel\')">✏️</button><div class="fp"><div class="pn"><h4>Contacto</h4>'+row('Teléfono',esc(fmtTel(c.tel)))+row('Email',esc(c.mail))+row('Zona',esc(c.zona))+'</div>'
@@ -335,8 +335,8 @@ header{min-height:86px}
 </script>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
 <style id="skin">
-/* Identidad de la web de Blumia: verde bosque, menta, crema, Poppins, botones tipo píldora */
-body,button,input,select,textarea{font-family:'Poppins','Plus Jakarta Sans',sans-serif}
+/* Identidad de la web de Blumia: verde bosque, menta, crema, 'PP Pangram Sans',Poppins, botones tipo píldora */
+body,button,input,select,textarea{font-family:'PP Pangram Sans','Poppins','Plus Jakarta Sans',sans-serif}
 header{background:var(--green)}
 .nav button,.nav .dd>button,.nav select{border-radius:99px}
 .nav select{padding:8px 14px}
@@ -360,7 +360,7 @@ header{background:var(--green)}
 .fh{background:var(--mint)}
 #saved{pointer-events:none}
 #dock{position:fixed;right:14px;bottom:14px;z-index:90;display:flex;flex-direction:column;gap:8px;align-items:flex-end}
-.dk{display:flex;align-items:center;gap:8px;border:none;border-radius:99px;padding:9px 16px;font:700 13px Poppins,sans-serif;cursor:pointer;background:var(--green);color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.28)}
+.dk{display:flex;align-items:center;gap:8px;border:none;border-radius:99px;padding:9px 16px;font:700 13px 'PP Pangram Sans',Poppins,sans-serif;cursor:pointer;background:var(--green);color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.28)}
 .dk b{background:var(--cream);color:var(--green);border-radius:99px;min-width:24px;padding:0 7px;line-height:22px;text-align:center}
 .dk i{font-style:normal;font-weight:600;opacity:.9;max-width:210px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dk.u{background:#B91C1C}.dk.u b{color:#B91C1C}

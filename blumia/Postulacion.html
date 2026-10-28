@@ -7,13 +7,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<?!= HtmlService.createHtmlOutputFromFile('FuenteMarca').getContent() ?>
 <style>
 
 :root{
-  --verde:#243D2C; --verde-d:#1b2e21; --amber:#F9E7A0;
+  --verde:#0F3F27; --verde-d:#1b2e21; --amber:#F9E7A0;
   --ivory:#F3F8F1; --ink:#111; --line:#e4e0d8; --muted:#6b6b6b;
   --err:#c0392b; --r:14px;
-  --font:'Poppins',sans-serif;
+  --font:'PP Pangram Sans','Poppins',sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--font);background:var(--ivory);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}

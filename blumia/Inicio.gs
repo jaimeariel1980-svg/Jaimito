@@ -40,7 +40,7 @@ function inicioHTML_() {
   // getRawContent: el HTML tal cual está en el archivo (createHtmlOutputFromFile le saca los comentarios y no se podrían reemplazar los marcadores)
   let html = HtmlService.createTemplateFromFile('InicioPagina').getRawContent();
   const admin = HtmlService.createTemplateFromFile('AdminPanel').getRawContent();
-  html = html.replace('%%DATOS%%', () => JSON.stringify(datos).replace(/</g, '\\u003c'))
+  html = html.replace('%%FUENTE%%', () => FUENTE_MARCA_()).replace('%%DATOS%%', () => JSON.stringify(datos).replace(/</g, '\\u003c'))
     .replace('%%URL%%', () => JSON.stringify(URL_BASE()))
     .replace('%%LOGO%%', () => JSON.stringify(LOGO_BLUMIA_))
     .replace('%%ASSETS%%', () => JSON.stringify(INICIO_ASSETS_))

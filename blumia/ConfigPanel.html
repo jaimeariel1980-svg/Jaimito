@@ -2,10 +2,10 @@
 .cf-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9100;display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 10px}
 .cf-bg.show{display:flex}
 .cf-box{background:#fff;border-radius:12px;max-width:900px;width:100%;padding:20px 24px;color:#222;font-size:14px}
-.cf-box h2{margin:0 0 12px;font-size:20px;color:#243D2C}
+.cf-box h2{margin:0 0 12px;font-size:20px;color:#0F3F27}
 .cf-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
 .cf-tab{background:#F7F5F1;border:1px solid #ddd;border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:700;font-size:13px}
-.cf-tab.on{background:#243D2C;color:#fff;border-color:#243D2C}
+.cf-tab.on{background:#0F3F27;color:#fff;border-color:#0F3F27}
 .cf-sec{display:none}.cf-sec.on{display:block}
 .cf-help{font-size:12px;color:#666;margin-bottom:10px;line-height:1.45}
 .cf-box input,.cf-box textarea,.cf-box select{border:1px solid #ccc;border-radius:6px;padding:7px 9px;font:13px/1.35 inherit;font-family:inherit;box-sizing:border-box;width:100%}
@@ -15,9 +15,9 @@
 .cf-pl{background:#F7F5F1;border-radius:8px;padding:10px;margin-bottom:10px}
 .cf-mini{background:#fff;border:1px solid #bbb;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:12px}
 .cf-mini.x{color:#B91C1C;border-color:#B91C1C}
-.cf-add{background:#E6F2EC;color:#243D2C;border:1px dashed #243D2C;border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:700;font-size:12px}
+.cf-add{background:#E6F2EC;color:#0F3F27;border:1px dashed #0F3F27;border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:700;font-size:12px}
 .cf-foot{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
-.cf-save{background:#243D2C;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-weight:800;cursor:pointer}
+.cf-save{background:#0F3F27;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-weight:800;cursor:pointer}
 .cf-close{background:#fff;border:1px solid #999;border-radius:8px;padding:10px 20px;cursor:pointer}
 @media(max-width:640px){.cf-row{grid-template-columns:1fr}}
 </style>
@@ -51,7 +51,7 @@
     CF.plantillas.forEach(function(t,i){if((v=g('cfp_'+i))!==null){t.texto=v;t.alcance=g('cfa_'+i);}});
   }
   function render(tab){
-    var T=[['ia','Requisitos para la IA'],['post','Preguntas de postulación'],['msg','Mensajes'],['dat','Datos de la búsqueda'],['scr','Screening'],['comp','Competencias'],['perfil','Perfil del puesto']];var tb=function(L){return L.map(function(t){return '<button class="cf-tab'+(t[0]===tab?' on':'')+'" onclick="cfTab(\''+t[0]+'\')">'+t[1]+'</button>';}).join('');};
+    var T=[['ia','Requisitos para la IA'],['post','Preguntas de postulación'],['msg','Mensajes'],['dat','Datos de la búsqueda'],['scr','Screening'],['comp','Competencias'],['perfil','Perfil del puesto'],['flyer','Flyer y textos']];var tb=function(L){return L.map(function(t){return '<button class="cf-tab'+(t[0]===tab?' on':'')+'" onclick="cfTab(\''+t[0]+'\')">'+t[1]+'</button>';}).join('');};
     var x='<h2>⚙ Configurar esta búsqueda</h2><div class="cf-help" style="margin:0 0 6px">'+esc(CF.datos.nombre||PERFIL)+' · para crear búsquedas nuevas o manejar usuarios usá la pantalla de Inicio (🏠).</div><div class="cf-tabs">'+tb(T)+'</div>';
     x+='<div class="cf-sec'+(tab==='ia'?' on':'')+'"><div class="cf-help">Es el texto que la IA usa para <b>puntuar los CVs</b> de esta búsqueda (perfil, experiencia excluyente, deseable, zona, pretensión…). Si cambia el perfil del puesto, actualizalo acá. Vale para los CVs que entren desde ahora; los ya analizados no se recalculan.</div><textarea id="cf_ia" style="min-height:340px">'+esc(CF.prompt_extra)+'</textarea>'+foot('ia')+'</div>';
     x+='<div class="cf-sec'+(tab==='post'?' on':'')+'"><div class="cf-help"><b>Preguntas fijas</b>: tildá las que querés que aparezcan en el formulario de esta búsqueda (todas son obligatorias para quien se postula).</div>';
@@ -61,7 +61,7 @@
     CF.preguntas.forEach(function(q,i){x+='<div class="cf-row"><div><label>Pregunta</label><input id="cfq_e'+i+'" value="'+esc(q.etiqueta)+'"></div><div><label>Tipo</label><select id="cfq_t'+i+'"><option value="texto"'+(q.tipo==='texto'?' selected':'')+'>Texto libre</option><option value="select"'+(q.tipo==='select'?' selected':'')+'>Elegir opción</option></select></div><div><label>Opciones (si elige)</label><input id="cfq_o'+i+'" value="'+esc(q.opciones)+'"></div><div><label>Obligatoria</label><select id="cfq_r'+i+'"><option value="SI"'+(q.requerido!=='NO'?' selected':'')+'>Sí</option><option value="NO"'+(q.requerido==='NO'?' selected':'')+'>No</option></select></div><button class="cf-mini x" onclick="cfQuitar('+i+')">✕</button></div>';});
     x+='<button class="cf-add" onclick="cfAgregar()">+ Agregar pregunta</button>'+foot('post')+'</div>';
     x+='<div class="cf-sec'+(tab==='msg'?' on':'')+'"><div class="cf-help">Textos de los WhatsApp y mails. Por defecto cada cambio vale <b>solo para esta búsqueda</b>; si elegís «Todas las búsquedas» cambia el texto general. Se completan solos: [NOMBRE] [PUESTO] [EMPRESA] [ENTREVISTADOR] (quien envía) y [LINK] (agenda).</div>';
-    CF.plantillas.forEach(function(t,i){x+='<div class="cf-pl"><b>'+esc(t.clave)+'</b> <span style="color:#888;font-size:12px">· '+esc(t.canal)+'</span> <span style="font-size:11px;font-weight:700;color:'+(t.propia?'#243D2C':'#888')+'">'+(t.propia?'· texto propio de esta búsqueda':'· texto general')+'</span><textarea id="cfp_'+i+'" style="min-height:120px;margin-top:6px">'+esc(t.texto)+'</textarea><div style="display:flex;gap:10px;align-items:center;margin-top:6px"><label style="margin:0">Guardar para:</label><select id="cfa_'+i+'" style="width:auto"><option value="esta">Solo esta búsqueda</option><option value="todas">Todas las búsquedas</option></select>'+(t.propia?'<button class="cf-mini" onclick="cfVolver('+i+')">↺ Volver al texto general</button>':'')+'</div></div>';});
+    CF.plantillas.forEach(function(t,i){x+='<div class="cf-pl"><b>'+esc(t.clave)+'</b> <span style="color:#888;font-size:12px">· '+esc(t.canal)+'</span> <span style="font-size:11px;font-weight:700;color:'+(t.propia?'#0F3F27':'#888')+'">'+(t.propia?'· texto propio de esta búsqueda':'· texto general')+'</span><textarea id="cfp_'+i+'" style="min-height:120px;margin-top:6px">'+esc(t.texto)+'</textarea><div style="display:flex;gap:10px;align-items:center;margin-top:6px"><label style="margin:0">Guardar para:</label><select id="cfa_'+i+'" style="width:auto"><option value="esta">Solo esta búsqueda</option><option value="todas">Todas las búsquedas</option></select>'+(t.propia?'<button class="cf-mini" onclick="cfVolver('+i+')">↺ Volver al texto general</button>':'')+'</div></div>';});
     x+=foot('msg')+'</div>';
     x+='<div class="cf-sec'+(tab==='dat'?' on':'')+'"><div class="cf-help">Datos de la búsqueda. Los links tienen que empezar con https://. Al guardar se recarga el tablero.</div>';
     Object.keys(ETQ).forEach(function(k){x+='<label>'+ETQ[k]+'</label><input id="cfd_'+k+'" value="'+esc(CF.datos[k])+'">';});
@@ -75,6 +75,7 @@
     x+='<label>Palabras del asunto del mail para ordenar los CVs de esta búsqueda (separadas con |)</label><input id="cfx_mail" value="'+esc(E.mail)+'"><div class="cf-help">Si el asunto del mail contiene una de estas palabras, el CV va a esta búsqueda. Si lo dejás vacío, igual se ordena cuando el asunto nombra el puesto.</div>';
     if(E.enlaces&&(E.enlaces.hoja||E.enlaces.carpeta))x+='<h3 style="margin:18px 0 4px;font-size:15px">Dónde está guardado</h3><div class="cf-help">Solo para abrir: esto no se edita desde acá.</div><div style="display:flex;gap:10px;flex-wrap:wrap">'+(E.enlaces.hoja?'<a class="cf-mini" target="_blank" href="'+esc(E.enlaces.hoja)+'">📄 Pestaña de candidatos</a>':'')+(E.enlaces.carpeta?'<a class="cf-mini" target="_blank" href="'+esc(E.enlaces.carpeta)+'">📁 Carpeta en Drive</a>':'')+'</div>';
     x+=foot('dat')+'</div>';
+    x+='<div class="cf-sec'+(tab==='flyer'?' on':'')+'"><div class="cf-help">El <b>flyer</b> y los <b>textos para redes</b> (LinkedIn, Instagram y WhatsApp) de esta búsqueda. Se arman con lo cargado en el perfil del puesto y con los colores y la tipografía de la marca; abrís el editor, retocás directo sobre el flyer y bajás la imagen.</div><button class="cf-save" onclick="window.open(URL_APP+\'?tipo=flyer&perfil=\'+encodeURIComponent(PERFIL),\'_blank\')">📢 Abrir el editor de flyer</button><div class="cf-foot"><button class="cf-close" onclick="cfCerrar()">Cerrar</button></div></div>';
     x+='<div class="cf-sec'+(tab==='perfil'?' on':'')+'"><div class="cf-help">El <b>perfil del puesto</b> es el relevamiento de la búsqueda (organización, puesto, perfil, formación, experiencia, competencias, contratación y proceso). Acá se <b>edita</b>; la versión guardada para consultar sin tocar nada está en el menú <b>📚 Búsqueda → Perfil del puesto</b>.</div>'
       +(CF.perfil&&CF.perfil.propio?'<p style="margin:10px 0"><b>Última versión guardada:</b> '+(CF.perfil.fecha||'todavía no se guardó ninguna')+'</p><button class="cf-save" onclick="cfPerfilEditar(this)">✏️ Abrir y editar el perfil</button><div class="cf-help" style="margin-top:10px">Se abre acá mismo, abajo. Al terminar tocá «Guardar en el sistema»: cada versión queda guardada con fecha y hora, y se abre siempre la última.</div><div id="cfPerfilFr" style="margin-top:12px"></div>':'<p style="margin:10px 0">Esta búsqueda todavía no tiene el perfil del puesto dentro del sistema (hoy usa un link a un documento externo, si lo cargaste en «Datos de la búsqueda»).</p><button class="cf-save" onclick="cfPerfilCrear(this)">Crear el perfil del puesto de esta búsqueda</button><div class="cf-help" style="margin-top:10px">Queda un formulario en blanco para completar a mano o con «✨ Completar con IA desde un Word».</div>')
       +'<div class="cf-foot"><button class="cf-close" onclick="cfCerrar()">Cerrar</button></div></div>';
