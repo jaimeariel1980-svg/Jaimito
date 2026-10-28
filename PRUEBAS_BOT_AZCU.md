@@ -2,6 +2,8 @@
 
 Armado el 28/10 a partir de la auditoría de producto. Sirve para medir el bot **antes y después de cada cambio** en `azcuSistema_`, `azcuChat`, las herramientas o el modelo (`AZCU_MODELO`).
 
+**Corredor (hecho el 28/10, `appscript/PruebasBot.gs`):** en el editor de Apps Script de Azcu, cargar la propiedad del script `AZCU_PRUEBAS = SI` y ejecutar `azcuPruebasBot`. Reemplaza solo las direcciones por propiedades reales de la cartera, llama a `azcuChat` con el historial y el contexto de cada frase (sin confirmar tarjetas), califica ✅ / 🟡 / ❌ con chequeos automáticos y escribe todo en la pestaña `Pruebas_Bot` de la planilla Maestra (frase, respuesta, tarjetas, llamadas, segundos, motivo y un renglón RESUMEN). Si pasa de ~5 minutos se pausa y hay que volver a ejecutarla. Se apaga sola (`AZCU_PRUEBAS = NO`) al terminar: así nadie puede dispararla desde el `/exec`. No corre la 29 (crea un recordatorio) ni la 43 (genera un PDF): probarlas a mano. Los chequeos son automáticos y conservadores: un ❌ hay que mirarlo, puede ser un falso negativo.
+
 Cómo usarlo:
 - Correrlo con la clave real, **fuera del `/exec`**. Por ejemplo, una función que se ejecuta desde el editor y que falla si el usuario no es el dueño del script; nunca una función pública que `google.script.run` pueda llamar.
 - No confirma tarjetas: solo mira qué responde el bot y qué tarjeta propone.
