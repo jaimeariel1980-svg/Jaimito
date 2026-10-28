@@ -135,12 +135,13 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Reclutamiento y Selección<small class="ver">v162</small></div>
+  <div class="prod">Reclutamiento y Selección<small class="ver">v163</small></div>
   <nav>
     <button class="ni" onclick="verAvisos()" style="position:relative"><span class="ic o">🔔</span><b>Avisos</b><span id="avCnt" style="display:none;position:absolute;top:2px;right:2px;background:#D9534F;color:#fff;border-radius:10px;font-size:11px;font-weight:800;padding:1px 6px"></span></button>
     <button class="ni" id="rf" onclick="actualizar()"><span class="ic g">↻</span><b>Actualizar</b></button>
     <button class="ni" onclick="verAgenda()"><span class="ic b">📅</span><b>Agenda</b></button>
     <button class="ni" onclick="verDireccion()"><span class="ic b">📊</span><b>Informe</b></button>
+    <button class="ni" id="bRank" onclick="verRanking()" style="display:none"><span class="ic b">🏆</span><b>Ranking</b></button>
     <button class="ni" onclick="vistaPreview()"><span class="ic g">🩺</span><b>Vista técnica</b></button>
     <button class="ni" id="bPerfil" style="display:none" onclick="verPerfil()"><span class="ic b">📋</span><b>Perfil del puesto</b></button>
     <button class="ni" id="bEnl" style="display:none" onclick="misEnlaces()"><span class="ic g">🔗</span><b>Enlaces</b></button>
@@ -419,7 +420,7 @@ function citaTxt(c){
 function ajustarRol(){
   var d=document.querySelector('[onclick="descartes()"]');if(d)d.style.display=RO?'none':'';
   var c=document.getElementById('bCtl');if(c)c.style.display=D&&D.admin?'':'none';
-  var e=document.getElementById('bEnl');if(e)e.style.display=D&&D.admin?'':'none';var g=document.getElementById('bCfg');if(g)g.style.display=D&&D.admin?'':'none';
+  var e=document.getElementById('bEnl');if(e)e.style.display=D&&D.admin?'':'none';var rk=document.getElementById('bRank');if(rk)rk.style.display=D&&D.admin?'':'none';var g=document.getElementById('bCfg');if(g)g.style.display=D&&D.admin?'':'none';
 }
 function bloquearRO(){
   [].forEach.call(document.querySelectorAll('#mbox button.btn,#mbox .nb,#mbox select,#mbox textarea'),function(e){if(/verPost/.test(e.getAttribute('onclick')||''))return;e.disabled=true;e.style.opacity=.5;});
@@ -937,6 +938,42 @@ function verResumen(f,btn,enf){
 function verTecnica(f,btn){
   var c=byFila(f),t=btn.textContent;btn.disabled=true;btn.textContent='Abriendo…';
   gs().withSuccessHandler(function(p){btn.disabled=false;btn.textContent=t;if(!p){alert('No encontré la entrevista técnica cargada');return;}abrirInforme(htmlTecnica(c,p));}).withFailureHandler(function(e){btn.disabled=false;btn.textContent=t;fer(e);}).getEvalPrevia(K,c.id,'pami2');
+}
+function verRanking(){
+  var b=document.getElementById('bRank'),t=b?b.querySelector('b').textContent:'';
+  if(b){b.disabled=true;b.querySelector('b').textContent='Armando…';}
+  var fin=function(){if(b){b.disabled=false;b.querySelector('b').textContent=t||'Ranking';}};
+  gs().withSuccessHandler(function(r){fin();abrirInforme(htmlRanking(JSON.parse(r)));}).withFailureHandler(function(e){fin();fer(e);}).getRankingContratados(K);
+}
+function htmlRanking(x){
+  var L=x.lista||[],n=L.length;
+  var cp=function(v){return v==null?'#C9D2DE':v>=8.5?'#1E8E5A':v>=7.5?'#7BCB9B':v>=6.5?'#F2B705':'#D9534F';};
+  var avg=function(a){a=a.filter(function(v){return v!=null;});return a.length?a.reduce(function(s,v){return s+v;},0)/a.length:null;};
+  var f1=function(v){return v==null?'–':v.toFixed(1);};
+  var conC=L.filter(function(c){return c.flags.length;});
+  var cont=function(key,get){var m={};L.forEach(function(c){var ks=get(c);(Array.isArray(ks)?ks:[ks]).forEach(function(k){m[k]=m[k]||{n:0,p:[]};m[k].n++;if(c.promedio!=null)m[k].p.push(c.promedio);});});return m;};
+  var gr=cont('g',function(c){return c.gremios.length?c.gremios:['Sin gremio'];});
+  var grk=Object.keys(gr).sort(function(a,b){return gr[b].n-gr[a].n;});
+  var barras=function(m,ks,conProm){var mx=Math.max.apply(null,ks.map(function(k){return m[k].n;}).concat([1]));return ks.map(function(k){var v=m[k],p=avg(v.p);return '<div class="br"><div class="n" style="width:30%">'+esc(k)+'</div><div class="t"><i style="width:'+Math.round(v.n/mx*100)+'%"></i></div><div class="v" style="width:'+(conProm?150:90)+'px">'+v.n+' · '+Math.round(v.n/n*100)+'%'+(conProm&&p!=null?' · prom. '+p.toFixed(1):'')+'</div></div>';}).join('');};
+  var orden=function(m,lista){return lista.filter(function(k){return m[k];});};
+  var form=cont('f',function(c){return c.cat;}),anios=cont('a',function(c){return c.anios||'Sin dato';}),
+      edad=cont('e',function(c){return c.edad==null?'Sin dato':c.edad<25?'Menos de 25':c.edad<35?'25 a 34':c.edad<45?'35 a 44':'45 o más';}),
+      otro=cont('o',function(c){return c.otro?'Trabaja en otro lugar':'Sin otro empleo declarado';}),pol=cont('p',function(c){return c.policlinico||'Sin asignar';});
+  var eds=L.map(function(c){return c.edad;}).filter(Boolean),ans=L.map(function(c){return c.aniosN;}).filter(function(v){return v!=null;});
+  var css='<style>.kp{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}.kp .cd{text-align:center}.kp .big{font-size:30px}.rk{display:flex;align-items:center;gap:10px;padding:7px 0;border-top:1px solid #E4E9F1;break-inside:avoid}.rk .ps{width:30px;height:30px;border-radius:50%;background:#034EA2;color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}.rk .nm{width:34%;line-height:1.25}.rk .nm b{font-size:14px}.rk .nm small{display:block;font-size:10.5px;color:#5D6B82}.rk .bb{flex:1}.rk .bb .t{background:#EEF1F6;height:16px;border-radius:8px;overflow:hidden}.rk .bb .t i{display:block;height:100%}.rk .bb small{font-size:11px;color:#3F4B66}.rk .pm{width:46px;text-align:right;font-size:18px;font-weight:800}.fl{display:inline-block;background:#FDE3E1;color:#9B2C28;border:1px solid #D9534F;border-radius:10px;padding:1px 8px;font-size:10.5px;font-weight:800;margin:2px 4px 0 0}.ch{display:inline-block;background:#E8F0FB;color:#034EA2;border-radius:10px;padding:1px 8px;font-size:10.5px;font-weight:700;margin:2px 4px 0 0}.pr{font-size:12px;line-height:1.45;margin:7px 0;break-inside:avoid}.pr b{color:#034EA2}@media print{.kp .cd,.rk{break-inside:avoid}}</style>';
+  var hd='<div class="hd"><div style="display:flex;align-items:center;gap:16px">'+infLogo()+'<div><small>Informe de dirección · '+esc(x.fecha||infFecha())+'</small><h1>Ranking de contratados</h1><div class="s">Promedio de competencias y entrevista técnica (0 a 10)</div></div></div><div class="pill">'+n+' contratado'+(n===1?'':'s')+'</div></div>';
+  var kp='<div class="kp"><div class="cd"><small>Contratados</small><div class="big">'+n+'</div></div><div class="cd"><small>Promedio general</small><div class="big" style="color:'+cp(avg(L.map(function(c){return c.promedio;})))+'">'+f1(avg(L.map(function(c){return c.promedio;})))+'</div></div><div class="cd"><small>Avanzaron con C</small><div class="big" style="color:'+(conC.length?'#D9534F':'#1E8E5A')+'">'+conC.length+'</div></div><div class="cd"><small>Gremio con más contratados</small><div class="big" style="font-size:20px;padding-top:8px">'+esc(grk.filter(function(k){return k!=='Sin gremio';})[0]||'–')+'</div></div></div>';
+  var rk='<h2>Ranking</h2>'+L.map(function(c,i){
+    var sub=[c.cat!=='Sin dato'?c.cat:'',c.edad?c.edad+' años':'',c.anios||'',c.policlinico?c.policlinico.replace('Policlínico ',''):''].filter(Boolean).join(' · ');
+    var chips=(c.gremios.length?c.gremios:['Sin gremio']).map(function(g){return '<span class="ch">'+esc(g)+'</span>';}).join('')+(c.otro?'<span class="ch" title="'+esc(c.otro)+'">Otro empleo</span>':'')+c.flags.map(function(f){return '<span class="fl">'+esc(f)+' · avanzó igual</span>';}).join('');
+    return '<div class="rk"><div class="ps">'+(i+1)+'</div><div class="nm"><b>'+esc(c.nombre)+'</b><small>'+esc(sub)+'</small><div>'+chips+'</div></div><div class="bb"><div class="t"><i style="width:'+Math.round((c.promedio||0)*10)+'%;background:'+cp(c.promedio)+'"></i></div><small>Competencias '+esc(c.nC||'–')+' '+f1(c.comp)+' · Técnica '+esc(c.nT||'–')+' '+f1(c.tec)+'</small></div><div class="pm" style="color:'+cp(c.promedio)+'">'+f1(c.promedio)+'</div></div>';
+  }).join('');
+  var avCasos=conC.length?'<h2>Casos con C que avanzaron igual</h2><div class="cd" style="border-color:#D9534F;background:#FFF5F4">'+conC.map(function(c){return '<div style="font-size:13px;margin:3px 0"><span style="font-weight:800">'+esc(c.nombre)+'</span>: '+esc(c.flags.join(' y '))+' · promedio '+f1(c.promedio)+'</div>';}).join('')+'</div>':'';
+  var dist='<h2>Distribución por gremio</h2>'+barras(gr,grk,true)+
+    '<div class="g g2"><div><h2>Formación</h2>'+barras(form,orden(form,['Enfermero/a profesional','Licenciado/a','Sin dato']),false)+'<h2>Otro empleo</h2>'+barras(otro,orden(otro,['Trabaja en otro lugar','Sin otro empleo declarado']),false)+'<h2>Policlínico</h2>'+barras(pol,Object.keys(pol),false)+'</div>'+
+    '<div><h2>Edad'+(eds.length?' · promedio '+Math.round(avg(eds))+' años':'')+'</h2>'+barras(edad,orden(edad,['Menos de 25','25 a 34','35 a 44','45 o más','Sin dato']),false)+'<h2>Años de experiencia'+(ans.length?' · promedio aprox. '+avg(ans).toFixed(1):'')+'</h2>'+barras(anios,orden(anios,['Menos de 1 año','1 a 3 años','3 a 5 años','Más de 5 años','Sin dato']).concat(Object.keys(anios).filter(function(k){return ['Menos de 1 año','1 a 3 años','3 a 5 años','Más de 5 años','Sin dato'].indexOf(k)<0;})),false)+'</div></div>';
+  var pr='<h2>Cada persona en una línea</h2>'+L.map(function(c,i){return '<div class="pr"><b>'+(i+1)+'. '+esc(c.nombre)+'</b> — '+esc(c.parrafo.replace(c.nombre+': ',''))+'</div>';}).join('');
+  return infDoc('Ranking de contratados',css+hd+kp+(n?rk+avCasos+dist+pr:'<h2>Sin contratados todavía</h2><div class="cd"><div class="tx">Cuando haya personas en estado «Contratado», acá aparece el ranking.</div></div>'));
 }
 function verFinal(f,btn){
   var c=byFila(f),t=btn.textContent;btn.disabled=true;btn.textContent='Armando…';

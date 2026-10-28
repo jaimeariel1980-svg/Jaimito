@@ -105,3 +105,41 @@ function getInformeFinal(k, fila) {
     secciones: textoFinal_(r, evs, partes, fin, letra, pos, rank.length)
   });
 }
+
+// Ranking de contratados para el informe de dirección: promedio de competencias y técnica, gremio, formación, experiencia, edad y otro empleo.
+function getRankingContratados(k) {
+  soloAdmin_(k);
+  const filas = hoja_('Candidatos').getDataRange().getValues().slice(1), por = evalsPorId_();
+  const g = (...a) => a.map(x => String(x == null ? '' : x).trim()).find(Boolean) || '';
+  const AN = { 'menos de 1 año': 0.5, '1 a 3 años': 2, '3 a 5 años': 4, 'más de 5 años': 6 };
+  const lista = [];
+  filas.forEach(r => {
+    if (!r[COL.nombre - 1] || String(r[COL.estado - 1]).trim() !== 'Contratado') return;
+    const id = String(r[COL.id - 1]), ev = por[id] || {};
+    const S = jsonSeguro_((ev.screening || {}).datos), C = jsonSeguro_((ev.competencias || {}).datos), sd = S.datos || {}, cm = C.meta || {};
+    const partes = partesCand_(r[COL.ajuste - 1], ev);
+    const comp = partes.competencias ? partes.competencias.puntaje : null, tec = partes.tecnica ? partes.tecnica.puntaje : null;
+    const nota = (celda, p) => notaLetra_(celda) || (p ? p.nota : '');
+    const nC = nota(r[COL.notaComp - 1], partes.competencias), nT = nota(r[COL.notaP2 - 1], partes.tecnica), nS = nota(r[COL.notaScr - 1], partes.screening), nCV = notaLetra_(r[COL.ajuste - 1]);
+    const vals = [comp, tec].filter(v => v != null);
+    const promedio = vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length * 100) / 100 : null;
+    let resp = [];
+    try { resp = JSON.parse(r[COL.resp - 1] || '[]'); } catch (e) { }
+    const an = (resp.find(x => /años de experiencia/i.test(String(x.q || ''))) || {}).a || '';
+    const form = g(r[COL.formacion - 1], sd.formacion, cm.formacion);
+    const cat = /licenciad|licenciatura|lic\./i.test(form) ? 'Licenciado/a' : /profesional|terciari|enfermer/i.test(form) ? 'Enfermero/a profesional' : 'Sin dato';
+    const edad = parseInt((String(g(sd.edad, cm.edad)).match(/\d+/) || [''])[0], 10) || null;
+    const gremios = /^sindicato/i.test(String(r[COL.recTipo - 1] || '')) ? String(r[COL.recPor - 1] || '').split(';').map(x => x.trim()).filter(Boolean) : [];
+    let otro = g(cm.empresaAct, sd.empresaAct);
+    if (/^(no|ninguno|ninguna|-|n\/a)\.?$/i.test(otro) || /pami/i.test(otro)) otro = '';
+    const flags = [];
+    if (nC === 'C') flags.push('C en competencias');
+    if (nT === 'C') flags.push('C en la técnica');
+    if (nS === 'C') flags.push('C en screening');
+    const num = v => v != null ? ' (' + v.toFixed(1) + ')' : '';
+    const parrafo = [form || 'formación sin dato', edad ? edad + ' años' : '', an ? 'experiencia: ' + String(an).toLowerCase() : '', gremios.length ? 'gremio: ' + gremios.join(' y ') : 'sin gremio', otro ? 'además trabaja en ' + otro : 'sin otro empleo declarado'].filter(Boolean).join(' · ') + '. Competencias ' + (nC || '–') + num(comp) + ' · Técnica ' + (nT || '–') + num(tec) + '.' + (flags.length ? ' Avanzó igual con ' + flags.join(' y ').toLowerCase() + '.' : '');
+    lista.push({ nombre: String(r[COL.nombre - 1]), policlinico: poliEf_(r), busq: String(r[COL.busq - 1] || ''), edad: edad, formacion: form, cat: cat, anios: String(an), aniosN: AN[String(an).toLowerCase()] != null ? AN[String(an).toLowerCase()] : null, gremios: gremios, otro: otro, turno: String(r[COL.turno - 1] || '').replace(/;\s*/g, ' · '), cv: nCV, scr: nS, comp: comp, tec: tec, nC: nC, nT: nT, promedio: promedio, flags: flags, parrafo: parrafo });
+  });
+  lista.sort((a, b) => (b.promedio == null ? -1 : b.promedio) - (a.promedio == null ? -1 : a.promedio) || (b.tec || 0) - (a.tec || 0) || (b.comp || 0) - (a.comp || 0) || a.nombre.localeCompare(b.nombre));
+  return JSON.stringify({ lista: lista, fecha: fmt_(new Date(), 'dd/MM/yyyy') });
+}
