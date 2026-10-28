@@ -28,6 +28,22 @@ function azcuErrorLog_(origen, e){
   }catch(x){}
 }
 
+// 👎 del chat: guarda la pregunta y la respuesta (sin teléfonos, mails ni DNI) 30 días para poder arreglar el bot
+function azcuFeedback(pin, nombre, pregunta, respuesta){
+  azcuPin_(pin);
+  function lim(t){ t = String(t||'').replace(/[\w.+-]+@[\w-]+\.[\w.-]+/g, '[mail]').replace(/\+?\d[\d\s().-]{6,}\d/g, '[nº]').replace(/\s+/g, ' ').trim().slice(0, 600); return /^[=+\-@]/.test(t) ? "'"+t : t; }
+  var lk = LockService.getScriptLock(); lk.waitLock(10000);
+  try{
+    var ss = SpreadsheetApp.openById(MAESTRO_ID), sh = ss.getSheetByName('Chat_Fallas') || ss.insertSheet('Chat_Fallas');
+    if(sh.getLastRow()===0) sh.appendRow(['Fecha','Quién','Pregunta','Respuesta del bot','Modelo']);
+    var lim30 = Date.now() - 30*86400000, v = sh.getLastRow()>1 ? sh.getRange(2, 1, sh.getLastRow()-1, 1).getValues() : [], k = 0;
+    while(k<v.length && v[k][0] instanceof Date && v[k][0].getTime() < lim30) k++;
+    if(k) sh.deleteRows(2, k);
+    sh.appendRow([new Date(), lim(nombre).slice(0, 60), lim(pregunta), lim(respuesta), typeof azcuModelo_==='function' ? azcuModelo_() : '']);
+  } finally { lk.releaseLock(); }
+  return {ok:true};
+}
+
 function azcuErroresDiario(){
   try{
     var sh = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Errores');
