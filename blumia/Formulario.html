@@ -11,13 +11,13 @@
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg:#F3F8F1;--white:#FFFFFF;--dark:#111111;--text:#1A1A1A;--mid:#555555;--light:#6B6B6B;--line:#D5E0CE;
-  --green:#243D2C;--green2:#2F5E41;--glight:#E3EEDC;--dorado:#FBC67B;--coral:#E8501A;
+  --green:#243D2C;--green2:#2F5E41;--glight:#E3EEDC;--dorado:#FBC67B;--coral:#C0391B;--turq:#5BB5A5;
   --font:'Poppins','Plus Jakarta Sans',sans-serif;
 }
 body{font-family:var(--font);background:var(--bg);color:var(--text)}
 .wrap{max-width:900px;margin:0 auto;padding:36px 52px 60px}
 .topbar{background:rgba(247,245,241,0.97);backdrop-filter:blur(20px);border-bottom:1px solid var(--line);padding:0 52px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
-.tb-logo{height:30px;display:block}.hero-logo{height:30px;display:block;margin-bottom:22px}
+.tb-logo{height:30px;display:block}.hero-logo{height:30px;display:none;margin-bottom:22px}@media print{.hero-logo{display:block}}
 .tb-brand{font-weight:800;font-size:20px;letter-spacing:-0.04em;color:var(--green)}
 .tb-sep{width:1px;height:24px;background:var(--line)}
 .tb-doc{font-size:13px;font-weight:600;color:var(--mid)}
@@ -31,13 +31,13 @@ body{font-family:var(--font);background:var(--bg);color:var(--text)}
 [contenteditable]{outline:none;cursor:text;border-radius:2px;transition:background .15s}
 [contenteditable]:hover{background:rgba(26,102,69,.05)}
 [contenteditable]:focus{background:rgba(26,102,69,.07);box-shadow:0 0 0 2px rgba(26,102,69,.2);padding:2px 5px;margin:-2px -5px}
-.hero{background:var(--green);color:#fff;padding:52px 52px 44px;border-bottom:4px solid var(--coral);position:relative;overflow:hidden}
+.hero{background:var(--green);color:#fff;padding:52px 52px 44px;border-bottom:4px solid var(--turq);position:relative;overflow:hidden}
 .hero h1{font-size:40px;font-weight:800;letter-spacing:-0.04em;color:#fff;line-height:1.1;margin-bottom:8px}
 .hero h1 em{color:rgba(255,255,255,0.75);font-style:normal}
 .hero-sub{font-size:15px;color:rgba(255,255,255,0.65);font-weight:500;margin-bottom:32px}
 .hero-meta{display:flex;gap:32px;flex-wrap:wrap}
 .hm-item{display:flex;flex-direction:column;gap:4px}
-.hm-label{font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.45)}
+.hm-label{font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.78)}
 .hm-val{font-size:15px;font-weight:600;color:#fff}
 .section{margin-bottom:32px}
 .section-label{font-size:11px;font-weight:800;letter-spacing:0.22em;text-transform:uppercase;color:var(--green);display:flex;align-items:center;gap:8px;margin-bottom:20px}
@@ -168,7 +168,7 @@ const state = { eval: {}, val: {}, veredictoManual: null, letraAuto: null };
 const EVAL_STYLE = {
   alto: { t: 'Alto', bg: '#E6F2EC', c: '#1A6645', b: 'rgba(26,102,69,.3)' },
   medio: { t: 'Medio', bg: '#FEF3D8', c: '#7a5500', b: 'rgba(251,198,123,.5)' },
-  bajo: { t: 'Bajo', bg: '#FDEAE4', c: '#E8501A', b: 'rgba(232,80,26,.3)' },
+  bajo: { t: 'Bajo', bg: '#FDEAE4', c: '#C0391B', b: 'rgba(192,57,27,.3)' },
   '': { t: '— Sin evaluar', bg: '#F7F5F1', c: '#6B6B6B', b: '#DDDBD7' }
 };
 const VEREDICTOS = {
@@ -193,7 +193,7 @@ function render() {
   <img class="hero-logo" alt="Blumia" src="${LOGO_BLANCO}">
   <h1><span>Screening de </span><em id="hero-nombre">${CAND_INICIAL || 'Candidato/a'}</em></h1>
   <div class="hero-sub">${h.posicion || ''} · ${h.empresa || ''}</div>
-  <div id="hero-links" class="ia-ui"></div>
+  <div id="hero-links" class="ia-ui" style="margin:-6px 0 14px"></div>
   <div class="hero-meta">
     <div class="hm-item"><div class="hm-label">Empresa</div><div class="hm-val">${h.empresa || ''}</div></div>
     <div class="hm-item"><div class="hm-label">Posición</div><div class="hm-val">${h.posicion || ''}</div></div>
@@ -210,8 +210,8 @@ function render() {
         <input type="text" id="d-nombre" value="${CAND_INICIAL || ''}" placeholder="—" oninput="document.getElementById('hero-nombre').innerText=this.value||'Candidato/a'">
       </div>
       <div class="field">
-        <label>Entrevistador/a</label>
-        <select id="d-entrevistadora" onchange="window.ENTR_ELEGIDO=this.value"><option value="">— Elegí —</option>>
+        <label for="d-entrevistadora">Entrevistador/a</label>
+        <select id="d-entrevistadora" onchange="window.ENTR_ELEGIDO=this.value"><option value="">— Elegí —</option>
           ${entrevistadoras.map(e => `<option value="${e}">${e}</option>`).join('')}
         </select>
       </div>
@@ -224,11 +224,11 @@ function render() {
       <div class="field"><label>Formación</label><input type="text" id="d-formacion" placeholder="Carrera, título, estado"></div>
     </div>
     <div class="grid-4">
-      <div class="field"><label>Fecha de la entrevista</label><input type="date" id="d-fecha"></div>
+      <div class="field"><label for="d-fecha">Fecha de la entrevista</label><input type="date" id="d-fecha"></div>
       <div class="field"><label>Remuneración actual</label><input type="text" id="d-rem-actual" placeholder="$"></div>
       <div class="field"><label>Remuneración pretendida</label><input type="text" id="d-rem-pret" placeholder="$"></div>
       <div class="field">
-        <label>Disponibilidad de ingreso</label>
+        <label for="d-disponibilidad">Disponibilidad de ingreso</label>
         <select id="d-disponibilidad"><option value="">—</option><option>Inmediata</option><option>15 días</option><option>30 días</option><option>+30 días</option></select>
       </div>
     </div>
@@ -283,7 +283,7 @@ function render() {
       <div style="font-size:10px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:var(--mid)">Umbrales automáticos</div>
       <div class="criterio-item"><div class="criterio-dot" style="background:var(--green)"></div><span style="color:var(--green)">≥ ${fmtN(Number(h.criterio_avanza) || 9)} — A (Avanza)</span></div>
       <div class="criterio-item"><div class="criterio-dot" style="background:#6EE7B7"></div><span style="color:var(--green)">≥ ${fmtN(Number(h.criterio_bplus) || 8)} — B+ (Avanza)</span></div>
-      <div class="criterio-item"><div class="criterio-dot" style="background:var(--dorado)"></div><span style="color:#7a5500">≥ ${fmtN(Number(h.criterio_reserva) || 6.5)} — B (en reserva)</span></div>
+      <div class="criterio-item"><div class="criterio-dot" style="background:var(--dorado)"></div><span style="color:#7a5500">≥ ${fmtN(Number(h.criterio_reserva) || 6.5)} — B (Avanza)</span></div>
       <div class="criterio-item"><div class="criterio-dot" style="background:var(--coral)"></div><span style="color:var(--coral)">&lt; ${fmtN(Number(h.criterio_reserva) || 6.5)} — C (No avanza)</span></div>
     </div>
   </div>
@@ -470,7 +470,7 @@ function enviarALaPlanilla() {
     const estilos = {
       alto:  { t: 'Alto',  bg: '#E6F2EC', col: '#1A6645', bd: '#1A6645' },
       medio: { t: 'Medio', bg: '#FEF3D8', col: '#7a5500', bd: '#FBC67B' },
-      bajo:  { t: 'Bajo',  bg: '#FDEAE4', col: '#E8501A', bd: '#E8501A' },
+      bajo:  { t: 'Bajo',  bg: '#FDEAE4', col: '#C0391B', bd: '#C0391B' },
       '':    { t: '— Sin evaluar', bg: '#F7F5F1', col: '#6B6B6B', bd: '#DDDBD7' }
     };
     const e = estilos[state.eval[item.id] || ''] || estilos[''];
@@ -502,6 +502,7 @@ function enviarALaPlanilla() {
 
   clone.querySelectorAll('script').forEach(s => s.remove());
   clone.querySelectorAll('.topbar,.toast,.veredicto-manual,.ia-ui').forEach(el => el.remove());
+  clone.querySelectorAll('.hero-logo').forEach(el => { el.style.display = 'block'; });
 
   google.script.run
     .withSuccessHandler(() => {

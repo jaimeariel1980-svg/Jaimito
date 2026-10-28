@@ -11,14 +11,14 @@
 :root{
   --bg:#F3F8F1;--bg2:#EEECEA;--white:#FFFFFF;
   --dark:#111111;--text:#1A1A1A;--mid:#555555;--light:#6B6B6B;--line:#D5E0CE;
-  --green:#243D2C;--green2:#2F5E41;--glight:#E3EEDC;--orange:#2F7F6F;
+  --green:#243D2C;--green2:#2F5E41;--glight:#E3EEDC;--orange:#266F60;
   --font:'Poppins','Plus Jakarta Sans',sans-serif;
   --c-rojo:#EF4444;--c-amarillo:#F59E0B;--c-verde-claro:#6EE7B7;--c-verde-fuerte:#1A6645;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 html,body{background:var(--bg);font-family:var(--font);color:var(--text);}
 .topbar{position:sticky;top:0;z-index:300;height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 52px;background:rgba(247,245,241,0.97);backdrop-filter:blur(20px);border-bottom:1px solid var(--line);}
-.tb-logo{height:30px;display:block}.hero-logo{height:30px;display:block;margin-bottom:22px}
+.tb-logo{height:30px;display:block}.hero-logo{height:30px;display:none;margin-bottom:22px}@media print{.hero-logo{display:block}}
 .tb-brand{font-weight:800;font-size:20px;letter-spacing:-0.04em;color:var(--dark);}
 .tb-sep{width:1px;height:24px;background:var(--line);}
 .tb-doc{font-size:13px;font-weight:600;color:var(--mid);}
@@ -41,7 +41,7 @@ html,body{background:var(--bg);font-family:var(--font);color:var(--text);}
 .hero-sub{font-size:16px;font-weight:500;opacity:0.7;margin-bottom:32px;}
 .hero-meta{display:flex;gap:32px;flex-wrap:wrap;}
 .hm-item{display:flex;flex-direction:column;gap:4px;}
-.hm-label{font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;opacity:0.5;}
+.hm-label{font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;opacity:0.78;}
 .hm-val{font-size:15px;font-weight:600;}
 
 [contenteditable="true"]{outline:none;border-radius:2px;transition:.15s;border-bottom:1px dashed transparent;}
@@ -109,8 +109,7 @@ html,body{background:var(--bg);font-family:var(--font);color:var(--text);}
 .sum-table td{border:1px solid var(--line);padding:0;height:42px;}
 .sum-table td:first-child{text-align:left;padding:10px 15px;font-weight:700;color:var(--dark);font-size:13px;}
 .sum-table td.peso-col{text-align:center;padding:10px;font-weight:800;color:var(--green);font-size:13px;}
-.sum-cell{width:100%;height:100%;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.2s;font-weight:800;font-size:16px;}
-.sum-cell:hover{background:var(--glight);}
+.sum-cell{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;}
 .sum-cell.sel[data-col="1"]{background:var(--c-rojo);color:#fff;}
 .sum-cell.sel[data-col="2"]{background:var(--c-amarillo);color:#fff;}
 .sum-cell.sel[data-col="3"]{background:var(--c-verde-claro);color:var(--dark);}
@@ -239,7 +238,7 @@ function render() {
       <button class="btn-del" type="button" onclick="delComp(this)">×</button>
       <div class="comp-header">
         <div class="comp-name">${c.nombre}</div>
-        <div class="peso-pill">Peso <input type="number" min="0" step="0.5" value="${c.peso}" data-peso oninput="actualizarScore()"></div>
+        <div class="peso-pill">Peso <input type="number" min="0" step="0.5" aria-label="Peso de ${c.nombre}" value="${c.peso}" data-peso oninput="actualizarScore()"></div>
       </div>
       <div class="comp-desc">${c.descripcion}</div>
       <div class="q-box">
@@ -288,8 +287,8 @@ function render() {
 
 <div class="meta-strip">
   <div class="mf"><label>Nombre de la persona entrevistada</label><input type="text" placeholder="Nombre completo" id="inp-cand" value="${CAND_INICIAL || ''}"></div>
-  <div class="mf"><label>Fecha</label><input type="date" id="inp-fecha"></div>
-  <div class="mf"><label>Entrevistador/a</label><select id="inp-entre">${entrevOptions}</select></div>
+  <div class="mf"><label for="inp-fecha">Fecha</label><input type="date" id="inp-fecha"></div>
+  <div class="mf"><label for="inp-entre">Entrevistador/a</label><select id="inp-entre">${entrevOptions}</select></div>
   ${DATOS.datosInternos ? '<div class="mf"><label>Edad</label><input type="text" placeholder="Ej: 38" id="inp-edad"></div>' : ''}
   <div class="mf"><label>Localidad</label><input type="text" placeholder="Dónde vive" id="inp-localidad"></div>
   ${DATOS.datosInternos ? '<div class="mf"><label>Situación familiar</label><input type="text" placeholder="Estado civil, hijos" id="inp-familia"></div>' : ''}
@@ -346,7 +345,7 @@ function render() {
         <div><label class="note-label">Fortalezas principales</label><textarea id="ta-fort" class="note-area" style="min-height:140px" placeholder="•&#10;•&#10;•"></textarea></div>
         <div><label class="note-label">Áreas a desarrollar</label><textarea id="ta-area" class="note-area" style="min-height:140px" placeholder="•&#10;•&#10;•"></textarea></div>
       </div>
-      <label class="note-label">Matriz de evaluación (4 niveles · puntaje ponderado)</label>
+      <label class="note-label">Resumen de niveles (se completa solo con los botones de cada competencia)</label>
       <table class="sum-table">
         <thead>
           <tr>
@@ -363,7 +362,7 @@ function render() {
       <div class="score-banner">
         <div>
           <div class="score-banner-label">Puntaje ponderado total</div>
-          <div class="score-banner-text" id="score-detalle">Completá la matriz arriba para calcular</div>
+          <div class="score-banner-text" id="score-detalle">Elegí el nivel de cada competencia para calcular</div>
         </div>
         <div><span class="score-banner-num" id="score-num">—</span><span class="score-banner-max"> / 10</span></div>
       </div>
@@ -426,23 +425,6 @@ function bindEvents() {
       actualizarScore();
       return;
     }
-    const cell = e.target.closest('.sum-cell');
-    if (cell) {
-      const row = cell.closest('tr');
-      row.querySelectorAll('.sum-cell').forEach(c => { c.classList.remove('sel'); c.textContent = ''; });
-      cell.classList.add('sel');
-      cell.textContent = 'X';
-      const compId = row.dataset.comp;
-      const col = +cell.dataset.col;
-      const card = document.querySelector('.comp-card[data-comp="' + compId + '"]');
-      if (card) {
-        card.querySelectorAll('.freq-btn').forEach(b => b.classList.remove('sel'));
-        const btn = card.querySelector('.freq-btn[data-f="' + col + '"]');
-        if (btn) btn.classList.add('sel');
-      }
-      actualizarScore();
-      return;
-    }
     const vo = e.target.closest('.verdict-opt');
     if (vo && !e.target.closest('[contenteditable="true"]')) {
       const container = vo.closest('.verdict-opts');
@@ -475,7 +457,7 @@ function actualizarScore() {
   const scoreDetalle = document.getElementById('score-detalle');
   if (totalMaximo === 0) {
     scoreNum.textContent = '—';
-    scoreDetalle.textContent = 'Completá la matriz arriba para calcular';
+    scoreDetalle.textContent = 'Elegí el nivel de cada competencia para calcular';
     return;
   }
   const score = (totalPuntos / totalMaximo) * 10;
@@ -546,7 +528,9 @@ document.getElementById('btnGuardar').addEventListener('click', function() {
     congelarValores();
     expandirTextareas();
     ocultarIA(true);
+    document.querySelectorAll('.hero-logo').forEach(e => { e.style.display = 'block'; });
     const htmlSnap = '<!DOCTYPE html>' + document.documentElement.outerHTML;
+    document.querySelectorAll('.hero-logo').forEach(e => { e.style.display = ''; });
     ocultarIA(false);
     restaurarTextareas();
     btn.disabled = true;

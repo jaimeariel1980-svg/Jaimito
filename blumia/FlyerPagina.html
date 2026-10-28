@@ -27,7 +27,7 @@ textarea{width:100%;border:1.5px solid var(--l);border-radius:8px;padding:8px 10
 .bt.full{width:100%}
 .dots{display:flex;gap:6px}.dot{width:26px;height:26px;border-radius:6px;cursor:pointer;border:2px solid transparent;outline:1px solid #ccc}.dot.on{border-color:var(--coral)}
 .chk{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;margin-bottom:8px;cursor:pointer}
-.nota{font-size:11px;color:#777;line-height:1.4}
+.nota{font-size:11px;color:#5E5E5E;line-height:1.4}
 .aviso{background:#FFF3CD;color:#7a5500;border-radius:8px;padding:8px 10px;font-size:12px;margin-bottom:10px}
 #msg{font-size:12px;margin-top:8px;min-height:16px;color:var(--gf);font-weight:600}
 #main{flex:1;min-width:0}
@@ -57,6 +57,7 @@ textarea{width:100%;border:1.5px solid var(--l);border-radius:8px;padding:8px 10
 #fcol{flex:1;min-width:0}
 #fTxt{font-size:calc(34px*var(--k));font-weight:600;line-height:1.35;color:#F7F5F1}
 #arrow{font-size:calc(60px*var(--k));font-weight:800;line-height:1;color:#F4D03F;margin:6px 0}
+#fcol:has(#fMail:empty) #arrow{display:none}
 #fMail{font-size:calc(34px*var(--k));font-weight:700;color:#F7F5F1;white-space:nowrap}
 #guiaT,#guiaB{position:absolute;left:0;width:100%;background:rgba(240,96,93,.28);border:2px dashed rgba(240,96,93,.9);z-index:50;display:none;pointer-events:none;color:#fff;font:700 22px Poppins,sans-serif;text-align:center;padding-top:8px}
 #guiaT{top:0;height:250px}#guiaB{bottom:0;height:250px;padding-top:0;padding-bottom:8px;display:none;align-items:flex-end;justify-content:center}
@@ -110,24 +111,24 @@ input[type=range]{accent-color:#243D2C}
 
   <div class="sec"><h3>Foto de fondo</h3>
     <div class="row"><label class="bt" for="inBg" style="flex:2">📷 Subir foto</label><button class="bt" id="quitBg">Quitar</button></div><input type="file" id="inBg" accept="image/*" style="display:none">
-    <label class="lb">Difuminado <b id="vOv">60%</b></label><input type="range" id="sOv" min="0" max="100" value="60">
-    <label class="lb" style="margin-top:6px">Zoom <b id="vZ">100%</b></label><input type="range" id="sZ" min="100" max="220" value="100">
-    <label class="lb" style="margin-top:6px">Mover a los costados <b id="vPx">50%</b></label><input type="range" id="sPx" min="0" max="100" value="50">
-    <label class="lb" style="margin-top:6px">Mover arriba / abajo <b id="vPy">50%</b></label><input type="range" id="sPy" min="0" max="100" value="50">
+    <label class="lb">Difuminado <b id="vOv">60%</b></label><input type="range" id="sOv" aria-label="Oscurecer la foto" min="0" max="100" value="60">
+    <label class="lb" style="margin-top:6px">Zoom <b id="vZ">100%</b></label><input type="range" id="sZ" aria-label="Zoom de la foto" min="100" max="220" value="100">
+    <label class="lb" style="margin-top:6px">Mover a los costados <b id="vPx">50%</b></label><input type="range" id="sPx" aria-label="Posición horizontal de la foto" min="0" max="100" value="50">
+    <label class="lb" style="margin-top:6px">Mover arriba / abajo <b id="vPy">50%</b></label><input type="range" id="sPy" aria-label="Posición vertical de la foto" min="0" max="100" value="50">
     <div class="nota" style="margin-top:6px">Cada búsqueda cambia de foto: se guarda junto con el diseño.</div></div>
 
   <div class="sec"><h3>Logos y cinta</h3>
     <div class="row"><button class="bt" id="logoC">Logo claro</button><button class="bt" id="logoO">Logo oscuro</button></div>
-    <label class="lb">Tamaño del logo <b id="vLg">110px</b></label><input type="range" id="sLg" min="60" max="200" value="110">
+    <label class="lb">Tamaño del logo <b id="vLg">110px</b></label><input type="range" id="sLg" aria-label="Tamaño del logo" min="60" max="200" value="110">
     <div class="row" style="margin-top:8px"><label class="bt" for="inCli" style="flex:2">🏷 Logo del cliente</label><button class="bt" id="quitCli">Quitar</button></div><input type="file" id="inCli" accept="image/*" style="display:none">
-    <label class="lb">Tamaño logo cliente <b id="vCl">80px</b></label><input type="range" id="sCl" min="40" max="200" value="80">
+    <label class="lb">Tamaño logo cliente <b id="vCl">80px</b></label><input type="range" id="sCl" aria-label="Tamaño del logo del cliente" min="40" max="200" value="80">
     <label class="chk" style="margin-top:8px"><input type="checkbox" id="bucOn"> Mostrar la cinta amarilla</label>
-    <label class="lb">Opacidad de la cinta <b id="vBo">100%</b></label><input type="range" id="sBo" min="10" max="100" value="100"></div>
+    <label class="lb">Opacidad de la cinta <b id="vBo">100%</b></label><input type="range" id="sBo" aria-label="Opacidad del trazo de fondo" min="10" max="100" value="100"></div>
 
   <div class="sec"><h3>Colores y tamaño</h3>
     <label class="lb">Título y textos</label><div class="dots" id="cT"><span class="dot" data-c="#1A1A1A" style="background:#1A1A1A"></span><span class="dot" data-c="#FFFFFF" style="background:#fff"></span><span class="dot" data-c="#1A6645" style="background:#1A6645"></span><span class="dot" data-c="#F7F5F1" style="background:#F7F5F1"></span></div>
-    <label class="lb" style="margin-top:8px">Acento (cargo, títulos, tildes)</label><div class="dots" id="cA"><span class="dot" data-c="#1A6645" style="background:#1A6645"></span><span class="dot" data-c="#E8501A" style="background:#E8501A"></span><span class="dot" data-c="#FBC67B" style="background:#FBC67B"></span><span class="dot" data-c="#FFFFFF" style="background:#fff"></span></div>
-    <label class="lb" style="margin-top:8px">Tamaño del texto <b id="vTs">100%</b></label><input type="range" id="sTs" min="70" max="130" value="100">
+    <label class="lb" style="margin-top:8px">Acento (cargo, títulos, tildes)</label><div class="dots" id="cA"><span class="dot" data-c="#1A6645" style="background:#1A6645"></span><span class="dot" data-c="#5BB5A5" style="background:#5BB5A5"></span><span class="dot" data-c="#FBC67B" style="background:#FBC67B"></span><span class="dot" data-c="#FFFFFF" style="background:#fff"></span></div>
+    <label class="lb" style="margin-top:8px">Tamaño del texto <b id="vTs">100%</b></label><input type="range" id="sTs" aria-label="Tamaño del texto" min="70" max="130" value="100">
     <div class="nota">Si el texto no entra, se achica solo.</div></div>
 
   <div class="sec"><h3>Ítems</h3>
@@ -146,9 +147,9 @@ input[type=range]{accent-color:#243D2C}
     <div class="nota" id="fechaG"></div><div class="nota" id="viejo"></div></div>
 
   <div class="sec"><h3>Textos para redes</h3>
-    <label class="lb">LinkedIn</label><textarea id="tLi" rows="6"></textarea><button class="bt full" data-cp="tLi" style="margin:4px 0 10px">Copiar</button>
-    <label class="lb">Instagram</label><textarea id="tIg" rows="5"></textarea><button class="bt full" data-cp="tIg" style="margin:4px 0 10px">Copiar</button>
-    <label class="lb">WhatsApp</label><textarea id="tWa" rows="4"></textarea><button class="bt full" data-cp="tWa" style="margin:4px 0 0">Copiar</button></div>
+    <label class="lb">LinkedIn</label><textarea id="tLi" aria-label="Posteo de LinkedIn" rows="6"></textarea><button class="bt full" data-cp="tLi" style="margin:4px 0 10px">Copiar</button>
+    <label class="lb">Instagram</label><textarea id="tIg" aria-label="Posteo de Instagram" rows="5"></textarea><button class="bt full" data-cp="tIg" style="margin:4px 0 10px">Copiar</button>
+    <label class="lb">WhatsApp</label><textarea id="tWa" aria-label="Mensaje de WhatsApp" rows="4"></textarea><button class="bt full" data-cp="tWa" style="margin:4px 0 0">Copiar</button></div>
 </div>
 
 <div id="main"><div id="vwrap"><div id="stage">
@@ -193,7 +194,7 @@ function porDefecto(){
     txt:{badge:[DATOS.ubicacion].filter(Boolean).join(' · ')||'Presencial',busc:'Buscamos',cargo:DATOS.puesto,
       baj:nombre.charAt(0).toUpperCase()+nombre.slice(1)+' busca sumar a su equipo una persona para el puesto de '+DATOS.puesto+'.',
       titD:'Principales desafíos',titR:'Requisitos',
-      form:'Postulate enviando tu CV a:',qrCap:'Escaneá para postularte',mail:DATOS.mail},
+      form:'Postulate desde el link que acompaña este posteo',qrCap:'Escaneá para postularte',mail:''},
     iD:['Completá los principales desafíos del puesto.'],iR:['Completá los requisitos del puesto.'],
     social:{linkedin:'',instagram:'',whatsapp:''}};
 }
@@ -294,7 +295,7 @@ function cableado(){
   $('mostrarEmp').onchange=function(){S.mostrarEmpresa=this.checked;marcar()};
   $('conQr').onchange=function(){
     leerTextos();S.qr=this.checked;
-    var CQ='Te invitamos a postularte escaneando el QR o ingresando al enlace de la descripción.',SQ='Postulate enviando tu CV a:';
+    var CQ='Te invitamos a postularte escaneando el QR o ingresando al enlace de la descripción.',SQ='Postulate desde el link que acompaña este posteo';
     if(S.qr&&S.txt.form===SQ)S.txt.form=CQ;else if(!S.qr&&S.txt.form===CQ)S.txt.form=SQ;
     pintarTextos();aplicar();marcar()};
   $('bucOn').onchange=function(){S.bucOn=this.checked;aplicar();marcar()};
