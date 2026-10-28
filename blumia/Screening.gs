@@ -36,7 +36,7 @@ if (fila === -1) {
   try {
     const folder = DriveApp.getFolderById(FOLDER_ID);
     const nombreArchivo = "Informe_Screening_" + nombreBuscado.replace(/\s+/g, '_');
-    const blob = Utilities.newBlob(data.htmlFull, "text/html", nombreArchivo + ".html");
+    const blob = Utilities.newBlob(conFuentePdf_(data.htmlFull), "text/html", nombreArchivo + ".html");
     const pdfFile = folder.createFile(blob.getAs("application/pdf"));
     
     // Columna M (13) - Link al PDF

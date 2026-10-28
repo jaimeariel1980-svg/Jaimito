@@ -407,8 +407,16 @@ function llenarColumnaO(perfilId) {
 }
 
 /** El conversor HTML→PDF de Apps Script no siempre dibuja imágenes embebidas: el logo del encabezado se pide por URL pública (Cloudflare, azcubot/netlify). */
+// @font-face de Pangram para los PDF e informes (el conversor a PDF necesita TTF; el navegador usa woff2)
+function conFuentePdf_(html) {
+  const u = 'https://azcubot.pages.dev/fonts/pangram-';
+  const css = '<style>' + [500, 600, 700].map(w => "@font-face{font-family:'PP Pangram Sans';font-weight:" + w + ';font-style:normal;src:url(' + u + w + '.ttf) format(\'truetype\'),url(' + u + w + '.woff2) format(\'woff2\')}').join('') + '</style>';
+  const h = String(html || '');
+  return h.indexOf('pangram-500.ttf') > -1 ? h : h.replace(/<head[^>]*>/i, m => m + css);
+}
+
 function logoParaPdf_(html) {
-  return String(html || '').replace(/(<img[^>]*class="hero-logo"[^>]*?src=")data:image\/[a-z]+;base64,[^"]+(")/, '$1https://azcubot.pages.dev/blumia-logo-blanco.png$2');
+  return conFuentePdf_(html).replace(/(<img[^>]*class="hero-logo"[^>]*?src=")data:image\/[a-z]+;base64,[^"]+(")/, '$1https://azcubot.pages.dev/blumia-logo-blanco.png$2');
 }
 
 function guardarEnPlanilla_(nombreCandidato, htmlContent, ajustePonderacion, perfilId, quien, estadoJSON, editar) {
@@ -1152,7 +1160,7 @@ function generarPDFPostulacion(d, decl, cfg, perfil) {
     .filter(x => x[1]).map(x => '<tr><td class="k">' + x[0] + '</td><td class="v">' + x[1] + '</td></tr>').join('');
 
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
-    body{font-family:'Plus Jakarta Sans',Arial,sans-serif;margin:0;color:#111;background:#F7F5F1}
+    body{font-family:'PP Pangram Sans','Plus Jakarta Sans',Arial,sans-serif;margin:0;color:#111;background:#F7F5F1}
     .hero{background:#1A6645;padding:30px 34px;color:#fff}
     .hero .eyebrow{color:rgba(255,255,255,.7);font-size:11px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;margin-bottom:8px}
     .hero .pos{font-size:24px;font-weight:800}
@@ -1192,7 +1200,7 @@ function generarPDFPostulacion(d, decl, cfg, perfil) {
   </body></html>`;
 
   const folderId = cfg.folder_pdf_postulacion || cfg.folder_recibidos;
-  const blob = Utilities.newBlob(html, 'text/html', 'Postulacion_' + (d.nombre || 'candidato').replace(/\s+/g, '_') + '.html');
+  const blob = Utilities.newBlob(conFuentePdf_(html), 'text/html', 'Postulacion_' + (d.nombre || 'candidato').replace(/\s+/g, '_') + '.html');
   const pdf = DriveApp.getFolderById(folderId).createFile(blob.getAs('application/pdf'));
   return pdf.getUrl();
 }
@@ -1497,9 +1505,9 @@ function generarInformeCandidato_(perfilId, fila) {
 '</body></html>';
 
   const carpeta = DriveApp.getRootFolder();
-  const archivo = carpeta.createFile('Informe_' + nombre.replace(/\s+/g,'_') + '.html', htmlFull, MimeType.HTML);
+  const archivo = carpeta.createFile('Informe_' + nombre.replace(/\s+/g,'_') + '.html', conFuentePdf_(htmlFull), MimeType.HTML);
   const fileId = archivo.getId();
-  archivo.setContent(htmlFull.replace('__FILEID__', fileId));
+  archivo.setContent(conFuentePdf_(htmlFull).replace('__FILEID__', fileId));
   const url = URL_WEBAPP + '?tipo=verinforme&id=' + fileId;
   const rich = SpreadsheetApp.newRichTextValue().setText('📄 Ver informe').setLinkUrl(url).build();
   sh.getRange(fila, 33).setRichTextValue(rich);
@@ -1711,9 +1719,9 @@ function generarHTMLProceso(empresa) {
   const it=DriveApp.getFoldersByName('Informes Clientes');
   const carpeta=it.hasNext()?it.next():DriveApp.createFolder('Informes Clientes');
   let arch; const ex=carpeta.getFilesByName('Informe_Proceso_'+empresa+'.html');
-  if(ex.hasNext()){arch=ex.next();arch.setContent(html);}else{arch=carpeta.createFile('Informe_Proceso_'+empresa+'.html',html,MimeType.HTML);}
+  if(ex.hasNext()){arch=ex.next();arch.setContent(conFuentePdf_(html));}else{arch=carpeta.createFile('Informe_Proceso_'+empresa+'.html',conFuentePdf_(html),MimeType.HTML);}
   const fileId=arch.getId();
-  arch.setContent(html.replace('__FILEID__',fileId));
+  arch.setContent(conFuentePdf_(html).replace('__FILEID__',fileId));
   const url=URL_WEBAPP+'?tipo=verinforme&id='+fileId;
   Logger.log('HTML editable proceso: '+url);
   return url;
