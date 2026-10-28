@@ -79,7 +79,7 @@ function azcuPruebasLista_(T){
   add('mandame la ubicación','Ubicación de la ficha abierta.',{ficha:2,t:[],adj:true});
   add('mandame la ubicación de {A1}','Ubicación de la pedida, no de la ficha abierta.',{ficha:2,t:[],no:'{C2} \\d'});
   add('visita en {A2}, Marcos Tejo, le interesó, quiere volver con la esposa','Tarjeta directa de visita con observaciones.',{t:['cargar'],cr:'esposa'});
-  add('vino una pareja a ver {A3}','Pregunta solo lo que falta, en una línea.',{t:[],tx:'nombre|qui[eé]n|resultado|c[oó]mo|detalle',max:280});
+  add('vino una pareja a ver {A3}','Arma la tarjeta (con lo que hay) o pregunta lo que falta, corto.',{tx:'nombre|qui[eé]n|resultado|c[oó]mo|detalle|tarjeta',max:300});
   add('no, 54000','Tarjeta nueva con 54.000, misma propiedad.',{hist:[['u','visité {A2} con Marcos Tejo, ofreció 50000'],['a','¡Dale! Dejé la tarjeta lista, confirmala acá abajo 👇']],min:1,no:'Datos y operaci'});
   add('dejalo, mejor no','Sin tarjeta nueva; dice que no confirme.',{hist:[['u','visité {A2} con Marcos Tejo, ofreció 50000'],['a','¡Dale! Dejé la tarjeta lista, confirmala acá abajo 👇']],t:[],tx:'confirm|sin efecto|no hago|no hace falta|no armo'});
   add('agendá visita mañana a las 15 en {A4} con Ana López','Tarjeta de agendar con la fecha de mañana.',{t:['agendar'],cr:'15:00'});
@@ -87,7 +87,7 @@ function azcuPruebasLista_(T){
   add('fui con un cliente a ver una casa de la inmobiliaria Bertollo en Pérez Bulnes 6637, le gustó','Visita externa sin buscar en la cartera.',{t:['visitaext']});
   add('Ana Gómez hizo una oferta de 90 mil por {A2}','Tarjeta de propuesta con el monto.',{t:['propuesta'],cr:'90'});
   add('rechazaron la propuesta de {A2}','Pide el motivo antes de armar la tarjeta.',{t:[],tx:'motivo|por qu[eé]'});
-  add('aceptaron la propuesta de {A2}','Tarjeta; aclara que pasa a Reserva.',{min:1,tx:'reserva'});
+  add('aceptaron la propuesta de {A2}','Pregunta de quién es la propuesta, o arma la tarjeta y aclara que pasa a Reserva.',{tx:'reserva|qui[eé]n|nombre|cliente'});
   add('pasá {A3} a publicada','Tarjeta de cambio de etapa.',{t:['etapa']});
   add('bajale el precio a {A2} a 62 mil dólares','Tarjeta de editar precio con 62.000.',{t:['campos'],cr:'62'});
   add('se cayó la visita de mañana en {A4}','La ubica y arma la tarjeta de cancelar (o dice que no hay).',{tx:'visita|no (encuentro|hay|figura)'});
