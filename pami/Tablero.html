@@ -135,7 +135,7 @@ summary .cnt{background:#fff;border-radius:99px;padding:0 8px;font-size:11px}
 <body>
 <div class="hdr"><div class="in">
   <span class="lg w"></span>
-  <div class="prod">Reclutamiento y Selección<small class="ver">v172</small></div>
+  <div class="prod">Reclutamiento y Selección<small class="ver">v173</small></div>
   <nav>
     <button class="ni" onclick="verAvisos()" style="position:relative"><span class="ic o">🔔</span><b>Avisos</b><span id="avCnt" style="display:none;position:absolute;top:2px;right:2px;background:#D9534F;color:#fff;border-radius:10px;font-size:11px;font-weight:800;padding:1px 6px"></span></button>
     <button class="ni" id="rf" onclick="actualizar()"><span class="ic g">↻</span><b>Actualizar</b></button>
@@ -972,7 +972,7 @@ function htmlRanking(x,sel){
     var eds=L.map(function(c){return c.edad;}).filter(Boolean),ans=L.map(function(c){return c.aniosN;}).filter(function(v){return v!=null;});
     var AR=['Menos de 1 año','1 a 3 años','3 a 5 años','Más de 5 años','Sin dato'];
     var gm=cont(function(c){return c.gremios.length?c.gremios:[];}),gks=Object.keys(gm).sort(function(a,b){return gm[b].n-gm[a].n;});
-    var kp='<div class="kp" style="grid-template-columns:repeat('+Math.min(gks.length+2,6)+',1fr)"><div class="cd"><small>Contratados</small><div class="big">'+n+'</div></div>'+gks.map(function(k){return '<div class="cd"><small>'+esc(k)+'</small><div class="big">'+gm[k].n+'</div></div>';}).join('')+'<div class="cd"><small>Sin gremio</small><div class="big" style="color:#5D6B82">'+(n-conG)+'</div></div></div>';
+    var kp='<div class="kp" style="grid-template-columns:repeat('+Math.ceil((gks.length+2)/Math.ceil((gks.length+2)/6))+',1fr)"><div class="cd"><small>Contratados</small><div class="big">'+n+'</div></div>'+gks.map(function(k){return '<div class="cd"><small>'+esc(k)+'</small><div class="big">'+gm[k].n+'</div></div>';}).join('')+'<div class="cd"><small>Sin gremio</small><div class="big" style="color:#5D6B82">'+(n-conG)+'</div></div></div>';
     var rk='<h2 class="s2">Ranking</h2><table class="tb"><thead><tr><th></th><th>Persona</th><th>Competencias</th><th>Técnica</th><th>Promedio</th><th>Gremio</th><th>Alertas</th></tr></thead><tbody>'+L.map(function(c,i){
       return '<tr><td class="ps"><span>'+(i+1)+'</span></td><td class="nm"><b>'+esc(c.nombre)+'</b><small>'+esc([c.cat!=='Sin dato'?c.cat:'',c.edad?c.edad+' años':''].filter(Boolean).join(' · '))+'</small></td><td class="nt">'+esc(c.nC||'–')+' · <b>'+f1(c.comp)+'</b></td><td class="nt">'+esc(c.nT||'–')+' · <b>'+f1(c.tec)+'</b></td><td class="pr"><span class="pb"><i style="width:'+Math.round((c.promedio||0)*10)+'%;background:'+cp(c.promedio)+'"></i></span><b style="color:'+cp(c.promedio)+'">'+f1(c.promedio)+'</b></td><td>'+(c.gremios.length?esc(c.gremios.join(', ')):'<span style="color:#9AA7B8">—</span>')+'</td><td class="al">'+(c.flags.length?'⚠ '+esc(c.flags.join(' y '))+'<br><span style="font-weight:600">avanzó igual por pedido de Enfermería</span>':'<span style="color:#9AA7B8;font-weight:400">—</span>')+'</td></tr>';
     }).join('')+'</tbody></table>';
