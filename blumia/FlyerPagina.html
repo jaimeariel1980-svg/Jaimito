@@ -147,6 +147,7 @@ input[type=range]{accent-color:#243D2C}
 
   <div class="sec"><h3>Guardar</h3>
     <button class="bt pri full" id="btnSave" style="margin-bottom:8px">💾 Guardar en Drive</button>
+    <button class="bt pri full" id="btnWa" style="margin-bottom:8px">💬 Enviar por WhatsApp</button>
     <button class="bt pri full" id="btnPng">⬇ Descargar imagen (PNG)</button>
     <div id="msg"></div>
     <div class="nota" id="fechaG"></div><div class="nota" id="viejo"></div></div>
@@ -341,7 +342,7 @@ function cableado(){
   var cp=document.querySelectorAll('[data-cp]');for(var i=0;i<cp.length;i++)cp[i].onclick=function(){copiar(this.getAttribute('data-cp'),this)};
   $('btnIA').onclick=generarIA;
   $('btnSave').onclick=guardar;
-  $('btnPng').onclick=descargar;
+  $('btnPng').onclick=function(){descargar()};$('btnWa').onclick=function(){descargar('wa')};
   $('resX').onclick=function(){$('res').classList.remove('show')};
   window.onbeforeunload=function(){return sucio?'Tenés cambios sin guardar.':undefined};
 }
@@ -376,17 +377,21 @@ function guardar(){
     .withFailureHandler(function(e){b.disabled=false;b.textContent='💾 Guardar en Drive';msg((e&&e.message)||String(e),false)}).flyerGuardar(DATOS.perfil,JSON.stringify(S));
 }
 
-function descargar(){
+function descargar(modo){
   if(typeof html2canvas!=='function'){msg('No se pudo cargar la herramienta de imagen. Revisá la conexión y recargá.',false);return}
-  leerTextos();var b=$('btnPng'),f=FMT[S.fmt];b.disabled=true;b.textContent='Armando la imagen…';
+  leerTextos();var b=$(modo==='wa'?'btnWa':'btnPng'),tb=b.textContent,f=FMT[S.fmt];b.disabled=true;b.textContent='Armando la imagen…';
   if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
   document.body.classList.add('exporting');
   var st=$('stage'),tr=st.style.transform;st.style.transform='none';
-  var fin=function(){st.style.transform=tr;document.body.classList.remove('exporting');b.disabled=false;b.textContent='⬇ Descargar imagen (PNG)'};
+  var fin=function(){st.style.transform=tr;document.body.classList.remove('exporting');b.disabled=false;b.textContent=tb};
   (document.fonts&&document.fonts.ready||Promise.resolve()).then(function(){setTimeout(function(){
     html2canvas($('flyer'),{scale:2,useCORS:true,allowTaint:true,backgroundColor:'#EEF7EE',width:f.W,height:f.H,windowWidth:f.W,windowHeight:f.H,scrollX:0,scrollY:0}).then(function(c){
       fin();
       var url=c.toDataURL('image/png'),nom='flyer-'+DATOS.puesto.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'-'+f.nom+'.png';
+      if(modo==='wa'){c.toBlob(function(bl){var tx=$('tWa').value||'';var fl=null;try{fl=new File([bl],nom,{type:'image/png'})}catch(e){}
+        if(fl&&navigator.canShare&&navigator.canShare({files:[fl]})){navigator.share({files:[fl],text:tx}).catch(function(){})}
+        else{var a=document.createElement('a');a.href=url;a.download=nom;document.body.appendChild(a);a.click();a.remove();window.open('https://wa.me/?text='+encodeURIComponent(tx),'_blank');msg('Se bajó la imagen y se abrió WhatsApp con el texto: adjuntá la imagen del flyer al chat.',true)}
+      },'image/png');return}
       $('resImg').src=url;$('resA').href=url;$('resA').setAttribute('download',nom);$('resN').textContent='Si no se descargó sola, tocá «Descargar» o mantené apretada la imagen para guardarla.';$('res').classList.add('show');
       try{var a=document.createElement('a');a.href=url;a.download=nom;document.body.appendChild(a);a.click();a.remove()}catch(e){}
     }).catch(function(e){fin();msg('No se pudo armar la imagen: '+((e&&e.message)||e),false)});
