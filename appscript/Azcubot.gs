@@ -103,7 +103,7 @@ function azcuCorta_(p){ return {id:p.id, direccion:p.dir, tipo:p.tipo, etapa:p.e
 
 var AZCU_NOCALLE_ = {las:1,la:1,los:1,hs:1,hora:1,horas:1,dia:1,mes:1,piso:1,dpto:1,depto:1,departamento:1,ano:1,anos:1,usd:1,pesos:1,precio:1,monto:1,valor:1,dolares:1,m2:1,metros:1,mts:1,ambientes:1,dormitorios:1,visitas:1,consultas:1,calle:1,casa:1,propiedad:1,ficha:1,de:1,del:1,por:1,con:1,al:1,en:1,el:1,un:1,una:1,que:1,para:1,mas:1,ver:1,datos:1,dato:1,info:1,informacion:1,contame:1,conta:1,decime:1,dame:1,pasame:1,mandame:1,mostrame:1,cuanto:1,sale:1,cuesta:1,quiero:1,necesito:1,saber:1,tenes:1,busca:1,buscame:1,mail:1,telefono:1,propietario:1,dueno:1,vendedor:1,etapa:1,estado:1,historial:1,documentos:1,papeles:1,podes:1,decir:1,favor:1,hola:1};
 function azcuPedidas_(texto){
-  var t = azcuSinAc_(texto).replace(/\b\d{1,2}\s*[:.]\s*\d{2}\b/g,' ').replace(/\b\d{6,}\b/g,' ').replace(/[,;¿?¡!()"]/g,' ').split(/\s+/).filter(Boolean), out = [], i, j, w, x, pos, prev, TR = {nro:1,numero:1,num:1,n:1};
+  var t = azcuSinAc_(texto).replace(/\b\d{1,2}\s*[:.]\s*\d{2}\b/g,' ').replace(/\b(\d)\.(\d{3})\b/g,'$1$2').replace(/\b\d{6,}\b/g,' ').replace(/[°º]/g,'').replace(/[,;¿?¡!()"]/g,' ').split(/\s+/).filter(Boolean), out = [], i, j, w, x, pos, prev, TR = {nro:1,numero:1,num:1,n:1,al:1,altura:1};
   for(i=1;i<t.length;i++){
     if(!/^\d{2,5}$/.test(t[i])) continue;
     pos = i-1; prev = t[pos].replace(/\.$/,'');
