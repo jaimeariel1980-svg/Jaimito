@@ -31,7 +31,7 @@ function accesoLog_(usuario, evento, detalle) {
     let sh = ss.getSheetByName(HOJA_ACC_);
     if (!sh) {
       sh = ss.insertSheet(HOJA_ACC_);
-      sh.getRange(1, 1, 1, 4).setValues([['fecha', 'usuario', 'evento', 'detalle']]).setFontWeight('bold').setBackground('#243D2C').setFontColor('#fff');
+      sh.getRange(1, 1, 1, 4).setValues([['fecha', 'usuario', 'evento', 'detalle']]).setFontWeight('bold').setBackground('#0F3F27').setFontColor('#fff');
       sh.setFrozenRows(1);
     }
     sh.appendRow([new Date(), String(usuario || ''), String(evento), String(detalle || '').slice(0, 300)]);
@@ -43,7 +43,7 @@ function usuariosHoja_() {
   let sh = ss.getSheetByName(HOJA_USU_);
   if (sh) return sh;
   sh = ss.insertSheet(HOJA_USU_);
-  sh.getRange(1, 1, 1, 8).setValues([['nombre', 'rol', 'activo', 'sal', 'hash', 'pin_temporal', 'cambio', 'ultimo_ingreso']]).setFontWeight('bold').setBackground('#243D2C').setFontColor('#fff');
+  sh.getRange(1, 1, 1, 8).setValues([['nombre', 'rol', 'activo', 'sal', 'hash', 'pin_temporal', 'cambio', 'ultimo_ingreso']]).setFontWeight('bold').setBackground('#0F3F27').setFontColor('#fff');
   sh.setFrozenRows(1);
   ADMINS_INICIALES_.forEach(n => nuevaFilaUsuario_(sh, n, 'Administrador'));
   return sh;

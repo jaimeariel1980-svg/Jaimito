@@ -10,7 +10,7 @@ function evalHoja_() {
   let sh = ss.getSheetByName(HOJA_EVAL_);
   if (!sh) {
     sh = ss.insertSheet(HOJA_EVAL_);
-    sh.getRange(1, 1, 1, 7).setValues([['fecha', 'perfil', 'candidato', 'etapa', 'nota', 'quien', 'archivo']]).setFontWeight('bold').setBackground('#243D2C').setFontColor('#fff');
+    sh.getRange(1, 1, 1, 7).setValues([['fecha', 'perfil', 'candidato', 'etapa', 'nota', 'quien', 'archivo']]).setFontWeight('bold').setBackground('#0F3F27').setFontColor('#fff');
     sh.setFrozenRows(1);
   }
   return sh;

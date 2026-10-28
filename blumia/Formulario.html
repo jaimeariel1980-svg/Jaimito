@@ -7,12 +7,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <base target="_top">
 <title>Screening · Blumia</title>
+<?!= HtmlService.createHtmlOutputFromFile('FuenteMarca').getContent() ?>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --bg:#F3F8F1;--white:#FFFFFF;--dark:#111111;--text:#1A1A1A;--mid:#555555;--light:#6B6B6B;--line:#D5E0CE;
-  --green:#243D2C;--green2:#2F5E41;--glight:#E3EEDC;--dorado:#FBC67B;--coral:#C0391B;--turq:#5BB5A5;
-  --font:'Poppins','Plus Jakarta Sans',sans-serif;
+  --green:#0F3F27;--green2:#2F5E41;--glight:#E3EEDC;--dorado:#FBC67B;--coral:#C0391B;--turq:#5BB5A5;
+  --font:'PP Pangram Sans','Poppins','Plus Jakarta Sans',sans-serif;
 }
 body{font-family:var(--font);background:var(--bg);color:var(--text)}
 .wrap{max-width:900px;margin:0 auto;padding:36px 52px 60px}
@@ -108,7 +109,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text)}
   .sd-verde.on,.sd-amarillo.on,.sd-rojo.on,.res-verde,.res-amarillo,.res-rojo{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 .gbar{position:sticky;bottom:0;z-index:250;display:flex;justify-content:center;padding:14px 16px 16px;background:linear-gradient(to top,rgba(247,245,241,.97) 65%,rgba(247,245,241,0));pointer-events:none}
-.gbar button{pointer-events:auto;background:#243D2C;color:#fff;border:none;border-radius:99px;padding:14px 38px;font:700 15px Poppins,Arial,sans-serif;cursor:pointer;box-shadow:0 6px 20px rgba(36,61,44,.35);letter-spacing:.2px}
+.gbar button{pointer-events:auto;background:#0F3F27;color:#fff;border:none;border-radius:99px;padding:14px 38px;font:700 15px 'PP Pangram Sans',Poppins,Arial,sans-serif;cursor:pointer;box-shadow:0 6px 20px rgba(36,61,44,.35);letter-spacing:.2px}
 .gbar button:hover{background:#1a2d20}.gbar button:disabled{opacity:.65;cursor:default}
 @media print{.gbar{display:none!important}}
 </style>

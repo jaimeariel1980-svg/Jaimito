@@ -1,12 +1,12 @@
 <style>
-.nbf{display:inline-flex;align-items:center;gap:8px;border:1.5px dashed #243D2C;padding:10px 16px;border-radius:8px;cursor:pointer;color:#243D2C;font-weight:700;font-size:13px;position:relative;text-transform:none}.nbf:hover{background:#E3EEDC}.nbf:focus-within{outline:3px solid #5BB5A5}
+.nbf{display:inline-flex;align-items:center;gap:8px;border:1.5px dashed #0F3F27;padding:10px 16px;border-radius:8px;cursor:pointer;color:#0F3F27;font-weight:700;font-size:13px;position:relative;text-transform:none}.nbf:hover{background:#E3EEDC}.nbf:focus-within{outline:3px solid #5BB5A5}
 .cf-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9100;display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 10px}
 .cf-bg.show{display:flex}
 .cf-box{background:#fff;border-radius:12px;max-width:900px;width:100%;padding:20px 24px;color:#222;font-size:14px}
-.cf-box h2{margin:0 0 12px;font-size:20px;color:#243D2C}
+.cf-box h2{margin:0 0 12px;font-size:20px;color:#0F3F27}
 .cf-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
 .cf-tab{background:#F7F5F1;border:1px solid #ddd;border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:700;font-size:13px}
-.cf-tab.on{background:#243D2C;color:#fff;border-color:#243D2C}
+.cf-tab.on{background:#0F3F27;color:#fff;border-color:#0F3F27}
 .cf-sec{display:none}.cf-sec.on{display:block}
 .cf-help{font-size:12px;color:#666;margin-bottom:10px;line-height:1.45}
 .cf-box input,.cf-box textarea,.cf-box select{border:1px solid #ccc;border-radius:6px;padding:7px 9px;font:13px/1.35 inherit;font-family:inherit;box-sizing:border-box;width:100%}
@@ -16,9 +16,9 @@
 .cf-pl{background:#F7F5F1;border-radius:8px;padding:10px;margin-bottom:10px}
 .cf-mini{background:#fff;border:1px solid #bbb;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:12px}
 .cf-mini.x{color:#B91C1C;border-color:#B91C1C}
-.cf-add{background:#E6F2EC;color:#243D2C;border:1px dashed #243D2C;border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:700;font-size:12px}
+.cf-add{background:#E6F2EC;color:#0F3F27;border:1px dashed #0F3F27;border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:700;font-size:12px}
 .cf-foot{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
-.cf-save{background:#243D2C;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-weight:800;cursor:pointer}
+.cf-save{background:#0F3F27;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-weight:800;cursor:pointer}
 .cf-close{background:#fff;border:1px solid #999;border-radius:8px;padding:10px 20px;cursor:pointer}
 @media(max-width:640px){.cf-row{grid-template-columns:1fr}}
 
@@ -48,7 +48,7 @@
   function nbHtml(){
     if(NB.creada){var c=NB.creada;return '<div class="cf-pl"><b>✅ Búsqueda creada: '+esc(c.nombre)+'</b><div class="cf-help" style="margin-top:8px">Empresa: '+esc(c.empresa)+'. Ya tiene su pestaña de candidatos, carpetas de Drive, formularios de screening y competencias, y preguntas de postulación.<br><br>'+(c.perfil&&c.perfil.ok?'<b>Perfil del puesto:</b> la IA completó '+c.perfil.campos+' campos con el Word. <b>Revisalo</b> antes de usarlo.'+((c.perfil.avisos||[]).length?'<ul style="margin:6px 0 0 18px">'+c.perfil.avisos.map(function(a){return '<li>'+esc(a)+'</li>';}).join('')+'</ul>':''):'<b>Perfil del puesto:</b> no se pudo armar solo ('+esc((c.perfil&&c.perfil.error)||'sin detalle')+'). Abrilo con el botón y usá «✨ Completar con IA desde un Word».')+'<br><br>Los CVs que lleguen al mail con el nombre del puesto en el asunto se ordenan solos.</div></div><div id="nbPerfilFr" style="margin-top:10px"></div><div class="cf-foot"><button class="cf-close" onclick="nbOtra()">Crear otra</button><button class="cf-close" onclick="nbVerPerfil(this)">✏️ Revisar el perfil del puesto</button><button class="cf-save" onclick="window.top.location.href=NB.creada.kanban">Abrir el tablero de la búsqueda</button></div>';}
     if(!NB.prop)return '<div class="cf-help">Acá se crea una <b>búsqueda nueva</b>; no modifica la que tenés abierta. Subí el <b>Word</b> con el relevamiento del puesto (o pegá el texto) y la <b>IA</b> arma la búsqueda completa: requisitos para puntuar CVs, criterios de screening, competencias con preguntas y preguntas de postulación. <b>Antes de crear nada lo revisás y lo corregís vos.</b> El archivo no se guarda: solo se lee el texto.</div>'
-      +'<label>Archivo Word (.docx)</label><label class="nbf"><input type="file" id="nb_file" accept=".docx,.txt" onchange="nbArchivo(this);var f=this.files&&this.files[0];document.getElementById(\'nbFn\').textContent=f?\'✓ \'+f.name:\'\'" style="position:absolute;width:1px;height:1px;opacity:0">📎 Elegir el archivo Word</label><span id="nbFn" style="margin-left:10px;font-size:13px;color:#243D2C;font-weight:600"></span>'
+      +'<label>Archivo Word (.docx)</label><label class="nbf"><input type="file" id="nb_file" accept=".docx,.txt" onchange="nbArchivo(this);var f=this.files&&this.files[0];document.getElementById(\'nbFn\').textContent=f?\'✓ \'+f.name:\'\'" style="position:absolute;width:1px;height:1px;opacity:0">📎 Elegir el archivo Word</label><span id="nbFn" style="margin-left:10px;font-size:13px;color:#0F3F27;font-weight:600"></span>'
       +'<label>…o pegá el texto del relevamiento</label><textarea id="nb_texto" style="min-height:220px" placeholder="Pegá acá el texto o subí el Word">'+esc(NB.texto)+'</textarea>'
       +'<label>Empresa (opcional: si la dejás vacía la propone la IA)</label><input id="nb_emp" value="'+esc(NB.empresa)+'">'
       +'<div class="cf-foot"><button class="cf-save" id="nb_go" onclick="nbAnalizar(this)"'+(NB.ocupado?' disabled':'')+'>🤖 Analizar con IA</button></div>';
