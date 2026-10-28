@@ -5,7 +5,7 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--font);background:var(--bg);color:#1A1A1A;font-size:14px}
 .hero{background:var(--deep);color:#fff;position:relative;overflow:hidden;padding:20px 0 34px;min-height:300px}
-.hero{background-image:radial-gradient(circle at 50% 50%,rgba(255,255,255,0) 150px,rgba(255,255,255,.06) 151px,rgba(255,255,255,.06) 235px,rgba(255,255,255,0) 236px),radial-gradient(circle at 10% 118%,rgba(255,255,255,0) 90px,rgba(255,255,255,.05) 91px,rgba(255,255,255,.05) 155px,rgba(255,255,255,0) 156px)}
+.hero{background-image:radial-gradient(circle at 10% 118%,rgba(255,255,255,0) 90px,rgba(255,255,255,.05) 91px,rgba(255,255,255,.05) 155px,rgba(255,255,255,0) 156px)}
 .in{padding:0 28px;position:relative}
 .top{display:flex;align-items:center;justify-content:space-between;position:relative;z-index:2}
 .top img{height:38px}
@@ -30,6 +30,7 @@ body{font-family:var(--font);background:var(--bg);color:#1A1A1A;font-size:14px}
 .cta .pri{background:var(--cream);color:var(--deep);border:none}.cta .pri:hover{background:#f6dc72}
 .cta .sec{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.55)}.cta .sec:hover{background:rgba(255,255,255,.14)}
 .sq{position:absolute;z-index:1;pointer-events:none}
+.aro{left:50%;top:50%;width:470px;height:470px;margin:-235px 0 0 -235px;border-radius:50%;border:85px solid rgba(255,255,255,.07);box-sizing:border-box}
 .s2{right:-70px;top:calc(50% + 26px);transform:translateY(-50%);height:270px;opacity:.7}
 body{overflow-x:hidden}
 main{padding:30px 28px 50px}
@@ -53,12 +54,13 @@ main{padding:30px 28px 50px}
 details.cerr{margin-top:12px}details.cerr summary{cursor:pointer;color:#666;font-weight:700;margin:4px 0 12px}
 .vacio{background:#fff;border:1px dashed var(--line);border-radius:18px;padding:34px;text-align:center;color:#666}
 footer{text-align:center;color:#5E5E5E;font-size:12px;padding:10px 0 30px}
-@media(max-width:640px){.hero{padding:16px 16px 28px;min-height:260px}.ht{margin-top:26px}.ht h1{font-size:26px}.s2{display:none}.stats{gap:20px}.cta button,.cta a{flex:1 1 100%;text-align:center}.grid{grid-template-columns:1fr}.top img{height:32px}}
+@media(max-width:640px){.hero{padding:16px 16px 28px;min-height:260px}.ht{margin-top:26px}.ht h1{font-size:26px}.s2,.aro{display:none}.stats{gap:20px}.cta button,.cta a{flex:1 1 100%;text-align:center}.grid{grid-template-columns:1fr}.top img{height:32px}}
 </style><style id="btnU">/* un solo estilo de botón: rectángulo de 8 px (las píldoras quedan solo para etiquetas y contadores) */
 .cta button,.cta a{border-radius:8px}
 </style>
 </head><body>
 <section class="hero">
+  <div class="sq aro"></div>
   <img class="sq s2" id="s2" alt="">
   <div class="in">
   <div class="top"><img id="lg" alt="Blumia"><div class="r"><button class="gear" id="gear" title="Administración" onclick="menuAdm(event)">⚙</button><div class="menu" id="menu"></div><button class="avt" id="quienBtn" onclick="blMenuUsuario()">·</button></div></div>
