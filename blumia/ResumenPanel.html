@@ -23,8 +23,8 @@
 .rs-dw{display:flex;flex-direction:column;align-items:center;gap:14px;padding:6px 0}
 .rs-dw svg{width:210px;height:210px;flex-shrink:0}
 .rs-dw svg path{transition:opacity .12s}.rs-dw svg path:hover{opacity:.75}
-.rs-leg{display:flex;flex-wrap:wrap;gap:9px;justify-content:center;width:100%}
-.rs-lb{border:1px solid #e3e0d9;border-radius:12px;padding:10px 13px;min-width:108px;background:#fff;text-align:center;transition:.12s}
+.rs-leg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:100%;max-width:360px;margin:0 auto}
+.rs-lb{border:1px solid #e3e0d9;border-radius:12px;padding:10px 8px;min-width:0;background:#fff;text-align:center;transition:.12s;display:flex;flex-direction:column;justify-content:center}
 .rs-lb:hover{border-color:#0F3F27}
 .rs-lb .t{display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;color:#666;font-weight:700;margin-bottom:6px}
 .rs-lb .t i{width:11px;height:11px;border-radius:4px;display:inline-block}
@@ -112,7 +112,7 @@
     var cn={},sin=0;L.forEach(function(x){if(x.t!=='desc')return;var m=String(x.c.motivo||'').trim();if(!m){sin++;return;}m.split(/;\s*/).forEach(function(z){z=z.replace(/^Otro: .*/,'Otro');cn[z]=(cn[z]||0)+1;});});
     var ks=Object.keys(cn).sort(function(a,b){return cn[b]-cn[a];});
     if(!ks.length&&!sin)return '';
-    return '<div style="margin-top:14px"><div style="font-size:12px;font-weight:800;color:#243D2C;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Motivos de descarte</div><div class="rs-leg" style="justify-content:flex-start">'
+    return '<div style="margin-top:14px"><div style="font-size:12px;font-weight:800;color:#243D2C;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px">Motivos de descarte</div><div class="rs-leg" style="max-width:none;margin:0;grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">'
       +ks.map(function(k){return '<div class="rs-lb" data-k="mot:'+esc(k)+'"><div class="t">'+esc(k)+'</div><div class="p">'+cn[k]+'</div></div>';}).join('')
       +(sin?'<div class="rs-lb" data-k="mot:" style="border-color:#E0A800"><div class="t">Sin motivo cargado</div><div class="p">'+sin+'</div></div>':'')+'</div></div>';
   }
