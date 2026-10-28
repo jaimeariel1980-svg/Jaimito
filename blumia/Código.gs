@@ -1948,7 +1948,8 @@ function kanbanHTML_(perfilId) {
   html = html.replace('%%SORTABLE%%', () => HtmlService.createHtmlOutputFromFile('SortableLib').getContent()); // arrastrar tarjetas no depende de una CDN externa
   lapT_('Armar la plantilla del tablero');
   let bandaRef = 0;
-  try { bandaRef = Number(datosInformeBusqueda(perfilId).banda) || 0; } catch (e) { }
+  bandaRef = Number(String(cfg.banda_salarial || '').replace(/\D/g, '')) || 0; // lo normal: sale de Config sin abrir otra planilla
+  if (!bandaRef) { try { bandaRef = Number(datosInformeBusqueda(perfilId).banda) || 0; } catch (e) { } }
   lapT_('Banda salarial (datos del informe)');
   const enlaces = [['Formulario de postulación (para los candidatos)', URL_WEBAPP + '?tipo=postulacion&perfil=' + encodeURIComponent(perfilId)], ['Tablero de esta búsqueda', URL_WEBAPP + '?tipo=kanban&perfil=' + encodeURIComponent(perfilId)], ['Flyer y textos para redes', flyer], ['Perfil del puesto (documento)', perfilPdf], ['Agenda · screening', cfg.link_screening], ['Agenda · competencias', cfg.link_competencias], ['Agenda · entrevista con la empresa (virtual)', cfg.link_empresa_virtual], ['Agenda · entrevista con la empresa (presencial)', cfg.link_empresa_presencial]].filter(x => typeof x[1] === 'string' && /^https?:\/\//i.test(x[1]));
   try { const extra = '<script>var metEstado = ' + metEstado_.toString() + '; var BANDA_REF = ' + bandaRef + '; var URL_APP = ' + JSON.stringify(URL_BASE()) + '; var ENLACES = ' + JSON.stringify(enlaces).replace(/</g, '\\u003c') + ';</script>' + ['ConfigPanel', 'ResumenPanel', 'TableroCards'].map(f => HtmlService.createHtmlOutputFromFile(f).getContent()).join(''); html = html.replace(/<\/html>\s*$/, () => extra + '</html>'); } catch (e) { }
