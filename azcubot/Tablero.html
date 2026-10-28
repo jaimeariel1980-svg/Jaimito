@@ -116,8 +116,8 @@ td{padding:7px 8px;border-bottom:1px solid #f1f0ec;vertical-align:top}
 <div class="top"><div class="chip"><img id="logoimg" alt="Azcuénaga"></div>
 <div class="sep"></div><h1>Tablero de propiedades</h1><div class="toplinks"><a href="#" onclick="irApp('');return false" rel="noopener">↗ Precarga</a><a href="#" onclick="irApp('?app=procedimiento');return false" rel="noopener">↗ Procedimiento de Ventas</a></div><div class="dir">Mendoza 4873 · Rosario</div></div>
 <div class="wrap">
-  <div class="nav"><button class="tab on" id="tabR" onclick="ver('resumen')">Resumen</button><button class="tab" id="tabP" onclick="ver('props')">Propiedades</button><button class="tab" id="tabV" onclick="visAbrir('prox')">Visitas</button><button class="tab" id="tabC" onclick="ver('cons')">Consultas WhatsApp <span id="consBadge" style="display:none;background:#d1495b;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px"></span></button><button class="tab" id="tabN" onclick="novAbrir()">Novedades <span id="novBadge" style="display:none;background:#d1495b;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px"></span></button><button class="tab" id="tabBajas" onclick="bajasAbrir()">Bajas</button><button class="tab" id="tabPap" onclick="papAbrir()">Papelera</button><button class="tab" id="tabCfg" onclick="cfgAbrir()" title="Usuario, sonido y avisos">Configuración</button></div>
-  <div id="mnav"><button id="mn_resumen" onclick="ver('resumen')"><span class="ic">🏠</span>Resumen</button><button id="mn_props" onclick="ver('props')"><span class="ic">🏘️</span>Propiedades</button><button id="mn_vis" onclick="visAbrir('prox')"><span class="ic">🗓</span>Visitas</button><button id="mn_nov" onclick="novAbrir()"><span class="ic">🔔</span>Novedades<span class="mb" id="mn_novb"></span></button><button id="mn_mas" onclick="mnavMas()"><span class="ic">☰</span>Más</button></div>
+  <div class="nav"><button class="tab on" id="tabR" onclick="ver('resumen')">Resumen</button><button class="tab" id="tabP" onclick="ver('props')">Propiedades</button><button class="tab" id="tabV" onclick="visAbrir('auto')">Visitas</button><button class="tab" id="tabC" onclick="ver('cons')">Consultas WhatsApp <span id="consBadge" style="display:none;background:#d1495b;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px"></span></button><button class="tab" id="tabN" onclick="novAbrir()">Novedades <span id="novBadge" style="display:none;background:#d1495b;color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px"></span></button><button class="tab" id="tabBajas" onclick="bajasAbrir()">Bajas</button><button class="tab" id="tabPap" onclick="papAbrir()">Papelera</button><button class="tab" id="tabCfg" onclick="cfgAbrir()" title="Usuario, sonido y avisos">Configuración</button></div>
+  <div id="mnav"><button id="mn_resumen" onclick="ver('resumen')"><span class="ic">🏠</span>Resumen</button><button id="mn_props" onclick="ver('props')"><span class="ic">🏘️</span>Propiedades</button><button id="mn_vis" onclick="visAbrir('auto')"><span class="ic">🗓</span>Visitas</button><button id="mn_nov" onclick="novAbrir()"><span class="ic">🔔</span>Novedades<span class="mb" id="mn_novb"></span></button><button id="mn_mas" onclick="mnavMas()"><span class="ic">☰</span>Más</button></div>
   <div id="cons" style="display:none"></div>
   <div id="resumen">
   <div class="dash" id="dash"></div>
@@ -1055,28 +1055,28 @@ function cfgAbrir(){
   var dl=document.getElementById('dlg');if(!dl)return;
   var sec=function(h,d){return '<h3 class="sec" style="margin:14px 0 4px">'+h+'</h3>'+(d?'<div style="font-size:12px;color:var(--gris);margin-bottom:6px">'+d+'</div>':'');};
   var bt='style="width:100%;margin:3px 0;text-align:left"';
-  dl.innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">⚙️ Configuración</div><div class="sub">Tu usuario y tus avisos</div></div><div class="fb">'
+  dl.innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">Configuración</div><div class="sub">Tu usuario y tus avisos</div></div><div class="fb">'
    +sec('Mi usuario','Con este nombre queda registrado todo lo que hagas y es con el que te llegan los avisos.')
    +'<button id="vendbtn" class="btn s" '+bt+' onclick="cambiarVend()"></button>'
    +sec('Avisos','')
-   +'<button id="tgbtn" class="btn s" '+bt+' onclick="avisosTelegram()">📲 Avisos por Telegram</button>'
+   +'<button id="tgbtn" class="btn s" '+bt+' onclick="avisosTelegram()">Avisos por Telegram</button>'
    +'<div style="font-size:12px;color:var(--gris);margin:0 0 6px 2px">Recibí los avisos también en Telegram: llegan siempre y con un botón que te lleva a la sección.</div>'
    +'<button id="sndbtn" class="btn s" '+bt+' onclick="toggleSonido()"></button>'
    +'<div style="font-size:12px;color:var(--gris);margin:0 0 6px 2px">Sonido corto al vender o reservar una propiedad.</div>'
-   +'<button id="avibtn" class="btn s" '+bt+' style="display:none;width:100%;margin:3px 0;text-align:left" onclick="probarAviso()">🔔 Probar aviso</button>'
+   +'<button id="avibtn" class="btn s" '+bt+' style="display:none;width:100%;margin:3px 0;text-align:left" onclick="probarAviso()">Probar aviso</button>'
    +sec('Datos','')
-   +'<button class="btn s" '+bt+' onclick="closeDL();descargar()">🖨 Descargar o imprimir el tablero (PDF)</button>'
+   +'<button class="btn s" '+bt+' onclick="closeDL();descargar()">Descargar o imprimir el tablero (PDF)</button>'
    +sec('¿Necesitás ayuda?','Respondemos en el día hábil.')
-   +(SOPORTE_WA?'<a class="btn s" '+bt+' target="_blank" rel="noopener" href="https://wa.me/'+SOPORTE_WA+'?text='+encodeURIComponent('Hola, necesito ayuda con Azcu')+'">💬 Escribir por WhatsApp</a>':'')
-   +'<a class="btn s" '+bt+' href="mailto:'+SOPORTE_MAIL+'?subject='+encodeURIComponent('Ayuda con Azcu')+'">✉️ Escribir por mail</a>'
+   +(SOPORTE_WA?'<a class="btn s" '+bt+' target="_blank" rel="noopener" href="https://wa.me/'+SOPORTE_WA+'?text='+encodeURIComponent('Hola, necesito ayuda con Azcu')+'">Escribir por WhatsApp</a>':'')
+   +'<a class="btn s" '+bt+' href="mailto:'+SOPORTE_MAIL+'?subject='+encodeURIComponent('Ayuda con Azcu')+'">Escribir por mail</a>'
    +'</div>';
   document.getElementById('ov2').classList.add('on');
   _pintaSnd();_pintaVend();
 }
-function probarAviso(){var n=_yo();if(!n)return;var b=document.getElementById('avibtn');if(b){b.disabled=true;b.textContent='Enviando…';}function fin(m){if(b){b.disabled=false;b.textContent='🔔 Probar aviso';}alert(m);}google.script.run.withSuccessHandler(function(r){fin((r&&r.msg)||'Sin respuesta');}).withFailureHandler(function(e){fin('Error: '+(e&&e.message?e.message:e));}).probarAvisoTb(n);}
-function _pintaSnd(){const b=document.getElementById('sndbtn');if(!b)return;const _av=document.getElementById('avibtn');if(_av){let n='';try{n=localStorage.getItem('azcu_nombre')||'';}catch(e){}_av.style.display=/ariel|ana[ií]?lia/i.test(n)?'':'none';}let on=true;try{on=localStorage.getItem('azcu_sonido')!=='0';}catch(e){}b.textContent='🔊 Sonido: '+(on?'ON':'OFF');}
+function probarAviso(){var n=_yo();if(!n)return;var b=document.getElementById('avibtn');if(b){b.disabled=true;b.textContent='Enviando…';}function fin(m){if(b){b.disabled=false;b.textContent='Probar aviso';}alert(m);}google.script.run.withSuccessHandler(function(r){fin((r&&r.msg)||'Sin respuesta');}).withFailureHandler(function(e){fin('Error: '+(e&&e.message?e.message:e));}).probarAvisoTb(n);}
+function _pintaSnd(){const b=document.getElementById('sndbtn');if(!b)return;const _av=document.getElementById('avibtn');if(_av){let n='';try{n=localStorage.getItem('azcu_nombre')||'';}catch(e){}_av.style.display=/ariel|ana[ií]?lia/i.test(n)?'':'none';}let on=true;try{on=localStorage.getItem('azcu_sonido')!=='0';}catch(e){}b.textContent='Sonido: '+(on?'ON':'OFF');}
 setTimeout(_pintaSnd,300);
-function _pintaVend(){var b=document.getElementById('vendbtn');if(!b)return;var n='';try{n=(localStorage.getItem('azcu_nombre')||'').trim();}catch(e){}b.textContent=n?('👤 Usuario: '+n):'👤 ¿Quién sos?';}
+function _pintaVend(){var b=document.getElementById('vendbtn');if(!b)return;var n='';try{n=(localStorage.getItem('azcu_nombre')||'').trim();}catch(e){}b.textContent=n?('Usuario: '+n):'¿Quién sos?';}
 function cambiarVend(){var n='';try{n=(localStorage.getItem('azcu_nombre')||'').trim();}catch(e){}var v=prompt('Tu nombre: queda registrado en todo lo que hagas (quién cargó, cambió o borró cada cosa). Usá el mismo en Azcu:',n);if(v===null)return;v=v.trim();try{localStorage.setItem('azcu_nombre',v);}catch(e){}_pintaVend();}
 function _yo(){var n='';try{n=(localStorage.getItem('azcu_nombre')||'').trim();}catch(e){}if(!n){try{n=(prompt('¿Quién sos? Tu nombre queda registrado en todo lo que hagas (quién cargó o cambió cada cosa). Usá el mismo en Azcu.')||'').trim();if(n)localStorage.setItem('azcu_nombre',n);}catch(e){}_pintaVend();}return n;}
 function _vend(id){
@@ -1112,7 +1112,8 @@ function consCargar(forzar){
 function consVer(){if(!CONS)consCargar();else{consPintar();consCargar(false);}}
 function consAt(r){var a=CONS.idx.a;return a>-1&&String(r.v[a]||'').trim()!=='';}
 function consBadge(){var b=document.getElementById('consBadge');if(!b||!CONS||!CONS.ok)return;var lim=Date.now()-7*86400000,n=CONS.rows.filter(function(r){return !consAt(r)&&(r.t===null||r.t>=lim);}).length;b.style.display=n?'inline-block':'none';b.textContent=n;}
-function consFiltro(f){CONS_F=f;consPintar();}
+var CONS_USR=false;
+function consFiltro(f){CONS_USR=true;CONS_F=f;consPintar();}
 function consFecha(t){if(t===null)return '';var d=new Date(t),dn=['dom','lun','mar','mié','jue','vie','sáb'],p=function(n){return ('0'+n).slice(-2);};return dn[d.getDay()]+' '+p(d.getDate())+'/'+p(d.getMonth()+1)+' '+p(d.getHours())+':'+p(d.getMinutes());}
 function consPintar(){
   var box=document.getElementById('cons');
@@ -1121,6 +1122,7 @@ function consPintar(){
   var ix=CONS.idx,now=Date.now(),vf=consDesdeViernes(),hoy0=new Date();hoy0.setHours(0,0,0,0);
   var tot={finde:0,hoy:0,sem:0,pend:0,todas:CONS.rows.length};
   CONS.rows.forEach(function(r){var t=r.t;if(t!==null){if(t>=vf)tot.finde++;if(t>=hoy0.getTime())tot.hoy++;if(t>=now-7*86400000)tot.sem++;}if(!consAt(r)&&(t===null||t>=now-14*86400000))tot.pend++;});
+  if(!CONS_USR&&!tot[CONS_F]){var _c=['pend','finde','sem','todas'].filter(function(k){return tot[k];})[0];if(_c)CONS_F=_c;}
   var lista=CONS.rows.filter(function(r){var t=r.t;switch(CONS_F){case 'finde':return t!==null&&t>=vf;case 'hoy':return t!==null&&t>=hoy0.getTime();case 'sem':return t!==null&&t>=now-7*86400000;case 'pend':return !consAt(r)&&(t===null||t>=now-14*86400000);default:return true;}});
   lista.sort(function(a,b){return (b.t||0)-(a.t||0)||b.r-a.r;});
   var usados={};['f','h','t','n','m','p','a'].forEach(function(k){if(ix[k]>-1)usados[ix[k]]=1;});
@@ -1557,7 +1559,7 @@ function festejar(msg,tipo){
 }
 function apodo(v){const n=String(v||'').trim().split(/\s+/)[0];const k=n.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();return {analia:'Ani',sebastian:'Seba'}[k]||n;}
 function festMsg(p){const n=apodo(p&&p.vendedor);return n?'🎉 ¡Vendida! Felicitaciones, '+n+'!':null;}
-function toggleSonido(){let on=true;try{on=localStorage.getItem('azcu_sonido')!=='0';localStorage.setItem('azcu_sonido',on?'0':'1');}catch(e){}const b=document.getElementById('sndbtn');if(b)b.textContent='🔊 Sonido: '+(on?'OFF':'ON');if(!on)festejar('🔊 Sonido activado','reserva');}
+function toggleSonido(){let on=true;try{on=localStorage.getItem('azcu_sonido')!=='0';localStorage.setItem('azcu_sonido',on?'0':'1');}catch(e){}const b=document.getElementById('sndbtn');if(b)b.textContent='Sonido: '+(on?'OFF':'ON');if(!on)festejar('Sonido activado','reserva');}
 function changeEtapa(id,et){const p=DATA.find(x=>x.id===id);if(p){if(et==='Vendida'&&p.etapa!=='Vendida')p._fest=1;else if(et==='Reserva'&&p.etapa!=='Reserva')p._fest=2;else if(et!=='Vendida'&&et!=='Reserva')p._fest=0;p.etapa=et;p.estado=ET2EST[et]||p.estado;}ficha(id);}
 let DRAG=null;
 function drag(e,id){if(!EDIT)return;DRAG=id;e.dataTransfer.effectAllowed='move';}
@@ -1850,7 +1852,7 @@ function novAbrir(hist){
   if(!its.length)h='<div style="color:var(--gris);padding:20px 0">Todo tranquilo. No hubo novedades en los últimos días.</div>';
   if(hist)h='<button class="btn s" style="margin-bottom:8px" onclick="novAbrir()">‹ Volver a novedades</button>'+h+(its.length>8?'<button class="btn p" style="position:sticky;bottom:6px;display:block;margin:10px 0 0 auto;border-radius:20px" onclick="document.querySelector(\'#dlg .fb\').scrollTo({top:0,behavior:\'smooth\'})">↑ Subir</button>':'');
   else h+='<div style="text-align:center;margin-top:12px"><a href="#" style="font-size:12.5px;color:var(--gris)" onclick="novAbrir(true);return false">Ver historial completo</a></div>';
-  document.getElementById('dlg').innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">'+(hist?'Historial':'🔔 Novedades')+'</div><div class="sub">'+(hist?'Últimos 90 días · tocá una para abrir la ficha':'Lo más reciente · tocá una para abrir la ficha')+'</div></div><div class="fb">'+h+'</div>';
+  document.getElementById('dlg').innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">'+(hist?'Historial':'Novedades')+'</div><div class="sub">'+(hist?'Últimos 90 días · tocá una para abrir la ficha':'Lo más reciente · tocá una para abrir la ficha')+'</div></div><div class="fb">'+h+'</div>';
   document.getElementById('ov2').classList.add('on');
   try{localStorage.setItem(NOV_KEY,String(Date.now()));}catch(e){}
   novBadge();
@@ -1881,11 +1883,14 @@ function visFiltrar(per,vend){
 }
 function visKpi(){var a=document.getElementById('kVh'),b=document.getElementById('kVs');if(a)a.textContent=visFiltrar('hoy').length;if(b)b.textContent=visFiltrar('sem').length;}
 function kpiV(l,id,per){return '<div class="kpi clk" onclick="visAbrir(\''+per+'\',\'\')"><div class="n" id="'+id+'">'+(VIS_HOY?visFiltrar(per).length:'…')+'</div><div class="l">'+l+'</div><div class="hint">ver detalle</div></div>';}
+var VIS_AUTO=false;
 function visAbrir(per,vend){
+  if(per==='auto'){per='prox';VIS_AUTO=true;}
   if(per)VIS_F.per=per;if(vend!==undefined)VIS_F.v=vend;
   var dl=document.getElementById('dlg');
-  if(!VIS_HOY){dl.innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">🗓 Visitas</div></div><div class="fb"><div style="color:var(--gris);padding:20px 0">Cargando…</div></div>';document.getElementById('ov2').classList.add('on');visLoad(function(){if(VIS_HOY)visAbrir();else dl.querySelector('.fb').innerHTML='<div style="color:var(--rojo);padding:20px 0">No pude cargar las visitas. Probá de nuevo.</div>';});return;}
-  var CH=[['hoy','Hoy'],['sem','Semana'],['prox','Próximas'],['sinres','Sin resultado'],['real','Realizadas'],['col','🤝 Colegas del mes'],['canc','Canceladas'],['todas','Todas']],h=VIS_HOY,vs=_visVends();
+  if(!VIS_HOY){dl.innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">Visitas</div></div><div class="fb"><div style="color:var(--gris);padding:20px 0">Cargando…</div></div>';document.getElementById('ov2').classList.add('on');visLoad(function(){if(VIS_HOY)visAbrir();else dl.querySelector('.fb').innerHTML='<div style="color:var(--rojo);padding:20px 0">No pude cargar las visitas. Probá de nuevo.</div>';});return;}
+  if(VIS_AUTO){VIS_AUTO=false;if(!visFiltrar(VIS_F.per,VIS_F.v).length){var _a=['sem','todas'].filter(function(k){return visFiltrar(k,VIS_F.v).length;})[0];if(_a)VIS_F.per=_a;}}
+  var CH=[['hoy','Hoy'],['sem','Semana'],['prox','Próximas'],['sinres','Sin resultado'],['real','Realizadas'],['col','Colegas del mes'],['canc','Canceladas'],['todas','Todas']],h=VIS_HOY,vs=_visVends();
   var asc=VIS_F.per==='hoy'||VIS_F.per==='sem'||VIS_F.per==='prox',l=visFiltrar(VIS_F.per,VIS_F.v);
   if(asc)l=l.slice().sort(function(a,b){return a.d<b.d?-1:a.d>b.d?1:(a.h<b.h?-1:a.h>b.h?1:0);});
   var hoyD=new Date(h+'T12:00:00'),man=new Date(hoyD);man.setDate(man.getDate()+1);var ayer=new Date(hoyD);ayer.setDate(ayer.getDate()-1);
@@ -1900,7 +1905,7 @@ function visAbrir(per,vend){
     html+='<div onclick="visDet('+x.f+')" style="display:flex;gap:10px;padding:9px 10px;border-radius:10px;margin-bottom:4px;cursor:pointer;background:#f6f8fc'+(x.e==='c'?';opacity:.65':'')+'"><div style="min-width:44px;font-weight:700;color:#2b4a8b;font-size:13px">'+(x.h||'—')+'</div><div style="min-width:0;flex:1"><div style="font-size:13.5px;font-weight:700">'+(x.x?'🏢 ':'🏠 ')+_vE(x.dir)+(x.x?' <span style="background:#fff1e0;color:#b4620a;border-radius:6px;padding:1px 6px;font-size:10px;font-weight:700;vertical-align:middle;white-space:nowrap">OTRA INMOBILIARIA</span>':(x.im||x.co?' <span style="background:#e8f0ff;color:#2b4a8b;border-radius:6px;padding:1px 6px;font-size:10px;font-weight:700;vertical-align:middle;white-space:nowrap">🤝 POR OTRA INMOBILIARIA</span>':''))+'</div><div style="font-size:12px;color:var(--gris)">'+((x.im||x.co)?_vE(x.im||'')+(x.co?(x.im?' · ':'')+'colega '+_vE(x.co):'')+' · ':'')+_vE(x.cli||'—')+(x.v||x.c?' · 👤 '+_vE(x.v||x.c):'')+'</div></div><span style="align-self:center;background:'+bd[1]+';color:'+bd[2]+';border-radius:8px;padding:2px 8px;font-size:11px;font-weight:700;white-space:nowrap">'+_vE(bd[0])+'</span></div>';
   });
   if(!l.length)html+='<div style="color:var(--gris);padding:18px 0;text-align:center">No hay visitas en esta vista.</div>';
-  dl.innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">🗓 Visitas</div><div class="sub">Propias y a propiedades de otras inmobiliarias · tocá una para ver el detalle</div></div><div class="fb">'+html+'</div>';
+  dl.innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">Visitas</div><div class="sub">Propias y a propiedades de otras inmobiliarias · tocá una para ver el detalle</div></div><div class="fb">'+html+'</div>';
   document.getElementById('ov2').classList.add('on');
 }
 function visDet(f){
@@ -1932,7 +1937,7 @@ function papAbrir(){
   google.script.run.withSuccessHandler(function(d){
     var its=(d&&d.items)||[],h='',IC={propiedad:'🏠',interaccion:'💬',documento:'📄'};
     its.forEach(function(x){
-      var f=new Date(x.ms),cuando=f.toLocaleDateString('es-AR',{day:'numeric',month:'short'})+' '+f.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+      var f=new Date(x.ms),cuando=f.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+f.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false});
       h+='<div style="display:flex;gap:10px;padding:9px 10px;border-radius:10px;margin-bottom:5px;background:#f6f8fc"><span style="font-size:18px">'+(IC[x.tipo]||'🗑')+'</span><div style="min-width:0;flex:1"><div style="font-size:13.5px;font-weight:700;word-break:break-word">'+_vE(x.que)+'</div><div style="font-size:12px;color:var(--gris)">'+(x.quien?'👤 '+_vE(x.quien)+' · ':'')+cuando+' · quedan '+x.dias+' día'+(x.dias===1?'':'s')+'</div></div><button class="btn g" style="align-self:center;padding:5px 10px;font-size:12px" onclick="papRestaurar(\''+_vE(x.id)+'\',this)">↩ Restaurar</button></div>';
     });
     if(!its.length)h='<div style="color:var(--gris);padding:20px 0;text-align:center">La papelera está vacía.</div>';
@@ -2027,7 +2032,7 @@ function adaptar(datos){
   }).map(snapO);
 }
 function snapO(p){var s=SIM[p.id]||{};p._o={precio:p.precio,tipo:p.tipo,obs:p.obs,etapa:p.etapa,origen:p.origen,colega:p.colega,colegaTel:p.colegaTel,comision:p.comision,vendedor:p.vendedor,boleto:p.boleto,boletoOk:p.boletoOk,escritura:p.escritura,escrituraOk:p.escrituraOk,pct:p.pct,motivo:p.motivo,papeles:JSON.parse(JSON.stringify(p.papeles||{})),sim:Object.assign({},s)};return p;}
-if(!(function(){try{return localStorage.getItem('azdatos_v1');}catch(e){return null;}})()) document.getElementById('dash').innerHTML='<div style="padding:22px;color:var(--gris);font-size:15px">Cargando propiedades del maestro…</div>';
+if(!(function(){try{return localStorage.getItem('azdatos_v1');}catch(e){return null;}})()) {document.getElementById('dash').innerHTML='<div class="skl" style="grid-column:1/-1;padding:22px"><div style="color:var(--gris);font-size:15px;margin-bottom:14px">Cargando propiedades…</div><i></i><i></i><i></i></div>';setTimeout(function(){var d=document.getElementById('dash');if(d&&d.querySelector('.skl'))d.innerHTML='<div style="grid-column:1/-1;padding:22px;color:var(--gris);font-size:15px">Está tardando más de lo normal. <button class="btn p" onclick="location.reload()">Reintentar</button></div>';},30000);}
 var _CK='azdatos_v1', _ck=null, _fdone=false, _hayCache=false;
 try{ _ck=localStorage.getItem(_CK); }catch(e){}
 function _cargaDatos(datos){
@@ -3338,7 +3343,7 @@ function mnavMas(){
   var it=function(ic,tx,fn){return '<button class="btn s" style="width:100%;text-align:left;margin:4px 0;padding:12px 14px;font-size:15px" onclick="closeDL();'+fn+'">'+ic+' '+tx+'</button>';};
   dl.innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">☰ Más</div></div><div class="fb">'
    +it('💬','Consultas WhatsApp',"ver('cons')")+it('📉','Bajas','bajasAbrir()')+it('🗑','Papelera','papAbrir()')+it('⚙️','Configuración','cfgAbrir()')
-   +it('📝','Ir a Precarga',"irApp('')")+it('📘','Procedimiento de Ventas',"irApp('?app=procedimiento')")+'</div>';
+   +it('📝','Precarga',"irApp('')")+it('📘','Procedimiento de Ventas',"irApp('?app=procedimiento')")+'</div>';
   document.getElementById('ov2').classList.add('on');
 }
 (function(){
@@ -3360,6 +3365,7 @@ function mnavMas(){
 <style id="azbfix">
 .azb-chips{-webkit-mask-image:linear-gradient(90deg,#000 86%,transparent);mask-image:linear-gradient(90deg,#000 86%,transparent);padding-right:30px}
 .azb-tip{pointer-events:none}
+.skl i{display:block;height:64px;border-radius:10px;margin-bottom:10px;background:linear-gradient(90deg,#e9edf3 25%,#f4f6f9 50%,#e9edf3 75%);background-size:200% 100%;animation:sklm 1.2s linear infinite}@keyframes sklm{to{background-position:-200% 0}}@media(prefers-reduced-motion:reduce){.skl i{animation:none}}
 body.azb-modal .azb-fab,body.azb-modal .azb-tip{display:none!important}
 .azb-err{color:#d1495b;font-size:13.5px;font-weight:600;margin:10px 0 0;text-align:center;line-height:1.35}
 </style>
