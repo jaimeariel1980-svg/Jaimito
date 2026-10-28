@@ -1035,7 +1035,7 @@ function azcuChat(pin, mensajes, ctx){
       if(ttT){ var pT = azcuProp_(idT); return {texto:ttT, acciones:[], adjuntos:[{k:'b', label:'📋 Ver la ficha resumida', act:'ask', id:'Contame de '+(pT ? pT.dir : idT)}], panel:null}; }
     }
   }catch(e){}
-  try{ var tx2 = (mensajes||[]).length && mensajes[mensajes.length-1].role==='user' ? String(mensajes[mensajes.length-1].content||'') : ''; if(ctx.fichaId && azcuAtajoOk_(tx2, ctx.fichaId) && tx2 && /contame|cont[aá] de|info|datos|ficha|completo|detalle|todo/i.test(tx2) && !/cu[aá]nto|cu[aá]ndo|qui[eé]n|d[oó]nde|precio|tel[eé]fono|mail|historial|interacci|papeles|falta|document|\bmand|\benvi|compart|pdf/i.test(tx2)){ var dd = azcuFmtFicha_(ctx.fichaId); if(dd) return {texto:dd, acciones:[], adjuntos:azcuBtnsFicha_(ctx.fichaId), panel:null}; } }catch(e){}
+  try{ var tx2 = (mensajes||[]).length && mensajes[mensajes.length-1].role==='user' ? String(mensajes[mensajes.length-1].content||'') : ''; if(ctx.fichaId && azcuAtajoOk_(tx2, ctx.fichaId) && tx2 && /contame|cont[aá] de|info|datos|ficha|completo|detalle|todo/i.test(tx2) && !/tampoco|figura|aparece|\best[aá]\b|\bhay\b|\btiene\b|\bdice\b|cu[aá]nto|cu[aá]ndo|qui[eé]n|d[oó]nde|precio|tel[eé]fono|mail|historial|interacci|papeles|falta|document|\bmand|\benvi|compart|pdf/i.test(tx2)){ var dd = azcuFmtFicha_(ctx.fichaId); if(dd) return {texto:dd, acciones:[], adjuntos:azcuBtnsFicha_(ctx.fichaId), panel:null}; } }catch(e){}
   try{
     var tx3 = (mensajes||[]).length && mensajes[mensajes.length-1].role==='user' ? String(mensajes[mensajes.length-1].content||'') : '';
     if(ctx.fichaId && azcuAtajoOk_(tx3, ctx.fichaId) && tx3 && /\b(mand|envi|pas[aá]me|compart|dame)/i.test(tx3)){
@@ -1072,7 +1072,7 @@ function azcuChat(pin, mensajes, ctx){
   var tools = azcuTools_(), acciones = [], adj = [], panel = null, i;
   var mapa = {proponer_cargar_interaccion:'cargar', proponer_agendar_visita:'agendar', proponer_visita_externa:'visitaext', proponer_cancelar_visita:'cancelvis', proponer_restaurar:'restaurar', proponer_registrar_propuesta:'propuesta', proponer_cambiar_etapa:'etapa', proponer_editar_campos:'campos', proponer_marcar_documento:'doc', proponer_borrar_documento:'borrardoc', proponer_editar_interaccion:'editarint', proponer_eliminar_interaccion:'elimint', proponer_eliminar_propiedad:'elimprop', proponer_enviar_reporte:'reporte'};
   var directo = null, ult = (mensajes||[]).length ? mensajes[mensajes.length-1] : null, esAcc = !!(ult && /carg|agend|registr|propuesta|cambi|pas[aá] a|edit|borr|elimin|marc|sub[ií]|envi|mand|record|avis|visita|document|papeles|falta|cu[aá]nto|cu[aá]ndo|qui[eé]n|tel[eé]fono|mail|historial|interacci/i.test(String(ult.content||'')) && !/^(info|datos|ficha|contame)/i.test(String(ult.content||'').trim()));
-  var txU = String((ult && ult.content)||''), pideFicha = /info|datos|ficha|contame|cont[aá] de|completo|detalle|mostr[aá]|pasame|todo (de|sobre)/i.test(txU) || (txU.split(/\s+/).length<=6 && pedUlt.length>0 && cd.length>0);
+  var txU = String((ult && ult.content)||''), pideFicha = (/info|datos|ficha|contame|cont[aá] de|completo|detalle|mostr[aá]|pasame|todo (de|sobre)/i.test(txU) && !/\b(tampoco|figura|aparece|est[aá]|hay|tiene|falta|dice)\b/i.test(txU)) || (txU.split(/\s+/).length<=6 && pedUlt.length>0 && cd.length>0);
   if(!pideFicha) esAcc = true;
   function fin(t){ return {texto:t, acciones:acciones, adjuntos:adj, panel:panel}; }
   var reint = false;
