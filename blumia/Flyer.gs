@@ -54,7 +54,8 @@ function flyerHTML_(perfilId) {
   const js = o => JSON.stringify(o).replace(/</g, '\\u003c');
   let html = HtmlService.createTemplateFromFile('FlyerPagina').getRawContent();
   const lib = HtmlService.createTemplateFromFile('FlyerQRLib').getRawContent();
-  html = html.replace('%%QRLIB%%', () => lib).replace('%%ASSETS%%', () => js(FLYER_ASSETS_)).replace('%%DATOS%%', () => js(datos));
+  const fuente = HtmlService.createTemplateFromFile('FuenteMarca').getRawContent();
+  html = html.replace('%%FUENTE%%', () => fuente).replace('%%QRLIB%%', () => lib).replace('%%ASSETS%%', () => js(FLYER_ASSETS_)).replace('%%DATOS%%', () => js(datos));
   return HtmlService.createHtmlOutput(html).setTitle('Flyer · ' + datos.puesto + ' | Blumia')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
