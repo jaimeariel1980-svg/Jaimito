@@ -77,7 +77,7 @@ function limpiarInteraccionesYComentarios(){
   try{ SpreadsheetApp.getUi().alert(t); }catch(e){}
   return t;
 }
-function azcuCalentar(){ azcuDatos_(true); }
+function azcuCalentar(){ azcuDatos_(true); try{ azcuMantenimiento_(); }catch(e){} }
 function azcuMapaDirs_(forzar){
   var c = CacheService.getScriptCache(), t = forzar ? null : c.get('azdir');
   if(t){ try{ return JSON.parse(t); }catch(e){} }
@@ -1414,7 +1414,7 @@ function azcuApi(e){
       out = {ok:true, data:tf.apply(null, a.slice(1))};
     }
     else out = {ok:false, error:'Función desconocida'};
-  }catch(err){ out = {ok:false, error:String(err.message || err)}; }
+  }catch(err){ out = {ok:false, error:String(err.message || err)}; try{ azcuErrorLog_('Chat y herramientas ('+String(req.fn||'')+')', err); }catch(eL){} }
   var id = String(req.id || '').replace(/[^A-Za-z0-9]/g, '');
   if(id && /^azcu(Chat|Voz|AdjPlan|CompletarPlan|Ejecutar)$/.test(req.fn||'')){ try{ var a0 = req.args || []; nomA = String((req.fn==='azcuChat' ? (a0[2]||{}).nombre : req.fn==='azcuVoz' ? (a0[4]||{}).nombre : req.fn==='azcuEjecutar' ? (a0[1]||{}).quien : (a0[3]||{}).nombre) || ''); }catch(e){} }
   if(id){ azcuPut_(id, out); if(nomA) azcuFinAviso_(id, nomA, out, tA); return ContentService.createTextOutput('{"ok":true}').setMimeType(ContentService.MimeType.JSON); }
