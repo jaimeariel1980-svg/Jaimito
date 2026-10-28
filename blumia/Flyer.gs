@@ -61,6 +61,14 @@ function flyerHTML_(perfilId) {
 }
 
 // Guarda el diseño del flyer de la búsqueda (un solo archivo que se pisa; la foto ya viene comprimida desde la pantalla)
+function flyerSocial_(perfilId) {
+  const d = flyerDatos_(perfilId);
+  let s = {};
+  try { s = (JSON.parse(d.guardado || '{}').social) || {}; } catch (e) { }
+  const rep = t => String(t || '').replace(/\[LINK\]/g, d.linkPostulacion);
+  return { linkedin: rep(s.linkedin), instagram: rep(s.instagram), whatsapp: rep(s.whatsapp), link: d.linkPostulacion, fecha: d.fecha };
+}
+
 function flyerGuardar_(perfilId, json) {
   const cfg = getConfig(perfilId);
   const txt = String(json || '');

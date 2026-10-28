@@ -259,6 +259,7 @@ function registroApi_() {
     guardarEnPlanilla: { f: guardarEnPlanilla_ },
     flyerGuardar: { f: flyerGuardar_ },
     flyerTextosIA: { f: flyerTextosIA_ },
+    flyerSocial: { f: flyerSocial_ },
     guardarFormularioPerfil: { f: guardarFormularioPerfil_, admin: true },
     guardarInformeEditado: { f: guardarInformeEditado_ },
     guardarMotivoDescarte: { f: guardarMotivoDescarte_ },
