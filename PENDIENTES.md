@@ -61,6 +61,10 @@ Lo mantiene Claude. Prioridad: 🔴 urgente · 🟠 importante · 🟡 cuando se
 - ✅ **Reprogramaciones, citas desaparecidas y contactos repetidos** (27/10, v162, `hechosProceso_`) llegan solos al resumen. No detecta un «no se presentó» como tal: solo lo que registra el sistema. — *Claude*
 - 🟡 **Respaldo de la grabación**: el audio de la entrevista solo vive en la ventanita; si se cierra antes de terminar se pierde. Evaluar guardar el audio en Drive de forma temporal (decisión de Ariel por privacidad). — *Ariel + Claude*
 
+- 🟠 **Revisar a quiénes tienen C y quedaron ocultos para los jefes** (anotado 28/10, a pedido de Ariel): en la columna de técnica buscar la etiqueta «⚠ C · oculto para jefes» (por ejemplo Manuel) y decidir caso por caso si se deja oculta o se habilita desde la ficha. — *Ariel*
+- ✅ **Ranking de contratados en el informe** (28/10, v163, botón 🏆 Ranking, solo administradores): ranking por promedio de competencias y técnica, casos con C que avanzaron igual, distribución por gremio, formación, experiencia, edad, otro empleo y policlínico, y una línea por persona. Falta verlo con los contratados reales. — *Ariel*
+- 🟡 **Ranking: datos que pueden faltar**: años de experiencia sale de la pregunta de postulación (rangos), la edad de screening/competencias y «otro empleo» de «empresa actual» en esas etapas; si no se cargaron, figura «Sin dato». — *Claude*
+
 ## Operativo
 - 🔴 **Apagar el bot viejo de Telegram (piloto)**: revocar su token en BotFather, borrar los activadores y archivar el proyecto de Apps Script, revocar su clave de OpenAI. Después, sacar del repo `bot-azcuenaga.gs` y los `.py` de la raíz. — *Ariel (cuentas) + Claude (repo)*
 - 🟠 **Sin pruebas antes de publicar**: cualquiera con escritura en la rama principal publica a producción y el workflow no revisa sintaxis. Proponer chequeo automático de sintaxis y proteger la rama. — *Claude + Ariel (GitHub)*
