@@ -73,9 +73,10 @@ function leerUsuariosHoja_() {
   const sh = usuariosHoja_();
   const n = sh.getLastRow();
   if (n < 2) return [];
-  return sh.getRange(2, 1, n - 1, 8).getValues().map((r, i) => ({
+  return sh.getRange(2, 1, n - 1, Math.max(8, Math.min(sh.getLastColumn(), 10))).getValues().map((r, i) => ({
     fila: i + 2, nombre: String(r[0]).trim(), clave: usuClave_(r[0]), rol: String(r[1]).trim() === 'Administrador' ? 'Administrador' : 'Usuario',
-    activo: String(r[2]).trim().toUpperCase() === 'NO' ? 'NO' : 'SI', sal: String(r[3] || ''), hash: String(r[4] || ''), temporal: String(r[5] || '').trim(), cambio: Number(r[6]) || 0
+    activo: String(r[2]).trim().toUpperCase() === 'NO' ? 'NO' : 'SI', sal: String(r[3] || ''), hash: String(r[4] || ''), temporal: String(r[5] || '').trim(), cambio: Number(r[6]) || 0,
+    mail: String(r[8] || '').trim(), entrevista: String(r[9] || '').trim().toLowerCase()
   })).filter(u => u.nombre);
 }
 
@@ -162,7 +163,34 @@ function pagina_(params) {
 function yo_() { return { nombre: SES_.nombre, rol: SES_.rol }; }
 
 function listarUsuarios_() {
-  return leerUsuarios_().map(u => ({ nombre: u.nombre, rol: u.rol, activo: u.activo, pendiente: USAR_PIN_ && (!u.hash || !!u.temporal) }));
+  return leerUsuarios_().map(u => ({ nombre: u.nombre, rol: u.rol, activo: u.activo, pendiente: USAR_PIN_ && (!u.hash || !!u.temporal), mail: u.mail, screening: usuHace_(u, 'screening'), competencias: usuHace_(u, 'competencias') }));
+}
+
+/* Quién entrevista (29/10): en «Usuarios», columna «mail» (su Google, para invitarlo al evento) y «entrevista» (qué etapas hace: vacío = screening y competencias,
+   «screening», «competencias», «screening,competencias» o «ninguna»). */
+function usuHace_(u, etapa) {
+  const e = String(u.entrevista || '');
+  if (!e) return true;
+  return e.split(',').map(x => x.trim()).indexOf(etapa) >= 0;
+}
+
+function guardarEntrevistaUsuario_(nombre, mail, screening, competencias) {
+  const u = usuarioPorNombre_(nombre);
+  mail = String(mail || '').trim().toLowerCase();
+  if (mail && !/^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/.test(mail)) throw new Error('Ese mail no es válido.');
+  const sh = usuariosHoja_();
+  if (sh.getMaxColumns() < 10) sh.insertColumnsAfter(sh.getMaxColumns(), 10 - sh.getMaxColumns());
+  if (!sh.getRange(1, 9).getValue()) { sh.getRange(1, 9, 1, 2).setValues([['mail', 'entrevista']]).setFontWeight('bold').setBackground('#0F3F27').setFontColor('#fff'); }
+  const et = [screening ? 'screening' : '', competencias ? 'competencias' : ''].filter(Boolean).join(',') || 'ninguna';
+  sh.getRange(u.fila, 9, 1, 2).setNumberFormat('@').setValues([[mail, et === 'screening,competencias' ? '' : et]]);
+  usuInvalidar_();
+  accesoLog_(SES_ ? SES_.nombre : '', 'Entrevistador', u.nombre + ': ' + (et === 'ninguna' ? 'no entrevista' : et) + (mail ? ' · ' + mail : ''));
+  return { ok: true };
+}
+
+// Para el panel «Agendar» de la ficha: quién puede entrevistar cada etapa (sin mails) y quién es el usuario actual
+function entrevistadoresAgenda_() {
+  return { yo: SES_ ? SES_.nombre : '', lista: leerUsuarios_().filter(u => u.activo === 'SI').map(u => ({ nombre: u.nombre, screening: usuHace_(u, 'screening'), competencias: usuHace_(u, 'competencias') })) };
 }
 
 function usuarioPorNombre_(nombre) {
@@ -225,6 +253,8 @@ function registroApi_() {
     reiniciarPinUsuario: { f: reiniciarPinUsuario_, admin: true },
     activarUsuario: { f: activarUsuario_, admin: true },
     cambiarRolUsuario: { f: cambiarRolUsuario_, admin: true },
+    guardarEntrevistaUsuario: { f: guardarEntrevistaUsuario_, admin: true },
+    entrevistadoresAgenda: { f: entrevistadoresAgenda_ },
     agendarCitaTablero: { f: agendarCitaTablero_ },
     analizarEntrevista: { f: analizarEntrevista_ },
     anularEtapa: { f: anularEtapa_ },

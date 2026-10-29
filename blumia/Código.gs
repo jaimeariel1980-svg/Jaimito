@@ -2095,7 +2095,7 @@ function doGetKanban_(perfilId) {
       tel: d[i][2] || '', dni: String(d[i][3] || ''), mail: d[i][21] || '',
       resumen: d[i][6] || '', cv: cvs[i - 1] || '',
       informe: link(i + 1, 33),
-      scrPDF: link(i + 1, 13), compPDF: link(i + 1, 17), postulacion: link(i + 1, 31), cita: d[i][36] || '', historial: d[i][37] || '', mailDescarte: d[i][39] || '', fuente: String(d[i][9] || ''), contactado: d[i][40] || '', notaScrEmp: d[i][43] || '', notaPresEmp: d[i][44] || '', notaScrEmp: d[i][43] || '', notaPresEmp: d[i][44] || '', ordenCli: Number(d[i][34]) || 0, valCli: String(d[i][35] || ''), formacion: d[i][22] || '', requisitos: d[i][5] || '', pretNum: (function(){var m=String(d[i][5]||'').match(/Remuneraci[oó]n pretendida:\s*\$?\s*([\d.\s]+)/i);return m?Number(m[1].replace(/[.\s]/g,'')):0;})()
+      scrPDF: link(i + 1, 13), compPDF: link(i + 1, 17), postulacion: link(i + 1, 31), cita: d[i][36] || '', citaCon: String(d[i][45] || ''), historial: d[i][37] || '', mailDescarte: d[i][39] || '', fuente: String(d[i][9] || ''), contactado: d[i][40] || '', notaScrEmp: d[i][43] || '', notaPresEmp: d[i][44] || '', notaScrEmp: d[i][43] || '', notaPresEmp: d[i][44] || '', ordenCli: Number(d[i][34]) || 0, valCli: String(d[i][35] || ''), formacion: d[i][22] || '', requisitos: d[i][5] || '', pretNum: (function(){var m=String(d[i][5]||'').match(/Remuneraci[oó]n pretendida:\s*\$?\s*([\d.\s]+)/i);return m?Number(m[1].replace(/[.\s]/g,'')):0;})()
     });
   }
   return JSON.stringify(out);
@@ -2524,6 +2524,7 @@ function syncCitasCalendar() {
     if (t.includes('screening')) return 'Screening';
     return 'Entrevista';
   };
+  const conDe = e => { const m = String(e.getDescription() || '').match(/Entrevista a cargo de:\s*([^\n\r]+)/); return m ? m[1].trim() : ''; };
   const etapaDe = est => {
     const e = String(est).toLowerCase();
     if (e.includes('empresa') && e.includes('agendad')) return 'empresa';
@@ -2535,8 +2536,9 @@ function syncCitasCalendar() {
   perfiles.forEach(id => {
     try {
       const sh = getSheet(getConfig(id));
-      if (sh.getMaxColumns() < 38) sh.insertColumnsAfter(sh.getMaxColumns(), 38 - sh.getMaxColumns());
+      if (sh.getMaxColumns() < 46) sh.insertColumnsAfter(sh.getMaxColumns(), 46 - sh.getMaxColumns());
       sh.getRange(1, 37, sh.getMaxRows(), 2).clearDataValidations();
+      sh.getRange(1, 46).setValue('Entrevistador cita');
       sh.getRange(1,37).setValue('Cita');
       sh.getRange(1,38).setValue('Historial');
       const d = sh.getDataRange().getValues();
@@ -2558,7 +2560,7 @@ function syncCitasCalendar() {
         // historial completo (todas las entrevistas, más reciente arriba)
         if (suyos.length) {
           const hist = suyos.slice().sort((a,b) => b.getStartTime() - a.getStartTime())
-            .map(e => tipoDe(e.getTitle()) + ' — ' + Utilities.formatDate(e.getStartTime(), 'GMT-3', 'dd/MM/yyyy HH:mm'))
+            .map(e => tipoDe(e.getTitle()) + ' — ' + Utilities.formatDate(e.getStartTime(), 'GMT-3', 'dd/MM/yyyy HH:mm') + (conDe(e) ? ' · con ' + conDe(e) : ''))
             .join('\n');
           sh.getRange(i+1, 38).setValue(hist);
         } else {
@@ -2567,14 +2569,15 @@ function syncCitasCalendar() {
 
         // cita pendiente (solo si estado agendado)
         const etapa = etapaDe(d[i][8]);
-        if (!etapa) { sh.getRange(i+1,37).setValue(''); continue; }
+        if (!etapa) { sh.getRange(i+1,37).setValue(''); sh.getRange(i+1,46).setValue(''); continue; }
         const ahora = new Date();
         const cands = suyos.filter(e => e.getTitle().toLowerCase().includes(etapa) && e.getStartTime() >= ahora);
         if (cands.length) {
           cands.sort((a,b) => a.getStartTime() - b.getStartTime());
           sh.getRange(i+1, 37).setValue(Utilities.formatDate(cands[0].getStartTime(), 'GMT-3', "dd/MM/yyyy 'a las' HH:mm"));
+          sh.getRange(i+1, 46).setValue(conDe(cands[0]));
         } else {
-          sh.getRange(i+1,37).setValue('');
+          sh.getRange(i+1,37).setValue(''); sh.getRange(i+1,46).setValue('');
         }
       }
       Logger.log(id + ' ok');

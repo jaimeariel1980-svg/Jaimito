@@ -902,13 +902,15 @@ function avisoSistema(t,ok){
   d.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:'+(ok?'#0F3F27':'#C0391B')+';color:#fff;padding:12px 22px;border-radius:8px;font:600 13px sans-serif;z-index:99999;box-shadow:0 4px 14px rgba(0,0,0,.25)';
   document.body.appendChild(d);setTimeout(function(){d.remove();},3500);
 }
-function guardarSistema(){
+function guardarSistema(forzar){
   var b=document.getElementById('btn-sis'),t=document.getElementById('btn-sis-t'),orig='Guardar en el sistema';
   var vuelve=function(ms){setTimeout(function(){b.disabled=false;if(t)t.textContent=orig;},ms||0);};
   b.disabled=true;if(t)t.textContent='Guardando…';
   google.script.run.withSuccessHandler(function(f){document.getElementById('sis-fecha').textContent='Guardado: '+f;if(t)t.textContent='Guardado ✓';avisoSistema('Guardado en el sistema ✓',true);vuelve(2200);})
-    .withFailureHandler(function(e){vuelve(0);avisoSistema((e&&e.message)||'No se pudo guardar',false);})
-    .guardarPerfilDatos(PERFIL_ID,PERFIL_TOKEN,JSON.stringify(datosForm()));
+    .withFailureHandler(function(e){vuelve(0);var m=(e&&e.message)||'No se pudo guardar';
+      if(/POCOS_DATOS\|/.test(m)){if(window.confirm(m.split('|')[1]))guardarSistema(true);return;}
+      avisoSistema(m,false);})
+    .guardarPerfilDatos(PERFIL_ID,PERFIL_TOKEN,JSON.stringify(datosForm()),!!forzar);
 }
 if(DATOS_GUARDADOS){aplicarDatos(DATOS_GUARDADOS);if(FECHA_GUARDADO)document.getElementById('sis-fecha').textContent='Última versión guardada: '+FECHA_GUARDADO;}
 </script>
