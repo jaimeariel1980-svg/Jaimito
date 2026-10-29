@@ -8,6 +8,7 @@
 
 const FLYER_ARCHIVO_ = 'Flyer - datos.json';
 const FLYER_MAX_BYTES_ = 4 * 1024 * 1024;
+const FLYER_TEXTOS_ = 'Flyer - textos.json';
 const FLYER_IMAGEN_ = 'Flyer - imagen.jpg';
 
 function flyerHero_(perfilId) {
@@ -64,16 +65,33 @@ function flyerHTML_(perfilId) {
 
 // Guarda el diseño del flyer de la búsqueda (un solo archivo que se pisa; la foto ya viene comprimida desde la pantalla)
 function flyerSocial_(perfilId) {
-  const d = flyerDatos_(perfilId);
+  const cache = CacheService.getScriptCache(), ck = 'fsoc_' + perfilId;
+  try { const hit = cache.get(ck); if (hit) return JSON.parse(hit); } catch (e) { }
+  const cfg = getConfig(perfilId), carpeta = carpetaPerfil_(cfg);
+  const link = URL_WEBAPP + '?tipo=postulacion&perfil=' + encodeURIComponent(perfilId);
+  const rep = t => String(t || '').replace(/\[LINK\]/g, link);
   let s = {};
-  try { s = (JSON.parse(d.guardado || '{}').social) || {}; } catch (e) { }
-  const rep = t => String(t || '').replace(/\[LINK\]/g, d.linkPostulacion);
-  let imagen = '', imagenId = '';
-  try { const it = carpetaPerfil_(getConfig(perfilId)).getFilesByName(FLYER_IMAGEN_); if (it.hasNext()) { const fi = it.next(); imagen = fi.getUrl(); imagenId = fi.getId(); } } catch (e) { }
-  return { linkedin: rep(s.linkedin), instagram: rep(s.instagram), whatsapp: rep(s.whatsapp), link: d.linkPostulacion, fecha: d.fecha, imagen: imagen, imagenId: imagenId };
+  const ft = carpeta.getFilesByName(FLYER_TEXTOS_);
+  if (ft.hasNext()) { try { s = JSON.parse(ft.next().getBlob().getDataAsString()) || {}; } catch (e) { } }
+  else { // primera vez: se saca del archivo grande del diseño (trae la foto) y se deja una copia chica para las próximas
+    const fd = carpeta.getFilesByName(FLYER_ARCHIVO_);
+    if (fd.hasNext()) { try { s = (JSON.parse(fd.next().getBlob().getDataAsString()).social) || {}; } catch (e) { } try { carpeta.createFile(FLYER_TEXTOS_, JSON.stringify(s), MimeType.PLAIN_TEXT); } catch (e) { } }
+  }
+  let imagen = '', imagenId = '', fecha = '';
+  try { const it = carpeta.getFilesByName(FLYER_IMAGEN_); if (it.hasNext()) { const fi = it.next(); imagen = fi.getUrl(); imagenId = fi.getId(); fecha = Utilities.formatDate(fi.getLastUpdated(), 'America/Argentina/Buenos_Aires', 'dd/MM/yyyy HH:mm'); } } catch (e) { }
+  const out = { linkedin: rep(s.linkedin), instagram: rep(s.instagram), whatsapp: rep(s.whatsapp), link: link, fecha: fecha, imagen: imagen, imagenId: imagenId };
+  try { cache.put(ck, JSON.stringify(out), 600); } catch (e) { }
+  return out;
 }
 
-// Guarda solo los textos de difusión (LinkedIn, Instagram, WhatsApp) en el mismo archivo del flayer, sin tocar el diseño
+function flyerCacheBorrar_(perfilId) { try { CacheService.getScriptCache().remove('fsoc_' + perfilId); } catch (e) { } }
+
+function flyerTextosEscribir_(carpeta, social) {
+  const txt = JSON.stringify(social || {});
+  const it = carpeta.getFilesByName(FLYER_TEXTOS_);
+  if (it.hasNext()) it.next().setContent(txt); else carpeta.createFile(FLYER_TEXTOS_, txt, MimeType.PLAIN_TEXT);
+}
+
 function difusionGuardar_(perfilId, t) {
   const cfg = getConfig(perfilId);
   const lim = (v, n) => String(v == null ? '' : v).replace(/[<>]/g, '').slice(0, n);
@@ -84,6 +102,8 @@ function difusionGuardar_(perfilId, t) {
   const txt = JSON.stringify(g);
   if (txt.length > FLYER_MAX_BYTES_) throw new Error('No se pudo guardar: el archivo del flayer es demasiado grande.');
   if (f) f.setContent(txt); else carpetaPerfil_(cfg).createFile(FLYER_ARCHIVO_, txt, MimeType.PLAIN_TEXT);
+  try { flyerTextosEscribir_(carpetaPerfil_(cfg), g.social); } catch (e) { }
+  flyerCacheBorrar_(perfilId);
   try { registrarHistorial_(cfg.hoja_nombre || perfilId, '(búsqueda)', 'Difusión', 'Textos de difusión guardados', QUIEN_); } catch (e) { }
   return { fecha: Utilities.formatDate(new Date(), 'America/Argentina/Buenos_Aires', 'dd/MM/yyyy HH:mm') };
 }
@@ -110,6 +130,7 @@ function flyerGuardar_(perfilId, json) {
     try { const nuevo = JSON.parse(txt), previo = JSON.parse(f.getBlob().getDataAsString() || '{}'); if (previo && previo.social) { nuevo.social = previo.social; out = JSON.stringify(nuevo); } } catch (e) { }
   }
   if (f) f.setContent(out); else carpetaPerfil_(cfg).createFile(FLYER_ARCHIVO_, out, MimeType.PLAIN_TEXT);
+  flyerCacheBorrar_(perfilId);
   try { registrarHistorial_(cfg.hoja_nombre || perfilId, '(búsqueda)', 'Flyer', 'Diseño del flayer guardado', QUIEN_); } catch (e) { }
   return { fecha: Utilities.formatDate(new Date(), 'America/Argentina/Buenos_Aires', 'dd/MM/yyyy HH:mm') };
 }
@@ -124,6 +145,7 @@ function flyerImagen_(perfilId, base64) {
   while (it.hasNext()) it.next().setTrashed(true);
   const f = carpeta.createFile(Utilities.newBlob(Utilities.base64Decode(b64), 'image/jpeg', FLYER_IMAGEN_));
   f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  flyerCacheBorrar_(perfilId);
   return { imagen: f.getUrl() };
 }
 
