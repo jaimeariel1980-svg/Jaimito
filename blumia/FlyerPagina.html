@@ -72,6 +72,11 @@ textarea{width:100%;border:1.5px solid var(--l);border-radius:8px;padding:8px 10
 #mvBox label{display:inline-flex;align-items:center;gap:6px;font-weight:600}
 #mvBox .bt{height:34px}
 #mvBox .ayuda{flex-basis:100%;color:#666;font-size:11px}
+#pvBg{position:fixed;inset:0;background:rgba(10,30,20,.88);z-index:9999;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px}
+#pvBg.show{display:flex}
+#pvBg img{max-width:100%;max-height:calc(100vh - 110px);border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,.5);background:#fff}
+#pvBg .pvt{color:#fff;font:600 13px var(--font);text-align:center}
+#pvBg .row{display:flex;gap:10px}#pvBg .bt{white-space:nowrap;padding:0 18px}
 /* ---- acomodar a mano ---- */
 #flyer.mv{touch-action:none;cursor:move}
 #flyer.mv *{user-select:none;-webkit-user-select:none}
@@ -186,8 +191,10 @@ input[type=range]{accent-color:#243D2C}
     <div style="display:none"><textarea id="tLi"></textarea><textarea id="tIg"></textarea><textarea id="tWa"></textarea></div></div>
 </div>
 
+<div id="pvBg" data-html2canvas-ignore="true"><div class="pvt" id="pvT">Armando la vista previa…</div><img id="pvImg" alt="Vista previa del flayer" style="display:none"><div class="row"><button type="button" class="bt" id="pvX" style="background:#fff">Cerrar</button><button type="button" class="bt" id="pvDl" style="background:#0F3F27;color:#fff;display:none">Descargar imagen</button></div></div>
 <div id="main"><div id="modos" data-html2canvas-ignore="true">
   <div class="seg" role="group" aria-label="Modo de trabajo"><button type="button" id="mEd" class="on">✏️ Editar textos</button><button type="button" id="mMv">✥ Mover y cambiar tamaño</button></div>
+  <button type="button" class="bt" id="mPv" style="height:44px">👁 Vista previa</button>
   <input type="checkbox" id="mvOn" style="display:none">
   <div id="mvBox" style="display:none">
     <span id="mvSel">Tocá un bloque del flayer para elegirlo.</span>
@@ -364,6 +371,10 @@ function mvIniciar(){
   function modo(mv){var c=$('mvOn');if(c.checked!==mv){c.checked=mv;c.dispatchEvent(new Event('change'))}$('mEd').classList.toggle('on',!mv);$('mMv').classList.toggle('on',mv)}
   $('mEd').onclick=function(){modo(false)};$('mMv').onclick=function(){modo(true)};
   $('flyer').addEventListener('dblclick',function(e){if(!$('mvOn').checked)return;var t=e.target;modo(false);var ed=t.closest?t.closest('[contenteditable]'):null;if(ed){setTimeout(function(){ed.focus()},30)}});
+  $('mPv').onclick=function(){var bg=$('pvBg'),im=$('pvImg');bg.classList.add('show');im.style.display='none';$('pvDl').style.display='none';$('pvT').textContent='Armando la vista previa…';
+    capturar(function(c,url){im.src=url;im.style.display='block';$('pvT').textContent='Así se ve el flayer terminado ('+FMT[S.fmt].W+'×'+FMT[S.fmt].H+'). Para cambiar algo, cerrá y editá.';$('pvDl').style.display='inline-flex';$('pvDl').onclick=function(){var a=document.createElement('a');a.href=url;a.download='flayer-vista-previa.jpg';document.body.appendChild(a);a.click();a.remove()}},function(m){$('pvT').textContent=m},0.6,'image/jpeg',.9)};
+  $('pvX').onclick=function(){$('pvBg').classList.remove('show')};
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')$('pvBg').classList.remove('show')});
   $('sFk').oninput=function(){S.footK=Number(this.value);$('vFk').textContent=S.footK+'%';aplicar();marcar()};
   $('sMs').oninput=function(){if(!mvSel)return;var p=mvPos(mvSel,true);p.s=Number(this.value);$('vMs').textContent=p.s+'%';mvAplicar();marcar()};
   $('mvRb').onclick=function(){if(!mvSel)return;var f=(S.pos||{})[S.fmt];if(f)delete f[mvSel];mvElegir(mvSel);marcar()};
