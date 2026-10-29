@@ -125,6 +125,7 @@
      .withFailureHandler(function(e){btn.disabled=false;btn.textContent='Guardar';alert('No se guardó: '+badPin(e));})
      .guardarConfigBusqueda(p,PERFIL,d,q);
   };
+  window.addEventListener('message',function(e){if(e.data&&e.data.blPerfilSalir){var d=document.getElementById('cfPerfilFr');if(d)d.innerHTML='';}});
   window.cfPerfilEditar=function(b){b.disabled=true;google.script.run.withSuccessHandler(function(u){b.disabled=false;var d=document.getElementById('cfPerfilFr');if(!d){window.open(u,'_blank');return;}d.innerHTML='<iframe src="'+esc(u)+'" style="width:100%;height:78vh;border:1px solid #ccc;border-radius:8px;background:#fff"></iframe><div style="text-align:right;margin-top:6px"><a href="'+esc(u)+'" target="_blank" style="font-size:12px">Abrir en pantalla completa ↗</a></div>';}).withFailureHandler(function(e){b.disabled=false;alert((e&&e.message)||e);}).linkPerfilConPin(PERFIL,'sesion','editar');};
 
   function g(id){var e=document.getElementById(id);return e?e.value:null;}

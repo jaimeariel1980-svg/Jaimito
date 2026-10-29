@@ -87,3 +87,54 @@
   };
 })();
 </script>
+<style>
+#ia-seg{background:#FFF8DC;border-bottom:1px solid #E6D58A;padding:7px 16px;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;font:12px 'PP Pangram Sans',Poppins,sans-serif;color:#5A4A00}
+#ia-seg button{border-radius:8px;padding:6px 12px;font:600 12px 'PP Pangram Sans',Poppins,sans-serif;cursor:pointer;border:1px solid #B8A24A;background:#fff;color:#0F3F27}
+#ia-seg button.salir{border-color:#999;color:#444}
+#ia-seg .grow{flex:1;min-width:200px}
+#ia-aviso{display:none;background:#FDECEA;border:1px solid #E9B1AA;color:#7A1F14;padding:8px 16px;font:600 13px 'PP Pangram Sans',Poppins,sans-serif;align-items:center;gap:10px;flex-wrap:wrap}
+#ia-aviso.show{display:flex}
+#ia-aviso button{border-radius:8px;padding:6px 12px;font:600 12px sans-serif;cursor:pointer;border:1px solid #999;background:#fff}
+@media print{#ia-seg,#ia-aviso{display:none!important}}
+</style>
+<script>
+(function(){
+  if(typeof controles!=='function'||typeof datosForm!=='function'||typeof aplicarDatos!=='function'||typeof PERFIL_ID==='undefined')return;
+  var KEY='bl_perfil_borrador_'+PERFIL_ID,base='';
+  function snap(){try{return JSON.stringify(datosForm());}catch(e){return '';}}
+  function sucio(){return snap()!==base;}
+  function ls(f){try{return f(window.localStorage);}catch(e){return null;}}
+  var nav=document.querySelector('nav.topbar')||document.body.firstChild;
+  var bar=document.createElement('div');bar.id='ia-seg';bar.className='ia-ui';
+  bar.innerHTML='<span class="grow">🛟 <b>Red de seguridad:</b> mientras editás se guarda un borrador en este navegador. Por las dudas, bajá una copia a tu compu.</span><button id="seg-bajar">⬇ Descargar copia</button><button id="seg-subir">⬆ Cargar copia</button><input type="file" id="seg-file" accept=".json,application/json" style="display:none"><button class="salir" id="seg-salir">Salir sin guardar</button>';
+  nav.parentNode.insertBefore(bar,nav.nextSibling);
+  var av=document.createElement('div');av.id='ia-aviso';av.className='ia-ui';bar.parentNode.insertBefore(av,bar.nextSibling);
+  function aviso(html,botones){av.innerHTML='<span>'+html+'</span>';botones.forEach(function(b){var x=document.createElement('button');x.textContent=b[0];x.onclick=function(){av.classList.remove('show');b[1]();};av.appendChild(x);});av.classList.add('show');}
+  function salir(){try{window.parent.postMessage({blPerfilSalir:1},'*');}catch(e){}setTimeout(function(){try{window.close();}catch(e){}},300);}
+  document.getElementById('seg-salir').onclick=function(){
+    if(!sucio()){salir();return;}
+    aviso('Hay cambios sin guardar. Si salís, se pierden (queda el borrador de este navegador por si volvés).',[['Salir igual',salir],['Seguir editando',function(){}]]);
+  };
+  document.getElementById('seg-bajar').onclick=function(){
+    var f=new Date(),p=function(n){return ('0'+n).slice(-2);},nom='perfil-'+PERFIL_ID+'-'+f.getFullYear()+p(f.getMonth()+1)+p(f.getDate())+'-'+p(f.getHours())+p(f.getMinutes())+'.json';
+    var b=new Blob([JSON.stringify({perfil:PERFIL_ID,fecha:f.toISOString(),datos:datosForm()})],{type:'application/json'}),a=document.createElement('a');
+    a.href=URL.createObjectURL(b);a.download=nom;document.body.appendChild(a);a.click();a.remove();
+  };
+  document.getElementById('seg-subir').onclick=function(){document.getElementById('seg-file').click();};
+  document.getElementById('seg-file').onchange=function(){
+    var f=this.files&&this.files[0];if(!f)return;
+    f.text().then(function(t){var j=JSON.parse(t);var d=j.datos||j;if(!d||!d.v)throw new Error('x');aplicarDatos(d);aviso('Copia cargada. Revisala y tocá «Guardar en el sistema».',[['Ok',function(){}]]);}).catch(function(){aviso('Ese archivo no es una copia del perfil.',[['Ok',function(){}]]);});
+    this.value='';
+  };
+  setTimeout(function(){
+    base=snap();
+    var b=ls(function(s){return s.getItem(KEY);});
+    if(b){try{var o=JSON.parse(b);if(o&&o.d&&JSON.stringify(o.d)!==base){var min=Math.max(1,Math.round((Date.now()-o.t)/60000));
+      aviso('Hay un <b>borrador sin guardar de hace '+min+' min</b> en este navegador.',[['Recuperarlo',function(){aplicarDatos(o.d);}],['Descartarlo',function(){ls(function(s){s.removeItem(KEY);});}]]);}}catch(e){}}
+  },900);
+  setInterval(function(){if(base&&sucio())ls(function(s){s.setItem(KEY,JSON.stringify({t:Date.now(),d:datosForm()}));});},10000);
+  var sf=document.getElementById('sis-fecha');
+  if(sf&&window.MutationObserver)new MutationObserver(function(){ls(function(s){s.removeItem(KEY);});base=snap();}).observe(sf,{childList:true,characterData:true,subtree:true});
+  window.addEventListener('beforeunload',function(e){if(base&&sucio()){e.preventDefault();e.returnValue='';}});
+})();
+</script>
