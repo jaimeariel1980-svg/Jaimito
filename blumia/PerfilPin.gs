@@ -70,13 +70,21 @@ function ultimoPerfilDatos_(cfg) {
 
 /* Guarda una versión con fecha y hora del perfil del puesto (los valores del formulario) en la carpeta del perfil en Drive.
    Solo se puede con el acceso temporal que da linkPerfilConPin_ (o sea, después del PIN). */
-function guardarPerfilDatos(perfilId, tok, datosJson) {
+function guardarPerfilDatos(perfilId, tok, datosJson, forzar) {
   if (!tok || CacheService.getScriptCache().get('pp_' + tok) !== String(perfilId)) throw new Error('Acceso vencido. Volvé a abrir el perfil desde el tablero con el PIN.');
   const txt = String(datosJson || '');
   if (txt.length > 300000) throw new Error('El perfil es demasiado grande para guardarlo.');
   const d = JSON.parse(txt);
   if (!d || !Array.isArray(d.v)) throw new Error('Datos inválidos.');
   const cfg = getConfig(perfilId);
+  // Red de seguridad (29/10: se guardó una versión casi vacía encima de una completa): si la nueva tiene menos de la mitad de datos que la última, pide confirmar
+  if (!forzar) {
+    const llenos = v => (Array.isArray(v) ? v : []).filter(x => { const t = String(x == null ? '' : x).trim(); return t !== '' && t !== '0' && t !== '-1'; }).length;
+    let antes = 0;
+    try { const u = ultimoPerfilDatos_(cfg); if (u) antes = llenos((JSON.parse(u.texto) || {}).v); } catch (e) { }
+    const ahoraN = llenos(d.v);
+    if (antes >= 15 && ahoraN < antes / 2) throw new Error('POCOS_DATOS|La versión que vas a guardar tiene ' + ahoraN + ' datos cargados y la última guardada tiene ' + antes + '. Si seguís, la última pasa a ser esta (la anterior queda en Drive). ¿Guardar igual?');
+  }
   const ahora = new Date();
   const sello = Utilities.formatDate(ahora, 'America/Argentina/Buenos_Aires', 'yyyy-MM-dd HH-mm-ss');
   carpetaPerfil_(cfg).createFile('Perfil del puesto - datos ' + sello + '.json', txt, MimeType.PLAIN_TEXT);
