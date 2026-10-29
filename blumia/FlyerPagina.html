@@ -117,7 +117,14 @@ input[type=range]{accent-color:#243D2C}
     <label class="lb" style="margin-top:6px">Zoom <b id="vZ">100%</b></label><input type="range" id="sZ" aria-label="Zoom de la foto" min="100" max="220" value="100">
     <label class="lb" style="margin-top:6px">Mover a los costados <b id="vPx">50%</b></label><input type="range" id="sPx" aria-label="Posición horizontal de la foto" min="0" max="100" value="50">
     <label class="lb" style="margin-top:6px">Mover arriba / abajo <b id="vPy">50%</b></label><input type="range" id="sPy" aria-label="Posición vertical de la foto" min="0" max="100" value="50">
-    <div class="nota" style="margin-top:6px">Cada búsqueda cambia de foto: se guarda junto con el diseño.</div></div>
+    <div class="nota" style="margin-top:6px">Cada búsqueda cambia de foto: se guarda junto con el diseño.</div>
+    <details id="iaFoto" style="margin-top:10px;border:1px solid #D5E0CE;border-radius:8px;padding:8px 10px;background:#F6FAF4"><summary style="cursor:pointer;font-weight:700;font-size:13px">✨ Generar la foto con IA (Gemini / ChatGPT)</summary>
+      <label class="lb" style="margin-top:8px">Ambiente</label>
+      <select id="iaAmb" aria-label="Ambiente de la foto"><option value="oficina">Oficina</option><option value="industria">Planta industrial</option><option value="comercial">Equipo comercial</option><option value="salud">Salud / clínica</option><option value="logistica">Depósito / logística</option></select>
+      <label class="lb" style="margin-top:8px">Prompt (se ajusta al formato elegido; podés editarlo)</label>
+      <textarea id="iaPrompt" aria-label="Prompt para generar la foto" rows="7" style="width:100%"></textarea>
+      <div class="row" style="margin-top:6px"><button class="bt" id="iaGem" style="flex:1">Copiar y abrir Gemini</button><button class="bt" id="iaGpt" style="flex:1">Copiar y abrir ChatGPT</button></div>
+      <div class="nota" style="margin-top:6px">Se copia el prompt y se abre la herramienta (en ChatGPT queda escrito solo; en Gemini pegalo con Ctrl+V). Cuando tengas la imagen, bajala y subila con «Subir foto».</div></details></div>
 
   <div class="sec"><h3>Logos y cinta</h3>
     <div class="row"><button class="bt" id="logoC">Logo claro</button><button class="bt" id="logoO">Logo oscuro</button></div>
@@ -225,6 +232,7 @@ function tinte(col,cb){
 }
 function mezcla(a,b,t){var A=parseInt(a.slice(1),16),B=parseInt(b.slice(1),16),f=function(sh){var x=(A>>sh)&255,y=(B>>sh)&255;return Math.round(x+(y-x)*t)};return'#'+((1<<24)+(f(16)<<16)+(f(8)<<8)+f(0)).toString(16).slice(1)}
 function aplicar(){
+  if(window.pintarPrompt)pintarPrompt();
   if(!FMT[S.fmt])S.fmt='st';
   var f=FMT[S.fmt],fl=$('flyer'),fh=S.qr?f.foot:f.footN;
   fl.style.width=f.W+'px';fl.style.height=f.H+'px';fl.style.setProperty('--k',f.k);$('stage').style.width=f.W+'px';
@@ -296,6 +304,13 @@ function vista(){
 window.addEventListener('resize',vista);
 
 function marcar(){sucio=true;$('msg').textContent=''}
+var IA_AMB={oficina:'dos profesionales argentinas conversando en una oficina moderna y luminosa, una de ellas escucha con una leve sonrisa',industria:'dos profesionales con ropa de trabajo revisando una tablet en una planta industrial limpia y ordenada',comercial:'dos personas de un equipo comercial reunidas frente a una notebook en un espacio de trabajo moderno',salud:'un equipo de profesionales de la salud conversando en un pasillo luminoso de una clínica moderna',logistica:'un supervisor y una coordinadora revisando una tablet en un depósito logístico ordenado'};
+var IA_FMT={st:['vertical 9:16','las personas ocupan el tercio inferior derecho; la mitad superior queda despejada'],li:['vertical 4:5','las personas ocupan la mitad inferior; la parte superior queda despejada'],ls:['horizontal 1,91:1','las personas están en el lado derecho; la mitad izquierda queda despejada y tranquila']};
+var iaEdit=false;
+function armarPrompt(){var a=IA_AMB[$('iaAmb').value]||IA_AMB.oficina,f=IA_FMT[S.fmt]||IA_FMT.st;
+  return 'Fotografía realista, formato '+f[0]+'. '+a.charAt(0).toUpperCase()+a.slice(1)+', ambiente cálido y cercano. Luz natural, tonos verdes oscuros en el fondo, profundidad de campo suave, estilo fotografía corporativa editorial. Composición: '+f[1]+', sin elementos fuertes ni brillos, para poder poner texto encima. Sin texto, sin logos, sin carteles, sin marcas de agua. Rostros y manos naturales, sin deformaciones.';}
+function pintarPrompt(){var p=$('iaPrompt');if(p&&!iaEdit)p.value=armarPrompt();}
+function copiarTexto(t){try{navigator.clipboard.writeText(t).catch(function(){})}catch(e){}var e=document.createElement('textarea');e.value=t;e.style.position='fixed';e.style.opacity='0';document.body.appendChild(e);e.select();try{document.execCommand('copy')}catch(x){}e.remove()}
 function msg(t,ok){var m=$('msg');m.textContent=t;m.style.color=ok===false?'#B91C1C':'#1A6645'}
 
 function aJpeg(file,max,png,cb){
@@ -306,6 +321,10 @@ function aJpeg(file,max,png,cb){
     im.onerror=function(){msg('No se pudo leer esa imagen.',false)};im.src=e.target.result};r.readAsDataURL(file)}
 
 function cableado(){
+  $('iaAmb').onchange=function(){iaEdit=false;pintarPrompt()};
+  $('iaPrompt').oninput=function(){iaEdit=true};
+  $('iaGem').onclick=function(){var p=$('iaPrompt').value;copiarTexto(p);window.open('https://gemini.google.com/app','_blank');msg('Prompt copiado. En Gemini pegalo (Ctrl+V) y enviá.')};
+  $('iaGpt').onclick=function(){var p=$('iaPrompt').value;copiarTexto(p);window.open('https://chatgpt.com/?q='+encodeURIComponent(p),'_blank');msg('Prompt copiado y enviado a ChatGPT. Si no aparece escrito, pegalo (Ctrl+V).')};
   $('fSt').onclick=function(){leerTextos();S.fmt='st';aplicar();marcar()};
   $('fLi').onclick=function(){leerTextos();S.fmt='li';aplicar();marcar()};
   $('fLs').onclick=function(){leerTextos();S.fmt='ls';aplicar();marcar()};
