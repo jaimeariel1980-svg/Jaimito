@@ -160,8 +160,8 @@ input[type=range]{accent-color:#243D2C}
     <label class="lb">Paleta de marca: color de base (fondo y pie)</label><div class="dots" id="cF"><span class="dot" data-c="#0F3F27" style="background:#0F3F27"></span><span class="dot" data-c="#B4E1E0" style="background:#B4E1E0"></span><span class="dot" data-c="#F9BDBB" style="background:#F9BDBB"></span><span class="dot" data-c="#FEE795" style="background:#FEE795"></span><span class="dot" data-c="#FBC67B" style="background:#FBC67B"></span><span class="dot" data-c="#CDE7CE" style="background:#CDE7CE"></span></div>
     <label class="lb" style="margin-top:8px">Título y textos</label><div class="dots" id="cT"><span class="dot" data-c="#0F3F27" style="background:#0F3F27"></span><span class="dot" data-c="#1A1A1A" style="background:#1A1A1A"></span><span class="dot" data-c="#FFFFFF" style="background:#FFFFFF"></span><span class="dot" data-c="#EEF7EE" style="background:#EEF7EE"></span></div>
     <label class="lb" style="margin-top:8px">Acento (cargo, títulos, tildes)</label><div class="dots" id="cA"><span class="dot" data-c="#0F3F27" style="background:#0F3F27"></span><span class="dot" data-c="#FBC67B" style="background:#FBC67B"></span><span class="dot" data-c="#F9BDBB" style="background:#F9BDBB"></span><span class="dot" data-c="#B4E1E0" style="background:#B4E1E0"></span><span class="dot" data-c="#FEE795" style="background:#FEE795"></span><span class="dot" data-c="#FFFFFF" style="background:#FFFFFF"></span></div>
-    <label class="lb" style="margin-top:8px">Tamaño del texto <b id="vTs">100%</b></label><input type="range" id="sTs" aria-label="Tamaño del texto" min="70" max="130" value="100">
-    <div class="nota">Si el texto no entra, se achica solo.</div></div>
+    <label class="lb" style="margin-top:8px">Tamaño del texto <b id="vTs">100%</b></label><input type="range" id="sTs" aria-label="Tamaño del texto" min="50" max="140" value="100">
+    <div class="nota" id="notaTs">Si el texto no entra, se achica solo.</div></div>
 
   <div class="sec"><h3>Ítems</h3>
     <div class="row"><span style="flex:2;font-size:12px;font-weight:600">Desafíos</span><button class="bt" id="addD">+</button><button class="bt" id="remD">−</button></div>
@@ -316,6 +316,7 @@ function ajustar(){
   var f=FMT[S.fmt],fl=$('flyer'),ct=$('cont'),us=S.ts/100,s=1,n=0;
   fl.style.setProperty('--s',us);
   while(ct.offsetTop<f.minTop&&s>.5&&n++<40){s-=.02;fl.style.setProperty('--s',(us*s).toFixed(3))}
+  var nt=$('notaTs');if(nt){nt.textContent=s<.999?'⚠ El texto no entra a ese tamaño: se muestra al '+Math.round(us*s*100)+'%. Por eso el control parece no hacer nada. Para agrandarlo, acortá algún texto o bajá el alto del pie.':'Si el texto no entra, se achica solo.';nt.style.color=s<.999?'#B45309':''}
   $('sub').textContent=DATOS.puesto+(s<.999?' · texto ajustado al '+Math.round(us*s*100)+'%':'');
 }
 
