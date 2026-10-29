@@ -63,6 +63,15 @@ textarea{width:100%;border:1.5px solid var(--l);border-radius:8px;padding:8px 10
 #fMail{font-size:calc(34px*var(--k));font-weight:700;color:var(--ft);white-space:nowrap}
 #guiaT,#guiaB{position:absolute;left:0;width:100%;background:rgba(240,96,93,.28);border:2px dashed rgba(240,96,93,.9);z-index:50;display:none;pointer-events:none;color:#fff;font:700 22px Poppins,sans-serif;text-align:center;padding-top:8px}
 #guiaT{top:0;height:250px}#guiaB{bottom:0;height:250px;padding-top:0;padding-bottom:8px;display:none;align-items:flex-end;justify-content:center}
+/* ---- acomodar a mano ---- */
+#flyer.mv{touch-action:none;cursor:move}
+#flyer.mv *{user-select:none;-webkit-user-select:none}
+#flyer.mv #cont,#flyer.mv #foot{pointer-events:none}
+#flyer.mv #cont>*,#flyer.mv #foot>*{pointer-events:auto}
+#flyer.mv #bucle,#flyer.mv #aro,#flyer.mv #logo,#flyer.mv #logoCli{pointer-events:auto}
+#flyer.mv .mvb:hover{outline:3px dashed rgba(47,107,69,.55);outline-offset:4px}
+#flyer.mv .mvsel{outline:4px solid #E5484D;outline-offset:4px}
+.exporting .mvsel,.exporting .mvb:hover{outline:none!important}
 .exporting #guiaT,.exporting #guiaB{display:none!important}
 #flyer.f-st #foot{padding-bottom:var(--safeB,0px)}
 /* LinkedIn apaisado: texto a la izquierda, foto a la derecha, pie finito */
@@ -110,6 +119,15 @@ input[type=range]{accent-color:#243D2C}
     <label class="chk"><input type="checkbox" id="mostrarEmp"> Nombrar a la empresa en el flayer</label><div class="nota" id="notaCiega" style="display:none">Búsqueda ciega: la empresa no se nombra en ningún lado. Se cambia en ⚙ Configurar → Datos de la búsqueda.</div>
     <button class="bt ia full" id="btnIA">✨ Generar textos</button>
     <div class="nota" style="margin-top:6px">Redacta bajada, desafíos, requisitos y los posteos con lo que está cargado en el perfil del puesto. Después editás todo directo sobre el flayer.</div></div>
+
+  <div class="sec"><h3>Acomodar a mano</h3>
+    <label class="chk"><input type="checkbox" id="mvOn"> ✥ Mover y cambiar el tamaño de cada bloque</label>
+    <div id="mvBox" style="display:none;margin-top:8px">
+      <div class="nota" id="mvSel" style="font-weight:700">Tocá un bloque del flayer para elegirlo.</div>
+      <label class="lb" style="margin-top:6px">Tamaño del bloque <b id="vMs">100%</b></label><input type="range" id="sMs" aria-label="Tamaño del bloque elegido" min="30" max="250" value="100">
+      <div class="row" style="margin-top:6px"><button class="bt" id="mvRb" style="flex:1">Reiniciar este bloque</button><button class="bt" id="mvRt" style="flex:1">Reiniciar todo</button></div>
+      <div class="nota" style="margin-top:6px">Arrastrá cualquier bloque (título, textos, logo, cinta, QR…). Con las flechas del teclado se mueve de a 1 px (con Shift, de a 10). Mientras esto está prendido no se editan los textos: apagalo para escribir. Cada formato guarda sus propias posiciones.</div>
+    </div></div>
 
   <div class="sec"><h3>Foto de fondo</h3>
     <div class="row"><label class="bt" for="inBg" style="flex:2">📷 Subir foto</label><button class="bt" id="quitBg">Quitar</button></div><input type="file" id="inBg" accept="image/*" style="display:none">
@@ -233,6 +251,7 @@ function tinte(col,cb){
 function mezcla(a,b,t){var A=parseInt(a.slice(1),16),B=parseInt(b.slice(1),16),f=function(sh){var x=(A>>sh)&255,y=(B>>sh)&255;return Math.round(x+(y-x)*t)};return'#'+((1<<24)+(f(16)<<16)+(f(8)<<8)+f(0)).toString(16).slice(1)}
 function aplicar(){
   if(window.pintarPrompt)pintarPrompt();
+  if(window.mvAplicar&&$('mvOn')){mvAplicar();if(mvSel)mvElegir(mvSel)}
   if(!FMT[S.fmt])S.fmt='st';
   var f=FMT[S.fmt],fl=$('flyer'),fh=S.qr?f.foot:f.footN;
   fl.style.width=f.W+'px';fl.style.height=f.H+'px';fl.style.setProperty('--k',f.k);$('stage').style.width=f.W+'px';
@@ -311,6 +330,26 @@ function armarPrompt(){var a=IA_AMB[$('iaAmb').value]||IA_AMB.oficina,f=IA_FMT[S
   return 'Fotografía realista, formato '+f[0]+'. '+a.charAt(0).toUpperCase()+a.slice(1)+', ambiente cálido y cercano. Luz natural, tonos verdes oscuros en el fondo, profundidad de campo suave, estilo fotografía corporativa editorial. Composición: '+f[1]+', sin elementos fuertes ni brillos, para poder poner texto encima. Sin texto, sin logos, sin carteles, sin marcas de agua. Rostros y manos naturales, sin deformaciones.';}
 function pintarPrompt(){var p=$('iaPrompt');if(p&&!iaEdit)p.value=armarPrompt();}
 function copiarTexto(t){try{navigator.clipboard.writeText(t).catch(function(){})}catch(e){}var e=document.createElement('textarea');e.value=t;e.style.position='fixed';e.style.opacity='0';document.body.appendChild(e);e.select();try{document.execCommand('copy')}catch(x){}e.remove()}
+var MV={logo:['#logo','Logo de Blumia'],cli:['#logoCli','Logo del cliente'],bucle:['#bucle','Cinta de marca'],aro:['#aro','Aro de marca'],badge:['#badge','Etiqueta (lugar y modalidad)'],tit:['#tit','Título'],baj:['#baj','Bajada'],secD:['#secD','Principales desafíos'],secR:['#secR','Requisitos'],qr:['#qrbox','QR'],fcol:['#fcol','Texto y correo del pie']};
+var mvSel='',mvDrag=null;
+function mvPos(k,crear){S.pos=S.pos||{};var f=S.pos[S.fmt];if(!f){if(!crear)return null;f=S.pos[S.fmt]={}}var p=f[k];if(!p&&crear)p=f[k]={x:0,y:0,s:100};return p||null}
+function mvAplicar(){Object.keys(MV).forEach(function(k){var e=document.querySelector(MV[k][0]);if(!e)return;var p=mvPos(k,false);e.classList.add('mvb');e.style.transformOrigin='0 0';e.style.transform=(p&&(p.x||p.y||p.s!==100))?'translate('+p.x+'px,'+p.y+'px) scale('+(p.s/100)+')':''});
+  Object.keys(MV).forEach(function(k){var e=document.querySelector(MV[k][0]);if(e)e.classList.toggle('mvsel',$('mvOn').checked&&k===mvSel)});}
+function mvElegir(k){mvSel=k||'';$('mvSel').textContent=k?'Elegido: '+MV[k][1]:'Tocá un bloque del flayer para elegirlo.';var p=k?mvPos(k,false):null;$('sMs').value=p?p.s:100;$('vMs').textContent=(p?p.s:100)+'%';$('sMs').disabled=!k;mvAplicar()}
+function mvEscala(){var r=$('flyer').getBoundingClientRect();return r.width/1080||1}
+function mvBuscar(t){for(var k in MV){var e=document.querySelector(MV[k][0]);if(e&&(e===t||e.contains(t)))return k}return ''}
+function mvIniciar(){
+  var fl=$('flyer');
+  fl.addEventListener('mousedown',function(e){if($('mvOn').checked)e.preventDefault()},true);
+  fl.addEventListener('pointerdown',function(e){if(!$('mvOn').checked)return;var k=mvBuscar(e.target);mvElegir(k);if(!k)return;var p=mvPos(k,true);mvDrag={k:k,x:e.clientX,y:e.clientY,px:p.x,py:p.y};try{fl.setPointerCapture(e.pointerId)}catch(x){}e.preventDefault()});
+  fl.addEventListener('pointermove',function(e){if(!mvDrag)return;var sc=mvEscala(),p=mvPos(mvDrag.k,true);p.x=Math.round(mvDrag.px+(e.clientX-mvDrag.x)/sc);p.y=Math.round(mvDrag.py+(e.clientY-mvDrag.y)/sc);mvAplicar()});
+  var fin=function(){if(mvDrag){mvDrag=null;marcar()}};fl.addEventListener('pointerup',fin);fl.addEventListener('pointercancel',fin);
+  $('mvOn').onchange=function(){var on=this.checked;fl.classList.toggle('mv',on);$('mvBox').style.display=on?'block':'none';if(!on)mvSel='';mvElegir(mvSel)};
+  $('sMs').oninput=function(){if(!mvSel)return;var p=mvPos(mvSel,true);p.s=Number(this.value);$('vMs').textContent=p.s+'%';mvAplicar();marcar()};
+  $('mvRb').onclick=function(){if(!mvSel)return;var f=(S.pos||{})[S.fmt];if(f)delete f[mvSel];mvElegir(mvSel);marcar()};
+  $('mvRt').onclick=function(){if(S.pos)delete S.pos[S.fmt];mvElegir(mvSel);marcar()};
+  document.addEventListener('keydown',function(e){if(!$('mvOn').checked||!mvSel)return;var t=e.target;if(t&&/INPUT|TEXTAREA|SELECT/.test(t.tagName)&&t.type!=='checkbox')return;var d=e.shiftKey?10:1,dx=0,dy=0;if(e.key==='ArrowLeft')dx=-d;else if(e.key==='ArrowRight')dx=d;else if(e.key==='ArrowUp')dy=-d;else if(e.key==='ArrowDown')dy=d;else return;e.preventDefault();var p=mvPos(mvSel,true);p.x+=dx;p.y+=dy;mvAplicar();marcar()});
+}
 function msg(t,ok){var m=$('msg');m.textContent=t;m.style.color=ok===false?'#B91C1C':'#1A6645'}
 
 function aJpeg(file,max,png,cb){
@@ -321,6 +360,7 @@ function aJpeg(file,max,png,cb){
     im.onerror=function(){msg('No se pudo leer esa imagen.',false)};im.src=e.target.result};r.readAsDataURL(file)}
 
 function cableado(){
+  mvIniciar();
   $('iaAmb').onchange=function(){iaEdit=false;pintarPrompt()};
   $('iaPrompt').oninput=function(){iaEdit=true};
   $('iaGem').onclick=function(){var p=$('iaPrompt').value;copiarTexto(p);window.open('https://gemini.google.com/app','_blank');msg('Prompt copiado. En Gemini pegalo (Ctrl+V) y enviá.')};
