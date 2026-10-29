@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Flayer | Blumia</title>
+<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Flyer | Blumia</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Source+Serif+4:wght@400;500;600&display=swap" rel="stylesheet">
 %%FUENTE%%
@@ -88,6 +88,7 @@ textarea{width:100%;border:1.5px solid var(--l);border-radius:8px;padding:8px 10
 #secR{border-left-color:#B4E1E0}
 #foot{background:linear-gradient(#F9BDBB,#F9BDBB) top left/100% 10px no-repeat,var(--fc)}
 #flyer.f-ls #foot{background:var(--fc)}
+#flyer.f-ls #ph{height:100%}
 #flyer.noqr:not(.f-ls) #fcol{display:flex;flex-direction:column;align-items:center;gap:calc(16px*var(--k))}
 #flyer.noqr:not(.f-ls) #fTxt{font-size:calc(30px*var(--k))}
 #flyer.noqr:not(.f-ls) #fMail{background:var(--pill,#FEE795);color:#0F3F27;border-radius:999px;padding:.3em 1.2em;font-size:calc(46px*var(--k));display:inline-block}
@@ -104,6 +105,11 @@ textarea{width:100%;border:1.5px solid var(--l);border-radius:8px;padding:8px 10
 #flyer #cont,#flyer #foot{pointer-events:none}
 #flyer #cont>*,#flyer #foot>*{pointer-events:auto}
 #flyer #bucle,#flyer #aro,#flyer #logo,#flyer #logoCli{pointer-events:auto}
+@media(max-width:900px){#main{order:-1}#panel{order:1}#panel .sec.plg>h3{cursor:pointer;display:flex;justify-content:space-between;align-items:center}#panel .sec.plg>h3::after{content:'▸';font-size:14px}#panel .sec.plg.abierta>h3::after{content:'▾'}#panel .sec.plg:not(.abierta)>*:not(h3){display:none!important}}
+/* ---- auditoría ---- */
+#tit{margin-bottom:calc(14px*var(--k)*var(--s))}
+#flyer:not(.f-ls):not(.noqr) #fcol{display:flex;flex-direction:column;justify-content:center;align-self:center;gap:calc(10px*var(--k))}
+@media(max-width:640px){.dots .dot{width:40px;height:40px}.dots{gap:8px;flex-wrap:wrap}}
 /* ---- acomodar a mano ---- */
 #flyer.mv{touch-action:none;cursor:move}
 #flyer.mv *{user-select:none;-webkit-user-select:none}
@@ -146,8 +152,8 @@ body:not(.exporting) [contenteditable]:focus{background:rgba(255,255,255,.85);co
 input[type=range]{accent-color:#243D2C}
 </style></head><body>
 <div id="panel">
-  <h2>📢 Editor de flayer</h2><div class="sub" id="sub"></div>
-  <div id="avisoIA" class="aviso" style="display:none">Todavía no generaste los textos: tocá «✨ Generar textos» o escribí directo sobre el flayer.</div>
+  <h2>📢 Editor de flyer</h2><div class="sub" id="sub"></div>
+  <div id="avisoIA" class="aviso" style="display:none">Todavía no generaste los textos: tocá «✨ Generar textos» o escribí directo sobre el flyer.</div>
 
   <div class="sec"><h3>Formato</h3>
     <button class="bt full" id="fSt" style="margin-bottom:6px">📱 Historia a pantalla completa · 9:16</button>
@@ -157,15 +163,15 @@ input[type=range]{accent-color:#243D2C}
     <label class="chk" id="guiaW" style="margin-top:6px"><input type="checkbox" id="guia"> Mostrar lo que tapa Instagram (guía)</label></div>
 
   <div class="sec"><h3>Textos con IA</h3>
-    <label class="chk"><input type="checkbox" id="mostrarEmp"> Nombrar a la empresa en el flayer</label><div class="nota" id="notaCiega" style="display:none">Búsqueda ciega: la empresa no se nombra en ningún lado. Se cambia en ⚙ Configurar → Datos de la búsqueda.</div>
+    <label class="chk"><input type="checkbox" id="mostrarEmp"> Nombrar a la empresa en el flyer</label><div class="nota" id="notaCiega" style="display:none">Búsqueda ciega: la empresa no se nombra en ningún lado. Se cambia en ⚙ Configurar → Datos de la búsqueda.</div>
     <button class="bt ia full" id="btnIA">✨ Generar textos</button>
-    <div class="nota" style="margin-top:6px">Redacta bajada, desafíos, requisitos y los posteos con lo que está cargado en el perfil del puesto. Después editás todo directo sobre el flayer.</div></div>
+    <div class="nota" style="margin-top:6px">Redacta bajada, desafíos, requisitos y los posteos con lo que está cargado en el perfil del puesto. Después editás todo directo sobre el flyer.</div></div>
 
   <div class="sec"><h3>Acomodo</h3>
-    <div class="nota" style="margin-bottom:6px">Tocá cualquier parte del flayer para cambiarle el color, el tamaño o la letra desde la barra que aparece al lado.</div>
+    <div class="nota" style="margin-bottom:6px">Tocá cualquier parte del flyer para cambiarle el color, el tamaño o la letra desde la barra que aparece al lado.</div>
     <button type="button" class="bt" id="mvRt" style="width:100%">Reiniciar todo el acomodo</button></div>
 
-  <div class="sec"><h3>Pie del flayer</h3>
+  <div class="sec"><h3>Pie del flyer</h3>
     <label class="lb">Alto del pie verde <b id="vFk">100%</b></label><input type="range" id="sFk" aria-label="Alto del pie verde" min="40" max="170" value="100">
     <div class="nota" style="margin-bottom:8px">En el pie podés escribir más líneas en «Postulate…» (Enter hace un renglón nuevo). El correo y la flecha se mueven por separado.</div></div>
 
@@ -208,7 +214,7 @@ input[type=range]{accent-color:#243D2C}
 
   <div class="sec"><h3>Postulación</h3>
     <label class="chk"><input type="checkbox" id="conQr"> Con código QR</label>
-    <label class="lb">Link del QR</label><input type="text" id="qrUrl" placeholder="https://...">
+    <label class="lb">Link del QR</label><input type="text" id="qrUrl" placeholder="https://..."><div class="nota" id="qrDens" style="display:none;color:#B45309">⚠ El QR queda muy denso (link largo): pegá un link corto para que se escanee fácil.</div>
     <div class="nota" style="margin-top:4px">Conviene pegar un link corto (el QR queda más limpio).</div></div>
 
   <div class="sec"><h3>Guardar</h3>
@@ -223,17 +229,19 @@ input[type=range]{accent-color:#243D2C}
     <div style="display:none"><textarea id="tLi"></textarea><textarea id="tIg"></textarea><textarea id="tWa"></textarea></div></div>
 </div>
 
-<div id="pvBg" data-html2canvas-ignore="true"><div class="pvt" id="pvT">Armando la vista previa…</div><img id="pvImg" alt="Vista previa del flayer" style="display:none"><div class="row"><button type="button" class="bt" id="pvX" style="background:#fff">Cerrar</button><button type="button" class="bt" id="pvDl" style="background:#0F3F27;color:#fff;display:none">Descargar imagen</button></div></div>
+<div id="pvBg" data-html2canvas-ignore="true"><div class="pvt" id="pvT">Armando la vista previa…</div><img id="pvImg" alt="Vista previa del flyer" style="display:none"><div class="row"><button type="button" class="bt" id="pvX" style="background:#fff">Cerrar</button><button type="button" class="bt" id="pvDl" style="background:#0F3F27;color:#fff;display:none">Descargar imagen</button></div></div>
 <div id="main"><div id="modos" data-html2canvas-ignore="true">
   <div class="seg" role="group" aria-label="Modo de trabajo"><button type="button" id="mEd" class="on">✏️ Editar textos</button><button type="button" id="mMv">✥ Mover y cambiar tamaño</button></div>
   <span style="display:inline-flex;gap:6px"><button type="button" class="bt" id="mUn" title="Deshacer (Ctrl+Z)" aria-label="Deshacer" style="height:44px;min-width:44px;font-size:18px">↶</button><button type="button" class="bt" id="mRe" title="Rehacer (Ctrl+Y)" aria-label="Rehacer" style="height:44px;min-width:44px;font-size:18px">↷</button></span>
   <button type="button" class="bt" id="mPv" style="height:44px">👁 Vista previa</button>
   <input type="checkbox" id="mvOn" style="display:none">
+  <div id="conAv" style="display:none;width:100%;background:#FFF1DC;border:1px solid #F0B964;color:#7A4A00;border-radius:8px;padding:6px 10px;font-size:12px"></div>
+  <div id="zonaAv" style="display:none;width:100%;background:#FFF1DC;border:1px solid #F0B964;color:#7A4A00;border-radius:8px;padding:6px 10px;font-size:12px"></div>
 </div>
 <div id="ftb" data-html2canvas-ignore="true">
   <span id="ftGrip" class="ftg" title="Arrastrá para mover el bloque">✥</span><span id="mvSel" class="ftn">—</span>
   <span class="fts"><button type="button" class="fdot" id="ftM" title="Más chico">A−</button><b id="vMs">100%</b><button type="button" class="fdot" id="ftP" title="Más grande">A+</button><input type="range" id="sMs" min="30" max="250" value="100" style="display:none"></span>
-  <span id="mvFmt" style="display:none;align-items:center;gap:4px"><button type="button" class="fdot" id="fB" title="Negrita" style="font-weight:900">B</button><span style="width:6px"></span><button type="button" class="fdot fa" data-a="left" title="Alinear a la izquierda">⇤</button><button type="button" class="fdot fa" data-a="center" title="Centrar">↔</button><button type="button" class="fdot fa" data-a="right" title="Alinear a la derecha">⇥</button><button type="button" class="fdot fa" data-a="justify" title="Justificar">☰</button></span>
+  <span id="mvFmt" style="display:none;align-items:center;gap:4px"><button type="button" class="fdot" id="fB" title="Negrita" style="font-weight:900">B</button><span style="width:6px"></span><button type="button" class="fdot fa" data-a="left" title="Alinear a la izquierda">⇤</button><button type="button" class="fdot fa" data-a="center" title="Centrar">↔</button><button type="button" class="fdot fa" data-a="right" title="Alinear a la derecha">⇥</button></span>
   <span id="mvCol" style="display:none;align-items:center;gap:5px"><span style="font-weight:600">Color</span><button type="button" class="cdot" data-c="" title="Automático (color general)" style="background:#fff">⟲</button><button type="button" class="cdot" data-c="#0F3F27" style="background:#0F3F27"></button><button type="button" class="cdot" data-c="#1A1A1A" style="background:#1A1A1A"></button><button type="button" class="cdot" data-c="#FFFFFF" style="background:#FFFFFF"></button><button type="button" class="cdot" data-c="#FBC67B" style="background:#FBC67B"></button><button type="button" class="cdot" data-c="#FEE795" style="background:#FEE795"></button><button type="button" class="cdot" data-c="#F9BDBB" style="background:#F9BDBB"></button><button type="button" class="cdot" data-c="#B4E1E0" style="background:#B4E1E0"></button><input type="color" id="mvColPick" aria-label="Otro color" value="#0F3F27" style="width:30px;height:26px;padding:0;border:1px solid #ccc;border-radius:6px"></span>
   <button type="button" class="fdot" id="ftLogo" style="display:none">Logo oscuro</button><button type="button" class="fdot" id="ftHide" style="display:none">Ocultar</button>
   <button type="button" class="fdot" id="mvRb" title="Volver este bloque a su lugar y tamaño">⟲</button><button type="button" class="fdot" id="ftOk" title="Cerrar" aria-label="Cerrar">✕</button>
@@ -255,7 +263,7 @@ input[type=range]{accent-color:#243D2C}
   </div>
 </div></div></div></div>
 
-<div id="res"><div class="in"><b id="resT">Tu flayer está listo</b><div class="nota" id="resN"></div><img id="resImg" alt=""><div class="row"><a class="bt pri" id="resA" download="flyer.png">⬇ Descargar</a><button class="bt" id="resX">Cerrar</button></div></div></div>
+<div id="res"><div class="in"><b id="resT">Tu flyer está listo</b><div class="nota" id="resN"></div><img id="resImg" alt=""><div class="row"><a class="bt pri" id="resA" download="flyer.png">⬇ Descargar</a><button class="bt" id="resX">Cerrar</button></div></div></div>
 
 <script>%%QRLIB%%</script>
 <script>
@@ -280,7 +288,7 @@ function porDefecto(){
     txt:{badge:[DATOS.ubicacion].filter(Boolean).join(' · ')||'Presencial',busc:'Buscamos',cargo:DATOS.puesto,
       baj:nombre.charAt(0).toUpperCase()+nombre.slice(1)+' busca sumar a su equipo una persona para el puesto de '+DATOS.puesto+'.',
       titD:'Principales desafíos',titR:'Requisitos',
-      form:'Postulate desde el link que acompaña este posteo',qrCap:'Escaneá para postularte',mail:DATOS.mail||''},
+      form:(DATOS.mail?'Postulate enviándonos tu CV a:':'Postulate desde el link que acompaña este posteo'),qrCap:'Escaneá para postularte',mail:DATOS.mail||''},
     iD:['Completá los principales desafíos del puesto.'],iR:['Completá los requisitos del puesto.'],
     social:{linkedin:'',instagram:'',whatsapp:''}};
 }
@@ -333,6 +341,9 @@ function aplicar(){
   var lum=function(h){var n=parseInt(h.slice(1),16),r=n>>16,g=(n>>8)&255,b=n&255;return(.299*r+.587*g+.114*b)/255};
   var fc=S.colF||'#0F3F27',cl=lum(fc)>.62;fl.style.setProperty('--fc',fc);fl.style.setProperty('--fc2',mezcla(fc,cl?'#FFFFFF':'#7FB08F',cl?.5:.45));fl.style.setProperty('--ft',cl?'#0F3F27':'#EEF7EE');fl.style.setProperty('--ac2',cl?'#0F3F27':'#FEE795');
   makeQr(S.qr?S.qrUrl:'');
+  var qd=$('qrDens');if(qd)qd.style.display=(S.qr&&String(S.qrUrl||'').length>60)?'block':'none';
+  var tcD=lum(S.colT||'#0F3F27')<.5;$('ph').style.background=(!S.bg&&tcD)?'linear-gradient(160deg,'+mezcla(fc,'#FFFFFF',.86)+' 0%,'+mezcla(fc,'#FFFFFF',.94)+' 100%)':'';
+  fotoAnalisis();
   pintarPanel();
   ajustar();vista();
 }
@@ -377,7 +388,7 @@ function ajustar(){
 
 function vista(){
   var vw=$('vwrap'),fw=FMT[S.fmt].W,W=vw.clientWidth||fw,sc=Math.min(1,W/fw);
-  $('stage').style.transform='scale('+sc+')';vw.style.height=(FMT[S.fmt].H*sc)+'px';
+  $('stage').style.transform='scale('+sc+')';vw.style.height=(FMT[S.fmt].H*sc)+'px';setTimeout(function(){if(window.zonas){zonas();if(window.fotoAnalisis)fotoAnalisis()}},60);
 }
 window.addEventListener('resize',vista);
 
@@ -397,8 +408,8 @@ function copiarTexto(t){try{navigator.clipboard.writeText(t).catch(function(){})
 var MV={logo:['#logo','Logo de Blumia'],cli:['#logoCli','Logo del cliente'],bucle:['#bucle','Cinta de marca'],aro:['#aro','Aro de marca'],badge:['#badge','Etiqueta (lugar y modalidad)'],tit:['#tit','Título'],baj:['#baj','Bajada'],secD:['#secD','Principales desafíos'],secR:['#secR','Requisitos'],qr:['#qrbox','QR'],fTxt:['#fTxt','Texto del pie'],arrow:['#arrow','Flecha del pie'],fMail:['#fMail','Correo del pie']};
 var mvSel='',mvDrag=null;var MVT=['badge','tit','baj','secD','secR','qr','fTxt','arrow','fMail'];
 function mvPos(k,crear){S.pos=S.pos||{};var f=S.pos[S.fmt];if(!f){if(!crear)return null;f=S.pos[S.fmt]={}}var p=f[k];if(!p&&crear)p=f[k]={x:0,y:0,s:100};return p||null}
-function mvAplicar(){Object.keys(MV).forEach(function(k){var e=document.querySelector(MV[k][0]);if(!e)return;var p=mvPos(k,false);e.classList.add('mvb');e.style.transformOrigin='0 0';e.style.transform=(p&&(p.x||p.y||p.s!==100))?'translate('+p.x+'px,'+p.y+'px) scale('+(p.s/100)+')':'';if(MVT.indexOf(k)>=0){e.style.fontWeight=(p&&p.b)?'900':'';e.style.textAlign=(p&&p.a)?p.a:'';if(p&&p.a==='justify')e.style.textAlignLast='left';else e.style.textAlignLast='';}var c=p&&p.c;if(MVT.indexOf(k)>=0){if(c){e.style.color=c;['--tc','--ac','--ft','--ac2'].forEach(function(v){e.style.setProperty(v,c)})}else{e.style.color='';['--tc','--ac','--ft','--ac2'].forEach(function(v){e.style.removeProperty(v)})}}});
-  Object.keys(MV).forEach(function(k){var e=document.querySelector(MV[k][0]);if(e)e.classList.toggle('mvsel',k===mvSel)});ftbPos();}
+function mvAplicar(){Object.keys(MV).forEach(function(k){var e=document.querySelector(MV[k][0]);if(!e)return;var p=mvPos(k,false);e.classList.add('mvb');e.style.transformOrigin='0 0';e.style.transform=(p&&(p.x||p.y||p.s!==100))?'translate('+p.x+'px,'+p.y+'px) scale('+(p.s/100)+')':'';if(MVT.indexOf(k)>=0){e.style.fontWeight=(p&&p.b)?(k==='baj'?'700':'900'):'';e.style.textAlign=(p&&p.a&&p.a!=='justify')?p.a:'';}var c=p&&p.c;if(MVT.indexOf(k)>=0){if(c){e.style.color=c;['--tc','--ac','--ft','--ac2'].forEach(function(v){e.style.setProperty(v,c)})}else{e.style.color='';['--tc','--ac','--ft','--ac2'].forEach(function(v){e.style.removeProperty(v)})}}});
+  Object.keys(MV).forEach(function(k){var e=document.querySelector(MV[k][0]);if(e)e.classList.toggle('mvsel',k===mvSel)});ftbPos();zonas();fotoAnalisis();}
 var MVC=['bucle','aro'];
 function mvElegir(k){mvSel=k||'';var p=k?mvPos(k,false):null;$('mvSel').textContent=k?MV[k][1]:'—';$('sMs').value=p?p.s:100;$('vMs').textContent=(p?p.s:100)+'%';
   var esT=k&&MVT.indexOf(k)>=0,esC=k&&MVC.indexOf(k)>=0;
@@ -410,6 +421,39 @@ function mvElegir(k){mvSel=k||'';var p=k?mvPos(k,false):null;$('mvSel').textCont
 function ftbPos(){var b=$('ftb');if(!b)return;if(!mvSel){b.style.display='none';return}var e=document.querySelector(MV[mvSel][0]);if(!e||getComputedStyle(e).display==='none'){b.style.display='none';return}
   var r=e.getBoundingClientRect();b.style.display='flex';var w=b.offsetWidth,h=b.offsetHeight,vw=document.documentElement.clientWidth,vh=window.innerHeight;
   var x=Math.max(8,Math.min(r.left,vw-w-8)),y=r.top-h-10;if(y<8)y=r.bottom+10;if(y+h>vh-8)y=Math.max(8,vh-h-8);b.style.left=x+'px';b.style.top=y+'px'}
+var fotoK='',fotoIm=null,fotoCv=null,fotoTm=null;
+function fotoAnalisis(){clearTimeout(fotoTm);fotoTm=setTimeout(fotoCalc,350)}
+function lumRel(r,g,b){var c=[r,g,b].map(function(v){v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)});return .2126*c[0]+.7152*c[1]+.0722*c[2]}
+function fotoCalc(){var av=$('conAv');if(!S)return;
+  if(!S.bg){if(av)av.style.display='none';return}
+  var f=FMT[S.fmt],bg=$('bg'),w=parseFloat(bg.style.width),h=parseFloat(bg.style.height),L=parseFloat(bg.style.left),T=parseFloat(bg.style.top);
+  var key=[S.bg.length,S.fmt,S.zoom,S.px,S.py].join('|');
+  var usar=function(){
+    var k=.1,cw=Math.round(f.W*k),ch=Math.round(f.H*k),c=document.createElement('canvas');c.width=cw;c.height=ch;var x=c.getContext('2d');
+    var sc=Math.max(w/fotoIm.naturalWidth,h/fotoIm.naturalHeight);x.drawImage(fotoIm,(L+(w-fotoIm.naturalWidth*sc)/2)*k,(T+(h-fotoIm.naturalHeight*sc)/2)*k,fotoIm.naturalWidth*sc*k,fotoIm.naturalHeight*sc*k);
+    var fl=$('flyer'),r0=fl.getBoundingClientRect(),ek=r0.width/f.W||1;
+    var region=function(sel){var e=document.querySelector(sel);if(!e)return null;var r=e.getBoundingClientRect();return{x:Math.max(0,Math.round((r.left-r0.left)/ek*k)),y:Math.max(0,Math.round((r.top-r0.top)/ek*k)),w:Math.max(1,Math.round(r.width/ek*k)),h:Math.max(1,Math.round(r.height/ek*k))}};
+    var prom=function(rg){if(!rg)return null;rg.w=Math.min(rg.w,cw-rg.x);rg.h=Math.min(rg.h,ch-rg.y);if(rg.w<1||rg.h<1)return null;var d=x.getImageData(rg.x,rg.y,rg.w,rg.h).data,R=0,G=0,B=0,n=0;for(var i=0;i<d.length;i+=4){R+=d[i];G+=d[i+1];B+=d[i+2];n++}return[R/n,G/n,B/n,(rg.y+rg.h/2)/ch,(rg.x+rg.w/2)/cw]};
+    // título: color efectivo del fondo bajo el título (foto + difuminado)
+    var pt=prom(region('#tit'));
+    if(pt&&av){var v=S.ov,yy=pt[3],xx=pt[4],a;
+      if(S.fmt==='ls'){a=xx<=.46?1:xx<=.62?1-(1-v*.006)*((xx-.46)/.16):xx<=.8?v*.006*(1-(xx-.62)/.18):0}
+      else{a=yy<=.25?v*.004*(yy/.25):yy<=.42?v*.004+(v*.01-v*.004)*((yy-.25)/.17):yy<=.55?v*.01+(v*.015-v*.01)*((yy-.42)/.13):yy<=.68?v*.015+(1-v*.015)*((yy-.55)/.13):1;a=Math.max(0,Math.min(1,a))}
+      var er=pt[0]*(1-a)+238*a,eg=pt[1]*(1-a)+247*a,eb=pt[2]*(1-a)+238*a;
+      var tp=mvPos('tit',false),tcol=(tp&&tp.c)||S.colT||'#0F3F27',n=parseInt(tcol.slice(1),16),Lt=lumRel(n>>16,(n>>8)&255,n&255),Lb=lumRel(er,eg,eb),ratio=(Math.max(Lt,Lb)+.05)/(Math.min(Lt,Lb)+.05);
+      if(ratio<3){av.style.display='block';av.innerHTML='⚠ El título se lee poco sobre esta foto (contraste '+ratio.toFixed(1)+':1). Probá otro color (con foto oscura, blanco), más difuminado u otra foto.'}else av.style.display='none'}
+    // logo claro/oscuro automático
+    if(S.logoManual!==true&&S.fmt!=='ls'){var pl=prom(region('#logo'));if(pl){var osc=lumRel(pl[0],pl[1],pl[2])>.35;if(S.logoOsc!==osc){S.logoOsc=osc;$('logo').src=osc?ASSETS.logoOsc:ASSETS.logo}}}
+  };
+  if(fotoK===key&&fotoIm){usar();return}
+  var im=new Image();im.onload=function(){fotoIm=im;fotoK=key;usar()};im.src=S.bg;
+}
+function zonas(){var el=$('zonaAv');if(!el)return;var m=[];
+  if(S&&S.fmt==='st'){var fl=$('flyer'),r0=fl.getBoundingClientRect(),k=mvEscala(),H=FMT.st.H;
+    [['logo','el logo'],['cli','el logo del cliente'],['fTxt','el texto del pie'],['fMail','el correo'],['qr','el QR']].forEach(function(a){var e=document.querySelector(MV[a[0]][0]);if(!e||getComputedStyle(e).display==='none')return;var r=e.getBoundingClientRect(),t=(r.top-r0.top)/k,b=(r.bottom-r0.top)/k;if(t<250||b>H-250)m.push(a[1])})}
+  if(!m.length){el.style.display='none';el.innerHTML='';return}
+  el.style.display='block';el.innerHTML='⚠ '+m.join(', ')+(m.length>1?' quedan':' queda')+' en una zona que Instagram tapa (arriba o abajo). <button type="button" class="bt" id="zonaBt" style="height:28px">Mostrar la guía</button>';
+  $('zonaBt').onclick=function(){S.guia=true;aplicar();marcar()}}
 function mvEscala(){var r=$('flyer').getBoundingClientRect();return r.width/1080||1}
 function mvBuscar(t){for(var k in MV){var e=document.querySelector(MV[k][0]);if(e&&(e===t||e.contains(t)))return k}return ''}
 function mvIniciar(){
@@ -425,13 +469,13 @@ function mvIniciar(){
   $('ftOk').onclick=function(){mvElegir('')};
   function tam(d){if(!mvSel)return;var p=mvPos(mvSel,true);p.s=Math.max(30,Math.min(250,p.s+d));mvElegir(mvSel);marcar()}
   $('ftM').onclick=function(){tam(-5)};$('ftP').onclick=function(){tam(5)};
-  $('ftLogo').onclick=function(){S.logoOsc=!S.logoOsc;aplicar();mvElegir(mvSel);marcar()};
+  $('ftLogo').onclick=function(){S.logoManual=true;S.logoOsc=!S.logoOsc;aplicar();mvElegir(mvSel);marcar()};
   $('ftHide').onclick=function(){if(mvSel==='bucle')S.bucOn=false;else if(mvSel==='aro')S.aro=false;else if(mvSel==='cli'){$('quitCli').click();mvElegir('');return}aplicar();mvElegir('');marcar()};
   function modo(mv){var c=$('mvOn');if(c.checked!==mv){c.checked=mv;c.dispatchEvent(new Event('change'))}$('mEd').classList.toggle('on',!mv);$('mMv').classList.toggle('on',mv)}
   $('mEd').onclick=function(){modo(false)};$('mMv').onclick=function(){modo(true)};
   $('flyer').addEventListener('dblclick',function(e){if(!$('mvOn').checked)return;var t=e.target;modo(false);var ed=t.closest?t.closest('[contenteditable]'):null;if(ed){setTimeout(function(){ed.focus()},30)}});
   $('mPv').onclick=function(){var bg=$('pvBg'),im=$('pvImg');bg.classList.add('show');im.style.display='none';$('pvDl').style.display='none';$('pvT').textContent='Armando la vista previa…';
-    capturar(function(c,url){im.src=url;im.style.display='block';$('pvT').textContent='Así se ve el flayer terminado ('+FMT[S.fmt].W+'×'+FMT[S.fmt].H+'). Para cambiar algo, cerrá y editá.';$('pvDl').style.display='inline-flex';$('pvDl').onclick=function(){var a=document.createElement('a');a.href=url;a.download='flayer-vista-previa.jpg';document.body.appendChild(a);a.click();a.remove()}},function(m){$('pvT').textContent=m},0.6,'image/jpeg',.9)};
+    capturar(function(c,url){im.src=url;im.style.display='block';$('pvT').textContent='Así se ve el flyer terminado ('+FMT[S.fmt].W+'×'+FMT[S.fmt].H+'). Para cambiar algo, cerrá y editá.';$('pvDl').style.display='inline-flex';$('pvDl').onclick=function(){var b=this,t=b.textContent;b.disabled=true;b.textContent='Armando…';capturar(function(c,u){b.disabled=false;b.textContent=t;var a=document.createElement('a');a.href=u;a.download='flyer.jpg';document.body.appendChild(a);a.click();a.remove()},function(m){b.disabled=false;b.textContent=t;$('pvT').textContent=m},2,'image/jpeg',.92)}},function(m){$('pvT').textContent=m},0.6,'image/jpeg',.9)};
   $('pvX').onclick=function(){$('pvBg').classList.remove('show')};
   document.addEventListener('keydown',function(e){if(e.key==='Escape'){$('pvBg').classList.remove('show');if(mvSel)mvElegir('')}});
   [].forEach.call(document.querySelectorAll('#mvCol .cdot'),function(b){b.onclick=function(){if(!mvSel)return;var c=b.getAttribute('data-c');if(MVC.indexOf(mvSel)>=0){S.colB=c||'#FEE795';aplicar();mvElegir(mvSel);marcar();return}var p=mvPos(mvSel,true);if(c)p.c=c;else delete p.c;mvElegir(mvSel);marcar()}});
@@ -442,6 +486,7 @@ function mvIniciar(){
   $('mUn').onclick=function(){hIr(-1)};$('mRe').onclick=function(){hIr(1)};
   document.addEventListener('keydown',function(e){if(!(e.ctrlKey||e.metaKey))return;var t=e.target;if(t&&(t.isContentEditable||/INPUT|TEXTAREA|SELECT/.test(t.tagName)))return;var k=e.key.toLowerCase();if(k==='z'&&!e.shiftKey){e.preventDefault();hIr(-1)}else if(k==='y'||(k==='z'&&e.shiftKey)){e.preventDefault();hIr(1)}});
   setTimeout(function(){pushSnap()},900);
+  if(window.matchMedia&&window.matchMedia('(max-width:900px)').matches){[].forEach.call(document.querySelectorAll('#panel .sec'),function(sec,i){var h=sec.querySelector('h3');if(!h)return;sec.classList.add('plg');if(i===0)sec.classList.add('abierta');h.onclick=function(){sec.classList.toggle('abierta')}})}
   $('sFk').oninput=function(){S.footK=Number(this.value);$('vFk').textContent=S.footK+'%';aplicar();marcar()};
   $('sMs').oninput=function(){if(!mvSel)return;var p=mvPos(mvSel,true);p.s=Number(this.value);$('vMs').textContent=p.s+'%';mvAplicar();marcar()};
   $('mvRb').onclick=function(){if(!mvSel)return;var f=(S.pos||{})[S.fmt];if(f)delete f[mvSel];mvElegir(mvSel);marcar()};
@@ -459,6 +504,8 @@ function aJpeg(file,max,png,cb){
 
 function cableado(){
   mvIniciar();
+  if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){zonas();fotoAnalisis()});
+  [300,1200,2500].forEach(function(t){setTimeout(function(){zonas();fotoAnalisis()},t)});window.addEventListener('load',function(){setTimeout(zonas,100)});
   $('iaAmb').onchange=function(){iaEdit=false;pintarPrompt()};
   $('iaPrompt').oninput=function(){iaEdit=true};
   $('iaGem').onclick=function(){var p=$('iaPrompt').value;copiarTexto(p);window.open('https://gemini.google.com/app','_blank');msg('Prompt copiado. En Gemini pegalo (Ctrl+V) y enviá.')};
@@ -526,15 +573,24 @@ function generarIA(){
   }).withFailureHandler(function(e){b.disabled=false;b.textContent='✨ Generar textos';msg((e&&e.message)||String(e),false)}).flyerTextosIA(DATOS.perfil,{mostrarEmpresa:S.mostrarEmpresa});
 }
 
-function guardar(){
+function guardar(){conRelleno(guardar_)}
+function guardar_(){
   leerTextos();var b=$('btnSave');b.disabled=true;b.textContent='Guardando…';
   var listo=function(r){b.disabled=false;b.textContent='💾 Guardar en Drive';sucio=false;msg('Guardado.');$('fechaG').textContent='Último guardado: '+r.fecha};
   var err=function(e){b.disabled=false;b.textContent='💾 Guardar en Drive';msg((e&&e.message)||String(e),false)};
   google.script.run.withSuccessHandler(function(r){
-    capturar(function(c,url){google.script.run.withSuccessHandler(function(){listo(r);msg('Guardado. Ya se puede enviar por WhatsApp desde el menú Búsqueda.')}).withFailureHandler(function(e){listo(r);msg('Se guardó el diseño, pero no la imagen para enviar: '+((e&&e.message)||e),false)}).flyerImagen(DATOS.perfil,url)},function(m){listo(r);msg('Se guardó el diseño, pero no la imagen para enviar: '+m,false)},1.5,'image/jpeg',0.88);
+    capturar(function(c,url){google.script.run.withSuccessHandler(function(){listo(r);msg('Guardado. Ya se puede enviar por WhatsApp desde el menú Búsqueda.')}).withFailureHandler(function(e){listo(r);msg('Se guardó el diseño, pero no la imagen para enviar: '+((e&&e.message)||e),false)}).flyerImagen(DATOS.perfil,url,S.fmt)},function(m){listo(r);msg('Se guardó el diseño, pero no la imagen para enviar: '+m,false)},1.5,'image/jpeg',0.88);
   }).withFailureHandler(err).flyerGuardar(DATOS.perfil,JSON.stringify(S));
 }
 
+function conBgCover(fn){ // html2canvas no respeta object-fit: se le pasa la foto ya recortada al tamaño del cuadro
+  if(!S.bg){fn(function(){});return}
+  var im=new Image();im.onerror=function(){fn(function(){})};
+  im.onload=function(){var bg=$('bg'),w=Math.round(parseFloat(bg.style.width)),h=Math.round(parseFloat(bg.style.height)),sc=Math.max(w/im.naturalWidth,h/im.naturalHeight),c=document.createElement('canvas');c.width=w;c.height=h;
+    c.getContext('2d').drawImage(im,(w-im.naturalWidth*sc)/2,(h-im.naturalHeight*sc)/2,im.naturalWidth*sc,im.naturalHeight*sc);
+    var old=bg.src,rest=function(){bg.onload=null;bg.src=old};bg.onload=function(){bg.onload=null;fn(rest)};bg.src=c.toDataURL('image/jpeg',.93)};
+  im.src=S.bg;
+}
 function capturar(ok,fallo,escala,tipo,q){
   if(typeof html2canvas!=='function'){fallo('No se pudo cargar la herramienta de imagen. Revisá la conexión y recargá.');return}
   var f=FMT[S.fmt];
@@ -543,11 +599,16 @@ function capturar(ok,fallo,escala,tipo,q){
   var st=$('stage'),tr=st.style.transform;st.style.transform='none';
   var fin=function(){st.style.transform=tr;document.body.classList.remove('exporting')};
   (document.fonts&&document.fonts.ready||Promise.resolve()).then(function(){setTimeout(function(){
-    html2canvas($('flyer'),{scale:escala,useCORS:true,allowTaint:true,backgroundColor:'#EEF7EE',width:f.W,height:f.H,windowWidth:f.W,windowHeight:f.H,scrollX:0,scrollY:0}).then(function(c){fin();ok(c,c.toDataURL(tipo,q),f)}).catch(function(e){fin();fallo('No se pudo armar la imagen: '+((e&&e.message)||e))});
+    conBgCover(function(rest){
+      html2canvas($('flyer'),{scale:escala,useCORS:true,allowTaint:true,backgroundColor:'#EEF7EE',width:f.W,height:f.H,windowWidth:f.W,windowHeight:f.H,scrollX:0,scrollY:0}).then(function(c){rest();fin();ok(c,c.toDataURL(tipo,q),f)}).catch(function(e){rest();fin();fallo('No se pudo armar la imagen: '+((e&&e.message)||e))});
+    });
   },80)});
 }
 
-function descargar(modo){
+function hayRelleno(){return (S.iD||[]).concat(S.iR||[]).some(function(t){return /^Completá los /.test(String(t))})}
+function conRelleno(fn){leerTextos();if(!hayRelleno()){fn();return}var m='Todavía quedan textos de relleno («Completá los principales desafíos…»). ¿Seguir igual?';if(typeof blConfirm==='function')blConfirm(m,fn,{si:'Seguir igual',no:'Volver'});else if(window.confirm(m))fn()}
+function descargar(modo){conRelleno(function(){descargar_(modo)})}
+function descargar_(modo){
   leerTextos();var b=$(modo==='wa'?'btnWa':'btnPng'),tb=b.textContent;b.disabled=true;b.textContent='Armando la imagen…';
   capturar(function(c,url,f){
     b.disabled=false;b.textContent=tb;
@@ -563,7 +624,7 @@ function descargar(modo){
 
 cargarEstado();cableado();pintarTextos();aplicar();
 if(DATOS.fecha)$('fechaG').textContent='Último guardado: '+DATOS.fecha;
-if(DATOS.linkViejo)$('viejo').innerHTML='Flayer anterior: <a href="'+DATOS.linkViejo.replace(/"/g,'')+'" target="_blank">abrir</a>';
+if(DATOS.linkViejo)$('viejo').innerHTML='Flyer anterior: <a href="'+DATOS.linkViejo.replace(/"/g,'')+'" target="_blank">abrir</a>';
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){ajustar();vista()});
 </script>
 </body></html>
