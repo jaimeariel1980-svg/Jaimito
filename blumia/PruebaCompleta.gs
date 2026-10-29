@@ -74,12 +74,20 @@ function pruebaCompleta_(op) {
     // 3. páginas
     [['Página: tablero', { tipo: 'kanban', perfil: c.id }], ['Página: postulación', { tipo: 'postulacion', perfil: c.id }],
      ['Página: screening', { perfil: c.id, nombre: 'Prueba Candidato', entrevistador: 'Prueba' }], ['Página: competencias', { tipo: 'competencias', perfil: c.id, nombre: 'Prueba Candidato', entrevistador: 'Prueba' }],
-     ['Página: flyer', { tipo: 'flyer', perfil: c.id }]].forEach(p => paso(p[0], () => {
+     ['Página: flyer', { tipo: 'flyer', perfil: c.id }], ['Página: informe de la búsqueda', { tipo: 'informebusqueda', perfil: c.id }]].forEach(p => paso(p[0], () => {
       const h = doGetPagina_({ parameter: p[1] }).getContent();
       requiere(h.length > 3000, 'La página salió casi vacía (' + h.length + ' caracteres)');
       requiere(!/incompleto|Error al cargar/i.test(h.slice(0, 4000)), 'La página muestra un error');
       return Math.round(h.length / 1024) + ' KB';
     }));
+
+    paso('Informe de la búsqueda: números y armado (sin IA)', () => {
+      const e = ibEstadisticas_(c.id);
+      requiere(typeof e.total === 'number' && typeof e.scr === 'number', 'No salieron los números');
+      const h = ibArmarHTML_(getConfig(c.id), 'Prueba', 'Prueba', e, { titulo: 'T', resumen: 'R', hallazgos: [{ titulo: 'a', texto: 'b' }], recomendaciones: ['x'], proximos: ['y'], cierre: 'z' });
+      requiere(h.length > 3000 && h.indexOf('__FILEID__') > 0, 'El informe salió incompleto');
+      return e.total + ' candidatos';
+    });
 
     // 3b. búsqueda ciega
     paso('Búsqueda ciega: sin nombre ni logo de la empresa para el candidato', () => {
