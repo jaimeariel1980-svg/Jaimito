@@ -2358,16 +2358,19 @@ function menuWA(f){
   var h='<div style="font-size:13px;margin-bottom:12px;color:#555">Elegí qué mensaje enviar a <b>'+c.nombre+'</b>:</div>';
   ops.forEach(function(o){h+='<button class="mbtn wa" style="display:block;width:100%;margin-bottom:8px;text-align:left" onclick="enviarWA('+f+',\\''+o[0]+'\\',this)">'+o[1]+'</button>';});
   h+='<button class="mbtn alt" style="width:100%;margin-top:6px" onclick="ficha('+f+')">← Volver</button>';
+  h='<div style="margin-bottom:14px;padding:10px;border-radius:8px;background:#E3EEDC"><label for="waEnt" style="font-size:12px;font-weight:700;display:block;margin-bottom:4px">Quién lo entrevista (para screening y competencias)</label><select id="waEnt" style="height:38px;width:100%;border:1.5px solid #D5E0CE;border-radius:8px;padding:0 8px;font:inherit;background:#fff"><option value="">Link de agenda de la búsqueda (sin persona)</option></select><div style="font-size:11px;color:#555;margin-top:4px">Si elegís a una persona, el mensaje lleva <b>su</b> link de agenda y queda anotado en el historial.</div></div>'+h;
   document.getElementById('mtit').textContent='WhatsApp · '+c.nombre;
   document.getElementById('mbody').innerHTML=h;
+  waEntCargar();
 }
+function waEntCargar(){google.script.run.withSuccessHandler(function(r){var s=document.getElementById("waEnt");if(!s||!r)return;(r.lista||[]).forEach(function(u){var o=document.createElement("option");o.value=u.nombre;o.textContent=u.nombre+(u.linkScr||u.linkComp?"":" (sin links de agenda)");s.appendChild(o);});}).entrevistadoresAgenda();}
 function quienSoy(){var q='';try{q=localStorage.getItem('blumia_quien')||'';}catch(e){}return q;}
 function enviarWA(f,tipo,btn){
   btn.textContent='Preparando...';
   google.script.run.withSuccessHandler(function(r){
-    if(r&&r.ok){window.open(r.url,'_blank');btn.textContent='✓ Abierto';}
+    if(r&&r.ok){window.open(r.url,'_blank');btn.textContent='✓ Abierto';if(r.aviso)alert(r.aviso);}
     else{alert('Error: '+(r?r.error:'desconocido'));}
-  }).withFailureHandler(function(e){alert('Error: '+e.message);}).armarComunicacion(PERFIL,f,tipo,quienSoy());
+  }).withFailureHandler(function(e){alert('Error: '+e.message);}).armarComunicacion(PERFIL,f,tipo,quienSoy(),(document.getElementById('waEnt')||{}).value||'');
 }
 function menuBanco(f){
   var c=DATA.find(function(x){return x.fila===f;});
@@ -2511,11 +2514,22 @@ function notaManual_(perfilId, fila, etapa, nota, quien) {
   return { ok: true, estado: est };
 }
 function syncCitasCalendar() {
-  const cal = CalendarApp.getCalendarById('blumiaconsulting@gmail.com');
   const desde = new Date(); desde.setDate(desde.getDate() - 180);
   const hasta = new Date(); hasta.setDate(hasta.getDate() + 90);
-  const eventos = cal.getEvents(desde, hasta);
-  const norm = s => String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]/g,'');
+  // Calendarios que se leen: el de Blumia y el de cada persona que entrevista (su mail en la pestaña Usuarios; lo comparte con la cuenta del sistema).
+  // Cada evento queda con quién lo entrevista: la descripción («Entrevista a cargo de»), o dueño del calendario donde está.
+  const eventos = [];
+  const leer = (cal, con) => { try { cal.getEvents(desde, hasta).forEach(e => eventos.push({ e: e, con: con })); } catch (err) { Logger.log('Calendario sin leer (' + con + '): ' + err.message); } };
+  const calBlumia = CalendarApp.getCalendarById('blumiaconsulting@gmail.com');
+  if (calBlumia) leer(calBlumia, '');
+  try {
+    leerUsuarios_().filter(u => u.activo === 'SI' && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(u.mail || '') && String(u.mail).toLowerCase() !== 'blumiaconsulting@gmail.com').forEach(u => {
+      let cal = null;
+      try { cal = CalendarApp.getCalendarById(u.mail) || CalendarApp.subscribeToCalendar(u.mail); } catch (err) { Logger.log('No pude abrir el calendario de ' + u.nombre + ': ' + err.message); }
+      if (cal) leer(cal, u.nombre);
+    });
+  } catch (err) { Logger.log('Usuarios sin leer: ' + err.message); }
+  const norm = s => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,'');
   const perfiles = listarPerfiles().map(p => p.id).filter(id => id !== 'operaciones');
 
   const tipoDe = titulo => {
@@ -2525,7 +2539,7 @@ function syncCitasCalendar() {
     if (t.includes('screening')) return 'Screening';
     return 'Entrevista';
   };
-  const conDe = e => { const m = String(e.getDescription() || '').match(/Entrevista a cargo de:\s*([^\n\r]+)/); return m ? m[1].trim() : ''; };
+  const conDe = x => { const m = String(x.e.getDescription() || '').match(/Entrevista a cargo de:\s*([^\n\r]+)/); return m ? m[1].trim() : (x.con || ''); };
   const etapaDe = est => {
     const e = String(est).toLowerCase();
     if (e.includes('empresa') && e.includes('agendad')) return 'empresa';
@@ -2533,6 +2547,8 @@ function syncCitasCalendar() {
     if (e.includes('screening') && e.includes('agendad')) return 'screening';
     return '';
   };
+  // el candidato reservó solo desde la página de citas: si está «Avanza a …» y hay una cita futura de esa etapa, pasa a «… agendada»
+  const AGENDA_AUTO = { 'avanza a screening': ['screening', 'Screening agendado'], 'avanza a competencias': ['competencias', 'Competencias agendada'] };
 
   perfiles.forEach(id => {
     try {
@@ -2547,35 +2563,50 @@ function syncCitasCalendar() {
         if (!d[i][1]) continue;
         const nombreN = norm(d[i][1]);
         const mailN = String(d[i][21]||'').toLowerCase().trim();
-        const suyos = eventos.filter(e => {
+        const suyos = eventos.filter(x => {
+          const e = x.e;
           if (mailN && mailN.includes('@')) {
             const invitados = e.getGuestList().map(g => g.getEmail().toLowerCase());
             if (invitados.includes(mailN)) return true;
           }
-          const m = e.getTitle().match(/\(([^)]+)\)/);
-          if(!m) return false;
-          const evN = norm(m[1]);
-          return evN === nombreN || (evN.length >= 10 && (nombreN.includes(evN) || evN.includes(nombreN)));
+          const tit = e.getTitle();
+          const m = tit.match(/\(([^)]+)\)/);
+          if (m) {
+            const evN = norm(m[1]);
+            if (evN === nombreN || (evN.length >= 10 && (nombreN.includes(evN) || evN.includes(nombreN)))) return true;
+          }
+          return nombreN.length >= 10 && norm(tit).includes(nombreN);
         });
 
         // historial completo (todas las entrevistas, más reciente arriba)
         if (suyos.length) {
-          const hist = suyos.slice().sort((a,b) => b.getStartTime() - a.getStartTime())
-            .map(e => tipoDe(e.getTitle()) + ' — ' + Utilities.formatDate(e.getStartTime(), 'GMT-3', 'dd/MM/yyyy HH:mm') + (conDe(e) ? ' · con ' + conDe(e) : ''))
+          const hist = suyos.slice().sort((a,b) => b.e.getStartTime() - a.e.getStartTime())
+            .map(x => tipoDe(x.e.getTitle()) + ' — ' + Utilities.formatDate(x.e.getStartTime(), 'GMT-3', 'dd/MM/yyyy HH:mm') + (conDe(x) ? ' · con ' + conDe(x) : ''))
             .join('\n');
           sh.getRange(i+1, 38).setValue(hist);
         } else {
           sh.getRange(i+1, 38).setValue('');
         }
 
-        // cita pendiente (solo si estado agendado)
-        const etapa = etapaDe(d[i][8]);
-        if (!etapa) { sh.getRange(i+1,37).setValue(''); sh.getRange(i+1,46).setValue(''); continue; }
+        // cita pendiente (solo si estado agendado; o se pasa solo a «agendada» si reservó por la página de citas)
+        let etapa = etapaDe(d[i][8]);
         const ahora = new Date();
-        const cands = suyos.filter(e => e.getTitle().toLowerCase().includes(etapa) && e.getStartTime() >= ahora);
+        if (!etapa) {
+          const auto = AGENDA_AUTO[String(d[i][8] || '').trim().toLowerCase()];
+          const hay = auto && suyos.filter(x => x.e.getTitle().toLowerCase().includes(auto[0]) && x.e.getStartTime() >= ahora).sort((a,b) => a.e.getStartTime() - b.e.getStartTime())[0];
+          if (hay) {
+            const c9 = sh.getRange(i+1, 9), reg = c9.getDataValidation();
+            c9.setDataValidation(null).setValue(auto[1]);
+            if (reg) c9.setDataValidation(reg);
+            try { registrarHistorial_(sh.getName(), d[i][1], 'Agenda', auto[1] + ': ' + Utilities.formatDate(hay.e.getStartTime(), 'GMT-3', "dd/MM/yyyy 'a las' HH:mm") + (conDe(hay) ? ' · con ' + conDe(hay) : '') + ' (el candidato reservó solo; detectado en el calendario)', 'sistema'); } catch (err) { }
+            etapa = auto[0];
+          }
+        }
+        if (!etapa) { sh.getRange(i+1,37).setValue(''); sh.getRange(i+1,46).setValue(''); continue; }
+        const cands = suyos.filter(x => x.e.getTitle().toLowerCase().includes(etapa) && x.e.getStartTime() >= ahora);
         if (cands.length) {
-          cands.sort((a,b) => a.getStartTime() - b.getStartTime());
-          sh.getRange(i+1, 37).setValue(Utilities.formatDate(cands[0].getStartTime(), 'GMT-3', "dd/MM/yyyy 'a las' HH:mm"));
+          cands.sort((a,b) => a.e.getStartTime() - b.e.getStartTime());
+          sh.getRange(i+1, 37).setValue(Utilities.formatDate(cands[0].e.getStartTime(), 'GMT-3', "dd/MM/yyyy 'a las' HH:mm"));
           sh.getRange(i+1, 46).setValue(conDe(cands[0]));
         } else {
           sh.getRange(i+1,37).setValue(''); sh.getRange(i+1,46).setValue('');
@@ -2752,7 +2783,7 @@ function crearPestanaPlantillas(){
   sh.setColumnWidth(4, 600);
   Logger.log('Pestaña Plantillas creada con 5 filas');
 }
-function armarComunicacion_(perfilId, fila, tipo, quien){
+function armarComunicacion_(perfilId, fila, tipo, quien, entrevistadorElegido){
   const cfg = getConfig(perfilId);
   const sh = getSheet(cfg);
   const nombre = String(sh.getRange(fila, 2).getValue() || '').split(' ')[0];
@@ -2767,7 +2798,18 @@ function armarComunicacion_(perfilId, fila, tipo, quien){
     'contacto-empresa-virtual': cfg.link_empresa_virtual,
     'contacto-empresa-presencial': cfg.link_empresa_virtual
   };
-  const link = linkPorTipo[tipo] || '';
+  let link = linkPorTipo[tipo] || '';
+  // Link de agenda de la persona que entrevista (su página de citas de Google Calendar; se carga en ⚙ Administración → Usuarios). Sin eso, el link de la búsqueda.
+  let conQuien = '', aviso = '';
+  const etapaAg = tipo === 'contacto-screening' ? 'screening' : (tipo === 'contacto-competencias' ? 'competencias' : '');
+  if (etapaAg && String(entrevistadorElegido || '').trim()) {
+    const u = leerUsuarios_().find(x => x.clave === usuClave_(entrevistadorElegido) && x.activo === 'SI');
+    if (!u) return { ok: false, error: 'No encontré a ese entrevistador entre los usuarios habilitados.' };
+    if (!usuHace_(u, etapaAg)) return { ok: false, error: String(u.nombre).split(' ')[0] + ' no hace ' + etapaAg + '. Elegí a otra persona.' };
+    const propio = etapaAg === 'screening' ? u.linkScr : u.linkComp;
+    if (propio) link = propio; else aviso = String(u.nombre).split(' ')[0] + ' todavía no tiene cargado su link de agenda de ' + etapaAg + ': el mensaje lleva el link de la búsqueda.';
+    conQuien = u.nombre;
+  }
 
   let texto = plantillaTexto_(tipo, perfilId).texto;
   if(!texto) return {ok:false, error:'No encontré la plantilla ' + tipo};
@@ -2776,19 +2818,20 @@ function armarComunicacion_(perfilId, fila, tipo, quien){
                .replace(/\[PUESTO\]/g, puesto)
                .replace(/la empresa \[EMPRESA\]/g, EMPRESAS_CONOCIDAS_[empresa] ? 'la empresa ' + empresa : empresa)
                .replace(/\[EMPRESA\]/g, empresa)
-               .replace(/\[ENTREVISTADOR\]/g, entrevistador)
+               .replace(/\[ENTREVISTADOR\]/g, conQuien ? String(conQuien).split(' ')[0] : entrevistador)
                .replace(/\[LINK\]/g, link);
 
   let telWa = tel;
   if(telWa.indexOf('54') !== 0) telWa = '549' + telWa.replace(/^0+/,'');
   var etiqueta = {'contacto-screening':'screening','contacto-competencias':'competencias','contacto-empresa-virtual':'empresa','contacto-empresa-presencial':'empresa','descarte-competencias':'descarte comp.','descarte-empresa':'descarte emp.'}[tipo] || '';
   if(etiqueta){
-    sh.getRange(fila, 41).setValue(etiqueta + ' · ' + Utilities.formatDate(new Date(), 'GMT-3', 'dd/MM/yyyy'));
-    registrarContacto_(perfilId, fila, sh.getRange(fila, 2).getValue(), tel, 'WhatsApp: ' + etiqueta, entrevistador);
-    registrarHistorial_(sh.getName(), sh.getRange(fila, 2).getValue(), 'Contacto', 'WhatsApp: ' + etiqueta, entrevistador);
+    const etq = etiqueta + (conQuien ? ' (' + String(conQuien).split(' ')[0] + ')' : '');
+    sh.getRange(fila, 41).setValue(etq + ' · ' + Utilities.formatDate(new Date(), 'GMT-3', 'dd/MM/yyyy'));
+    registrarContacto_(perfilId, fila, sh.getRange(fila, 2).getValue(), tel, 'WhatsApp: ' + etq, entrevistador);
+    registrarHistorial_(sh.getName(), sh.getRange(fila, 2).getValue(), 'Contacto', 'WhatsApp: ' + etq + (conQuien && link !== linkPorTipo[tipo] ? ' · con el link de agenda de ' + conQuien : ''), entrevistador);
   }
   const url = 'https://wa.me/' + telWa + '?text=' + encodeURIComponent(texto);
-  return {ok:true, url:url, texto:texto};
+  return {ok:true, url:url, texto:texto, aviso:aviso};
 }
 function crearPestanaBanco(){
   const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
