@@ -107,7 +107,7 @@ input[type=range]{accent-color:#243D2C}
     <label class="chk" id="guiaW" style="margin-top:6px"><input type="checkbox" id="guia"> Mostrar lo que tapa Instagram (guía)</label></div>
 
   <div class="sec"><h3>Textos con IA</h3>
-    <label class="chk"><input type="checkbox" id="mostrarEmp"> Nombrar a la empresa en el flyer</label>
+    <label class="chk"><input type="checkbox" id="mostrarEmp"> Nombrar a la empresa en el flyer</label><div class="nota" id="notaCiega" style="display:none">Búsqueda ciega: la empresa no se nombra en ningún lado. Se cambia en ⚙ Configurar → Datos de la búsqueda.</div>
     <button class="bt ia full" id="btnIA">✨ Generar textos</button>
     <div class="nota" style="margin-top:6px">Redacta bajada, desafíos, requisitos y los posteos con lo que está cargado en el perfil del puesto. Después editás todo directo sobre el flyer.</div></div>
 
@@ -193,7 +193,7 @@ var generado=false,sucio=false;
 var S=null;
 
 function porDefecto(){
-  var emp=DATOS.empresa==='MACS';
+  var emp=!DATOS.ciega&&DATOS.empresa==='MACS';
   var nombre=emp?DATOS.empresa:DATOS.empresaNeutral;
   return {fmt:'st',qr:false,guia:false,qrUrl:DATOS.linkPostulacion,mostrarEmpresa:emp,bg:'',cli:'',colT:'#0F3F27',colA:'#0F3F27',colF:'#0F3F27',colB:'#FEE795',aro:false,logoOsc:false,
     ov:60,px:50,py:50,zoom:100,ts:100,logoH:110,cliH:80,bucOn:true,bucOp:100,
@@ -256,7 +256,7 @@ function aplicar(){
 function pintarPanel(){
   $('fSt').classList.toggle('on',S.fmt==='st');$('fLi').classList.toggle('on',S.fmt==='li');$('fLs').classList.toggle('on',S.fmt==='ls');$('fNota').textContent=FMT[S.fmt].nota;$('guia').checked=!!S.guia;$('guiaW').style.display=S.fmt==='st'?'flex':'none';
   $('logoC').classList.toggle('on',!S.logoOsc);$('logoO').classList.toggle('on',S.logoOsc);
-  $('mostrarEmp').checked=!!S.mostrarEmpresa;$('conQr').checked=!!S.qr;$('bucOn').checked=!!S.bucOn;$('qrUrl').value=S.qrUrl||'';
+  if(DATOS.ciega){S.mostrarEmpresa=false;S.cli='';}$('mostrarEmp').checked=!!S.mostrarEmpresa;$('mostrarEmp').disabled=!!DATOS.ciega;if($('notaCiega'))$('notaCiega').style.display=DATOS.ciega?'block':'none';$('conQr').checked=!!S.qr;$('bucOn').checked=!!S.bucOn;$('qrUrl').value=S.qrUrl||'';
   var m={sOv:['ov','vOv','%'],sZ:['zoom','vZ','%'],sPx:['px','vPx','%'],sPy:['py','vPy','%'],sLg:['logoH','vLg','px'],sCl:['cliH','vCl','px'],sBo:['bucOp','vBo','%'],sTs:['ts','vTs','%']};
   for(var id in m){$(id).value=S[m[id][0]];$(m[id][1]).textContent=S[m[id][0]]+m[id][2]}
   var d=document.querySelectorAll('#cT .dot');for(var i=0;i<d.length;i++)d[i].classList.toggle('on',d[i].getAttribute('data-c')===S.colT);
@@ -330,7 +330,7 @@ function cableado(){
   $('aroOn').onchange=function(){S.aro=this.checked;aplicar();marcar()};
   $('inBg').onchange=function(e){var f=e.target.files[0];if(!f)return;aJpeg(f,1800,false,function(u){S.bg=u;S.zoom=100;S.px=50;S.py=50;aplicar();marcar()});this.value=''};
   $('quitBg').onclick=function(){S.bg='';aplicar();marcar()};
-  $('inCli').onchange=function(e){var f=e.target.files[0];if(!f)return;aJpeg(f,600,true,function(u){S.cli=u;aplicar();marcar()});this.value=''};
+  $('inCli').onchange=function(e){var f=e.target.files[0];if(!f)return;if(DATOS.ciega){msg('Búsqueda ciega: no se puede poner el logo del cliente.',false);return}aJpeg(f,600,true,function(u){S.cli=u;aplicar();marcar()});this.value=''};
   $('quitCli').onclick=function(){S.cli='';aplicar();marcar()};
   $('addD').onclick=function(){leerTextos();S.iD.push('Nuevo ítem');setItems('iD',S.iD);ajustar();marcar()};
   $('remD').onclick=function(){leerTextos();if(S.iD.length>1)S.iD.pop();setItems('iD',S.iD);ajustar();marcar()};

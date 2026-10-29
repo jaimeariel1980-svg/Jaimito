@@ -677,12 +677,13 @@ function getHeroPostulacion(perfilId) {
     if (!fila) return { pos: 'Búsqueda', loc: '', logo: '', empresa: '' };
     const o = {};
     headers.forEach((h, i) => o[h] = fila[i]);
-    const loc = [o.empresa, o.ubicacion].filter(Boolean).join(' · ');
+    let loc = [o.empresa, o.ubicacion].filter(Boolean).join(' · ');
     let logo = '', empresa = String(o.empresa || '');
     try {
       const cfg = getConfig(perfilId);
       logo = logoCliente_(cfg);
       if (!empresa) empresa = empresaKey_(cfg);
+      if (busquedaCiega_(cfg)) { logo = ''; empresa = ''; loc = String(o.ubicacion || ''); } // búsqueda ciega: sin nombre ni logo de la empresa
     } catch (e) { }
     return { pos: String(o.posicion || 'Búsqueda'), loc: loc, logo: logo, empresa: empresa };
   } catch (err) {

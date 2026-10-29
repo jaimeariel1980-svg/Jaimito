@@ -25,8 +25,13 @@ function empresaInforme_(cfg) {
   return EMPRESAS_CONOCIDAS_[e] ? EMPRESAS_CONOCIDAS_[e].legal : e;
 }
 
+/* Búsqueda ciega (Config.busqueda_ciega = SI): a los candidatos no se les muestra el nombre ni el logo de la empresa cliente
+   (postulación, mensajes, mails, flyer y textos para redes). Se activa en ⚙ Configurar → Datos de la búsqueda. */
+function busquedaCiega_(cfg) { return !!cfg && String(cfg.busqueda_ciega || '').toUpperCase().trim() === 'SI'; }
+
 function empresaParaCandidatos_(cfg) {
   const x = (cfg && typeof cfg.empresa_candidatos === 'string') ? cfg.empresa_candidatos.trim() : '';
+  if (busquedaCiega_(cfg)) return x && x.toLowerCase() !== empresaKey_(cfg).toLowerCase() ? x : 'una empresa cliente';
   if (x) return x;
   const e = empresaKey_(cfg);
   return EMPRESAS_CONOCIDAS_[e] ? e : 'una empresa cliente del sector ' + e;

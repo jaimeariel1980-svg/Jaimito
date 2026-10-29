@@ -168,3 +168,5 @@ Hecha con el código real y 37 fichas de ejemplo; el modelo real (`gpt-4o-mini`)
 - ✅ Blumia (29/10): primera corrida de `blumiaPruebaCompleta` con los 24 pasos en verde (Ariel). Prueba semanal automática agregada (lunes 4 h, mail si falla). Falta la lista a mano (PDF con Pangram, celular, WhatsApp del flyer). — *Ariel*
 
 - Blumia (29/10): función `blumiaBorrarBusquedaLogistica` (borra la búsqueda vieja de prueba «Gerente de Logística», pedido de Ariel; se niega si tiene candidatos o si hay más de una coincidencia). Ariel la corre desde el editor; después se puede sacar del código. — *Ariel*
+
+- Blumia (29/10): búsqueda ciega implementada (`busqueda_ciega`). Falta que Ariel la pruebe con una búsqueda real: abrir la postulación en ventana privada y revisar que no aparezca la empresa ni el logo; mirar un mensaje armado desde la ficha y el flyer. Prioridad alta · Ariel.

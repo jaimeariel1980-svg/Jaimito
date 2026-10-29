@@ -38,7 +38,8 @@ function flyerDatos_(perfilId) {
   return {
     perfil: perfilId,
     puesto: puesto,
-    empresa: empresa,
+    empresa: busquedaCiega_(cfg) ? empresaParaCandidatos_(cfg) : empresa,
+    ciega: busquedaCiega_(cfg),
     empresaNeutral: empresaParaCandidatos_(cfg),
     ubicacion: String(hero.ubicacion || ''),
     instancia: String(hero.instancia || ''),
@@ -119,7 +120,7 @@ function flyerPerfilTexto_(cfg) {
 function flyerTextosIA_(perfilId, opciones) {
   const cfg = getConfig(perfilId);
   const d = flyerDatos_(perfilId);
-  const mostrar = !!(opciones && opciones.mostrarEmpresa);
+  const mostrar = !!(opciones && opciones.mostrarEmpresa) && !d.ciega;
   const empresa = mostrar ? d.empresa : d.empresaNeutral;
   const perfil = flyerPerfilTexto_(cfg);
   const extra = (typeof cfg.prompt_extra === 'string') ? cfg.prompt_extra.slice(0, 5000) : '';
