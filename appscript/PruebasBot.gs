@@ -35,7 +35,7 @@ function azcuPruebasTokens_(){
   Object.keys(porDir).forEach(function(k){ if(!dos && porDir[k].length>1) dos = porDir[k]; });
   ds.forEach(function(p){ if(!bv && /^(av|avda|bv|bvd|boulevard|pje|pasaje)\.?\s/i.test(String(p.det.calle).trim())) bv = p; });
   var paso = Math.max(1, Math.floor(uni.length/6));
-  for(var i=1;i<=6;i++){ var p = uni[(i-1)*paso] || uni[uni.length-1]; if(p){ T['A'+i] = p.det.calle+' '+p.det.numero; T['C'+i] = String(p.det.calle).trim(); T['I'+i] = p.id; T['D'+i] = p.dir; } }
+  for(var i=1;i<=6;i++){ var p = uni[(i-1)*paso] || uni[uni.length-1]; if(p){ T['A'+i] = p.det.calle+' '+p.det.numero; T['C'+i] = String(p.det.calle).trim(); T['I'+i] = p.id; T['D'+i] = p.dir; var nm = String(p.prop || (p.duenos && p.duenos[0] && p.duenos[0].nombre) || '').trim().split(/\s+/); T['O'+i] = nm.length>1 ? nm[nm.length-1].replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ]/g,'') : ''; } }
   if(T.A2) T.X2 = T.C2+' '+(+T.A2.split(' ').pop()*10+7);
   if(dos){ T.D = dos[0].det.calle+' '+dos[0].det.numero; T.U1 = dos[0].dir; T.U2 = dos[1].dir; }
   if(bv){ T.BV = String(bv.det.calle).replace(/^(av|avda|bv|bvd|boulevard|pje|pasaje)\.?\s+/i,'').trim()+' '+bv.det.numero; }
@@ -73,7 +73,7 @@ function azcuPruebasLista_(T){
   add('{BV} qué etapa tiene?','La encuentra y dice la etapa.',{t:[],tx:'etapa|publicad|captaci|reserva|vendid|baja'});
   add('tenés algo en {C1}?','Lista las propiedades de la calle.',{t:[],tx:'{C1}'});
   add('y en {C1}?','Habla de la calle pedida, no de la ficha abierta.',{ficha:5,t:[],tx:'{C1}',no:'{C5} \\d'});
-  add('y el dueño?','Dueño de la propiedad de la charla.',{hist:[['u','contame de {A1}'],['a',FA(1)]],t:[],no:'Datos y operaci|{C2}'});
+  add('y el dueño?','Dueño de la propiedad de la charla (el nombre real, nunca inventado).',{hist:[['u','contame de {A1}'],['a',FA(1)]],t:[],tx:'{O1}',no:'Datos y operaci|{C2}'});
   add('en la ficha tampoco está el tel?','Responde el teléfono (o que no está), sin otra ficha.',{hist:[['u','contame de {A1}'],['a',FA(1)]],t:[],no:'Datos y operaci|{C2}|{C3}',max:500});
   add('y la otra?','Muestra la unidad que no se mostró.',{hist:[['u','contame de {D}'],['a','Hay dos unidades en {D}: {U1} y {U2}. ¿Cuál querés ver?'],['u','la primera'],['a','Datos de {U1}: Departamento, Publicada.']],t:[],no:'a cu[aá]l te refer'});
   add('la otra','Pregunta a cuál (no hay contexto).',{t:[],tx:'cu[aá]l'});
