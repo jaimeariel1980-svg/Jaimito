@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Flyer | Blumia</title>
+<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Flayer | Blumia</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 %%FUENTE%%
@@ -96,8 +96,8 @@ body:not(.exporting) [contenteditable]:focus{background:rgba(255,255,255,.85);co
 input[type=range]{accent-color:#243D2C}
 </style></head><body>
 <div id="panel">
-  <h2>📢 Flyer y textos</h2><div class="sub" id="sub"></div>
-  <div id="avisoIA" class="aviso" style="display:none">Todavía no generaste los textos: tocá «✨ Generar textos» o escribí directo sobre el flyer.</div>
+  <h2>📢 Flayer y textos</h2><div class="sub" id="sub"></div>
+  <div id="avisoIA" class="aviso" style="display:none">Todavía no generaste los textos: tocá «✨ Generar textos» o escribí directo sobre el flayer.</div>
 
   <div class="sec"><h3>Formato</h3>
     <button class="bt full" id="fSt" style="margin-bottom:6px">📱 Historia a pantalla completa · 9:16</button>
@@ -107,9 +107,9 @@ input[type=range]{accent-color:#243D2C}
     <label class="chk" id="guiaW" style="margin-top:6px"><input type="checkbox" id="guia"> Mostrar lo que tapa Instagram (guía)</label></div>
 
   <div class="sec"><h3>Textos con IA</h3>
-    <label class="chk"><input type="checkbox" id="mostrarEmp"> Nombrar a la empresa en el flyer</label><div class="nota" id="notaCiega" style="display:none">Búsqueda ciega: la empresa no se nombra en ningún lado. Se cambia en ⚙ Configurar → Datos de la búsqueda.</div>
+    <label class="chk"><input type="checkbox" id="mostrarEmp"> Nombrar a la empresa en el flayer</label><div class="nota" id="notaCiega" style="display:none">Búsqueda ciega: la empresa no se nombra en ningún lado. Se cambia en ⚙ Configurar → Datos de la búsqueda.</div>
     <button class="bt ia full" id="btnIA">✨ Generar textos</button>
-    <div class="nota" style="margin-top:6px">Redacta bajada, desafíos, requisitos y los posteos con lo que está cargado en el perfil del puesto. Después editás todo directo sobre el flyer.</div></div>
+    <div class="nota" style="margin-top:6px">Redacta bajada, desafíos, requisitos y los posteos con lo que está cargado en el perfil del puesto. Después editás todo directo sobre el flayer.</div></div>
 
   <div class="sec"><h3>Foto de fondo</h3>
     <div class="row"><label class="bt" for="inBg" style="flex:2">📷 Subir foto</label><button class="bt" id="quitBg">Quitar</button></div><input type="file" id="inBg" accept="image/*" style="display:none">
@@ -175,7 +175,7 @@ input[type=range]{accent-color:#243D2C}
   </div>
 </div></div></div></div>
 
-<div id="res"><div class="in"><b id="resT">Tu flyer está listo</b><div class="nota" id="resN"></div><img id="resImg" alt=""><div class="row"><a class="bt pri" id="resA" download="flyer.png">⬇ Descargar</a><button class="bt" id="resX">Cerrar</button></div></div></div>
+<div id="res"><div class="in"><b id="resT">Tu flayer está listo</b><div class="nota" id="resN"></div><img id="resImg" alt=""><div class="row"><a class="bt pri" id="resA" download="flyer.png">⬇ Descargar</a><button class="bt" id="resX">Cerrar</button></div></div></div>
 
 <script>%%QRLIB%%</script>
 <script>
@@ -399,7 +399,7 @@ function descargar(modo){
     var nom='flyer-'+DATOS.puesto.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'-'+f.nom+'.png';
     if(modo==='wa'){c.toBlob(function(bl){var tx=$('tWa').value||'';var fl=null;try{fl=new File([bl],nom,{type:'image/png'})}catch(e){}
       if(fl&&navigator.canShare&&navigator.canShare({files:[fl]})){navigator.share({files:[fl],text:tx}).catch(function(){})}
-      else{var a=document.createElement('a');a.href=url;a.download=nom;document.body.appendChild(a);a.click();a.remove();window.open('https://wa.me/?text='+encodeURIComponent(tx),'_blank');msg('Se bajó la imagen y se abrió WhatsApp con el texto: adjuntá la imagen del flyer al chat.',true)}
+      else{var a=document.createElement('a');a.href=url;a.download=nom;document.body.appendChild(a);a.click();a.remove();window.open('https://wa.me/?text='+encodeURIComponent(tx),'_blank');msg('Se bajó la imagen y se abrió WhatsApp con el texto: adjuntá la imagen del flayer al chat.',true)}
     },'image/png');return}
     $('resImg').src=url;$('resA').href=url;$('resA').setAttribute('download',nom);$('resN').textContent='Si no se descargó sola, tocá «Descargar» o mantené apretada la imagen para guardarla.';$('res').classList.add('show');
     try{var a=document.createElement('a');a.href=url;a.download=nom;document.body.appendChild(a);a.click();a.remove()}catch(e){}
@@ -408,7 +408,7 @@ function descargar(modo){
 
 cargarEstado();cableado();pintarTextos();aplicar();
 if(DATOS.fecha)$('fechaG').textContent='Último guardado: '+DATOS.fecha;
-if(DATOS.linkViejo)$('viejo').innerHTML='Flyer anterior: <a href="'+DATOS.linkViejo.replace(/"/g,'')+'" target="_blank">abrir</a>';
+if(DATOS.linkViejo)$('viejo').innerHTML='Flayer anterior: <a href="'+DATOS.linkViejo.replace(/"/g,'')+'" target="_blank">abrir</a>';
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){ajustar();vista()});
 </script>
 </body></html>
