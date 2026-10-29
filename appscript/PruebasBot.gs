@@ -86,7 +86,7 @@ function azcuPruebasLista_(T){
   add('dejalo, mejor no','Sin tarjeta nueva; dice que no confirme.',{hist:[['u','visité {A2} con Marcos Tejo, ofreció 50000'],['a','¡Dale! Dejé la tarjeta lista, confirmala acá abajo 👇']],t:[],tx:'confirm|sin efecto|no hago|no hace falta|no armo'});
   add('agendá visita mañana a las 15 en {A4} con Ana López','Tarjeta de agendar con la fecha de mañana.',{t:['agendar'],cr:'15:00'});
   add('el 2/11 a las 15 visita en {A4} con Ana','2 de noviembre a las 15, no número de calle.',{t:['agendar'],cr:'02/11|2/11'});
-  add('fui con un cliente a ver una casa de la inmobiliaria Bertollo en Pérez Bulnes 6637, le gustó','Visita externa sin buscar en la cartera.',{t:['visitaext']});
+  add('fui con un cliente a ver una casa de la inmobiliaria Bertollo en Pérez Bulnes 6637, le gustó','Visita externa sin buscar en la cartera: arma la tarjeta o pregunta el nombre del cliente.',{tx:'visita con otra inmobiliaria|nombre|cliente'});
   add('Ana Gómez hizo una oferta de 90 mil por {A2}','Tarjeta de propuesta con el monto.',{t:['propuesta'],cr:'90'});
   add('rechazaron la propuesta de {A2}','Pide el motivo antes de armar la tarjeta.',{t:[],tx:'motivo|por qu[eé]'});
   add('aceptaron la propuesta de {A2}','Pregunta de quién es la propuesta, o arma la tarjeta y aclara que pasa a Reserva.',{tx:'reserva|qui[eé]n|nombre|cliente'});
