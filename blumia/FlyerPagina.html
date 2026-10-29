@@ -90,8 +90,11 @@ textarea{width:100%;border:1.5px solid var(--l);border-radius:8px;padding:8px 10
 #irBox .irPt{min-width:64px;height:64px;border-radius:50%;background:#0F3F27;color:#fff;font-weight:800;font-size:26px;display:flex;align-items:center;justify-content:center}#irBox .irPt small{font-size:12px;font-weight:600;opacity:.8}
 #irBox .irS{border:1px solid #D5E0CE;border-left-width:6px;border-radius:8px;padding:8px 12px;margin-top:8px}
 #irBox .irS.alta{border-left-color:#E5484D}#irBox .irS.media{border-left-color:#FBC67B}#irBox .irS.baja{border-left-color:#B4E1E0}
-#irBox .irS b{display:block;font-size:13px;color:#0F3F27}#irBox .irS span{font-size:12px;color:#444;line-height:1.45}
+#irBox .irS b{display:block;font-size:13px;color:#0F3F27}#irBox .irS span{display:block;font-size:12px;color:#444;line-height:1.45}
 #irBox .irFoot{display:flex;gap:8px;margin-top:14px;justify-content:flex-end;flex-wrap:wrap}
+#irBox .irOk{background:#E3EEDC;border-radius:8px;padding:8px 12px;font-size:12px;color:#0F3F27;margin-bottom:8px}
+#irBox .irT{font-size:12px;font-style:italic;color:#0F3F27;margin:6px 0 4px}
+#irBox .irA{height:30px;margin-top:6px;font-size:12px}
 /* ---- revisión y mockups ---- */
 #audBt.ok{background:#E3EEDC;color:#0F3F27}#audBt.warn{background:#FFF1DC;border-color:#F0B964;color:#7A4A00}#audBt.bad{background:#FDECEA;border-color:#E9B1AA;color:#7A1F14}
 #audLs .ai{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:6px 10px;border-radius:8px;margin-top:6px;font-size:12px;line-height:1.4}
@@ -289,7 +292,7 @@ input[type=range]{accent-color:#243D2C}
   <button type="button" class="bt" id="audBt" style="height:44px">Revisión</button>
   <button type="button" class="bt" id="audMej" style="height:44px">✨ Mejorar solo</button>
   <button type="button" class="bt" id="mMk" style="height:44px">📱 Ver cómo se ve</button>
-  <button type="button" class="bt" id="mIa" style="height:44px" title="Claude mira el flyer y da sugerencias (usa IA)">🔎 Revisión con IA</button>
+  <button type="button" class="bt" id="mIa" style="height:44px" title="Claude mira el flyer, sugiere y aplica los cambios (usa IA)">🔎 Revisión con IA</button>
   <div id="audLs" style="display:none;flex-basis:100%"></div>
 </div>
 <div id="ftb" data-html2canvas-ignore="true">
@@ -504,14 +507,47 @@ function audMejorar(){leerTextos();clearTimeout(hTm);pushSnap();hHold=true;var b
   pintarTextos();aplicar();
   setTimeout(function(){fotoCalc();setTimeout(function(){if(AUD.con)audFixCon();zonas();setTimeout(function(){if(AUD.zon.length)audFixZon();hHold=false;pushSnap();b.disabled=false;b.textContent=t;sucio=true;audSoon();msg('Listo: dejé 3 y 3, el texto al 100 %, los bloques en su lugar y el contraste revisado. Si no te gusta, ↶ lo deshace todo junto.',true)},150)},450)},250)}
 function irEsc(t){return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;')}
-function irPintar(r){var bx=$('irBox');var h='<div class="irHead"><div class="irPt">'+r.puntaje+'<small>/10</small></div><div style="font-size:14px;line-height:1.4;font-weight:600;color:#0F3F27">'+irEsc(r.resumen)+'</div></div>';
-  (r.sugerencias||[]).forEach(function(x){h+='<div class="irS '+x.prioridad+'"><b>'+irEsc(x.que)+'</b><span>'+irEsc(x.como)+'</span></div>'});
+var IA_RES=null,IA_RONDA=1;
+function irClamp(v,lo,hi){v=Math.round(Number(v));return isNaN(v)?lo:Math.max(lo,Math.min(hi,v))}
+function iaAplicarUna(a){if(!a||!a.tipo)return false;var p;
+  switch(a.tipo){
+    case 'colorTitulo':S.colT=a.color;p=mvPos('tit',false);if(p)delete p.c;return true;
+    case 'colorBloque':if(MVT.indexOf(a.bloque)<0)return false;mvPos(a.bloque,true).c=a.color;return true;
+    case 'difuminado':S.ov=irClamp(a.valor,0,100);return true;
+    case 'tamanoTexto':S.ts=irClamp(a.valor,70,130);return true;
+    case 'tamanoBloque':if(!MV[a.bloque])return false;mvPos(a.bloque,true).s=irClamp(a.valor,40,200);return true;
+    case 'mover':if(!MV[a.bloque])return false;p=mvPos(a.bloque,true);p.x+=irClamp(a.dx,-600,600);p.y+=irClamp(a.dy,-600,600);return true;
+    case 'dejarItems':var n=irClamp(a.n,2,4);S.iD=(S.iD||[]).slice(0,n);S.iR=(S.iR||[]).slice(0,n);setItems('iD',S.iD);setItems('iR',S.iR);return true;
+    case 'logoOscuro':S.logoManual=true;S.logoOsc=!!a.valor;return true;
+    case 'altoPie':S.footK=irClamp(a.valor,60,150);return true;
+    case 'serif':S.serif=!!a.valor;return true;
+    case 'ocultar':if(a.bloque==='bucle')S.bucOn=false;else if(a.bloque==='aro')S.aro=false;else return false;return true;
+    case 'negrita':if(MVT.indexOf(a.bloque)<0)return false;p=mvPos(a.bloque,true);if(a.valor)p.b=1;else delete p.b;return true;
+    case 'zonaSegura':zonas();if(!AUD.zon.length)return false;var H=FMT.st.H;AUD.zon.forEach(function(z){var d=z.top<250?250-z.top+12:-(z.bottom-(H-250)+12);var q=mvPos(z.k,true);q.y=Math.round(q.y+d)});return true;
+    case 'proponerTexto':return false;
+  }return false}
+function iaUsarTexto(a){if(a.bloque==='baj')S.txt.baj=a.texto;else if(a.bloque==='fTxt')S.txt.form=a.texto;else if(a.bloque==='badge')S.txt.badge=a.texto;else return;clearTimeout(hTm);pushSnap();pintarTextos();aplicar();marcar()}
+function iaAplicarTodo(auto){var r=IA_RES;if(!r)return;clearTimeout(hTm);pushSnap();hHold=true;var n=0;(r.sugerencias||[]).forEach(function(x){if(x.accion&&x.accion.tipo!=='proponerTexto'&&iaAplicarUna(x.accion))n++});aplicar();hHold=false;pushSnap();sucio=true;audSoon();
+  if(auto&&n&&IA_RONDA<2){iaRevisar(2)}else irPintar(r,n)}
+function iaEstado(){var bl={};if(S.pos&&S.pos[S.fmt])Object.keys(S.pos[S.fmt]).forEach(function(k){var p=S.pos[S.fmt][k];bl[k]={x:p.x,y:p.y,s:p.s}});
+  return {formato:S.fmt,colorTitulo:S.colT,difuminado:S.ov,tamanoTexto:S.ts,desafios:(S.iD||[]).length,requisitos:(S.iR||[]).length,logoOscuro:!!S.logoOsc,altoPie:S.footK||100,serif:!!S.serif,qr:!!S.qr,conFoto:!!S.bg,avisos:audItems().map(function(x){return x.t}),bloquesMovidos:bl}}
+function irPintar(r,aplicadas){IA_RES=r;var bx=$('irBox');var acts=0;(r.sugerencias||[]).forEach(function(x){if(x.accion&&x.accion.tipo!=='proponerTexto')acts++});
+  var h='<div class="irHead"><div class="irPt">'+r.puntaje+'<small>/10</small></div><div style="font-size:14px;line-height:1.4;font-weight:600;color:#0F3F27">'+irEsc(r.resumen)+(IA_RONDA>1?'<div style="font-size:11px;color:#777;font-weight:500;margin-top:4px">Segunda revisión, después de aplicar los cambios.</div>':'')+'</div></div>';
+  if(aplicadas)h+='<div class="irOk">✔ Apliqué '+aplicadas+(aplicadas===1?' cambio':' cambios')+'. Si no te gusta, cerrá y tocá ↶: se deshace todo junto.</div>';
+  if(acts)h+='<button type="button" class="bt" id="irAll" style="width:100%;background:#0F3F27;color:#fff;margin-bottom:4px">✨ Aplicar todo ('+acts+')</button>';
+  (r.sugerencias||[]).forEach(function(x,i){var a=x.accion;h+='<div class="irS '+x.prioridad+'"><b>'+irEsc(x.que)+'</b><span>'+irEsc(x.como)+'</span>';
+    if(a&&a.tipo==='proponerTexto')h+='<div class="irT">«'+irEsc(a.texto)+'»</div><button type="button" class="bt irA" data-t="'+i+'">Usar este texto</button>';
+    else if(a)h+='<button type="button" class="bt irA" data-i="'+i+'">Aplicar</button>';
+    h+='</div>'});
   if(!(r.sugerencias||[]).length)h+='<div class="irS baja"><b>Sin cambios importantes</b><span>No encontré problemas para corregir.</span></div>';
-  h+='<div style="font-size:11px;color:#777;margin-top:10px">Es una opinión de IA: usala como guía. Para arreglar lo básico está también «Revisión» y «Mejorar solo».</div><div class="irFoot"><button type="button" class="bt" id="irRe">Volver a revisar</button><button type="button" class="bt" id="irX" style="background:#0F3F27;color:#fff">Cerrar</button></div>';
-  bx.innerHTML=h;$('irX').onclick=function(){$('iaRev').classList.remove('show')};$('irRe').onclick=iaRevisar}
-function iaRevisar(){var bx=$('irBox');$('iaRev').classList.add('show');bx.innerHTML='<div class="irCarga">🔎 Claude está mirando tu flyer… (unos 20 segundos)</div>';leerTextos();
+  h+='<div style="font-size:11px;color:#777;margin-top:10px">Es una opinión de IA: revisá el resultado en «Ver cómo se ve».</div><div class="irFoot"><button type="button" class="bt" id="irRe">Volver a revisar</button><button type="button" class="bt" id="irX" style="background:#0F3F27;color:#fff">Cerrar</button></div>';
+  bx.innerHTML=h;$('irX').onclick=function(){$('iaRev').classList.remove('show')};$('irRe').onclick=function(){iaRevisar(1)};
+  if($('irAll'))$('irAll').onclick=function(){iaAplicarTodo(true)};
+  [].forEach.call(bx.querySelectorAll('.irA'),function(b){b.onclick=function(){var x;if(b.getAttribute('data-t')!==null){x=r.sugerencias[+b.getAttribute('data-t')].accion;iaUsarTexto(x);b.textContent='✔ Usado';b.disabled=true;return}
+    x=r.sugerencias[+b.getAttribute('data-i')].accion;clearTimeout(hTm);pushSnap();hHold=true;var ok=iaAplicarUna(x);aplicar();hHold=false;pushSnap();sucio=true;audSoon();b.textContent=ok?'✔ Aplicado':'No se pudo';b.disabled=true}})}
+function iaRevisar(ronda){IA_RONDA=ronda||1;var bx=$('irBox');$('iaRev').classList.add('show');bx.innerHTML='<div class="irCarga">🔎 Claude está mirando tu flyer'+(IA_RONDA>1?' otra vez, ya con los cambios':'')+'… (unos 20 segundos)</div>';leerTextos();
   var fallo=function(m){bx.innerHTML='<div class="irCarga">No se pudo revisar: '+irEsc(m)+'</div><div class="irFoot"><button type="button" class="bt" id="irX">Cerrar</button></div>';$('irX').onclick=function(){$('iaRev').classList.remove('show')}};
-  capturar(function(c,url){google.script.run.withSuccessHandler(irPintar).withFailureHandler(function(e){fallo((e&&e.message)||e)}).flyerRevisar(DATOS.perfil,url,S.fmt)},fallo,0.55,'image/jpeg',.82)}
+  capturar(function(c,url){google.script.run.withSuccessHandler(function(r){irPintar(r,0)}).withFailureHandler(function(e){fallo((e&&e.message)||e)}).flyerRevisar(DATOS.perfil,url,S.fmt,iaEstado(),IA_RONDA)},fallo,0.55,'image/jpeg',.82)}
 var mkUrl='',mkTab='ig';
 function mkAbrir(){$('mkBg').classList.add('show');$('mkStage').innerHTML='<div class="mkCarga">Armando la imagen…</div>';mkUrl='';
   leerTextos();capturar(function(c,url){mkUrl=url;mkPintar()},function(m){$('mkStage').innerHTML='<div class="mkCarga">'+m+'</div>'},0.6,'image/jpeg',.9)}
@@ -590,7 +626,7 @@ function mvIniciar(){
   setTimeout(function(){pushSnap()},900);
   if(window.matchMedia&&window.matchMedia('(max-width:900px)').matches){[].forEach.call(document.querySelectorAll('#panel .sec'),function(sec,i){var h=sec.querySelector('h3');if(!h)return;sec.classList.add('plg');if(i===0)sec.classList.add('abierta');h.onclick=function(){sec.classList.toggle('abierta')}})}
   $('audBt').onclick=function(){var ls=$('audLs');audAbierto=!(ls.style.display==='block');audRender()};
-  $('audMej').onclick=audMejorar;$('mIa').onclick=iaRevisar;
+  $('audMej').onclick=audMejorar;$('mIa').onclick=function(){iaRevisar(1)};
   $('mMk').onclick=mkAbrir;$('mkX').onclick=function(){$('mkBg').classList.remove('show')};
   [].forEach.call(document.querySelectorAll('#mkBg .seg button'),function(b){b.onclick=function(){mkTab=b.getAttribute('data-mk');mkPintar()}});
   $('sFk').oninput=function(){S.footK=Number(this.value);$('vFk').textContent=S.footK+'%';aplicar();marcar()};

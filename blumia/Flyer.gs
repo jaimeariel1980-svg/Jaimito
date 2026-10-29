@@ -126,8 +126,37 @@ function difusionTextosIA_(perfilId) {
   return { linkedin: rep(r.linkedin), instagram: rep(r.instagram), whatsapp: rep(r.whatsapp) };
 }
 
-// Revisión de diseño con IA: Claude mira la imagen del flyer y da sugerencias concretas (uso interno, tiene un costo chico por revisión)
-function flyerRevisarIA_(perfilId, base64, fmt) {
+// Revisión de diseño con IA: Claude mira la imagen del flyer, da sugerencias y, en cada una, una acción concreta que el editor puede aplicar solo.
+// Solo acepta acciones de una lista cerrada y con valores acotados (la IA no toca nada fuera de eso).
+const FLYER_COLORES_ = ['#0F3F27', '#1A1A1A', '#FFFFFF', '#FBC67B', '#FEE795', '#F9BDBB', '#B4E1E0'];
+const FLYER_BLOQUES_ = ['logo', 'cli', 'bucle', 'aro', 'badge', 'tit', 'baj', 'secD', 'secR', 'qr', 'fTxt', 'arrow', 'fMail'];
+const FLYER_BLOQUES_TEXTO_ = ['badge', 'tit', 'baj', 'secD', 'secR', 'qr', 'fTxt', 'arrow', 'fMail'];
+
+function flyerAccionOk_(a) {
+  if (!a || typeof a !== 'object') return null;
+  const t = String(a.tipo || '');
+  const num = (v, lo, hi) => { const n = Number(v); return isFinite(n) ? Math.max(lo, Math.min(hi, Math.round(n))) : null; };
+  const col = v => { const c = String(v || '').toUpperCase(); return FLYER_COLORES_.indexOf(c) >= 0 ? c : null; };
+  const blq = (v, lista) => (lista || FLYER_BLOQUES_).indexOf(String(v)) >= 0 ? String(v) : null;
+  let r = null;
+  if (t === 'colorTitulo') { const c = col(a.color); if (c) r = { tipo: t, color: c }; }
+  else if (t === 'colorBloque') { const c = col(a.color), b = blq(a.bloque, FLYER_BLOQUES_TEXTO_); if (c && b) r = { tipo: t, bloque: b, color: c }; }
+  else if (t === 'difuminado') { const n = num(a.valor, 0, 100); if (n !== null) r = { tipo: t, valor: n }; }
+  else if (t === 'tamanoTexto') { const n = num(a.valor, 70, 130); if (n !== null) r = { tipo: t, valor: n }; }
+  else if (t === 'tamanoBloque') { const n = num(a.valor, 40, 200), b = blq(a.bloque); if (n !== null && b) r = { tipo: t, bloque: b, valor: n }; }
+  else if (t === 'mover') { const dx = num(a.dx, -600, 600), dy = num(a.dy, -600, 600), b = blq(a.bloque); if (dx !== null && dy !== null && b) r = { tipo: t, bloque: b, dx: dx, dy: dy }; }
+  else if (t === 'dejarItems') { const n = num(a.n, 2, 4); if (n !== null) r = { tipo: t, n: n }; }
+  else if (t === 'logoOscuro') r = { tipo: t, valor: !!a.valor };
+  else if (t === 'altoPie') { const n = num(a.valor, 60, 150); if (n !== null) r = { tipo: t, valor: n }; }
+  else if (t === 'serif') r = { tipo: t, valor: !!a.valor };
+  else if (t === 'ocultar') { const b = blq(a.bloque, ['bucle', 'aro']); if (b) r = { tipo: t, bloque: b }; }
+  else if (t === 'negrita') { const b = blq(a.bloque, FLYER_BLOQUES_TEXTO_); if (b) r = { tipo: t, bloque: b, valor: !!a.valor }; }
+  else if (t === 'zonaSegura') r = { tipo: t };
+  else if (t === 'proponerTexto') { const b = blq(a.bloque, ['baj', 'fTxt', 'badge']); const x = String(a.texto || '').replace(/[<>]/g, '').trim().slice(0, 300); if (b && x) r = { tipo: t, bloque: b, texto: x }; }
+  return r;
+}
+
+function flyerRevisarIA_(perfilId, base64, fmt, estado, ronda) {
   const cfg = getConfig(perfilId);
   const b64 = String(base64 || '').replace(/^data:image\/jpeg;base64,/, '');
   if (b64.length < 100 || b64.length > 6 * 1024 * 1024) throw new Error('La imagen para revisar no es válida o es demasiado grande.');
@@ -135,12 +164,22 @@ function flyerRevisarIA_(perfilId, base64, fmt) {
   const sistema = 'Sos director/a de arte de Blumia Consulting (consultora de RR. HH. de Argentina). Revisás flyers de búsquedas laborales que se publican en historias de Instagram, posteos de LinkedIn y mensajes de WhatsApp. ' +
     'Marca: verde #0F3F27, naranja #FBC67B, rosa #F9BDBB, amarillo #FEE795, celeste #B4E1E0; tipografía Pangram; estilo cálido, limpio y profesional. ' +
     'Mirá la imagen y respondé SOLO con un JSON válido, sin texto antes ni después, con esta forma exacta: ' +
-    '{"puntaje":un entero de 1 a 10,"resumen":"una frase (máx. 140 caracteres) sobre cómo se ve en general","sugerencias":[{"prioridad":"alta|media|baja","que":"qué mejorar (máx. 110 caracteres)","como":"cómo arreglarlo con los controles del editor, en palabras simples (máx. 150 caracteres)"}]}. ' +
-    'Dá de 3 a 5 sugerencias, ordenadas de la más importante a la menos importante. Evaluá: legibilidad (contraste y tamaño de letra, pensando en un celular), jerarquía (qué se lee primero), foto, equilibrio y espacios, zonas que tapa Instagram (250 px arriba y abajo en el formato historia), coherencia con la marca y claridad de cómo postularse. ' +
-    'No inventes problemas: si algo está bien, decilo en el resumen y dá menos sugerencias. Español rioplatense, sin tecnicismos, con vos.';
+    '{"puntaje":entero de 1 a 10,"resumen":"una frase (máx. 140 caracteres)","sugerencias":[{"prioridad":"alta|media|baja","que":"qué mejorar (máx. 110 caracteres)","como":"cómo arreglarlo, en palabras simples (máx. 150 caracteres)","accion":null o un objeto de la lista de abajo}]}. ' +
+    'Dá de 3 a 5 sugerencias, de la más a la menos importante. Evaluá: legibilidad (contraste y tamaño de letra pensando en un celular), jerarquía, foto, equilibrio y espacios, zonas que tapa Instagram (250 px arriba y abajo en historia), coherencia con la marca y claridad de cómo postularse. ' +
+    'ACCIONES (el editor las ejecuta solas; usá solo estas, con estos valores; si ninguna sirve, accion = null): ' +
+    '{"tipo":"colorTitulo","color":"#FFFFFF"} (color de la paleta: #0F3F27 #1A1A1A #FFFFFF #FBC67B #FEE795 #F9BDBB #B4E1E0); ' +
+    '{"tipo":"colorBloque","bloque":"baj","color":"#1A1A1A"}; {"tipo":"difuminado","valor":0-100} (más alto = la foto se funde más con el fondo claro); {"tipo":"tamanoTexto","valor":70-130}; ' +
+    '{"tipo":"tamanoBloque","bloque":"tit","valor":40-200}; {"tipo":"mover","bloque":"fMail","dx":-600..600,"dy":-600..600} (px en un lienzo de 1080 de ancho; dy negativo sube); {"tipo":"dejarItems","n":2-4}; ' +
+    '{"tipo":"logoOscuro","valor":true|false}; {"tipo":"altoPie","valor":60-150}; {"tipo":"serif","valor":true|false}; {"tipo":"ocultar","bloque":"bucle|aro"}; {"tipo":"negrita","bloque":"baj","valor":true|false}; ' +
+    '{"tipo":"zonaSegura"} (saca de las zonas de Instagram lo que esté tapado); {"tipo":"proponerTexto","bloque":"baj|fTxt|badge","texto":"texto nuevo, más corto"} (solo si el texto es muy largo o confuso). ' +
+    'Bloques válidos: logo, cli, bucle, aro, badge, tit, baj, secD, secR, qr, fTxt, arrow, fMail. ' +
+    (Number(ronda) >= 2 ? 'Esta es la SEGUNDA revisión, después de aplicar cambios: marcá solo lo que siga mal; si el flyer ya está bien (puntaje 8 o más) devolvé pocas o ninguna sugerencia. ' : '') +
+    'No inventes problemas: si algo está bien, decilo en el resumen. Español rioplatense, sin tecnicismos, con vos.';
+  let est = '';
+  try { est = JSON.stringify(estado || {}).slice(0, 1800); } catch (e) { }
   const usuario = [
     { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } },
-    { type: 'text', text: 'Formato: ' + (FLYER_FORMATOS_[fmt] || 'sin dato') + '. Puesto: ' + puesto + '.' + (busquedaCiega_(cfg) ? ' Es una búsqueda ciega: el nombre de la empresa cliente no debe aparecer.' : '') }
+    { type: 'text', text: 'Formato: ' + (FLYER_FORMATOS_[fmt] || 'sin dato') + '. Puesto: ' + puesto + '.' + (busquedaCiega_(cfg) ? ' Es una búsqueda ciega: el nombre de la empresa cliente no debe aparecer.' : '') + (est ? ' Estado actual del editor (para que tus acciones tengan sentido): ' + est : '') }
   ];
   const r = extraerJSON_(procesarConClaude(sistema, usuario, 'redactar'));
   const t = (v, n) => String(v == null ? '' : v).replace(/[<>]/g, '').trim().slice(0, n);
@@ -148,7 +187,7 @@ function flyerRevisarIA_(perfilId, base64, fmt) {
   return {
     puntaje: Math.max(1, Math.min(10, Math.round(Number(r.puntaje) || 0))),
     resumen: t(r.resumen, 200),
-    sugerencias: (Array.isArray(r.sugerencias) ? r.sugerencias : []).slice(0, 6).map(x => ({ prioridad: pr[String(x && x.prioridad).toLowerCase()] ? String(x.prioridad).toLowerCase() : 'media', que: t(x && x.que, 160), como: t(x && x.como, 220) })).filter(x => x.que)
+    sugerencias: (Array.isArray(r.sugerencias) ? r.sugerencias : []).slice(0, 6).map(x => ({ prioridad: pr[String(x && x.prioridad).toLowerCase()] ? String(x.prioridad).toLowerCase() : 'media', que: t(x && x.que, 160), como: t(x && x.como, 220), accion: flyerAccionOk_(x && x.accion) })).filter(x => x.que)
   };
 }
 
