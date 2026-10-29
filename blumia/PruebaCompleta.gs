@@ -74,7 +74,7 @@ function pruebaCompleta_(op) {
     // 3. páginas
     [['Página: tablero', { tipo: 'kanban', perfil: c.id }], ['Página: postulación', { tipo: 'postulacion', perfil: c.id }],
      ['Página: screening', { perfil: c.id, nombre: 'Prueba Candidato', entrevistador: 'Prueba' }], ['Página: competencias', { tipo: 'competencias', perfil: c.id, nombre: 'Prueba Candidato', entrevistador: 'Prueba' }],
-     ['Página: flyer', { tipo: 'flyer', perfil: c.id }], ['Página: informe de la búsqueda', { tipo: 'informebusqueda', perfil: c.id }], ['Página: ranking', { tipo: 'ranking', perfil: c.id }]].forEach(p => paso(p[0], () => {
+     ['Página: flyer', { tipo: 'flyer', perfil: c.id }], ['Página: informe de la búsqueda', { tipo: 'informebusqueda', perfil: c.id }]].forEach(p => paso(p[0], () => {
       const h = doGetPagina_({ parameter: p[1] }).getContent();
       requiere(h.length > 3000, 'La página salió casi vacía (' + h.length + ' caracteres)');
       requiere(!/incompleto|Error al cargar/i.test(h.slice(0, 4000)), 'La página muestra un error');
@@ -87,19 +87,6 @@ function pruebaCompleta_(op) {
       const h = ibArmarHTML_(getConfig(c.id), 'Prueba', 'Prueba', e, { titulo: 'T', resumen: 'R', hallazgos: [{ titulo: 'a', texto: 'b' }], recomendaciones: ['x'], proximos: ['y'], cierre: 'z' });
       requiere(h.length > 3000 && h.indexOf('__FILEID__') > 0, 'El informe salió incompleto');
       return e.total + ' candidatos';
-    });
-
-    paso('Ranking: pool, guardar orden y armar informe', () => {
-      const d = rankingDatos_(c.id);
-      requiere(Array.isArray(d.candidatos) && Array.isArray(d.orden), 'El ranking no devolvió datos');
-      const p = d.candidatos[0];
-      if (!p) return 'sin candidatos en carrera (se omite el resto)';
-      rankingGuardar_(c.id, [{ fila: p.fila, com: 'Prueba' }], true);
-      const d2 = rankingDatos_(c.id);
-      requiere(d2.orden.length === 1 && d2.orden[0].com === 'Prueba', 'El orden guardado no volvió igual');
-      const h = rankingArmarHTML_('Prueba', 'Prueba', [{ c: p, com: 'x' }], true);
-      requiere(h.length > 3000 && h.indexOf('__FILEID__') > 0, 'El informe del ranking salió incompleto');
-      return d.candidatos.length + ' en carrera';
     });
 
     // 3b. búsqueda ciega

@@ -102,11 +102,25 @@ header{min-height:86px}
     if(m.t==='act'&&dias(c)>=DIAS_ALERTA&&!/agendad/i.test(c.estado))fl+='<span class="tag rj">🕒 '+dias(c)+' d sin movimiento</span>';
     if(/recomend|referid/i.test(c.fuente||''))fl+='<span class="tag zok" title="'+esc(c.fuente)+'">⭐ Recomendado</span>';
     fl+=tagsTarjeta(c);
+    if(c.ordenCli>0)fl+='<span class="tag zok" title="Orden en el PDF para el cliente">N.º '+c.ordenCli+' en el ranking</span>';
+    var rk='';
+    if(m.t!=='desc'&&m.lv>=3){var nr=DATA.filter(function(x){var mm=metEstado(x.estado);return mm&&mm.t!=='desc'&&mm.lv>=3;}).length,op='<option value="0">Sin orden</option>';for(var q=1;q<=Math.max(nr,1);q++)op+='<option value="'+q+'"'+(c.ordenCli===q?' selected':'')+'>'+q+'</option>';
+      rk='<div class="ln rk"><i>🏆</i><label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#0F3F27;white-space:nowrap" title="Orden para el cliente (PDF)">Orden <select aria-label="Orden para el cliente" onclick="event.stopPropagation()" onchange="event.stopPropagation();rkSet('+c.fila+',+this.value)" style="height:30px;width:64px;border:1.5px solid var(--line);border-radius:8px;padding:0 6px;font:700 12px inherit;font-family:inherit;background:#fff">'+op+'</select></label></div>';}
     return '<div class="card '+notaCls(n)+'" data-fila="'+c.fila+'" onclick="ficha('+c.fila+')">'
       +'<div class="top"><b>'+esc(c.nombre)+'</b><div class="bdg">'+(n?'<span class="nota '+notaClsBadge(n)+'">'+esc(n)+'</span><small>'+ep+'</small>':'')+'</div></div>'+fo+ub+pr
-      +(t1?'<div class="ln"><i>🗓</i><div class="tags">'+t1+'</div></div>':'')+(fl?'<div class="ln"><i>⚑</i><div class="tags">'+fl+'</div></div>':'')+'</div>';
+      +rk+(t1?'<div class="ln"><i>🗓</i><div class="tags">'+t1+'</div></div>':'')+(fl?'<div class="ln"><i>⚑</i><div class="tags">'+fl+'</div></div>':'')+'</div>';
+  };
+  window.rkSet=function(fila,pos){
+    var l=DATA.filter(function(c){return c.ordenCli>0&&c.fila!==fila;}).sort(function(a,b){return a.ordenCli-b.ordenCli;}).map(function(c){return c.fila;});
+    if(pos>0)l.splice(Math.min(pos-1,l.length),0,fila);
+    var ant={};DATA.forEach(function(c){ant[c.fila]=c.ordenCli;});
+    DATA.forEach(function(c){var i=l.indexOf(c.fila);c.ordenCli=i>=0?i+1:0;});
+    var val=function(f){var c=DATA.find(function(x){return x.fila===f;});return c&&c.valCli||'Se ajusta';};
+    renderBoardN();
+    google.script.run.withSuccessHandler(function(){toast();}).withFailureHandler(function(e){DATA.forEach(function(c){c.ordenCli=ant[c.fila]||0;});renderBoardN();blAlert('No se pudo guardar el orden: '+((e&&e.message)||e));}).rankingGuardar(PERFIL,l.map(function(f){return {fila:f,val:val(f)};}));
   };
   function ordCard(a,b){
+    if(a.ordenCli>0||b.ordenCli>0){if(!(a.ordenCli>0))return 1;if(!(b.ordenCli>0))return -1;return a.ordenCli-b.ordenCli;}
     var now=Date.now()-36e5,fa=avFecha(a.cita),fb=avFecha(b.cita),ra=fa?(fa>=now?0:2):1,rb=fb?(fb>=now?0:2):1;
     if(ra!==rb)return ra-rb;if(ra===0)return fa-fb;return (b.movMs||b.recMs||0)-(a.movMs||a.recMs||0);
   }

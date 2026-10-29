@@ -94,7 +94,7 @@ function doGetPagina_(e) {
   const tipo = e?.parameter?.tipo;
   const perfil = e?.parameter?.perfil || '';
   let template, titulo;
-  const tipoQuePideBusqueda = ['competencias', 'postulacion', 'kanban', 'flyer', 'perfilpuesto', 'pdfcliente', 'informe', 'procesohtml', 'informebusqueda', 'ranking'].indexOf(tipo) >= 0 || (!tipo && !!e?.parameter?.nombre);
+  const tipoQuePideBusqueda = ['competencias', 'postulacion', 'kanban', 'flyer', 'perfilpuesto', 'pdfcliente', 'informe', 'procesohtml', 'informebusqueda'].indexOf(tipo) >= 0 || (!tipo && !!e?.parameter?.nombre);
   if (!perfil && tipoQuePideBusqueda) return linkIncompleto_();
 
   if (tipo === 'competencias') {
@@ -158,8 +158,6 @@ function doGetPagina_(e) {
     return flyerHTML_(perfil);
   } else if (tipo === 'informebusqueda') {
     return informeBusquedaHTML_(perfil);
-  } else if (tipo === 'ranking') {
-    return rankingHTML_(perfil);
   } else if (tipo === 'procesohtml') {
     let empProceso = empresaDefault_();
     try { if (e.parameter.perfil) empProceso = empresaKey_(getConfig(e.parameter.perfil)); } catch (err) { }
@@ -1611,7 +1609,8 @@ function generarPDFClientes(perfilId) {
 
   if (items.length === 0) throw new Error('No hay informes generados en este puesto (col 33 vacía).');
 
-  // ordenar por "Orden cliente" (col 35); los sin orden van al final
+  // si hay ranking (col 35), el PDF lleva solo a esas personas, en ese orden; sin ranking, todos los informes como antes
+  if (items.some(x => x.orden < 999)) items = items.filter(x => x.orden < 999);
   items.sort((a,b) => a.orden - b.orden);
 
   const filas = items.map(r =>
@@ -2096,7 +2095,7 @@ function doGetKanban_(perfilId) {
       tel: d[i][2] || '', dni: String(d[i][3] || ''), mail: d[i][21] || '',
       resumen: d[i][6] || '', cv: cvs[i - 1] || '',
       informe: link(i + 1, 33),
-      scrPDF: link(i + 1, 13), compPDF: link(i + 1, 17), postulacion: link(i + 1, 31), cita: d[i][36] || '', historial: d[i][37] || '', mailDescarte: d[i][39] || '', fuente: String(d[i][9] || ''), contactado: d[i][40] || '', notaScrEmp: d[i][43] || '', notaPresEmp: d[i][44] || '', notaScrEmp: d[i][43] || '', notaPresEmp: d[i][44] || '', formacion: d[i][22] || '', requisitos: d[i][5] || '', pretNum: (function(){var m=String(d[i][5]||'').match(/Remuneraci[oó]n pretendida:\s*\$?\s*([\d.\s]+)/i);return m?Number(m[1].replace(/[.\s]/g,'')):0;})()
+      scrPDF: link(i + 1, 13), compPDF: link(i + 1, 17), postulacion: link(i + 1, 31), cita: d[i][36] || '', historial: d[i][37] || '', mailDescarte: d[i][39] || '', fuente: String(d[i][9] || ''), contactado: d[i][40] || '', notaScrEmp: d[i][43] || '', notaPresEmp: d[i][44] || '', notaScrEmp: d[i][43] || '', notaPresEmp: d[i][44] || '', ordenCli: Number(d[i][34]) || 0, valCli: String(d[i][35] || ''), formacion: d[i][22] || '', requisitos: d[i][5] || '', pretNum: (function(){var m=String(d[i][5]||'').match(/Remuneraci[oó]n pretendida:\s*\$?\s*([\d.\s]+)/i);return m?Number(m[1].replace(/[.\s]/g,'')):0;})()
     });
   }
   return JSON.stringify(out);
@@ -2229,9 +2228,9 @@ Object.keys(EMPRESAS).forEach(function(emp){
 navHTML+='</select>';
 navHTML+='<button title="Volver al inicio (todas las búsquedas)" onclick="window.top.location.href=\\'${URL_WEBAPP}?tipo=inicio\\'">🏠 Inicio</button>';
 navHTML+='<button id="quienBtn" class="avt" title="Tocá para salir" onclick="blMenuUsuario()">👤</button>';
-navHTML+='<div class="dd"><button onclick="ddToggle(this)">📄 Informes ▾</button><div class="ddm"><a onclick="window.open(\\'${URL_WEBAPP}?tipo=informebusqueda&perfil=${perfilId}\\',\\'_blank\\')">📝 Informe de la búsqueda (con IA)</a><a onclick="window.open(\\'${URL_WEBAPP}?tipo=procesohtml&perfil=${perfilId}\\',\\'_blank\\')">📊 Informe de proceso (para la empresa)</a><a onclick="blConfirm(\\'¿Generar PDF cliente de esta búsqueda?\\',function(){window.open(\\'${URL_WEBAPP}?tipo=pdfcliente&perfil=${perfilId}\\',\\'_blank\\')})">📄 PDF para el cliente</a></div></div>';
+navHTML+='<div class="dd"><button onclick="ddToggle(this)">📄 Informes ▾</button><div class="ddm"><a onclick="window.open(\\'${URL_WEBAPP}?tipo=informebusqueda&perfil=${perfilId}\\',\\'_blank\\')">📝 Informe de la búsqueda (con IA)</a><a onclick="window.open(\\'${URL_WEBAPP}?tipo=procesohtml&perfil=${perfilId}\\',\\'_blank\\')">📊 Informe de proceso (para la empresa)</a><a onclick="blConfirm(\\'¿Generar el PDF para el cliente? Lleva los informes de quienes tengan número en «Orden para el cliente» (columna Empresa), en ese orden; si nadie tiene número, lleva todos.\\',function(){window.open(\\'${URL_WEBAPP}?tipo=pdfcliente&perfil=${perfilId}\\',\\'_blank\\')})">📄 PDF para el cliente</a></div></div>';
 navHTML+='<div class="dd"><button onclick="ddToggle(this)">📚 Búsqueda ▾</button><div class="ddm">'+(${perfilProt?'true':'false'}?'<a onclick="pedirPerfilPin()">🔒 Perfil del puesto</a>':'<a onclick="window.open(\\'${perfilUrl}\\',\\'_blank\\')">📋 Perfil del puesto</a>')+'<a onclick="verFlyer()">📢 Difusión</a><a onclick="verEnlaces()">🔗 Enlaces</a><a onclick="verHistorial()">📜 Historial de la búsqueda</a></div></div>';
-navHTML+='<div class="dd"><button onclick="ddToggle(this)">🧰 Candidatos ▾</button><div class="ddm"><a onclick="window.top.location.href=\\'${URL_WEBAPP}?tipo=ranking&perfil=${perfilId}\\'">🏆 Ranking para el cliente</a><a onclick="descartesMasivo()">✉ Mails de descarte</a><a title="Baja un archivo para importar a los contactos de Google" onclick="bajarContactos(this)">📇 Contactos al celular</a><a onclick="window.top.location.href=\\'${URL_WEBAPP}?tipo=banco&desde=${perfilId}\\'">★ Banco de talento</a><a onclick="abrirPapelera()">🗑 Papelera ('+ELIM.length+')</a></div></div>';
+navHTML+='<div class="dd"><button onclick="ddToggle(this)">🧰 Candidatos ▾</button><div class="ddm"><a onclick="descartesMasivo()">✉ Mails de descarte</a><a title="Baja un archivo para importar a los contactos de Google" onclick="bajarContactos(this)">📇 Contactos al celular</a><a onclick="window.top.location.href=\\'${URL_WEBAPP}?tipo=banco&desde=${perfilId}\\'">★ Banco de talento</a><a onclick="abrirPapelera()">🗑 Papelera ('+ELIM.length+')</a></div></div>';
 document.addEventListener('click',function(e){if(!e.target.closest('.dd'))document.querySelectorAll('.ddm.show').forEach(function(m){m.classList.remove('show');});});
 function ddToggle(b){var m=b.nextElementSibling,ab=m.classList.contains('show');document.querySelectorAll('.ddm.show').forEach(function(x){x.classList.remove('show');});if(!ab)m.classList.add('show');}
 document.getElementById('nav').innerHTML=navHTML;
