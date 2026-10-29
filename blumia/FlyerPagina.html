@@ -200,7 +200,7 @@ function porDefecto(){
     txt:{badge:[DATOS.ubicacion].filter(Boolean).join(' · ')||'Presencial',busc:'Buscamos',cargo:DATOS.puesto,
       baj:nombre.charAt(0).toUpperCase()+nombre.slice(1)+' busca sumar a su equipo una persona para el puesto de '+DATOS.puesto+'.',
       titD:'Principales desafíos',titR:'Requisitos',
-      form:'Postulate desde el link que acompaña este posteo',qrCap:'Escaneá para postularte',mail:''},
+      form:'Postulate desde el link que acompaña este posteo',qrCap:'Escaneá para postularte',mail:DATOS.mail||''},
     iD:['Completá los principales desafíos del puesto.'],iR:['Completá los requisitos del puesto.'],
     social:{linkedin:'',instagram:'',whatsapp:''}};
 }
