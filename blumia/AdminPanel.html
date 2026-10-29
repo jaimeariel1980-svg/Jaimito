@@ -199,7 +199,7 @@
     ping(0);
   };
   function render(tab){
-    var T=[['usr','👥 Usuarios'],['copia','💾 Copia de seguridad'],['acc','📜 Accesos'],['vel','⏱ Diagnóstico de velocidad']];
+    var T=[['usr','👥 Usuarios'],['copia','💾 Copia de seguridad'],['acc','📜 Accesos'],['vel','⏱ Diagnóstico de velocidad'],['vac','🧹 Vaciar búsqueda']];
     var x=tab==='nueva'?'<h2>➕ Nueva búsqueda</h2>':'<h2>⚙ Administración</h2><div class="cf-help" style="margin:0 0 6px">Lo que no depende de una búsqueda en particular.</div><div class="cf-tabs">'+T.map(function(t){return '<button class="cf-tab'+(t[0]===tab?' on':'')+'" onclick="adTab(\''+t[0]+'\')">'+t[1]+'</button>';}).join('')+'</div>';
     if(tab==='nueva')x+=nbHtml();
     if(tab==='usr')x+='<div class="cf-help">Quién puede entrar. Los <b>administradores</b> configuran las búsquedas y manejan los usuarios; los <b>usuarios</b> trabajan con los candidatos. Por ahora se entra solo con nombre y apellido (sin PIN): escribí el nombre completo como lo va a poner la persona.</div><div id="cfUsr">Cargando…</div><div class="cf-foot"><button class="cf-close" onclick="adCerrar()">Cerrar</button></div>';
@@ -209,9 +209,26 @@
       var opts=(typeof DATOS!=='undefined'?DATOS:[]).map(function(b){return '<option value="'+esc(b.id)+'">'+esc(b.nombre)+(b.cerrada?' (cerrada)':'')+'</option>';}).join('');
       x+='<div class="cf-help">Mide cuánto tarda en abrirse el tablero de una búsqueda y <b>en qué paso se va el tiempo</b>: la conexión con Google, la lectura de la planilla y el armado de la página. Sirve para saber qué mejorar. Tarda unos segundos.</div><label>Búsqueda</label><select id="adVelSel">'+opts+'</select><div class="cf-foot" style="justify-content:flex-start"><button class="cf-save" onclick="adMedir(this)">⏱ Medir</button></div><div id="adVel"></div><div class="cf-foot"><button class="cf-close" onclick="adCerrar()">Cerrar</button></div>';
     }
+    if(tab==='vac'){
+      var op2=(typeof DATOS!=='undefined'?DATOS:[]).map(function(b){return '<option value="'+esc(b.id)+'">'+esc(b.nombre)+(b.cerrada?' (cerrada)':'')+'</option>';}).join('');
+      x+='<div class="cf-help">Borra <b>todos los candidatos</b> de una búsqueda, con su historial, contactos y evaluaciones, y manda sus archivos de Drive a la papelera (se recuperan 30 días desde la papelera de Drive). No toca la configuración, los formularios, el flyer ni el Banco de talento. Sirve para arrancar de cero después de las pruebas. Te va a pedir que escribas el nombre de la búsqueda para confirmar.</div><label>Búsqueda a vaciar</label><select id="adVacSel">'+op2+'</select><div class="cf-foot" style="justify-content:flex-start"><button class="cf-save" style="background:#b3261e;border-color:#b3261e" onclick="adVaciar(this)">🧹 Vaciar esta búsqueda…</button></div><div id="adVac"></div><div class="cf-foot"><button class="cf-close" onclick="adCerrar()">Cerrar</button></div>';
+    }
     document.getElementById('cfBox').innerHTML=x;
     if(tab==='usr')cfUsuarios();if(tab==='copia')adCopia();if(tab==='acc')adAccesos();
   }
+  window.adVaciar=function(b){
+    var id=document.getElementById('adVacSel').value,d=document.getElementById('adVac');if(!id)return;
+    b.disabled=true;d.innerHTML='';
+    google.script.run.withSuccessHandler(function(i){
+      b.disabled=false;
+      if(!i.candidatos){d.innerHTML='<div class="cf-help">La búsqueda «'+esc(i.nombre)+'» no tiene candidatos para borrar.</div>';return;}
+      blPrompt('Esto borra los '+i.candidatos+' candidatos de «'+i.nombre+'» con su historial, contactos y evaluaciones, y manda sus archivos de Drive a la papelera. No se puede deshacer desde acá. Para confirmar, escribí el nombre de la búsqueda:','',function(t){
+        d.innerHTML='<div class="cf-help">Vaciando la búsqueda… puede tardar un momento.</div>';
+        var q='';try{q=localStorage.getItem('blumia_quien')||'';}catch(e){}
+        google.script.run.withSuccessHandler(function(r){d.innerHTML='<div class="cf-help" style="color:#0F3F27;font-weight:700">Listo: se borraron '+r.candidatos+' candidatos, '+r.historial+' movimientos de historial y '+r.archivos+' archivos pasaron a la papelera de Drive.</div>';}).withFailureHandler(function(e){d.innerHTML='<div style="color:#B91C1C">'+esc((e&&e.message)||e)+'</div>';}).vaciarBusqueda(id,t,q);
+      },{titulo:'Vaciar la búsqueda',si:'Borrar todo',peligro:true});
+    }).withFailureHandler(function(e){b.disabled=false;d.innerHTML='<div style="color:#B91C1C">'+esc((e&&e.message)||e)+'</div>';}).vaciarBusquedaInfo(id);
+  };
   window.adTab=function(t){sync();render(t);};
   window.adAbrir=function(t){document.getElementById('cfBg').classList.add('show');render(t||'nueva');};
   window.adCerrar=window.cfCerrar=function(){document.getElementById('cfBg').classList.remove('show');};

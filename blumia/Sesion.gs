@@ -262,6 +262,8 @@ function registroApi_() {
     flyerGuardar: { f: flyerGuardar_ },
     ibAnalizar: { f: ibAnalizar_ },
     ibRedactar: { f: ibRedactar_ },
+    informePDF: { f: informePDF_ },
+    informeEnviar: { f: informeEnviar_ },
     rankingGuardar: { f: rankingGuardar_ },
     vaciarBusquedaInfo: { f: vaciarBusquedaInfo_, admin: true },
     vaciarBusqueda: { f: vaciarBusqueda_, admin: true },

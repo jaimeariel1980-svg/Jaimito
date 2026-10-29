@@ -157,7 +157,7 @@ function doGetPagina_(e) {
   } else if (tipo === 'flyer') {
     return flyerHTML_(perfil);
   } else if (tipo === 'informebusqueda') {
-    return informeBusquedaHTML_(perfil);
+    return informeBusquedaHTML_(perfil, e.parameter.alcance);
   } else if (tipo === 'procesohtml') {
     let empProceso = empresaDefault_();
     try { if (e.parameter.perfil) empProceso = empresaKey_(getConfig(e.parameter.perfil)); } catch (err) { }
@@ -2228,9 +2228,9 @@ Object.keys(EMPRESAS).forEach(function(emp){
 navHTML+='</select>';
 navHTML+='<button title="Volver al inicio (todas las búsquedas)" onclick="window.top.location.href=\\'${URL_WEBAPP}?tipo=inicio\\'">🏠 Inicio</button>';
 navHTML+='<button id="quienBtn" class="avt" title="Tocá para salir" onclick="blMenuUsuario()">👤</button>';
-navHTML+='<div class="dd"><button onclick="ddToggle(this)">📄 Informes ▾</button><div class="ddm"><a onclick="window.open(\\'${URL_WEBAPP}?tipo=informebusqueda&perfil=${perfilId}\\',\\'_blank\\')">📝 Informe de la búsqueda</a><a onclick="blConfirm(\\'¿Generar el PDF para el cliente? Lleva los informes de quienes tengan número en «Orden para el cliente» (columna Empresa), en ese orden; si nadie tiene número, lleva todos.\\',function(){window.open(\\'${URL_WEBAPP}?tipo=pdfcliente&perfil=${perfilId}\\',\\'_blank\\')})">📄 PDF para el cliente</a></div></div>';
+navHTML+='<div class="dd"><button onclick="ddToggle(this)">📄 Informes ▾</button><div class="ddm"><a onclick="window.open(\\'${URL_WEBAPP}?tipo=informebusqueda&perfil=${perfilId}\\',\\'_blank\\')">📝 Informe de la búsqueda</a><a onclick="window.open(\\'${URL_WEBAPP}?tipo=informebusqueda&alcance=empresa&perfil=${perfilId}\\',\\'_blank\\')">🏢 Informe de toda la empresa</a><a onclick="blConfirm(\\'¿Generar el PDF para el cliente? Lleva los informes de quienes tengan número en «Orden para el cliente» (columna Empresa), en ese orden; si nadie tiene número, lleva todos.\\',function(){window.open(\\'${URL_WEBAPP}?tipo=pdfcliente&perfil=${perfilId}\\',\\'_blank\\')})">📄 PDF para el cliente</a></div></div>';
 navHTML+='<div class="dd"><button onclick="ddToggle(this)">📚 Búsqueda ▾</button><div class="ddm">'+(${perfilProt?'true':'false'}?'<a onclick="pedirPerfilPin()">🔒 Perfil del puesto</a>':'<a onclick="window.open(\\'${perfilUrl}\\',\\'_blank\\')">📋 Perfil del puesto</a>')+'<a onclick="verFlyer()">📢 Difusión</a><a onclick="verEnlaces()">🔗 Enlaces</a><a onclick="verHistorial()">📜 Historial de la búsqueda</a></div></div>';
-navHTML+='<div class="dd"><button onclick="ddToggle(this)">🧰 Candidatos ▾</button><div class="ddm"><a onclick="descartesMasivo()">✉ Mails de descarte</a><a title="Baja un archivo para importar a los contactos de Google" onclick="bajarContactos(this)">📇 Contactos al celular</a><a onclick="window.top.location.href=\\'${URL_WEBAPP}?tipo=banco&desde=${perfilId}\\'">★ Banco de talento</a><a onclick="abrirPapelera()">🗑 Papelera ('+ELIM.length+')</a>'+(window.blRol&&blRol()==='Administrador'?'<a style="color:#b3261e" onclick="vaciarBusqueda()">🧹 Vaciar búsqueda…</a>':'')+'</div></div>';
+navHTML+='<div class="dd"><button onclick="ddToggle(this)">🧰 Candidatos ▾</button><div class="ddm"><a onclick="descartesMasivo()">✉ Mails de descarte</a><a title="Baja un archivo para importar a los contactos de Google" onclick="bajarContactos(this)">📇 Contactos al celular</a><a onclick="window.top.location.href=\\'${URL_WEBAPP}?tipo=banco&desde=${perfilId}\\'">★ Banco de talento</a><a onclick="abrirPapelera()">🗑 Papelera ('+ELIM.length+')</a></div></div>';
 document.addEventListener('click',function(e){if(!e.target.closest('.dd'))document.querySelectorAll('.ddm.show').forEach(function(m){m.classList.remove('show');});});
 function ddToggle(b){var m=b.nextElementSibling,ab=m.classList.contains('show');document.querySelectorAll('.ddm.show').forEach(function(x){x.classList.remove('show');});if(!ab)m.classList.add('show');}
 document.getElementById('nav').innerHTML=navHTML;
