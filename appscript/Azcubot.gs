@@ -869,8 +869,8 @@ function azcuValidarAccion_(tipo, a){
   var datos = {id:p.id, dir:p.dir}, resumen, peligro = false, s;
   if(tipo==='cargar'){
     if(AZCU_VIAS.indexOf(a.via)<0 || AZCU_RESULTADOS.indexOf(a.resultado)<0) return {error:'Vía o resultado inválidos.'};
-    if(/rechaz|no le interes/i.test(a.resultado||'') && !String(a.observaciones||'').trim()) return {error:'Falta el motivo (por qué se rechazó o no le interesó): preguntalo en una línea; queda registrado.'};
-    if(!String(a.interesado||'').trim() || /^(no figura|desconocido|sin dato|n\/?a|sin nombre)$/i.test(String(a.interesado).trim())) return {error:'Falta el nombre del interesado: preguntalo en una línea (no pongas «no figura»).'};
+    if(/rechaz|no le interes/i.test(a.resultado||'') && (!String(a.observaciones||'').trim() || /[¿?]/.test(String(a.observaciones)))) return {error:'Falta el motivo (por qué se rechazó o no le interesó): preguntalo en una línea; queda registrado. No pongas una pregunta en las observaciones.'};
+    if(!String(a.interesado||'').trim() || /^(no (figura|se\b|tengo|dice|indic|especific|consta)|desconocid|sin (dato|nombre|especif)|n\/?a$|[—-]+$)/i.test(String(a.interesado).trim())) return {error:'Falta el nombre del interesado: preguntalo en una línea (no pongas «no figura»).'};
     datos.interesado = a.interesado||''; datos.tel = String(a.telefono||'').replace(/[^0-9]/g,''); datos.via = a.via; datos.resultado = a.resultado; datos.prox = a.proximo_paso||''; datos.obs = a.observaciones||''; datos.inmob = a.inmobiliaria||''; datos.colega = a.colega||'';
     resumen = 'Cargar en '+p.dir+': '+datos.interesado+' · '+datos.via+' · '+datos.resultado+(datos.prox?' · próximo paso: '+datos.prox:'')+(datos.inmob?' · viene por '+datos.inmob+(datos.colega?' (colega '+datos.colega+')':''):'')+(datos.obs?' · detalle: '+datos.obs:'');
   } else if(tipo==='agendar'){
