@@ -176,7 +176,7 @@ const EVAL_STYLE = {
 const VEREDICTOS = {
   A: { titulo: 'A · Avanza', desc: 'Cumple lo crítico y lo deseable. Avanza a la siguiente instancia.', cls: 'res-verde', color: 'verde' },
   'B+': { titulo: 'B+ · Avanza', desc: 'Muy bueno, cumple lo excluyente con una cuestión menor. Avanza a la siguiente instancia.', cls: 'res-verdeclaro', color: 'verde' },
-  B: { titulo: 'B · Avanza', desc: 'Cumple lo crítico con algún flanco menor. Avanza a la siguiente instancia.', cls: 'res-amarillo', color: 'amarillo' },
+  B: { titulo: 'B · Reserva', desc: 'Cumple lo mínimo con dudas o flancos a resolver. Queda en reserva.', cls: 'res-amarillo', color: 'amarillo' },
   C: { titulo: 'C · No avanza', desc: 'No cumple lo crítico o presenta red flags importantes.', cls: 'res-rojo', color: 'rojo' }
 };
 
@@ -275,8 +275,8 @@ function render() {
       <div class="veredicto-manual-label">Resultado · Letra para la planilla <span id="sugerencia-auto" style="font-weight:600;color:var(--mid);margin-left:8px;text-transform:none;letter-spacing:0">(sugerencia automática: —)</span></div>
       <div class="vd-opts">
         <button class="vd-btn" onclick="setVeredictoManual('A')"><strong>A</strong> · Avanza</button>
-        <button class="vd-btn" onclick="setVeredictoManual('B+')"><strong>B+</strong> · Avanza</button>
-        <button class="vd-btn" onclick="setVeredictoManual('B')"><strong>B</strong> · Avanza</button>
+        <button class="vd-btn" onclick="setVeredictoManual('B+')"><strong>B+</strong> · Avanza con observación</button>
+        <button class="vd-btn" onclick="setVeredictoManual('B')"><strong>B</strong> · Reserva</button>
         <button class="vd-btn" onclick="setVeredictoManual('C')"><strong>C</strong> · No avanza</button>
         <button class="vd-btn" style="color:var(--light);font-size:10px" onclick="resetVeredicto()">↺ Auto</button>
       </div>

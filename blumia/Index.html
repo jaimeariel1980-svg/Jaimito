@@ -129,6 +129,7 @@ html,body{background:var(--bg);font-family:var(--font);color:var(--text);}
 .verdict-opt{flex:1;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;padding:18px;border:2px solid var(--line);font-size:14px;font-weight:800;transition:.2s;background:#fff;color:var(--light);font-family:var(--font);border-radius:6px;text-transform:uppercase;}
 .vdot{width:12px;height:12px;border-radius:50%;border:2px solid currentColor;}
 .verdict-opt.adj-alto.sel{background:var(--c-verde-fuerte);color:#fff;border-color:var(--c-verde-fuerte);box-shadow:0 4px 15px rgba(26,102,69,0.3);}
+.verdict-opt.adj-mbp.sel{background:#7bc47f;color:#fff;border-color:#7bc47f;box-shadow:0 4px 15px rgba(123,196,127,0.3);}
 .verdict-opt.adj-mod.sel{background:var(--c-amarillo);color:#fff;border-color:var(--c-amarillo);box-shadow:0 4px 15px rgba(245,158,11,0.3);}
 .verdict-opt.adj-bajo.sel{background:var(--c-rojo);color:#fff;border-color:var(--c-rojo);box-shadow:0 4px 15px rgba(239,68,68,0.3);}
 .verdict-opt.sel .vdot{background:#fff;border-color:#fff;}
@@ -376,7 +377,8 @@ function render() {
         <div class="verdict-sub">Tu juicio profesional tiene prioridad sobre el puntaje automático</div>
         <div class="verdict-opts">
           <button class="verdict-opt adj-alto" type="button"><div class="vdot"></div><span>Alto ajuste</span></button>
-          <button class="verdict-opt adj-mod" type="button"><div class="vdot"></div><span>Ajuste con observaciones</span></button>
+          <button class="verdict-opt adj-mbp" type="button"><div class="vdot"></div><span>Alto, con observación menor</span></button>
+          <button class="verdict-opt adj-mod" type="button"><div class="vdot"></div><span>Con observaciones (reserva)</span></button>
           <button class="verdict-opt adj-bajo" type="button"><div class="vdot"></div><span>No ajusta</span></button>
         </div>
       </div>
@@ -522,7 +524,7 @@ document.getElementById('btnGuardar').addEventListener('click', function() {
   if (!cand) { alert('Falta el nombre de la persona entrevistada.'); return; }
   const ajusteBtn = document.querySelector('.verdict-opt.sel');
   let ponderacion = '';
-  if (ajusteBtn) ponderacion = ajusteBtn.classList.contains('adj-alto') ? 'A' : ajusteBtn.classList.contains('adj-mod') ? 'B' : ajusteBtn.classList.contains('adj-bajo') ? 'C' : '';
+  if (ajusteBtn) ponderacion = ajusteBtn.classList.contains('adj-alto') ? 'A' : ajusteBtn.classList.contains('adj-mbp') ? 'B+' : ajusteBtn.classList.contains('adj-mod') ? 'B' : ajusteBtn.classList.contains('adj-bajo') ? 'C' : '';
   const btn = this;
   const guardar = function() {
     const ESTADO_EF = efCapturar();
@@ -549,7 +551,7 @@ document.getElementById('btnGuardar').addEventListener('click', function() {
       })
       .guardarEnPlanilla(cand, htmlSnap, ponderacion, PERFIL_ID, (function(){try{return localStorage.getItem('blumia_quien')||ENTR_INICIAL||'';}catch(e){return ENTR_INICIAL||'';}})(), ESTADO_EF, EDITAR);
   };
-  if (!ponderacion) blConfirm('No elegiste el «Ajuste al rol» (Alto / Con observaciones / No ajusta): la entrevista se guarda pero la nota de competencias queda sin cargar.\n\n¿Guardar igual?', guardar, { si: 'Guardar igual' });
+  if (!ponderacion) blConfirm('No elegiste el «Ajuste al rol» (Alto / Alto con observación menor / Con observaciones / No ajusta): la entrevista se guarda pero la nota de competencias queda sin cargar.\n\n¿Guardar igual?', guardar, { si: 'Guardar igual' });
   else guardar();
 });
 </script>

@@ -32,7 +32,7 @@ function estadoPorNota_(etapa, nota) {
   if (m[v]) v = m[v];
   if (['A', 'B+', 'B', 'C'].indexOf(v) === -1) return '';
   if (v === 'C') return { cv: 'Descartado sin screening', screening: 'Descartado post screening', competencias: 'Descartado en competencias', empresa: 'Descartado en empresa' }[etapa];
-  if (v === 'B' && etapa !== 'cv' && etapa !== 'screening') return etapa === 'competencias' ? 'Reserva competencias' : 'En reserva';
+  if (v === 'B' && etapa !== 'cv') return { screening: 'Reserva screening', competencias: 'Reserva competencias' }[etapa] || 'En reserva';
   return { cv: 'Avanza a screening', screening: 'Avanza a competencias', competencias: 'Avanza a screening empresa', empresa: 'En cliente' }[etapa];
 }
 

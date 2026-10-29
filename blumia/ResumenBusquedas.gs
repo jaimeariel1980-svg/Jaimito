@@ -12,7 +12,7 @@ function metEstado_(estado) {
     else if (/screening empresa|presencial empresa|en empresa/.test(l)) { lv = /screening empresa/.test(l) ? 3 : 4; d = 'emp'; }
     else { lv = 0; d = 'cv'; }
   } else if (/reserva/.test(l)) {
-    t = 'res'; lv = /screening empresa/.test(l) ? 3 : /presencial empresa/.test(l) ? 4 : 2;
+    t = 'res'; lv = /screening empresa/.test(l) ? 3 : /presencial empresa/.test(l) ? 4 : /reserva screening/.test(l) ? 1 : 2;
   } else {
     lv = /competencias/.test(l) ? 2 : /screening empresa/.test(l) ? 3 : /presencial empresa|avanza a empresa|entrevista empresa|en cliente/.test(l) ? 4 : /screening/.test(l) ? 1 : 0;
   }
