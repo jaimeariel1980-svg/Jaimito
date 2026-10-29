@@ -549,7 +549,7 @@ document.getElementById('btnGuardar').addEventListener('click', function() {
         btn.textContent = 'Guardar entrevista';
         alert('Error al guardar: ' + err.message);
       })
-      .guardarEnPlanilla(cand, htmlSnap, ponderacion, PERFIL_ID, (function(){try{return localStorage.getItem('blumia_quien')||ENTR_INICIAL||'';}catch(e){return ENTR_INICIAL||'';}})(), ESTADO_EF, EDITAR);
+      .guardarEnPlanilla(cand, htmlSnap, ponderacion, PERFIL_ID, (function(){var el=document.getElementById('inp-entre');var v=el&&el.value?String(el.value).trim():'';if(v)return v;try{return localStorage.getItem('blumia_quien')||ENTR_INICIAL||'';}catch(e){return ENTR_INICIAL||'';}})(), ESTADO_EF, EDITAR);
   };
   if (!ponderacion) blConfirm('No elegiste el «Ajuste al rol» (Alto / Alto con observación menor / Con observaciones / No ajusta): la entrevista se guarda pero la nota de competencias queda sin cargar.\n\n¿Guardar igual?', guardar, { si: 'Guardar igual' });
   else guardar();

@@ -104,6 +104,12 @@ function pruebaCompleta_(op) {
       return e.lista.length + ' usuarios';
     });
 
+    paso('Quién entrevistó (tarjeta): se lee de Evaluaciones', () => {
+      const m = entrevistadoresEval_(c.id);
+      requiere(m && typeof m === 'object', 'No devolvió un mapa');
+      return Object.keys(m).length + ' evaluaciones con entrevistador';
+    });
+
     // 3b. búsqueda ciega
     paso('Búsqueda ciega: sin nombre ni logo de la empresa para el candidato', () => {
       try {

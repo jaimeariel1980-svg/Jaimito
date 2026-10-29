@@ -2080,6 +2080,7 @@ function doGetKanban_(perfilId) {
   const out = [];
   const cMot = d[0].indexOf('Motivo de descarte');
   const cObs = d[0].indexOf('Observaciones');
+  const entEval = entrevistadoresEval_(perfilId);
   const movs = ultimosMovimientos_(sh.getName());
   lapT_('Leer el historial de movimientos');
   const prev = previosDeFilas_(perfilId, d.slice(1));
@@ -2095,7 +2096,7 @@ function doGetKanban_(perfilId) {
       tel: d[i][2] || '', dni: String(d[i][3] || ''), mail: d[i][21] || '',
       resumen: d[i][6] || '', cv: cvs[i - 1] || '',
       informe: link(i + 1, 33),
-      scrPDF: link(i + 1, 13), compPDF: link(i + 1, 17), postulacion: link(i + 1, 31), cita: d[i][36] || '', citaCon: String(d[i][45] || ''), historial: d[i][37] || '', mailDescarte: d[i][39] || '', fuente: String(d[i][9] || ''), contactado: d[i][40] || '', notaScrEmp: d[i][43] || '', notaPresEmp: d[i][44] || '', notaScrEmp: d[i][43] || '', notaPresEmp: d[i][44] || '', ordenCli: Number(d[i][34]) || 0, valCli: String(d[i][35] || ''), formacion: d[i][22] || '', requisitos: d[i][5] || '', pretNum: (function(){var m=String(d[i][5]||'').match(/Remuneraci[oó]n pretendida:\s*\$?\s*([\d.\s]+)/i);return m?Number(m[1].replace(/[.\s]/g,'')):0;})()
+      scrPDF: link(i + 1, 13), compPDF: link(i + 1, 17), postulacion: link(i + 1, 31), entScr: entEval[evalNorm_(d[i][1]) + '|screening'] || '', entComp: entEval[evalNorm_(d[i][1]) + '|competencias'] || '', cita: d[i][36] || '', citaCon: String(d[i][45] || ''), historial: d[i][37] || '', mailDescarte: d[i][39] || '', fuente: String(d[i][9] || ''), contactado: d[i][40] || '', notaScrEmp: d[i][43] || '', notaPresEmp: d[i][44] || '', notaScrEmp: d[i][43] || '', notaPresEmp: d[i][44] || '', ordenCli: Number(d[i][34]) || 0, valCli: String(d[i][35] || ''), formacion: d[i][22] || '', requisitos: d[i][5] || '', pretNum: (function(){var m=String(d[i][5]||'').match(/Remuneraci[oó]n pretendida:\s*\$?\s*([\d.\s]+)/i);return m?Number(m[1].replace(/[.\s]/g,'')):0;})()
     });
   }
   return JSON.stringify(out);
