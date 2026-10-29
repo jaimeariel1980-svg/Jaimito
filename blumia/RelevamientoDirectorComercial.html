@@ -375,7 +375,7 @@ footer{
   </div>
   <div class="tb-right">
     <div class="tb-badge">Confidencial</div>
-    <span id="sis-fecha" style="font-size:11px;color:#555;margin-right:8px"></span><button class="btn-save" id="btn-sis" onclick="guardarSistema()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Guardar en el sistema</button><button class="btn-pdf" onclick="window.print()">
+    <span id="sis-fecha" style="font-size:11px;color:#555;margin-right:8px"></span><button class="btn-save" id="btn-sis" onclick="guardarSistema()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> <span id="btn-sis-t">Guardar en el sistema</span></button><button class="btn-pdf" onclick="window.print()">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Exportar PDF
     </button>
@@ -841,9 +841,11 @@ function avisoSistema(t,ok){
   document.body.appendChild(d);setTimeout(function(){d.remove();},3500);
 }
 function guardarSistema(){
-  var b=document.getElementById('btn-sis');b.disabled=true;
-  google.script.run.withSuccessHandler(function(f){b.disabled=false;document.getElementById('sis-fecha').textContent='Guardado: '+f;avisoSistema('Guardado en el sistema ✓',true);})
-    .withFailureHandler(function(e){b.disabled=false;avisoSistema((e&&e.message)||'No se pudo guardar',false);})
+  var b=document.getElementById('btn-sis'),t=document.getElementById('btn-sis-t'),orig='Guardar en el sistema';
+  var vuelve=function(ms){setTimeout(function(){b.disabled=false;if(t)t.textContent=orig;},ms||0);};
+  b.disabled=true;if(t)t.textContent='Guardando…';
+  google.script.run.withSuccessHandler(function(f){document.getElementById('sis-fecha').textContent='Guardado: '+f;if(t)t.textContent='Guardado ✓';avisoSistema('Guardado en el sistema ✓',true);vuelve(2200);})
+    .withFailureHandler(function(e){vuelve(0);avisoSistema((e&&e.message)||'No se pudo guardar',false);})
     .guardarPerfilDatos(PERFIL_ID,PERFIL_TOKEN,JSON.stringify(datosForm()));
 }
 if(DATOS_GUARDADOS){aplicarDatos(DATOS_GUARDADOS);if(FECHA_GUARDADO)document.getElementById('sis-fecha').textContent='Última versión guardada: '+FECHA_GUARDADO;}
