@@ -152,6 +152,7 @@ function flyerAccionOk_(a) {
   else if (t === 'ocultar') { const b = blq(a.bloque, ['bucle', 'aro']); if (b) r = { tipo: t, bloque: b }; }
   else if (t === 'negrita') { const b = blq(a.bloque, FLYER_BLOQUES_TEXTO_); if (b) r = { tipo: t, bloque: b, valor: !!a.valor }; }
   else if (t === 'zonaSegura') r = { tipo: t };
+  else if (t === 'acomodar') r = { tipo: t };
   else if (t === 'proponerTexto') { const b = blq(a.bloque, ['baj', 'fTxt', 'badge']); const x = String(a.texto || '').replace(/[<>]/g, '').trim().slice(0, 300); if (b && x) r = { tipo: t, bloque: b, texto: x }; }
   return r;
 }
@@ -165,13 +166,13 @@ function flyerRevisarIA_(perfilId, base64, fmt, estado, ronda) {
     'Marca: verde #0F3F27, naranja #FBC67B, rosa #F9BDBB, amarillo #FEE795, celeste #B4E1E0; tipografía Pangram; estilo cálido, limpio y profesional. ' +
     'Mirá la imagen y respondé SOLO con un JSON válido, sin texto antes ni después, con esta forma exacta: ' +
     '{"puntaje":entero de 1 a 10,"resumen":"una frase (máx. 140 caracteres)","sugerencias":[{"prioridad":"alta|media|baja","que":"qué mejorar (máx. 110 caracteres)","como":"cómo arreglarlo, en palabras simples (máx. 150 caracteres)","accion":null o un objeto de la lista de abajo}]}. ' +
-    'Dá de 3 a 5 sugerencias, de la más a la menos importante. Evaluá: legibilidad (contraste y tamaño de letra pensando en un celular), jerarquía, foto, equilibrio y espacios, zonas que tapa Instagram (250 px arriba y abajo en historia), coherencia con la marca y claridad de cómo postularse. ' +
+    'Dá de 3 a 5 sugerencias, de la más a la menos importante. Evaluá en primer lugar la DISTRIBUCIÓN: todo centrado o alineado al mismo margen, márgenes parejos a izquierda y derecha, nada pegado a los bordes, y espacios parejos entre bloques sin huecos grandes ni elementos amontonados; si algo de eso está mal, la primera sugerencia es la acción acomodar. Después evaluá: legibilidad (contraste y tamaño de letra pensando en un celular), jerarquía, foto, equilibrio, zonas que tapa Instagram (250 px arriba y abajo en historia), coherencia con la marca y claridad de cómo postularse. ' +
     'ACCIONES (el editor las ejecuta solas; usá solo estas, con estos valores; si ninguna sirve, accion = null): ' +
     '{"tipo":"colorTitulo","color":"#FFFFFF"} (color de la paleta: #0F3F27 #1A1A1A #FFFFFF #FBC67B #FEE795 #F9BDBB #B4E1E0); ' +
     '{"tipo":"colorBloque","bloque":"baj","color":"#1A1A1A"}; {"tipo":"difuminado","valor":0-100} (más alto = la foto se funde más con el fondo claro); {"tipo":"tamanoTexto","valor":70-130}; ' +
     '{"tipo":"tamanoBloque","bloque":"tit","valor":40-200}; {"tipo":"mover","bloque":"fMail","dx":-600..600,"dy":-600..600} (px en un lienzo de 1080 de ancho; dy negativo sube); {"tipo":"dejarItems","n":2-4}; ' +
     '{"tipo":"logoOscuro","valor":true|false}; {"tipo":"altoPie","valor":60-150}; {"tipo":"serif","valor":true|false}; {"tipo":"ocultar","bloque":"bucle|aro"}; {"tipo":"negrita","bloque":"baj","valor":true|false}; ' +
-    '{"tipo":"zonaSegura"} (saca de las zonas de Instagram lo que esté tapado); {"tipo":"proponerTexto","bloque":"baj|fTxt|badge","texto":"texto nuevo, más corto"} (solo si el texto es muy largo o confuso). ' +
+    '{"tipo":"zonaSegura"} (saca de las zonas de Instagram lo que esté tapado); {"tipo":"acomodar"} (centra, alinea al mismo margen, separa de los bordes y parejiza los espacios entre bloques; el editor lo hace con medidas exactas); {"tipo":"proponerTexto","bloque":"baj|fTxt|badge","texto":"texto nuevo, más corto"} (solo si el texto es muy largo o confuso). ' +
     'Bloques válidos: logo, cli, bucle, aro, badge, tit, baj, secD, secR, qr, fTxt, arrow, fMail. ' +
     (Number(ronda) >= 2 ? 'Esta es la SEGUNDA revisión, después de aplicar cambios: marcá solo lo que siga mal; si el flyer ya está bien (puntaje 8 o más) devolvé pocas o ninguna sugerencia. ' : '') +
     'No inventes problemas: si algo está bien, decilo en el resumen. Español rioplatense, sin tecnicismos, con vos.';
