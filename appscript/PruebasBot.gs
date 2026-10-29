@@ -40,6 +40,7 @@ function azcuPruebasTokens_(){
   if(dos){ T.D = dos[0].det.calle+' '+dos[0].det.numero; T.U1 = dos[0].dir; T.U2 = dos[1].dir; }
   if(bv){ T.BV = String(bv.det.calle).replace(/^(av|avda|bv|bvd|boulevard|pje|pasaje)\.?\s+/i,'').trim()+' '+bv.det.numero; }
   if(T.A1){ var w = T.C1.split(' ').pop(); T.TIPEO = T.A1.replace(w, w.length>=5 ? w.charAt(0)+w.charAt(1)+w.charAt(3)+w.charAt(2)+w.slice(4) : w); }
+  if(T.C2) T.C2k = String(T.C2).replace(/^calle\s+/i,'');
   if(T.A2) T.N2 = azcuPruebasPalabras_(+T.A2.split(' ').pop()), T.C2s = T.C2;
   return T;
 }
@@ -105,13 +106,13 @@ function azcuPruebasLista_(T){
   add('llamé al 341-5551234 y no atendió','No hace una resta.',{no:'-5\\.5|5\\.550'});
   add('341-5551234','No responde -5.550.893.',{no:'-5\\.5|5\\.550'});
   add('mandale la encuesta al cliente de {A6}','Botones de encuesta de esa propiedad.',{t:[],tx:'encuesta'});
-  add('pasame el formulario de captación para mandarle a un dueño','Link del formulario, sin pedir propiedad.',{t:[],tx:'formulario|link|enlace',no:'qu[eé] propiedad|cu[aá]l propiedad'});
+  add('pasame el formulario de captación para mandarle a un dueño','Link del formulario, sin pedir propiedad.',{t:[],tx:'https|go\\.html|botones',no:'qu[eé] propiedad|cu[aá]l propiedad|no lo tengo'});
   add('haceme el pdf de la ficha de {A1}','PDF de esa ficha.',{skip:'Genera un archivo en Drive: probar a mano.'});
   add('qué es mejor, crédito hipotecario UVA o tradicional?','Máximo 3 líneas, sin listas.',{t:[],max:450,no:'^\\s*1\\.'});
   add('redactame un mail para el dueño de {A2} contándole que bajamos el precio','Mail completo con el dato real.',{t:[],tx:'asunto|estimad|hola|saludos'});
   add('recuperá la visita que borré ayer','Mira la Papelera y pregunta cuál (o arma la tarjeta de restaurar).',{tx:'papelera|restaur|recuper|borrad|no (hay|encuentro|figura)'});
   add('dame info de {TIPEO}','Tolera el tipeo: da la ficha, no dice «no encuentro».',{t:[],no:'no encuentro|no (la )?encontr',tx:'Datos y operaci|precio|etapa'});
-  add('che q onda la de {C2}?','Entiende la calle pedida.',{t:[],tx:'{C2}'});
+  add('che q onda la de {C2}?','Entiende la calle pedida.',{t:[],tx:'{C2k}'});
   add('cargame que hoy vinieron 3 personas a ver {A3}: Ana (le gustó), Pedro (no le interesó, caro) y Luis (va a hacer una oferta)','Una tarjeta por persona.',{n:3});
   add('ehh visita en {C2} al {N2} con marcos tejo le encantó','Entiende la dirección dictada y arma la tarjeta.',{t:['cargar']});
   return L;
