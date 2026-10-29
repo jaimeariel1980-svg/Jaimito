@@ -10,6 +10,8 @@ const FLYER_ARCHIVO_ = 'Flyer - datos.json';
 const FLYER_MAX_BYTES_ = 4 * 1024 * 1024;
 const FLYER_TEXTOS_ = 'Flyer - textos.json';
 const FLYER_IMAGEN_ = 'Flyer - imagen.jpg';
+const FLYER_FORMATOS_ = { st: 'Historia 9:16', li: 'Post 4:5', ls: 'LinkedIn apaisado' };
+const flyerImagenFmt_ = fmt => 'Flyer - imagen ' + fmt + '.jpg';
 
 function flyerHero_(perfilId) {
   try {
@@ -59,7 +61,7 @@ function flyerHTML_(perfilId) {
   const lib = HtmlService.createTemplateFromFile('FlyerQRLib').getRawContent();
   const fuente = HtmlService.createTemplateFromFile('FuenteMarca').getRawContent();
   html = html.replace('%%FUENTE%%', () => fuente).replace('%%QRLIB%%', () => lib).replace('%%ASSETS%%', () => js(FLYER_ASSETS_)).replace('%%DATOS%%', () => js(datos));
-  return HtmlService.createHtmlOutput(html).setTitle('Flayer · ' + datos.puesto + ' | Blumia')
+  return HtmlService.createHtmlOutput(html).setTitle('Flyer · ' + datos.puesto + ' | Blumia')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
@@ -79,7 +81,12 @@ function flyerSocial_(perfilId) {
   }
   let imagen = '', imagenId = '', fecha = '';
   try { const it = carpeta.getFilesByName(FLYER_IMAGEN_); if (it.hasNext()) { const fi = it.next(); imagen = fi.getUrl(); imagenId = fi.getId(); fecha = Utilities.formatDate(fi.getLastUpdated(), 'America/Argentina/Buenos_Aires', 'dd/MM/yyyy HH:mm'); } } catch (e) { }
-  const out = { linkedin: rep(s.linkedin), instagram: rep(s.instagram), whatsapp: rep(s.whatsapp), link: link, fecha: fecha, imagen: imagen, imagenId: imagenId };
+  const imagenes = [];
+  Object.keys(FLYER_FORMATOS_).forEach(fm => {
+    try { const it = carpeta.getFilesByName(flyerImagenFmt_(fm)); if (it.hasNext()) { const fi = it.next(); imagenes.push({ fmt: fm, label: FLYER_FORMATOS_[fm], url: fi.getUrl(), id: fi.getId(), ts: fi.getLastUpdated().getTime(), fecha: Utilities.formatDate(fi.getLastUpdated(), 'America/Argentina/Buenos_Aires', 'dd/MM/yyyy HH:mm') }); } } catch (e) { }
+  });
+  imagenes.sort((a, b) => b.ts - a.ts); // la más reciente primero
+  const out = { linkedin: rep(s.linkedin), instagram: rep(s.instagram), whatsapp: rep(s.whatsapp), link: link, fecha: fecha, imagen: imagen, imagenId: imagenId, imagenes: imagenes };
   try { cache.put(ck, JSON.stringify(out), 600); } catch (e) { }
   return out;
 }
@@ -100,7 +107,7 @@ function difusionGuardar_(perfilId, t) {
   if (f) { try { g = JSON.parse(f.getBlob().getDataAsString()) || {}; } catch (e) { g = {}; } }
   g.social = { linkedin: lim(t && t.linkedin, 3000), instagram: lim(t && t.instagram, 2200), whatsapp: lim(t && t.whatsapp, 1000) };
   const txt = JSON.stringify(g);
-  if (txt.length > FLYER_MAX_BYTES_) throw new Error('No se pudo guardar: el archivo del flayer es demasiado grande.');
+  if (txt.length > FLYER_MAX_BYTES_) throw new Error('No se pudo guardar: el archivo del flyer es demasiado grande.');
   if (f) f.setContent(txt); else carpetaPerfil_(cfg).createFile(FLYER_ARCHIVO_, txt, MimeType.PLAIN_TEXT);
   try { flyerTextosEscribir_(carpetaPerfil_(cfg), g.social); } catch (e) { }
   flyerCacheBorrar_(perfilId);
@@ -108,7 +115,7 @@ function difusionGuardar_(perfilId, t) {
   return { fecha: Utilities.formatDate(new Date(), 'America/Argentina/Buenos_Aires', 'dd/MM/yyyy HH:mm') };
 }
 
-// Redacta solo los tres textos de difusión (no toca el diseño del flayer)
+// Redacta solo los tres textos de difusión (no toca el diseño del flyer)
 function difusionTextosIA_(perfilId) {
   const d = flyerDatos_(perfilId);
   let g = {};
@@ -122,31 +129,37 @@ function difusionTextosIA_(perfilId) {
 function flyerGuardar_(perfilId, json) {
   const cfg = getConfig(perfilId);
   const txt = String(json || '');
-  if (txt.length < 2 || txt.length > FLYER_MAX_BYTES_) throw new Error('El flayer es demasiado grande para guardarlo (probá con una foto más liviana).');
-  try { JSON.parse(txt); } catch (e) { throw new Error('El diseño del flayer no es válido.'); }
+  if (txt.length < 2 || txt.length > FLYER_MAX_BYTES_) throw new Error('El flyer es demasiado grande para guardarlo (probá con una foto más liviana).');
+  try { JSON.parse(txt); } catch (e) { throw new Error('El diseño del flyer no es válido.'); }
   const f = flyerArchivo_(cfg);
   let out = txt;
-  if (f) { // los textos de difusión se editan en ⚙ Configurar → Difusión: el editor del flayer no los pisa
+  if (f) { // los textos de difusión se editan en ⚙ Configurar → Difusión: el editor del flyer no los pisa
     try { const nuevo = JSON.parse(txt), previo = JSON.parse(f.getBlob().getDataAsString() || '{}'); if (previo && previo.social) { nuevo.social = previo.social; out = JSON.stringify(nuevo); } } catch (e) { }
   }
   if (f) f.setContent(out); else carpetaPerfil_(cfg).createFile(FLYER_ARCHIVO_, out, MimeType.PLAIN_TEXT);
   flyerCacheBorrar_(perfilId);
-  try { registrarHistorial_(cfg.hoja_nombre || perfilId, '(búsqueda)', 'Flyer', 'Diseño del flayer guardado', QUIEN_); } catch (e) { }
+  try { registrarHistorial_(cfg.hoja_nombre || perfilId, '(búsqueda)', 'Flyer', 'Diseño del flyer guardado', QUIEN_); } catch (e) { }
   return { fecha: Utilities.formatDate(new Date(), 'America/Argentina/Buenos_Aires', 'dd/MM/yyyy HH:mm') };
 }
 
 // Guarda la imagen terminada del flyer (JPG) en la carpeta de la búsqueda con link de lectura, para enviarla por WhatsApp sin abrir el editor
-function flyerImagen_(perfilId, base64) {
+function flyerImagen_(perfilId, base64, fmt) {
   const cfg = getConfig(perfilId);
   const b64 = String(base64 || '').replace(/^data:image\/jpeg;base64,/, '');
-  if (b64.length < 100 || b64.length > 12 * 1024 * 1024) throw new Error('La imagen del flayer no es válida o es demasiado grande.');
+  if (b64.length < 100 || b64.length > 12 * 1024 * 1024) throw new Error('La imagen del flyer no es válida o es demasiado grande.');
+  fmt = FLYER_FORMATOS_[fmt] ? fmt : '';
   const carpeta = carpetaPerfil_(cfg);
-  const it = carpeta.getFilesByName(FLYER_IMAGEN_);
-  while (it.hasNext()) it.next().setTrashed(true);
-  const f = carpeta.createFile(Utilities.newBlob(Utilities.base64Decode(b64), 'image/jpeg', FLYER_IMAGEN_));
-  f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  const nombres = [FLYER_IMAGEN_].concat(fmt ? [flyerImagenFmt_(fmt)] : []);
+  let url = '';
+  nombres.forEach(nom => {
+    const it = carpeta.getFilesByName(nom);
+    while (it.hasNext()) it.next().setTrashed(true);
+    const f = carpeta.createFile(Utilities.newBlob(Utilities.base64Decode(b64), 'image/jpeg', nom));
+    f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    if (!url) url = f.getUrl();
+  });
   flyerCacheBorrar_(perfilId);
-  return { imagen: f.getUrl() };
+  return { imagen: url };
 }
 
 // Valores cargados en el perfil del puesto (relevamiento) como texto «campo: valor», para que la IA tenga de dónde sacar desafíos y requisitos
@@ -176,8 +189,8 @@ function flyerTextosIA_(perfilId, opciones) {
   const empresa = mostrar ? d.empresa : d.empresaNeutral;
   const perfil = flyerPerfilTexto_(cfg);
   const extra = (typeof cfg.prompt_extra === 'string') ? cfg.prompt_extra.slice(0, 5000) : '';
-  if (!perfil && !extra) throw new Error('Esta búsqueda todavía no tiene datos para redactar el flayer: cargá el perfil del puesto en ⚙ Configurar (o escribí los textos a mano en la pantalla).');
-  const sistema = 'Sos redactor/a de avisos de empleo de Blumia Consulting (Argentina). Con los datos de una búsqueda armás el texto de un flayer y tres posteos. ' +
+  if (!perfil && !extra) throw new Error('Esta búsqueda todavía no tiene datos para redactar el flyer: cargá el perfil del puesto en ⚙ Configurar (o escribí los textos a mano en la pantalla).');
+  const sistema = 'Sos redactor/a de avisos de empleo de Blumia Consulting (Argentina). Con los datos de una búsqueda armás el texto de un flyer y tres posteos. ' +
     'Respondé SOLO con un JSON válido, sin texto antes ni después ni markdown, con esta forma exacta: ' +
     '{"badge":"ubicación · modalidad (máx. 40 caracteres, ej. «Pilar · Presencial»)","bajada":"2 o 3 frases (máx. 280 caracteres) que presentan a la empresa y qué busca","desafios":["4 o 5 ítems, cada uno máx. 95 caracteres, empiezan con verbo en infinitivo"],"requisitos":["4 ítems, cada uno máx. 95 caracteres"],' +
     '"linkedin":"posteo para LinkedIn (máx. 900 caracteres, con saltos de línea, 2 o 3 emojis como mucho, termina invitando a postularse en [LINK])","instagram":"posteo para Instagram (máx. 600 caracteres, con 4 o 5 hashtags, invita a postularse en el link de la bio o por [LINK])","whatsapp":"mensaje corto para difundir por WhatsApp (máx. 450 caracteres, con [LINK])"}. ' +
