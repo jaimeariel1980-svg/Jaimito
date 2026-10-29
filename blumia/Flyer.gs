@@ -105,7 +105,11 @@ function flyerGuardar_(perfilId, json) {
   if (txt.length < 2 || txt.length > FLYER_MAX_BYTES_) throw new Error('El flayer es demasiado grande para guardarlo (probá con una foto más liviana).');
   try { JSON.parse(txt); } catch (e) { throw new Error('El diseño del flayer no es válido.'); }
   const f = flyerArchivo_(cfg);
-  if (f) f.setContent(txt); else carpetaPerfil_(cfg).createFile(FLYER_ARCHIVO_, txt, MimeType.PLAIN_TEXT);
+  let out = txt;
+  if (f) { // los textos de difusión se editan en ⚙ Configurar → Difusión: el editor del flayer no los pisa
+    try { const nuevo = JSON.parse(txt), previo = JSON.parse(f.getBlob().getDataAsString() || '{}'); if (previo && previo.social) { nuevo.social = previo.social; out = JSON.stringify(nuevo); } } catch (e) { }
+  }
+  if (f) f.setContent(out); else carpetaPerfil_(cfg).createFile(FLYER_ARCHIVO_, out, MimeType.PLAIN_TEXT);
   try { registrarHistorial_(cfg.hoja_nombre || perfilId, '(búsqueda)', 'Flyer', 'Diseño del flayer guardado', QUIEN_); } catch (e) { }
   return { fecha: Utilities.formatDate(new Date(), 'America/Argentina/Buenos_Aires', 'dd/MM/yyyy HH:mm') };
 }
