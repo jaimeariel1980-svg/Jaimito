@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Flayer | Blumia</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Source+Serif+4:wght@400;500;600&display=swap" rel="stylesheet">
 %%FUENTE%%
 <style>
 :root{--g:#0F3F27;--gf:#0F3F27;--m:#E3EEDC;--l:#D5E0CE;--bg:#EEF7EE;--c:#FEE795;--coral:#F0605D;--font:'Poppins',sans-serif}
@@ -82,6 +82,17 @@ textarea{width:100%;border:1.5px solid var(--l);border-radius:8px;padding:8px 10
 #mvBox .fdot{min-width:32px;height:30px;border-radius:8px;border:1.5px solid #cfd8d2;background:#fff;color:#0F3F27;font:700 14px var(--font);cursor:pointer;padding:0 6px}
 #mvBox .fdot.on{background:#0F3F27;color:#fff;border-color:#0F3F27}
 .item span{flex:1}
+/* ---- toques de marca ---- */
+.secbox{border-left-width:8px}
+#secD{border-left-color:#FBC67B}
+#secR{border-left-color:#B4E1E0}
+#foot{background:linear-gradient(#F9BDBB,#F9BDBB) top left/100% 10px no-repeat,var(--fc)}
+#flyer.f-ls #foot{background:var(--fc)}
+#flyer.noqr:not(.f-ls) #fcol{display:flex;flex-direction:column;align-items:center;gap:calc(16px*var(--k))}
+#flyer.noqr:not(.f-ls) #fTxt{font-size:calc(30px*var(--k))}
+#flyer.noqr:not(.f-ls) #fMail{background:var(--pill,#FEE795);color:#0F3F27;border-radius:999px;padding:.3em 1.2em;font-size:calc(46px*var(--k));display:inline-block}
+#fMail:empty{display:none!important}
+#baj.serif{font-family:'Gelica','Source Serif 4',Georgia,serif;font-weight:500;line-height:1.45}
 /* ---- acomodar a mano ---- */
 #flyer.mv{touch-action:none;cursor:move}
 #flyer.mv *{user-select:none;-webkit-user-select:none}
@@ -173,6 +184,7 @@ input[type=range]{accent-color:#243D2C}
     <label class="lb" style="margin-top:8px">Título y textos</label><div class="dots" id="cT"><span class="dot" data-c="#0F3F27" style="background:#0F3F27"></span><span class="dot" data-c="#1A1A1A" style="background:#1A1A1A"></span><span class="dot" data-c="#FFFFFF" style="background:#FFFFFF"></span><span class="dot" data-c="#EEF7EE" style="background:#EEF7EE"></span></div>
     <label class="lb" style="margin-top:8px">Acento (cargo, títulos, tildes)</label><div class="dots" id="cA"><span class="dot" data-c="#0F3F27" style="background:#0F3F27"></span><span class="dot" data-c="#FBC67B" style="background:#FBC67B"></span><span class="dot" data-c="#F9BDBB" style="background:#F9BDBB"></span><span class="dot" data-c="#B4E1E0" style="background:#B4E1E0"></span><span class="dot" data-c="#FEE795" style="background:#FEE795"></span><span class="dot" data-c="#FFFFFF" style="background:#FFFFFF"></span></div>
     <label class="lb" style="margin-top:8px">Tamaño del texto <b id="vTs">100%</b></label><input type="range" id="sTs" aria-label="Tamaño del texto" min="50" max="140" value="100">
+    <label class="chk" style="margin-top:8px"><input type="checkbox" id="sSerif"> Bajada en letra serif (como el texto del sitio)</label>
     <div class="nota" id="notaTs">Si el texto no entra, se achica solo.</div></div>
 
   <div class="sec"><h3>Ítems</h3>
@@ -247,7 +259,7 @@ var S=null;
 function porDefecto(){
   var emp=!DATOS.ciega&&DATOS.empresa==='MACS';
   var nombre=emp?DATOS.empresa:DATOS.empresaNeutral;
-  return {fmt:'st',qr:false,guia:false,qrUrl:DATOS.linkPostulacion,mostrarEmpresa:emp,bg:'',cli:'',colT:'#0F3F27',colA:'#0F3F27',colF:'#0F3F27',colB:'#FEE795',aro:false,logoOsc:false,
+  return {fmt:'st',qr:false,guia:false,qrUrl:DATOS.linkPostulacion,mostrarEmpresa:emp,bg:'',cli:'',colT:'#0F3F27',colA:'#0F3F27',colF:'#0F3F27',colB:'#FEE795',aro:false,logoOsc:false,serif:true,
     ov:60,px:50,py:50,zoom:100,ts:100,logoH:110,cliH:80,bucOn:true,bucOp:100,
     txt:{badge:[DATOS.ubicacion].filter(Boolean).join(' · ')||'Presencial',busc:'Buscamos',cargo:DATOS.puesto,
       baj:nombre.charAt(0).toUpperCase()+nombre.slice(1)+' busca sumar a su equipo una persona para el puesto de '+DATOS.puesto+'.',
@@ -300,6 +312,7 @@ function aplicar(){
   $('logo').src=(S.logoOsc||S.fmt==='ls')?ASSETS.logoOsc:ASSETS.logo;var lh=S.fmt==='ls'?Math.round(S.logoH*.62):S.fmt==='st'?Math.round(S.logoH*.75):S.logoH;$('logo').style.height=lh+'px';$('logo').style.top=f.logoT+'px';$('logoCli').style.top=f.logoT+'px';
   var cl=$('logoCli');if(S.cli){cl.src=S.cli;cl.style.display='block';cl.style.height=(S.fmt==='ls'?Math.round(S.cliH*.7):S.cliH)+'px'}else{cl.removeAttribute('src');cl.style.display='none'}
   var bu=$('bucle');tinte(S.colB,function(u){bu.src=u});bu.style.display=S.bucOn?'block':'none';bu.style.opacity=S.bucOp/100;bu.style.top=f.bucT+'px';
+  fl.style.setProperty('--pill',S.colB||'#FEE795');$('baj').classList.toggle('serif',!!S.serif);if($('sSerif'))$('sSerif').checked=!!S.serif;
   var ar=$('aro');ar.style.display=S.aro?'block':'none';ar.style.borderColor=S.colB;
   var lum=function(h){var n=parseInt(h.slice(1),16),r=n>>16,g=(n>>8)&255,b=n&255;return(.299*r+.587*g+.114*b)/255};
   var fc=S.colF||'#0F3F27',cl=lum(fc)>.62;fl.style.setProperty('--fc',fc);fl.style.setProperty('--fc2',mezcla(fc,cl?'#FFFFFF':'#7FB08F',cl?.5:.45));fl.style.setProperty('--ft',cl?'#0F3F27':'#EEF7EE');fl.style.setProperty('--ac2',cl?'#0F3F27':'#FEE795');
@@ -386,6 +399,7 @@ function mvIniciar(){
   $('mvColPick').oninput=function(){if(!mvSel)return;var p=mvPos(mvSel,true);p.c=this.value;mvElegir(mvSel);marcar()};
   $('fB').onclick=function(){if(!mvSel)return;var p=mvPos(mvSel,true);if(p.b)delete p.b;else p.b=1;mvElegir(mvSel);marcar()};
   [].forEach.call(document.querySelectorAll('#mvFmt .fa'),function(b){b.onclick=function(){if(!mvSel)return;var p=mvPos(mvSel,true),a=b.getAttribute('data-a');if(p.a===a)delete p.a;else p.a=a;mvElegir(mvSel);marcar()}});
+  $('sSerif').onchange=function(){S.serif=this.checked;aplicar();marcar()};
   $('sFk').oninput=function(){S.footK=Number(this.value);$('vFk').textContent=S.footK+'%';aplicar();marcar()};
   $('sMs').oninput=function(){if(!mvSel)return;var p=mvPos(mvSel,true);p.s=Number(this.value);$('vMs').textContent=p.s+'%';mvAplicar();marcar()};
   $('mvRb').onclick=function(){if(!mvSel)return;var f=(S.pos||{})[S.fmt];if(f)delete f[mvSel];mvElegir(mvSel);marcar()};
@@ -465,7 +479,7 @@ function generarIA(){
     function L(x){return String(x||'').split('[LINK]').join(link)}
     leerTextos();
     if(r.badge)S.txt.badge=r.badge;if(r.bajada)S.txt.baj=r.bajada;
-    if(r.desafios&&r.desafios.length)S.iD=r.desafios;if(r.requisitos&&r.requisitos.length)S.iR=r.requisitos;
+    if(r.desafios&&r.desafios.length)S.iD=r.desafios.slice(0,3);if(r.requisitos&&r.requisitos.length)S.iR=r.requisitos.slice(0,3);
     generado=true;pintarTextos();aplicar();marcar();msg('Textos listos. Revisalos y editá lo que haga falta.');
   }).withFailureHandler(function(e){b.disabled=false;b.textContent='✨ Generar textos';msg((e&&e.message)||String(e),false)}).flyerTextosIA(DATOS.perfil,{mostrarEmpresa:S.mostrarEmpresa});
 }
