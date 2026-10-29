@@ -126,6 +126,32 @@ function difusionTextosIA_(perfilId) {
   return { linkedin: rep(r.linkedin), instagram: rep(r.instagram), whatsapp: rep(r.whatsapp) };
 }
 
+// Revisión de diseño con IA: Claude mira la imagen del flyer y da sugerencias concretas (uso interno, tiene un costo chico por revisión)
+function flyerRevisarIA_(perfilId, base64, fmt) {
+  const cfg = getConfig(perfilId);
+  const b64 = String(base64 || '').replace(/^data:image\/jpeg;base64,/, '');
+  if (b64.length < 100 || b64.length > 6 * 1024 * 1024) throw new Error('La imagen para revisar no es válida o es demasiado grande.');
+  const puesto = (typeof cfg.nombre === 'string' && cfg.nombre) ? cfg.nombre : perfilId;
+  const sistema = 'Sos director/a de arte de Blumia Consulting (consultora de RR. HH. de Argentina). Revisás flyers de búsquedas laborales que se publican en historias de Instagram, posteos de LinkedIn y mensajes de WhatsApp. ' +
+    'Marca: verde #0F3F27, naranja #FBC67B, rosa #F9BDBB, amarillo #FEE795, celeste #B4E1E0; tipografía Pangram; estilo cálido, limpio y profesional. ' +
+    'Mirá la imagen y respondé SOLO con un JSON válido, sin texto antes ni después, con esta forma exacta: ' +
+    '{"puntaje":un entero de 1 a 10,"resumen":"una frase (máx. 140 caracteres) sobre cómo se ve en general","sugerencias":[{"prioridad":"alta|media|baja","que":"qué mejorar (máx. 110 caracteres)","como":"cómo arreglarlo con los controles del editor, en palabras simples (máx. 150 caracteres)"}]}. ' +
+    'Dá de 3 a 5 sugerencias, ordenadas de la más importante a la menos importante. Evaluá: legibilidad (contraste y tamaño de letra, pensando en un celular), jerarquía (qué se lee primero), foto, equilibrio y espacios, zonas que tapa Instagram (250 px arriba y abajo en el formato historia), coherencia con la marca y claridad de cómo postularse. ' +
+    'No inventes problemas: si algo está bien, decilo en el resumen y dá menos sugerencias. Español rioplatense, sin tecnicismos, con vos.';
+  const usuario = [
+    { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } },
+    { type: 'text', text: 'Formato: ' + (FLYER_FORMATOS_[fmt] || 'sin dato') + '. Puesto: ' + puesto + '.' + (busquedaCiega_(cfg) ? ' Es una búsqueda ciega: el nombre de la empresa cliente no debe aparecer.' : '') }
+  ];
+  const r = extraerJSON_(procesarConClaude(sistema, usuario, 'redactar'));
+  const t = (v, n) => String(v == null ? '' : v).replace(/[<>]/g, '').trim().slice(0, n);
+  const pr = { alta: 1, media: 1, baja: 1 };
+  return {
+    puntaje: Math.max(1, Math.min(10, Math.round(Number(r.puntaje) || 0))),
+    resumen: t(r.resumen, 200),
+    sugerencias: (Array.isArray(r.sugerencias) ? r.sugerencias : []).slice(0, 6).map(x => ({ prioridad: pr[String(x && x.prioridad).toLowerCase()] ? String(x.prioridad).toLowerCase() : 'media', que: t(x && x.que, 160), como: t(x && x.como, 220) })).filter(x => x.que)
+  };
+}
+
 function flyerGuardar_(perfilId, json) {
   const cfg = getConfig(perfilId);
   const txt = String(json || '');
