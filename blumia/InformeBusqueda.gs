@@ -175,7 +175,7 @@ function ibRedactar_(perfilId, hallazgos, respuestas, extra) {
   const nombre = alcance ? 'Informe_Empresa_' + String(empresaKey_(cfg)).replace(/[^\w-]+/g, '_') + '.html' : 'Informe_Busqueda_' + perfilId + '.html';
   const exs = carpeta.getFilesByName(nombre);
   const arch = exs.hasNext() ? exs.next() : carpeta.createFile(nombre, '<html></html>', MimeType.HTML);
-  arch.setContent(conFuentePdf_(html).replace('__FILEID__', arch.getId()));
+  arch.setContent(conFuentePdf_(html).replace(/__FILEID__/g, arch.getId()));
   try { registrarHistorial_(cfg.hoja_nombre || perfilId, '(búsqueda)', 'Informe', (alcance ? 'Informe consolidado de la empresa' : 'Informe general para el cliente') + ' armado', QUIEN_); } catch (e) { }
   return { url: URL_WEBAPP + '?tipo=verinforme&id=' + arch.getId(), informe: inf };
 }
@@ -226,12 +226,12 @@ function ibArmarHTML_(cfg, puesto, empresa, e, inf) {
   const cierre = '<section class="resumen"><div class="res-eye">Cierre</div><h2 class="res-tit" contenteditable="true">' + esc(inf.cierre || 'La búsqueda avanza y el pipeline está activo') + '</h2><div class="res-grid">' +
     [[e.total, 'CVs recibidos', ''], [e.emp, 'Avanzan a empresa', ' amber'], [e.res, 'En reserva', ''], [e.desc, 'Descartados', '']].map(x => '<div class="res-card"><div class="res-num' + x[2] + '" contenteditable="true">' + x[0] + '</div><div class="res-lbl">' + x[1] + '</div></div>').join('') + '</div></section>';
   const extra = 'body{font-size:16px}.hero{padding-top:44px}.h-title{font-size:48px}.hs-lbl{font-size:12px}.bsq-sub{font-size:15px}.sec-title{font-size:26px}.sec-num{font-size:11px}.insight-text{font-size:16px;line-height:1.7}.insight-tag{font-size:14px!important}.lista li{font-size:16px;line-height:1.6}.fuente-item,.ind-chip{font-size:15px}.fnl-det,.sal-d,.stat-lbl,.fnl-extra{font-size:13px}.res-lbl{font-size:12px}.res-lect{font-size:16px}' +
-    '#barra-guardar{display:flex;gap:8px;align-items:center}#barra-guardar button{padding:10px 16px}#edBtn.on{background:#0F3F27;color:#fff}.ed-x,.ed-add{display:none}body.ed .ed-h{position:relative;outline:1px dashed rgba(15,63,39,.35);outline-offset:3px}body.ed .ed-x{display:flex;position:absolute;top:-10px;right:-10px;width:26px;height:26px;border-radius:50%;background:#b3261e;color:#fff;border:2px solid #fff;font:800 13px/1 inherit;font-family:inherit;align-items:center;justify-content:center;cursor:pointer;z-index:20;padding:0;box-shadow:0 1px 4px rgba(0,0,0,.3)}body.ed .ed-add{display:inline-flex;margin:8px 8px 0 0;background:#fff;border:1.5px dashed #0F3F27;color:#0F3F27;border-radius:8px;padding:7px 14px;font:700 13px inherit;font-family:inherit;cursor:pointer}.ed-p{font-size:16px;line-height:1.7;max-width:820px;margin-top:12px}' +
-    '@media print{.ed-x,.ed-add,#barra-guardar{display:none!important}.ed-h{outline:none!important}}' +
+    '#barra-guardar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}#edPdf{background:#0F3F27!important;color:#fff!important}#barra-guardar button{padding:10px 16px}#edBtn.on{background:#0F3F27;color:#fff}.ed-x,.ed-add{display:none}body.ed .ed-h{position:relative;outline:1px dashed rgba(15,63,39,.35);outline-offset:3px}body.ed .ed-x{display:flex;position:absolute;top:-10px;right:-10px;width:26px;height:26px;border-radius:50%;background:#b3261e;color:#fff;border:2px solid #fff;font:800 13px/1 inherit;font-family:inherit;align-items:center;justify-content:center;cursor:pointer;z-index:20;padding:0;box-shadow:0 1px 4px rgba(0,0,0,.3)}body.ed .ed-add{display:inline-flex;margin:8px 8px 0 0;background:#fff;border:1.5px dashed #0F3F27;color:#0F3F27;border-radius:8px;padding:7px 14px;font:700 13px inherit;font-family:inherit;cursor:pointer}.ed-p{font-size:16px;line-height:1.7;max-width:820px;margin-top:12px}' +
+    '@media print{.ed-x,.ed-add,#barra-guardar,#pdfPanel{display:none!important}.ed-h{outline:none!important}}' +
     '.perfil-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}.pf{background:#fff;border:1px solid var(--line);border-radius:4px;padding:18px}.pf-t{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px}.bar{display:grid;grid-template-columns:96px 1fr 44px;gap:8px;align-items:center;margin-bottom:8px;font-size:12px;font-weight:600}.bar .bt{background:var(--bg2);height:10px;border-radius:5px;overflow:hidden}.bar .bt i{display:block;height:100%;background:var(--green)}.bar .bv{text-align:right;color:var(--mid)}.busqueda>.insight{margin-bottom:34px}.rk-tw{overflow-x:auto}table.pb{width:100%;border-collapse:collapse;font-size:15px}table.pb th{text-align:left;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);padding:8px;border-bottom:2px solid var(--dark)}table.pb td{padding:10px 8px;border-bottom:1px solid var(--line)}.lista{padding-left:20px;max-width:820px}.lista li{margin-bottom:8px}.insight-tag{text-transform:none!important;letter-spacing:0!important;font-size:13px!important}@media(max-width:700px){.h-stats,.res-grid{grid-template-columns:1fr 1fr}.salary-grid,.stats-grid.three{grid-template-columns:1fr}.hero,.busqueda,.resumen{padding-left:20px;padding-right:20px}.h-title{font-size:30px}}';
   const script = '<script>(' + ibEditorJS_.toString() + ')();</scr' + 'ipt>';
   return '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Informe de la búsqueda · ' + esc(puesto) + '</title><style>' + cssInformeProceso_() + extra + '</style></head><body>' +
-    '<div id="barra-guardar" contenteditable="false"><button type="button" id="edBtn" title="Quitar o agregar textos y puntos">✏️ Editar</button><button type="button" id="edUn" style="display:none">↶ Deshacer</button><button type="button" id="edSave">GUARDAR CAMBIOS</button></div>' +
+    '<div id="barra-guardar" contenteditable="false"><button type="button" id="edBtn" title="Quitar o agregar textos y puntos">✏️ Editar</button><button type="button" id="edUn" style="display:none">↶ Deshacer</button><button type="button" id="edPdf">📑 PDF para el cliente</button><button type="button" id="edSave">GUARDAR CAMBIOS</button></div>' +
     '<section class="hero"><img class="hero-logo" src="' + LOGO + '"><div class="eyebrow">Atracción y Elección · Informe de búsqueda</div><div class="cliente-nombre" contenteditable="true">' + esc(empresa) + '</div>' +
     '<h1 class="h-title" contenteditable="true">El proceso está <em>en marcha</em>, el mercado <em>respondió</em>.</h1><div class="h-stats">' + hstats + '</div></section>' +
     '<section class="busqueda"><div class="bsq-head"><div class="bsq-eye">' + (e.porBusqueda ? 'Consolidado · ' + e.porBusqueda.length + ' búsquedas' : 'Búsqueda') + '</div><h2 class="bsq-title" contenteditable="true">' + esc(puesto) + '</h2>' + (e.banda ? '<div class="bsq-sub" contenteditable="true">Banda salarial de referencia: $' + Number(e.banda).toLocaleString('es-AR') + '</div>' : '') + '</div>' +
@@ -242,6 +242,48 @@ function ibArmarHTML_(cfg, puesto, empresa, e, inf) {
 // Estilo del informe de proceso (lo usan generarHTMLProceso y el informe de la búsqueda)
 function cssInformeProceso_() {
   return ':root{--bg:#F7F5F1;--bg2:#EEECEA;--white:#FFF;--dark:#111;--text:#1A1A1A;--mid:#555;--light:#999;--line:#DDDBD7;--green:#1A6645;--green2:#238055;--glight:#E6F2EC;--amber:#F5C842;--font:\'PP Pangram Sans\',\'Plus Jakarta Sans\',sans-serif;}*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}body{font-family:var(--font);color:var(--text);font-size:14px;line-height:1.5;background:var(--bg);}[contenteditable]:focus{outline:2px solid var(--green);outline-offset:2px;background:rgba(245,200,66,.12);}#barra-guardar{position:fixed;top:14px;right:14px;z-index:9999;}#barra-guardar button{background:var(--amber);color:var(--dark);border:none;padding:11px 20px;border-radius:3px;font-weight:800;font-size:11px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.25);font-family:var(--font);}.hero{padding:52px 40px 40px;background:linear-gradient(180deg,#FCFAF6 0%,var(--bg) 100%);border-bottom:1px solid var(--line);}.hero-logo{height:56px;margin-bottom:20px;display:block;}.eyebrow{display:block;font-size:11px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--green);background:var(--glight);padding:6px 14px;border-radius:2px;margin-bottom:14px;width:fit-content;}.cliente-nombre{font-size:15px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);margin-bottom:16px;}.h-title{font-size:46px;line-height:1.06;letter-spacing:-.03em;font-weight:800;margin-bottom:10px;max-width:900px;}.h-title em{color:var(--green);font-style:normal;}.h-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:34px;padding-top:30px;border-top:1px solid var(--line);}.hs-num{font-size:50px;font-weight:800;color:var(--green);letter-spacing:-.04em;line-height:1;}.hs-lbl{font-size:11px;font-weight:700;margin-top:8px;text-transform:uppercase;letter-spacing:.08em;}.busqueda{padding:44px 40px;border-bottom:1px solid var(--line);background:#fff;}.bsq-head{margin-bottom:30px;}.bsq-eye{font-size:11px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--green);margin-bottom:8px;}.bsq-title{font-size:32px;font-weight:800;letter-spacing:-.025em;line-height:1.1;}.bsq-sub{font-size:14px;color:var(--mid);margin-top:8px;}.section{margin-bottom:40px;}.sec-num{font-size:10px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--mid);margin-bottom:8px;}.sec-title{font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:20px;}.sec-title em{color:var(--green);font-style:normal;}.funnel{max-width:640px;margin:0 auto;}.fnl-stage{display:grid;grid-template-columns:1fr 170px;gap:20px;align-items:center;margin-bottom:6px;break-inside:avoid;}.fnl-shape{padding:12px 20px;text-align:center;color:#fff;margin:0 auto;width:100%;}.fnl-shape.f1{background:linear-gradient(180deg,#1A6645,#238055);clip-path:polygon(0 0,100% 0,93% 100%,7% 100%);}.fnl-shape.f2{background:linear-gradient(180deg,#238055,#3FA670);clip-path:polygon(7% 0,93% 0,86% 100%,14% 100%);width:86%;}.fnl-shape.f3{background:#3FA670;clip-path:polygon(14% 0,86% 0,79% 100%,21% 100%);width:70%;}.fnl-shape.f4{background:linear-gradient(180deg,#F5C842,#E0A82E);clip-path:polygon(21% 0,79% 0,72% 100%,28% 100%);width:54%;}.fnl-num{font-size:26px;font-weight:800;letter-spacing:-1px;line-height:1;}.fnl-num.dark{color:#1A1A1A;}.fnl-lb{font-size:9px;font-weight:700;letter-spacing:1.6px;margin-top:3px;opacity:.9;}.fnl-lb.dark{color:#1A1A1A;opacity:1;}.fnl-side{padding-left:12px;border-left:2px solid var(--line);}.fnl-pct{font-size:15px;font-weight:800;color:var(--mid);}.fnl-det{font-size:11px;color:var(--light);margin-top:2px;}.fnl-extra{font-size:12px;color:var(--mid);margin-top:12px;text-align:center;font-weight:600;}.salary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}.sal-card{background:#fff;border:1px solid var(--line);padding:24px;border-radius:4px;}.sal-card.green{border-top:3px solid var(--green);}.sal-card.amber{border-top:3px solid var(--amber);}.sal-card.dark{border-top:3px solid var(--dark);}.sal-pct{font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1;}.sal-pct.green{color:var(--green);}.sal-pct.amber{color:#B8902F;}.sal-pct.dark{color:var(--dark);}.sal-l{font-size:13px;font-weight:700;margin-top:8px;}.sal-d{font-size:12px;color:var(--mid);margin-top:4px;}.ind-grid{display:flex;flex-wrap:wrap;gap:8px;}.ind-chip{background:#FCFAF6;border:1px solid var(--line);border-left:3px solid var(--amber);padding:8px 14px;font-size:12px;border-radius:2px;font-weight:600;}.stats-grid{display:grid;gap:14px;}.stats-grid.three{grid-template-columns:repeat(3,1fr);}.stat-card{background:#fff;border:1px solid var(--line);padding:20px;border-radius:4px;}.stat-card.acc3{border-top:3px solid var(--mid);}.stat-num{font-size:34px;font-weight:800;letter-spacing:-.03em;line-height:1;}.stat-num.gray{color:var(--mid);}.stat-lbl{font-size:11px;font-weight:700;margin-top:6px;text-transform:uppercase;letter-spacing:.06em;}.insight{padding:20px 24px;background:linear-gradient(180deg,#FCFAF6 0%,#F2EFEA 100%);border-left:4px solid var(--green);border-radius:2px;margin-top:16px;break-inside:avoid;}.insight-tag{font-size:10px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--green);margin-bottom:8px;display:block;}.insight-text{font-size:13px;line-height:1.6;}.fuentes-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}.fuente-item{font-size:13px;color:#333;font-weight:600;}.resumen{padding:52px 40px;background:var(--green);color:#fff;}.res-eye{font-size:11px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--amber);margin-bottom:14px;}.res-tit{font-size:34px;font-weight:800;letter-spacing:-.03em;line-height:1.1;margin-bottom:24px;}.res-tit em{color:var(--amber);font-style:normal;}.res-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;}.res-card{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:4px;padding:22px;}.res-num{font-size:44px;font-weight:800;letter-spacing:-.03em;line-height:1;}.res-num.amber{color:var(--amber);}.res-lbl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-top:8px;}.res-lect{font-size:14px;line-height:1.7;color:rgba(255,255,255,.92);margin-top:24px;}footer{padding:28px;text-align:center;font-size:11px;color:var(--mid);background:#fff;border-top:1px solid var(--line);}@media print{@page{size:A4;margin:12mm 10mm;}#barra-guardar{display:none!important;}.busqueda,.resumen{page-break-before:always;}.hero{page-break-after:avoid;}.section,.insight,.fnl-stage{break-inside:avoid;}}';
+}
+
+/* PDF del informe para el cliente (pedido de Ariel 29/10: «fundamental»): convierte el informe guardado (con las ediciones) con PDFShift,
+   como el «PDF para el cliente», y lo deja en la carpeta «Informes Clientes» con link para ver. Opcionalmente lo manda por mail con el PDF adjunto. */
+function ibArchivoInforme_(id, extension) {
+  const f = DriveApp.getFileById(String(id));
+  let ok = false;
+  const ps = f.getParents();
+  while (ps.hasNext()) if (ps.next().getName() === 'Informes Clientes') ok = true;
+  if (!ok || !/^(Informe|Ranking)_/.test(f.getName()) || (extension && f.getName().slice(-extension.length) !== extension)) throw new Error('Ese archivo no es un informe para el cliente.');
+  return f;
+}
+
+function informePDF_(fileId, quien) {
+  QUIEN_ = quien || '';
+  const f = ibArchivoInforme_(fileId, '.html');
+  const html = f.getBlob().getDataAsString().replace(/<script[\s\S]*?<\/script>/gi, '');
+  const resp = UrlFetchApp.fetch('https://api.pdfshift.io/v3/convert/pdf', {
+    method: 'post', headers: { 'Authorization': 'Basic ' + Utilities.base64Encode('api:' + pdfshiftKey_()) }, contentType: 'application/json',
+    payload: JSON.stringify({ source: html, format: 'A4', use_print: true }), muteHttpExceptions: true
+  });
+  if (resp.getResponseCode() !== 200) throw new Error('No se pudo armar el PDF (' + resp.getResponseCode() + '): ' + resp.getContentText().substring(0, 200));
+  const carpeta = f.getParents().next();
+  const nombre = f.getName().replace(/\.html$/, '.pdf');
+  const viejos = carpeta.getFilesByName(nombre);
+  while (viejos.hasNext()) viejos.next().setTrashed(true);
+  const pdf = carpeta.createFile(resp.getBlob().setName(nombre));
+  pdf.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  try { registrarHistorial_('(informes)', f.getName(), 'Informe PDF', 'PDF generado', quien); } catch (e) { }
+  return { url: pdf.getUrl(), id: pdf.getId(), nombre: nombre };
+}
+
+function informeEnviar_(pdfId, para, asunto, mensaje, quien) {
+  QUIEN_ = quien || '';
+  para = String(para || '').trim();
+  if (!/^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/.test(para)) throw new Error('Escribí un correo válido (uno solo).');
+  const f = ibArchivoInforme_(pdfId, '.pdf');
+  const lim = (v, n) => String(v == null ? '' : v).replace(/[\r\n]+/g, ' ').trim().slice(0, n);
+  const cuerpo = String(mensaje || '').slice(0, 3000) || 'Te comparto el informe de la búsqueda. Cualquier duda, quedo a disposición.';
+  MailApp.sendEmail({ to: para, subject: lim(asunto, 150) || 'Informe de la búsqueda', body: cuerpo + '\n\nBlumia Consulting', name: 'Blumia Consulting', attachments: [f.getBlob()] });
+  try { registrarHistorial_('(informes)', f.getName(), 'Informe enviado', 'Enviado a ' + para, quien); } catch (e) { }
+  return { ok: true };
 }
 
 // Modo edición del informe armado (corre dentro del HTML del informe, no en Apps Script): ✕ para sacar cualquier bloque, punto o dato,
@@ -276,19 +318,50 @@ function ibEditorJS_() {
     [].forEach.call(raiz.querySelectorAll('.ed-x,.ed-add'), function (n) { n.parentNode.removeChild(n); });
     [].forEach.call(raiz.querySelectorAll('[data-ed]'), function (n) { n.removeAttribute('data-ed'); n.classList.remove('ed-h'); });
   }
+  function panel(h) { var p = document.getElementById('pdfPanel'); if (!p) { p = document.createElement('div'); p.id = 'pdfPanel'; p.setAttribute('contenteditable', 'false'); p.style.cssText = 'position:fixed;top:64px;right:14px;z-index:9998;background:#fff;border:2px solid #0F3F27;border-radius:12px;padding:16px;width:340px;max-width:calc(100vw - 28px);box-shadow:0 8px 30px rgba(0,0,0,.3);font:14px/1.45 inherit;font-family:inherit'; document.body.appendChild(p); } p.innerHTML = h; return p; }
+  function esc(t) { return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
   function encender() { on = true; document.body.classList.add('ed'); document.getElementById('edBtn').classList.add('on'); document.getElementById('edBtn').textContent = '✔ Listo'; marcar(); }
   function apagar() { on = false; document.body.classList.remove('ed'); document.getElementById('edBtn').classList.remove('on'); document.getElementById('edBtn').textContent = '✏️ Editar'; limpiar(document); }
   document.getElementById('edBtn').onclick = function () { if (on) apagar(); else encender(); };
   document.getElementById('edUn').onclick = function () { var u = pila.pop(); if (u) u.p.insertBefore(u.e, u.s && u.s.parentNode === u.p ? u.s : null); estado(); };
-  document.getElementById('edSave').onclick = function () {
-    var btn = this, estaba = on;
-    if (on) apagar();
-    btn.textContent = 'Guardando...'; btn.disabled = true;
+  function guardar(cb, falla) {
+    var estaba = on; if (on) apagar();
     var clon = document.documentElement.cloneNode(true);
+    var pp = clon.querySelector('#pdfPanel'); if (pp) pp.parentNode.removeChild(pp);
     var b = clon.querySelector('#edSave'); if (b) { b.textContent = 'GUARDAR CAMBIOS'; b.disabled = false; }
     var eb = clon.querySelector('#edBtn'); if (eb) { eb.classList.remove('on'); eb.textContent = '✏️ Editar'; }
     var eu = clon.querySelector('#edUn'); if (eu) eu.style.display = 'none';
-    google.script.run.withSuccessHandler(function (r) { btn.textContent = (r && r.ok) ? 'GUARDADO' : 'ERROR'; btn.disabled = false; setTimeout(function () { btn.textContent = 'GUARDAR CAMBIOS'; }, 2500); if (estaba) encender(); })
-      .withFailureHandler(function () { btn.textContent = 'ERROR'; btn.disabled = false; if (estaba) encender(); }).guardarInformeEditado('__FILEID__', '<!DOCTYPE html>' + clon.outerHTML);
+    var ep = clon.querySelector('#edPdf'); if (ep) { ep.textContent = '📑 PDF para el cliente'; ep.disabled = false; }
+    google.script.run.withSuccessHandler(function (r) { if (estaba) encender(); if (r && r.ok) cb(); else falla('No se pudo guardar el informe.'); })
+      .withFailureHandler(function (e) { if (estaba) encender(); falla((e && e.message) || 'No se pudo guardar el informe.'); }).guardarInformeEditado('__FILEID__', '<!DOCTYPE html>' + clon.outerHTML);
+  }
+  document.getElementById('edPdf').onclick = function () {
+    var bt = this, t = bt.textContent; bt.disabled = true; bt.textContent = 'Armando el PDF…';
+    var fin = function (m) { bt.disabled = false; bt.textContent = t; panel('<b>No se pudo armar el PDF</b><p style="margin:8px 0">' + esc(m) + '</p><button type="button" id="pdfX" style="height:36px;padding:0 14px;border-radius:8px;border:1.5px solid #0F3F27;background:#fff;font-weight:700;cursor:pointer">Cerrar</button>'); document.getElementById('pdfX').onclick = function () { document.getElementById('pdfPanel').remove(); }; };
+    guardar(function () {
+      google.script.run.withSuccessHandler(function (r) {
+        bt.disabled = false; bt.textContent = t;
+        var asunto = (document.title || 'Informe') + '';
+        var p = panel('<b style="color:#0F3F27">✔ PDF listo</b><div style="margin:10px 0;display:flex;gap:8px;flex-wrap:wrap"><a href="' + esc(r.url) + '" target="_blank" style="display:inline-flex;align-items:center;height:36px;padding:0 14px;border-radius:8px;background:#0F3F27;color:#fff;font-weight:700;text-decoration:none">Abrir PDF</a><button type="button" id="pdfCp" style="height:36px;padding:0 14px;border-radius:8px;border:1.5px solid #0F3F27;background:#fff;font-weight:700;cursor:pointer">Copiar link</button></div>' +
+          '<div style="font-weight:700;margin-top:6px">Enviarlo por mail al cliente</div><input id="pdfMail" type="email" placeholder="correo del cliente" style="width:100%;height:38px;margin:6px 0;border:1.5px solid #D5E0CE;border-radius:8px;padding:0 10px;font:inherit"><textarea id="pdfMsg" rows="3" style="width:100%;border:1.5px solid #D5E0CE;border-radius:8px;padding:8px 10px;font:inherit">Te comparto el informe de la búsqueda. Cualquier duda, quedo a disposición.</textarea><div id="pdfSt" style="font-size:12px;color:#666;margin:6px 0"></div><div style="display:flex;gap:8px"><button type="button" id="pdfEnv" style="height:38px;padding:0 14px;border-radius:8px;border:none;background:#FEE795;font-weight:800;cursor:pointer">Enviar por mail</button><button type="button" id="pdfX" style="height:38px;padding:0 14px;border-radius:8px;border:1.5px solid #0F3F27;background:#fff;font-weight:700;cursor:pointer">Cerrar</button></div>');
+        document.getElementById('pdfX').onclick = function () { p.remove(); };
+        document.getElementById('pdfCp').onclick = function () { try { navigator.clipboard.writeText(r.url); this.textContent = 'Copiado ✔'; } catch (e) { window.prompt('Copiá el link:', r.url); } };
+        var env = document.getElementById('pdfEnv'), confirmado = false;
+        env.onclick = function () {
+          var para = document.getElementById('pdfMail').value.trim(), st = document.getElementById('pdfSt');
+          if (!/^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/.test(para)) { st.style.color = '#b3261e'; st.textContent = 'Escribí un correo válido.'; return; }
+          if (!confirmado) { confirmado = true; env.textContent = 'Confirmar envío a ' + para; st.style.color = '#666'; st.textContent = 'Se manda desde la cuenta de Blumia con el PDF adjunto.'; return; }
+          env.disabled = true; env.textContent = 'Enviando…';
+          google.script.run.withSuccessHandler(function () { env.textContent = '✔ Enviado'; st.style.color = '#0F3F27'; st.textContent = 'Enviado a ' + para + '.'; })
+            .withFailureHandler(function (e) { env.disabled = false; confirmado = false; env.textContent = 'Enviar por mail'; st.style.color = '#b3261e'; st.textContent = (e && e.message) || 'No se pudo enviar.'; })
+            .informeEnviar(r.id, para, asunto, document.getElementById('pdfMsg').value, '');
+        };
+      }).withFailureHandler(function (e) { fin((e && e.message) || e); }).informePDF('__FILEID__', '');
+    }, fin);
+  };
+  document.getElementById('edSave').onclick = function () {
+    var btn = this; btn.textContent = 'Guardando...'; btn.disabled = true;
+    var fin = function (t) { btn.textContent = t; btn.disabled = false; setTimeout(function () { btn.textContent = 'GUARDAR CAMBIOS'; }, 2500); };
+    guardar(function () { fin('GUARDADO'); }, function () { fin('ERROR'); });
   };
 }
