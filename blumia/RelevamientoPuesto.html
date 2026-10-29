@@ -3,6 +3,7 @@
 <head>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
 <meta charset="UTF-8"/>
+<?!= HtmlService.createHtmlOutputFromFile('FuenteMarca').getContent() ?>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Relevamiento de Perfil | Blumia Consulting</title>
 
@@ -23,17 +24,17 @@
 
 
 :root{
-  --bg:      #F7F5F1;
-  --bg2:     #EEECEA;
+  --bg:      #F3F8F1;
+  --bg2:     #E3EEDC;
   --white:   #FFFFFF;
   --dark:    #111111;
   --text:    #1A1A1A;
   --mid:     #555555;
   --light:   #999999;
-  --line:    #DDDBD7;
-  --green:   #1A6645;
-  --green2:  #238055;
-  --glight:  #E6F2EC;
+  --line:    #D5E0CE;
+  --green:   #0F3F27;
+  --green2:  #2F5E41;
+  --glight:  #E3EEDC;
   --orange:  #2F7F6F;
   --font:    'PP Pangram Sans','Poppins', 'Plus Jakarta Sans', sans-serif;
 }
@@ -46,7 +47,7 @@ body{font-family:var(--font);color:var(--text);}
   position:sticky;top:0;z-index:300;
   height:64px;display:flex;align-items:center;justify-content:space-between;
   padding:0 52px;
-  background:rgba(247,245,241,0.97);
+  background:rgba(243,248,241,0.97);
   backdrop-filter:blur(20px);
   border-bottom:1px solid var(--line);
 }
@@ -308,16 +309,16 @@ footer{
   body{background:white;}
   .main{padding:20px;}
 }
-.btn-save{display:flex;align-items:center;gap:6px;background:#1A6645;color:#fff;border:none;border-radius:6px;padding:0 14px;height:32px;font:600 12px/1 "Poppins",sans-serif;letter-spacing:.04em;cursor:pointer;transition:opacity .15s}.btn-save:hover{opacity:.85}
+.btn-save{display:flex;align-items:center;gap:6px;background:#0F3F27;color:#fff;border:none;border-radius:6px;padding:0 14px;height:32px;font:600 12px/1 "Poppins",sans-serif;letter-spacing:.04em;cursor:pointer;transition:opacity .15s}.btn-save:hover{opacity:.85}
 @media print {
   *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .topbar,.stepper,.nav-row,.addbtn,.btn-pdf,.btn-save,#ov,footer,#nav-common{display:none!important}
-  body,html{background:#F7F5F1!important;margin:0;padding:0}
+  body,html{background:#F3F8F1!important;margin:0;padding:0}
   .main{max-width:100%;padding:16px 24px;margin:0}
   .sec{display:block!important;visibility:visible!important;opacity:1!important;
        page-break-after:always;break-after:page;margin-bottom:0;padding-bottom:0}
   .sec:last-of-type{page-break-after:avoid;break-after:avoid}
-  .sec-head{background:#F7F5F1!important;padding:16px 0 12px;border-bottom:2px solid #1A6645;margin-bottom:16px}
+  .sec-head{background:#F3F8F1!important;padding:16px 0 12px;border-bottom:2px solid #0F3F27;margin-bottom:16px}
   .sec-title{font-size:20px!important;margin:4px 0}
   .sec-desc{font-size:11px!important;margin:4px 0}
   .eyebrow{font-size:9px!important}
@@ -339,7 +340,7 @@ footer{
   .pills{display:flex;flex-wrap:wrap;gap:6px}
   .pill{border:1px solid #ccc!important;border-radius:4px;padding:3px 10px;
         font-size:10px!important;background:#fff!important}
-  .pill.on{background:#1A6645!important;color:#fff!important;border-color:#1A6645!important}
+  .pill.on{background:#0F3F27!important;color:#fff!important;border-color:#0F3F27!important}
   .sl{padding-left:16px}
   .si{margin-bottom:4px}
   .si input{border:none!important;border-bottom:1px solid #ccc!important;border-radius:0!important;
@@ -376,7 +377,7 @@ footer{
   </div>
   <div class="tb-right">
     <div class="tb-badge">Confidencial</div>
-    <span id="sis-fecha" style="font-size:11px;color:#555;margin-right:8px"></span><button class="btn-save" id="btn-sis" onclick="guardarSistema()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> <span id="btn-sis-t">Guardar en el sistema</span></button><button class="btn-pdf" onclick="imprimirPerfil()">
+    <span id="sis-fecha" style="font-size:11px;color:#555;margin-right:8px"></span><button class="btn-save" id="btn-sis" onclick="guardarSistema()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> <span id="btn-sis-t">Guardar en el sistema</span></button><button class="btn-pdf" onclick="exportarPDF()">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       Exportar PDF
     </button>
@@ -791,6 +792,56 @@ function saveHTML(){
 }
 
 
+var PDF_LIBS_=0;
+function cargarLib_(u,ok,ko){var s=document.createElement('script');s.src=u;s.onload=ok;s.onerror=ko;document.head.appendChild(s);}
+function exportarPDF(){
+  var btn=document.querySelector('.btn-pdf'),tx=btn&&btn.lastChild,orig=tx?tx.textContent:'';
+  function est(t){if(tx)tx.textContent=t;}
+  function fin(){est(orig);if(btn)btn.disabled=false;}
+  function respaldo(){fin();imprimirPerfil();}
+  if(btn)btn.disabled=true;est(' Preparando…');
+  var libs=function(){
+    if(typeof html2canvas==='function'&&window.jspdf)return generar();
+    cargarLib_('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',function(){
+      cargarLib_('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',generar,respaldo);
+    },respaldo);
+  };
+  function generar(){
+    var secs=[].slice.call(document.querySelectorAll('.sec')),prev=secs.map(function(s){return s.style.cssText;});
+    var st=document.createElement('style');st.id='capcss';st.textContent='body.cap .pv{display:block;white-space:pre-wrap;word-break:break-word;border:1px solid #ccc;border-radius:4px;padding:6px 8px;font-size:13px;line-height:1.4;min-height:22px;background:#fff;color:#1a1a1a;box-sizing:border-box;width:100%}body.cap .pv-hide{display:none!important}body.cap .sec{animation:none!important}body.cap .addbtn,body.cap .nav-row,body.cap #nav-common{display:none!important}';
+    document.head.appendChild(st);toPrint();document.body.classList.add('cap');
+    var J=window.jspdf.jsPDF,doc=new J({unit:'mm',format:'a4'}),PW=210,PH=297,MX=10,MY=12,AW=PW-2*MX,AH=PH-2*MY-6,pag=0,i=0,rem=0;
+    function limpiar(){secs.forEach(function(s,k){s.style.cssText=prev[k];});document.body.classList.remove('cap');fromPrint();var e=document.getElementById('capcss');if(e)e.remove();}
+    function sig(){
+      if(i>=secs.length){
+        var n=doc.getNumberOfPages();for(var p=1;p<=n;p++){doc.setPage(p);doc.setFontSize(8);doc.setTextColor(120);doc.text('Blumia · Relevamiento de perfil · '+p+'/'+n,PW/2,PH-8,{align:'center'});}
+        limpiar();doc.save('Relevamiento_Perfil_del_Puesto.pdf');fin();return;
+      }
+      est(' Armando '+(i+1)+'/'+secs.length+'…');
+      secs.forEach(function(s,k){s.style.display=k===i?'block':'none';});
+      var el=secs[i];
+      var cortes=[].map.call(el.querySelectorAll('.card'),function(c){return c.offsetTop+c.offsetHeight;});
+      var base=el.getBoundingClientRect().top;cortes=[].map.call(el.querySelectorAll('.card'),function(c){return c.getBoundingClientRect().bottom-base;});
+      html2canvas(el,{scale:1.5,backgroundColor:getComputedStyle(document.body).backgroundColor||'#F3F8F1',useCORS:true,logging:false}).then(function(cv){
+        var k=cv.width/el.offsetWidth,y=0,H=cv.height,cz=cortes.map(function(c){return c*k;});
+        while(y<H-2){
+          if(pag===0){pag=1;rem=AH;}
+          if(rem<AH*0.22){doc.addPage();rem=AH;}
+          var lim=rem*cv.width/AW,fin2=Math.min(H,y+lim);
+          if(fin2<H){var c2=cz.filter(function(c){return c<=y+lim&&c>y+20;});if(c2.length)fin2=Math.max.apply(null,c2);else if(rem<AH){doc.addPage();rem=AH;continue;}}
+          var h=fin2-y,pc=document.createElement('canvas');pc.width=cv.width;pc.height=Math.ceil(h);
+          pc.getContext('2d').drawImage(cv,0,y,cv.width,h,0,0,cv.width,h);
+          var hm=h*AW/cv.width;
+          doc.addImage(pc.toDataURL('image/jpeg',0.9),'JPEG',MX,MY+(AH-rem),AW,hm);
+          rem-=hm+4;y=fin2;
+        }
+        i++;setTimeout(sig,20);
+      }).catch(function(e){limpiar();respaldo();});
+    }
+    sig();
+  }
+  try{libs();}catch(e){respaldo();}
+}
 function imprimirPerfil(){
   toPrint();
   var cl=document.documentElement.cloneNode(true);
@@ -839,7 +890,7 @@ function aplicarDatos(d){
 }
 function avisoSistema(t,ok){
   var d=document.createElement('div');d.textContent=t;
-  d.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:'+(ok?'#1A6645':'#C0391B')+';color:#fff;padding:12px 22px;border-radius:8px;font:600 13px sans-serif;z-index:99999;box-shadow:0 4px 14px rgba(0,0,0,.25)';
+  d.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:'+(ok?'#0F3F27':'#C0391B')+';color:#fff;padding:12px 22px;border-radius:8px;font:600 13px sans-serif;z-index:99999;box-shadow:0 4px 14px rgba(0,0,0,.25)';
   document.body.appendChild(d);setTimeout(function(){d.remove();},3500);
 }
 function guardarSistema(){
