@@ -93,6 +93,18 @@ function pruebaCompleta_(op) {
       return 'OK';
     });
 
+    // 3c. preguntas habituales propias
+    paso('Preguntas habituales propias (lista general)', () => {
+      const antes = leerHabituales_();
+      try {
+        const r = guardarHabituales_('', antes.concat([{ etiqueta: 'PRUEBA ¿Tenés registro de conducir?', tipo: 'select', opciones: 'Sí|No', requerido: 'SI' }]), c.quien);
+        requiere(r.habituales.some(h => /PRUEBA ¿Tenés registro/.test(h.etiqueta)), 'No quedó guardada en la lista');
+        requiere(getConfigBusqueda_('', c.id).habituales.length === antes.length + 1, 'Configurar no devuelve la lista');
+      } finally { guardarHabituales_('', antes, c.quien); }
+      requiere(leerHabituales_().length === antes.length, 'La lista no volvió a como estaba');
+      return 'OK';
+    });
+
     // 4. postulación
     const dni = '9' + String(Date.now()).slice(-7);
     const cand = { nombre: 'Prueba Candidato Uno', telefono: '3415550000', dni: dni, email: email, nivelFormacion: 'Universitario', estadoFormacion: 'Completo', tituloFormacion: 'Lic. en Administración', remuneracion: '1000000', localidad: 'Rosario', movilidad: 'Sí' };

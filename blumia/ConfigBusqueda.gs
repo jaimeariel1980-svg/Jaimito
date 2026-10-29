@@ -1,12 +1,50 @@
 const CFG_CAMPOS_ = ['nombre', 'nombre_perfil', 'empresa', 'empresa_candidatos', 'logo_cliente', 'preguntas_base', 'datos_internos', 'busqueda_ciega', 'banda_salarial', 'link_screening', 'link_competencias', 'link_empresa_virtual', 'link_empresa_presencial', 'link_flyer', 'link_perfil'];
 
+/* Preguntas habituales propias: una lista general (pestaña Preguntas_Habituales) que se crea una vez y se tilda en cualquier búsqueda.
+   Tildarla en una búsqueda la copia a las preguntas de esa búsqueda (Postulacion_Preguntas); destildarla la saca de esa búsqueda. */
+const HOJA_HAB_ = 'Preguntas_Habituales';
+
+function leerHabituales_() {
+  const sh = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName(HOJA_HAB_);
+  if (!sh || sh.getLastRow() < 2) return [];
+  return sh.getRange(2, 1, sh.getLastRow() - 1, 4).getValues().filter(r => String(r[0]).trim())
+    .map(r => ({ etiqueta: String(r[0]), tipo: String(r[1]) === 'select' ? 'select' : 'texto', opciones: String(r[2] || ''), requerido: String(r[3]) === 'NO' ? 'NO' : 'SI' }));
+}
+
+function guardarHabituales_(pin, lista, quien) {
+  pinValido_(pin);
+  const visto = {};
+  const L = (Array.isArray(lista) ? lista : []).slice(0, 40).map(q => {
+    const et = limpiarTxt_(q.etiqueta).slice(0, 300);
+    if (!et) throw new Error('Hay una pregunta sin texto.');
+    const k = et.toLowerCase();
+    if (visto[k]) throw new Error('La pregunta «' + et + '» está repetida.');
+    visto[k] = 1;
+    const tipo = String(q.tipo).toLowerCase() === 'select' ? 'select' : 'texto';
+    const ops = tipo === 'select' ? String(q.opciones || '').split('|').map(o => limpiarTxt_(o)).filter(Boolean) : [];
+    if (tipo === 'select' && !ops.length) throw new Error('La pregunta «' + et + '» necesita opciones.');
+    return [et, tipo, ops.join('|'), q.requerido === 'NO' ? 'NO' : 'SI'];
+  });
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+    let sh = ss.getSheetByName(HOJA_HAB_);
+    if (!sh) { sh = ss.insertSheet(HOJA_HAB_); sh.getRange(1, 1, 1, 4).setValues([['etiqueta', 'tipo', 'opciones', 'requerido']]).setFontWeight('bold'); }
+    if (sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, 4).clearContent();
+    if (L.length) { sh.getRange(2, 1, L.length, 4).setNumberFormat('@').setValues(L); }
+    try { registrarHistorial_('(sistema)', '', 'Preguntas habituales', L.length + ' pregunta(s) en la lista general', limpiarTxt_(quien) || 'sin nombre'); } catch (e) { }
+  } finally { lock.releaseLock(); }
+  return { ok: true, habituales: leerHabituales_() };
+}
+
 function getConfigBusqueda_(pin, perfilId) {
   pinValido_(pin);
   const cfg = getConfig(perfilId);
   const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
   const datos = {};
   CFG_CAMPOS_.forEach(k => { datos[k] = typeof cfg[k] === 'string' ? cfg[k] : (cfg[k] == null ? '' : String(cfg[k])); });
-  return { perfil: perfilPuestoInfo_(cfg), extra: configExtraLeer_(ss, cfg, perfilId), datos: datos, prompt_extra: String(cfg.prompt_extra || ''), preguntas: getPreguntasPostulacion(perfilId), plantillas: listarPlantillas_(ss, perfilId) };
+  return { perfil: perfilPuestoInfo_(cfg), extra: configExtraLeer_(ss, cfg, perfilId), datos: datos, prompt_extra: String(cfg.prompt_extra || ''), preguntas: getPreguntasPostulacion(perfilId), habituales: leerHabituales_(), plantillas: listarPlantillas_(ss, perfilId) };
 }
 
 function guardarConfigBusqueda_(pin, perfilId, p, quien) {
