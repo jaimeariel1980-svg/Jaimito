@@ -1076,8 +1076,10 @@ function procesarMailsRouter() {
   let label = GmailApp.getUserLabelByName(LABEL);
   if (!label) label = GmailApp.createLabel(LABEL);
 
+  reintentarSinClasificar_(LABEL); // si ya hay forma de ubicar mails que habían quedado sin clasificar, se vuelven a procesar
   const threads = GmailApp.search(`to:${CORREO_DESTINO} newer_than:3d -label:${LABEL}`, 0, 50);
-  let ok = 0, sin = 0;
+  let ok = 0, sin = 0, noCv = 0;
+  const avisos = []; // lo que necesita que alguien lo mire (se manda un solo mail al final)
 
   threads.forEach(thread => {
     const msgs = thread.getMessages();
@@ -1102,6 +1104,15 @@ function procesarMailsRouter() {
         // extraemos el texto UNA sola vez (se reutiliza para clasificar y analizar)
         const textoCV = extraerTextoCV_(file);
 
+        // 1b) un adjunto que claramente no es un CV (factura, folleto, firma…) no se procesa como candidato
+        if (!esCVProbable_(textoCV)) {
+          try { thread.addLabel(GmailApp.getUserLabelByName('Blumia/No es CV') || GmailApp.createLabel('Blumia/No es CV')); } catch (e) { }
+          hojaSinClasificar_().appendRow([msg.getDate(), asunto, att.getName(), file.getUrl(), 'No parece un CV (el archivo no tiene experiencia ni formación)']);
+          avisos.push('No parece un CV: «' + att.getName() + '» (asunto: ' + asunto + ')');
+          noCv++;
+          return;
+        }
+
         // 2) si el asunto no resolvió, clasificar con GPT (usa solo los primeros 2000 chars)
         if (!perfil) {
           perfil = clasificarPerfilGPT(textoCV);
@@ -1111,6 +1122,7 @@ function procesarMailsRouter() {
         etiquetarHilo_(thread, perfil);
         if (!perfil) {
           hojaSinClasificar_().appendRow([msg.getDate(), asunto, att.getName(), file.getUrl(), 'GPT no pudo clasificar / asunto sin pista']);
+          avisos.push('Sin clasificar: «' + att.getName() + '» (asunto: ' + asunto + ')');
           sin++;
           return;
         }
@@ -1128,7 +1140,43 @@ function procesarMailsRouter() {
     thread.addLabel(label);
   });
 
-  Logger.log(`✅ Router: ${ok} ruteados y procesados · ${sin} a "Sin clasificar".`);
+  if (avisos.length) avisarCVsPendientes_(avisos);
+  Logger.log(`✅ Router: ${ok} ruteados y procesados · ${sin} a "Sin clasificar" · ${noCv} que no parecen CV.`);
+}
+
+// ¿Tiene pinta de CV? Solo descarta lo que es claramente otra cosa: si el texto no se pudo leer (PDF escaneado) se sigue como siempre.
+function esCVProbable_(texto) {
+  const t = String(texto || '');
+  if (t.length < 250) return true;
+  return /experiencia|educaci[oó]n|formaci[oó]n|curr[ií]cul|habilidades|idiomas|estudios|universidad|laboral|trayectoria|perfil profesional|skills|experience|education|employment/i.test(t);
+}
+
+// Un solo mail por barrido a quien es dueño del script, con lo que quedó sin ubicar
+function avisarCVsPendientes_(lineas) {
+  try {
+    const para = Session.getEffectiveUser().getEmail();
+    if (!para) return;
+    MailApp.sendEmail({
+      to: para,
+      subject: 'Blumia: ' + lineas.length + (lineas.length === 1 ? ' CV necesita' : ' CVs necesitan') + ' que lo mires',
+      body: lineas.join('\n') + '\n\nQué hacer: en la pestaña «Sin clasificar» de la planilla está el link de cada archivo. Si es un CV de una búsqueda, cargá en ⚙ Configurar → Datos de la búsqueda → «Palabras del asunto del mail» una palabra que use la gente en el asunto; en el próximo barrido se reintenta solo.'
+    });
+  } catch (e) { }
+}
+
+// Mails que quedaron en «Blumia/Sin clasificar»: si ahora el asunto o la única búsqueda abierta los ubica, se les saca la marca de procesado para que el barrido los vuelva a leer
+function reintentarSinClasificar_(LABEL) {
+  try {
+    const sinLabel = GmailApp.getUserLabelByName('Blumia/Sin clasificar');
+    if (!sinLabel) return;
+    GmailApp.search('label:blumia-sin-clasificar newer_than:7d', 0, 20).forEach(th => {
+      const asuntos = th.getMessages().map(m => m.getSubject());
+      if (!asuntos.some(a => rutearPorAsunto_(a) || unicaBusquedaAbierta_())) return;
+      th.removeLabel(sinLabel);
+      const pl = GmailApp.getUserLabelByName(LABEL);
+      if (pl) th.removeLabel(pl);
+    });
+  } catch (e) { Logger.log('reintentarSinClasificar_: ' + e); }
 }
 function procesarTodo_v2() {
   asegurarCopiaDiaria_();
