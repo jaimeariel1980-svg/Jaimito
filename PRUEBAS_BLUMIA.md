@@ -8,6 +8,9 @@
 5. Si se corta a la mitad: ejecutar `blumiaLimpiarPruebas` (borra restos de búsquedas de prueba).
 6. Correrla después de cada cambio grande y antes de mostrarle Blumia a alguien.
 
+## 1b. Prueba semanal automática
+Los lunes a las 4 h corre sola la misma prueba (el activador se crea solo, no hay que hacer nada). Si todo está bien no avisa nada (queda el registro en `Pruebas_Blumia`); si algo falla, llega un mail con los pasos que fallaron. Para apagarla: propiedad `BLUMIA_PRUEBA_SEMANAL` = `NO`.
+
 ## 2. Lista a mano (10 minutos, con los ojos; lo que el servidor no ve)
 Usar una búsqueda real o la de prueba.
 - [ ] Ingreso con nombre y apellido; el Inicio carga y muestra las búsquedas.

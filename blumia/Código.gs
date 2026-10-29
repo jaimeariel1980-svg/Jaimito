@@ -1124,6 +1124,7 @@ function procesarMailsRouter() {
 }
 function procesarTodo_v2() {
   asegurarCopiaDiaria_();
+  asegurarPruebaSemanal_();
   // 1) MAIL — barrido único con router (decide perfil solo)
   try {
     procesarMailsRouter();

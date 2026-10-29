@@ -27,9 +27,9 @@ function blumiaLimpiarPruebas() {
   return log.length ? log : ['No había restos de pruebas.'];
 }
 
-function pruebaCompleta_() {
+function pruebaCompleta_(op) {
   const res = [], c = { quien: 'Prueba automática' };
-  const email = Session.getEffectiveUser().getEmail();
+  const email = (op && op.sinMail) ? '' : Session.getEffectiveUser().getEmail(); // la prueba semanal no invita ni manda mails
   const requiere = (cond, msg) => { if (!cond) throw new Error(msg); };
   const paso = (nombre, fn) => {
     const t = Date.now();
@@ -263,4 +263,32 @@ function limpiarPrueba_(c, log) {
     return n;
   }));
   hacer('limpiar la memoria rápida', () => { const k = CacheService.getScriptCache(); k.remove('cfg_all'); });
+}
+
+/* Prueba semanal automática: los lunes de madrugada corre el mismo circuito y, si algo falla, avisa por mail a quien es dueño del script.
+   El activador se crea solo desde procesarTodo_v2 (asegurarPruebaSemanal_). Para apagarla: propiedad del script BLUMIA_PRUEBA_SEMANAL = NO. */
+function blumiaPruebaSemanal() {
+  const props = PropertiesService.getScriptProperties();
+  if (props.getProperty('BLUMIA_PRUEBA_SEMANAL') === 'NO') return;
+  const cache = CacheService.getScriptCache();
+  if (cache.get('prueba_semanal_corriendo')) return;
+  cache.put('prueba_semanal_corriendo', '1', 600);
+  const para = Session.getEffectiveUser().getEmail();
+  const sesAntes = SES_;
+  SES_ = { nombre: 'Prueba automática', rol: 'Administrador', fila: 0 };
+  try {
+    const out = pruebaCompleta_({ sinMail: true });
+    if (/❌/.test(out)) MailApp.sendEmail({ to: para, subject: '⚠️ Blumia: la prueba semanal encontró problemas', body: out + '\n\nEl detalle completo está en la pestaña Pruebas_Blumia de la planilla.' });
+  } catch (e) {
+    try { MailApp.sendEmail({ to: para, subject: '⚠️ Blumia: la prueba semanal no pudo correr', body: String(e && e.message || e) + '\n\nSi quedaron restos, corré blumiaLimpiarPruebas desde el editor (con BLUMIA_PRUEBAS = SI).' }); } catch (e2) { }
+  } finally { SES_ = sesAntes; cache.remove('prueba_semanal_corriendo'); }
+}
+
+function asegurarPruebaSemanal_() {
+  try {
+    const cache = CacheService.getScriptCache();
+    if (cache.get('prueba_semanal_ok')) return;
+    if (!ScriptApp.getProjectTriggers().some(t => t.getHandlerFunction() === 'blumiaPruebaSemanal')) ScriptApp.newTrigger('blumiaPruebaSemanal').timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(4).create();
+    cache.put('prueba_semanal_ok', '1', 21600);
+  } catch (e) { Logger.log('asegurarPruebaSemanal_: ' + e); }
 }
