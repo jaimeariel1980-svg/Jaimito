@@ -166,3 +166,5 @@ Hecha con el código real y 37 fichas de ejemplo; el modelo real (`gpt-4o-mini`)
 - ✅ Resumen semanal de los 👎 (29/10): `azcuFallasSemanal`, push a la gerencia los lunes 9 h con la cantidad y las primeras preguntas (si no hubo 👎 no manda nada). El arreglo de cada falla sigue siendo manual: pasarle las filas de `Chat_Fallas` a Claude.
 
 - ✅ Blumia (29/10): primera corrida de `blumiaPruebaCompleta` con los 24 pasos en verde (Ariel). Prueba semanal automática agregada (lunes 4 h, mail si falla). Falta la lista a mano (PDF con Pangram, celular, WhatsApp del flyer). — *Ariel*
+
+- Blumia (29/10): función `blumiaBorrarBusquedaLogistica` (borra la búsqueda vieja de prueba «Gerente de Logística», pedido de Ariel; se niega si tiene candidatos o si hay más de una coincidencia). Ariel la corre desde el editor; después se puede sacar del código. — *Ariel*

@@ -229,19 +229,24 @@ function pruebaInforme_(res) {
 }
 
 /* Borra todo lo de UNA búsqueda de prueba. Solo actúa si el id empieza con «prueba-automatica». */
-function limpiarPrueba_(c, log) {
+function limpiarPrueba_(c, log, forzar) {
   const id = String(c.id || '');
-  if (id.indexOf(PRUEBA_PREFIJO_) !== 0) throw new Error('Por seguridad solo se borran búsquedas de prueba.');
+  if (!forzar && id.indexOf(PRUEBA_PREFIJO_) !== 0) throw new Error('Por seguridad solo se borran búsquedas de prueba.');
   const hacer = (que, fn) => { try { const n = fn(); log.push(que + (n === undefined ? '' : ' (' + n + ')')); } catch (e) { log.push('No pude ' + que + ': ' + String(e && e.message || e).slice(0, 120)); } };
   const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
   let cfg = null;
   try { cfg = getConfig(id); } catch (e) { }
   const nombreBusq = cfg ? String(cfg.nombre || cfg.nombre_perfil || '') : '';
-  if (cfg && nombreBusq.indexOf('PRUEBA AUTOM') !== 0) throw new Error('Por seguridad solo se borran búsquedas de prueba.');
+  if (!forzar && cfg && nombreBusq.indexOf('PRUEBA AUTOM') !== 0) throw new Error('Por seguridad solo se borran búsquedas de prueba.');
 
   hacer('borrar el evento del calendario', () => { if (c.evento) { const cal = CalendarApp.getCalendarById('blumiaconsulting@gmail.com'); const ev = cal && cal.getEventById(c.evento); if (ev) ev.deleteEvent(); } });
   hacer('borrar el informe del candidato', () => { if (c.informeId) DriveApp.getFileById(c.informeId).setTrashed(true); });
-  hacer('borrar las carpetas de Drive', () => {
+  if (forzar) hacer('mandar a la papelera de Drive las 4 carpetas de la búsqueda (se recuperan 30 días)', () => {
+    let n = 0;
+    ['folder_madre', 'folder_recibidos', 'folder_pdf_screening', 'folder_pdf_competencias'].forEach(k => { if (cfg && cfg[k]) { const f = DriveApp.getFolderById(cfg[k]); let a = 0; const it = f.getFiles(); while (it.hasNext()) { it.next(); a++; } log.push('carpeta «' + f.getName() + '» con ' + a + ' archivo(s)'); f.setTrashed(true); n++; } });
+    return n;
+  });
+  if (!forzar) hacer('borrar las carpetas de Drive', () => {
     if (!cfg || !cfg.folder_madre) return 0;
     const carpeta = DriveApp.getFolderById(cfg.folder_madre).getParents().next();
     const empresa = carpeta.getParents().hasNext() ? carpeta.getParents().next() : null;
@@ -250,7 +255,7 @@ function limpiarPrueba_(c, log) {
     return 1;
   });
   hacer('borrar la pestaña de candidatos', () => { const s = cfg && ss.getSheetByName(cfg.hoja_nombre); if (s) ss.deleteSheet(s); });
-  ['Config', 'Perfiles_Hero', 'Perfiles_Screening_Eval', 'Perfiles_Screening_Val', 'Perfiles_Competencias', 'Postulacion_Preguntas'].forEach(nom => hacer('borrar filas de ' + nom, () => {
+  ['Config', 'Perfiles_Hero', 'Perfiles_Screening_Eval', 'Perfiles_Screening_Val', 'Perfiles_Competencias', 'Postulacion_Preguntas', 'Mail_Routing'].forEach(nom => hacer('borrar filas de ' + nom, () => {
     const s = ss.getSheetByName(nom); if (!s) return 0;
     const d = s.getDataRange().getValues(); let n = 0;
     for (let i = d.length - 1; i >= 1; i--) if (String(d[i][0]) === id) { s.deleteRow(i + 1); n++; }
@@ -291,4 +296,24 @@ function asegurarPruebaSemanal_() {
     if (!ScriptApp.getProjectTriggers().some(t => t.getHandlerFunction() === 'blumiaPruebaSemanal')) ScriptApp.newTrigger('blumiaPruebaSemanal').timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(4).create();
     cache.put('prueba_semanal_ok', '1', 21600);
   } catch (e) { Logger.log('asegurarPruebaSemanal_: ' + e); }
+}
+
+/* Borra una búsqueda vieja de prueba («Gerente de Logística», pedido de Ariel 29/10). Se corre desde el editor con BLUMIA_PRUEBAS = SI.
+   Protecciones: tiene que haber exactamente UNA búsqueda cuyo nombre diga «logística» y su pestaña no puede tener candidatos.
+   Manda a la papelera de Drive las 4 carpetas de la búsqueda (la carpeta madre de la búsqueda no se toca) y borra la pestaña y sus filas de configuración. */
+function blumiaBorrarBusquedaLogistica() {
+  if (PropertiesService.getScriptProperties().getProperty('BLUMIA_PRUEBAS') !== 'SI') throw new Error('Cargá BLUMIA_PRUEBAS = SI para borrar.');
+  const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const d = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName('Config').getDataRange().getValues(), H = d[0];
+  const col = k => H.indexOf(k);
+  const hit = d.slice(1).filter(r => r[0] && ['nombre', 'nombre_perfil', 'hoja_nombre'].some(k => col(k) >= 0 && /gerente.*logistic|logistic/.test(norm(r[col(k)]))));
+  if (hit.length !== 1) throw new Error('Esperaba encontrar UNA búsqueda de logística y encontré ' + hit.length + ': ' + hit.map(r => r[0]).join(', ') + '. No borré nada.');
+  const id = String(hit[0][0]), cfg = getConfig(id), sh = getSheet(cfg);
+  const n = sh ? sh.getDataRange().getValues().slice(1).filter(r => String(r[1] || '').trim()).length : 0;
+  if (n > 0) throw new Error('La búsqueda «' + id + '» tiene ' + n + ' candidato(s) cargado(s). Por seguridad no borré nada.');
+  const log = [];
+  limpiarPrueba_({ id: id }, log, true);
+  const out = 'Búsqueda «' + id + '» borrada:\n' + log.join('\n');
+  Logger.log(out);
+  return out;
 }
