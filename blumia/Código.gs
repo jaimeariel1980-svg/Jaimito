@@ -524,10 +524,10 @@ function aplicarEstadoNota(sheet, fila, etapa, nota) {
   let estado;
   if (v === 'C') {
     estado = { cv:'Descartado sin screening', screening:'Descartado post screening', competencias:'Descartado en competencias', empresa:'Descartado en empresa' }[etapa];
-  } else if (v === 'B' && etapa !== 'cv' && etapa !== 'screening') {
-    estado = (etapa === 'competencias') ? 'Reserva competencias' : 'En reserva';
+  } else if (v === 'B' && etapa !== 'cv') {
+    estado = { screening:'Reserva screening', competencias:'Reserva competencias' }[etapa] || 'En reserva';
   } else {
-    // A, B+ siempre avanzan; B en CV también avanza
+    // A y B+ siempre avanzan; B solo avanza en CV (en las demás etapas queda en reserva)
     estado = { cv:'Avanza a screening', screening:'Avanza a competencias', competencias:'Avanza a screening empresa', empresa:'En cliente' }[etapa];
   }
 
@@ -2236,7 +2236,7 @@ try{var _q=localStorage.getItem('blumia_quien'),_b=document.getElementById('quie
 const COLS=[['Análisis de CV',['Nuevo','Contactado','Pendiente','']],['Screening',['Avanza a screening','Screening agendado']],['Competencias',['Avanza a competencias','Competencias agendada']],['Empresa',['Avanza a screening empresa','Screening empresa agendado','Avanza a presencial empresa','Avanza a empresa','Entrevista empresa agendada','En cliente']],['Contratado',['Contratado']]];
 const BASE={'Análisis de CV':'Nuevo','Screening':'Avanza a screening','Competencias':'Avanza a competencias','Empresa':'Avanza a presencial empresa','Contratado':'Contratado'};
 const DESC_TIPOS=['Descartado sin screening','Descartado post screening','Descartado en competencias','Descartado en screening empresa','Descartado presencial empresa','Descartado Fuera de zona','Descartado NO le interesa'];
-const RES_TIPOS=['En reserva','Reserva competencias','Reserva screening empresa','Reserva presencial empresa'];
+const RES_TIPOS=['En reserva','Reserva screening','Reserva competencias','Reserva screening empresa','Reserva presencial empresa'];
 const nota=n=>n?'<span class="nota n'+String(n).replace('+','')+'">'+n+'</span>':'';
 const tag=e=>/agendad/i.test(e)?'<span class="tag ag">Agendado</span>':'';
 const card=c=>'<div class="card" data-fila="'+c.fila+'" onclick="ficha('+c.fila+')"><button class="cx" title="Eliminar" onclick="event.stopPropagation();eliminar('+c.fila+')">✕</button>'+nota(c.notaPresEmp||c.notaScrEmp||c.notaComp||c.notaScr||c.nota)+'<div class="n">'+c.nombre+'</div><div class="meta">'+(c.zona||'—')+(c.pretension?' · $'+c.pretension:'')+'</div>'+(c.formacion&&c.formacion!=='Sin dato'?'<div class="meta" title="'+String(c.formacion).replace(/"/g,'')+'">🎓 '+String(c.formacion).slice(0,70)+'</div>':'')+(c.cita?'<div class="cita-tag">📅 '+c.cita+'</div>':'')+tagsTarjeta(c)+(c.contactado?'<span class="tag" style="background:#D1FAE5;color:#065F46">✓ Contact. '+c.contactado+' <button title="Borrar la marca de contacto" style="border:none;background:none;color:#065F46;cursor:pointer;font-weight:800;padding:0 0 0 4px" onclick="event.stopPropagation();borrarMarca('+c.fila+')">✕</button></span>':'')+tag(c.estado)+'</div>';

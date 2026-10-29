@@ -11,7 +11,7 @@ const LINKS_AGENDA_ = ['link_screening', 'link_competencias', 'link_empresa_virt
 const CARPETA_MADRE_BUSQUEDAS_ = '18bhn7cD2PkcK_SldSfKHrjiieHvO3tYH';
 const ESTADOS_BUSQUEDA_ = ['Pendiente', 'Nuevo', 'Contactado', 'Avanza a screening', 'Screening agendado', 'Avanza a competencias', 'Competencias agendada',
   'Avanza a screening empresa', 'Screening empresa agendado', 'Avanza a presencial empresa', 'Entrevista empresa agendada',
-  'En cliente', 'Contratado', 'En reserva', 'Descartado sin screening', 'Descartado post screening', 'Descartado en competencias',
+  'En cliente', 'Contratado', 'En reserva', 'Reserva screening', 'Reserva competencias', 'Descartado sin screening', 'Descartado post screening', 'Descartado en competencias',
   'Descartado en screening empresa', 'Descartado presencial empresa', 'Descartado Fuera de zona', 'Descartado NO le interesa'];
 
 function slugBusqueda_(s) {

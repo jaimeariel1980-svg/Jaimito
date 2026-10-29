@@ -67,7 +67,7 @@ function anularEtapa_(perfilId, fila, etapa, quien) {
   const sh = getSheet(getConfig(perfilId));
   fila = filaCandidato_(sh, fila);
   const E = {
-    'screening': { col: 12, nom: 'screening', vuelve: 'Avanza a screening', desde: ['Avanza a competencias', 'Descartado post screening', 'Competencias agendada', 'En reserva'] },
+    'screening': { col: 12, nom: 'screening', vuelve: 'Avanza a screening', desde: ['Avanza a competencias', 'Descartado post screening', 'Competencias agendada', 'En reserva', 'Reserva screening'] },
     'competencias': { col: 16, nom: 'competencias', vuelve: 'Avanza a competencias', desde: ['Avanza a screening empresa', 'Descartado en competencias', 'Reserva competencias', 'Screening empresa agendado'] },
     'screening-empresa': { col: 44, nom: 'screening con la empresa', vuelve: 'Avanza a screening empresa', desde: ['Avanza a presencial empresa', 'Reserva screening empresa', 'Descartado en screening empresa', 'Entrevista empresa agendada'] },
     'presencial-empresa': { col: 45, nom: 'entrevista final con la empresa', vuelve: 'Avanza a presencial empresa', desde: ['Contratado', 'Reserva presencial empresa', 'Descartado presencial empresa'] }
