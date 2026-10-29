@@ -17,6 +17,16 @@ function mailPalabras_(ss, perfilId) {
   return f ? String(f[1] || '').trim() : '';
 }
 
+function enlacesBusqueda_(cfg) {
+  const enlaces = {};
+  try { enlaces.carpeta = DriveApp.getFolderById(cfg.folder_madre).getParents().next().getUrl(); } catch (e) { }
+  try {
+    const sh = SpreadsheetApp.openById(cfg.sheet_id).getSheetByName(cfg.hoja_nombre);
+    enlaces.hoja = 'https://docs.google.com/spreadsheets/d/' + cfg.sheet_id + '/edit#gid=' + sh.getSheetId();
+  } catch (e) { }
+  return enlaces;
+}
+
 function configExtraLeer_(ss, cfg, perfilId) {
   const hero = {};
   HERO_EDIT_.forEach(k => hero[k] = '');
@@ -26,12 +36,7 @@ function configExtraLeer_(ss, cfg, perfilId) {
     const f = d.slice(1).find(r => r[0] === perfilId);
     if (f) HERO_EDIT_.forEach(k => { const c = d[0].indexOf(k); if (c >= 0) hero[k] = String(f[c] == null ? '' : f[c]); });
   }
-  const enlaces = {};
-  try { enlaces.carpeta = DriveApp.getFolderById(cfg.folder_madre).getParents().next().getUrl(); } catch (e) { }
-  try {
-    const sh = SpreadsheetApp.openById(cfg.sheet_id).getSheetByName(cfg.hoja_nombre);
-    enlaces.hoja = 'https://docs.google.com/spreadsheets/d/' + cfg.sheet_id + '/edit#gid=' + sh.getSheetId();
-  } catch (e) { }
+  const enlaces = {}; // se completan aparte (configLazy_) para no frenar la apertura
   return { hero: hero, estado: estadoBusqueda_(cfg), cv_ia: CV_IA_OPC_.indexOf(String(cfg.cv_ia || '').toLowerCase().trim()) >= 0 ? String(cfg.cv_ia || '').toLowerCase().trim() : '', mail: mailPalabras_(ss, perfilId), enlaces: enlaces };
 }
 

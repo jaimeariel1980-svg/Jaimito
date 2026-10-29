@@ -241,6 +241,7 @@ function registroApi_() {
     exportarContactosCSV: { f: exportarContactosCSV_ },
     generarInformeCandidato: { f: generarInformeCandidato_ },
     getConfigBusqueda: { f: getConfigBusqueda_, admin: true },
+    configLazy: { f: configLazy_, admin: true },
     getContactosRegistro: { f: getContactosRegistro_ },
     getDatosPerfil: { f: getDatosPerfil_ },
     getEvaluacionPrevia: { f: getEvaluacionPrevia_ },

@@ -33,7 +33,7 @@
   window.cfAbrir=function(tab){
     var p=pin();if(!p)return;
     var bg=document.getElementById('cfBg');bg.classList.add('show');document.getElementById('cfBox').innerHTML='<h2>⚙ Configurar búsqueda</h2><div class="cf-help">Cargando…</div>';
-    google.script.run.withSuccessHandler(function(d){CF=d;CF.base=snapBase();render(typeof tab==='string'?tab:'ia');}).withFailureHandler(function(e){alert(badPin(e));bg.classList.remove('show');}).getConfigBusqueda(p,PERFIL);
+    google.script.run.withSuccessHandler(function(d){CF=d;CF.base=snapBase();render(typeof tab==='string'?tab:'ia');cfLazy();}).withFailureHandler(function(e){alert(badPin(e));bg.classList.remove('show');}).getConfigBusqueda(p,PERFIL);
   };
   function snapBase(){return JSON.parse(JSON.stringify({datos:CF.datos,prompt_extra:CF.prompt_extra,hero:CF.extra.hero,estado:CF.extra.estado,cv_ia:CF.extra.cv_ia,mail:CF.extra.mail}));}
   window.cfCerrar=function(){document.getElementById('cfBg').classList.remove('show');};
@@ -74,6 +74,8 @@
     setTimeout(function(){['linkedin','instagram','whatsapp'].forEach(cfDifContar);},0);
     return h;
   }
+  var CFTAB='ia';
+  function cfLazy(){google.script.run.withSuccessHandler(function(r){if(!CF||!r)return;CF.perfil=r.perfil||CF.perfil;CF.extra.enlaces=r.enlaces||{};if(CFTAB==='perfil'||CFTAB==='dat'){sync();render(CFTAB);}}).withFailureHandler(function(){if(CF&&CF.perfil&&CF.perfil.fecha===null)CF.perfil.fecha='';}).configLazy(pin(),PERFIL);}
   window.cfTab=function(t){sync();render(t);};
   function sync(){
     fdSync();
@@ -91,6 +93,7 @@
     CF.plantillas.forEach(function(t,i){if((v=g('cfp_'+i))!==null){t.texto=v;t.alcance=g('cfa_'+i);}});
   }
   function render(tab){
+    CFTAB=tab;
     var T=[['ia','Requisitos para la IA'],['post','Preguntas de postulación'],['msg','Mensajes'],['dat','Datos de la búsqueda'],['scr','Screening'],['comp','Competencias'],['perfil','Perfil del puesto'],['flyer','Difusión']];var tb=function(L){return L.map(function(t){return '<button class="cf-tab'+(t[0]===tab?' on':'')+'" onclick="cfTab(\''+t[0]+'\')">'+t[1]+'</button>';}).join('');};
     var x='<h2>⚙ Configurar esta búsqueda</h2><div class="cf-help" style="margin:0 0 6px">'+esc(CF.datos.nombre||PERFIL)+' · para crear búsquedas nuevas o manejar usuarios usá la pantalla de Inicio (🏠).</div><div class="cf-tabs">'+tb(T)+'</div>';
     x+='<div class="cf-sec'+(tab==='ia'?' on':'')+'"><div class="cf-help">Es el texto que la IA usa para <b>puntuar los CVs</b> de esta búsqueda (perfil, experiencia excluyente, deseable, zona, pretensión…). Si cambia el perfil del puesto, actualizalo acá. Vale para los CVs que entren desde ahora; los ya analizados no se recalculan.</div><textarea id="cf_ia" style="min-height:340px">'+esc(CF.prompt_extra)+'</textarea>'+foot('ia')+'</div>';
@@ -122,9 +125,9 @@
     x+='<label>Palabras del asunto del mail para ordenar los CVs de esta búsqueda (separadas con |)</label><input id="cfx_mail" value="'+esc(E.mail)+'"><div class="cf-help">Si el asunto del mail contiene una de estas palabras, el CV va a esta búsqueda. Si lo dejás vacío, igual se ordena cuando el asunto nombra el puesto.</div>';
     if(E.enlaces&&(E.enlaces.hoja||E.enlaces.carpeta))x+='<h3 style="margin:18px 0 4px;font-size:15px">Dónde está guardado</h3><div class="cf-help">Solo para abrir: esto no se edita desde acá.</div><div style="display:flex;gap:10px;flex-wrap:wrap">'+(E.enlaces.hoja?'<a class="cf-mini" target="_blank" href="'+esc(E.enlaces.hoja)+'">📄 Pestaña de candidatos</a>':'')+(E.enlaces.carpeta?'<a class="cf-mini" target="_blank" href="'+esc(E.enlaces.carpeta)+'">📁 Carpeta en Drive</a>':'')+'</div>';
     x+=foot('dat')+'</div>';
-    x+='<div class="cf-sec'+(tab==='flyer'?' on':'')+'">'+flyerTextos()+'<div class="cf-foot"><button class="cf-close" onclick="cfCerrar()">Cerrar</button></div></div>';
+    x+='<div class="cf-sec'+(tab==='flyer'?' on':'')+'">'+(tab==='flyer'?flyerTextos():'')+'<div class="cf-foot"><button class="cf-close" onclick="cfCerrar()">Cerrar</button></div></div>';
     x+='<div class="cf-sec'+(tab==='perfil'?' on':'')+'"><div class="cf-help">El <b>perfil del puesto</b> es el relevamiento de la búsqueda (organización, puesto, perfil, formación, experiencia, competencias, contratación y proceso). Acá se <b>edita</b>; la versión guardada para consultar sin tocar nada está en el menú <b>📚 Búsqueda → Perfil del puesto</b>.</div>'
-      +(CF.perfil&&CF.perfil.propio?'<p style="margin:10px 0"><b>Última versión guardada:</b> '+(CF.perfil.fecha||'todavía no se guardó ninguna')+'</p><button class="cf-save" onclick="cfPerfilEditar(this)">✏️ Abrir y editar el perfil</button><div class="cf-help" style="margin-top:10px">Se abre acá mismo, abajo. Al terminar tocá «Guardar en el sistema»: cada versión queda guardada con fecha y hora, y se abre siempre la última.</div><div class="cf-help" style="margin-top:8px">📎 Si falla el sistema: guía para completar y después subir con «Completar con IA»: <a href="https://azcubot.pages.dev/guias/Guia_Relevamiento_Perfil_completable.pdf" target="_blank">PDF completable</a> · <a href="https://azcubot.pages.dev/guias/Guia_Relevamiento_Perfil.docx" target="_blank">Word</a></div><div id="cfPerfilFr" style="margin-top:12px"></div>':'<p style="margin:10px 0">Esta búsqueda todavía no tiene el perfil del puesto dentro del sistema (hoy usa un link a un documento externo, si lo cargaste en «Datos de la búsqueda»).</p><button class="cf-save" onclick="cfPerfilCrear(this)">Crear el perfil del puesto de esta búsqueda</button><div class="cf-help" style="margin-top:10px">Queda un formulario en blanco para completar a mano o con «✨ Completar con IA desde un Word».</div>')
+      +(CF.perfil&&CF.perfil.propio?'<p style="margin:10px 0"><b>Última versión guardada:</b> '+(CF.perfil.fecha===null?'cargando…':(CF.perfil.fecha||'todavía no se guardó ninguna'))+'</p><button class="cf-save" onclick="cfPerfilEditar(this)">✏️ Abrir y editar el perfil</button><div class="cf-help" style="margin-top:10px">Se abre acá mismo, abajo. Al terminar tocá «Guardar en el sistema»: cada versión queda guardada con fecha y hora, y se abre siempre la última.</div><div class="cf-help" style="margin-top:8px">📎 Si falla el sistema: guía para completar y después subir con «Completar con IA»: <a href="https://azcubot.pages.dev/guias/Guia_Relevamiento_Perfil_completable.pdf" target="_blank">PDF completable</a> · <a href="https://azcubot.pages.dev/guias/Guia_Relevamiento_Perfil.docx" target="_blank">Word</a></div><div id="cfPerfilFr" style="margin-top:12px"></div>':'<p style="margin:10px 0">Esta búsqueda todavía no tiene el perfil del puesto dentro del sistema (hoy usa un link a un documento externo, si lo cargaste en «Datos de la búsqueda»).</p><button class="cf-save" onclick="cfPerfilCrear(this)">Crear el perfil del puesto de esta búsqueda</button><div class="cf-help" style="margin-top:10px">Queda un formulario en blanco para completar a mano o con «✨ Completar con IA desde un Word».</div>')
       +'<div class="cf-foot"><button class="cf-close" onclick="cfCerrar()">Cerrar</button></div></div>';
     x+='<div class="cf-sec'+(tab==='scr'?' on':'')+'">'+scrHtml()+'</div><div class="cf-sec'+(tab==='comp'?' on':'')+'">'+compHtml()+'</div>';
     document.getElementById('cfBox').innerHTML=x;

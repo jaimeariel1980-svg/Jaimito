@@ -44,7 +44,14 @@ function getConfigBusqueda_(pin, perfilId) {
   const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
   const datos = {};
   CFG_CAMPOS_.forEach(k => { datos[k] = typeof cfg[k] === 'string' ? cfg[k] : (cfg[k] == null ? '' : String(cfg[k])); });
-  return { perfil: perfilPuestoInfo_(cfg), extra: configExtraLeer_(ss, cfg, perfilId), datos: datos, prompt_extra: String(cfg.prompt_extra || ''), preguntas: getPreguntasPostulacion(perfilId), habituales: leerHabituales_(), plantillas: listarPlantillas_(ss, perfilId) };
+  return { perfil: { propio: !!cfg.perfil_html, fecha: null }, extra: configExtraLeer_(ss, cfg, perfilId), datos: datos, prompt_extra: String(cfg.prompt_extra || ''), preguntas: getPreguntasPostulacion(perfilId), habituales: leerHabituales_(), plantillas: listarPlantillas_(ss, perfilId) };
+}
+
+// Lo lento (carpeta de Drive, planilla de candidatos y versiones del perfil del puesto) se pide aparte, después de abrir el panel
+function configLazy_(pin, perfilId) {
+  pinValido_(pin);
+  const cfg = getConfig(perfilId);
+  return { perfil: perfilPuestoInfo_(cfg), enlaces: enlacesBusqueda_(cfg) };
 }
 
 function guardarConfigBusqueda_(pin, perfilId, p, quien) {
