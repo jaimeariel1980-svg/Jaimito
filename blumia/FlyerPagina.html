@@ -57,7 +57,7 @@ textarea{width:100%;border:1.5px solid var(--l);border-radius:8px;padding:8px 10
 #qrImg{background:#fff;padding:12px;border-radius:10px;display:block;margin:0 auto}
 #qrCap{font-size:22px;font-weight:700;color:var(--ft);margin-top:10px}
 #fcol{flex:1;min-width:0}
-#fTxt{font-size:calc(34px*var(--k));font-weight:600;line-height:1.35;color:var(--ft)}
+#fTxt{white-space:pre-line;font-size:calc(34px*var(--k));font-weight:600;line-height:1.35;color:var(--ft)}
 #arrow{font-size:calc(60px*var(--k));font-weight:800;line-height:1;color:var(--ac2,#FEE795);margin:6px 0}
 #fcol:has(#fMail:empty) #arrow{display:none}
 #fMail{font-size:calc(34px*var(--k));font-weight:700;color:var(--ft);white-space:nowrap}
@@ -121,6 +121,8 @@ input[type=range]{accent-color:#243D2C}
     <div class="nota" style="margin-top:6px">Redacta bajada, desafíos, requisitos y los posteos con lo que está cargado en el perfil del puesto. Después editás todo directo sobre el flayer.</div></div>
 
   <div class="sec"><h3>Acomodar a mano</h3>
+    <label class="lb">Alto del pie verde <b id="vFk">100%</b></label><input type="range" id="sFk" aria-label="Alto del pie verde" min="40" max="170" value="100">
+    <div class="nota" style="margin-bottom:8px">En el pie podés escribir más líneas en «Postulate…» (Enter hace un renglón nuevo). El correo y la flecha se mueven por separado.</div>
     <label class="chk"><input type="checkbox" id="mvOn"> ✥ Mover y cambiar el tamaño de cada bloque</label>
     <div id="mvBox" style="display:none;margin-top:8px">
       <div class="nota" id="mvSel" style="font-weight:700">Tocá un bloque del flayer para elegirlo.</div>
@@ -251,9 +253,10 @@ function tinte(col,cb){
 function mezcla(a,b,t){var A=parseInt(a.slice(1),16),B=parseInt(b.slice(1),16),f=function(sh){var x=(A>>sh)&255,y=(B>>sh)&255;return Math.round(x+(y-x)*t)};return'#'+((1<<24)+(f(16)<<16)+(f(8)<<8)+f(0)).toString(16).slice(1)}
 function aplicar(){
   if(window.pintarPrompt)pintarPrompt();
+  if($('sFk')){$('sFk').value=S.footK||100;$('vFk').textContent=(S.footK||100)+'%'}
   if(window.mvAplicar&&$('mvOn')){mvAplicar();if(mvSel)mvElegir(mvSel)}
   if(!FMT[S.fmt])S.fmt='st';
-  var f=FMT[S.fmt],fl=$('flyer'),fh=S.qr?f.foot:f.footN;
+  var f=FMT[S.fmt],fl=$('flyer'),fh=Math.round((S.qr?f.foot:f.footN)*(S.footK||100)/100);
   fl.style.width=f.W+'px';fl.style.height=f.H+'px';fl.style.setProperty('--k',f.k);$('stage').style.width=f.W+'px';
   fl.style.setProperty('--tc',S.colT);fl.style.setProperty('--ac',S.colA);fl.style.setProperty('--safeB',f.safeB+'px');
   fl.className='f-'+S.fmt+(S.qr?'':' noqr');
@@ -303,7 +306,7 @@ function pintarTextos(){
 function leerTextos(){
   var t=S.txt;
   t.badge=$('badge').textContent.trim();t.busc=$('busc').textContent.trim();t.cargo=$('cargo').textContent.trim();t.baj=$('baj').textContent.trim();
-  t.titD=$('titD').textContent.trim();t.titR=$('titR').textContent.trim();t.form=$('fTxt').textContent.trim();t.qrCap=$('qrCap').textContent.trim();t.mail=$('fMail').textContent.trim();
+  t.titD=$('titD').textContent.trim();t.titR=$('titR').textContent.trim();t.form=$('fTxt').innerText.trim();t.qrCap=$('qrCap').textContent.trim();t.mail=$('fMail').textContent.trim();
   S.iD=getItems('iD');S.iR=getItems('iR');
   S.social={linkedin:$('tLi').value,instagram:$('tIg').value,whatsapp:$('tWa').value};
 }
@@ -330,7 +333,7 @@ function armarPrompt(){var a=IA_AMB[$('iaAmb').value]||IA_AMB.oficina,f=IA_FMT[S
   return 'Fotografía realista, formato '+f[0]+'. '+a.charAt(0).toUpperCase()+a.slice(1)+', ambiente cálido y cercano. Luz natural, tonos verdes oscuros en el fondo, profundidad de campo suave, estilo fotografía corporativa editorial. Composición: '+f[1]+', sin elementos fuertes ni brillos, para poder poner texto encima. Sin texto, sin logos, sin carteles, sin marcas de agua. Rostros y manos naturales, sin deformaciones.';}
 function pintarPrompt(){var p=$('iaPrompt');if(p&&!iaEdit)p.value=armarPrompt();}
 function copiarTexto(t){try{navigator.clipboard.writeText(t).catch(function(){})}catch(e){}var e=document.createElement('textarea');e.value=t;e.style.position='fixed';e.style.opacity='0';document.body.appendChild(e);e.select();try{document.execCommand('copy')}catch(x){}e.remove()}
-var MV={logo:['#logo','Logo de Blumia'],cli:['#logoCli','Logo del cliente'],bucle:['#bucle','Cinta de marca'],aro:['#aro','Aro de marca'],badge:['#badge','Etiqueta (lugar y modalidad)'],tit:['#tit','Título'],baj:['#baj','Bajada'],secD:['#secD','Principales desafíos'],secR:['#secR','Requisitos'],qr:['#qrbox','QR'],fcol:['#fcol','Texto y correo del pie']};
+var MV={logo:['#logo','Logo de Blumia'],cli:['#logoCli','Logo del cliente'],bucle:['#bucle','Cinta de marca'],aro:['#aro','Aro de marca'],badge:['#badge','Etiqueta (lugar y modalidad)'],tit:['#tit','Título'],baj:['#baj','Bajada'],secD:['#secD','Principales desafíos'],secR:['#secR','Requisitos'],qr:['#qrbox','QR'],fTxt:['#fTxt','Texto del pie'],arrow:['#arrow','Flecha del pie'],fMail:['#fMail','Correo del pie']};
 var mvSel='',mvDrag=null;
 function mvPos(k,crear){S.pos=S.pos||{};var f=S.pos[S.fmt];if(!f){if(!crear)return null;f=S.pos[S.fmt]={}}var p=f[k];if(!p&&crear)p=f[k]={x:0,y:0,s:100};return p||null}
 function mvAplicar(){Object.keys(MV).forEach(function(k){var e=document.querySelector(MV[k][0]);if(!e)return;var p=mvPos(k,false);e.classList.add('mvb');e.style.transformOrigin='0 0';e.style.transform=(p&&(p.x||p.y||p.s!==100))?'translate('+p.x+'px,'+p.y+'px) scale('+(p.s/100)+')':''});
@@ -345,6 +348,7 @@ function mvIniciar(){
   fl.addEventListener('pointermove',function(e){if(!mvDrag)return;var sc=mvEscala(),p=mvPos(mvDrag.k,true);p.x=Math.round(mvDrag.px+(e.clientX-mvDrag.x)/sc);p.y=Math.round(mvDrag.py+(e.clientY-mvDrag.y)/sc);mvAplicar()});
   var fin=function(){if(mvDrag){mvDrag=null;marcar()}};fl.addEventListener('pointerup',fin);fl.addEventListener('pointercancel',fin);
   $('mvOn').onchange=function(){var on=this.checked;fl.classList.toggle('mv',on);$('mvBox').style.display=on?'block':'none';if(!on)mvSel='';mvElegir(mvSel)};
+  $('sFk').oninput=function(){S.footK=Number(this.value);$('vFk').textContent=S.footK+'%';aplicar();marcar()};
   $('sMs').oninput=function(){if(!mvSel)return;var p=mvPos(mvSel,true);p.s=Number(this.value);$('vMs').textContent=p.s+'%';mvAplicar();marcar()};
   $('mvRb').onclick=function(){if(!mvSel)return;var f=(S.pos||{})[S.fmt];if(f)delete f[mvSel];mvElegir(mvSel);marcar()};
   $('mvRt').onclick=function(){if(S.pos)delete S.pos[S.fmt];mvElegir(mvSel);marcar()};
@@ -395,7 +399,7 @@ function cableado(){
   $('addR').onclick=function(){leerTextos();S.iR.push('Nuevo ítem');setItems('iR',S.iR);ajustar();marcar()};
   $('remR').onclick=function(){leerTextos();if(S.iR.length>1)S.iR.pop();setItems('iR',S.iR);ajustar();marcar()};
   $('flyer').addEventListener('input',function(){ajustar();marcar()});
-  $('flyer').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();e.target.blur()}});
+  $('flyer').addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target.id!=='fTxt'){e.preventDefault();e.target.blur()}});
   ['tLi','tIg','tWa'].forEach(function(id){$(id).oninput=marcar});
   var cp=document.querySelectorAll('[data-cp]');for(var i=0;i<cp.length;i++)cp[i].onclick=function(){copiar(this.getAttribute('data-cp'),this)};
   $('btnIA').onclick=generarIA;
