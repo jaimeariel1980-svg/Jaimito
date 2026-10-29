@@ -7,9 +7,10 @@
 // El informe siempre arranca con este título (pedido de Ariel); se puede editar en el informe armado
 const IB_TITULO_ = 'El proceso está en marcha, el mercado respondió.';
 
-function informeBusquedaHTML_(perfilId) {
+function informeBusquedaHTML_(perfilId, alcance) {
   const cfg = getConfig(perfilId);
-  const datos = { perfil: perfilId, puesto: String(cfg.nombre || perfilId), empresa: empresaInforme_(cfg), volver: URL_WEBAPP + '?tipo=kanban&perfil=' + encodeURIComponent(perfilId) };
+  const emp = alcance === 'empresa';
+  const datos = { perfil: perfilId, alcance: emp ? 'empresa' : '', puesto: emp ? 'Todas las búsquedas' : String(cfg.nombre || perfilId), empresa: empresaInforme_(cfg), volver: URL_WEBAPP + '?tipo=kanban&perfil=' + encodeURIComponent(perfilId) };
   const js = o => JSON.stringify(o).replace(/</g, '\\u003c');
   let html = HtmlService.createTemplateFromFile('InformeBusquedaPagina').getRawContent();
   const fuente = HtmlService.createTemplateFromFile('FuenteMarca').getRawContent();
@@ -20,7 +21,7 @@ function informeBusquedaHTML_(perfilId) {
 
 // Números de la búsqueda, con las mismas reglas que el Resumen y el Informe de proceso (metEstado_).
 // Edad, género y zona se leen del análisis del CV (columna Requisitos) y se muestran solo agregados.
-function ibEstadisticas_(perfilId, conResumenes) {
+function ibEstUna_(perfilId, conResumenes) {
   const cfg = getConfig(perfilId);
   const filas = JSON.parse(doGetKanban_(perfilId));
   const banda = Number(String(cfg.banda_salarial || '').replace(/\D/g, '')) || 0;
@@ -67,20 +68,56 @@ function ibEstadisticas_(perfilId, conResumenes) {
     if (conResumenes && m.scr && res.length < 60 && c.resumen) res.push(String(c.resumen).replace(/\s+/g, ' ').slice(0, 170));
     if (c.recMs && (!primero || c.recMs < primero)) primero = c.recMs;
   });
-  e.dias = primero ? Math.max(1, Math.round((Date.now() - primero) / 864e5)) : 0;
-  const top = (o, n) => Object.keys(o).sort((a, b) => o[b] - o[a]).slice(0, n).map(k => ({ nombre: k, cantidad: o[k] }));
-  e.motivosTop = top(e.motivos, 5); e.fuentesTop = top(e.fuentes, 5); e.formacionTop = top(e.formacion, 4);
-  delete e.motivos; delete e.fuentes; delete e.formacion;
+  e._primero = primero; e.nombre = String(cfg.nombre || perfilId);
   if (conResumenes) e._res = res;
   return e;
 }
 
-function ibAnalizar_(perfilId) {
+// Búsquedas que entran en el informe: solo esta o, con alcance «empresa», todas las de la misma empresa (consolidado)
+function ibIds_(perfilId, alcance) {
+  if (alcance !== 'empresa') return [perfilId];
+  const emp = empresaKey_(getConfig(perfilId));
+  const ids = [];
+  listarPerfiles().forEach(p => { if (p.id === 'operaciones') return; try { if (empresaKey_(getConfig(p.id)) === emp) ids.push(p.id); } catch (e) { } });
+  return ids.length ? ids : [perfilId];
+}
+
+function ibSumar_(a, b) {
+  Object.keys(b).forEach(k => {
+    const v = b[k];
+    if (typeof v === 'number') a[k] = (a[k] || 0) + v;
+    else if (v && typeof v === 'object' && !Array.isArray(v)) { a[k] = a[k] || {}; ibSumar_(a[k], v); }
+  });
+  return a;
+}
+
+function ibEstadisticas_(perfilId, conResumenes, alcance) {
+  const ids = ibIds_(perfilId, alcance);
+  const raws = ids.map(id => ibEstUna_(id, conResumenes));
+  const e = raws.length === 1 ? raws[0] : raws.reduce((acc, r) => ibSumar_(acc, r), {});
+  if (raws.length > 1) {
+    e.banda = 0;
+    e._res = [].concat.apply([], raws.map(r => r._res || [])).slice(0, 60);
+    e._primero = Math.min.apply(null, raws.map(r => r._primero).filter(Boolean).concat([Infinity]));
+    if (!isFinite(e._primero)) e._primero = 0;
+    e.porBusqueda = raws.map(r => ({ nombre: r.nombre, total: r.total, scr: r.scr, comp: r.comp, emp: r.emp, res: r.res, desc: r.desc }));
+    delete e.nombre;
+  }
+  e.dias = e._primero ? Math.max(1, Math.round((Date.now() - e._primero) / 864e5)) : 0;
+  delete e._primero;
+  const top = (o, n) => Object.keys(o || {}).sort((a, b) => o[b] - o[a]).slice(0, n).map(k => ({ nombre: k, cantidad: o[k] }));
+  e.motivosTop = top(e.motivos, 5); e.fuentesTop = top(e.fuentes, 5); e.formacionTop = top(e.formacion, 4);
+  delete e.motivos; delete e.fuentes; delete e.formacion;
+  if (!conResumenes) delete e._res;
+  return e;
+}
+
+function ibAnalizar_(perfilId, alcance) {
   const cfg = getConfig(perfilId);
-  const est = ibEstadisticas_(perfilId, true);
+  const est = ibEstadisticas_(perfilId, true, alcance);
   const resumenes = est._res || []; delete est._res;
-  const puesto = String(cfg.nombre || perfilId);
-  const sistema = 'Sos consultor/a senior de selección de personal en Blumia Consulting (Argentina). Vas a preparar el informe general de una búsqueda para el CLIENTE. ' +
+  const puesto = alcance === 'empresa' ? 'Todas las búsquedas de ' + empresaInforme_(cfg) : String(cfg.nombre || perfilId);
+  const sistema = 'Sos consultor/a senior de selección de personal en Blumia Consulting (Argentina). Vas a preparar el informe general de ' + (alcance === 'empresa' ? 'TODAS las búsquedas de un cliente (consolidado: "porBusqueda" trae los números de cada una; incluí hallazgos que comparen las búsquedas entre sí)' : 'una búsqueda') + ' para el CLIENTE. ' +
     'Recibís los números reales de la búsqueda (incluye distribución agregada por rango de edad, género y zona; "edadScr" y "generoScr" son de quienes pasaron screening) y resúmenes anónimos de los candidatos que pasaron screening. Respondé SOLO con un JSON válido, sin texto antes ni después, con esta forma exacta: ' +
     '{"hallazgos":[{"titulo":"máx. 70 caracteres","detalle":"1 o 2 frases con el dato concreto","tipo":"positivo|atencion|dato"}],"industrias":[{"nombre":"sector","cantidad":entero}],"preguntas":[{"id":"q1","texto":"pregunta corta","sugeridas":["respuesta posible 1","respuesta posible 2","respuesta posible 3"]}]}. ' +
     'De 5 a 7 hallazgos, ordenados por importancia para el cliente, apoyados SOLO en los números recibidos (no inventes datos, causas ni porcentajes que no se puedan calcular con ellos). Incluí al menos uno sobre el perfil de las candidaturas (edad, género, formación o zona) en términos descriptivos de la muestra y uno sobre la expectativa salarial si hay datos. ' +
@@ -107,7 +144,8 @@ function ibAnalizar_(perfilId) {
 // Escribe el informe con los hallazgos que se dejaron y las respuestas, lo guarda editable en Drive y devuelve el link
 function ibRedactar_(perfilId, hallazgos, respuestas, extra) {
   const cfg = getConfig(perfilId);
-  const est = ibEstadisticas_(perfilId);
+  const alcance = extra && extra.alcance === 'empresa' ? 'empresa' : '';
+  const est = ibEstadisticas_(perfilId, false, alcance);
   const lim = (v, n) => String(v == null ? '' : v).replace(/[<>]/g, '').trim().slice(0, n);
   const hs = (Array.isArray(hallazgos) ? hallazgos : []).slice(0, 8).map(h => ({ titulo: lim(h && h.titulo, 90), detalle: lim(h && h.detalle, 400) })).filter(h => h.titulo);
   const rs = (Array.isArray(respuestas) ? respuestas : []).slice(0, 8).map(r => ({ pregunta: lim(r && r.pregunta, 160), respuesta: lim(r && r.respuesta, 500) })).filter(r => r.respuesta);
@@ -115,8 +153,8 @@ function ibRedactar_(perfilId, hallazgos, respuestas, extra) {
   const industrias = (Array.isArray(ex.industrias) ? ex.industrias : []).slice(0, 10).map(x => lim(x, 50)).filter(Boolean);
   const inc = Object.assign({ salarial: true, industrias: true, edad: true, genero: true, zona: true, fuentes: true }, ex.incluir || {});
   if (!hs.length) throw new Error('Dejá al menos un hallazgo para armar el informe.');
-  const empresa = empresaInforme_(cfg), puesto = String(cfg.nombre || perfilId);
-  const sistema = 'Sos consultor/a senior de selección de personal en Blumia Consulting (Argentina). Redactás el informe general de una búsqueda dirigido al CLIENTE (' + empresa + '). ' +
+  const empresa = empresaInforme_(cfg), puesto = alcance ? 'Todas las búsquedas' : String(cfg.nombre || perfilId);
+  const sistema = 'Sos consultor/a senior de selección de personal en Blumia Consulting (Argentina). Redactás el informe general de ' + (alcance ? 'todas las búsquedas (consolidado)' : 'una búsqueda') + ' dirigido al CLIENTE (' + empresa + '). ' +
     'Usá SOLO los números y los hallazgos recibidos y las respuestas de quien lidera la búsqueda; no inventes datos, porcentajes ni causas. Respetá el tono pedido en las respuestas (si no hay, profesional y cercano). ' +
     'No nombres candidatos, no menciones situación familiar ni criterios internos de evaluación; edad y género solo como descripción agregada de quiénes se postularon, nunca como criterio ni recomendación. Hablá de la búsqueda en tercera persona ("la búsqueda", "se recibieron"). Español rioplatense profesional. ' +
     'Respondé SOLO con un JSON válido con esta forma exacta: {"resumen":"párrafo de 3 a 5 frases","hallazgos":[{"titulo":"","texto":"2 o 3 frases"}],"recomendaciones":["acción concreta"],"proximos_pasos":["paso concreto"],"cierre":"1 o 2 frases"}. ' +
@@ -134,11 +172,11 @@ function ibRedactar_(perfilId, hallazgos, respuestas, extra) {
   const html = ibArmarHTML_(cfg, puesto, empresa, est, inf);
   const it = DriveApp.getFoldersByName('Informes Clientes');
   const carpeta = it.hasNext() ? it.next() : DriveApp.createFolder('Informes Clientes');
-  const nombre = 'Informe_Busqueda_' + perfilId + '.html';
+  const nombre = alcance ? 'Informe_Empresa_' + String(empresaKey_(cfg)).replace(/[^\w-]+/g, '_') + '.html' : 'Informe_Busqueda_' + perfilId + '.html';
   const exs = carpeta.getFilesByName(nombre);
   const arch = exs.hasNext() ? exs.next() : carpeta.createFile(nombre, '<html></html>', MimeType.HTML);
   arch.setContent(conFuentePdf_(html).replace('__FILEID__', arch.getId()));
-  try { registrarHistorial_(cfg.hoja_nombre || perfilId, '(búsqueda)', 'Informe', 'Informe general para el cliente armado', QUIEN_); } catch (e) { }
+  try { registrarHistorial_(cfg.hoja_nombre || perfilId, '(búsqueda)', 'Informe', (alcance ? 'Informe consolidado de la empresa' : 'Informe general para el cliente') + ' armado', QUIEN_); } catch (e) { }
   return { url: URL_WEBAPP + '?tipo=verinforme&id=' + arch.getId(), informe: inf };
 }
 
@@ -159,10 +197,12 @@ function ibArmarHTML_(cfg, puesto, empresa, e, inf) {
     stage(e.total, 'CVS RECIBIDOS', '100%', 'base del proceso', 'f1', false) + stage(e.scr, 'SCREENINGS', pct(e.scr, e.total), 'entrevistas telefónicas', 'f2', false) +
     stage(e.comp, 'COMPETENCIAS', pct(e.comp, e.total), 'evaluación profunda', 'f3', false) + stage(e.emp, 'AVANZAN A EMPRESA', pct(e.emp, e.total), 'finalistas presentados', 'f4', true) +
     '</div>' + (e.res ? '<div class="fnl-extra" contenteditable="true">+ ' + e.res + ' candidatos en reserva activa</div>' : '') + (e.dias ? '<div class="fnl-extra">Tiempo desde el primer CV recibido: ' + e.dias + ' días</div>' : ''));
-  if (inc.salarial !== false && e.banda && e.pret.total >= 5) cuerpo += sec('Realidad salarial', '', '<h3 class="sec-title">Lo que <em>pretende</em> el mercado</h3><div class="salary-grid">' +
+  if (e.porBusqueda && e.porBusqueda.length > 1) cuerpo += sec('Por búsqueda', '', '<h3 class="sec-title">Cada <em>búsqueda</em></h3><div class="rk-tw"><table class="pb"><thead><tr><th>Búsqueda</th><th>CVs</th><th>Screening</th><th>Competencias</th><th>Empresa</th><th>Reserva</th><th>Descartados</th></tr></thead><tbody>' +
+    e.porBusqueda.map(b => '<tr><td contenteditable="true">' + esc(b.nombre) + '</td><td>' + b.total + '</td><td>' + b.scr + '</td><td>' + b.comp + '</td><td>' + b.emp + '</td><td>' + b.res + '</td><td>' + b.desc + '</td></tr>').join('') + '</tbody></table></div>');
+  if (inc.salarial !== false && (e.banda || e.porBusqueda) && e.pret.total >= 5) cuerpo += sec('Realidad salarial', '', '<h3 class="sec-title">Lo que <em>pretende</em> el mercado</h3><div class="salary-grid">' +
     '<div class="sal-card dark"><div class="sal-pct dark" contenteditable="true">' + pct(e.pret.debajo, e.pret.total) + '</div><div class="sal-l">Por debajo</div><div class="sal-d">de la banda de referencia</div></div>' +
     '<div class="sal-card green"><div class="sal-pct green" contenteditable="true">' + pct(e.pret.linea, e.pret.total) + '</div><div class="sal-l">En línea</div><div class="sal-d">con la banda</div></div>' +
-    '<div class="sal-card amber"><div class="sal-pct amber" contenteditable="true">' + pct(e.pret.encima, e.pret.total) + '</div><div class="sal-l">Por encima</div><div class="sal-d">de la banda</div></div></div><div class="fnl-extra">Sobre ' + e.pret.total + ' candidatos que informaron pretensión · banda de referencia $' + Number(e.banda).toLocaleString('es-AR') + '</div>');
+    '<div class="sal-card amber"><div class="sal-pct amber" contenteditable="true">' + pct(e.pret.encima, e.pret.total) + '</div><div class="sal-l">Por encima</div><div class="sal-d">de la banda</div></div></div><div class="fnl-extra">Sobre ' + e.pret.total + ' candidatos que informaron pretensión · ' + (e.banda ? 'banda de referencia $' + Number(e.banda).toLocaleString('es-AR') : 'respecto de la banda de cada búsqueda') + '</div>');
   if (inc.industrias !== false && inf.industrias && inf.industrias.length) cuerpo += sec('Industrias de origen', '', '<h3 class="sec-title">De dónde <em>vienen</em></h3><div class="ind-grid">' + inf.industrias.map(x => '<div class="ind-chip" contenteditable="true">' + esc(x) + '</div>').join('') + '</div>');
   const tieneEdad = inc.edad !== false && conDato(e.edadScr) >= 5, tieneGen = inc.genero !== false && conDato(e.generoScr) >= 5, tieneZona = inc.zona !== false && (e.zona['En zona'] + e.zona['Fuera de zona']) >= 5;
   if (tieneEdad || tieneGen || tieneZona) {
@@ -188,13 +228,13 @@ function ibArmarHTML_(cfg, puesto, empresa, e, inf) {
   const extra = 'body{font-size:16px}.hero{padding-top:44px}.h-title{font-size:48px}.hs-lbl{font-size:12px}.bsq-sub{font-size:15px}.sec-title{font-size:26px}.sec-num{font-size:11px}.insight-text{font-size:16px;line-height:1.7}.insight-tag{font-size:14px!important}.lista li{font-size:16px;line-height:1.6}.fuente-item,.ind-chip{font-size:15px}.fnl-det,.sal-d,.stat-lbl,.fnl-extra{font-size:13px}.res-lbl{font-size:12px}.res-lect{font-size:16px}' +
     '#barra-guardar{display:flex;gap:8px;align-items:center}#barra-guardar button{padding:10px 16px}#edBtn.on{background:#0F3F27;color:#fff}.ed-x,.ed-add{display:none}body.ed .ed-h{position:relative;outline:1px dashed rgba(15,63,39,.35);outline-offset:3px}body.ed .ed-x{display:flex;position:absolute;top:-10px;right:-10px;width:26px;height:26px;border-radius:50%;background:#b3261e;color:#fff;border:2px solid #fff;font:800 13px/1 inherit;font-family:inherit;align-items:center;justify-content:center;cursor:pointer;z-index:20;padding:0;box-shadow:0 1px 4px rgba(0,0,0,.3)}body.ed .ed-add{display:inline-flex;margin:8px 8px 0 0;background:#fff;border:1.5px dashed #0F3F27;color:#0F3F27;border-radius:8px;padding:7px 14px;font:700 13px inherit;font-family:inherit;cursor:pointer}.ed-p{font-size:16px;line-height:1.7;max-width:820px;margin-top:12px}' +
     '@media print{.ed-x,.ed-add,#barra-guardar{display:none!important}.ed-h{outline:none!important}}' +
-    '.perfil-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}.pf{background:#fff;border:1px solid var(--line);border-radius:4px;padding:18px}.pf-t{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px}.bar{display:grid;grid-template-columns:96px 1fr 44px;gap:8px;align-items:center;margin-bottom:8px;font-size:12px;font-weight:600}.bar .bt{background:var(--bg2);height:10px;border-radius:5px;overflow:hidden}.bar .bt i{display:block;height:100%;background:var(--green)}.bar .bv{text-align:right;color:var(--mid)}.busqueda>.insight{margin-bottom:34px}.lista{padding-left:20px;max-width:820px}.lista li{margin-bottom:8px}.insight-tag{text-transform:none!important;letter-spacing:0!important;font-size:13px!important}@media(max-width:700px){.h-stats,.res-grid{grid-template-columns:1fr 1fr}.salary-grid,.stats-grid.three{grid-template-columns:1fr}.hero,.busqueda,.resumen{padding-left:20px;padding-right:20px}.h-title{font-size:30px}}';
+    '.perfil-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}.pf{background:#fff;border:1px solid var(--line);border-radius:4px;padding:18px}.pf-t{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px}.bar{display:grid;grid-template-columns:96px 1fr 44px;gap:8px;align-items:center;margin-bottom:8px;font-size:12px;font-weight:600}.bar .bt{background:var(--bg2);height:10px;border-radius:5px;overflow:hidden}.bar .bt i{display:block;height:100%;background:var(--green)}.bar .bv{text-align:right;color:var(--mid)}.busqueda>.insight{margin-bottom:34px}.rk-tw{overflow-x:auto}table.pb{width:100%;border-collapse:collapse;font-size:15px}table.pb th{text-align:left;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);padding:8px;border-bottom:2px solid var(--dark)}table.pb td{padding:10px 8px;border-bottom:1px solid var(--line)}.lista{padding-left:20px;max-width:820px}.lista li{margin-bottom:8px}.insight-tag{text-transform:none!important;letter-spacing:0!important;font-size:13px!important}@media(max-width:700px){.h-stats,.res-grid{grid-template-columns:1fr 1fr}.salary-grid,.stats-grid.three{grid-template-columns:1fr}.hero,.busqueda,.resumen{padding-left:20px;padding-right:20px}.h-title{font-size:30px}}';
   const script = '<script>(' + ibEditorJS_.toString() + ')();</scr' + 'ipt>';
   return '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Informe de la búsqueda · ' + esc(puesto) + '</title><style>' + cssInformeProceso_() + extra + '</style></head><body>' +
     '<div id="barra-guardar" contenteditable="false"><button type="button" id="edBtn" title="Quitar o agregar textos y puntos">✏️ Editar</button><button type="button" id="edUn" style="display:none">↶ Deshacer</button><button type="button" id="edSave">GUARDAR CAMBIOS</button></div>' +
     '<section class="hero"><img class="hero-logo" src="' + LOGO + '"><div class="eyebrow">Atracción y Elección · Informe de búsqueda</div><div class="cliente-nombre" contenteditable="true">' + esc(empresa) + '</div>' +
     '<h1 class="h-title" contenteditable="true">El proceso está <em>en marcha</em>, el mercado <em>respondió</em>.</h1><div class="h-stats">' + hstats + '</div></section>' +
-    '<section class="busqueda"><div class="bsq-head"><div class="bsq-eye">Búsqueda</div><h2 class="bsq-title" contenteditable="true">' + esc(puesto) + '</h2>' + (e.banda ? '<div class="bsq-sub" contenteditable="true">Banda salarial de referencia: $' + Number(e.banda).toLocaleString('es-AR') + '</div>' : '') + '</div>' +
+    '<section class="busqueda"><div class="bsq-head"><div class="bsq-eye">' + (e.porBusqueda ? 'Consolidado · ' + e.porBusqueda.length + ' búsquedas' : 'Búsqueda') + '</div><h2 class="bsq-title" contenteditable="true">' + esc(puesto) + '</h2>' + (e.banda ? '<div class="bsq-sub" contenteditable="true">Banda salarial de referencia: $' + Number(e.banda).toLocaleString('es-AR') + '</div>' : '') + '</div>' +
     '<div class="insight"><span class="insight-tag">Resumen</span><div class="insight-text" contenteditable="true">' + esc(inf.resumen) + '</div></div>' + cuerpo + '</section>' + cierre +
     '<footer>Blumia Consulting · Documento preparado para ' + esc(empresa) + '</footer>' + script + '</body></html>';
 }

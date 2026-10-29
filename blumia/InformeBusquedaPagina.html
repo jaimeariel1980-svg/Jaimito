@@ -47,7 +47,7 @@ function pintar(r){R=r;var e=r.est,n=function(a,l){return '<div class="num"><b>'
   var h2='';r.preguntas.forEach(function(p,i){h2+='<div class="pg"><b>'+esc(p.texto)+'</b><div class="chips">'+p.sugeridas.map(function(s){return '<button type="button" class="chip" data-q="'+i+'">'+esc(s)+'</button>'}).join('')+'</div><textarea data-q="'+i+'" placeholder="Tu respuesta (opcional)"></textarea></div>'});
   $('b2').innerHTML=h2;[].forEach.call(document.querySelectorAll('.chip'),function(c){c.onclick=function(){var t=document.querySelector('textarea[data-q="'+c.getAttribute('data-q')+'"]');t.value=c.textContent;t.focus()}});
   $('p2').style.display='block';$('p3').style.display='block'}
-google.script.run.withSuccessHandler(pintar).withFailureHandler(function(e){$('b1').innerHTML='<div class="err">No se pudo analizar: '+esc((e&&e.message)||e)+'</div>'}).ibAnalizar(DATOS.perfil);
+google.script.run.withSuccessHandler(pintar).withFailureHandler(function(e){$('b1').innerHTML='<div class="err">No se pudo analizar: '+esc((e&&e.message)||e)+'</div>'}).ibAnalizar(DATOS.perfil,DATOS.alcance);
 $('bRed').onclick=function(){var b=this,t=b.textContent;var hs=HZ.filter(function(h){return h.on&&h.titulo.trim()}).map(function(h){return {titulo:h.titulo,detalle:h.detalle}});
   if(!hs.length){$('b3').innerHTML='<div class="err">Dejá al menos un hallazgo tildado.</div>';return}
   var rs=[];[].forEach.call(document.querySelectorAll('textarea[data-q]'),function(a){var v=a.value.trim();if(v)rs.push({pregunta:R.preguntas[+a.getAttribute('data-q')].texto,respuesta:v})});
@@ -57,5 +57,5 @@ $('bRed').onclick=function(){var b=this,t=b.textContent;var hs=HZ.filter(functio
   var ok=function(r){b.disabled=false;b.textContent='✨ Volver a redactar';var i=r.informe;
     $('b3').innerHTML='<div class="res"><h3>'+esc(i.titulo)+'</h3><p>'+esc(i.resumen)+'</p><p style="margin-top:10px;font-size:12px;color:#555">'+i.hallazgos.length+' hallazgos · '+i.recomendaciones.length+' recomendaciones · '+i.proximos.length+' próximos pasos</p></div><div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap"><a class="bt pri" target="_blank" href="'+esc(r.url)+'">Abrir informe para revisar y presentar</a></div><p style="font-size:12px;color:#666;margin-top:8px">En el informe podés editar cualquier texto y tocar «Guardar cambios». Para pasarlo a PDF: Ctrl+P → Guardar como PDF.</p>'};
   var ko=function(e){b.disabled=false;b.textContent=t;$('b3').innerHTML='<div class="err">No se pudo redactar: '+esc((e&&e.message)||e)+'</div>'};
-  google.script.run.withSuccessHandler(ok).withFailureHandler(ko).ibRedactar(DATOS.perfil,hs,rs,{industrias:ind,incluir:INC})};
+  google.script.run.withSuccessHandler(ok).withFailureHandler(ko).ibRedactar(DATOS.perfil,hs,rs,{industrias:ind,incluir:INC,alcance:DATOS.alcance})};
 </script></body></html>
