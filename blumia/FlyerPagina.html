@@ -77,6 +77,8 @@ textarea{width:100%;border:1.5px solid var(--l);border-radius:8px;padding:8px 10
 #pvBg img{max-width:100%;max-height:calc(100vh - 110px);border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,.5);background:#fff}
 #pvBg .pvt{color:#fff;font:600 13px var(--font);text-align:center}
 #pvBg .row{display:flex;gap:10px}#pvBg .bt{white-space:nowrap;padding:0 18px}
+#mvBox .cdot{width:24px;height:24px;border-radius:50%;border:2px solid #cfd8d2;cursor:pointer;padding:0;font-size:13px;line-height:1;color:#555}
+#mvBox .cdot.on{border-color:#E5484D;box-shadow:0 0 0 2px #fff,0 0 0 4px #E5484D}
 /* ---- acomodar a mano ---- */
 #flyer.mv{touch-action:none;cursor:move}
 #flyer.mv *{user-select:none;-webkit-user-select:none}
@@ -199,6 +201,7 @@ input[type=range]{accent-color:#243D2C}
   <div id="mvBox" style="display:none">
     <span id="mvSel">Tocá un bloque del flayer para elegirlo.</span>
     <label>Tamaño <b id="vMs">100%</b><input type="range" id="sMs" aria-label="Tamaño del bloque elegido" min="30" max="250" value="100" disabled></label>
+    <span id="mvCol" style="display:none;align-items:center;gap:5px"><span style="font-weight:600">Color</span><button type="button" class="cdot" data-c="" title="Automático (color general)" style="background:#fff">⟲</button><button type="button" class="cdot" data-c="#0F3F27" style="background:#0F3F27"></button><button type="button" class="cdot" data-c="#1A1A1A" style="background:#1A1A1A"></button><button type="button" class="cdot" data-c="#FFFFFF" style="background:#FFFFFF"></button><button type="button" class="cdot" data-c="#FBC67B" style="background:#FBC67B"></button><button type="button" class="cdot" data-c="#FEE795" style="background:#FEE795"></button><button type="button" class="cdot" data-c="#F9BDBB" style="background:#F9BDBB"></button><button type="button" class="cdot" data-c="#B4E1E0" style="background:#B4E1E0"></button><input type="color" id="mvColPick" aria-label="Otro color" value="#0F3F27" style="width:30px;height:26px;padding:0;border:1px solid #ccc;border-radius:6px"></span>
     <button type="button" class="bt" id="mvRb">Reiniciar bloque</button><button type="button" class="bt" id="mvRt">Reiniciar todo</button>
     <span class="ayuda">Arrastrá un bloque · flechas = 1 px (Shift = 10) · doble toque para editar su texto</span>
   </div>
@@ -354,11 +357,11 @@ function armarPrompt(){var a=IA_AMB[$('iaAmb').value]||IA_AMB.oficina,f=IA_FMT[S
 function pintarPrompt(){var p=$('iaPrompt');if(p&&!iaEdit)p.value=armarPrompt();}
 function copiarTexto(t){try{navigator.clipboard.writeText(t).catch(function(){})}catch(e){}var e=document.createElement('textarea');e.value=t;e.style.position='fixed';e.style.opacity='0';document.body.appendChild(e);e.select();try{document.execCommand('copy')}catch(x){}e.remove()}
 var MV={logo:['#logo','Logo de Blumia'],cli:['#logoCli','Logo del cliente'],bucle:['#bucle','Cinta de marca'],aro:['#aro','Aro de marca'],badge:['#badge','Etiqueta (lugar y modalidad)'],tit:['#tit','Título'],baj:['#baj','Bajada'],secD:['#secD','Principales desafíos'],secR:['#secR','Requisitos'],qr:['#qrbox','QR'],fTxt:['#fTxt','Texto del pie'],arrow:['#arrow','Flecha del pie'],fMail:['#fMail','Correo del pie']};
-var mvSel='',mvDrag=null;
+var mvSel='',mvDrag=null;var MVT=['badge','tit','baj','secD','secR','qr','fTxt','arrow','fMail'];
 function mvPos(k,crear){S.pos=S.pos||{};var f=S.pos[S.fmt];if(!f){if(!crear)return null;f=S.pos[S.fmt]={}}var p=f[k];if(!p&&crear)p=f[k]={x:0,y:0,s:100};return p||null}
-function mvAplicar(){Object.keys(MV).forEach(function(k){var e=document.querySelector(MV[k][0]);if(!e)return;var p=mvPos(k,false);e.classList.add('mvb');e.style.transformOrigin='0 0';e.style.transform=(p&&(p.x||p.y||p.s!==100))?'translate('+p.x+'px,'+p.y+'px) scale('+(p.s/100)+')':''});
+function mvAplicar(){Object.keys(MV).forEach(function(k){var e=document.querySelector(MV[k][0]);if(!e)return;var p=mvPos(k,false);e.classList.add('mvb');e.style.transformOrigin='0 0';e.style.transform=(p&&(p.x||p.y||p.s!==100))?'translate('+p.x+'px,'+p.y+'px) scale('+(p.s/100)+')':'';var c=p&&p.c;if(MVT.indexOf(k)>=0){if(c){e.style.color=c;['--tc','--ac','--ft','--ac2'].forEach(function(v){e.style.setProperty(v,c)})}else{e.style.color='';['--tc','--ac','--ft','--ac2'].forEach(function(v){e.style.removeProperty(v)})}}});
   Object.keys(MV).forEach(function(k){var e=document.querySelector(MV[k][0]);if(e)e.classList.toggle('mvsel',$('mvOn').checked&&k===mvSel)});}
-function mvElegir(k){mvSel=k||'';$('mvSel').textContent=k?'Elegido: '+MV[k][1]:'Tocá un bloque del flayer para elegirlo.';var p=k?mvPos(k,false):null;$('sMs').value=p?p.s:100;$('vMs').textContent=(p?p.s:100)+'%';$('sMs').disabled=!k;mvAplicar()}
+function mvElegir(k){mvSel=k||'';$('mvSel').textContent=k?'Elegido: '+MV[k][1]:'Tocá un bloque del flayer para elegirlo.';var p=k?mvPos(k,false):null;$('sMs').value=p?p.s:100;$('vMs').textContent=(p?p.s:100)+'%';$('sMs').disabled=!k;var mc=$('mvCol');if(mc){var esT=k&&MVT.indexOf(k)>=0;mc.style.display=esT?'inline-flex':'none';var cc=(p&&p.c)||'';[].forEach.call(mc.querySelectorAll('.cdot'),function(b){b.classList.toggle('on',(b.getAttribute('data-c')||'')===cc)})}mvAplicar()}
 function mvEscala(){var r=$('flyer').getBoundingClientRect();return r.width/1080||1}
 function mvBuscar(t){for(var k in MV){var e=document.querySelector(MV[k][0]);if(e&&(e===t||e.contains(t)))return k}return ''}
 function mvIniciar(){
@@ -375,6 +378,8 @@ function mvIniciar(){
     capturar(function(c,url){im.src=url;im.style.display='block';$('pvT').textContent='Así se ve el flayer terminado ('+FMT[S.fmt].W+'×'+FMT[S.fmt].H+'). Para cambiar algo, cerrá y editá.';$('pvDl').style.display='inline-flex';$('pvDl').onclick=function(){var a=document.createElement('a');a.href=url;a.download='flayer-vista-previa.jpg';document.body.appendChild(a);a.click();a.remove()}},function(m){$('pvT').textContent=m},0.6,'image/jpeg',.9)};
   $('pvX').onclick=function(){$('pvBg').classList.remove('show')};
   document.addEventListener('keydown',function(e){if(e.key==='Escape')$('pvBg').classList.remove('show')});
+  [].forEach.call(document.querySelectorAll('#mvCol .cdot'),function(b){b.onclick=function(){if(!mvSel)return;var p=mvPos(mvSel,true),c=b.getAttribute('data-c');if(c)p.c=c;else delete p.c;mvElegir(mvSel);marcar()}});
+  $('mvColPick').oninput=function(){if(!mvSel)return;var p=mvPos(mvSel,true);p.c=this.value;mvElegir(mvSel);marcar()};
   $('sFk').oninput=function(){S.footK=Number(this.value);$('vFk').textContent=S.footK+'%';aplicar();marcar()};
   $('sMs').oninput=function(){if(!mvSel)return;var p=mvPos(mvSel,true);p.s=Number(this.value);$('vMs').textContent=p.s+'%';mvAplicar();marcar()};
   $('mvRb').onclick=function(){if(!mvSel)return;var f=(S.pos||{})[S.fmt];if(f)delete f[mvSel];mvElegir(mvSel);marcar()};
