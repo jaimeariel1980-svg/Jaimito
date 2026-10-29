@@ -94,7 +94,7 @@ function azcuPruebasLista_(T){
   add('se cayó la visita de mañana en {A4}','La ubica y arma la tarjeta de cancelar (o dice que no hay).',{tx:'visita|no (encuentro|hay|figura)'});
   add('recordame mañana a las 9 llamar a Juan','Recordatorio personal.',{skip:'Crea el recordatorio sin tarjeta: probar a mano.'});
   add('avisá que mañana no hay reunión','Pregunta a quién va.',{t:[],tx:'equipo|vos|persona|qui[eé]n'});
-  add('decile a Marcos que mañana vaya a {A3} a las 10','Tarjeta de aviso a Marcos.',{min:1,cr:'Marcos'});
+  add('decile a Marcos que mañana vaya a {A3} a las 10','Tarjeta de aviso a Marcos (no una visita).',{min:1,cr:'Marcos',t:['avisopersona']});
   add('qué tengo hoy?','Agenda del día.',{t:[]});
   add('cómo viene la semana?','Resumen de la semana.',{t:[]});
   add('qué papeles faltan en toda la cartera?','Lista completa, sin «y N más».',{t:[],no:'y \\d+ m[aá]s'});
@@ -110,7 +110,7 @@ function azcuPruebasLista_(T){
   add('qué es mejor, crédito hipotecario UVA o tradicional?','Máximo 3 líneas, sin listas.',{t:[],max:450,no:'^\\s*1\\.'});
   add('redactame un mail para el dueño de {A2} contándole que bajamos el precio','Mail completo con el dato real.',{t:[],tx:'asunto|estimad|hola|saludos'});
   add('recuperá la visita que borré ayer','Mira la Papelera y pregunta cuál (o arma la tarjeta de restaurar).',{tx:'papelera|restaur|recuper|borrad|no (hay|encuentro|figura)'});
-  add('dame info de {TIPEO}','Tolera el tipeo.',{t:[]});
+  add('dame info de {TIPEO}','Tolera el tipeo: da la ficha, no dice «no encuentro».',{t:[],no:'no encuentro|no (la )?encontr',tx:'Datos y operaci|precio|etapa'});
   add('che q onda la de {C2}?','Entiende la calle pedida.',{t:[],tx:'{C2}'});
   add('cargame que hoy vinieron 3 personas a ver {A3}: Ana (le gustó), Pedro (no le interesó, caro) y Luis (va a hacer una oferta)','Una tarjeta por persona.',{n:3});
   add('ehh visita en {C2} al {N2} con marcos tejo le encantó','Entiende la dirección dictada y arma la tarjeta.',{t:['cargar']});
