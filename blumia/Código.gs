@@ -2521,7 +2521,9 @@ function syncCitasCalendar() {
   const eventos = [];
   const leer = (cal, con) => { try { cal.getEvents(desde, hasta).forEach(e => eventos.push({ e: e, con: con })); } catch (err) { Logger.log('Calendario sin leer (' + con + '): ' + err.message); } };
   const calBlumia = CalendarApp.getCalendarById('blumiaconsulting@gmail.com');
-  if (calBlumia) leer(calBlumia, '');
+  let duenoBlumia = '';
+  try { const ub = leerUsuarios_().find(u => u.activo === 'SI' && String(u.mail || '').toLowerCase() === 'blumiaconsulting@gmail.com'); if (ub) duenoBlumia = ub.nombre; } catch (err) { }
+  if (calBlumia) leer(calBlumia, duenoBlumia);
   try {
     leerUsuarios_().filter(u => u.activo === 'SI' && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(u.mail || '') && String(u.mail).toLowerCase() !== 'blumiaconsulting@gmail.com').forEach(u => {
       let cal = null;
@@ -2548,6 +2550,7 @@ function syncCitasCalendar() {
     return '';
   };
   // el candidato reservó solo desde la página de citas: si está «Avanza a …» y hay una cita futura de esa etapa, pasa a «… agendada»
+  const sinEtapa = titulo => !/screening|competencia|empresa/i.test(titulo);
   const AGENDA_AUTO = { 'avanza a screening': ['screening', 'Screening agendado'], 'avanza a competencias': ['competencias', 'Competencias agendada'] };
 
   perfiles.forEach(id => {
@@ -2593,7 +2596,7 @@ function syncCitasCalendar() {
         const ahora = new Date();
         if (!etapa) {
           const auto = AGENDA_AUTO[String(d[i][8] || '').trim().toLowerCase()];
-          const hay = auto && suyos.filter(x => x.e.getTitle().toLowerCase().includes(auto[0]) && x.e.getStartTime() >= ahora).sort((a,b) => a.e.getStartTime() - b.e.getStartTime())[0];
+          const hay = auto && suyos.filter(x => (x.e.getTitle().toLowerCase().includes(auto[0]) || sinEtapa(x.e.getTitle())) && x.e.getStartTime() >= ahora).sort((a,b) => a.e.getStartTime() - b.e.getStartTime())[0];
           if (hay) {
             const c9 = sh.getRange(i+1, 9), reg = c9.getDataValidation();
             c9.setDataValidation(null).setValue(auto[1]);
@@ -2603,7 +2606,7 @@ function syncCitasCalendar() {
           }
         }
         if (!etapa) { sh.getRange(i+1,37).setValue(''); sh.getRange(i+1,46).setValue(''); continue; }
-        const cands = suyos.filter(x => x.e.getTitle().toLowerCase().includes(etapa) && x.e.getStartTime() >= ahora);
+        const cands = suyos.filter(x => (x.e.getTitle().toLowerCase().includes(etapa) || (etapa !== 'empresa' && sinEtapa(x.e.getTitle()))) && x.e.getStartTime() >= ahora);
         if (cands.length) {
           cands.sort((a,b) => a.e.getStartTime() - b.e.getStartTime());
           sh.getRange(i+1, 37).setValue(Utilities.formatDate(cands[0].e.getStartTime(), 'GMT-3', "dd/MM/yyyy 'a las' HH:mm"));
@@ -2806,7 +2809,7 @@ function armarComunicacion_(perfilId, fila, tipo, quien, entrevistadorElegido){
     const u = leerUsuarios_().find(x => x.clave === usuClave_(entrevistadorElegido) && x.activo === 'SI');
     if (!u) return { ok: false, error: 'No encontré a ese entrevistador entre los usuarios habilitados.' };
     if (!usuHace_(u, etapaAg)) return { ok: false, error: String(u.nombre).split(' ')[0] + ' no hace ' + etapaAg + '. Elegí a otra persona.' };
-    const propio = etapaAg === 'screening' ? u.linkScr : u.linkComp;
+    const propio = etapaAg === 'screening' ? (u.linkScr || u.linkComp) : (u.linkComp || u.linkScr);
     if (propio) link = propio; else aviso = String(u.nombre).split(' ')[0] + ' todavía no tiene cargado su link de agenda de ' + etapaAg + ': el mensaje lleva el link de la búsqueda.';
     conQuien = u.nombre;
   }
