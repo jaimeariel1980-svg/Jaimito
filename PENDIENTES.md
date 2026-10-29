@@ -177,3 +177,5 @@ Hecha con el código real y 37 fichas de ejemplo; el modelo real (`gpt-4o-mini`)
 
 - ✅ **Blumia: «🔎 Revisión con IA» del flyer (29/10, Ariel: «sí hacelo»)**: `flyerRevisarIA_` en `Flyer.gs` (solo administradores, `flyerRevisar` en `Sesion.gs`) manda la imagen final a Claude (tarea `redactar`, Sonnet 5.5, unos centavos por revisión) y devuelve puntaje, resumen y 3–5 sugerencias con prioridad. No arregla solo: es guía; lo básico lo resuelven «Revisión» y «Mejorar solo». Probar con un flyer real (la parte del servidor no se pudo probar acá).
 
+- ✅ **Blumia: «Aplicar con IA» en la revisión del flyer (29/10, Ariel: «dale»)**: cada sugerencia de `flyerRevisarIA_` trae una `accion` de una lista cerrada (`flyerAccionOk_` en `Flyer.gs` valida tipo y rangos; colores solo de la paleta) que el editor ejecuta con `iaAplicarUna` (`FlyerPagina.html`); «Aplicar todo» entra como un solo paso de ↶ y hace una segunda revisión automática (máximo 2 vueltas). Reescribir textos nunca es automático: sale «Usar este texto». Toda acción nueva se agrega en las dos puntas (servidor y cliente).
+
