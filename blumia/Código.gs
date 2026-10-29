@@ -957,6 +957,11 @@ function perfilesActivos_() {
   return out;
 }
 
+function unicaBusquedaAbierta_() {
+  const a = perfilesActivos_();
+  return a.length === 1 ? a[0].id : null;
+}
+
 function rutearPorAsunto_(asunto) {
   if (!asunto) return null;
   const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
@@ -1084,6 +1089,8 @@ function procesarMailsRouter() {
 
         // 1) intentar por asunto (gratis)
         let perfil = rutearPorAsunto_(asunto);
+        // si hay UNA sola búsqueda abierta, todo CV que llega va a esa (sin depender del asunto ni de la IA)
+        if (!perfil) perfil = unicaBusquedaAbierta_();
 
         // guardamos el archivo en Drive una sola vez (en carpeta del perfil si ya lo sabemos, si no temporal en raíz)
         let cfgTmp = perfil ? getConfig(perfil) : null;
