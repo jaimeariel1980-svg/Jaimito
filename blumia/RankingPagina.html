@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ranking | Blumia</title>
+%%FUENTE%%
+%%SORTABLE%%
+<style>
+:root{--g:#0F3F27;--m:#E3EEDC;--l:#D5E0CE;--bg:#EEF7EE;--c:#FEE795;--font:'PP Pangram Sans','Poppins',sans-serif}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);background:var(--bg);color:#1A1A1A;font-size:14px;line-height:1.45}
+header{background:var(--g);color:#fff;padding:20px 28px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+header .t{flex:1;min-width:220px}header .e{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--c);font-weight:800}header h1{font-size:24px;letter-spacing:-.02em;line-height:1.15}
+.bt{height:40px;border-radius:8px;border:1.5px solid var(--l);background:var(--m);color:var(--g);font:700 13px var(--font);cursor:pointer;padding:0 16px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;white-space:nowrap}
+.bt:hover{border-color:var(--g)}.bt.pri{background:var(--g);color:#fff;border-color:var(--g)}.bt.am{background:var(--c);border-color:var(--c)}.bt:disabled{opacity:.6;cursor:default}
+.bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 28px;background:#fff;border-bottom:1px solid var(--l);position:sticky;top:0;z-index:5}
+.bar label{display:flex;gap:6px;align-items:center;font-weight:600;font-size:13px;cursor:pointer}.bar input{accent-color:var(--g);width:16px;height:16px}
+.bar .st{margin-left:auto;font-size:12px;color:#666}
+.cols{display:grid;grid-template-columns:1fr 1.25fr;gap:20px;padding:20px 28px 60px;align-items:start}
+.col{background:#fff;border:1px solid var(--l);border-radius:12px;padding:14px}.col h2{font-size:15px;color:var(--g);margin-bottom:2px;display:flex;align-items:center;gap:8px}.col h2 b{background:var(--c);border-radius:999px;font-size:12px;padding:1px 10px}.col .sub{font-size:12px;color:#666;margin-bottom:10px}
+.lst{min-height:80px;display:flex;flex-direction:column;gap:10px;border-radius:8px}.lst:empty::before{content:attr(data-vacio);display:block;border:2px dashed var(--l);border-radius:8px;padding:22px;text-align:center;color:#888;font-size:13px}
+.cd{border:1.5px solid var(--l);border-radius:12px;padding:10px 12px;background:#fff}.cd.sortable-ghost{opacity:.4}.cd.reserva{background:#fafaf2}
+.top{display:flex;align-items:center;gap:8px}.pos{flex:none;width:30px;height:30px;border-radius:50%;background:var(--g);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:14px}.cd:first-child .pos.rk1{background:var(--c);color:var(--g)}
+.grip{cursor:grab;color:#999;font-size:18px;user-select:none;touch-action:none;padding:2px 4px}.nm{flex:1;min-width:0;font-weight:800;font-size:15px;line-height:1.2}.nm small{display:block;font-weight:500;font-size:11px;color:#666}
+.ctl{display:flex;gap:4px}.ctl button{width:32px;height:32px;border-radius:8px;border:1.5px solid var(--l);background:var(--m);color:var(--g);font:800 14px var(--font);cursor:pointer}.ctl button:hover{border-color:var(--g)}
+.ch{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 4px}.n{font-size:11px;font-weight:800;border-radius:6px;padding:2px 8px;background:#eee}.n i{font-style:normal;font-weight:600;color:#666;margin-right:4px}.n.A{background:#1A6645;color:#fff}.n.A i{color:#cfe}.n.Bp{background:#B7E0C6;color:#14502F}.n.B{background:#F7DC6F;color:#6B5800}.n.C{background:#E06666;color:#fff}.n.C i{color:#fee}
+.mt{font-size:12px;color:#555}.res{display:inline-block;background:#FBC67B;color:#5a3a00;border-radius:6px;font-size:10px;font-weight:800;padding:1px 7px;margin-left:6px;text-transform:uppercase;letter-spacing:.06em}
+.com{width:100%;margin-top:8px;border:1.5px solid var(--l);border-radius:8px;padding:7px 9px;font:500 12px/1.4 var(--font);resize:vertical;min-height:40px}
+.msg{padding:30px;text-align:center;color:#555}.err{background:#fde8e8;color:#8a1c1c;border-radius:8px;padding:12px;margin:14px 28px}
+.fin{margin:0 28px 30px;background:#fff;border:1px solid var(--l);border-left:4px solid var(--g);border-radius:8px;padding:16px;display:none}
+@media(max-width:820px){.cols{grid-template-columns:1fr;padding:14px 16px 60px}.bar{padding:12px 16px}header{padding:16px}.bar .st{margin-left:0;width:100%}.fin{margin:0 16px 30px}}
+</style></head><body>
+<header><div class="t"><div class="e">Ranking para el cliente</div><h1 id="hT"></h1></div><a class="bt" id="hVol" href="#">← Volver al tablero</a></header>
+<div class="bar"><button class="bt" id="bSug">✨ Ordenar por notas</button><label><input type="checkbox" id="cPret" checked>Mostrar pretensión salarial en el informe</label><span class="st" id="st"></span><button class="bt pri" id="bInf" disabled>Generar informe para el cliente</button></div>
+<div id="err" class="err" style="display:none"></div>
+<div class="fin" id="fin"></div>
+<div id="carga" class="msg">Cargando candidatos…</div>
+<div class="cols" id="cols" style="display:none">
+  <div class="col"><h2>Disponibles <b id="nDis">0</b></h2><div class="sub">Personas en carrera con alguna nota. Arrastrá (⠿) o tocá ＋ para sumarlas al ranking.</div><div class="lst" id="lDis" data-vacio="No hay más personas disponibles"></div></div>
+  <div class="col"><h2>Ranking para el cliente <b id="nRk">0</b></h2><div class="sub">El de arriba es el primero. Ordená con el dedo (⠿) o con ↑ ↓ y escribí un comentario si querés.</div><div class="lst" id="lRk" data-vacio="Arrastrá personas acá o tocá «Ordenar por notas»"></div></div>
+</div>
+<script>
+var DATOS=%%DATOS%%;
+function $(i){return document.getElementById(i)}
+function esc(t){return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}
+$('hT').textContent=DATOS.puesto+' · '+DATOS.empresa;
+$('hVol').onclick=function(e){e.preventDefault();window.top.location.href=DATOS.volver};
+var C={},RK=[],COM={},tm=null,cargado=false;
+var VAL={A:4,'B+':3,B:2,C:0};
+function money(n){return n?'$'+Number(n).toLocaleString('es-AR'):''}
+function chip(lb,v){return v?'<span class="n '+String(v).replace('+','p')+'"><i>'+lb+'</i>'+esc(v)+'</span>':''}
+function card(c,enRk,i){var mt=[c.pret?money(c.pret):'',c.zona&&/fuera/i.test(c.zona)?'Fuera de zona':''].filter(Boolean).join(' · ');
+  var h='<div class="cd'+(c.reserva?' reserva':'')+'" data-f="'+c.fila+'"><div class="top">'+(enRk?'<span class="pos'+(i===0?' rk1':'')+'">'+(i+1)+'</span>':'')+'<span class="grip" title="Arrastrar">⠿</span><div class="nm">'+esc(c.nombre)+'<small>'+esc(c.etapa)+(c.formacion?' · '+esc(c.formacion):'')+'</small></div><div class="ctl">'+
+   (enRk?'<button data-a="up" aria-label="Subir">↑</button><button data-a="dn" aria-label="Bajar">↓</button><button data-a="x" aria-label="Quitar del ranking">✕</button>':'<button data-a="add" aria-label="Sumar al ranking">＋</button>')+'</div></div>'+
+   '<div class="ch">'+chip('CV',c.notas.cv)+chip('Screening',c.notas.scr)+chip('Comp.',c.notas.comp)+chip('Empresa',c.notas.emp)+'</div>'+
+   '<div class="mt">'+esc(mt)+(c.reserva?'<span class="res">En reserva</span>':'')+'</div>';
+  if(enRk)h+='<textarea class="com" placeholder="Comentario para el cliente (opcional)">'+esc(COM[c.fila]||'')+'</textarea>';
+  return h+'</div>'}
+function score(c){var v=function(k){return VAL[c.notas[k]]||0};return v('emp')*1000+v('comp')*100+v('scr')*10+v('cv')-(c.reserva?5000:0)}
+function pintar(){var enRk={};RK.forEach(function(f){enRk[f]=1});
+  var dis=Object.keys(C).map(function(f){return C[f]}).filter(function(c){return !enRk[c.fila]}).sort(function(a,b){return score(b)-score(a)});
+  $('lDis').innerHTML=dis.map(function(c){return card(c,false)}).join('');
+  $('lRk').innerHTML=RK.map(function(f,i){return card(C[f],true,i)}).join('');
+  $('nDis').textContent=dis.length;$('nRk').textContent=RK.length;$('bInf').disabled=!RK.length;
+  [].forEach.call(document.querySelectorAll('.cd .com'),function(t){t.oninput=function(){COM[t.closest('.cd').getAttribute('data-f')]=t.value;guardarSoon()}})}
+function leerOrden(){RK=[].map.call($('lRk').querySelectorAll('.cd'),function(e){return +e.getAttribute('data-f')})}
+function guardarSoon(){if(!cargado)return;$('st').textContent='Cambios sin guardar…';clearTimeout(tm);tm=setTimeout(guardar,900)}
+function guardar(cb){clearTimeout(tm);$('st').textContent='Guardando…';
+  google.script.run.withSuccessHandler(function(){var d=new Date();$('st').textContent='Guardado ✓ '+('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);if(cb)cb()}).withFailureHandler(function(e){$('st').textContent='No se pudo guardar';mostrarErr((e&&e.message)||e)})
+   .rankingGuardar(DATOS.perfil,RK.map(function(f){return {fila:f,com:COM[f]||''}}),$('cPret').checked)}
+function mostrarErr(m){var e=$('err');e.textContent=m;e.style.display='block';setTimeout(function(){e.style.display='none'},6000)}
+function mover(f,a){var i=RK.indexOf(f);if(a==='add'){if(i<0)RK.push(f)}else if(a==='x'){if(i>=0)RK.splice(i,1)}else if(a==='up'&&i>0){RK.splice(i-1,0,RK.splice(i,1)[0])}else if(a==='dn'&&i>=0&&i<RK.length-1){RK.splice(i+1,0,RK.splice(i,1)[0])}else return;pintar();guardarSoon()}
+document.addEventListener('click',function(e){var b=e.target.closest('.ctl button');if(!b)return;mover(+b.closest('.cd').getAttribute('data-f'),b.getAttribute('data-a'))});
+function sortables(){var o={group:'rk',animation:150,handle:'.grip',forceFallback:true,fallbackOnBody:true,ghostClass:'sortable-ghost',onEnd:function(){leerOrden();pintar();guardarSoon()}};new Sortable($('lDis'),o);new Sortable($('lRk'),o)}
+function iniciar(r){C={};r.candidatos.forEach(function(c){C[c.fila]=c});RK=r.orden.map(function(o){COM[o.fila]=o.com||'';return o.fila});$('cPret').checked=r.mostrarPret!==false;
+  $('carga').style.display='none';$('cols').style.display='grid';pintar();sortables();cargado=true;$('st').textContent=r.fecha?'Guardado '+r.fecha:(r.sugerido&&RK.length?'Orden sugerido por las notas (sin guardar todavía)':'')}
+google.script.run.withSuccessHandler(iniciar).withFailureHandler(function(e){$('carga').innerHTML='<div class="err" style="margin:0">No se pudo cargar: '+esc((e&&e.message)||e)+'</div>'}).rankingDatos(DATOS.perfil);
+$('cPret').onchange=guardarSoon;
+$('bSug').onclick=function(){var hacer=function(){var b=$('bSug');b.disabled=true;google.script.run.withSuccessHandler(function(o){b.disabled=false;RK=o.map(function(x){return x.fila});pintar();guardarSoon()}).withFailureHandler(function(e){b.disabled=false;mostrarErr((e&&e.message)||e)}).rankingSugerir(DATOS.perfil)};
+  if(RK.length&&typeof blConfirm==='function')blConfirm('Esto reemplaza el orden actual por el sugerido según las notas. ¿Seguir?',hacer,{si:'Reemplazar'});else hacer()};
+$('bInf').onclick=function(){var b=this,t=b.textContent;b.disabled=true;b.textContent='Armando el informe…';
+  guardar(function(){google.script.run.withSuccessHandler(function(r){b.disabled=false;b.textContent=t;var f=$('fin');f.style.display='block';f.innerHTML='<b>Informe listo</b> · '+r.n+(r.n===1?' persona':' personas')+'.<br><a class="bt pri" style="margin-top:10px" target="_blank" href="'+esc(r.url)+'">Abrir informe para revisar y presentar</a><p style="font-size:12px;color:#666;margin-top:8px">Ahí podés editar textos y tocar «Guardar cambios». Para PDF: Ctrl+P → Guardar como PDF.</p>'})
+   .withFailureHandler(function(e){b.disabled=false;b.textContent=t;mostrarErr((e&&e.message)||e)}).rankingInforme(DATOS.perfil)})};
+</script></body></html>
