@@ -1,5 +1,5 @@
 /* ============================================================
-   FLYER Y TEXTOS PARA REDES de una búsqueda (menú 📚 Búsqueda → 📢 Flayer y textos).
+   FLYER Y TEXTOS PARA REDES de una búsqueda (menú 📚 Búsqueda → 📢 Difusión).
    - flyerHTML_: sirve Flyer.html con los datos de la búsqueda y el último diseño guardado.
    - flyerGuardar_: guarda el diseño (textos, colores, foto de fondo ya comprimida) como «Flyer - datos.json» en la carpeta de la búsqueda.
    - flyerTextosIA_: Claude redacta el flyer (bajada, desafíos, requisitos) y los posteos de LinkedIn / Instagram / WhatsApp.
@@ -71,6 +71,32 @@ function flyerSocial_(perfilId) {
   let imagen = '', imagenId = '';
   try { const it = carpetaPerfil_(getConfig(perfilId)).getFilesByName(FLYER_IMAGEN_); if (it.hasNext()) { const fi = it.next(); imagen = fi.getUrl(); imagenId = fi.getId(); } } catch (e) { }
   return { linkedin: rep(s.linkedin), instagram: rep(s.instagram), whatsapp: rep(s.whatsapp), link: d.linkPostulacion, fecha: d.fecha, imagen: imagen, imagenId: imagenId };
+}
+
+// Guarda solo los textos de difusión (LinkedIn, Instagram, WhatsApp) en el mismo archivo del flayer, sin tocar el diseño
+function difusionGuardar_(perfilId, t) {
+  const cfg = getConfig(perfilId);
+  const lim = (v, n) => String(v == null ? '' : v).replace(/[<>]/g, '').slice(0, n);
+  const f = flyerArchivo_(cfg);
+  let g = {};
+  if (f) { try { g = JSON.parse(f.getBlob().getDataAsString()) || {}; } catch (e) { g = {}; } }
+  g.social = { linkedin: lim(t && t.linkedin, 3000), instagram: lim(t && t.instagram, 2200), whatsapp: lim(t && t.whatsapp, 1000) };
+  const txt = JSON.stringify(g);
+  if (txt.length > FLYER_MAX_BYTES_) throw new Error('No se pudo guardar: el archivo del flayer es demasiado grande.');
+  if (f) f.setContent(txt); else carpetaPerfil_(cfg).createFile(FLYER_ARCHIVO_, txt, MimeType.PLAIN_TEXT);
+  try { registrarHistorial_(cfg.hoja_nombre || perfilId, '(búsqueda)', 'Difusión', 'Textos de difusión guardados', QUIEN_); } catch (e) { }
+  return { fecha: Utilities.formatDate(new Date(), 'America/Argentina/Buenos_Aires', 'dd/MM/yyyy HH:mm') };
+}
+
+// Redacta solo los tres textos de difusión (no toca el diseño del flayer)
+function difusionTextosIA_(perfilId) {
+  const d = flyerDatos_(perfilId);
+  let g = {};
+  try { g = JSON.parse(d.guardado || '{}') || {}; } catch (e) { }
+  const mostrar = (g.mostrarEmpresa !== undefined) ? !!g.mostrarEmpresa : d.empresa === 'MACS';
+  const r = flyerTextosIA_(perfilId, { mostrarEmpresa: mostrar });
+  const rep = t => String(t || '').replace(/\[LINK\]/g, d.linkPostulacion);
+  return { linkedin: rep(r.linkedin), instagram: rep(r.instagram), whatsapp: rep(r.whatsapp) };
 }
 
 function flyerGuardar_(perfilId, json) {

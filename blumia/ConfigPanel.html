@@ -30,23 +30,53 @@
   function pin(){return 'sesion';}
   function quien(){var q='';try{q=localStorage.getItem('blumia_quien')||'';}catch(e){}return q;}
   function badPin(e){var m=(e&&e.message)||String(e);if(/PIN/.test(m)){try{sessionStorage.removeItem('bl_pin');}catch(x){}}return m;}
-  window.cfAbrir=function(){
+  window.cfAbrir=function(tab){
     var p=pin();if(!p)return;
     var bg=document.getElementById('cfBg');bg.classList.add('show');document.getElementById('cfBox').innerHTML='<h2>⚙ Configurar búsqueda</h2><div class="cf-help">Cargando…</div>';
-    google.script.run.withSuccessHandler(function(d){CF=d;CF.base=snapBase();render('ia');}).withFailureHandler(function(e){alert(badPin(e));bg.classList.remove('show');}).getConfigBusqueda(p,PERFIL);
+    google.script.run.withSuccessHandler(function(d){CF=d;CF.base=snapBase();render(typeof tab==='string'?tab:'ia');}).withFailureHandler(function(e){alert(badPin(e));bg.classList.remove('show');}).getConfigBusqueda(p,PERFIL);
   };
   function snapBase(){return JSON.parse(JSON.stringify({datos:CF.datos,prompt_extra:CF.prompt_extra,hero:CF.extra.hero,estado:CF.extra.estado,cv_ia:CF.extra.cv_ia,mail:CF.extra.mail}));}
   window.cfCerrar=function(){document.getElementById('cfBg').classList.remove('show');};
   var SOC=null,SOCcarga=false;
+  var DIF_LIM={whatsapp:1000,linkedin:3000,instagram:2200};
+  function difWa(t){return (/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)?'https://wa.me/?text=':'https://web.whatsapp.com/send?text=')+encodeURIComponent(t);}
+  function difVal(k){var e=document.getElementById('cfs_'+k);return e?e.value:(SOC&&SOC[k])||'';}
+  function difMsg(t,ok){var e=document.getElementById('cfdmsg');if(e){e.textContent=t;e.style.color=ok===false?'#B91C1C':'#0F3F27';}}
+  function difGuardar(cb,silencio){var o={linkedin:difVal('linkedin'),instagram:difVal('instagram'),whatsapp:difVal('whatsapp')};google.script.run.withSuccessHandler(function(){SOC.linkedin=o.linkedin;SOC.instagram=o.instagram;SOC.whatsapp=o.whatsapp;if(!silencio)difMsg('Textos guardados.');if(cb)cb();}).withFailureHandler(function(e){difMsg('No se pudo guardar: '+((e&&e.message)||e),false);}).difusionGuardar(PERFIL,o);}
+  window.cfDifGuardar=function(){difMsg('Guardando…');difGuardar();};
+  window.cfDifContar=function(k){var e=document.getElementById('cfs_'+k),c=document.getElementById('cfc_'+k);if(!e||!c)return;var n=e.value.length;c.textContent=n+' / '+DIF_LIM[k]+' caracteres';c.style.color=n>DIF_LIM[k]?'#B91C1C':'#777';};
+  window.cfDifCopiar=function(k,b){var e=document.getElementById('cfs_'+k);if(!e)return;e.select();var ok=function(){var o=b.textContent;b.textContent='¡Copiado!';setTimeout(function(){b.textContent=o;},1500);};try{navigator.clipboard.writeText(e.value).then(ok,function(){document.execCommand('copy');ok();});}catch(x){document.execCommand('copy');ok();}};
+  window.cfDifCompartir=function(k){
+    var t=difVal(k);if(!t.trim()){difMsg('Primero escribí o generá el texto.',false);return;}
+    try{navigator.clipboard.writeText(t).catch(function(){});}catch(x){}
+    if(k==='whatsapp'){window.open(difWa(t+(SOC.imagen?'\n\n'+SOC.imagen:'')),'_blank');difMsg('Se abrió WhatsApp con el texto'+(SOC.imagen?' y el link del flayer':'')+'.');}
+    else if(k==='linkedin'){window.open('https://www.linkedin.com/feed/?shareActive=true&text='+encodeURIComponent(t),'_blank');difMsg('Se abrió LinkedIn. Si el texto no aparece, pegalo (Ctrl+V). La imagen se adjunta a mano.');}
+    else{window.open('https://www.instagram.com/','_blank');difMsg('Te copié el texto. En Instagram, creá el posteo, adjuntá la imagen y pegalo (Ctrl+V).');}
+    difGuardar(null,true);
+  };
+  window.cfDifGenerar=function(b){
+    var hay=['linkedin','instagram','whatsapp'].some(function(k){return difVal(k).trim();});
+    var go=function(){b.disabled=true;var o=b.textContent;b.textContent='Redactando…';difMsg('La IA está redactando (hasta 1 minuto)…');
+      google.script.run.withSuccessHandler(function(r){b.disabled=false;b.textContent=o;['linkedin','instagram','whatsapp'].forEach(function(k){var e=document.getElementById('cfs_'+k);if(e){e.value=r[k]||'';cfDifContar(k);}});difMsg('Listo. Revisalos, retocá lo que haga falta y tocá «Guardar textos».');}).withFailureHandler(function(e){b.disabled=false;b.textContent=o;difMsg((e&&e.message)||String(e),false);}).difusionTextos(PERFIL);};
+    if(hay&&typeof blConfirm==='function')blConfirm('Ya hay textos escritos. Si generás de nuevo se reemplazan los tres. ¿Seguir?',go,{si:'Generar de nuevo'});else go();
+  };
   function flyerTextos(){
-    if(!SOC){if(!SOCcarga){SOCcarga=true;google.script.run.withSuccessHandler(function(d){SOC=d||{};SOCcarga=false;render('flyer');}).withFailureHandler(function(){SOC={};SOCcarga=false;render('flyer');}).flyerSocial(PERFIL);}return '<div class="cf-help" style="margin-top:12px">Cargando textos…</div>';}
-    var h='';[['linkedin','Aviso de LinkedIn'],['instagram','Instagram'],['whatsapp','WhatsApp']].forEach(function(k){var t=SOC[k[0]]||'';h+='<h3 style="margin:16px 0 4px;font-size:14px">'+k[1]+'</h3>'+(t?'<textarea readonly id="cfs_'+k[0]+'" rows="'+(k[0]==='linkedin'?9:5)+'" style="width:100%;font:inherit;font-size:13px;padding:10px;border:1px solid #D5E0CE;border-radius:8px">'+String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</textarea><button class="cf-mini" onclick="cfCopiarSoc(\''+k[0]+'\',this)">Copiar</button>':'<div class="cf-help">Todavía no hay texto. Abrí el editor y tocá «✨ Generar textos».</div>');});
+    if(!SOC){if(!SOCcarga){SOCcarga=true;google.script.run.withSuccessHandler(function(d){SOC=d||{};SOCcarga=false;render('flyer');}).withFailureHandler(function(){SOC={};SOCcarga=false;render('flyer');}).flyerSocial(PERFIL);}return '<div class="cf-help" style="margin-top:12px">Cargando…</div>';}
+    var h='<h3 style="margin:6px 0 2px;font-size:16px">Textos para publicar</h3><div class="cf-help">Editá directo acá. Al tocar «Enviar» o «Publicar» el texto se copia, se guarda y se abre la red.</div>';
+    [['whatsapp','WhatsApp',8,'Enviar por WhatsApp'],['linkedin','LinkedIn',14,'Publicar en LinkedIn'],['instagram','Instagram',10,'Abrir Instagram']].forEach(function(k){var t=SOC[k[0]]||'';
+      h+='<div style="margin:14px 0 4px;display:flex;justify-content:space-between;align-items:baseline"><b style="font-size:14px">'+k[1]+'</b><span id="cfc_'+k[0]+'" style="font-size:11px;color:#777"></span></div><textarea id="cfs_'+k[0]+'" oninput="cfDifContar(\''+k[0]+'\')" style="width:100%;min-height:'+(k[2]*21)+'px;font:inherit;font-size:14px;line-height:1.5;padding:12px;border:1px solid #D5E0CE;border-radius:10px;resize:vertical">'+String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</textarea><div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap"><button class="cf-mini" onclick="cfDifCopiar(\''+k[0]+'\',this)">Copiar</button><button class="cf-save" style="padding:7px 14px;font-size:13px" onclick="cfDifCompartir(\''+k[0]+'\')">'+k[3]+'</button></div>';});
+    h+='<div style="display:flex;gap:8px;align-items:center;margin-top:16px;flex-wrap:wrap"><button class="cf-save" onclick="cfDifGuardar()">Guardar textos</button><button class="cf-mini" style="padding:10px 14px" onclick="cfDifGenerar(this)">✨ Generar con IA</button><span id="cfdmsg" style="font-size:12px"></span></div>';
+    h+='<h3 style="margin:26px 0 6px;font-size:16px;border-top:1px solid #E3EEDC;padding-top:18px">Flayer</h3>';
+    if(SOC.imagenId)h+='<div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap"><img src="https://drive.google.com/thumbnail?id='+SOC.imagenId+'&sz=w400" alt="Flayer de la búsqueda" style="width:180px;max-width:100%;border-radius:8px;border:1px solid #ddd"><div style="font-size:12px;color:#666;line-height:1.6">Último guardado: '+(SOC.fecha||'')+'<br><a href="'+SOC.imagen+'" target="_blank">Abrir imagen</a></div></div>';
+    else h+='<div class="cf-help">Todavía no hay un flayer terminado. Se arma en el editor y, al guardarlo, queda acá.</div>';
+    h+='<div style="margin-top:10px"><button class="cf-save" onclick="window.open(URL_APP+\'?tipo=flyer&perfil=\'+encodeURIComponent(PERFIL),\'_blank\')">Editar flayer</button></div>';
+    setTimeout(function(){['linkedin','instagram','whatsapp'].forEach(cfDifContar);},0);
     return h;
   }
-  window.cfCopiarSoc=function(k,b){var e=document.getElementById('cfs_'+k);if(!e)return;e.select();var ok=function(){var o=b.textContent;b.textContent='¡Copiado!';setTimeout(function(){b.textContent=o;},1500);};try{navigator.clipboard.writeText(e.value).then(ok,function(){document.execCommand('copy');ok();});}catch(x){document.execCommand('copy');ok();}};
   window.cfTab=function(t){sync();render(t);};
   function sync(){
     fdSync();
+    if(SOC)['linkedin','instagram','whatsapp'].forEach(function(k){var e=document.getElementById('cfs_'+k);if(e)SOC[k]=e.value;});
     if(!CF)return;var g=function(id){var e=document.getElementById(id);return e?e.value:null;},v;
     if((v=g('cf_ia'))!==null)CF.prompt_extra=v;
     ['posicion','ubicacion','instancia','entrevistadoras'].forEach(function(k){if((v=g('cfh_'+k))!==null)CF.extra.hero[k]=v;});
@@ -60,7 +90,7 @@
     CF.plantillas.forEach(function(t,i){if((v=g('cfp_'+i))!==null){t.texto=v;t.alcance=g('cfa_'+i);}});
   }
   function render(tab){
-    var T=[['ia','Requisitos para la IA'],['post','Preguntas de postulación'],['msg','Mensajes'],['dat','Datos de la búsqueda'],['scr','Screening'],['comp','Competencias'],['perfil','Perfil del puesto'],['flyer','Flayer y textos']];var tb=function(L){return L.map(function(t){return '<button class="cf-tab'+(t[0]===tab?' on':'')+'" onclick="cfTab(\''+t[0]+'\')">'+t[1]+'</button>';}).join('');};
+    var T=[['ia','Requisitos para la IA'],['post','Preguntas de postulación'],['msg','Mensajes'],['dat','Datos de la búsqueda'],['scr','Screening'],['comp','Competencias'],['perfil','Perfil del puesto'],['flyer','Difusión']];var tb=function(L){return L.map(function(t){return '<button class="cf-tab'+(t[0]===tab?' on':'')+'" onclick="cfTab(\''+t[0]+'\')">'+t[1]+'</button>';}).join('');};
     var x='<h2>⚙ Configurar esta búsqueda</h2><div class="cf-help" style="margin:0 0 6px">'+esc(CF.datos.nombre||PERFIL)+' · para crear búsquedas nuevas o manejar usuarios usá la pantalla de Inicio (🏠).</div><div class="cf-tabs">'+tb(T)+'</div>';
     x+='<div class="cf-sec'+(tab==='ia'?' on':'')+'"><div class="cf-help">Es el texto que la IA usa para <b>puntuar los CVs</b> de esta búsqueda (perfil, experiencia excluyente, deseable, zona, pretensión…). Si cambia el perfil del puesto, actualizalo acá. Vale para los CVs que entren desde ahora; los ya analizados no se recalculan.</div><textarea id="cf_ia" style="min-height:340px">'+esc(CF.prompt_extra)+'</textarea>'+foot('ia')+'</div>';
     x+='<div class="cf-sec'+(tab==='post'?' on':'')+'"><div class="cf-help"><b>Preguntas habituales</b>: tildá las que querés que aparezcan en el formulario de esta búsqueda (todas son obligatorias para quien se postula). ¿Necesitás otra distinta? Agregala con el botón de abajo.</div>';
@@ -91,7 +121,7 @@
     x+='<label>Palabras del asunto del mail para ordenar los CVs de esta búsqueda (separadas con |)</label><input id="cfx_mail" value="'+esc(E.mail)+'"><div class="cf-help">Si el asunto del mail contiene una de estas palabras, el CV va a esta búsqueda. Si lo dejás vacío, igual se ordena cuando el asunto nombra el puesto.</div>';
     if(E.enlaces&&(E.enlaces.hoja||E.enlaces.carpeta))x+='<h3 style="margin:18px 0 4px;font-size:15px">Dónde está guardado</h3><div class="cf-help">Solo para abrir: esto no se edita desde acá.</div><div style="display:flex;gap:10px;flex-wrap:wrap">'+(E.enlaces.hoja?'<a class="cf-mini" target="_blank" href="'+esc(E.enlaces.hoja)+'">📄 Pestaña de candidatos</a>':'')+(E.enlaces.carpeta?'<a class="cf-mini" target="_blank" href="'+esc(E.enlaces.carpeta)+'">📁 Carpeta en Drive</a>':'')+'</div>';
     x+=foot('dat')+'</div>';
-    x+='<div class="cf-sec'+(tab==='flyer'?' on':'')+'"><div class="cf-help">El <b>flyer</b> y los <b>textos del aviso</b> (LinkedIn, Instagram y WhatsApp) de esta búsqueda. Se arman con el perfil del puesto y con los colores y la tipografía de la marca. Los textos se generan y se retocan en el editor; acá los ves y los copiás para publicar.</div><button class="cf-save" onclick="window.open(URL_APP+\'?tipo=flyer&perfil=\'+encodeURIComponent(PERFIL),\'_blank\')">📢 Abrir el editor de flayer</button>'+flyerTextos()+'<div class="cf-foot"><button class="cf-close" onclick="cfCerrar()">Cerrar</button></div></div>';
+    x+='<div class="cf-sec'+(tab==='flyer'?' on':'')+'">'+flyerTextos()+'<div class="cf-foot"><button class="cf-close" onclick="cfCerrar()">Cerrar</button></div></div>';
     x+='<div class="cf-sec'+(tab==='perfil'?' on':'')+'"><div class="cf-help">El <b>perfil del puesto</b> es el relevamiento de la búsqueda (organización, puesto, perfil, formación, experiencia, competencias, contratación y proceso). Acá se <b>edita</b>; la versión guardada para consultar sin tocar nada está en el menú <b>📚 Búsqueda → Perfil del puesto</b>.</div>'
       +(CF.perfil&&CF.perfil.propio?'<p style="margin:10px 0"><b>Última versión guardada:</b> '+(CF.perfil.fecha||'todavía no se guardó ninguna')+'</p><button class="cf-save" onclick="cfPerfilEditar(this)">✏️ Abrir y editar el perfil</button><div class="cf-help" style="margin-top:10px">Se abre acá mismo, abajo. Al terminar tocá «Guardar en el sistema»: cada versión queda guardada con fecha y hora, y se abre siempre la última.</div><div class="cf-help" style="margin-top:8px">📎 Si falla el sistema: guía para completar y después subir con «Completar con IA»: <a href="https://azcubot.pages.dev/guias/Guia_Relevamiento_Perfil_completable.pdf" target="_blank">PDF completable</a> · <a href="https://azcubot.pages.dev/guias/Guia_Relevamiento_Perfil.docx" target="_blank">Word</a></div><div id="cfPerfilFr" style="margin-top:12px"></div>':'<p style="margin:10px 0">Esta búsqueda todavía no tiene el perfil del puesto dentro del sistema (hoy usa un link a un documento externo, si lo cargaste en «Datos de la búsqueda»).</p><button class="cf-save" onclick="cfPerfilCrear(this)">Crear el perfil del puesto de esta búsqueda</button><div class="cf-help" style="margin-top:10px">Queda un formulario en blanco para completar a mano o con «✨ Completar con IA desde un Word».</div>')
       +'<div class="cf-foot"><button class="cf-close" onclick="cfCerrar()">Cerrar</button></div></div>';
