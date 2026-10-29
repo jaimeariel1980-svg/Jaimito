@@ -202,7 +202,7 @@ function pruebaCompleta_(op) {
       flyerGuardar_(c.id, JSON.stringify({ fmt: 'historia', txt: { badge: 'Prueba' } }));
       const im = flyerImagen_(c.id, PRUEBA_JPG_);
       const s = flyerSocial_(c.id);
-      requiere(s.imagen && s.imagenId, 'No quedó la imagen del flyer');
+      requiere(s.imagen && s.imagenId, 'No quedó la imagen del flayer');
       requiere(im.imagen, 'No devolvió el link de la imagen');
       requiere(flyerHTML_(c.id).getContent().length > 3000, 'La pantalla del flyer salió vacía');
       return 'OK';

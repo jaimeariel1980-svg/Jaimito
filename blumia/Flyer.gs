@@ -1,5 +1,5 @@
 /* ============================================================
-   FLYER Y TEXTOS PARA REDES de una búsqueda (menú 📚 Búsqueda → 📢 Flyer y textos).
+   FLYER Y TEXTOS PARA REDES de una búsqueda (menú 📚 Búsqueda → 📢 Flayer y textos).
    - flyerHTML_: sirve Flyer.html con los datos de la búsqueda y el último diseño guardado.
    - flyerGuardar_: guarda el diseño (textos, colores, foto de fondo ya comprimida) como «Flyer - datos.json» en la carpeta de la búsqueda.
    - flyerTextosIA_: Claude redacta el flyer (bajada, desafíos, requisitos) y los posteos de LinkedIn / Instagram / WhatsApp.
@@ -58,7 +58,7 @@ function flyerHTML_(perfilId) {
   const lib = HtmlService.createTemplateFromFile('FlyerQRLib').getRawContent();
   const fuente = HtmlService.createTemplateFromFile('FuenteMarca').getRawContent();
   html = html.replace('%%FUENTE%%', () => fuente).replace('%%QRLIB%%', () => lib).replace('%%ASSETS%%', () => js(FLYER_ASSETS_)).replace('%%DATOS%%', () => js(datos));
-  return HtmlService.createHtmlOutput(html).setTitle('Flyer · ' + datos.puesto + ' | Blumia')
+  return HtmlService.createHtmlOutput(html).setTitle('Flayer · ' + datos.puesto + ' | Blumia')
     .addMetaTag('viewport', 'width=device-width, initial-scale=1').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
@@ -76,11 +76,11 @@ function flyerSocial_(perfilId) {
 function flyerGuardar_(perfilId, json) {
   const cfg = getConfig(perfilId);
   const txt = String(json || '');
-  if (txt.length < 2 || txt.length > FLYER_MAX_BYTES_) throw new Error('El flyer es demasiado grande para guardarlo (probá con una foto más liviana).');
-  try { JSON.parse(txt); } catch (e) { throw new Error('El diseño del flyer no es válido.'); }
+  if (txt.length < 2 || txt.length > FLYER_MAX_BYTES_) throw new Error('El flayer es demasiado grande para guardarlo (probá con una foto más liviana).');
+  try { JSON.parse(txt); } catch (e) { throw new Error('El diseño del flayer no es válido.'); }
   const f = flyerArchivo_(cfg);
   if (f) f.setContent(txt); else carpetaPerfil_(cfg).createFile(FLYER_ARCHIVO_, txt, MimeType.PLAIN_TEXT);
-  try { registrarHistorial_(cfg.hoja_nombre || perfilId, '(búsqueda)', 'Flyer', 'Diseño del flyer guardado', QUIEN_); } catch (e) { }
+  try { registrarHistorial_(cfg.hoja_nombre || perfilId, '(búsqueda)', 'Flyer', 'Diseño del flayer guardado', QUIEN_); } catch (e) { }
   return { fecha: Utilities.formatDate(new Date(), 'America/Argentina/Buenos_Aires', 'dd/MM/yyyy HH:mm') };
 }
 
@@ -88,7 +88,7 @@ function flyerGuardar_(perfilId, json) {
 function flyerImagen_(perfilId, base64) {
   const cfg = getConfig(perfilId);
   const b64 = String(base64 || '').replace(/^data:image\/jpeg;base64,/, '');
-  if (b64.length < 100 || b64.length > 12 * 1024 * 1024) throw new Error('La imagen del flyer no es válida o es demasiado grande.');
+  if (b64.length < 100 || b64.length > 12 * 1024 * 1024) throw new Error('La imagen del flayer no es válida o es demasiado grande.');
   const carpeta = carpetaPerfil_(cfg);
   const it = carpeta.getFilesByName(FLYER_IMAGEN_);
   while (it.hasNext()) it.next().setTrashed(true);
@@ -124,8 +124,8 @@ function flyerTextosIA_(perfilId, opciones) {
   const empresa = mostrar ? d.empresa : d.empresaNeutral;
   const perfil = flyerPerfilTexto_(cfg);
   const extra = (typeof cfg.prompt_extra === 'string') ? cfg.prompt_extra.slice(0, 5000) : '';
-  if (!perfil && !extra) throw new Error('Esta búsqueda todavía no tiene datos para redactar el flyer: cargá el perfil del puesto en ⚙ Configurar (o escribí los textos a mano en la pantalla).');
-  const sistema = 'Sos redactor/a de avisos de empleo de Blumia Consulting (Argentina). Con los datos de una búsqueda armás el texto de un flyer y tres posteos. ' +
+  if (!perfil && !extra) throw new Error('Esta búsqueda todavía no tiene datos para redactar el flayer: cargá el perfil del puesto en ⚙ Configurar (o escribí los textos a mano en la pantalla).');
+  const sistema = 'Sos redactor/a de avisos de empleo de Blumia Consulting (Argentina). Con los datos de una búsqueda armás el texto de un flayer y tres posteos. ' +
     'Respondé SOLO con un JSON válido, sin texto antes ni después ni markdown, con esta forma exacta: ' +
     '{"badge":"ubicación · modalidad (máx. 40 caracteres, ej. «Pilar · Presencial»)","bajada":"2 o 3 frases (máx. 280 caracteres) que presentan a la empresa y qué busca","desafios":["4 o 5 ítems, cada uno máx. 95 caracteres, empiezan con verbo en infinitivo"],"requisitos":["4 ítems, cada uno máx. 95 caracteres"],' +
     '"linkedin":"posteo para LinkedIn (máx. 900 caracteres, con saltos de línea, 2 o 3 emojis como mucho, termina invitando a postularse en [LINK])","instagram":"posteo para Instagram (máx. 600 caracteres, con 4 o 5 hashtags, invita a postularse en el link de la bio o por [LINK])","whatsapp":"mensaje corto para difundir por WhatsApp (máx. 450 caracteres, con [LINK])"}. ' +
