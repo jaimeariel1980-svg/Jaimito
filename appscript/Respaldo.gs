@@ -60,6 +60,20 @@ function azcuErroresDiario(){
   }catch(e){ Logger.log('azcuErroresDiario: '+e); }
 }
 
+// resumen semanal de los 👎 del chat (lunes 9 h): cuántas respuestas se marcaron y las primeras preguntas, para pasárselas a Claude
+function azcuFallasSemanal(){
+  try{
+    var sf = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Chat_Fallas');
+    if(!sf || sf.getLastRow()<2) return;
+    var desde = Date.now() - 7*24*3600000, l = [];
+    sf.getRange(2, 1, sf.getLastRow()-1, 3).getValues().forEach(function(r){ if(r[0] instanceof Date && r[0].getTime() >= desde) l.push({q:String(r[2]||'').slice(0, 70), u:String(r[1]||'')}); });
+    if(!l.length) return;
+    var top = l.slice(0, 3).map(function(x){ return '«'+x.q+'»'+(x.u ? ' ('+x.u+')' : ''); }).join(' · ');
+    var dest = []; azcuGerentes_().forEach(function(nm){ azcuDestinos_(nm, true).forEach(function(d){ if(dest.indexOf(d)<0) dest.push(d); }); });
+    if(dest.length) azcuPush_('👎 '+l.length+(l.length===1 ? ' respuesta marcada' : ' respuestas marcadas')+' del chat esta semana', top+(l.length>3 ? ' y '+(l.length-3)+' más' : '')+'. Detalle en la pestaña Chat_Fallas: copiásela a Claude para que las arregle.', AZCU_WEB, dest, true, true);
+  }catch(e){ Logger.log('azcuFallasSemanal: '+e); }
+}
+
 // se llama desde azcuCalentar (cada 5 min): crea solo los dos activadores diarios si no existen
 function azcuMantenimiento_(){
   var c = CacheService.getScriptCache();
@@ -69,5 +83,6 @@ function azcuMantenimiento_(){
     var hs = ScriptApp.getProjectTriggers().map(function(t){ return t.getHandlerFunction(); });
     if(hs.indexOf('azcuCopiaDiaria')<0) ScriptApp.newTrigger('azcuCopiaDiaria').timeBased().everyDays(1).atHour(3).create();
     if(hs.indexOf('azcuErroresDiario')<0) ScriptApp.newTrigger('azcuErroresDiario').timeBased().everyDays(1).atHour(9).create();
+    if(hs.indexOf('azcuFallasSemanal')<0) ScriptApp.newTrigger('azcuFallasSemanal').timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(9).create();
   }catch(e){ Logger.log('azcuMantenimiento_: '+e); }
 }

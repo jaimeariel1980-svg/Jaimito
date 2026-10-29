@@ -163,3 +163,4 @@ Hecha con el código real y 37 fichas de ejemplo; el modelo real (`gpt-4o-mini`)
 
 - Blumia (29/10): la prueba automática (`blumiaPruebaCompleta`) está escrita pero **no se corrió todavía**: falta cargar `BLUMIA_PRUEBAS = SI` y ejecutarla desde el editor; los primeros fallos pueden ser de la prueba y no de Blumia. Prioridad alta · Ariel + Claude.
 - ✅ Instrucciones del chat (29/10): Ariel decidió **dejar las actuales** (`azcuSistema_`). `PromptNuevo.gs` queda en el repo apagado (se activa solo con `AZCU_PROMPT = nuevo`); si esa propiedad quedó cargada en el script, borrarla.
+- ✅ Resumen semanal de los 👎 (29/10): `azcuFallasSemanal`, push a la gerencia los lunes 9 h con la cantidad y las primeras preguntas (si no hubo 👎 no manda nada). El arreglo de cada falla sigue siendo manual: pasarle las filas de `Chat_Fallas` a Claude.
