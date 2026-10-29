@@ -97,6 +97,13 @@ function pruebaCompleta_(op) {
       return i.candidatos + ' candidatos (no se borró nada)';
     });
 
+    paso('Agenda: quién entrevista según la etapa', () => {
+      const e = entrevistadoresAgenda_();
+      requiere(Array.isArray(e.lista) && e.lista.length > 0, 'No hay usuarios para elegir entrevistador');
+      requiere(usuHace_({ entrevista: '' }, 'competencias') && !usuHace_({ entrevista: 'screening' }, 'competencias') && !usuHace_({ entrevista: 'ninguna' }, 'screening'), 'La regla de etapas por persona no anda');
+      return e.lista.length + ' usuarios';
+    });
+
     // 3b. búsqueda ciega
     paso('Búsqueda ciega: sin nombre ni logo de la empresa para el candidato', () => {
       try {

@@ -98,7 +98,7 @@ const AGENDA_TIPOS_ = {
   'empresa-presencial': { titulo: 'Entrevista con la empresa (presencial)', estado: 'Entrevista empresa agendada' }
 };
 
-function agendarCitaTablero_(perfilId, fila, tipo, fecha, hora, duracion, lugar, forzar, quien) {
+function agendarCitaTablero_(perfilId, fila, tipo, fecha, hora, duracion, lugar, forzar, quien, entrevistador) {
   QUIEN_ = quien || '';
   const T = AGENDA_TIPOS_[tipo];
   if (!T) throw new Error('Tipo de entrevista inválido.');
@@ -114,23 +114,39 @@ function agendarCitaTablero_(perfilId, fila, tipo, fecha, hora, duracion, lugar,
   const mail = String(sh.getRange(fila, 22).getValue() || '').trim();
   const cal = CalendarApp.getCalendarById('blumiaconsulting@gmail.com');
   if (!cal) throw new Error('No tengo acceso al calendario de Blumia.');
-  const choques = cal.getEvents(inicio, fin);
+  // Quién entrevista (solo screening y competencias; las de la empresa las hace la empresa). Se registra en el evento, en la ficha y en el Historial.
+  let quienEntrevista = null;
+  if (entrevistador && (tipo === 'screening' || tipo === 'competencias')) {
+    const u = leerUsuarios_().find(x => x.clave === usuClave_(entrevistador) && x.activo === 'SI');
+    if (!u) throw new Error('No encontré a ese entrevistador entre los usuarios habilitados.');
+    if (!usuHace_(u, tipo)) throw new Error(String(u.nombre).split(' ')[0] + ' no hace ' + (tipo === 'competencias' ? 'competencias' : 'screening') + '. Elegí a otra persona.');
+    quienEntrevista = u;
+  }
+  const nomEnt = quienEntrevista ? quienEntrevista.nombre : '';
+  const mailEnt = quienEntrevista && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(quienEntrevista.mail || '') ? quienEntrevista.mail : '';
+  // el choque de horario es por persona cuando se elige entrevistador (si no, contra todo el calendario como antes)
+  const choques = cal.getEvents(inicio, fin).filter(e => !quienEntrevista || String(e.getDescription() || '').indexOf('Entrevista a cargo de: ' + nomEnt) >= 0 || (mailEnt && e.getGuestList().some(g => g.getEmail().toLowerCase() === mailEnt.toLowerCase())));
   if (choques.length && !forzar) return { ok: false, conflicto: true, eventos: choques.slice(0, 3).map(e => e.getTitle()) };
-  const opts = { description: 'Candidato/a: ' + nombre + (lugar ? '\n' + lugar : '') + '\n\nAgendado desde el tablero de Blumia' };
+  const opts = { description: 'Candidato/a: ' + nombre + (nomEnt ? '\nEntrevista a cargo de: ' + nomEnt : '') + (lugar ? '\n' + lugar : '') + '\n\nAgendado desde el tablero de Blumia' };
   if (lugar) opts.location = String(lugar).slice(0, 300);
-  if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)) { opts.guests = mail; opts.sendInvites = true; }
+  const invitados = [];
+  if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mail)) invitados.push(mail);
+  if (mailEnt && invitados.indexOf(mailEnt) < 0) invitados.push(mailEnt);
+  if (invitados.length) { opts.guests = invitados.join(','); opts.sendInvites = true; }
   const ev = cal.createEvent(T.titulo + ' (' + nombre + ')', inicio, fin, opts);
   try { ev.removeAllReminders(); ev.addEmailReminder(30); ev.addPopupReminder(30); } catch (e) { } // Google avisa 30 min antes (mail y aviso en el celular)
   // estado y cita en la ficha (el sincronizador de Calendar los confirma después)
   const c9 = sh.getRange(fila, 9), r = c9.getDataValidation();
   c9.setDataValidation(null).setValue(T.estado);
   if (r) c9.setDataValidation(r);
-  if (sh.getMaxColumns() < 38) sh.insertColumnsAfter(sh.getMaxColumns(), 38 - sh.getMaxColumns());
+  if (sh.getMaxColumns() < 46) sh.insertColumnsAfter(sh.getMaxColumns(), 46 - sh.getMaxColumns());
+  if (!sh.getRange(1, 46).getValue()) sh.getRange(1, 46).setValue('Entrevistador cita');
   const txt = Utilities.formatDate(inicio, 'GMT-3', "dd/MM/yyyy 'a las' HH:mm");
   sh.getRange(fila, 37).setValue(txt);
+  sh.getRange(fila, 46).setValue(nomEnt);
   const tipoHist = tipo.indexOf('empresa') === 0 ? 'Empresa' : (tipo === 'competencias' ? 'Competencias' : 'Screening');
   const hist = String(sh.getRange(fila, 38).getValue() || '');
-  sh.getRange(fila, 38).setValue(tipoHist + ' — ' + Utilities.formatDate(inicio, 'GMT-3', 'dd/MM/yyyy HH:mm') + (hist ? '\n' + hist : ''));
-  registrarHistorial_(sh.getName(), nombre, 'Agenda', T.estado + ': ' + txt + (opts.guests ? ' · invitación enviada a ' + mail : ' · sin mail, no se envió invitación') + ' (creada desde el tablero)');
-  return { ok: true, cita: txt, invitado: !!opts.guests, evento: ev.getId() };
+  sh.getRange(fila, 38).setValue(tipoHist + ' — ' + Utilities.formatDate(inicio, 'GMT-3', 'dd/MM/yyyy HH:mm') + (nomEnt ? ' · con ' + nomEnt : '') + (hist ? '\n' + hist : ''));
+  registrarHistorial_(sh.getName(), nombre, 'Agenda', T.estado + ': ' + txt + (nomEnt ? ' · entrevista a cargo de ' + nomEnt : '') + (opts.guests ? ' · invitación enviada a ' + invitados.join(', ') : ' · sin mail, no se envió invitación') + ' (creada desde el tablero)');
+  return { ok: true, cita: txt, invitado: invitados.indexOf(mail) >= 0, invitadoEntrevistador: !!mailEnt, entrevistador: nomEnt, evento: ev.getId() };
 }
