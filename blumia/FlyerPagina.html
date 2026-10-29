@@ -82,6 +82,16 @@ textarea{width:100%;border:1.5px solid var(--l);border-radius:8px;padding:8px 10
 #mvBox .fdot{min-width:32px;height:30px;border-radius:8px;border:1.5px solid #cfd8d2;background:#fff;color:#0F3F27;font:700 14px var(--font);cursor:pointer;padding:0 6px}
 #mvBox .fdot.on{background:#0F3F27;color:#fff;border-color:#0F3F27}
 .item span{flex:1}
+#iaRev{position:fixed;inset:0;background:rgba(10,30,20,.88);z-index:9998;display:none;align-items:flex-start;justify-content:center;padding:20px 12px;overflow:auto}
+#iaRev.show{display:flex}
+#irBox{background:#fff;border-radius:14px;max-width:560px;width:100%;padding:18px 20px;font-family:var(--font)}
+#irBox .irCarga{padding:30px 10px;text-align:center;font-weight:600;color:#0F3F27}
+#irBox .irHead{display:flex;gap:14px;align-items:center;margin-bottom:12px}
+#irBox .irPt{min-width:64px;height:64px;border-radius:50%;background:#0F3F27;color:#fff;font-weight:800;font-size:26px;display:flex;align-items:center;justify-content:center}#irBox .irPt small{font-size:12px;font-weight:600;opacity:.8}
+#irBox .irS{border:1px solid #D5E0CE;border-left-width:6px;border-radius:8px;padding:8px 12px;margin-top:8px}
+#irBox .irS.alta{border-left-color:#E5484D}#irBox .irS.media{border-left-color:#FBC67B}#irBox .irS.baja{border-left-color:#B4E1E0}
+#irBox .irS b{display:block;font-size:13px;color:#0F3F27}#irBox .irS span{font-size:12px;color:#444;line-height:1.45}
+#irBox .irFoot{display:flex;gap:8px;margin-top:14px;justify-content:flex-end;flex-wrap:wrap}
 /* ---- revisión y mockups ---- */
 #audBt.ok{background:#E3EEDC;color:#0F3F27}#audBt.warn{background:#FFF1DC;border-color:#F0B964;color:#7A4A00}#audBt.bad{background:#FDECEA;border-color:#E9B1AA;color:#7A1F14}
 #audLs .ai{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:6px 10px;border-radius:8px;margin-top:6px;font-size:12px;line-height:1.4}
@@ -264,6 +274,7 @@ input[type=range]{accent-color:#243D2C}
     <div style="display:none"><textarea id="tLi"></textarea><textarea id="tIg"></textarea><textarea id="tWa"></textarea></div></div>
 </div>
 
+<div id="iaRev" data-html2canvas-ignore="true"><div id="irBox"></div></div>
 <div id="mkBg" data-html2canvas-ignore="true">
   <div class="mkTop"><div class="seg" role="tablist"><button type="button" data-mk="ig" class="on">Instagram</button><button type="button" data-mk="wa">WhatsApp</button><button type="button" data-mk="li">LinkedIn</button><button type="button" data-mk="cel">Celular</button></div><button type="button" class="bt" id="mkX" style="background:#fff">Cerrar</button></div>
   <div id="mkNota"></div>
@@ -278,6 +289,7 @@ input[type=range]{accent-color:#243D2C}
   <button type="button" class="bt" id="audBt" style="height:44px">Revisión</button>
   <button type="button" class="bt" id="audMej" style="height:44px">✨ Mejorar solo</button>
   <button type="button" class="bt" id="mMk" style="height:44px">📱 Ver cómo se ve</button>
+  <button type="button" class="bt" id="mIa" style="height:44px" title="Claude mira el flyer y da sugerencias (usa IA)">🔎 Revisión con IA</button>
   <div id="audLs" style="display:none;flex-basis:100%"></div>
 </div>
 <div id="ftb" data-html2canvas-ignore="true">
@@ -491,6 +503,15 @@ function audMejorar(){leerTextos();clearTimeout(hTm);pushSnap();hHold=true;var b
   S.iD=(S.iD||[]).slice(0,3);S.iR=(S.iR||[]).slice(0,3);if(!S.qr&&!String(S.txt.mail||'').trim()&&DATOS.mail)S.txt.mail=DATOS.mail;S.ts=100;S.serif=true;S.logoManual=false;if(S.pos)delete S.pos[S.fmt];
   pintarTextos();aplicar();
   setTimeout(function(){fotoCalc();setTimeout(function(){if(AUD.con)audFixCon();zonas();setTimeout(function(){if(AUD.zon.length)audFixZon();hHold=false;pushSnap();b.disabled=false;b.textContent=t;sucio=true;audSoon();msg('Listo: dejé 3 y 3, el texto al 100 %, los bloques en su lugar y el contraste revisado. Si no te gusta, ↶ lo deshace todo junto.',true)},150)},450)},250)}
+function irEsc(t){return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;')}
+function irPintar(r){var bx=$('irBox');var h='<div class="irHead"><div class="irPt">'+r.puntaje+'<small>/10</small></div><div style="font-size:14px;line-height:1.4;font-weight:600;color:#0F3F27">'+irEsc(r.resumen)+'</div></div>';
+  (r.sugerencias||[]).forEach(function(x){h+='<div class="irS '+x.prioridad+'"><b>'+irEsc(x.que)+'</b><span>'+irEsc(x.como)+'</span></div>'});
+  if(!(r.sugerencias||[]).length)h+='<div class="irS baja"><b>Sin cambios importantes</b><span>No encontré problemas para corregir.</span></div>';
+  h+='<div style="font-size:11px;color:#777;margin-top:10px">Es una opinión de IA: usala como guía. Para arreglar lo básico está también «Revisión» y «Mejorar solo».</div><div class="irFoot"><button type="button" class="bt" id="irRe">Volver a revisar</button><button type="button" class="bt" id="irX" style="background:#0F3F27;color:#fff">Cerrar</button></div>';
+  bx.innerHTML=h;$('irX').onclick=function(){$('iaRev').classList.remove('show')};$('irRe').onclick=iaRevisar}
+function iaRevisar(){var bx=$('irBox');$('iaRev').classList.add('show');bx.innerHTML='<div class="irCarga">🔎 Claude está mirando tu flyer… (unos 20 segundos)</div>';leerTextos();
+  var fallo=function(m){bx.innerHTML='<div class="irCarga">No se pudo revisar: '+irEsc(m)+'</div><div class="irFoot"><button type="button" class="bt" id="irX">Cerrar</button></div>';$('irX').onclick=function(){$('iaRev').classList.remove('show')}};
+  capturar(function(c,url){google.script.run.withSuccessHandler(irPintar).withFailureHandler(function(e){fallo((e&&e.message)||e)}).flyerRevisar(DATOS.perfil,url,S.fmt)},fallo,0.55,'image/jpeg',.82)}
 var mkUrl='',mkTab='ig';
 function mkAbrir(){$('mkBg').classList.add('show');$('mkStage').innerHTML='<div class="mkCarga">Armando la imagen…</div>';mkUrl='';
   leerTextos();capturar(function(c,url){mkUrl=url;mkPintar()},function(m){$('mkStage').innerHTML='<div class="mkCarga">'+m+'</div>'},0.6,'image/jpeg',.9)}
@@ -569,7 +590,7 @@ function mvIniciar(){
   setTimeout(function(){pushSnap()},900);
   if(window.matchMedia&&window.matchMedia('(max-width:900px)').matches){[].forEach.call(document.querySelectorAll('#panel .sec'),function(sec,i){var h=sec.querySelector('h3');if(!h)return;sec.classList.add('plg');if(i===0)sec.classList.add('abierta');h.onclick=function(){sec.classList.toggle('abierta')}})}
   $('audBt').onclick=function(){var ls=$('audLs');audAbierto=!(ls.style.display==='block');audRender()};
-  $('audMej').onclick=audMejorar;
+  $('audMej').onclick=audMejorar;$('mIa').onclick=iaRevisar;
   $('mMk').onclick=mkAbrir;$('mkX').onclick=function(){$('mkBg').classList.remove('show')};
   [].forEach.call(document.querySelectorAll('#mkBg .seg button'),function(b){b.onclick=function(){mkTab=b.getAttribute('data-mk');mkPintar()}});
   $('sFk').oninput=function(){S.footK=Number(this.value);$('vFk').textContent=S.footK+'%';aplicar();marcar()};
