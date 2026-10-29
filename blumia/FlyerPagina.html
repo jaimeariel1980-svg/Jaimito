@@ -93,6 +93,17 @@ textarea{width:100%;border:1.5px solid var(--l);border-radius:8px;padding:8px 10
 #flyer.noqr:not(.f-ls) #fMail{background:var(--pill,#FEE795);color:#0F3F27;border-radius:999px;padding:.3em 1.2em;font-size:calc(46px*var(--k));display:inline-block}
 #fMail:empty{display:none!important}
 #baj.serif{font-family:'Gelica','Source Serif 4',Georgia,serif;font-weight:500;line-height:1.45}
+#ftb{position:fixed;z-index:200;display:none;flex-wrap:wrap;align-items:center;gap:6px 8px;max-width:min(92vw,640px);background:#fff;border:1.5px solid #0F3F27;border-radius:12px;padding:6px 8px;box-shadow:0 8px 28px rgba(0,0,0,.25);font:600 12px var(--font)}
+#ftb .ftg{cursor:grab;font-size:18px;color:#0F3F27;padding:0 4px;touch-action:none;user-select:none}
+#ftb .ftn{font-weight:800;color:#0F3F27}
+#ftb .fts{display:inline-flex;align-items:center;gap:4px}
+#ftb .fdot{min-width:32px;height:30px;border-radius:8px;border:1.5px solid #cfd8d2;background:#fff;color:#0F3F27;font:700 13px var(--font);cursor:pointer;padding:0 6px}
+#ftb .fdot.on{background:#0F3F27;color:#fff;border-color:#0F3F27}
+#ftb .cdot{width:24px;height:24px;border-radius:50%;border:2px solid #cfd8d2;cursor:pointer;padding:0;font-size:13px;line-height:1;color:#555}
+#ftb .cdot.on{border-color:#E5484D;box-shadow:0 0 0 2px #fff,0 0 0 4px #E5484D}
+#flyer #cont,#flyer #foot{pointer-events:none}
+#flyer #cont>*,#flyer #foot>*{pointer-events:auto}
+#flyer #bucle,#flyer #aro,#flyer #logo,#flyer #logoCli{pointer-events:auto}
 /* ---- acomodar a mano ---- */
 #flyer.mv{touch-action:none;cursor:move}
 #flyer.mv *{user-select:none;-webkit-user-select:none}
@@ -149,6 +160,10 @@ input[type=range]{accent-color:#243D2C}
     <label class="chk"><input type="checkbox" id="mostrarEmp"> Nombrar a la empresa en el flayer</label><div class="nota" id="notaCiega" style="display:none">Búsqueda ciega: la empresa no se nombra en ningún lado. Se cambia en ⚙ Configurar → Datos de la búsqueda.</div>
     <button class="bt ia full" id="btnIA">✨ Generar textos</button>
     <div class="nota" style="margin-top:6px">Redacta bajada, desafíos, requisitos y los posteos con lo que está cargado en el perfil del puesto. Después editás todo directo sobre el flayer.</div></div>
+
+  <div class="sec"><h3>Acomodo</h3>
+    <div class="nota" style="margin-bottom:6px">Tocá cualquier parte del flayer para cambiarle el color, el tamaño o la letra desde la barra que aparece al lado.</div>
+    <button type="button" class="bt" id="mvRt" style="width:100%">Reiniciar todo el acomodo</button></div>
 
   <div class="sec"><h3>Pie del flayer</h3>
     <label class="lb">Alto del pie verde <b id="vFk">100%</b></label><input type="range" id="sFk" aria-label="Alto del pie verde" min="40" max="170" value="100">
@@ -214,14 +229,14 @@ input[type=range]{accent-color:#243D2C}
   <span style="display:inline-flex;gap:6px"><button type="button" class="bt" id="mUn" title="Deshacer (Ctrl+Z)" aria-label="Deshacer" style="height:44px;min-width:44px;font-size:18px">↶</button><button type="button" class="bt" id="mRe" title="Rehacer (Ctrl+Y)" aria-label="Rehacer" style="height:44px;min-width:44px;font-size:18px">↷</button></span>
   <button type="button" class="bt" id="mPv" style="height:44px">👁 Vista previa</button>
   <input type="checkbox" id="mvOn" style="display:none">
-  <div id="mvBox" style="display:none">
-    <span id="mvSel">Tocá un bloque del flayer para elegirlo.</span>
-    <label>Tamaño <b id="vMs">100%</b><input type="range" id="sMs" aria-label="Tamaño del bloque elegido" min="30" max="250" value="100" disabled></label>
-    <span id="mvFmt" style="display:none;align-items:center;gap:4px"><button type="button" class="fdot" id="fB" title="Negrita" style="font-weight:900">B</button><span style="width:6px"></span><button type="button" class="fdot fa" data-a="left" title="Alinear a la izquierda">⇤</button><button type="button" class="fdot fa" data-a="center" title="Centrar">↔</button><button type="button" class="fdot fa" data-a="right" title="Alinear a la derecha">⇥</button><button type="button" class="fdot fa" data-a="justify" title="Justificar">☰</button></span>
-    <span id="mvCol" style="display:none;align-items:center;gap:5px"><span style="font-weight:600">Color</span><button type="button" class="cdot" data-c="" title="Automático (color general)" style="background:#fff">⟲</button><button type="button" class="cdot" data-c="#0F3F27" style="background:#0F3F27"></button><button type="button" class="cdot" data-c="#1A1A1A" style="background:#1A1A1A"></button><button type="button" class="cdot" data-c="#FFFFFF" style="background:#FFFFFF"></button><button type="button" class="cdot" data-c="#FBC67B" style="background:#FBC67B"></button><button type="button" class="cdot" data-c="#FEE795" style="background:#FEE795"></button><button type="button" class="cdot" data-c="#F9BDBB" style="background:#F9BDBB"></button><button type="button" class="cdot" data-c="#B4E1E0" style="background:#B4E1E0"></button><input type="color" id="mvColPick" aria-label="Otro color" value="#0F3F27" style="width:30px;height:26px;padding:0;border:1px solid #ccc;border-radius:6px"></span>
-    <button type="button" class="bt" id="mvRb">Reiniciar bloque</button><button type="button" class="bt" id="mvRt">Reiniciar todo</button>
-    <span class="ayuda">Arrastrá un bloque · flechas = 1 px (Shift = 10) · doble toque para editar su texto</span>
-  </div>
+</div>
+<div id="ftb" data-html2canvas-ignore="true">
+  <span id="ftGrip" class="ftg" title="Arrastrá para mover el bloque">✥</span><span id="mvSel" class="ftn">—</span>
+  <span class="fts"><button type="button" class="fdot" id="ftM" title="Más chico">A−</button><b id="vMs">100%</b><button type="button" class="fdot" id="ftP" title="Más grande">A+</button><input type="range" id="sMs" min="30" max="250" value="100" style="display:none"></span>
+  <span id="mvFmt" style="display:none;align-items:center;gap:4px"><button type="button" class="fdot" id="fB" title="Negrita" style="font-weight:900">B</button><span style="width:6px"></span><button type="button" class="fdot fa" data-a="left" title="Alinear a la izquierda">⇤</button><button type="button" class="fdot fa" data-a="center" title="Centrar">↔</button><button type="button" class="fdot fa" data-a="right" title="Alinear a la derecha">⇥</button><button type="button" class="fdot fa" data-a="justify" title="Justificar">☰</button></span>
+  <span id="mvCol" style="display:none;align-items:center;gap:5px"><span style="font-weight:600">Color</span><button type="button" class="cdot" data-c="" title="Automático (color general)" style="background:#fff">⟲</button><button type="button" class="cdot" data-c="#0F3F27" style="background:#0F3F27"></button><button type="button" class="cdot" data-c="#1A1A1A" style="background:#1A1A1A"></button><button type="button" class="cdot" data-c="#FFFFFF" style="background:#FFFFFF"></button><button type="button" class="cdot" data-c="#FBC67B" style="background:#FBC67B"></button><button type="button" class="cdot" data-c="#FEE795" style="background:#FEE795"></button><button type="button" class="cdot" data-c="#F9BDBB" style="background:#F9BDBB"></button><button type="button" class="cdot" data-c="#B4E1E0" style="background:#B4E1E0"></button><input type="color" id="mvColPick" aria-label="Otro color" value="#0F3F27" style="width:30px;height:26px;padding:0;border:1px solid #ccc;border-radius:6px"></span>
+  <button type="button" class="fdot" id="ftLogo" style="display:none">Logo oscuro</button><button type="button" class="fdot" id="ftHide" style="display:none">Ocultar</button>
+  <button type="button" class="fdot" id="mvRb" title="Volver este bloque a su lugar y tamaño">⟲</button><button type="button" class="fdot" id="ftOk" title="Cerrar" aria-label="Cerrar">✕</button>
 </div>
 <div id="vwrap"><div id="stage">
 <div id="flyer">
@@ -383,26 +398,44 @@ var MV={logo:['#logo','Logo de Blumia'],cli:['#logoCli','Logo del cliente'],bucl
 var mvSel='',mvDrag=null;var MVT=['badge','tit','baj','secD','secR','qr','fTxt','arrow','fMail'];
 function mvPos(k,crear){S.pos=S.pos||{};var f=S.pos[S.fmt];if(!f){if(!crear)return null;f=S.pos[S.fmt]={}}var p=f[k];if(!p&&crear)p=f[k]={x:0,y:0,s:100};return p||null}
 function mvAplicar(){Object.keys(MV).forEach(function(k){var e=document.querySelector(MV[k][0]);if(!e)return;var p=mvPos(k,false);e.classList.add('mvb');e.style.transformOrigin='0 0';e.style.transform=(p&&(p.x||p.y||p.s!==100))?'translate('+p.x+'px,'+p.y+'px) scale('+(p.s/100)+')':'';if(MVT.indexOf(k)>=0){e.style.fontWeight=(p&&p.b)?'900':'';e.style.textAlign=(p&&p.a)?p.a:'';if(p&&p.a==='justify')e.style.textAlignLast='left';else e.style.textAlignLast='';}var c=p&&p.c;if(MVT.indexOf(k)>=0){if(c){e.style.color=c;['--tc','--ac','--ft','--ac2'].forEach(function(v){e.style.setProperty(v,c)})}else{e.style.color='';['--tc','--ac','--ft','--ac2'].forEach(function(v){e.style.removeProperty(v)})}}});
-  Object.keys(MV).forEach(function(k){var e=document.querySelector(MV[k][0]);if(e)e.classList.toggle('mvsel',$('mvOn').checked&&k===mvSel)});}
-function mvElegir(k){mvSel=k||'';$('mvSel').textContent=k?'Elegido: '+MV[k][1]:'Tocá un bloque del flayer para elegirlo.';var p=k?mvPos(k,false):null;$('sMs').value=p?p.s:100;$('vMs').textContent=(p?p.s:100)+'%';$('sMs').disabled=!k;var mf=$('mvFmt');if(mf){var tx=k&&MVT.indexOf(k)>=0;mf.style.display=tx?'inline-flex':'none';$('fB').classList.toggle('on',!!(p&&p.b));[].forEach.call(mf.querySelectorAll('.fa'),function(b){b.classList.toggle('on',!!(p&&p.a===b.getAttribute('data-a')))})}var mc=$('mvCol');if(mc){var esT=k&&MVT.indexOf(k)>=0;mc.style.display=esT?'inline-flex':'none';var cc=(p&&p.c)||'';[].forEach.call(mc.querySelectorAll('.cdot'),function(b){b.classList.toggle('on',(b.getAttribute('data-c')||'')===cc)})}mvAplicar()}
+  Object.keys(MV).forEach(function(k){var e=document.querySelector(MV[k][0]);if(e)e.classList.toggle('mvsel',k===mvSel)});ftbPos();}
+var MVC=['bucle','aro'];
+function mvElegir(k){mvSel=k||'';var p=k?mvPos(k,false):null;$('mvSel').textContent=k?MV[k][1]:'—';$('sMs').value=p?p.s:100;$('vMs').textContent=(p?p.s:100)+'%';
+  var esT=k&&MVT.indexOf(k)>=0,esC=k&&MVC.indexOf(k)>=0;
+  var mf=$('mvFmt');mf.style.display=esT?'inline-flex':'none';$('fB').classList.toggle('on',!!(p&&p.b));[].forEach.call(mf.querySelectorAll('.fa'),function(b){b.classList.toggle('on',!!(p&&p.a===b.getAttribute('data-a')))});
+  var mc=$('mvCol');mc.style.display=(esT||esC)?'inline-flex':'none';var cc=esC?(S.colB||''):((p&&p.c)||'');[].forEach.call(mc.querySelectorAll('.cdot'),function(b){b.classList.toggle('on',(b.getAttribute('data-c')||'')===cc)});
+  var lg=$('ftLogo');lg.style.display=(k==='logo')?'inline-block':'none';lg.textContent=S.logoOsc?'Logo claro':'Logo oscuro';
+  var hd=$('ftHide');hd.style.display=(k==='bucle'||k==='aro'||k==='cli')?'inline-block':'none';hd.textContent=k==='cli'?'Quitar logo':'Ocultar';
+  mvAplicar()}
+function ftbPos(){var b=$('ftb');if(!b)return;if(!mvSel){b.style.display='none';return}var e=document.querySelector(MV[mvSel][0]);if(!e||getComputedStyle(e).display==='none'){b.style.display='none';return}
+  var r=e.getBoundingClientRect();b.style.display='flex';var w=b.offsetWidth,h=b.offsetHeight,vw=document.documentElement.clientWidth,vh=window.innerHeight;
+  var x=Math.max(8,Math.min(r.left,vw-w-8)),y=r.top-h-10;if(y<8)y=r.bottom+10;if(y+h>vh-8)y=Math.max(8,vh-h-8);b.style.left=x+'px';b.style.top=y+'px'}
 function mvEscala(){var r=$('flyer').getBoundingClientRect();return r.width/1080||1}
 function mvBuscar(t){for(var k in MV){var e=document.querySelector(MV[k][0]);if(e&&(e===t||e.contains(t)))return k}return ''}
 function mvIniciar(){
   var fl=$('flyer');
   fl.addEventListener('mousedown',function(e){if($('mvOn').checked)e.preventDefault()},true);
-  fl.addEventListener('pointerdown',function(e){if(!$('mvOn').checked)return;var k=mvBuscar(e.target);mvElegir(k);if(!k)return;var p=mvPos(k,true);mvDrag={k:k,x:e.clientX,y:e.clientY,px:p.x,py:p.y};try{fl.setPointerCapture(e.pointerId)}catch(x){}e.preventDefault()});
-  fl.addEventListener('pointermove',function(e){if(!mvDrag)return;var sc=mvEscala(),p=mvPos(mvDrag.k,true);p.x=Math.round(mvDrag.px+(e.clientX-mvDrag.x)/sc);p.y=Math.round(mvDrag.py+(e.clientY-mvDrag.y)/sc);mvAplicar()});
-  var fin=function(){if(mvDrag){mvDrag=null;marcar()}};fl.addEventListener('pointerup',fin);fl.addEventListener('pointercancel',fin);
-  $('mvOn').onchange=function(){var on=this.checked;fl.classList.toggle('mv',on);$('mvBox').style.display=on?'block':'none';if(!on)mvSel='';mvElegir(mvSel)};
+  fl.addEventListener('pointerdown',function(e){var k=mvBuscar(e.target);mvElegir(k);if(!k||!$('mvOn').checked)return;mvDragIni(k,e);e.preventDefault()});
+  function mvDragIni(k,e){var p=mvPos(k,true);mvDrag={k:k,x:e.clientX,y:e.clientY,px:p.x,py:p.y}}
+  $('ftGrip').addEventListener('pointerdown',function(e){if(!mvSel)return;mvDragIni(mvSel,e);e.preventDefault()});
+  document.addEventListener('pointermove',function(e){if(!mvDrag)return;var sc=mvEscala(),p=mvPos(mvDrag.k,true);p.x=Math.round(mvDrag.px+(e.clientX-mvDrag.x)/sc);p.y=Math.round(mvDrag.py+(e.clientY-mvDrag.y)/sc);mvAplicar()});
+  var fin=function(){if(mvDrag){mvDrag=null;marcar()}};document.addEventListener('pointerup',fin);document.addEventListener('pointercancel',fin);
+  $('mvOn').onchange=function(){fl.classList.toggle('mv',this.checked)};
+  window.addEventListener('scroll',ftbPos,true);window.addEventListener('resize',ftbPos);
+  $('ftOk').onclick=function(){mvElegir('')};
+  function tam(d){if(!mvSel)return;var p=mvPos(mvSel,true);p.s=Math.max(30,Math.min(250,p.s+d));mvElegir(mvSel);marcar()}
+  $('ftM').onclick=function(){tam(-5)};$('ftP').onclick=function(){tam(5)};
+  $('ftLogo').onclick=function(){S.logoOsc=!S.logoOsc;aplicar();mvElegir(mvSel);marcar()};
+  $('ftHide').onclick=function(){if(mvSel==='bucle')S.bucOn=false;else if(mvSel==='aro')S.aro=false;else if(mvSel==='cli'){$('quitCli').click();mvElegir('');return}aplicar();mvElegir('');marcar()};
   function modo(mv){var c=$('mvOn');if(c.checked!==mv){c.checked=mv;c.dispatchEvent(new Event('change'))}$('mEd').classList.toggle('on',!mv);$('mMv').classList.toggle('on',mv)}
   $('mEd').onclick=function(){modo(false)};$('mMv').onclick=function(){modo(true)};
   $('flyer').addEventListener('dblclick',function(e){if(!$('mvOn').checked)return;var t=e.target;modo(false);var ed=t.closest?t.closest('[contenteditable]'):null;if(ed){setTimeout(function(){ed.focus()},30)}});
   $('mPv').onclick=function(){var bg=$('pvBg'),im=$('pvImg');bg.classList.add('show');im.style.display='none';$('pvDl').style.display='none';$('pvT').textContent='Armando la vista previa…';
     capturar(function(c,url){im.src=url;im.style.display='block';$('pvT').textContent='Así se ve el flayer terminado ('+FMT[S.fmt].W+'×'+FMT[S.fmt].H+'). Para cambiar algo, cerrá y editá.';$('pvDl').style.display='inline-flex';$('pvDl').onclick=function(){var a=document.createElement('a');a.href=url;a.download='flayer-vista-previa.jpg';document.body.appendChild(a);a.click();a.remove()}},function(m){$('pvT').textContent=m},0.6,'image/jpeg',.9)};
   $('pvX').onclick=function(){$('pvBg').classList.remove('show')};
-  document.addEventListener('keydown',function(e){if(e.key==='Escape')$('pvBg').classList.remove('show')});
-  [].forEach.call(document.querySelectorAll('#mvCol .cdot'),function(b){b.onclick=function(){if(!mvSel)return;var p=mvPos(mvSel,true),c=b.getAttribute('data-c');if(c)p.c=c;else delete p.c;mvElegir(mvSel);marcar()}});
-  $('mvColPick').oninput=function(){if(!mvSel)return;var p=mvPos(mvSel,true);p.c=this.value;mvElegir(mvSel);marcar()};
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'){$('pvBg').classList.remove('show');if(mvSel)mvElegir('')}});
+  [].forEach.call(document.querySelectorAll('#mvCol .cdot'),function(b){b.onclick=function(){if(!mvSel)return;var c=b.getAttribute('data-c');if(MVC.indexOf(mvSel)>=0){S.colB=c||'#FEE795';aplicar();mvElegir(mvSel);marcar();return}var p=mvPos(mvSel,true);if(c)p.c=c;else delete p.c;mvElegir(mvSel);marcar()}});
+  $('mvColPick').oninput=function(){if(!mvSel)return;if(MVC.indexOf(mvSel)>=0){S.colB=this.value;aplicar();mvElegir(mvSel);marcar();return}var p=mvPos(mvSel,true);p.c=this.value;mvElegir(mvSel);marcar()};
   $('fB').onclick=function(){if(!mvSel)return;var p=mvPos(mvSel,true);if(p.b)delete p.b;else p.b=1;mvElegir(mvSel);marcar()};
   [].forEach.call(document.querySelectorAll('#mvFmt .fa'),function(b){b.onclick=function(){if(!mvSel)return;var p=mvPos(mvSel,true),a=b.getAttribute('data-a');if(p.a===a)delete p.a;else p.a=a;mvElegir(mvSel);marcar()}});
   $('sSerif').onchange=function(){S.serif=this.checked;aplicar();marcar()};
@@ -413,7 +446,7 @@ function mvIniciar(){
   $('sMs').oninput=function(){if(!mvSel)return;var p=mvPos(mvSel,true);p.s=Number(this.value);$('vMs').textContent=p.s+'%';mvAplicar();marcar()};
   $('mvRb').onclick=function(){if(!mvSel)return;var f=(S.pos||{})[S.fmt];if(f)delete f[mvSel];mvElegir(mvSel);marcar()};
   $('mvRt').onclick=function(){if(S.pos)delete S.pos[S.fmt];mvElegir(mvSel);marcar()};
-  document.addEventListener('keydown',function(e){if(!$('mvOn').checked||!mvSel)return;var t=e.target;if(t&&/INPUT|TEXTAREA|SELECT/.test(t.tagName)&&t.type!=='checkbox')return;var d=e.shiftKey?10:1,dx=0,dy=0;if(e.key==='ArrowLeft')dx=-d;else if(e.key==='ArrowRight')dx=d;else if(e.key==='ArrowUp')dy=-d;else if(e.key==='ArrowDown')dy=d;else return;e.preventDefault();var p=mvPos(mvSel,true);p.x+=dx;p.y+=dy;mvAplicar();marcar()});
+  document.addEventListener('keydown',function(e){if(!mvSel)return;var t=e.target;if(t&&(t.isContentEditable||(/INPUT|TEXTAREA|SELECT/.test(t.tagName)&&t.type!=='checkbox')))return;var d=e.shiftKey?10:1,dx=0,dy=0;if(e.key==='ArrowLeft')dx=-d;else if(e.key==='ArrowRight')dx=d;else if(e.key==='ArrowUp')dy=-d;else if(e.key==='ArrowDown')dy=d;else return;e.preventDefault();var p=mvPos(mvSel,true);p.x+=dx;p.y+=dy;mvAplicar();marcar()});
 }
 function msg(t,ok){var m=$('msg');m.textContent=t;m.style.color=ok===false?'#B91C1C':'#1A6645'}
 
