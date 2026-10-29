@@ -360,7 +360,8 @@ footer{
   .pv{display:block;white-space:pre-wrap;word-break:break-word;border:1px solid #ccc;border-radius:4px;padding:4px 6px;font-size:11px;line-height:1.4;min-height:20px;background:#fff;color:#1a1a1a;box-sizing:border-box;width:100%}
 }
 </style>
-<style id="btnU">/* un solo estilo de botón: rectángulo de 8 px (las píldoras quedan solo para etiquetas y contadores) */
+<style id="btnU">.tb-logo{height:30px;display:block}.tb-doc,.btn-save,.btn-pdf,.tb-badge{white-space:nowrap}@media(min-width:901px){.tb-right{flex-wrap:nowrap}}@media(max-width:900px){.tb-badge{display:none}.tb-logo{height:26px}}
+/* un solo estilo de botón: rectángulo de 8 px (las píldoras quedan solo para etiquetas y contadores) */
 .btn-save,.btn-pdf,.ovcl,.ia-btn{border-radius:8px!important}
 </style>
 </head>
@@ -369,7 +370,7 @@ footer{
 <!-- TOPBAR -->
 <nav class="topbar">
   <div class="tb-left">
-    <div class="tb-brand">Blumia</div>
+    <img class="tb-logo" alt="Blumia" src="<?!= LOGO_BLUMIA_VERDE_ ?>">
     <div class="tb-sep"></div>
     <div class="tb-doc">Relevamiento de Perfil</div>
   </div>
