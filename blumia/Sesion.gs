@@ -73,10 +73,10 @@ function leerUsuariosHoja_() {
   const sh = usuariosHoja_();
   const n = sh.getLastRow();
   if (n < 2) return [];
-  return sh.getRange(2, 1, n - 1, Math.max(8, Math.min(sh.getLastColumn(), 10))).getValues().map((r, i) => ({
+  return sh.getRange(2, 1, n - 1, Math.max(8, Math.min(sh.getLastColumn(), 12))).getValues().map((r, i) => ({
     fila: i + 2, nombre: String(r[0]).trim(), clave: usuClave_(r[0]), rol: String(r[1]).trim() === 'Administrador' ? 'Administrador' : 'Usuario',
     activo: String(r[2]).trim().toUpperCase() === 'NO' ? 'NO' : 'SI', sal: String(r[3] || ''), hash: String(r[4] || ''), temporal: String(r[5] || '').trim(), cambio: Number(r[6]) || 0,
-    mail: String(r[8] || '').trim(), entrevista: String(r[9] || '').trim().toLowerCase()
+    mail: String(r[8] || '').trim(), entrevista: String(r[9] || '').trim().toLowerCase(), linkScr: String(r[10] || '').trim(), linkComp: String(r[11] || '').trim()
   })).filter(u => u.nombre);
 }
 
@@ -163,7 +163,7 @@ function pagina_(params) {
 function yo_() { return { nombre: SES_.nombre, rol: SES_.rol }; }
 
 function listarUsuarios_() {
-  return leerUsuarios_().map(u => ({ nombre: u.nombre, rol: u.rol, activo: u.activo, pendiente: USAR_PIN_ && (!u.hash || !!u.temporal), mail: u.mail, screening: usuHace_(u, 'screening'), competencias: usuHace_(u, 'competencias') }));
+  return leerUsuarios_().map(u => ({ nombre: u.nombre, rol: u.rol, activo: u.activo, pendiente: USAR_PIN_ && (!u.hash || !!u.temporal), mail: u.mail, screening: usuHace_(u, 'screening'), competencias: usuHace_(u, 'competencias'), linkScr: u.linkScr, linkComp: u.linkComp }));
 }
 
 /* Quién entrevista (29/10): en «Usuarios», columna «mail» (su Google, para invitarlo al evento) y «entrevista» (qué etapas hace: vacío = screening y competencias,
@@ -174,23 +174,26 @@ function usuHace_(u, etapa) {
   return e.split(',').map(x => x.trim()).indexOf(etapa) >= 0;
 }
 
-function guardarEntrevistaUsuario_(nombre, mail, screening, competencias) {
+function guardarEntrevistaUsuario_(nombre, mail, screening, competencias, linkScr, linkComp) {
   const u = usuarioPorNombre_(nombre);
   mail = String(mail || '').trim().toLowerCase();
   if (mail && !/^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/.test(mail)) throw new Error('Ese mail no es válido.');
   const sh = usuariosHoja_();
-  if (sh.getMaxColumns() < 10) sh.insertColumnsAfter(sh.getMaxColumns(), 10 - sh.getMaxColumns());
-  if (!sh.getRange(1, 9).getValue()) { sh.getRange(1, 9, 1, 2).setValues([['mail', 'entrevista']]).setFontWeight('bold').setBackground('#0F3F27').setFontColor('#fff'); }
+  const url = v => { v = String(v || '').trim(); if (v && !/^https:\/\/[^\s<>"']{8,400}$/.test(v)) throw new Error('El link de agenda tiene que empezar con https:// y no puede llevar espacios.'); return v; };
+  linkScr = url(linkScr); linkComp = url(linkComp);
+  if (sh.getMaxColumns() < 12) sh.insertColumnsAfter(sh.getMaxColumns(), 12 - sh.getMaxColumns());
+  if (!sh.getRange(1, 9).getValue()) { sh.getRange(1, 9, 1, 4).setValues([['mail', 'entrevista', 'link_screening', 'link_competencias']]).setFontWeight('bold').setBackground('#0F3F27').setFontColor('#fff'); }
+  else if (!sh.getRange(1, 11).getValue()) { sh.getRange(1, 11, 1, 2).setValues([['link_screening', 'link_competencias']]).setFontWeight('bold').setBackground('#0F3F27').setFontColor('#fff'); }
   const et = [screening ? 'screening' : '', competencias ? 'competencias' : ''].filter(Boolean).join(',') || 'ninguna';
-  sh.getRange(u.fila, 9, 1, 2).setNumberFormat('@').setValues([[mail, et === 'screening,competencias' ? '' : et]]);
+  sh.getRange(u.fila, 9, 1, 4).setNumberFormat('@').setValues([[mail, et === 'screening,competencias' ? '' : et, linkScr, linkComp]]);
   usuInvalidar_();
-  accesoLog_(SES_ ? SES_.nombre : '', 'Entrevistador', u.nombre + ': ' + (et === 'ninguna' ? 'no entrevista' : et) + (mail ? ' · ' + mail : ''));
+  accesoLog_(SES_ ? SES_.nombre : '', 'Entrevistador', u.nombre + ': ' + (et === 'ninguna' ? 'no entrevista' : et) + (mail ? ' · ' + mail : '') + (linkScr || linkComp ? ' · links de agenda cargados' : ''));
   return { ok: true };
 }
 
 // Para el panel «Agendar» de la ficha: quién puede entrevistar cada etapa (sin mails) y quién es el usuario actual
 function entrevistadoresAgenda_() {
-  return { yo: SES_ ? SES_.nombre : '', lista: leerUsuarios_().filter(u => u.activo === 'SI').map(u => ({ nombre: u.nombre, screening: usuHace_(u, 'screening'), competencias: usuHace_(u, 'competencias') })) };
+  return { yo: SES_ ? SES_.nombre : '', lista: leerUsuarios_().filter(u => u.activo === 'SI').map(u => ({ nombre: u.nombre, screening: usuHace_(u, 'screening'), competencias: usuHace_(u, 'competencias'), linkScr: !!u.linkScr, linkComp: !!u.linkComp })) };
 }
 
 function usuarioPorNombre_(nombre) {
