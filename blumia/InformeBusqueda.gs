@@ -1,7 +1,8 @@
 /* Informe general de la búsqueda para el cliente, en 3 pasos (pedido de Ariel 29/10):
    1) la IA analiza los números y propone hallazgos; 2) hace unas pocas preguntas con respuesta sugerida sobre lo que los datos no dicen;
    3) redacta el informe con lo que Ariel dejó y respondió. Los números salen siempre de la planilla (nunca los inventa la IA).
-   No viajan nombres de candidatos ni edad ni situación familiar. Página: ?tipo=informebusqueda&perfil=<id> */
+   Mismo formato y contenido que el Informe de proceso (embudo, realidad salarial, industrias, descartes, fuentes) más rango de edad,
+   género y zona agregados. No viajan nombres de candidatos ni datos individuales ni situación familiar. Página: ?tipo=informebusqueda&perfil=<id> */
 
 function informeBusquedaHTML_(perfilId) {
   const cfg = getConfig(perfilId);
@@ -14,14 +15,19 @@ function informeBusquedaHTML_(perfilId) {
     .addMetaTag('viewport', 'width=device-width, initial-scale=1').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
-// Números de la búsqueda, calculados con las mismas reglas que el Resumen y el Informe de proceso (metEstado_)
-function ibEstadisticas_(perfilId) {
+// Números de la búsqueda, con las mismas reglas que el Resumen y el Informe de proceso (metEstado_).
+// Edad, género y zona se leen del análisis del CV (columna Requisitos) y se muestran solo agregados.
+function ibEstadisticas_(perfilId, conResumenes) {
   const cfg = getConfig(perfilId);
   const filas = JSON.parse(doGetKanban_(perfilId));
   const banda = Number(String(cfg.banda_salarial || '').replace(/\D/g, '')) || 0;
   const e = { total: 0, scr: 0, comp: 0, emp: 0, res: 0, desc: 0, dsin: 0, dpost: 0, dcomp: 0, activos: 0,
-    notasCV: { A: 0, 'B+': 0, B: 0, C: 0, sin: 0 }, motivos: {}, fuentes: {}, formacion: {}, pret: { debajo: 0, linea: 0, encima: 0, total: 0 }, banda: banda };
+    notasCV: { A: 0, 'B+': 0, B: 0, C: 0, sin: 0 }, motivos: {}, fuentes: {}, formacion: {}, pret: { debajo: 0, linea: 0, encima: 0, total: 0 }, banda: banda,
+    edad: { 'Menos de 30': 0, '30 a 39': 0, '40 a 49': 0, '50 o más': 0, 'Sin dato': 0 }, edadScr: { 'Menos de 30': 0, '30 a 39': 0, '40 a 49': 0, '50 o más': 0, 'Sin dato': 0 },
+    genero: { Mujeres: 0, Varones: 0, 'Sin dato': 0 }, generoScr: { Mujeres: 0, Varones: 0, 'Sin dato': 0 }, zona: { 'En zona': 0, 'Fuera de zona': 0, 'Sin dato': 0 } };
+  const res = [];
   let primero = 0;
+  const campo = (txt, k) => { const m = String(txt || '').match(new RegExp(k + ':\\s*([^|]+)', 'i')); return m ? m[1].trim() : ''; };
   filas.forEach(c => {
     const m = metEstado_(c.estado);
     if (!m) return;
@@ -47,107 +53,147 @@ function ibEstadisticas_(perfilId) {
       e.pret.total++;
       if (c.pretNum < banda * 0.95) e.pret.debajo++; else if (c.pretNum > banda * 1.05) e.pret.encima++; else e.pret.linea++;
     }
+    const ed = parseInt((campo(c.requisitos, 'Edad').match(/\d{2}/) || [''])[0], 10);
+    const kE = (ed >= 18 && ed <= 75) ? (ed < 30 ? 'Menos de 30' : ed < 40 ? '30 a 39' : ed < 50 ? '40 a 49' : '50 o más') : 'Sin dato';
+    const g = campo(c.requisitos, 'G[eé]nero').toLowerCase();
+    const kG = /^(f|muj)/.test(g) ? 'Mujeres' : /^(m|var|hom)/.test(g) ? 'Varones' : 'Sin dato';
+    const z = campo(c.requisitos, 'Zona').toLowerCase();
+    const kZ = /fuera|no\b/.test(z) ? 'Fuera de zona' : /en zona|^s[ií]|dentro|caba|gba|zona/.test(z) && !/n\/d/.test(z) ? 'En zona' : 'Sin dato';
+    e.edad[kE]++; e.genero[kG]++; e.zona[kZ]++;
+    if (m.scr) { e.edadScr[kE]++; e.generoScr[kG]++; }
+    if (conResumenes && m.scr && res.length < 60 && c.resumen) res.push(String(c.resumen).replace(/\s+/g, ' ').slice(0, 170));
     if (c.recMs && (!primero || c.recMs < primero)) primero = c.recMs;
   });
   e.dias = primero ? Math.max(1, Math.round((Date.now() - primero) / 864e5)) : 0;
   const top = (o, n) => Object.keys(o).sort((a, b) => o[b] - o[a]).slice(0, n).map(k => ({ nombre: k, cantidad: o[k] }));
   e.motivosTop = top(e.motivos, 5); e.fuentesTop = top(e.fuentes, 5); e.formacionTop = top(e.formacion, 4);
   delete e.motivos; delete e.fuentes; delete e.formacion;
+  if (conResumenes) e._res = res;
   return e;
 }
 
 function ibAnalizar_(perfilId) {
   const cfg = getConfig(perfilId);
-  const est = ibEstadisticas_(perfilId);
+  const est = ibEstadisticas_(perfilId, true);
+  const resumenes = est._res || []; delete est._res;
   const puesto = String(cfg.nombre || perfilId);
   const sistema = 'Sos consultor/a senior de selección de personal en Blumia Consulting (Argentina). Vas a preparar el informe general de una búsqueda para el CLIENTE. ' +
-    'Recibís los números reales de la búsqueda. Respondé SOLO con un JSON válido, sin texto antes ni después, con esta forma exacta: ' +
-    '{"hallazgos":[{"titulo":"máx. 70 caracteres","detalle":"1 o 2 frases con el dato concreto","tipo":"positivo|atencion|dato"}],"preguntas":[{"id":"q1","texto":"pregunta corta","sugeridas":["respuesta posible 1","respuesta posible 2","respuesta posible 3"]}]}. ' +
-    'De 4 a 6 hallazgos, ordenados por importancia para el cliente, apoyados SOLO en los números recibidos (no inventes datos, causas ni porcentajes que no se puedan calcular con ellos). ' +
+    'Recibís los números reales de la búsqueda (incluye distribución agregada por rango de edad, género y zona; "edadScr" y "generoScr" son de quienes pasaron screening) y resúmenes anónimos de los candidatos que pasaron screening. Respondé SOLO con un JSON válido, sin texto antes ni después, con esta forma exacta: ' +
+    '{"hallazgos":[{"titulo":"máx. 70 caracteres","detalle":"1 o 2 frases con el dato concreto","tipo":"positivo|atencion|dato"}],"industrias":[{"nombre":"sector","cantidad":entero}],"preguntas":[{"id":"q1","texto":"pregunta corta","sugeridas":["respuesta posible 1","respuesta posible 2","respuesta posible 3"]}]}. ' +
+    'De 5 a 7 hallazgos, ordenados por importancia para el cliente, apoyados SOLO en los números recibidos (no inventes datos, causas ni porcentajes que no se puedan calcular con ellos). Incluí al menos uno sobre el perfil de las candidaturas (edad, género, formación o zona) en términos descriptivos de la muestra y uno sobre la expectativa salarial si hay datos. ' +
+    'Nunca sugieras ni insinúes filtrar, preferir o descartar por edad o género: es solo una descripción de quiénes se postularon. ' +
+    'Industrias: de 3 a 8 sectores de origen, deducidos de los resúmenes, con la cantidad aproximada de candidatos de cada uno; si no hay resúmenes, lista vacía. ' +
     'Si la muestra es chica (menos de 15 CVs o menos de 5 en screening) decilo en un hallazgo y no saques conclusiones fuertes. ' +
     'De 4 a 6 preguntas para quien lidera la búsqueda, SOLO sobre lo que los números no dicen y que cambia cómo se escribe el informe: qué quiere destacar el cliente, si la banda salarial es negociable, qué se recomienda hacer con los candidatos en reserva, qué próximos pasos proponer, qué tono usar, si hay algo del mercado que explique lo observado. Cada pregunta con 2 o 3 respuestas sugeridas cortas (máx. 90 caracteres). ' +
     'Nada de nombres de personas. Español rioplatense profesional.';
-  const usuario = 'Puesto: ' + puesto + '. Empresa: ' + empresaInforme_(cfg) + '. Números de la búsqueda: ' + JSON.stringify(est);
+  const usuario = 'Puesto: ' + puesto + '. Empresa: ' + empresaInforme_(cfg) + '. Números de la búsqueda: ' + JSON.stringify(est) + (resumenes.length ? '. Resúmenes anónimos (uno por candidato): ' + JSON.stringify(resumenes) : '');
   let r;
-  try { r = extraerJSON_(procesarConClaude(sistema, usuario, 'analisis')); } catch (err) { r = { hallazgos: [], preguntas: [] }; }
+  try { r = extraerJSON_(procesarConClaude(sistema, usuario, 'analisis')); } catch (err) { r = { hallazgos: [], preguntas: [], industrias: [] }; }
   const t = (v, n) => String(v == null ? '' : v).replace(/[<>]/g, '').trim().slice(0, n);
   const tipos = { positivo: 1, atencion: 1, dato: 1 };
-  let hallazgos = (Array.isArray(r.hallazgos) ? r.hallazgos : []).slice(0, 6).map((h, i) => ({ id: 'h' + (i + 1), titulo: t(h && h.titulo, 90), detalle: t(h && h.detalle, 320), tipo: tipos[h && h.tipo] ? h.tipo : 'dato' })).filter(h => h.titulo);
+  const hallazgos = (Array.isArray(r.hallazgos) ? r.hallazgos : []).slice(0, 7).map((h, i) => ({ id: 'h' + (i + 1), titulo: t(h && h.titulo, 90), detalle: t(h && h.detalle, 320), tipo: tipos[h && h.tipo] ? h.tipo : 'dato' })).filter(h => h.titulo);
+  const industrias = (Array.isArray(r.industrias) ? r.industrias : []).slice(0, 8).map(x => t(x && x.nombre, 50)).filter(Boolean);
   let preguntas = (Array.isArray(r.preguntas) ? r.preguntas : []).slice(0, 6).map((p, i) => ({ id: 'q' + (i + 1), texto: t(p && p.texto, 160), sugeridas: (Array.isArray(p && p.sugeridas) ? p.sugeridas : []).slice(0, 3).map(s => t(s, 110)).filter(Boolean) })).filter(p => p.texto);
   if (!preguntas.length) preguntas = [
     { id: 'q1', texto: '¿Qué querés destacar del proceso ante el cliente?', sugeridas: ['La velocidad y el volumen de candidatos', 'La calidad de los finalistas', 'El ajuste a la banda salarial'] },
     { id: 'q2', texto: '¿Qué recomendás hacer con los candidatos en reserva?', sugeridas: ['Mantenerlos para una próxima búsqueda', 'Retomarlos si los finalistas no cierran'] },
     { id: 'q3', texto: '¿Qué tono preferís para el informe?', sugeridas: ['Profesional y cercano', 'Formal'] }];
-  return { est: est, hallazgos: hallazgos, preguntas: preguntas };
+  return { est: est, hallazgos: hallazgos, industrias: industrias, preguntas: preguntas };
 }
 
 // Escribe el informe con los hallazgos que se dejaron y las respuestas, lo guarda editable en Drive y devuelve el link
-function ibRedactar_(perfilId, hallazgos, respuestas) {
+function ibRedactar_(perfilId, hallazgos, respuestas, extra) {
   const cfg = getConfig(perfilId);
   const est = ibEstadisticas_(perfilId);
   const lim = (v, n) => String(v == null ? '' : v).replace(/[<>]/g, '').trim().slice(0, n);
   const hs = (Array.isArray(hallazgos) ? hallazgos : []).slice(0, 8).map(h => ({ titulo: lim(h && h.titulo, 90), detalle: lim(h && h.detalle, 400) })).filter(h => h.titulo);
   const rs = (Array.isArray(respuestas) ? respuestas : []).slice(0, 8).map(r => ({ pregunta: lim(r && r.pregunta, 160), respuesta: lim(r && r.respuesta, 500) })).filter(r => r.respuesta);
+  const ex = extra || {};
+  const industrias = (Array.isArray(ex.industrias) ? ex.industrias : []).slice(0, 10).map(x => lim(x, 50)).filter(Boolean);
+  const inc = Object.assign({ salarial: true, industrias: true, edad: true, genero: true, zona: true, fuentes: true }, ex.incluir || {});
   if (!hs.length) throw new Error('Dejá al menos un hallazgo para armar el informe.');
   const empresa = empresaInforme_(cfg), puesto = String(cfg.nombre || perfilId);
   const sistema = 'Sos consultor/a senior de selección de personal en Blumia Consulting (Argentina). Redactás el informe general de una búsqueda dirigido al CLIENTE (' + empresa + '). ' +
     'Usá SOLO los números y los hallazgos recibidos y las respuestas de quien lidera la búsqueda; no inventes datos, porcentajes ni causas. Respetá el tono pedido en las respuestas (si no hay, profesional y cercano). ' +
-    'No nombres candidatos, no menciones edad, género ni situación familiar, ni criterios internos de evaluación. Hablá de la búsqueda en tercera persona ("la búsqueda", "se recibieron"). Español rioplatense profesional. ' +
+    'No nombres candidatos, no menciones situación familiar ni criterios internos de evaluación; edad y género solo como descripción agregada de quiénes se postularon, nunca como criterio ni recomendación. Hablá de la búsqueda en tercera persona ("la búsqueda", "se recibieron"). Español rioplatense profesional. ' +
     'Respondé SOLO con un JSON válido con esta forma exacta: {"titulo":"máx. 90 caracteres, con gancho y sin exagerar","resumen":"párrafo de 3 a 5 frases","hallazgos":[{"titulo":"","texto":"2 o 3 frases"}],"recomendaciones":["acción concreta"],"proximos_pasos":["paso concreto"],"cierre":"1 o 2 frases"}. ' +
     'Hallazgos: reescribí los recibidos, en el mismo orden. 2 a 4 recomendaciones y 2 a 4 próximos pasos, coherentes con las respuestas.';
   const usuario = 'Puesto: ' + puesto + '. Números: ' + JSON.stringify(est) + '. Hallazgos a incluir: ' + JSON.stringify(hs) + '. Respuestas de quien lidera la búsqueda: ' + JSON.stringify(rs);
   const r = extraerJSON_(procesarConClaude(sistema, usuario, 'informe'));
-  const t = (v, n) => lim(v, n);
   const inf = {
-    titulo: t(r.titulo, 120) || ('Informe de la búsqueda · ' + puesto),
-    resumen: t(r.resumen, 900),
-    hallazgos: (Array.isArray(r.hallazgos) ? r.hallazgos : []).slice(0, 8).map(h => ({ titulo: t(h && h.titulo, 100), texto: t(h && h.texto, 600) })).filter(h => h.titulo),
-    recomendaciones: (Array.isArray(r.recomendaciones) ? r.recomendaciones : []).slice(0, 5).map(x => t(x, 300)).filter(Boolean),
-    proximos: (Array.isArray(r.proximos_pasos) ? r.proximos_pasos : []).slice(0, 5).map(x => t(x, 300)).filter(Boolean),
-    cierre: t(r.cierre, 400)
+    titulo: lim(r.titulo, 120) || ('Informe de la búsqueda · ' + puesto),
+    resumen: lim(r.resumen, 900),
+    hallazgos: (Array.isArray(r.hallazgos) ? r.hallazgos : []).slice(0, 8).map(h => ({ titulo: lim(h && h.titulo, 100), texto: lim(h && h.texto, 600) })).filter(h => h.titulo),
+    recomendaciones: (Array.isArray(r.recomendaciones) ? r.recomendaciones : []).slice(0, 5).map(x => lim(x, 300)).filter(Boolean),
+    proximos: (Array.isArray(r.proximos_pasos) ? r.proximos_pasos : []).slice(0, 5).map(x => lim(x, 300)).filter(Boolean),
+    cierre: lim(r.cierre, 400), industrias: industrias, incluir: inc
   };
   const html = ibArmarHTML_(cfg, puesto, empresa, est, inf);
   const it = DriveApp.getFoldersByName('Informes Clientes');
   const carpeta = it.hasNext() ? it.next() : DriveApp.createFolder('Informes Clientes');
   const nombre = 'Informe_Busqueda_' + perfilId + '.html';
-  const ex = carpeta.getFilesByName(nombre);
-  const arch = ex.hasNext() ? ex.next() : carpeta.createFile(nombre, '<html></html>', MimeType.HTML);
+  const exs = carpeta.getFilesByName(nombre);
+  const arch = exs.hasNext() ? exs.next() : carpeta.createFile(nombre, '<html></html>', MimeType.HTML);
   arch.setContent(conFuentePdf_(html).replace('__FILEID__', arch.getId()));
   try { registrarHistorial_(cfg.hoja_nombre || perfilId, '(búsqueda)', 'Informe', 'Informe general para el cliente armado', QUIEN_); } catch (e) { }
   return { url: URL_WEBAPP + '?tipo=verinforme&id=' + arch.getId(), informe: inf };
 }
 
+// Mismo formato que el Informe de proceso (cssInformeProceso_) más las secciones de perfil de las candidaturas y recomendaciones
 function ibArmarHTML_(cfg, puesto, empresa, e, inf) {
   const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const ce = s => '<span contenteditable="true">' + esc(s) + '</span>';
+  const ce = (s, tag, cls) => '<' + tag + (cls ? ' class="' + cls + '"' : '') + ' contenteditable="true">' + esc(s) + '</' + tag + '>';
   const pct = (a, b) => b ? Math.round(a / b * 100) + '%' : '—';
-  const fecha = Utilities.formatDate(new Date(), 'America/Argentina/Buenos_Aires', 'dd/MM/yyyy');
-  const lista = a => a.length ? '<ul>' + a.map(x => '<li contenteditable="true">' + esc(x) + '</li>').join('') + '</ul>' : '';
-  const emb = [['CVs recibidos', e.total, '100%'], ['Pasaron screening', e.scr, pct(e.scr, e.total)], ['Evaluación de competencias', e.comp, pct(e.comp, e.total)], ['Avanzan a la empresa', e.emp, pct(e.emp, e.total)]]
-    .map(x => '<div class="k"><div class="n">' + x[1] + '</div><div class="l">' + x[0] + '</div><div class="p">' + x[2] + ' del total</div></div>').join('');
-  const desc = '<div class="g3"><div class="k2"><div class="n2">' + e.dsin + '</div><div class="l">Análisis de CV</div></div><div class="k2"><div class="n2">' + e.dpost + '</div><div class="l">Post screening</div></div><div class="k2"><div class="n2">' + e.dcomp + '</div><div class="l">Competencias y empresa</div></div></div>';
-  const mot = e.motivosTop.length ? '<ul class="mot">' + e.motivosTop.map(m => '<li>' + esc(m.nombre) + ' <b>' + m.cantidad + '</b></li>').join('') + '</ul>' : '';
-  const sal = (e.banda && e.pret.total >= 5) ? '<div class="sec"><div class="eye">Expectativa salarial</div><h3>Lo que pretenden los candidatos</h3><div class="g3"><div class="k2"><div class="n2">' + pct(e.pret.debajo, e.pret.total) + '</div><div class="l">Por debajo de la banda</div></div><div class="k2"><div class="n2">' + pct(e.pret.linea, e.pret.total) + '</div><div class="l">En línea con la banda</div></div><div class="k2"><div class="n2">' + pct(e.pret.encima, e.pret.total) + '</div><div class="l">Por encima de la banda</div></div></div><p class="nota">Sobre ' + e.pret.total + ' candidatos que informaron pretensión.</p></div>' : '';
-  const hall = inf.hallazgos.map((h, i) => '<div class="h"><div class="hn">' + (i + 1) + '</div><div><h4 contenteditable="true">' + esc(h.titulo) + '</h4><p contenteditable="true">' + esc(h.texto) + '</p></div></div>').join('');
-  const css = ':root{--g:#0F3F27;--a:#FEE795;--bg:#EEF7EE;--l:#D5E0CE;--t:#1A1A1A;--m:#555;--f:\'PP Pangram Sans\',\'Poppins\',sans-serif}*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{font-family:var(--f);color:var(--t);background:#fff;font-size:14px;line-height:1.55}[contenteditable]:focus{outline:2px solid var(--g);outline-offset:2px;background:rgba(254,231,149,.25)}' +
-    '#bg{position:fixed;top:14px;right:14px;z-index:9}#bg button{background:var(--a);border:none;padding:11px 20px;border-radius:8px;font:800 11px var(--f);letter-spacing:.12em;text-transform:uppercase;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.25)}' +
-    '.hero{background:var(--g);color:#fff;padding:54px 44px 44px}.hero .eye{color:var(--a);font-size:11px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;margin-bottom:12px}.hero h1{font-size:38px;line-height:1.1;letter-spacing:-.02em;max-width:880px}.hero .meta{margin-top:16px;color:rgba(255,255,255,.8);font-size:13px}' +
-    '.wrap{padding:0 44px}.sec{padding:34px 0;border-bottom:1px solid var(--l)}.sec .eye{font-size:10px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--m);margin-bottom:6px}.sec h3{font-size:22px;color:var(--g);margin-bottom:16px;letter-spacing:-.02em}.sec p{max-width:820px}' +
-    '.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.k{background:var(--bg);border-radius:12px;padding:20px;border-top:4px solid var(--g)}.k .n{font-size:42px;font-weight:800;color:var(--g);line-height:1}.k .l{font-weight:700;margin-top:8px;font-size:13px}.k .p{font-size:12px;color:var(--m)}' +
-    '.k2{border:1px solid var(--l);border-radius:12px;padding:18px}.n2{font-size:32px;font-weight:800;color:var(--g);line-height:1}.l{font-size:12px;font-weight:700;margin-top:6px;color:var(--m)}.nota{font-size:12px;color:var(--m);margin-top:10px}.mot{margin-top:14px;columns:2;list-style:none}.mot li{padding:4px 0;font-size:13px;break-inside:avoid}.mot b{color:var(--g)}' +
-    '.h{display:flex;gap:16px;margin-bottom:18px;break-inside:avoid}.hn{flex:none;width:38px;height:38px;border-radius:50%;background:var(--a);color:var(--g);font-weight:800;display:flex;align-items:center;justify-content:center}.h h4{font-size:16px;color:var(--g);margin-bottom:4px}' +
-    '.sec ul{padding-left:20px;max-width:820px}.sec li{margin-bottom:8px}.cierre{background:var(--bg);padding:30px 44px;font-size:15px}footer{padding:22px 44px;font-size:11px;color:var(--m);text-align:center}' +
-    '@media(max-width:700px){.g4,.g3{grid-template-columns:1fr 1fr}.hero h1{font-size:28px}.mot{columns:1}.hero,.wrap,.cierre{padding-left:20px;padding-right:20px}}@media print{@page{size:A4;margin:12mm 10mm}#bg{display:none!important}.sec,.h,.k{break-inside:avoid}}';
-  const script = '<script>function guardarCambios(){var b=document.querySelector("#bg button");b.textContent="Guardando...";b.disabled=true;var c=document.documentElement.cloneNode(true);var x=c.querySelector("#bg button");if(x){x.textContent="GUARDAR CAMBIOS";x.disabled=false}google.script.run.withSuccessHandler(function(r){b.textContent=(r&&r.ok)?"GUARDADO":"ERROR";b.disabled=false;setTimeout(function(){b.textContent="GUARDAR CAMBIOS"},2500)}).withFailureHandler(function(){b.textContent="ERROR";b.disabled=false}).guardarInformeEditado("__FILEID__","<!DOCTYPE html>"+c.outerHTML)}</scr' + 'ipt>';
-  return '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Informe · ' + esc(puesto) + '</title><style>' + css + '</style></head><body>' +
-    '<div id="bg"><button onclick="guardarCambios()">GUARDAR CAMBIOS</button></div>' +
-    '<section class="hero"><div class="eye">Blumia Consulting · Informe de búsqueda</div><h1 contenteditable="true">' + esc(inf.titulo) + '</h1><div class="meta">' + esc(empresa) + ' · ' + esc(puesto) + ' · ' + fecha + '</div></section>' +
-    '<div class="wrap"><div class="sec"><div class="eye">Resumen</div><h3>Qué pasó en esta búsqueda</h3><p contenteditable="true">' + esc(inf.resumen) + '</p></div>' +
-    '<div class="sec"><div class="eye">El proceso en números</div><h3>Del volumen a la precisión</h3><div class="g4">' + emb + '</div>' + (e.res ? '<p class="nota">Además, ' + e.res + (e.res === 1 ? ' candidato queda' : ' candidatos quedan') + ' en reserva.</p>' : '') + (e.dias ? '<p class="nota">Tiempo desde el primer CV recibido: ' + e.dias + ' días.</p>' : '') + '</div>' +
-    '<div class="sec"><div class="eye">Descartes</div><h3>Filtro por etapa</h3>' + desc + mot + '</div>' + sal +
-    '<div class="sec"><div class="eye">Hallazgos</div><h3>Lo que vimos</h3>' + hall + '</div>' +
-    (inf.recomendaciones.length ? '<div class="sec"><div class="eye">Recomendaciones</div><h3>Qué sugerimos</h3>' + lista(inf.recomendaciones) + '</div>' : '') +
-    (inf.proximos.length ? '<div class="sec"><div class="eye">Próximos pasos</div><h3>Cómo seguimos</h3>' + lista(inf.proximos) + '</div>' : '') + '</div>' +
-    (inf.cierre ? '<div class="cierre" contenteditable="true">' + esc(inf.cierre) + '</div>' : '') +
+  const inc = inf.incluir || {};
+  const LOGO = 'https://lh3.googleusercontent.com/d/1457Wfl9zeY1V3sAGtY1IT2BmF2lqpoy8';
+  let n = 0;
+  const sec = (tit, em, cuerpo) => { n++; return '<div class="section"><div class="sec-num">0' + n + ' · ' + tit + '</div>' + cuerpo + '</div>'; };
+  const stage = (num, lb, p, det, cls, dark) => '<div class="fnl-stage"><div class="fnl-shape ' + cls + '"><div class="fnl-num' + (dark ? ' dark' : '') + '" contenteditable="true">' + num + '</div><div class="fnl-lb' + (dark ? ' dark' : '') + '">' + lb + '</div></div><div class="fnl-side"><div class="fnl-pct" contenteditable="true">' + p + '</div><div class="fnl-det">' + det + '</div></div></div>';
+  const barras = (obj, total) => '<div class="bars">' + Object.keys(obj).filter(k => k !== 'Sin dato' || obj[k]).map(k => '<div class="bar"><span class="bl">' + esc(k) + '</span><span class="bt"><i style="width:' + (total ? Math.round(obj[k] / total * 100) : 0) + '%"></i></span><span class="bv" contenteditable="true">' + pct(obj[k], total) + '</span></div>').join('') + '</div>';
+  const conDato = o => Object.keys(o).reduce((a, k) => a + (k === 'Sin dato' ? 0 : o[k]), 0);
+  let cuerpo = '';
+  cuerpo += sec('Embudo', '', '<h3 class="sec-title">Del volumen a la <em>precisión</em></h3><div class="funnel">' +
+    stage(e.total, 'CVS RECIBIDOS', '100%', 'base del proceso', 'f1', false) + stage(e.scr, 'SCREENINGS', pct(e.scr, e.total), 'entrevistas telefónicas', 'f2', false) +
+    stage(e.comp, 'COMPETENCIAS', pct(e.comp, e.total), 'evaluación profunda', 'f3', false) + stage(e.emp, 'AVANZAN A EMPRESA', pct(e.emp, e.total), 'finalistas presentados', 'f4', true) +
+    '</div>' + (e.res ? '<div class="fnl-extra" contenteditable="true">+ ' + e.res + ' candidatos en reserva activa</div>' : '') + (e.dias ? '<div class="fnl-extra">Tiempo desde el primer CV recibido: ' + e.dias + ' días</div>' : ''));
+  if (inc.salarial !== false && e.banda && e.pret.total >= 5) cuerpo += sec('Realidad salarial', '', '<h3 class="sec-title">Lo que <em>pretende</em> el mercado</h3><div class="salary-grid">' +
+    '<div class="sal-card dark"><div class="sal-pct dark" contenteditable="true">' + pct(e.pret.debajo, e.pret.total) + '</div><div class="sal-l">Por debajo</div><div class="sal-d">de la banda de referencia</div></div>' +
+    '<div class="sal-card green"><div class="sal-pct green" contenteditable="true">' + pct(e.pret.linea, e.pret.total) + '</div><div class="sal-l">En línea</div><div class="sal-d">con la banda</div></div>' +
+    '<div class="sal-card amber"><div class="sal-pct amber" contenteditable="true">' + pct(e.pret.encima, e.pret.total) + '</div><div class="sal-l">Por encima</div><div class="sal-d">de la banda</div></div></div><div class="fnl-extra">Sobre ' + e.pret.total + ' candidatos que informaron pretensión · banda de referencia $' + Number(e.banda).toLocaleString('es-AR') + '</div>');
+  if (inc.industrias !== false && inf.industrias && inf.industrias.length) cuerpo += sec('Industrias de origen', '', '<h3 class="sec-title">De dónde <em>vienen</em></h3><div class="ind-grid">' + inf.industrias.map(x => '<div class="ind-chip" contenteditable="true">' + esc(x) + '</div>').join('') + '</div>');
+  const tieneEdad = inc.edad !== false && conDato(e.edadScr) >= 5, tieneGen = inc.genero !== false && conDato(e.generoScr) >= 5, tieneZona = inc.zona !== false && (e.zona['En zona'] + e.zona['Fuera de zona']) >= 5;
+  if (tieneEdad || tieneGen || tieneZona) {
+    let c = '<h3 class="sec-title">Quiénes <em>se postularon</em></h3><div class="perfil-grid">';
+    if (tieneEdad) c += '<div class="pf"><div class="pf-t">Rango de edad</div>' + barras(e.edad, e.total) + '</div>';
+    if (tieneGen) c += '<div class="pf"><div class="pf-t">Distribución por género</div>' + barras(e.genero, e.total) + '</div>';
+    if (tieneZona) c += '<div class="pf"><div class="pf-t">Ubicación</div>' + barras(e.zona, e.total) + '</div>';
+    cuerpo += sec('Perfil de las candidaturas', '', c + '</div><div class="fnl-extra">Sobre el total de CVs recibidos. Es una descripción de quiénes se postularon, no un criterio de selección.</div>');
+  }
+  cuerpo += sec('Descartes', '', '<h3 class="sec-title">Filtro por <em>etapa</em></h3><div class="stats-grid three">' +
+    '<div class="stat-card acc3"><div class="stat-num gray" contenteditable="true">' + e.dsin + '</div><div class="stat-lbl">En análisis de CV</div></div>' +
+    '<div class="stat-card acc3"><div class="stat-num gray" contenteditable="true">' + e.dpost + '</div><div class="stat-lbl">Post screening</div></div>' +
+    '<div class="stat-card acc3"><div class="stat-num gray" contenteditable="true">' + e.dcomp + '</div><div class="stat-lbl">En competencias</div></div></div>' +
+    (e.motivosTop.length ? '<div class="ind-grid" style="margin-top:14px">' + e.motivosTop.map(m => '<div class="ind-chip">' + esc(m.nombre) + ' · <b>' + m.cantidad + '</b></div>').join('') + '</div>' : ''));
+  if (inc.fuentes !== false && e.fuentesTop.length) cuerpo += sec('Fuentes', '', '<h3 class="sec-title">Canales de <em>atracción</em></h3><div class="fuentes-grid">' + e.fuentesTop.map(f => '<div class="fuente-item">✓ ' + esc(f.nombre) + ' · ' + f.cantidad + '</div>').join('') + '</div>');
+  cuerpo += sec('Hallazgos', '', '<h3 class="sec-title">Lo que <em>vimos</em></h3>' + inf.hallazgos.map(h => '<div class="insight"><span class="insight-tag" contenteditable="true">' + esc(h.titulo) + '</span><div class="insight-text" contenteditable="true">' + esc(h.texto) + '</div></div>').join(''));
+  const lista = a => '<ul class="lista">' + a.map(x => '<li contenteditable="true">' + esc(x) + '</li>').join('') + '</ul>';
+  if (inf.recomendaciones.length) cuerpo += sec('Recomendaciones', '', '<h3 class="sec-title">Qué <em>sugerimos</em></h3>' + lista(inf.recomendaciones));
+  if (inf.proximos.length) cuerpo += sec('Próximos pasos', '', '<h3 class="sec-title">Cómo <em>seguimos</em></h3>' + lista(inf.proximos));
+  const hstats = [['CVs Recibidos', e.total], ['Screenings', e.scr], ['Competencias', e.comp], ['Avanzan a empresa', e.emp]].map(x => '<div class="hs-item"><div class="hs-num" contenteditable="true">' + x[1] + '</div><div class="hs-lbl">' + x[0] + '</div></div>').join('');
+  const cierre = '<section class="resumen"><div class="res-eye">Cierre</div><h2 class="res-tit" contenteditable="true">' + esc(inf.cierre || 'La búsqueda avanza y el pipeline está activo') + '</h2><div class="res-grid">' +
+    [[e.total, 'CVs recibidos', ''], [e.emp, 'Avanzan a empresa', ' amber'], [e.res, 'En reserva', ''], [e.desc, 'Descartados', '']].map(x => '<div class="res-card"><div class="res-num' + x[2] + '" contenteditable="true">' + x[0] + '</div><div class="res-lbl">' + x[1] + '</div></div>').join('') + '</div></section>';
+  const extra = '.perfil-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}.pf{background:#fff;border:1px solid var(--line);border-radius:4px;padding:18px}.pf-t{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px}.bar{display:grid;grid-template-columns:96px 1fr 44px;gap:8px;align-items:center;margin-bottom:8px;font-size:12px;font-weight:600}.bar .bt{background:var(--bg2);height:10px;border-radius:5px;overflow:hidden}.bar .bt i{display:block;height:100%;background:var(--green)}.bar .bv{text-align:right;color:var(--mid)}.busqueda>.insight{margin-bottom:34px}.lista{padding-left:20px;max-width:820px}.lista li{margin-bottom:8px}.insight-tag{text-transform:none!important;letter-spacing:0!important;font-size:13px!important}@media(max-width:700px){.h-stats,.res-grid{grid-template-columns:1fr 1fr}.salary-grid,.stats-grid.three{grid-template-columns:1fr}.hero,.busqueda,.resumen{padding-left:20px;padding-right:20px}.h-title{font-size:30px}}';
+  const script = '<script>function guardarCambios(){var btn=document.querySelector("#barra-guardar button");btn.textContent="Guardando...";btn.disabled=true;var clon=document.documentElement.cloneNode(true);var b=clon.querySelector("#barra-guardar button");if(b){b.textContent="GUARDAR CAMBIOS";b.disabled=false;}google.script.run.withSuccessHandler(function(r){btn.textContent=(r&&r.ok)?"GUARDADO":"ERROR";btn.disabled=false;setTimeout(function(){btn.textContent="GUARDAR CAMBIOS";},2500);}).withFailureHandler(function(){btn.textContent="ERROR";btn.disabled=false;}).guardarInformeEditado("__FILEID__","<!DOCTYPE html>"+clon.outerHTML);}</scr' + 'ipt>';
+  return '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Informe de la búsqueda · ' + esc(puesto) + '</title><style>' + cssInformeProceso_() + extra + '</style></head><body>' +
+    '<div id="barra-guardar" contenteditable="false"><button onclick="guardarCambios()">GUARDAR CAMBIOS</button></div>' +
+    '<section class="hero"><img class="hero-logo" src="' + LOGO + '"><div class="eyebrow">Atracción y Elección · Informe de búsqueda</div><div class="cliente-nombre" contenteditable="true">' + esc(empresa) + '</div>' +
+    '<h1 class="h-title" contenteditable="true">' + esc(inf.titulo) + '</h1><div class="h-stats">' + hstats + '</div></section>' +
+    '<section class="busqueda"><div class="bsq-head"><div class="bsq-eye">Búsqueda</div><h2 class="bsq-title" contenteditable="true">' + esc(puesto) + '</h2>' + (e.banda ? '<div class="bsq-sub" contenteditable="true">Banda salarial de referencia: $' + Number(e.banda).toLocaleString('es-AR') + '</div>' : '') + '</div>' +
+    '<div class="insight"><span class="insight-tag">Resumen</span><div class="insight-text" contenteditable="true">' + esc(inf.resumen) + '</div></div>' + cuerpo + '</section>' + cierre +
     '<footer>Blumia Consulting · Documento preparado para ' + esc(empresa) + '</footer>' + script + '</body></html>';
+}
+
+// Estilo del informe de proceso (lo usan generarHTMLProceso y el informe de la búsqueda)
+function cssInformeProceso_() {
+  return ':root{--bg:#F7F5F1;--bg2:#EEECEA;--white:#FFF;--dark:#111;--text:#1A1A1A;--mid:#555;--light:#999;--line:#DDDBD7;--green:#1A6645;--green2:#238055;--glight:#E6F2EC;--amber:#F5C842;--font:\'PP Pangram Sans\',\'Plus Jakarta Sans\',sans-serif;}*{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}body{font-family:var(--font);color:var(--text);font-size:14px;line-height:1.5;background:var(--bg);}[contenteditable]:focus{outline:2px solid var(--green);outline-offset:2px;background:rgba(245,200,66,.12);}#barra-guardar{position:fixed;top:14px;right:14px;z-index:9999;}#barra-guardar button{background:var(--amber);color:var(--dark);border:none;padding:11px 20px;border-radius:3px;font-weight:800;font-size:11px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.25);font-family:var(--font);}.hero{padding:52px 40px 40px;background:linear-gradient(180deg,#FCFAF6 0%,var(--bg) 100%);border-bottom:1px solid var(--line);}.hero-logo{height:56px;margin-bottom:20px;display:block;}.eyebrow{display:block;font-size:11px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--green);background:var(--glight);padding:6px 14px;border-radius:2px;margin-bottom:14px;width:fit-content;}.cliente-nombre{font-size:15px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--mid);margin-bottom:16px;}.h-title{font-size:46px;line-height:1.06;letter-spacing:-.03em;font-weight:800;margin-bottom:10px;max-width:900px;}.h-title em{color:var(--green);font-style:normal;}.h-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:34px;padding-top:30px;border-top:1px solid var(--line);}.hs-num{font-size:50px;font-weight:800;color:var(--green);letter-spacing:-.04em;line-height:1;}.hs-lbl{font-size:11px;font-weight:700;margin-top:8px;text-transform:uppercase;letter-spacing:.08em;}.busqueda{padding:44px 40px;border-bottom:1px solid var(--line);background:#fff;}.bsq-head{margin-bottom:30px;}.bsq-eye{font-size:11px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--green);margin-bottom:8px;}.bsq-title{font-size:32px;font-weight:800;letter-spacing:-.025em;line-height:1.1;}.bsq-sub{font-size:14px;color:var(--mid);margin-top:8px;}.section{margin-bottom:40px;}.sec-num{font-size:10px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--mid);margin-bottom:8px;}.sec-title{font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:20px;}.sec-title em{color:var(--green);font-style:normal;}.funnel{max-width:640px;margin:0 auto;}.fnl-stage{display:grid;grid-template-columns:1fr 170px;gap:20px;align-items:center;margin-bottom:6px;break-inside:avoid;}.fnl-shape{padding:12px 20px;text-align:center;color:#fff;margin:0 auto;width:100%;}.fnl-shape.f1{background:linear-gradient(180deg,#1A6645,#238055);clip-path:polygon(0 0,100% 0,93% 100%,7% 100%);}.fnl-shape.f2{background:linear-gradient(180deg,#238055,#3FA670);clip-path:polygon(7% 0,93% 0,86% 100%,14% 100%);width:86%;}.fnl-shape.f3{background:#3FA670;clip-path:polygon(14% 0,86% 0,79% 100%,21% 100%);width:70%;}.fnl-shape.f4{background:linear-gradient(180deg,#F5C842,#E0A82E);clip-path:polygon(21% 0,79% 0,72% 100%,28% 100%);width:54%;}.fnl-num{font-size:26px;font-weight:800;letter-spacing:-1px;line-height:1;}.fnl-num.dark{color:#1A1A1A;}.fnl-lb{font-size:9px;font-weight:700;letter-spacing:1.6px;margin-top:3px;opacity:.9;}.fnl-lb.dark{color:#1A1A1A;opacity:1;}.fnl-side{padding-left:12px;border-left:2px solid var(--line);}.fnl-pct{font-size:15px;font-weight:800;color:var(--mid);}.fnl-det{font-size:11px;color:var(--light);margin-top:2px;}.fnl-extra{font-size:12px;color:var(--mid);margin-top:12px;text-align:center;font-weight:600;}.salary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}.sal-card{background:#fff;border:1px solid var(--line);padding:24px;border-radius:4px;}.sal-card.green{border-top:3px solid var(--green);}.sal-card.amber{border-top:3px solid var(--amber);}.sal-card.dark{border-top:3px solid var(--dark);}.sal-pct{font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1;}.sal-pct.green{color:var(--green);}.sal-pct.amber{color:#B8902F;}.sal-pct.dark{color:var(--dark);}.sal-l{font-size:13px;font-weight:700;margin-top:8px;}.sal-d{font-size:12px;color:var(--mid);margin-top:4px;}.ind-grid{display:flex;flex-wrap:wrap;gap:8px;}.ind-chip{background:#FCFAF6;border:1px solid var(--line);border-left:3px solid var(--amber);padding:8px 14px;font-size:12px;border-radius:2px;font-weight:600;}.stats-grid{display:grid;gap:14px;}.stats-grid.three{grid-template-columns:repeat(3,1fr);}.stat-card{background:#fff;border:1px solid var(--line);padding:20px;border-radius:4px;}.stat-card.acc3{border-top:3px solid var(--mid);}.stat-num{font-size:34px;font-weight:800;letter-spacing:-.03em;line-height:1;}.stat-num.gray{color:var(--mid);}.stat-lbl{font-size:11px;font-weight:700;margin-top:6px;text-transform:uppercase;letter-spacing:.06em;}.insight{padding:20px 24px;background:linear-gradient(180deg,#FCFAF6 0%,#F2EFEA 100%);border-left:4px solid var(--green);border-radius:2px;margin-top:16px;break-inside:avoid;}.insight-tag{font-size:10px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--green);margin-bottom:8px;display:block;}.insight-text{font-size:13px;line-height:1.6;}.fuentes-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}.fuente-item{font-size:13px;color:#333;font-weight:600;}.resumen{padding:52px 40px;background:var(--green);color:#fff;}.res-eye{font-size:11px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--amber);margin-bottom:14px;}.res-tit{font-size:34px;font-weight:800;letter-spacing:-.03em;line-height:1.1;margin-bottom:24px;}.res-tit em{color:var(--amber);font-style:normal;}.res-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;}.res-card{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:4px;padding:22px;}.res-num{font-size:44px;font-weight:800;letter-spacing:-.03em;line-height:1;}.res-num.amber{color:var(--amber);}.res-lbl{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-top:8px;}.res-lect{font-size:14px;line-height:1.7;color:rgba(255,255,255,.92);margin-top:24px;}footer{padding:28px;text-align:center;font-size:11px;color:var(--mid);background:#fff;border-top:1px solid var(--line);}@media print{@page{size:A4;margin:12mm 10mm;}#barra-guardar{display:none!important;}.busqueda,.resumen{page-break-before:always;}.hero{page-break-after:avoid;}.section,.insight,.fnl-stage{break-inside:avoid;}}';
 }
