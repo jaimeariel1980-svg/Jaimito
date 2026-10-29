@@ -281,9 +281,9 @@ function informeEnviar_(pdfId, para, asunto, mensaje, quien) {
   const f = ibArchivoInforme_(pdfId, '.pdf');
   const lim = (v, n) => String(v == null ? '' : v).replace(/[\r\n]+/g, ' ').trim().slice(0, n);
   const cuerpo = String(mensaje || '').slice(0, 3000) || 'Te comparto el informe de la búsqueda. Cualquier duda, quedo a disposición.';
-  MailApp.sendEmail({ to: para, subject: lim(asunto, 150) || 'Informe de la búsqueda', body: cuerpo + '\n\nBlumia Consulting', name: 'Blumia Consulting', attachments: [f.getBlob()] });
-  try { registrarHistorial_('(informes)', f.getName(), 'Informe enviado', 'Enviado a ' + para, quien); } catch (e) { }
-  return { ok: true };
+  const env = enviarMailBlumia_(para, lim(asunto, 150) || 'Informe de la búsqueda', cuerpo + '\n\nBlumia Consulting', { attachments: [f.getBlob()] });
+  try { registrarHistorial_('(informes)', f.getName(), 'Informe enviado', 'Enviado a ' + para + ' desde ' + env.desde, quien); } catch (e) { }
+  return { ok: true, desde: env.desde, alias: env.alias };
 }
 
 // Modo edición del informe armado (corre dentro del HTML del informe, no en Apps Script): ✕ para sacar cualquier bloque, punto o dato,
@@ -352,7 +352,7 @@ function ibEditorJS_() {
           if (!/^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/.test(para)) { st.style.color = '#b3261e'; st.textContent = 'Escribí un correo válido.'; return; }
           if (!confirmado) { confirmado = true; env.textContent = 'Confirmar envío a ' + para; st.style.color = '#666'; st.textContent = 'Se manda desde la cuenta de Blumia con el PDF adjunto.'; return; }
           env.disabled = true; env.textContent = 'Enviando…';
-          google.script.run.withSuccessHandler(function () { env.textContent = '✔ Enviado'; st.style.color = '#0F3F27'; st.textContent = 'Enviado a ' + para + '.'; })
+          google.script.run.withSuccessHandler(function (rr) { env.textContent = '✔ Enviado'; st.style.color = rr && rr.alias === false ? '#9A7500' : '#0F3F27'; st.textContent = 'Enviado a ' + para + (rr && rr.desde ? ' desde ' + rr.desde + '.' : '.') + (rr && rr.alias === false ? ' (La dirección de la empresa todavía no está dada de alta como remitente en Gmail: sale de esta cuenta, pero las respuestas van a la de Blumia.)' : ''); })
             .withFailureHandler(function (e) { env.disabled = false; confirmado = false; env.textContent = 'Enviar por mail'; st.style.color = '#b3261e'; st.textContent = (e && e.message) || 'No se pudo enviar.'; })
             .informeEnviar(r.id, para, asunto, document.getElementById('pdfMsg').value, '');
         };
