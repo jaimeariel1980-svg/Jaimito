@@ -211,6 +211,7 @@ input[type=range]{accent-color:#243D2C}
 <div id="pvBg" data-html2canvas-ignore="true"><div class="pvt" id="pvT">Armando la vista previa…</div><img id="pvImg" alt="Vista previa del flayer" style="display:none"><div class="row"><button type="button" class="bt" id="pvX" style="background:#fff">Cerrar</button><button type="button" class="bt" id="pvDl" style="background:#0F3F27;color:#fff;display:none">Descargar imagen</button></div></div>
 <div id="main"><div id="modos" data-html2canvas-ignore="true">
   <div class="seg" role="group" aria-label="Modo de trabajo"><button type="button" id="mEd" class="on">✏️ Editar textos</button><button type="button" id="mMv">✥ Mover y cambiar tamaño</button></div>
+  <span style="display:inline-flex;gap:6px"><button type="button" class="bt" id="mUn" title="Deshacer (Ctrl+Z)" aria-label="Deshacer" style="height:44px;min-width:44px;font-size:18px">↶</button><button type="button" class="bt" id="mRe" title="Rehacer (Ctrl+Y)" aria-label="Rehacer" style="height:44px;min-width:44px;font-size:18px">↷</button></span>
   <button type="button" class="bt" id="mPv" style="height:44px">👁 Vista previa</button>
   <input type="checkbox" id="mvOn" style="display:none">
   <div id="mvBox" style="display:none">
@@ -365,7 +366,12 @@ function vista(){
 }
 window.addEventListener('resize',vista);
 
-function marcar(){sucio=true;$('msg').textContent=''}
+var hist=[],hi=-1,hTm=null,hBusy=false;
+function hKey(){return JSON.stringify(S,function(k,v){return (k==='bg'||k==='cli')?(v?v.length:0):v})}
+function pushSnap(){if(hBusy||!S)return;try{leerTextos()}catch(e){}var k=hKey();if(hi>=0&&hist[hi].k===k)return;hist=hist.slice(0,hi+1);hist.push({k:k,s:structuredClone(S)});if(hist.length>40)hist.shift();hi=hist.length-1;hBtn()}
+function hBtn(){var u=$('mUn'),r=$('mRe');if(u)u.disabled=hi<=0;if(r)r.disabled=hi>=hist.length-1}
+function hIr(d){clearTimeout(hTm);pushSnap();var n=hi+d;if(n<0||n>=hist.length)return;hi=n;hBusy=true;S=structuredClone(hist[hi].s);pintarTextos();aplicar();try{pintarPanel()}catch(e){}if(window.mvElegir)mvElegir(mvSel);hBusy=false;sucio=true;hBtn()}
+function marcar(){sucio=true;$('msg').textContent='';if(!hBusy){clearTimeout(hTm);hTm=setTimeout(pushSnap,350)}}
 var IA_AMB={oficina:'dos profesionales argentinas conversando en una oficina moderna y luminosa, una de ellas escucha con una leve sonrisa',industria:'dos profesionales con ropa de trabajo revisando una tablet en una planta industrial limpia y ordenada',comercial:'dos personas de un equipo comercial reunidas frente a una notebook en un espacio de trabajo moderno',salud:'un equipo de profesionales de la salud conversando en un pasillo luminoso de una clínica moderna',logistica:'un supervisor y una coordinadora revisando una tablet en un depósito logístico ordenado'};
 var IA_FMT={st:['vertical 9:16','las personas ocupan la mitad superior del cuadro; la mitad inferior queda despejada, suave y tranquila, porque ahí va el texto'],li:['vertical 4:5','las personas ocupan la mitad superior del cuadro; la mitad inferior queda despejada, suave y tranquila, porque ahí va el texto'],ls:['horizontal 1,91:1','las personas están en el lado derecho; la mitad izquierda queda despejada y tranquila, porque ahí va el texto']};
 var iaEdit=false;
@@ -400,6 +406,9 @@ function mvIniciar(){
   $('fB').onclick=function(){if(!mvSel)return;var p=mvPos(mvSel,true);if(p.b)delete p.b;else p.b=1;mvElegir(mvSel);marcar()};
   [].forEach.call(document.querySelectorAll('#mvFmt .fa'),function(b){b.onclick=function(){if(!mvSel)return;var p=mvPos(mvSel,true),a=b.getAttribute('data-a');if(p.a===a)delete p.a;else p.a=a;mvElegir(mvSel);marcar()}});
   $('sSerif').onchange=function(){S.serif=this.checked;aplicar();marcar()};
+  $('mUn').onclick=function(){hIr(-1)};$('mRe').onclick=function(){hIr(1)};
+  document.addEventListener('keydown',function(e){if(!(e.ctrlKey||e.metaKey))return;var t=e.target;if(t&&(t.isContentEditable||/INPUT|TEXTAREA|SELECT/.test(t.tagName)))return;var k=e.key.toLowerCase();if(k==='z'&&!e.shiftKey){e.preventDefault();hIr(-1)}else if(k==='y'||(k==='z'&&e.shiftKey)){e.preventDefault();hIr(1)}});
+  setTimeout(function(){pushSnap()},900);
   $('sFk').oninput=function(){S.footK=Number(this.value);$('vFk').textContent=S.footK+'%';aplicar();marcar()};
   $('sMs').oninput=function(){if(!mvSel)return;var p=mvPos(mvSel,true);p.s=Number(this.value);$('vMs').textContent=p.s+'%';mvAplicar();marcar()};
   $('mvRb').onclick=function(){if(!mvSel)return;var f=(S.pos||{})[S.fmt];if(f)delete f[mvSel];mvElegir(mvSel);marcar()};
@@ -511,8 +520,8 @@ function descargar(modo){
     b.disabled=false;b.textContent=tb;
     var nom='flyer-'+DATOS.puesto.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')+'-'+f.nom+'.png';
     if(modo==='wa'){c.toBlob(function(bl){var tx=$('tWa').value||'';var fl=null;try{fl=new File([bl],nom,{type:'image/png'})}catch(e){}
-      if(fl&&navigator.canShare&&navigator.canShare({files:[fl]})){navigator.share({files:[fl],text:tx}).catch(function(){})}
-      else{var a=document.createElement('a');a.href=url;a.download=nom;document.body.appendChild(a);a.click();a.remove();window.open('https://wa.me/?text='+encodeURIComponent(tx),'_blank');msg('Se bajó la imagen y se abrió WhatsApp con el texto: adjuntá la imagen del flayer al chat.',true)}
+      if(fl&&/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)&&navigator.canShare&&navigator.canShare({files:[fl]})){navigator.share({files:[fl],text:tx}).catch(function(){})}
+      else{var a=document.createElement('a');a.href=url;a.download=nom;document.body.appendChild(a);a.click();a.remove();window.open((/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)?'https://wa.me/?text=':'https://web.whatsapp.com/send?text=')+encodeURIComponent(tx),'_blank');msg('Se bajó la imagen y se abrió WhatsApp Web con el texto: elegí el contacto y arrastrá la imagen al chat.',true)}
     },'image/png');return}
     $('resImg').src=url;$('resA').href=url;$('resA').setAttribute('download',nom);$('resN').textContent='Si no se descargó sola, tocá «Descargar» o mantené apretada la imagen para guardarla.';$('res').classList.add('show');
     try{var a=document.createElement('a');a.href=url;a.download=nom;document.body.appendChild(a);a.click();a.remove()}catch(e){}
