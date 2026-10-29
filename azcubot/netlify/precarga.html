@@ -96,7 +96,7 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
 <title>Formulario de Precarga — Azcuénaga Inmobiliaria</title>
 <style>
   :root{
-    --navy:#22386a;
+    --navy:#1B3866;
     --cream:#eaecf1;
     --card:#ffffff;
     --terracotta:#b5673e;
@@ -114,7 +114,7 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
     color:var(--ink);
   }
   header{
-    background:var(--navy);
+    background:linear-gradient(120deg,#1B3866,#0A3D91);
     color:#fff;
     padding:22px 32px;
     display:flex;
@@ -128,7 +128,7 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
     font-weight:700;font-size:14px;
   }
   header .logo-chip{
-    background:#fff;border-radius:10px;
+    background:#fff;border-radius:12px;
     padding:6px 9px;display:flex;align-items:center;
   }
   header .logo-chip img{height:32px;display:block;}
@@ -140,16 +140,16 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
   .precarga-banner{
     background:var(--terracotta-soft);
     border:1px solid #e7c9b3;
-    border-radius:10px;
+    border-radius:12px;
     padding:14px 18px;
     font-size:13.5px;
-    color:#7a4a30;
+    color:#8A4B2A;
     margin-bottom:28px;
   }
   .precarga-banner code{
     background:#fff;
     padding:2px 7px;
-    border-radius:5px;
+    border-radius:8px;
     font-weight:600;
   }
 
@@ -172,7 +172,7 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
 
   .dueño-block{
     border:1px dashed var(--line);
-    border-radius:10px;
+    border-radius:12px;
     padding:18px 18px 6px;
     margin-bottom:16px;
     position:relative;
@@ -216,7 +216,7 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
     width:100%;
     padding:9px 10px;
     border:1px solid var(--line);
-    border-radius:7px;
+    border-radius:8px;
     font-size:13.5px;
     font-family:inherit;
     color:var(--ink);
@@ -337,7 +337,7 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
     align-items:center;
     gap:12px;
     padding:13px 18px;
-    border-radius:10px;
+    border-radius:12px;
     font-size:13.5px;
     font-weight:600;
     margin-bottom:20px;
@@ -1743,22 +1743,22 @@ var EdPDF=(function(){
     if(document.getElementById('edp-css'))return;
     var c=document.createElement('style');c.id='edp-css';
     c.textContent='#edp{position:fixed;inset:0;z-index:99990;background:#eef1f6;display:flex;flex-direction:column;font-family:Segoe UI,Helvetica,Arial,sans-serif;color:#1f2a44}'+
-    '#edp .h{background:#22386a;color:#fff;padding:10px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}#edp .h b{font-size:16px;flex:1;min-width:160px}'+
+    '#edp .h{background:#1B3866;color:#fff;padding:10px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}#edp .h b{font-size:16px;flex:1;min-width:160px}'+
     '#edp .tb{background:#fff;border-bottom:1px solid #dfe3ea;padding:8px 14px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}'+
-    '#edp button,#edp select{font:600 13px inherit;font-family:inherit;border:1px solid #c9d0dc;background:#fff;color:#22386a;border-radius:8px;padding:7px 11px;cursor:pointer}'+
+    '#edp button,#edp select{font:600 13px inherit;font-family:inherit;border:1px solid #c9d0dc;background:#fff;color:#1B3866;border-radius:8px;padding:7px 11px;cursor:pointer}'+
     '#edp button.p{background:#b5673e;border-color:#b5673e;color:#fff}#edp .h button{border-color:rgba(255,255,255,.4);background:rgba(255,255,255,.12);color:#fff}#edp .h button.p{background:#b5673e;border-color:#b5673e}#edp button:disabled{opacity:.5;cursor:default}'+
     '#edp .g{flex:1;overflow:auto;padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;align-content:start}'+
-    '#edp .c{position:relative;background:#fff;border:2px solid #cbd2de;border-radius:10px;padding:6px;cursor:grab;user-select:none}#edp .c.s{box-shadow:0 0 0 3px #f5b041}#edp .c.o{outline:3px dashed #22386a}'+
-    '#edp .im{height:118px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#f3f5f9;border-radius:6px}#edp .im img{max-width:100%;max-height:118px;transition:transform .15s}#edp .im i{font-size:11px;color:#8a93a5;font-style:normal}'+
-    '#edp .n{position:absolute;top:3px;left:5px;background:#22386a;color:#fff;border-radius:8px;font-size:10px;padding:0 6px}#edp .k{position:absolute;top:3px;right:5px}'+
-    '#edp .a{display:flex;gap:2px;margin-top:5px;justify-content:space-between}#edp .a button{padding:2px 0;font-size:12px;border-radius:6px;flex:1}'+
-    '#edp .t{font-size:10.5px;font-weight:700;color:#fff;border-radius:6px;padding:1px 5px;margin-top:4px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'+
-    '#edp .em{grid-column:1/-1;text-align:center;color:#6b7280;padding:50px 10px;border:2px dashed #b9c1d1;border-radius:14px;background:#fff}'+
+    '#edp .c{position:relative;background:#fff;border:2px solid #cbd2de;border-radius:12px;padding:6px;cursor:grab;user-select:none}#edp .c.s{box-shadow:0 0 0 3px #f5b041}#edp .c.o{outline:3px dashed #1B3866}'+
+    '#edp .im{height:118px;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#f3f5f9;border-radius:8px}#edp .im img{max-width:100%;max-height:118px;transition:transform .15s}#edp .im i{font-size:11px;color:#8a93a5;font-style:normal}'+
+    '#edp .n{position:absolute;top:3px;left:5px;background:#1B3866;color:#fff;border-radius:8px;font-size:10px;padding:0 6px}#edp .k{position:absolute;top:3px;right:5px}'+
+    '#edp .a{display:flex;gap:2px;margin-top:5px;justify-content:space-between}#edp .a button{padding:2px 0;font-size:12px;border-radius:8px;flex:1}'+
+    '#edp .t{font-size:10.5px;font-weight:700;color:#fff;border-radius:8px;padding:1px 5px;margin-top:4px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'+
+    '#edp .em{grid-column:1/-1;text-align:center;color:#6b7280;padding:50px 10px;border:2px dashed #b9c1d1;border-radius:12px;background:#fff}'+
     '#edp .rs{padding:6px 14px;font-size:12.5px;color:#4a5568;background:#fff;border-top:1px solid #dfe3ea}'+
-    '#edp .big{display:flex;flex-direction:column;gap:4px;align-items:center;width:210px;padding:16px 12px;font-size:28px;border-radius:14px}#edp .big b{font-size:15px}#edp .big small{font-size:12px;color:#6b7280;font-weight:400;font-style:normal}#edp .rg input{width:58px;padding:6px;border:1px solid #c9d0dc;border-radius:8px}'+
+    '#edp .big{display:flex;flex-direction:column;gap:4px;align-items:center;width:210px;padding:16px 12px;font-size:28px;border-radius:12px}#edp .big b{font-size:15px}#edp .big small{font-size:12px;color:#6b7280;font-weight:400;font-style:normal}#edp .rg input{width:58px;padding:6px;border:1px solid #c9d0dc;border-radius:8px}'+
     '#edp .tb select{max-width:340px;min-width:200px}'+
     '#edp .hp{background:#fff8e1;border-bottom:1px solid #f0dca0;padding:8px 14px;font-size:13px;color:#5a4a10;line-height:1.45}#edp .im{cursor:zoom-in}#edp .k{width:22px;height:22px;cursor:pointer}#edp .sel{background:#e8f0fe;border-bottom:1px solid #c7d7f5;padding:8px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px}'+
-    '#edpv{position:fixed;inset:0;z-index:99995;background:rgba(10,20,40,.85);display:flex;flex-direction:column;align-items:center;padding:10px;gap:8px}#edpv .vb{display:flex;gap:6px;align-items:center;flex-wrap:wrap;color:#fff;font-size:13px}#edpv .vb button{font:600 13px inherit;font-family:inherit;border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.14);color:#fff;border-radius:8px;padding:7px 12px;cursor:pointer}#edpv .vc{flex:1;overflow:auto;display:flex;align-items:flex-start;justify-content:center;width:100%}#edpv canvas,#edpv img{max-width:100%;background:#fff;border-radius:6px}';
+    '#edpv{position:fixed;inset:0;z-index:99995;background:rgba(10,20,40,.85);display:flex;flex-direction:column;align-items:center;padding:10px;gap:8px}#edpv .vb{display:flex;gap:6px;align-items:center;flex-wrap:wrap;color:#fff;font-size:13px}#edpv .vb button{font:600 13px inherit;font-family:inherit;border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.14);color:#fff;border-radius:8px;padding:7px 12px;cursor:pointer}#edpv .vc{flex:1;overflow:auto;display:flex;align-items:flex-start;justify-content:center;width:100%}#edpv canvas,#edpv img{max-width:100%;background:#fff;border-radius:8px}';
     document.head.appendChild(c);
   }
   function nuevaId(){return 'p'+(++UID);}
@@ -1849,7 +1849,7 @@ var EdPDF=(function(){
     if(!S.pg.length&&(S.modo==='unir'||S.modo==='separar')){g.innerHTML='<div class="em">'+(S.modo==='unir'?'Elegí arriba en qué documento se guarda y tocá <b>+ Archivos</b>. Agregá todas las fotos y PDFs que quieras.':'Tocá <b>+ Archivos</b> y elegí el PDF que querés separar.')+'<br><br><button data-x="add">+ Archivos</button> <button data-x="m-ini">Volver</button></div>';rs.textContent='';return;}
     if(!S.pg.length){
       var bt='<button class="big" data-x="m-unir">🔗<b>Unir</b><small>Juntá fotos y PDFs en un solo '+(con?'documento':'PDF')+'</small></button>'+(con?'<button class="big" data-x="m-sep">✂️<b>Separar</b><small>Dividí un PDF en varios documentos (a mano o con IA)</small></button>':'')+'<button class="big" data-x="m-ord">📑<b>Ordenar / editar</b><small>Reordená, rotá o quitá páginas</small></button>';
-      g.innerHTML='<div class="em"><div style="font-weight:700;font-size:16px;margin-bottom:14px;color:#22386a">¿Qué querés hacer?</div><div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:14px">'+bt+'</div><small>También podés arrastrar PDFs y fotos acá. Se pueden mezclar.</small></div>';rs.textContent='';return;}
+      g.innerHTML='<div class="em"><div style="font-weight:700;font-size:16px;margin-bottom:14px;color:#1B3866">¿Qué querés hacer?</div><div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:14px">'+bt+'</div><small>También podés arrastrar PDFs y fotos acá. Se pueden mezclar.</small></div>';rs.textContent='';return;}
     g.innerHTML=S.pg.map(function(q,n){
       return '<div class="c'+(S.sel.has(q.id)?' s':'')+'" draggable="true" data-id="'+q.id+'" style="border-color:'+(con&&q.box?color(q.box):'#cbd2de')+'">'+
         '<span class="n">'+(n+1)+'</span><input type="checkbox" class="k" data-k="'+q.id+'" '+(S.sel.has(q.id)?'checked':'')+'>'+
