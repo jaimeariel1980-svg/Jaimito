@@ -96,7 +96,7 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
   <style>
     /* Variables de color */
     :root {
-      --azul-header: #1b365d;
+      --azul-header: #1B3866;
       --gris-fondo: #f4f5f7;
       --texto-oscuro: #333333;
       --borde-tarjeta: #e0e0e0;
@@ -113,7 +113,7 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
 
     /* Encabezado */
     .header {
-      background-color: var(--azul-header);
+      background: linear-gradient(120deg,#1B3866,#0A3D91);
       height: 70px;
       display: flex;
       align-items: center;
@@ -133,7 +133,7 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
       background: white;
       color: var(--azul-header);
       padding: 8px 12px;
-      border-radius: 4px;
+      border-radius: 8px;
       font-weight: bold;
       font-size: 14px;
       text-align: center;
@@ -189,7 +189,7 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
       width: 100%;
       padding: 15px;
       border: 1px solid var(--borde-tarjeta);
-      border-radius: 6px;
+      border-radius: 8px;
       box-sizing: border-box;
       font-family: 'Inter', 'Segoe UI', sans-serif;
       font-size: 14px;
@@ -214,7 +214,7 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
 
     .option-card {
       border: 1px solid var(--borde-tarjeta);
-      border-radius: 6px;
+      border-radius: 8px;
       padding: 20px;
       cursor: pointer;
       transition: all 0.2s;
@@ -256,7 +256,7 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
       flex: 1;
       text-align: center;
       border: 1px solid var(--borde-tarjeta);
-      border-radius: 4px;
+      border-radius: 8px;
       padding: 10px 0;
       cursor: pointer;
     }
@@ -273,11 +273,11 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
 
     /* Botón enviar */
     .btn-submit {
-      background-color: var(--azul-header);
+      background: linear-gradient(120deg,#1B3866,#0A3D91);
       color: white;
       border: none;
       padding: 12px 30px;
-      border-radius: 4px;
+      border-radius: 8px;
       font-size: 15px;
       font-weight: 500;
       cursor: pointer;
