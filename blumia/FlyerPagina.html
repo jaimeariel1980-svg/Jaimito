@@ -63,6 +63,15 @@ textarea{width:100%;border:1.5px solid var(--l);border-radius:8px;padding:8px 10
 #fMail{font-size:calc(34px*var(--k));font-weight:700;color:var(--ft);white-space:nowrap}
 #guiaT,#guiaB{position:absolute;left:0;width:100%;background:rgba(240,96,93,.28);border:2px dashed rgba(240,96,93,.9);z-index:50;display:none;pointer-events:none;color:#fff;font:700 22px Poppins,sans-serif;text-align:center;padding-top:8px}
 #guiaT{top:0;height:250px}#guiaB{bottom:0;height:250px;padding-top:0;padding-bottom:8px;display:none;align-items:flex-end;justify-content:center}
+#modos{position:sticky;top:0;z-index:80;background:#fff;border:1px solid var(--l);border-radius:12px;padding:8px 10px;margin-bottom:10px;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;box-shadow:0 2px 10px rgba(0,0,0,.06)}
+#modos .seg{display:inline-flex;border:1.5px solid var(--g);border-radius:10px;overflow:hidden}
+#modos .seg button{border:0;background:#fff;color:var(--g);font:700 13px var(--font);padding:10px 16px;cursor:pointer;min-height:42px}
+#modos .seg button.on{background:var(--g);color:#fff}
+#mvBox{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;font-size:12px}
+#mvBox #mvSel{font-weight:700;color:var(--g)}
+#mvBox label{display:inline-flex;align-items:center;gap:6px;font-weight:600}
+#mvBox .bt{height:34px}
+#mvBox .ayuda{flex-basis:100%;color:#666;font-size:11px}
 /* ---- acomodar a mano ---- */
 #flyer.mv{touch-action:none;cursor:move}
 #flyer.mv *{user-select:none;-webkit-user-select:none}
@@ -120,16 +129,9 @@ input[type=range]{accent-color:#243D2C}
     <button class="bt ia full" id="btnIA">✨ Generar textos</button>
     <div class="nota" style="margin-top:6px">Redacta bajada, desafíos, requisitos y los posteos con lo que está cargado en el perfil del puesto. Después editás todo directo sobre el flayer.</div></div>
 
-  <div class="sec"><h3>Acomodar a mano</h3>
+  <div class="sec"><h3>Pie del flayer</h3>
     <label class="lb">Alto del pie verde <b id="vFk">100%</b></label><input type="range" id="sFk" aria-label="Alto del pie verde" min="40" max="170" value="100">
-    <div class="nota" style="margin-bottom:8px">En el pie podés escribir más líneas en «Postulate…» (Enter hace un renglón nuevo). El correo y la flecha se mueven por separado.</div>
-    <label class="chk"><input type="checkbox" id="mvOn"> ✥ Mover y cambiar el tamaño de cada bloque</label>
-    <div id="mvBox" style="display:none;margin-top:8px">
-      <div class="nota" id="mvSel" style="font-weight:700">Tocá un bloque del flayer para elegirlo.</div>
-      <label class="lb" style="margin-top:6px">Tamaño del bloque <b id="vMs">100%</b></label><input type="range" id="sMs" aria-label="Tamaño del bloque elegido" min="30" max="250" value="100">
-      <div class="row" style="margin-top:6px"><button class="bt" id="mvRb" style="flex:1">Reiniciar este bloque</button><button class="bt" id="mvRt" style="flex:1">Reiniciar todo</button></div>
-      <div class="nota" style="margin-top:6px">Arrastrá cualquier bloque (título, textos, logo, cinta, QR…). Con las flechas del teclado se mueve de a 1 px (con Shift, de a 10). Mientras esto está prendido no se editan los textos: apagalo para escribir. Cada formato guarda sus propias posiciones.</div>
-    </div></div>
+    <div class="nota" style="margin-bottom:8px">En el pie podés escribir más líneas en «Postulate…» (Enter hace un renglón nuevo). El correo y la flecha se mueven por separado.</div></div>
 
   <div class="sec"><h3>Foto de fondo</h3>
     <div class="row"><label class="bt" for="inBg" style="flex:2">📷 Subir foto</label><button class="bt" id="quitBg">Quitar</button></div><input type="file" id="inBg" accept="image/*" style="display:none">
@@ -184,7 +186,17 @@ input[type=range]{accent-color:#243D2C}
     <div style="display:none"><textarea id="tLi"></textarea><textarea id="tIg"></textarea><textarea id="tWa"></textarea></div></div>
 </div>
 
-<div id="main"><div id="vwrap"><div id="stage">
+<div id="main"><div id="modos" data-html2canvas-ignore="true">
+  <div class="seg" role="group" aria-label="Modo de trabajo"><button type="button" id="mEd" class="on">✏️ Editar textos</button><button type="button" id="mMv">✥ Mover y cambiar tamaño</button></div>
+  <input type="checkbox" id="mvOn" style="display:none">
+  <div id="mvBox" style="display:none">
+    <span id="mvSel">Tocá un bloque del flayer para elegirlo.</span>
+    <label>Tamaño <b id="vMs">100%</b><input type="range" id="sMs" aria-label="Tamaño del bloque elegido" min="30" max="250" value="100" disabled></label>
+    <button type="button" class="bt" id="mvRb">Reiniciar bloque</button><button type="button" class="bt" id="mvRt">Reiniciar todo</button>
+    <span class="ayuda">Arrastrá un bloque · flechas = 1 px (Shift = 10) · doble toque para editar su texto</span>
+  </div>
+</div>
+<div id="vwrap"><div id="stage">
 <div id="flyer">
   <div id="ph"></div><img id="bg" alt=""><div id="ov"></div><div id="guiaT">Acá Instagram pone tu perfil</div><div id="guiaB">Acá Instagram pone «Enviar mensaje»</div>
   <div id="aro"></div><img id="bucle" alt=""><img id="logo" alt=""><img id="logoCli" alt="">
@@ -349,6 +361,9 @@ function mvIniciar(){
   fl.addEventListener('pointermove',function(e){if(!mvDrag)return;var sc=mvEscala(),p=mvPos(mvDrag.k,true);p.x=Math.round(mvDrag.px+(e.clientX-mvDrag.x)/sc);p.y=Math.round(mvDrag.py+(e.clientY-mvDrag.y)/sc);mvAplicar()});
   var fin=function(){if(mvDrag){mvDrag=null;marcar()}};fl.addEventListener('pointerup',fin);fl.addEventListener('pointercancel',fin);
   $('mvOn').onchange=function(){var on=this.checked;fl.classList.toggle('mv',on);$('mvBox').style.display=on?'block':'none';if(!on)mvSel='';mvElegir(mvSel)};
+  function modo(mv){var c=$('mvOn');if(c.checked!==mv){c.checked=mv;c.dispatchEvent(new Event('change'))}$('mEd').classList.toggle('on',!mv);$('mMv').classList.toggle('on',mv)}
+  $('mEd').onclick=function(){modo(false)};$('mMv').onclick=function(){modo(true)};
+  $('flyer').addEventListener('dblclick',function(e){if(!$('mvOn').checked)return;var t=e.target;modo(false);var ed=t.closest?t.closest('[contenteditable]'):null;if(ed){setTimeout(function(){ed.focus()},30)}});
   $('sFk').oninput=function(){S.footK=Number(this.value);$('vFk').textContent=S.footK+'%';aplicar();marcar()};
   $('sMs').oninput=function(){if(!mvSel)return;var p=mvPos(mvSel,true);p.s=Number(this.value);$('vMs').textContent=p.s+'%';mvAplicar();marcar()};
   $('mvRb').onclick=function(){if(!mvSel)return;var f=(S.pos||{})[S.fmt];if(f)delete f[mvSel];mvElegir(mvSel);marcar()};
