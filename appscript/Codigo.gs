@@ -2091,35 +2091,52 @@ function _invalidaNovedades_(){ try{ var c=CacheService.getScriptCache(); c.remo
 function _visitaAgendadaDe_(codigo, cli){
   var seg = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento');
   if(!seg) throw new Error('No existe la pestaña Seguimiento');
-  var v = seg.getDataRange().getValues(), out = [], i;
-  for(i=1;i<v.length;i++) if(String(v[i][0]).trim()===codigo && String(v[i][5]).trim()==='Visita agendada') out.push({fila:i+1, r:v[i], cli:String(v[i][3]||'').trim(), prox:String(v[i][6]||'').trim()});
-  var n = _ndir_(cli), t = n.split(' ')[0];
-  if(n){
-    var f = out.filter(function(x){ var c = _ndir_(x.cli); return c===n || (t.length>2 && c.indexOf(t)>-1); });
-    if(!f.length) throw new Error('No hay una visita agendada de '+cli+' en esta propiedad. Revisá el nombre o cargala desde 🗓 Visitas.');
-    out = f;
+  var v = seg.getDataRange().getValues(), i, ag = [], dirF = '';
+  function esAg(r){ return /^visita agendada$/i.test(String(r[5]).trim()); }
+  for(i=1;i<v.length;i++){
+    if(String(v[i][0]).trim()===codigo && !dirF && String(v[i][12]||'').trim()) dirF = _ndir_(v[i][12]);
+    if(esAg(v[i])) ag.push({fila:i+1, r:v[i], cli:String(v[i][3]||'').trim(), prox:String(v[i][6]||'').trim()});
   }
-  if(!out.length) throw new Error('Esta propiedad no tiene visitas agendadas.');
-  if(out.length>1) throw new Error('Hay '+out.length+' visitas agendadas ('+out.map(function(x){ return (x.cli||'—')+' '+x.prox.replace(/^Visita\s+/,''); }).join(' · ')+'). Poné el nombre completo del cliente.');
-  return out[0];
+  if(!dirF && typeof azcuMapaDirs_==='function'){ try{ dirF = _ndir_(String(azcuMapaDirs_()[codigo]||'').split(' · ')[0]); }catch(e){} }
+  // 1) misma ficha; 2) misma dirección (por si la visita quedó con otro código, caso fichas duplicadas)
+  var out = ag.filter(function(x){ return String(x.r[0]).trim()===codigo; });
+  var n = _ndir_(cli), t = n.split(' ')[0];
+  function porNombre(l){ return n ? l.filter(function(x){ var c = _ndir_(x.cli); return c===n || (t.length>2 && c.indexOf(t)>-1); }) : l; }
+  var f = porNombre(out);
+  if(!f.length && dirF) f = porNombre(ag.filter(function(x){ return String(x.r[0]).trim()!==codigo && _ndir_(x.r[12])===dirF; }));
+  if(!f.length) return null;
+  if(f.length>1) throw new Error('Hay '+f.length+' visitas agendadas ('+f.map(function(x){ return (x.cli||'—')+' '+x.prox.replace(/^Visita\s+/,''); }).join(' · ')+'). Poné el nombre completo del cliente.');
+  return f[0];
 }
+// cancela o reprograma la visita agendada del interesado; si no hay ninguna agendada, no bloquea: cancelar sigue como interacción común (seguir:true) y reprogramar agenda la nueva
 function _cancelarOReprogramar_(codigo, datos){
   var rep = /reprogram/i.test(String(datos.resultado||'')), mot = String(datos.obs||'').trim(), q = String(datos.cargo||datos.quien||'').trim();
   if(!rep && !mot) throw new Error('Anotá el motivo en Observaciones: queda registrado.');
-  var vs = _visitaAgendadaDe_(codigo, datos.interesado), r = vs.r, ext = /^EXT-/.test(codigo), tz = 'GMT-3';
+  var vs = _visitaAgendadaDe_(codigo, datos.interesado), ext = /^EXT-/.test(codigo), tz = 'GMT-3';
+  if(!vs && !rep) return {seguir:true};
+  var ini = null;
+  if(rep){ ini = new Date(datos.cuando); if(!datos.cuando || isNaN(ini.getTime())) throw new Error('Poné la fecha y hora nueva de la visita'); }
+  var r = vs ? vs.r : [], dir = typeof azcuMapaDirs_==='function' ? (azcuMapaDirs_()[codigo]||'') : '';
+  if(!vs){ // reprogramar sin visita agendada: solo se agenda la nueva
+    var b0 = {cuando:datos.cuando, interesado:String(datos.interesado||'').trim(), tel:String(datos.tel||''), obs:mot ? 'Reprogramada: '+mot : 'Reprogramada', vendedor:String(datos.vendedor||''), quien:q, mail:datos.mail||''};
+    var r0 = ext ? registrarVisitaExterna({codigo:codigo, cuando:b0.cuando, interesado:b0.interesado, tel:b0.tel, obs:b0.obs, vendedor:b0.vendedor, quien:q, mail:b0.mail}) : agendarVisita(codigo, {cuando:b0.cuando, interesado:b0.interesado, tel:b0.tel, obs:b0.obs, vendedor:b0.vendedor, quien:q, mail:b0.mail, dir:dir});
+    if(r0 && r0.duplicada) throw new Error('Ya hay una visita de ese cliente en esa fecha y hora.');
+    return {ok:true, reprogramada:true, sinAgendada:true};
+  }
   if(!rep){ cancelarVisita(vs.fila, mot, q); return {ok:true, cancelada:true}; }
-  var ini = new Date(datos.cuando); if(!datos.cuando || isNaN(ini.getTime())) throw new Error('Poné la fecha y hora nueva de la visita');
   var nuevo = 'Visita '+Utilities.formatDate(ini, tz, 'dd/MM/yyyy HH:mm');
   if(nuevo===vs.prox) throw new Error('Es la misma fecha y hora que ya tiene agendada.');
+  var codV = String(r[0]).trim(), extV = /^EXT-/.test(codV), dirV = typeof azcuMapaDirs_==='function' ? (azcuMapaDirs_()[codV]||'') : '';
   var base = {cuando:datos.cuando, interesado:String(r[3]||'').trim(), tel:String(r[4]||''), obs:mot ? 'Reprogramada: '+mot : 'Reprogramada', vendedor:String(r[9]||''), quien:q, inmob:String(r[11]||''), colega:String(r[15]||'')};
-  var rn = ext ? registrarVisitaExterna({codigo:codigo, cuando:datos.cuando, interesado:base.interesado, tel:base.tel, obs:base.obs, vendedor:base.vendedor, quien:q, inmob:base.inmob, colega:base.colega, mail:datos.mail||''})
-               : agendarVisita(codigo, {cuando:datos.cuando, interesado:base.interesado, tel:base.tel, obs:base.obs, vendedor:base.vendedor, quien:q, inmob:base.inmob, colega:base.colega, mail:datos.mail||'', dir:(typeof azcuMapaDirs_==='function' ? (azcuMapaDirs_()[codigo]||'') : '')});
+  var rn = extV ? registrarVisitaExterna({codigo:codV, cuando:datos.cuando, interesado:base.interesado, tel:base.tel, obs:base.obs, vendedor:base.vendedor, quien:q, inmob:base.inmob, colega:base.colega, mail:datos.mail||''})
+                : agendarVisita(codV, {cuando:datos.cuando, interesado:base.interesado, tel:base.tel, obs:base.obs, vendedor:base.vendedor, quien:q, inmob:base.inmob, colega:base.colega, mail:datos.mail||'', dir:dirV});
   if(rn && rn.duplicada) throw new Error('Ya hay una visita de ese cliente en esa fecha y hora.');
   cancelarVisita(vs.fila, 'pasó al '+Utilities.formatDate(ini, tz, 'dd/MM HH:mm')+(mot ? ' · '+mot : ''), q, true);
   return {ok:true, reprogramada:true};
 }
 function registrarInteraccion(codigo, datos){
-  if(/^(Visita cancelada|Reprogramar visita)$/i.test(String((datos||{}).resultado||'').trim())) return _cancelarOReprogramar_(String(codigo).trim(), datos);
+  var sinAg = false;
+  if(/^(Visita cancelada|Reprogramar visita)$/i.test(String((datos||{}).resultado||'').trim())){ var hk = _cancelarOReprogramar_(String(codigo).trim(), datos); if(!hk.seguir) return hk; sinAg = true; }
   var ss=SpreadsheetApp.openById(MAESTRO_ID);
   var seg=ss.getSheetByName('Seguimiento');
   if(!seg)throw new Error('No existe la pestaña Seguimiento');
@@ -2154,7 +2171,7 @@ function registrarInteraccion(codigo, datos){
   try{ if(!String(seg.getRange(1,11).getValue()).trim()) seg.getRange(1,11).setValue('Cargó'); }catch(e){}
   if(/Propuesta aceptada/i.test(String(datos.resultado||''))) _extAReserva_(codigo, datos.cargo);
   _invalidaNovedades_();
-  return {ok:true};
+  return sinAg ? {ok:true, sinAgendada:true} : {ok:true};
 }
 function editarInteraccion(filaSeg, datos){
   var ss=SpreadsheetApp.openById(MAESTRO_ID);
@@ -2574,7 +2591,7 @@ function registrarVisitaExterna(datos){
   datos = datos||{};
   var cli = String(datos.interesado||'').trim(), dir = String(datos.dir||'').trim(), inmob = String(datos.inmob||'').trim(), link = String(datos.link||'').trim(), precio = String(datos.precio||'').trim(), colega = String(datos.colega||'').trim(), tipo = String(datos.tipo||'').trim(), codigo = String(datos.codigo||'').trim(), explicito = !!codigo, i;
   if(!cli) throw new Error('Falta el nombre del cliente');
-  if(codigo && /^(Visita cancelada|Reprogramar visita)$/i.test(String(datos.resultado||'').trim())) return _cancelarOReprogramar_(codigo, datos);
+  if(codigo && /^(Visita cancelada|Reprogramar visita)$/i.test(String(datos.resultado||'').trim())){ var hk = _cancelarOReprogramar_(codigo, datos); if(!hk.seguir) return hk; }
   var seg = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento');
   if(!seg) throw new Error('No existe la pestaña Seguimiento');
   SEG_EXT_.forEach(function(n, k){ var c = seg.getRange(1, 11+k); if(!String(c.getValue()).trim()) c.setValue(n); });

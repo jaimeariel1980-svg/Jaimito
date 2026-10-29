@@ -1183,7 +1183,7 @@ function guardarConsulta(id){
   if(/^Reprogramar/.test(datos.resultado)){ const c=g('cf_cuando'); if(!c){ alert('Poné la fecha y hora nueva de la visita'); return; } datos.cuando=new Date(c).toISOString(); }
   const btn=document.getElementById('cf_btn'); if(btn){btn.textContent='Guardando…';btn.disabled=true;}
   google.script.run
-    .withSuccessHandler(function(){ if(/Propuesta aceptada/i.test(datos.resultado)){google.script.run.guardarPropiedad(id,{etapa:'Reserva',quien:_yo()});festejar(null,'reserva');} closeDL(); recargar(id); })
+    .withSuccessHandler(function(r){ if(/Propuesta aceptada/i.test(datos.resultado)){google.script.run.guardarPropiedad(id,{etapa:'Reserva',quien:_yo()});festejar(null,'reserva');} closeDL(); recargar(id); if(r&&r.sinAgendada)setTimeout(function(){alert(/^Reprogramar/.test(datos.resultado)?'No había una visita agendada de '+datos.interesado+': se agendó la nueva.':'No encontré una visita agendada de '+datos.interesado+' en esta propiedad: la cancelación quedó registrada igual.');},300); })
     .withFailureHandler(function(e){ alert('Error: '+(e&&e.message?e.message:e)); if(btn){btn.textContent='Registrar';btn.disabled=false;} })
     .registrarInteraccion(id, datos);
 }
