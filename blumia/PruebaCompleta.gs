@@ -81,6 +81,18 @@ function pruebaCompleta_(op) {
       return Math.round(h.length / 1024) + ' KB';
     }));
 
+    // 3b. búsqueda ciega
+    paso('Búsqueda ciega: sin nombre ni logo de la empresa para el candidato', () => {
+      try {
+        setConfigCampo_(c.id, 'busqueda_ciega', 'SI');
+        const cfgC = getConfig(c.id), h = getHeroPostulacion(c.id), fd = flyerDatos_(c.id);
+        requiere(!h.logo && !h.empresa && String(h.loc).indexOf('Prueba Blumia') < 0, 'La postulación todavía muestra la empresa: «' + h.loc + '»');
+        requiere(empresaParaCandidatos_(cfgC).indexOf('Prueba Blumia') < 0, 'Los mensajes todavía nombran a la empresa');
+        requiere(fd.ciega && String(fd.empresa).indexOf('Prueba Blumia') < 0, 'El flyer todavía nombra a la empresa');
+      } finally { setConfigCampo_(c.id, 'busqueda_ciega', 'NO'); }
+      return 'OK';
+    });
+
     // 4. postulación
     const dni = '9' + String(Date.now()).slice(-7);
     const cand = { nombre: 'Prueba Candidato Uno', telefono: '3415550000', dni: dni, email: email, nivelFormacion: 'Universitario', estadoFormacion: 'Completo', tituloFormacion: 'Lic. en Administración', remuneracion: '1000000', localidad: 'Rosario', movilidad: 'Sí' };
