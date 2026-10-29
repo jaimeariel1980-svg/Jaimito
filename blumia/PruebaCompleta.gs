@@ -89,6 +89,14 @@ function pruebaCompleta_(op) {
       return e.total + ' candidatos';
     });
 
+    paso('Vaciar búsqueda: pide el nombre y no borra con otro', () => {
+      const i = vaciarBusquedaInfo_(c.id);
+      let frenó = false;
+      try { vaciarBusqueda_(c.id, 'nombre equivocado ' + Date.now(), 'Prueba'); } catch (e) { frenó = /No borré nada/.test(String(e && e.message)); }
+      requiere(frenó, 'Vaciar la búsqueda no frenó con un nombre equivocado');
+      return i.candidatos + ' candidatos (no se borró nada)';
+    });
+
     // 3b. búsqueda ciega
     paso('Búsqueda ciega: sin nombre ni logo de la empresa para el candidato', () => {
       try {
