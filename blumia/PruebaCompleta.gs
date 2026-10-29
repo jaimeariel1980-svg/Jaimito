@@ -110,6 +110,13 @@ function pruebaCompleta_(op) {
       return Object.keys(m).length + ' evaluaciones con entrevistador';
     });
 
+    paso('Remitente de los mails de Blumia', () => {
+      const r = remitenteBlumia_();
+      requiere(/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(r), 'El remitente no es una dirección válida: ' + r);
+      let alias = false; try { alias = GmailApp.getAliases().some(a => String(a).toLowerCase() === r.toLowerCase()); } catch (e) { }
+      return r + (alias ? ' (alias dado de alta en Gmail)' : ' (SIN dar de alta como remitente en Gmail: los mails salen de la cuenta del sistema)');
+    });
+
     // 3b. búsqueda ciega
     paso('Búsqueda ciega: sin nombre ni logo de la empresa para el candidato', () => {
       try {

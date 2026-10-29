@@ -47,3 +47,21 @@ function hojaProceso_(empresa) {
   const e = empresa || empresaDefault_(), k = EMPRESAS_CONOCIDAS_[e];
   return k && k.hoja ? k.hoja : 'Informe_Proceso_' + e;
 }
+
+/* Mails que ve el candidato o el cliente (29/10, Ariel: «tiene que salir de Blumia Consulting»): salen con el nombre «Blumia Consulting» y desde la dirección
+   de la empresa (propiedad del script MAIL_ENVIO; si no está, empleos@blumiaconsulting.com). Para que el remitente sea esa dirección, tiene que estar dada de alta en
+   Gmail de la cuenta del sistema (Configuración → Cuentas → «Enviar como»); si no lo está, el mail igual sale (de la cuenta del sistema, con el nombre de Blumia) y las
+   respuestas van a la dirección de la empresa. Devuelve { alias, desde }. */
+function remitenteBlumia_() {
+  const p = PropertiesService.getScriptProperties().getProperty('MAIL_ENVIO');
+  return String(p || 'empleos@blumiaconsulting.com').trim();
+}
+function enviarMailBlumia_(para, asunto, cuerpo, opciones) {
+  const o = Object.assign({ name: 'Blumia Consulting' }, opciones || {});
+  const desde = remitenteBlumia_();
+  let alias = false;
+  try { alias = GmailApp.getAliases().some(a => String(a).toLowerCase() === desde.toLowerCase()); } catch (e) { }
+  if (alias) o.from = desde; else if (!o.replyTo) o.replyTo = desde;
+  GmailApp.sendEmail(para, asunto, cuerpo, o);
+  return { alias: alias, desde: alias ? desde : Session.getEffectiveUser().getEmail() };
+}

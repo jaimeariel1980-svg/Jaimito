@@ -2644,7 +2644,7 @@ function enviarMailDescarte(perfilId, fila) {
   }
 
   try {
-    GmailApp.sendEmail(mail, asunto, cuerpo);
+    enviarMailBlumia_(mail, asunto, cuerpo);
     sh.getRange(fila, 40).setValue('Enviado ' + Utilities.formatDate(new Date(), 'GMT-3', 'dd/MM/yyyy'));
     return { ok:true };
   } catch(e) {
@@ -2692,7 +2692,7 @@ function enviarDescartesMasivo_(perfilId, textoSin, textoPost, quien) {
     }
 
     try {
-      GmailApp.sendEmail(mail, asunto, cuerpo, {from:'empleos@blumiaconsulting.com', name:'Blumia Consulting'});
+      enviarMailBlumia_(mail, asunto, cuerpo);
       sh.getRange(i + 1, 40).setValue('Enviado ' + Utilities.formatDate(new Date(), 'GMT-3', 'dd/MM/yyyy'));
       registrarHistorial_(sh.getName(), d[i][1], 'Mail de descarte', 'Enviado (' + (esSin ? 'sin screening' : 'post screening') + ')');
       enviados++;
