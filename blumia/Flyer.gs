@@ -44,7 +44,7 @@ function flyerDatos_(perfilId) {
     ubicacion: String(hero.ubicacion || ''),
     instancia: String(hero.instancia || ''),
     linkPostulacion: URL_WEBAPP + '?tipo=postulacion&perfil=' + encodeURIComponent(perfilId),
-    mail: 'empleos@blumiaconsulting.com',
+    mail: String(cfg.email_postulacion || 'empleos@blumiaconsulting.com'),
     linkViejo: (typeof cfg.link_flyer === 'string') ? cfg.link_flyer : '',
     guardado: guardado,
     fecha: fecha
