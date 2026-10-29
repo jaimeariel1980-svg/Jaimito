@@ -263,6 +263,8 @@ function registroApi_() {
     ibAnalizar: { f: ibAnalizar_ },
     ibRedactar: { f: ibRedactar_ },
     rankingGuardar: { f: rankingGuardar_ },
+    vaciarBusquedaInfo: { f: vaciarBusquedaInfo_, admin: true },
+    vaciarBusqueda: { f: vaciarBusqueda_, admin: true },
     flyerTextosIA: { f: flyerTextosIA_ },
     flyerSocial: { f: flyerSocial_ },
     difusionGuardar: { f: difusionGuardar_, admin: true },

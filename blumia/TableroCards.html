@@ -114,6 +114,15 @@ header{min-height:86px}
   function rkGuardar(l,ant){google.script.run.withSuccessHandler(function(){toast();}).withFailureHandler(function(e){DATA.forEach(function(c){c.ordenCli=ant[c.fila]||0;});renderBoardN();blAlert('No se pudo guardar el orden: '+((e&&e.message)||e));}).rankingGuardar(PERFIL,l.map(function(f){var c=DATA.find(function(x){return x.fila===f;});return {fila:f,val:c&&c.valCli||'Se ajusta'};}));}
   window.rkVal=function(fila,v){var c=DATA.find(function(x){return x.fila===fila;});if(!c)return;var ant={};DATA.forEach(function(x){ant[x.fila]=x.ordenCli;});c.valCli=v;
     rkGuardar(DATA.filter(function(x){return x.ordenCli>0;}).sort(function(a,b){return a.ordenCli-b.ordenCli;}).map(function(x){return x.fila;}),ant);};
+  window.vaciarBusqueda=function(){
+    google.script.run.withSuccessHandler(function(i){
+      if(!i.candidatos){blAlert('La búsqueda no tiene candidatos para borrar.');return;}
+      blPrompt('Esto borra los '+i.candidatos+' candidatos de «'+i.nombre+'» con su historial, contactos y evaluaciones, y manda sus archivos de Drive a la papelera. No se puede deshacer desde acá. Para confirmar, escribí el nombre de la búsqueda:','',function(t){
+        blAlert('Vaciando la búsqueda… puede tardar un momento.');
+        google.script.run.withSuccessHandler(function(r){blAlert('Listo: se borraron '+r.candidatos+' candidatos, '+r.historial+' movimientos de historial y '+r.archivos+' archivos pasaron a la papelera de Drive.',function(){window.top.location.reload();});}).withFailureHandler(function(e){blAlert((e&&e.message)||e);}).vaciarBusqueda(PERFIL,t,quienSoy());
+      },{titulo:'Vaciar la búsqueda',si:'Borrar todo',peligro:true});
+    }).withFailureHandler(function(e){blAlert((e&&e.message)||e);}).vaciarBusquedaInfo(PERFIL);
+  };
   window.rkSet=function(fila,pos){
     var l=DATA.filter(function(c){return c.ordenCli>0&&c.fila!==fila;}).sort(function(a,b){return a.ordenCli-b.ordenCli;}).map(function(c){return c.fila;});
     if(pos>0)l.splice(Math.min(pos-1,l.length),0,fila);
