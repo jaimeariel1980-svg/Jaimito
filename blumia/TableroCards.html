@@ -107,9 +107,10 @@ header{min-height:86px}
     if(m.t!=='desc'&&m.lv>=3){var nr=DATA.filter(function(x){var mm=metEstado(x.estado);return mm&&mm.t!=='desc'&&mm.lv>=3;}).length,op='<option value="0">Sin orden</option>';for(var q=1;q<=Math.max(nr,1);q++)op+='<option value="'+q+'"'+(c.ordenCli===q?' selected':'')+'>'+q+'</option>';
       rk='<div class="ln rk"><i>🏆</i><label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#0F3F27;white-space:nowrap" title="Orden para el cliente (PDF)">Orden <select aria-label="Orden para el cliente" onclick="event.stopPropagation()" onchange="event.stopPropagation();rkSet('+c.fila+',+this.value)" style="height:30px;width:64px;border:1.5px solid var(--line);border-radius:8px;padding:0 6px;font:700 12px inherit;font-family:inherit;background:#fff">'+op+'</select></label></div>';
       if(c.ordenCli>0){var vv=c.valCli||'Se ajusta';rk+='<div class="ln rk"><i></i><select aria-label="Valoración para el cliente" title="Valoración en el PDF para el cliente" onclick="event.stopPropagation()" onchange="event.stopPropagation();rkVal('+c.fila+',this.value)" style="height:30px;max-width:100%;border:1.5px solid var(--line);border-radius:8px;padding:0 6px;font:700 12px inherit;font-family:inherit;background:#fff">'+['Se ajusta','Se ajusta con observaciones'].map(function(o){return '<option'+(vv===o?' selected':'')+'>'+o+'</option>';}).join('')+'</select></div>';}}
+    var enE=c.entComp?['Competencias',c.entComp]:(c.entScr?['Screening',c.entScr]:null);
     return '<div class="card '+notaCls(n)+'" data-fila="'+c.fila+'" onclick="ficha('+c.fila+')">'
       +'<div class="top"><b>'+esc(c.nombre)+'</b><div class="bdg">'+(n?'<span class="nota '+notaClsBadge(n)+'">'+esc(n)+'</span><small>'+ep+'</small>':'')+'</div></div>'+fo+ub+pr
-      +rk+(t1?'<div class="ln"><i>🗓</i><div class="tags">'+t1+'</div></div>':'')+(fl?'<div class="ln"><i>⚑</i><div class="tags">'+fl+'</div></div>':'')+'</div>';
+      +rk+(t1?'<div class="ln"><i>🗓</i><div class="tags">'+t1+'</div></div>':'')+(fl?'<div class="ln"><i>⚑</i><div class="tags">'+fl+'</div></div>':'')+(enE?'<div class="ent" title="Quién hizo la última entrevista: '+esc(enE[1])+' ('+enE[0].toLowerCase()+')">Entrevistó <b>'+esc(String(enE[1]).split(' ')[0])+'</b> · '+enE[0].toLowerCase()+'</div>':'')+'</div>';
   };
   function rkGuardar(l,ant){google.script.run.withSuccessHandler(function(){toast();}).withFailureHandler(function(e){DATA.forEach(function(c){c.ordenCli=ant[c.fila]||0;});renderBoardN();blAlert('No se pudo guardar el orden: '+((e&&e.message)||e));}).rankingGuardar(PERFIL,l.map(function(f){var c=DATA.find(function(x){return x.fila===f;});return {fila:f,val:c&&c.valCli||'Se ajusta'};}));}
   window.rkVal=function(fila,v){var c=DATA.find(function(x){return x.fila===fila;});if(!c)return;var ant={};DATA.forEach(function(x){ant[x.fila]=x.ordenCli;});c.valCli=v;
@@ -297,7 +298,7 @@ header{min-height:86px}
       +'<div class="fpw"><button class="fpe" title="Editar datos del candidato" onclick="panelTog(\'edPanel\')">✏️</button><div class="fp"><div class="pn"><h4>Contacto</h4>'+row('Teléfono',esc(fmtTel(c.tel)))+row('Email',esc(c.mail))+row('Zona',esc(c.zona))+'</div>'
       +'<div class="pn"><h4>Postulación</h4>'+row('Recibido',esc(c.recibido))+row('Llegó por',esc(c.fuente))+row('Formación',esc(fmtForm(c.formacion)))+row('Pretensión',c.pretension?'$'+fmtMiles(c.pretension):'')+'</div></div></div>'+editarHtml(c)
       +(c.resumen?'<div class="sec">Análisis del CV</div><div class="fres" style="margin:0">'+esc(c.resumen)+'</div>':'')
-      +'<div class="sec">Calificaciones</div>'+notas
+      +'<div class="sec">Calificaciones</div>'+notas+((c.entScr||c.entComp)?row('Entrevistó',[c.entScr?esc(c.entScr)+' (screening)':'',c.entComp?esc(c.entComp)+' (competencias)':''].filter(Boolean).join(' · ')):'')
       +((c.cita||c.historial)?'<div class="sec">Entrevistas (calendario)</div>'+row('Cita agendada',esc(c.cita)+(c.citaCon?' · con '+esc(c.citaCon):''))+(c.historial?'<div style="white-space:pre-line;font-size:13px">'+esc(c.historial)+'</div>':''):'')
       +'<div class="sec">Contacto con el candidato</div>'+contacto
       +'<div class="sec">Observaciones</div><textarea id="gObs" rows="3" placeholder="Ampliá cualquier dato del candidato">'+esc(c.obs||'')+'</textarea><div class="obsb"><button class="mbtn sm" id="gObsB" onclick="guardarObs('+c.fila+',this)">Guardar</button></div>'
@@ -629,6 +630,7 @@ header h1{font-size:15px;line-height:1.25;flex:1 1 100%;min-width:0;display:-web
 <style id="icons">
 .ic{display:inline-block;width:1.15em;height:1.15em;vertical-align:-.2em;line-height:1;flex:none;margin-right:.4em}.ic.z{margin-right:0}
 .ic svg{position:static!important;width:100%!important;height:100%!important;max-width:none!important;inset:auto!important;transform:none!important;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:block}
+.card .ent{margin-top:6px;font-size:11px;color:#6b7a70;line-height:1.2}.card .ent b{color:#0F3F27;font-weight:700}
 </style>
 <script>
 (function(){
