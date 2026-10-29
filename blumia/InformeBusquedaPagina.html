@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Informe de la búsqueda | Blumia</title>
+%%FUENTE%%
+<style>
+:root{--g:#0F3F27;--m:#E3EEDC;--l:#D5E0CE;--bg:#EEF7EE;--c:#FEE795;--font:'PP Pangram Sans','Poppins',sans-serif}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--font);background:var(--bg);color:#1A1A1A;font-size:14px;line-height:1.5}
+header{background:var(--g);color:#fff;padding:22px 28px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+header .t{flex:1;min-width:220px}header .e{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--c);font-weight:800}header h1{font-size:24px;letter-spacing:-.02em;line-height:1.15}
+.bt{height:40px;border-radius:8px;border:1.5px solid var(--l);background:var(--m);color:var(--g);font:700 13px var(--font);cursor:pointer;padding:0 16px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
+.bt:hover{border-color:var(--g)}.bt.pri{background:var(--g);color:#fff;border-color:var(--g)}.bt.am{background:var(--c);border-color:var(--c)}.bt:disabled{opacity:.6;cursor:default}
+main{max-width:900px;margin:0 auto;padding:24px 28px 60px}
+.paso{background:#fff;border:1px solid var(--l);border-radius:12px;padding:22px;margin-bottom:18px}
+.paso>h2{font-size:18px;color:var(--g);margin-bottom:4px;display:flex;align-items:center;gap:10px}.paso>h2 i{font-style:normal;width:28px;height:28px;border-radius:50%;background:var(--c);display:inline-flex;align-items:center;justify-content:center;font-size:14px}
+.paso>.sub{color:#666;font-size:13px;margin-bottom:14px}
+.nums{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}.num{background:var(--bg);border-radius:8px;padding:12px;border-top:3px solid var(--g)}.num b{font-size:28px;color:var(--g);line-height:1;display:block}.num span{font-size:11px;font-weight:700;color:#555}
+.hz{border:1.5px solid var(--l);border-radius:8px;padding:12px;margin-bottom:10px;display:grid;grid-template-columns:auto 1fr;gap:6px 12px}.hz.off{opacity:.45}.hz input[type=checkbox]{width:20px;height:20px;margin-top:4px;accent-color:var(--g)}
+.hz input[type=text],.hz textarea,.pg textarea{width:100%;border:1.5px solid var(--l);border-radius:8px;padding:8px 10px;font:500 13px/1.4 var(--font);background:#fff}.hz input[type=text]{font-weight:700;height:36px}.hz textarea,.pg textarea{resize:vertical;min-height:54px}
+.tag{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:2px 8px;border-radius:99px;justify-self:start}.tag.positivo{background:#CDE7CE;color:#0F3F27}.tag.atencion{background:#FBC67B;color:#5a3a00}.tag.dato{background:#B4E1E0;color:#0b4a49}
+.pg{margin-bottom:16px}.pg b{display:block;margin-bottom:6px;color:var(--g)}.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px}.chip{border:1.5px solid var(--l);background:var(--bg);border-radius:999px;padding:5px 12px;font:600 12px var(--font);cursor:pointer;color:var(--g)}.chip:hover{border-color:var(--g)}
+.carga{padding:30px;text-align:center;color:#555}.err{background:#fde8e8;color:#8a1c1c;border-radius:8px;padding:12px;margin-top:10px}
+.res{background:var(--bg);border-left:4px solid var(--g);border-radius:8px;padding:16px;margin-top:14px}.res h3{color:var(--g);margin-bottom:6px}
+@media(max-width:640px){main{padding:16px}header{padding:16px}.nums{grid-template-columns:1fr 1fr}.hz{grid-template-columns:1fr}.hz input[type=checkbox]{margin:0}}
+</style></head><body>
+<header><div class="t"><div class="e">Informe para el cliente</div><h1 id="hT"></h1></div><a class="bt" id="hVol" href="#">← Volver al tablero</a></header>
+<main>
+<div class="paso" id="p1"><h2><i>1</i>Lo que muestran los números</h2><div class="sub">La IA analiza la búsqueda y propone hallazgos. Dejá los que sirven, corregí lo que haga falta y sumá los tuyos.</div><div id="b1"><div class="carga">Analizando la búsqueda… (unos 20 segundos)</div></div></div>
+<div class="paso" id="p2" style="display:none"><h2><i>2</i>Lo que los números no dicen</h2><div class="sub">Contestá lo que quieras (tocá una sugerencia o escribí); lo que dejes vacío se saltea.</div><div id="b2"></div></div>
+<div class="paso" id="p3" style="display:none"><h2><i>3</i>Redactar el informe</h2><div class="sub">Se arma con tus hallazgos y respuestas, y queda editable antes de presentarlo.</div><button class="bt pri" id="bRed">✨ Redactar informe</button><div id="b3"></div></div>
+</main>
+<script>
+var DATOS=%%DATOS%%;
+function $(i){return document.getElementById(i)}
+function esc(t){return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;')}
+$('hT').textContent=DATOS.puesto+' · '+DATOS.empresa;
+$('hVol').onclick=function(e){e.preventDefault();window.top.location.href=DATOS.volver};
+var R=null,HZ=[];
+function pintarHz(){var b=$('hzL');b.innerHTML='';HZ.forEach(function(h,i){var d=document.createElement('div');d.className='hz'+(h.on?'':' off');
+  d.innerHTML='<input type="checkbox" '+(h.on?'checked':'')+' aria-label="Incluir"><div><span class="tag '+h.tipo+'">'+({positivo:'A favor',atencion:'Atención',dato:'Dato'}[h.tipo]||'Dato')+'</span></div><span></span><input type="text" value="'+esc(h.titulo)+'" aria-label="Título"><span></span><textarea aria-label="Detalle">'+esc(h.detalle)+'</textarea>';
+  d.querySelector('input[type=checkbox]').onchange=function(){h.on=this.checked;d.classList.toggle('off',!h.on)};
+  d.querySelector('input[type=text]').oninput=function(){h.titulo=this.value};d.querySelector('textarea').oninput=function(){h.detalle=this.value};b.appendChild(d)})}
+function pintar(r){R=r;var e=r.est,n=function(a,l){return '<div class="num"><b>'+a+'</b><span>'+l+'</span></div>'};
+  HZ=r.hallazgos.map(function(h){h.on=true;return h});
+  $('b1').innerHTML='<div class="nums">'+n(e.total,'CVs recibidos')+n(e.scr,'Pasaron screening')+n(e.comp,'Competencias')+n(e.emp,'Avanzan a empresa')+'</div><div id="hzL"></div><button class="bt" id="hzAdd">+ Agregar hallazgo propio</button>'+(r.hallazgos.length?'':'<div class="err">La IA no pudo proponer hallazgos ahora. Podés escribir los tuyos.</div>');
+  $('hzAdd').onclick=function(){HZ.push({id:'x'+HZ.length,titulo:'',detalle:'',tipo:'dato',on:true});pintarHz()};pintarHz();
+  var h2='';r.preguntas.forEach(function(p,i){h2+='<div class="pg"><b>'+esc(p.texto)+'</b><div class="chips">'+p.sugeridas.map(function(s){return '<button type="button" class="chip" data-q="'+i+'">'+esc(s)+'</button>'}).join('')+'</div><textarea data-q="'+i+'" placeholder="Tu respuesta (opcional)"></textarea></div>'});
+  $('b2').innerHTML=h2;[].forEach.call(document.querySelectorAll('.chip'),function(c){c.onclick=function(){var t=document.querySelector('textarea[data-q="'+c.getAttribute('data-q')+'"]');t.value=c.textContent;t.focus()}});
+  $('p2').style.display='block';$('p3').style.display='block'}
+google.script.run.withSuccessHandler(pintar).withFailureHandler(function(e){$('b1').innerHTML='<div class="err">No se pudo analizar: '+esc((e&&e.message)||e)+'</div>'}).ibAnalizar(DATOS.perfil);
+$('bRed').onclick=function(){var b=this,t=b.textContent;var hs=HZ.filter(function(h){return h.on&&h.titulo.trim()}).map(function(h){return {titulo:h.titulo,detalle:h.detalle}});
+  if(!hs.length){$('b3').innerHTML='<div class="err">Dejá al menos un hallazgo tildado.</div>';return}
+  var rs=[];[].forEach.call(document.querySelectorAll('textarea[data-q]'),function(a){var v=a.value.trim();if(v)rs.push({pregunta:R.preguntas[+a.getAttribute('data-q')].texto,respuesta:v})});
+  b.disabled=true;b.textContent='Redactando… (puede tardar un minuto)';$('b3').innerHTML='';
+  google.script.run.withSuccessHandler(function(r){b.disabled=false;b.textContent='✨ Volver a redactar';var i=r.informe;
+    $('b3').innerHTML='<div class="res"><h3>'+esc(i.titulo)+'</h3><p>'+esc(i.resumen)+'</p><p style="margin-top:10px;font-size:12px;color:#555">'+i.hallazgos.length+' hallazgos · '+i.recomendaciones.length+' recomendaciones · '+i.proximos.length+' próximos pasos</p></div><div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap"><a class="bt pri" target="_blank" href="'+esc(r.url)+'">Abrir informe para revisar y presentar</a></div><p style="font-size:12px;color:#666;margin-top:8px">En el informe podés editar cualquier texto y tocar «Guardar cambios». Para pasarlo a PDF: Ctrl+P → Guardar como PDF.</p>'})
+   .withFailureHandler(function(e){b.disabled=false;b.textContent=t;$('b3').innerHTML='<div class="err">No se pudo redactar: '+esc((e&&e.message)||e)+'</div>'}).ibRedactar(DATOS.perfil,hs,rs)};
+</script></body></html>

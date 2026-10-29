@@ -260,6 +260,8 @@ function registroApi_() {
     guardarDatosCandidato: { f: guardarDatosCandidato_ },
     guardarEnPlanilla: { f: guardarEnPlanilla_ },
     flyerGuardar: { f: flyerGuardar_ },
+    ibAnalizar: { f: ibAnalizar_ },
+    ibRedactar: { f: ibRedactar_ },
     flyerTextosIA: { f: flyerTextosIA_ },
     flyerSocial: { f: flyerSocial_ },
     difusionGuardar: { f: difusionGuardar_, admin: true },
