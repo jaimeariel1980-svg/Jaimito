@@ -8,20 +8,24 @@ function iaCacheKey_(pref, perfilId, cand) {
   return pref + h;
 }
 
-function transcribirAudio_(pin, perfilId, cand, b64, mime) {
-  pinValido_(pin);
+function transcribirBlob_(b64, mime, contexto) {
   if (!b64 || String(b64).length > 33000000) throw new Error('El audio está vacío o es demasiado largo');
   const tipo = String(mime || 'audio/webm').split(';')[0];
   const ext = /mp4|m4a/.test(tipo) ? 'm4a' : /ogg/.test(tipo) ? 'ogg' : /wav/.test(tipo) ? 'wav' : 'webm';
   const blob = Utilities.newBlob(Utilities.base64Decode(b64), tipo, 'audio.' + ext);
   const pedir = modelo => UrlFetchApp.fetch('https://api.openai.com/v1/audio/transcriptions', {
     method: 'post', muteHttpExceptions: true, headers: { Authorization: 'Bearer ' + OPENAI_API_KEY },
-    payload: { file: blob, model: modelo, language: 'es', prompt: 'Entrevista de selección de personal por competencias, en castellano rioplatense.' }
+    payload: { file: blob, model: modelo, language: 'es', prompt: contexto || 'Entrevista de selección de personal por competencias, en castellano rioplatense.' }
   });
   let parsed = JSON.parse(pedir('gpt-4o-mini-transcribe').getContentText());
   if (parsed.error) parsed = JSON.parse(pedir('whisper-1').getContentText());
   if (parsed.error) throw new Error('No se pudo transcribir: ' + parsed.error.message);
-  const texto = String(parsed.text || '').trim();
+  return String(parsed.text || '').trim();
+}
+
+function transcribirAudio_(pin, perfilId, cand, b64, mime) {
+  pinValido_(pin);
+  const texto = transcribirBlob_(b64, mime);
   if (perfilId && cand) guardarTransParcial_(perfilId, cand, texto);
   return texto;
 }
