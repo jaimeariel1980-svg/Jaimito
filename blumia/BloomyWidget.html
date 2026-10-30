@@ -1,7 +1,7 @@
 <style id="bloomycss">
-#bmFab{position:fixed;right:14px;bottom:14px;width:64px;height:64px;border-radius:50%;border:0;padding:0;background:#FCE894;border:3px solid #0F3F27;box-shadow:0 6px 18px rgba(15,63,39,.45);cursor:pointer;z-index:95;overflow:hidden;transition:transform .15s}
+#bmFab{position:fixed;right:14px;bottom:14px;width:84px;height:84px;border-radius:50%;border:0;padding:0;background:#FCE894;border:3px solid #0F3F27;box-shadow:0 6px 18px rgba(15,63,39,.45);cursor:pointer;z-index:95;overflow:hidden;transition:transform .15s}
 #bmFab:hover{transform:scale(1.07)}#bmFab svg{width:100%;height:100%;display:block}
-#bmTip{position:fixed;right:88px;bottom:30px;background:#0F3F27;color:#fff;font:600 13px var(--font,sans-serif);padding:8px 13px;border-radius:12px 12px 2px 12px;z-index:95;box-shadow:0 4px 14px rgba(0,0,0,.2)}
+#bmTip{position:fixed;right:108px;bottom:38px;background:#0F3F27;color:#fff;font:600 13px var(--font,sans-serif);padding:8px 13px;border-radius:12px 12px 2px 12px;z-index:95;box-shadow:0 4px 14px rgba(0,0,0,.2)}
 .bm-blink{animation:bmblink 4.5s infinite;transform-origin:center;transform-box:fill-box}
 @keyframes bmblink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.08)}}
 #bmPanel{position:fixed;top:0;right:0;bottom:0;width:420px;max-width:100vw;background:#EEF7EE;z-index:9100;display:none;flex-direction:column;box-shadow:-12px 0 40px rgba(15,63,39,.28);border-left:1px solid #D5E0CE;font-family:var(--font,sans-serif)}
@@ -26,7 +26,7 @@
 #bmIn{flex:1;border:1.5px solid #D5E0CE;border-radius:8px;padding:9px 11px;font:500 14px var(--font,sans-serif);resize:none;height:42px}
 #bmSend{height:42px;width:46px;border:0;border-radius:8px;background:#0F3F27;color:#fff;font-size:18px;cursor:pointer}#bmSend:disabled{opacity:.5}
 body:has(.modal-bg.show) #bmFab,body:has(.modal-bg.show) #bmTip{display:none!important}
-@media(max-width:640px){#bmPanel{width:100vw;border:0}#bmFab{width:54px;height:54px;bottom:10px}#bmTip{display:none}}
+@media(max-width:640px){#bmPanel{width:100vw;border:0}#bmFab{width:66px;height:66px;bottom:10px}#bmTip{display:none}}
 </style>
 <script id="bloomyjs">
 (function(){
