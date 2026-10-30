@@ -29,6 +29,7 @@ function ibEstUna_(perfilId, conResumenes) {
     notasCV: { A: 0, 'B+': 0, B: 0, C: 0, sin: 0 }, motivos: {}, fuentes: {}, formacion: {}, pret: { debajo: 0, linea: 0, encima: 0, total: 0 }, banda: banda,
     edad: { 'Menos de 30': 0, '30 a 39': 0, '40 a 49': 0, '50 o más': 0, 'Sin dato': 0 }, edadScr: { 'Menos de 30': 0, '30 a 39': 0, '40 a 49': 0, '50 o más': 0, 'Sin dato': 0 },
     genero: { Mujeres: 0, Varones: 0, 'Sin dato': 0 }, generoScr: { Mujeres: 0, Varones: 0, 'Sin dato': 0 }, zona: { 'En zona': 0, 'Fuera de zona': 0, 'Sin dato': 0 } };
+  e.hunting = huntingStats_(perfilId); delete e.hunting.vencidos;
   const res = [];
   let primero = 0;
   const campo = (txt, k) => { const m = String(txt || '').match(new RegExp(k + ':\\s*([^|]+)', 'i')); return m ? m[1].trim() : ''; };
@@ -197,6 +198,10 @@ function ibArmarHTML_(cfg, puesto, empresa, e, inf) {
     stage(e.total, 'CVS RECIBIDOS', '100%', 'base del proceso', 'f1', false) + stage(e.scr, 'SCREENINGS', pct(e.scr, e.total), 'entrevistas telefónicas', 'f2', false) +
     stage(e.comp, 'COMPETENCIAS', pct(e.comp, e.total), 'evaluación profunda', 'f3', false) + stage(e.emp, 'AVANZAN A EMPRESA', pct(e.emp, e.total), 'finalistas presentados', 'f4', true) +
     '</div>' + (e.res ? '<div class="fnl-extra" contenteditable="true">+ ' + e.res + ' candidatos en reserva activa</div>' : '') + (e.dias ? '<div class="fnl-extra">Tiempo desde el primer CV recibido: ' + e.dias + ' días</div>' : ''));
+  if (inc.hunting !== false && e.hunting && e.hunting.identificados > 0) { const h = e.hunting; cuerpo += sec('Búsqueda directa', '', '<h3 class="sec-title">Hunting: <em>llegamos a quienes no buscan</em></h3><div class="funnel">' +
+    stage(h.identificados, 'IDENTIFICADOS', '100%', 'perfiles mapeados en el mercado', 'f1', false) + stage(h.contactados, 'CONTACTADOS', pct(h.contactados, h.identificados), 'abordaje directo y confidencial', 'f2', false) +
+    stage(h.respondieron, 'RESPONDIERON', pct(h.respondieron, h.identificados), 'conversación abierta', 'f3', false) + stage(h.interesados, 'INTERESADOS', pct(h.interesados, h.identificados), h.enProceso ? h.enProceso + ' ya en el proceso de selección' : 'dispuestos a avanzar', 'f4', true) +
+    '</div><div class="fnl-extra">Contactos del hunting: personas que no se postularon y a las que abordamos de forma confidencial.</div>'); }
   if (e.porBusqueda && e.porBusqueda.length > 1) cuerpo += sec('Por búsqueda', '', '<h3 class="sec-title">Cada <em>búsqueda</em></h3><div class="rk-tw"><table class="pb"><thead><tr><th>Búsqueda</th><th>CVs</th><th>Screening</th><th>Competencias</th><th>Empresa</th><th>Reserva</th><th>Descartados</th></tr></thead><tbody>' +
     e.porBusqueda.map(b => '<tr><td contenteditable="true">' + esc(b.nombre) + '</td><td>' + b.total + '</td><td>' + b.scr + '</td><td>' + b.comp + '</td><td>' + b.emp + '</td><td>' + b.res + '</td><td>' + b.desc + '</td></tr>').join('') + '</tbody></table></div>');
   if (inc.salarial !== false && (e.banda || e.porBusqueda) && e.pret.total >= 5) cuerpo += sec('Realidad salarial', '', '<h3 class="sec-title">Lo que <em>pretende</em> el mercado</h3><div class="salary-grid">' +

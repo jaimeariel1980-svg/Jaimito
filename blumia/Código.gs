@@ -257,6 +257,21 @@ function procesarDriveManual(cfg) {
     }
     file.moveTo(recibidos);
   }
+
+  // Subcarpeta «Hunting»: perfiles de LinkedIn bajados a mano (entran con «Llegó por: Hunting (LinkedIn)»)
+  try {
+    const pid = cfg[Object.keys(cfg)[0]];
+    const subs = madre.getFoldersByName('Hunting');
+    while (subs.hasNext()) {
+      const fs = subs.next().getFiles();
+      while (fs.hasNext()) {
+        const file = fs.next();
+        const datos = procesarConChatGPT(file, cfg);
+        if (datos && !esDuplicado(datos, sheet)) { insertarFilaLibre(sheet, datos, file.getUrl(), file.getDateCreated(), HUNT_FUENTE_); huntingVincular_(pid, datos.nombre); }
+        file.moveTo(recibidos);
+      }
+    }
+  } catch (e) { Logger.log('Hunting (carpeta): ' + e); }
 }
 
 function insertarFilaLibre(sheet, datos, url, fecha, fuente) {
@@ -2026,7 +2041,7 @@ function kanbanHTML_(perfilId) {
   let eb = {}; try { eb = enlacesBusqueda_(cfg); } catch (e) { }
   if (eb.carpeta) enlaces.push(['Carpeta de Drive de la búsqueda', eb.carpeta]);
   if (eb.hoja) enlaces.push(['Sheet de la búsqueda (pestaña de candidatos)', eb.hoja]);
-  try { const extra = '<script>var metEstado = ' + metEstado_.toString() + '; var BANDA_REF = ' + bandaRef + '; var URL_APP = ' + JSON.stringify(URL_BASE()) + '; var ENLACES = ' + JSON.stringify(enlaces).replace(/</g, '\\u003c') + '; var ENLACE_CARPETA = ' + JSON.stringify(eb.carpeta || '') + '; var ENLACE_HOJA = ' + JSON.stringify(eb.hoja || '') + ';</script>' + ['ConfigPanel', 'ResumenPanel', 'TableroCards', 'BloomyWidget'].map(f => HtmlService.createHtmlOutputFromFile(f).getContent()).join(''); html = html.replace(/<\/html>\s*$/, () => extra + '</html>'); } catch (e) { }
+  try { const extra = '<script>var metEstado = ' + metEstado_.toString() + '; var BANDA_REF = ' + bandaRef + '; var URL_APP = ' + JSON.stringify(URL_BASE()) + '; var ENLACES = ' + JSON.stringify(enlaces).replace(/</g, '\\u003c') + '; var ENLACE_CARPETA = ' + JSON.stringify(eb.carpeta || '') + '; var ENLACE_HOJA = ' + JSON.stringify(eb.hoja || '') + ';</script>' + ['ConfigPanel', 'ResumenPanel', 'HuntingPanel', 'TableroCards', 'BloomyWidget'].map(f => HtmlService.createHtmlOutputFromFile(f).getContent()).join(''); html = html.replace(/<\/html>\s*$/, () => extra + '</html>'); } catch (e) { }
   lapT_('Sumar los paneles (configurar, resumen, tablero)');
   return HtmlService.createHtmlOutput(html)
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)

@@ -1,0 +1,232 @@
+<style id="huntcss">
+.rs-tab .hb{display:inline-block;min-width:18px;padding:2px 6px;margin-left:6px;border-radius:99px;background:#E0A800;color:#fff;font-weight:800;font-size:11px;line-height:1.3;font-family:inherit;text-align:center}
+#huntPage{display:none;padding:14px 28px 50px;color:#1a1a1a}
+#huntPage .hu-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+#huntPage .hu-top h2{margin:0;font-size:20px;color:#0F3F27;flex:1 1 auto}
+#huntPage .hu-btn{height:40px;padding:0 16px;border-radius:8px;border:1px solid #0F3F27;background:#fff;color:#0F3F27;font-weight:700;font-size:13px;line-height:1;font-family:inherit;cursor:pointer}
+#huntPage .hu-btn.p{background:#0F3F27;color:#fff}
+#huntPage .hu-btn.s{height:32px;padding:0 11px;font-size:12px}
+#huntPage .hu-btn.r{border-color:#B91C1C;color:#B91C1C}
+#huntPage .hu-btn:disabled{opacity:.5;cursor:default}
+#huntPage .hu-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:14px}
+#huntPage .rs-kpi{cursor:default}
+#huntPage .hu-help{font-size:12.5px;color:#555;background:#F3F8F1;border:1px solid #DCE8D3;border-radius:10px;padding:10px 14px;margin-bottom:14px;line-height:1.5}
+#huntPage .hu-board{display:flex;gap:12px;overflow-x:auto;align-items:flex-start;padding-bottom:10px}
+#huntPage .hu-col{flex:1 1 220px;min-width:220px;background:#EEF4EC;border-radius:12px;padding:10px;max-height:calc(100vh - 330px);overflow:auto}
+#huntPage .hu-ch{display:flex;align-items:center;justify-content:space-between;font-weight:800;font-size:13px;line-height:1.2;font-family:inherit;color:#0F3F27;text-transform:uppercase;letter-spacing:.5px;margin:2px 4px 10px}
+#huntPage .hu-ch b{background:#FEE795;border-radius:8px;min-width:30px;text-align:center;padding:3px 8px;font-size:15px}
+#huntPage .hu-card{background:#fff;border:1px solid #DDE5DA;border-left:5px solid #0F3F27;border-radius:10px;padding:11px 12px;margin-bottom:9px}
+#huntPage .hu-card.B{border-left-color:#E0A800}
+#huntPage .hu-n{font-weight:800;font-size:15px;line-height:1.25;display:flex;gap:6px;align-items:flex-start}
+#huntPage .hu-n span{flex:1}
+#huntPage .hu-pr{font-weight:800;font-size:10px;line-height:1;font-family:inherit;border-radius:6px;padding:3px 6px;background:#0F3F27;color:#fff}
+#huntPage .hu-card.B .hu-pr{background:#E0A800}
+#huntPage .hu-s{font-size:12.5px;color:#555;margin:3px 0 0;line-height:1.35}
+#huntPage .hu-seg{display:inline-block;margin-top:7px;font-weight:700;font-size:11px;line-height:1;font-family:inherit;border-radius:99px;padding:4px 9px;background:#F3F1EC;color:#555}
+#huntPage .hu-seg.v{background:#FBE3E1;color:#B91C1C}#huntPage .hu-seg.h{background:#FDF1C4;color:#7A5A00}
+#huntPage .hu-acc{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+#huntPage .hu-cer{margin-top:14px}
+#huntPage .hu-cer summary{cursor:pointer;font-weight:800;color:#555;font-size:13px;margin-bottom:8px}
+#huntPage .hu-cerg{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:9px}
+#huntPage .hu-vac{font-size:12.5px;color:#888;text-align:center;padding:14px 6px}
+.hu-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99998;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:30px 12px}
+.hu-box{background:#fff;border-radius:12px;max-width:620px;width:100%;padding:20px 22px;font:14px 'PP Pangram Sans',Poppins,sans-serif;color:#222}
+.hu-box h3{margin:0 0 10px;color:#0F3F27}.hu-box p{font-size:12.5px;color:#666;line-height:1.5;margin:0 0 10px}
+.hu-box label{display:block;font-size:12px;font-weight:700;color:#555;margin:10px 0 4px}
+.hu-box input[type=text],.hu-box select,.hu-box textarea{width:100%;box-sizing:border-box;border:1px solid #ccc;border-radius:8px;padding:9px 10px;font-size:13.5px;font-family:inherit}
+.hu-box textarea{min-height:120px}
+.hu-box .hu-row{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+.hu-box .hu-g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hu-box button{border-radius:8px;padding:9px 16px;font-weight:700;cursor:pointer;border:1px solid #999;background:#fff;font-family:inherit}
+.hu-box button.go{background:#0F3F27;color:#fff;border-color:#0F3F27}
+.hu-box .hu-cnt{font-size:11px;color:#888;text-align:right}
+.hu-box .hu-tp{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.hu-box .hu-tp button{padding:6px 12px;font-size:12.5px}.hu-box .hu-tp button.on{background:#0F3F27;color:#fff;border-color:#0F3F27}
+@media(max-width:640px){#huntPage{padding:10px 10px 50px}#huntPage .hu-kpis{grid-template-columns:repeat(2,1fr)}#huntPage .hu-col{flex:0 0 84%;max-height:none}.hu-box .hu-g2{grid-template-columns:1fr}}
+</style>
+<script>
+(function(){
+  if(typeof google==='undefined'||!google.script||typeof PERFIL==='undefined')return;
+  var ETAPAS=['Identificado','Contactado','Respondió','Interesado','En proceso'],CERR=['No le interesa','Sin respuesta'];
+  var DESC={'Identificado':'Mapeados, todavía sin contactar','Contactado':'Mensaje enviado, esperando respuesta','Respondió':'Hay conversación','Interesado':'Quiere avanzar: falta su perfil','En proceso':'Ya están en el tablero de candidatos'};
+  var D={items:[],stats:null,hoy:''},abierta=false,cargando=false;
+  function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  function quien(){try{return quienSoy();}catch(e){return '';}}
+  function run(fn,args,ok,ko){var r=google.script.run.withSuccessHandler(ok||function(){}).withFailureHandler(ko||function(e){aviso((e&&e.message)||String(e));});r[fn].apply(r,args);}
+  function aviso(m,fn){if(typeof blAlert==='function')blAlert(m,fn);else{alert(m);if(fn)fn();}}
+  function confirma(m,fn,o){if(typeof blConfirm==='function')blConfirm(m,fn,o);else if(confirm(m))fn();}
+  function dias(a,b){return Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/864e5);}
+  function porId(id){for(var i=0;i<D.items.length;i++)if(D.items[i].id===id)return D.items[i];return null;}
+
+  function cargar(cb){
+    cargando=true;
+    run('huntingListar',[PERFIL],function(r){D=r;cargando=false;pintar();badge();if(cb)cb();},function(e){cargando=false;var p=document.getElementById('huntPage');if(p)p.innerHTML='<div class="hu-help" style="color:#B91C1C">'+esc((e&&e.message)||e)+'</div>';});
+  }
+  function badge(){
+    var b=document.getElementById('rsTabH');if(!b)return;
+    var v=D.stats?D.stats.vencidos:0;
+    b.innerHTML='🎯 Hunting'+(v?'<span class="hb" title="Seguimientos para hacer hoy">'+v+'</span>':'');
+  }
+  function kpis(s){
+    var f=function(n,l,c){return '<div class="rs-kpi '+(c||'')+'"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>';};
+    return '<div class="hu-kpis">'+f(s.identificados,'Identificados')+f(s.contactados,'Contactados','')+f(s.respondieron,'Respondieron','')+f(s.interesados,'Interesados','')+f(s.enProceso,'En el proceso','')+'</div>';
+  }
+  function tarjeta(o){
+    var seg='';
+    if(o.estado==='Contactado'&&o.seguimiento){var d=dias(D.hoy,o.seguimiento);seg=d<0?'<span class="hu-seg v">Seguimiento vencido hace '+(-d)+' d</span>':d===0?'<span class="hu-seg h">Seguimiento HOY</span>':'<span class="hu-seg">Seguimiento en '+d+' d</span>';}
+    else if(o.estado==='Contactado'&&o.seguimientos>=3)seg='<span class="hu-seg">Sin más seguimientos</span>';
+    var acc='';
+    var B=function(t,a,c){return '<button class="hu-btn s '+(c||'')+'" data-a="'+a+'" data-id="'+esc(o.id)+'">'+t+'</button>';};
+    if(o.estado==='Identificado')acc=B('✉ Mensaje','msg','p')+B('Ya lo contacté','mov:Contactado');
+    else if(o.estado==='Contactado')acc=B('✉ Seguimiento','msg','p')+B('Seguimiento enviado','mov:Contactado')+B('Respondió','mov:Respondió')+B('Sin respuesta','mov:Sin respuesta');
+    else if(o.estado==='Respondió')acc=B('Le interesa','mov:Interesado','p')+B('No le interesa','mov:No le interesa');
+    else if(o.estado==='Interesado')acc=B('📄 Subir PDF de LinkedIn','pdf','p')+B('Ya no le interesa','mov:No le interesa');
+    else if(o.estado==='En proceso')acc='';
+    acc+=B('⋯','menu');
+    return '<div class="hu-card '+esc(o.prioridad)+'"><div class="hu-n"><span>'+esc(o.nombre)+'</span><i class="hu-pr" title="Prioridad">'+esc(o.prioridad)+'</i></div>'+
+      ((o.cargo||o.empresa)?'<div class="hu-s">'+esc(o.cargo)+(o.cargo&&o.empresa?' · ':'')+esc(o.empresa)+'</div>':'')+
+      (o.notas?'<div class="hu-s" style="color:#888">'+esc(o.notas)+'</div>':'')+
+      (o.estado==='En proceso'&&o.candidato?'<div class="hu-s" style="color:#0F3F27;font-weight:700">En el tablero como «'+esc(o.candidato)+'»</div>':'')+seg+'<div class="hu-acc">'+acc+'</div></div>';
+  }
+  function pintar(){
+    var p=document.getElementById('huntPage');if(!p)return;
+    var it=D.items,s=D.stats||{identificados:0,contactados:0,respondieron:0,interesados:0,enProceso:0,vencidos:0};
+    var x='<div class="hu-top"><h2>🎯 Hunting</h2><button class="hu-btn p" data-a="nueva">+ Agregar persona</button><button class="hu-btn" data-a="lista">Pegar lista</button></div>';
+    x+='<div class="hu-help"><b>Búsqueda directa.</b> Acá van las personas a las que abordamos antes de que se postulen: no están en el tablero de candidatos ni en sus números. Cuando alguien dice «me interesa», subí su perfil de LinkedIn (<i>Más → Guardar como PDF</i>) y pasa al tablero con <b>«Llegó por: Hunting (LinkedIn)»</b>. El embudo sale en el Resumen y en el informe del cliente.</div>';
+    x+=kpis(s);
+    x+='<div class="hu-board">'+ETAPAS.map(function(e){
+      var l=it.filter(function(o){return o.estado===e;});
+      l.sort(function(a,b){if(a.prioridad!==b.prioridad)return a.prioridad<b.prioridad?-1:1;var x=a.seguimiento||'9',y=b.seguimiento||'9';return x<y?-1:x>y?1:0;});
+      return '<div class="hu-col"><div class="hu-ch"><span>'+e+'</span><b>'+l.length+'</b></div><div class="hu-s" style="margin:-6px 4px 10px;font-size:11.5px;color:#6a7a6a">'+DESC[e]+'</div>'+(l.length?l.map(tarjeta).join(''):'<div class="hu-vac">Nadie por acá</div>')+'</div>';
+    }).join('')+'</div>';
+    var cer=it.filter(function(o){return CERR.indexOf(o.estado)>=0;});
+    if(cer.length)x+='<details class="hu-cer"><summary>Cerrados ('+cer.length+'): no le interesa / sin respuesta</summary><div class="hu-cerg">'+cer.map(function(o){return tarjeta(o).replace('<div class="hu-acc">','<div class="hu-s" style="margin-top:6px;font-weight:700">'+esc(o.estado)+'</div><div class="hu-acc">');}).join('')+'</div></details>';
+    p.innerHTML=x;
+  }
+
+  /* ---------- ventanas ---------- */
+  function modal(html){var bg=document.createElement('div');bg.className='hu-bg';bg.innerHTML='<div class="hu-box">'+html+'</div>';document.body.appendChild(bg);bg.addEventListener('mousedown',function(e){if(e.target===bg)bg.remove();});return bg;}
+  function formPersona(o){
+    var n=!o;o=o||{nombre:'',cargo:'',empresa:'',linkedin:'',prioridad:'A',notas:''};
+    var bg=modal('<h3>'+(n?'Agregar persona':'Editar')+'</h3><label>Nombre y apellido</label><input type="text" id="hf-n" value="'+esc(o.nombre)+'"><div class="hu-g2"><div><label>Cargo actual</label><input type="text" id="hf-c" value="'+esc(o.cargo)+'"></div><div><label>Empresa actual</label><input type="text" id="hf-e" value="'+esc(o.empresa)+'"></div></div><label>Link de LinkedIn</label><input type="text" id="hf-l" value="'+esc(o.linkedin)+'" placeholder="https://www.linkedin.com/in/…"><div class="hu-g2"><div><label>Prioridad</label><select id="hf-p"><option value="A"'+(o.prioridad==='A'?' selected':'')+'>A · encaje directo</option><option value="B"'+(o.prioridad==='B'?' selected':'')+'>B · secundario</option></select></div><div></div></div><label>Notas para personalizar el mensaje (opcional)</label><input type="text" id="hf-o" value="'+esc(o.notas)+'" placeholder="Ej: lideró licitaciones en minería; la recomendó un contacto"><div class="hu-row"><button id="hf-x">Cancelar</button><button class="go" id="hf-g">Guardar</button></div>');
+    bg.querySelector('#hf-x').onclick=function(){bg.remove();};
+    bg.querySelector('#hf-g').onclick=function(){
+      var d={nombre:bg.querySelector('#hf-n').value,cargo:bg.querySelector('#hf-c').value,empresa:bg.querySelector('#hf-e').value,linkedin:bg.querySelector('#hf-l').value,prioridad:bg.querySelector('#hf-p').value,notas:bg.querySelector('#hf-o').value};
+      if(String(d.nombre).trim().length<2){aviso('Falta el nombre.');return;}
+      this.disabled=true;
+      var ok=function(){bg.remove();cargar();};
+      if(n)run('huntingAgregar',[PERFIL,JSON.stringify([d]),quien()],function(r){if(!r.agregadas)aviso('Esa persona ya estaba en la lista.');ok();});
+      else run('huntingActualizar',[PERFIL,o.id,JSON.stringify(d),quien()],ok);
+    };
+    setTimeout(function(){bg.querySelector('#hf-n').focus();},50);
+  }
+  function pegarLista(){
+    var bg=modal('<h3>Pegar lista</h3><p>Una persona por línea, separando con <b>|</b> (o con tabulación si la copiás de una planilla): <b>Nombre | Cargo | Empresa | LinkedIn</b>. Solo el nombre es obligatorio. Las repetidas se ignoran.</p><textarea id="hl-t" placeholder="Ana Pérez | Directora Comercial | Empresa S.A. | https://www.linkedin.com/in/anaperez"></textarea><label><input type="checkbox" id="hl-b" style="width:auto;margin-right:6px">Marcar todas como prioridad B (secundarias)</label><div class="hu-row"><button id="hl-x">Cancelar</button><button class="go" id="hl-g">Agregar</button></div>');
+    bg.querySelector('#hl-x').onclick=function(){bg.remove();};
+    bg.querySelector('#hl-g').onclick=function(){
+      var pr=bg.querySelector('#hl-b').checked?'B':'A',L=[];
+      bg.querySelector('#hl-t').value.split(/\r?\n/).forEach(function(r){r=r.trim();if(!r)return;var c=r.split(/\t|\||;/).map(function(x){return x.trim();});
+        if(/linkedin\.com/i.test(c[0])&&c.length===1)return;
+        L.push({nombre:c[0],cargo:c[1]||'',empresa:c[2]||'',linkedin:c[3]||'',prioridad:pr});});
+      if(!L.length){aviso('No hay nada para agregar.');return;}
+      this.disabled=true;
+      run('huntingAgregar',[PERFIL,JSON.stringify(L),quien()],function(r){bg.remove();aviso('Se agregaron '+r.agregadas+' persona'+(r.agregadas===1?'':'s')+(r.repetidas?' ('+r.repetidas+' ya estaban)':'')+'.');cargar();},function(e){bg.querySelector('#hl-g').disabled=false;aviso((e&&e.message)||String(e));});
+    };
+  }
+  function copiar(t,btn){
+    var ok=function(){if(btn){var o=btn.textContent;btn.textContent='¡Copiado!';setTimeout(function(){btn.textContent=o;},1500);}};
+    try{navigator.clipboard.writeText(t).then(ok,function(){var a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove();ok();});}catch(e){var a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy');ok();}catch(x){}a.remove();}
+  }
+  function mensaje(o){
+    var tipo=o.estado==='Contactado'?(o.seguimientos>=1?'seg2':'seg1'):'primero';
+    var bg=modal('<h3>✉ Mensaje para '+esc(o.nombre)+'</h3><div class="hu-tp"><button data-t="primero">Primer mensaje</button><button data-t="seg1">Seguimiento 1</button><button data-t="seg2">Último seguimiento</button></div><label style="font-weight:600"><input type="checkbox" id="hm-n" checked style="width:auto;margin-right:6px">Nombrar a la empresa cliente (si la búsqueda es ciega, no se nombra igual)</label><div class="hu-row" style="margin-top:8px;justify-content:flex-start"><button class="go" id="hm-g">✨ Generar con IA</button></div><label>Nota para la invitación de conexión</label><textarea id="hm-c" style="min-height:70px" maxlength="300"></textarea><div class="hu-cnt" id="hm-cn">0 / 300</div><div class="hu-row" style="margin-top:4px"><button id="hm-cc">Copiar nota</button></div><label>Mensaje directo</label><textarea id="hm-m" style="min-height:150px"></textarea><div class="hu-row"><button id="hm-cm">Copiar mensaje</button>'+(o.linkedin?'<button id="hm-l">Abrir LinkedIn</button>':'')+(o.estado==='Identificado'?'<button class="go" id="hm-ya">Ya lo envié ✓</button>':'')+'<button id="hm-x">Cerrar</button></div>');
+    var $=function(s){return bg.querySelector(s);};
+    function marcar(){[].forEach.call(bg.querySelectorAll('.hu-tp button'),function(b){b.className=b.getAttribute('data-t')===tipo?'on':'';});}
+    marcar();
+    [].forEach.call(bg.querySelectorAll('.hu-tp button'),function(b){b.onclick=function(){tipo=b.getAttribute('data-t');marcar();};});
+    $('#hm-c').oninput=function(){$('#hm-cn').textContent=this.value.length+' / 300';};
+    $('#hm-g').onclick=function(){var g=this;g.disabled=true;g.textContent='La IA está escribiendo…';
+      run('huntingMensaje',[PERFIL,o.id,tipo,$('#hm-n').checked,quien()],function(r){g.disabled=false;g.textContent='✨ Generar de nuevo';$('#hm-c').value=r.conexion||'';$('#hm-cn').textContent=($('#hm-c').value.length)+' / 300';$('#hm-m').value=r.mensaje||'';},function(e){g.disabled=false;g.textContent='✨ Generar con IA';aviso((e&&e.message)||String(e));});};
+    $('#hm-cc').onclick=function(){copiar($('#hm-c').value,this);};
+    $('#hm-cm').onclick=function(){copiar($('#hm-m').value,this);};
+    if($('#hm-l'))$('#hm-l').onclick=function(){window.open(o.linkedin,'_blank');};
+    if($('#hm-ya'))$('#hm-ya').onclick=function(){this.disabled=true;run('huntingMover',[PERFIL,o.id,'Contactado',quien()],function(){bg.remove();cargar();});};
+    $('#hm-x').onclick=function(){bg.remove();};
+  }
+  function subirPdf(o){
+    var inp=document.createElement('input');inp.type='file';inp.accept='application/pdf,.pdf';
+    inp.onchange=function(){
+      var f=inp.files&&inp.files[0];if(!f)return;
+      if(f.size>10*1024*1024){aviso('El archivo es muy pesado (máximo 10 MB).');return;}
+      var bg=modal('<h3>📄 Perfil de LinkedIn</h3><p id="hp-s">Leyendo el perfil con la IA… puede tardar hasta un minuto. No cierres esta pantalla.</p>');
+      var fr=new FileReader();
+      fr.onload=function(){
+        var b64=String(fr.result).split(',')[1];
+        run('huntingSubirPdf',[PERFIL,o.id,b64,f.name,quien()],function(r){
+          bg.remove();
+          aviso(r.candidato+' ya está en el tablero de candidatos'+(r.nota?' con nota '+r.nota:'')+(r.repetido?' (ya figuraba: se vinculó con el existente)':'')+'. Llegó por «Hunting (LinkedIn)».',function(){cargar();try{if(typeof refrescarTablero==='function')refrescarTablero();}catch(e){}});
+        },function(e){bg.remove();aviso((e&&e.message)||String(e));});
+      };
+      fr.onerror=function(){bg.remove();aviso('No pude leer el archivo.');};
+      fr.readAsDataURL(f);
+    };
+    inp.click();
+  }
+  function menu(o){
+    var bg=modal('<h3>'+esc(o.nombre)+'</h3><div class="hu-row" style="justify-content:flex-start;flex-direction:column;align-items:stretch"><button data-a="edit">Editar datos</button>'+(o.linkedin?'<button data-a="li">Abrir LinkedIn</button>':'')+'<button data-a="msg">✉ Mensaje</button><label>Mover a otra etapa</label><select id="hmv"><option value="">Elegir…</option>'+ETAPAS.concat(CERR).map(function(e){return '<option'+(e===o.estado?' disabled':'')+'>'+e+'</option>';}).join('')+'</select><button data-a="del" style="border-color:#B91C1C;color:#B91C1C;margin-top:12px">Borrar de la lista</button><button data-a="x">Cerrar</button></div>');
+    bg.querySelector('#hmv').onchange=function(){var v=this.value;if(v){bg.remove();run('huntingMover',[PERFIL,o.id,v,quien()],function(){cargar();});}};
+    bg.addEventListener('click',function(ev){var a=ev.target.getAttribute&&ev.target.getAttribute('data-a');if(!a)return;bg.remove();
+      if(a==='edit')formPersona(o);else if(a==='li')window.open(o.linkedin,'_blank');else if(a==='msg')mensaje(o);
+      else if(a==='del')confirma('¿Borrar a '+o.nombre+' de la lista de hunting? Se elimina todo lo que guardamos de esa persona.',function(){run('huntingBorrar',[PERFIL,o.id,quien()],function(){cargar();});},{si:'Borrar',peligro:true});});
+  }
+
+  /* ---------- pestaña ---------- */
+  function ver(v){
+    var H=v==='hunting',p=document.getElementById('huntPage');
+    if(H){
+      base('resumen');
+      var rp=document.getElementById('resumenPage');if(rp)rp.style.display='none';
+      if(p)p.style.display='block';
+      ['rsTabR','rsTabT'].forEach(function(i){var b=document.getElementById(i);if(b)b.className='rs-tab';});
+      var h=document.getElementById('rsTabH');if(h)h.className='rs-tab on';
+      abierta=true;cargar();
+    }else{
+      abierta=false;if(p)p.style.display='none';
+      var h2=document.getElementById('rsTabH');if(h2)h2.className='rs-tab';
+      base(v);
+      if(v==='resumen')resumenBloque();
+    }
+  }
+  /* embudo de hunting dentro del Resumen (solo si la búsqueda tiene hunting) */
+  var cache=null;
+  function resumenBloque(){
+    var rp=document.getElementById('resumenPage');if(!rp)return;
+    var pon=function(){
+      var s=cache;if(!s||!s.identificados||document.getElementById('rsHunt'))return;
+      var f=function(n,l){return '<div class="rs-kpi"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>';};
+      var h='<div class="rs-panel" id="rsHunt"><h3>Hunting · búsqueda directa</h3><div class="rs-dash" style="grid-template-columns:repeat(5,1fr)">'+f(s.identificados,'Identificados')+f(s.contactados,'Contactados')+f(s.respondieron,'Respondieron')+f(s.interesados,'Interesados')+f(s.enProceso,'En el proceso')+'</div></div>';
+      var d=rp.querySelector('.rs-dash');if(d&&d.parentNode===rp)d.insertAdjacentElement('afterend',document.createRange().createContextualFragment(h).firstChild);else rp.insertAdjacentHTML('beforeend',h);
+    };
+    run('huntingListar',[PERFIL],function(r){cache=r.stats;D=r;badge();pon();},function(){});
+    if(!resumenBloque.obs){resumenBloque.obs=new MutationObserver(function(){if(document.getElementById('resumenPage').style.display==='block')pon();});resumenBloque.obs.observe(rp,{childList:true});}
+  }
+
+  var base=window.rsVer;
+  var tabs=document.querySelector('.rs-tabs');
+  if(!base||!tabs)return;
+  var t=document.createElement('button');t.className='rs-tab';t.id='rsTabH';t.setAttribute('onclick',"rsVer('hunting')");t.textContent='🎯 Hunting';
+  var tt=document.getElementById('rsTabT');if(tt)tt.insertAdjacentElement('afterend',t);else tabs.appendChild(t);
+  var page=document.createElement('div');page.id='huntPage';
+  var rp0=document.getElementById('resumenPage');if(rp0)rp0.insertAdjacentElement('afterend',page);else document.body.appendChild(page);
+  window.rsVer=ver;
+  page.addEventListener('click',function(e){
+    var b=e.target.closest('[data-a]');if(!b)return;
+    var a=b.getAttribute('data-a'),id=b.getAttribute('data-id'),o=id?porId(id):null;
+    if(a==='nueva')formPersona();else if(a==='lista')pegarLista();
+    else if(a==='msg'&&o)mensaje(o);else if(a==='pdf'&&o)subirPdf(o);else if(a==='menu'&&o)menu(o);
+    else if(a.indexOf('mov:')===0&&o){b.disabled=true;run('huntingMover',[PERFIL,o.id,a.slice(4),quien()],function(){cargar();},function(er){b.disabled=false;aviso((er&&er.message)||String(er));});}
+  });
+  // el globito con los seguimientos de hoy se ve desde cualquier pestaña
+  run('huntingListar',[PERFIL],function(r){D=r;cache=r.stats;badge();},function(){});
+})();
+</script>
