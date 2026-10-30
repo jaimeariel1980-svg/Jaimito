@@ -54,3 +54,38 @@ function perfilFichaBloque_(cfg) {
   return '\n\nFICHA DEL PUESTO acordada con el cliente (perfil del puesto). Usala como contexto principal del puesto; los campos marcados «Excluyente» pesan más que los demás. Si algo contradice los requisitos de arriba, priorizá esta ficha. ' +
     'No uses edad, género, estado civil, situación familiar ni nacionalidad para puntuar ni para decidir.\n' + f.slice(0, 7000) + '\n';
 }
+
+/* Perfil del puesto para CONSULTAR (referencia en el tablero, en los formularios de screening y competencias, en el hunting…):
+   secciones con «campo: valor», solo lectura. Para el equipo de Blumia: incluye señales de alerta y condiciones, nunca edad, género, estado civil ni datos del solicitante. */
+function perfilReferencia_(perfilId) {
+  const cfg = getConfig(perfilId);
+  const hero = getHeroPostulacion(perfilId);
+  const out = { pos: String(hero.pos || cfg.nombre || perfilId), fecha: '', secciones: [], vacio: true };
+  const u = ultimoPerfilDatos_(cfg);
+  if (!u) return out;
+  out.fecha = u.fecha;
+  const d = JSON.parse(u.texto), K = PERFIL_CAMPOS_, v = d.v || [];
+  const SEC_FUERA = /solicitante|pasos del proceso|notas internas|firmas/i, DEMO = { 19: 1, 20: 1, 21: 1 };
+  const AUX = /^(¿es excluyente\?|nivel|nivel requerido)$/i;
+  const map = {}, orden = [];
+  const poner = (sec, lab, val) => { if (!map[sec]) { map[sec] = []; orden.push(sec); } map[sec].push([lab, val]); };
+  K.campos.forEach((c, idx) => {
+    const sec = String(c.s || ''), lab = String(c.l || '').trim();
+    if (SEC_FUERA.test(sec) || DEMO[c.i] || NO_RELLENAR_PERFIL_.test(lab + ' ' + sec)) return;
+    let x = v[idx];
+    if (c.t === 'select') { const k = Number(x); x = (k > 0 && c.o && c.o[k]) ? c.o[k] : ''; }
+    x = String(x == null ? '' : x).trim();
+    if (!x) return;
+    if (AUX.test(lab)) { const it = map[sec] && map[sec][map[sec].length - 1]; if (it && !it.aux) it[1] += ' · ' + (/nivel/i.test(lab) ? 'nivel ' + x.toLowerCase() : x.toLowerCase()); return; }
+    poner(sec, lab || c.h || '', x);
+  });
+  for (let k = 0; k < 5; k++) {
+    const nom = String(v[81 + 2 * k] || '').trim(), niv = PERFIL_NIVELES_[Number(v[82 + 2 * k]) || 0];
+    if (nom) poner('Competencias requeridas', 'Competencia ' + (6 + k), nom + (niv ? ' · nivel ' + niv.toLowerCase() : ''));
+  }
+  const res = String(v[91] || '').trim();
+  if (res) poner('Resumen general', 'Resumen', res);
+  out.secciones = orden.map(s => ({ t: s, items: map[s].slice(0, 40).map(i => [String(i[0]).slice(0, 120), String(i[1]).slice(0, 3000)]) }));
+  out.vacio = !out.secciones.length;
+  return out;
+}

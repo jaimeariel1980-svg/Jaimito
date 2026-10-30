@@ -91,7 +91,7 @@
   function pintar(){
     var p=document.getElementById('huntPage');if(!p)return;
     var it=D.items,s=D.stats||{identificados:0,contactados:0,respondieron:0,interesados:0,enProceso:0,vencidos:0};
-    var x='<div class="hu-top"><h2>🎯 Hunting</h2><button class="hu-btn p" data-a="nueva">+ Agregar persona</button><button class="hu-btn" data-a="lista">Pegar lista</button></div>';
+    var x='<div class="hu-top"><h2>🎯 Hunting</h2><button class="hu-btn p" data-a="nueva">+ Agregar persona</button><button class="hu-btn" data-a="lista">Pegar lista</button><button class="hu-btn" data-a="perfil">📋 Perfil del puesto</button></div>';
     x+='<div class="hu-help"><b>Búsqueda directa.</b> Acá van las personas a las que abordamos antes de que se postulen: no están en el tablero de candidatos ni en sus números. Cuando alguien dice «me interesa», subí su perfil de LinkedIn (<i>Más → Guardar como PDF</i>) y pasa al tablero con <b>«Llegó por: Hunting (LinkedIn)»</b>. El embudo sale en el Resumen y en el informe del cliente.</div>';
     x+=kpis(s);
     x+='<div class="hu-board">'+ETAPAS.map(function(e){
@@ -222,7 +222,7 @@
   page.addEventListener('click',function(e){
     var b=e.target.closest('[data-a]');if(!b)return;
     var a=b.getAttribute('data-a'),id=b.getAttribute('data-id'),o=id?porId(id):null;
-    if(a==='nueva')formPersona();else if(a==='lista')pegarLista();
+    if(a==='nueva')formPersona();else if(a==='lista')pegarLista();else if(a==='perfil'){if(window.blPerfilRef)blPerfilRef();}
     else if(a==='msg'&&o)mensaje(o);else if(a==='pdf'&&o)subirPdf(o);else if(a==='menu'&&o)menu(o);
     else if(a.indexOf('mov:')===0&&o){b.disabled=true;run('huntingMover',[PERFIL,o.id,a.slice(4),quien()],function(){cargar();},function(er){b.disabled=false;aviso((er&&er.message)||String(er));});}
   });

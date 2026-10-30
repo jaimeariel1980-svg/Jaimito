@@ -155,6 +155,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text)}
 <div class="gbar ia-ui"><button type="button" id="btn-save-sheet" onclick="enviarALaPlanilla()">Guardar entrevista</button></div>
 
 <?!= HtmlService.createHtmlOutputFromFile('IAForm').getContent() ?>
+<?!= HtmlService.createHtmlOutputFromFile('PerfilRef').getContent() ?>
 <?!= HtmlService.createHtmlOutputFromFile('EstadoForm').getContent() ?>
 <?!= HtmlService.createTemplateFromFile('MotivoForm').evaluate().getContent() ?>
 <script>window.EDIT_TIPO='screening';</script>
@@ -429,10 +430,13 @@ function resetVeredicto() {
 }
 
 function cargarLinkCV() {
+  const btnPerfil = '<button type="button" class="pr-btn" style="margin-top:8px" onclick="blPerfilRef()">📋 Perfil del puesto</button>';
+  const el0 = document.getElementById('hero-links');
+  if (el0) el0.innerHTML = btnPerfil;
   if (!CAND_INICIAL) return;
   google.script.run.withSuccessHandler(info => {
     const el = document.getElementById('hero-links');
-    if (el && info && info.cv) el.innerHTML = '<a href="' + info.cv + '" target="_blank" rel="noopener" style="display:inline-block;margin-top:8px;background:#fff;color:#1A6645;padding:4px 12px;border-radius:8px;font-size:12px;font-weight:800;text-decoration:none">📄 Ver CV</a>';
+    if (el && info && info.cv) el.innerHTML = '<a href="' + info.cv + '" target="_blank" rel="noopener" style="display:inline-block;margin:8px 8px 0 0;background:#fff;color:#1A6645;padding:4px 12px;border-radius:8px;font-size:12px;font-weight:800;text-decoration:none">📄 Ver CV</a>' + btnPerfil;
   }).getLinkScreening(PERFIL_ID, CAND_INICIAL);
 }
 

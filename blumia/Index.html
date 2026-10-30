@@ -197,6 +197,7 @@ html,body{background:var(--bg);font-family:var(--font);color:var(--text);}
 <div class="gbar ia-ui"><button type="button" id="btnGuardar">Guardar entrevista</button></div>
 
 <?!= HtmlService.createHtmlOutputFromFile('IAForm').getContent() ?>
+<?!= HtmlService.createHtmlOutputFromFile('PerfilRef').getContent() ?>
 <?!= HtmlService.createHtmlOutputFromFile('EstadoForm').getContent() ?>
 <?!= HtmlService.createTemplateFromFile('MotivoForm').evaluate().getContent() ?>
 <script>window.EDIT_TIPO='competencias';</script>
@@ -223,12 +224,13 @@ if (CAND_INICIAL) {
     mostrarBotonScreening();
   }).getLinkScreening(PERFIL_ID, CAND_INICIAL);
 }
+setTimeout(mostrarBotonScreening, 1500); // el botón del perfil del puesto va aunque no haya candidato
 
 function mostrarBotonScreening() {
   const cont = document.getElementById('disp-links');
   if (!cont) return;
   const a = (u, t) => u ? '<a href="' + u + '" target="_blank" rel="noopener" style="display:inline-block;margin:4px 8px 0 0;background:#fff;color:#1A6645;padding:4px 12px;border-radius:8px;font-size:12px;font-weight:800;text-decoration:none">' + t + '</a>' : '';
-  cont.innerHTML = a(SCREENING_INFO.cv, '📄 Ver CV') + a(SCREENING_INFO.link, '📄 Ver screening' + (SCREENING_INFO.nota ? ' (' + SCREENING_INFO.nota + ')' : ''));
+  cont.innerHTML = a(SCREENING_INFO.cv, '📄 Ver CV') + a(SCREENING_INFO.link, '📄 Ver screening' + (SCREENING_INFO.nota ? ' (' + SCREENING_INFO.nota + ')' : '')) + '<button type="button" class="pr-btn" onclick="blPerfilRef()">📋 Perfil del puesto</button>';
 }
 
 function render() {
