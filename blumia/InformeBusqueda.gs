@@ -127,7 +127,8 @@ function ibAnalizar_(perfilId, alcance) {
     'Si la muestra es chica (menos de 15 CVs o menos de 5 en screening) decilo en un hallazgo y no saques conclusiones fuertes. ' +
     'De 4 a 6 preguntas para quien lidera la búsqueda, SOLO sobre lo que los números no dicen y que cambia cómo se escribe el informe: qué quiere destacar el cliente, si la banda salarial es negociable, qué se recomienda hacer con los candidatos en reserva, qué próximos pasos proponer, qué tono usar, si hay algo del mercado que explique lo observado. Cada pregunta con 2 o 3 respuestas sugeridas cortas (máx. 90 caracteres). ' +
     'Nada de nombres de personas. Español rioplatense profesional.';
-  const usuario = 'Puesto: ' + puesto + '. Empresa: ' + empresaInforme_(cfg) + '. Números de la búsqueda: ' + JSON.stringify(est) + (resumenes.length ? '. Resúmenes anónimos (uno por candidato): ' + JSON.stringify(resumenes) : '');
+  const fichaPuesto = alcance === 'empresa' ? '' : perfilFicha_(cfg, 'cv').slice(0, 3500);
+  const usuario = (fichaPuesto ? 'Ficha del puesto acordada con el cliente (contexto; no la repitas entera): ' + fichaPuesto + '\n\n' : '') + 'Puesto: ' + puesto + '. Empresa: ' + empresaInforme_(cfg) + '. Números de la búsqueda: ' + JSON.stringify(est) + (resumenes.length ? '. Resúmenes anónimos (uno por candidato): ' + JSON.stringify(resumenes) : '');
   let r;
   try { r = extraerJSON_(procesarConClaude(sistema, usuario, 'analisis')); } catch (err) { r = { hallazgos: [], preguntas: [], industrias: [] }; }
   const t = (v, n) => String(v == null ? '' : v).replace(/[<>]/g, '').trim().slice(0, n);

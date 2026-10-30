@@ -199,7 +199,8 @@ function huntingMensaje_(perfilId, id, tipo, nombrar, quien) {
     'REGLAS: usá solo los datos que te paso (no inventes logros, empresas ni fechas de su trayectoria); no menciones sueldo, la banda ni criterios internos de evaluación; ' + (ciega ? 'la búsqueda es CIEGA: no nombres a la empresa cliente ni insinúes cuál es; ' : '') +
     'ofrecé confidencialidad; sin emojis ni frases de plantilla vacías; sin adjetivos exagerados. Devolvé SOLO un JSON válido: {"conexion":"nota para la invitación de conexión, máximo 280 caracteres","mensaje":"mensaje directo, máximo 700 caracteres, con saludo y cierre"}.';
   const usuario = 'Rol: ' + (hero.pos || cfg.nombre) + '. Cliente: ' + empresa + '. Ubicación: ' + (ubic || 'a confirmar') + '. Persona: ' + o.nombre + (o.cargo ? ', ' + o.cargo : '') + (o.empresa ? ' en ' + o.empresa : '') + '. ' + (o.notas ? 'Notas para personalizar: ' + o.notas + '.' : '') + (o.mensaje && t !== 'primero' ? ' Mensaje anterior: ' + o.mensaje : '');
-  const r = extraerJSON_(procesarConClaude(sistema, usuario, 'redactar'));
+  const ficha = perfilFicha_(cfg, 'candidato').slice(0, 3500);
+  const r = extraerJSON_(procesarConClaude(sistema + (ficha ? ' Podés apoyarte en la ficha del puesto acordada con el cliente para decir de qué se trata el rol (misión, desafíos, reporte, modalidad), sin copiar cifras internas.' : ''), usuario + (ficha ? '\n\nFICHA DEL PUESTO:\n' + ficha : ''), 'redactar'));
   const limpio = (v, n) => String(v == null ? '' : v).replace(/[<>]/g, '').trim().slice(0, n);
   const res = { conexion: limpio(r.conexion, 300), mensaje: limpio(r.mensaje, 1900) };
   if (!res.mensaje) throw new Error('La IA no pudo armar el mensaje. Probá de nuevo.');
