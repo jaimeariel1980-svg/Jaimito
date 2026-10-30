@@ -358,3 +358,22 @@ function api(token, nombre, args) {
 function enlacesAgendaPersonas_() {
   try { return leerUsuarios_().filter(u => u.activo === 'SI' && (u.linkScr || u.linkComp)).map(u => ['Agenda de ' + u.nombre, u.linkScr || u.linkComp]); } catch (e) { return []; }
 }
+
+/* Quién entrevista «automático» (30/10, Ariel): entre las personas que hacen esa etapa en esa búsqueda y tienen link de agenda, la que menos entrevistas tiene en su calendario en los próximos 14 días;
+   si empatan, la que hace más tiempo que no se sugiere. Cada persona ordena su disponibilidad en su propia página de citas de Google: esto solo reparte. Devuelve {nombre, n} o null. */
+function entrevistadorSugerido_(perfilId, etapa) {
+  const cand = leerUsuarios_().filter(u => u.activo === 'SI' && usuHaceEn_(u, etapa, perfilId) && (u.linkScr || u.linkComp));
+  if (!cand.length) return null;
+  const ahora = new Date(), hasta = new Date(ahora.getTime() + 14 * 864e5), props = PropertiesService.getScriptProperties();
+  const filas = cand.map(u => {
+    let n = 0;
+    try {
+      const m = String(u.mail || '').trim();
+      if (/@/.test(m)) { const cal = CalendarApp.getCalendarById(m); if (cal) n = cal.getEvents(ahora, hasta).filter(e => !e.isAllDayEvent()).length; }
+    } catch (e) { }
+    return { u: u, n: n, ult: Number(props.getProperty('ENT_ULT_' + u.clave) || 0) };
+  });
+  filas.sort((a, b) => a.n - b.n || a.ult - b.ult);
+  props.setProperty('ENT_ULT_' + filas[0].u.clave, String(Date.now()));
+  return { nombre: filas[0].u.nombre, n: filas[0].n };
+}

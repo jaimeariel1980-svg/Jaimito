@@ -2361,12 +2361,12 @@ function menuWA(f){
   var h='<div style="font-size:13px;margin-bottom:12px;color:#555">Elegí qué mensaje enviar a <b>'+c.nombre+'</b>:</div>';
   ops.forEach(function(o){h+='<button class="mbtn wa" style="display:block;width:100%;margin-bottom:8px;text-align:left" onclick="enviarWA('+f+',\\''+o[0]+'\\',this)">'+o[1]+'</button>';});
   h+='<button class="mbtn alt" style="width:100%;margin-top:6px" onclick="ficha('+f+')">← Volver</button>';
-  h='<div style="margin-bottom:14px;padding:10px;border-radius:8px;background:#E3EEDC"><label for="waEnt" style="font-size:12px;font-weight:700;display:block;margin-bottom:4px">Quién lo entrevista (para screening y competencias)</label><select id="waEnt" style="height:38px;width:100%;border:1.5px solid #D5E0CE;border-radius:8px;padding:0 8px;font:inherit;background:#fff"><option value="">Link de agenda de la búsqueda (sin persona)</option></select><div style="font-size:11px;color:#555;margin-top:4px">Si elegís a una persona, el mensaje lleva <b>su</b> link de agenda y queda anotado en el historial.</div></div>'+h;
+  h='<div style="margin-bottom:14px;padding:10px;border-radius:8px;background:#E3EEDC"><label for="waEnt" style="font-size:12px;font-weight:700;display:block;margin-bottom:4px">Quién lo entrevista (para screening y competencias)</label><select id="waEnt" style="height:38px;width:100%;border:1.5px solid #D5E0CE;border-radius:8px;padding:0 8px;font:inherit;background:#fff"><option value="auto" selected>Automático: quien tenga menos entrevistas próximas</option><option value="">Link de agenda de la búsqueda (sin persona)</option></select><div style="font-size:11px;color:#555;margin-top:4px">«Automático» reparte entre quienes hacen esa etapa en esta búsqueda y manda <b>un solo link</b>, el de esa persona. También podés elegir a alguien: el mensaje lleva <b>su</b> link y queda anotado en el historial.</div></div>'+h;
   document.getElementById('mtit').textContent='WhatsApp · '+c.nombre;
   document.getElementById('mbody').innerHTML=h;
   waEntCargar();
 }
-function waEntCargar(){google.script.run.withSuccessHandler(function(r){var s=document.getElementById("waEnt");if(!s||!r)return;(r.lista||[]).forEach(function(u){var o=document.createElement("option");o.value=u.nombre;o.textContent=u.nombre+(u.linkScr||u.linkComp?"":" (sin links de agenda)");s.appendChild(o);});}).entrevistadoresAgenda(PERFIL);}
+function waEntCargar(){google.script.run.withSuccessHandler(function(r){var s=document.getElementById("waEnt");if(!s||!r)return;(r.lista||[]).forEach(function(u){var o=document.createElement("option");o.value=u.nombre;o.textContent=u.nombre+(u.screening&&u.competencias?"":(u.screening?" (solo screening)":(u.competencias?" (solo competencias)":" (no entrevista acá)")))+(u.linkScr||u.linkComp?"":" · sin link de agenda");s.appendChild(o);});}).entrevistadoresAgenda(PERFIL);}
 function quienSoy(){var q='';try{q=localStorage.getItem('blumia_quien')||'';}catch(e){}return q;}
 function enviarWA(f,tipo,btn){
   btn.textContent='Preparando...';
@@ -2810,6 +2810,15 @@ function armarComunicacion_(perfilId, fila, tipo, quien, entrevistadorElegido){
   // Link de agenda de la persona que entrevista (su página de citas de Google Calendar; se carga en ⚙ Administración → Usuarios). Sin eso, el link de la búsqueda.
   let conQuien = '', aviso = '';
   const etapaAg = tipo === 'contacto-screening' ? 'screening' : (tipo === 'contacto-competencias' ? 'competencias' : '');
+  // «Automático»: se propone a quien tenga menos entrevistas en los próximos 14 días entre los que hacen esa etapa en esta búsqueda
+  if (String(entrevistadorElegido || '') === 'auto') {
+    entrevistadorElegido = '';
+    if (etapaAg) {
+      const sug = entrevistadorSugerido_(perfilId, etapaAg);
+      if (sug) { entrevistadorElegido = sug.nombre; aviso = 'Automático: se mandó el link de ' + String(sug.nombre).split(' ')[0] + ' (' + (sug.n === 0 ? 'no tiene entrevistas próximas' : sug.n + ' entrevista' + (sug.n === 1 ? '' : 's') + ' próxima' + (sug.n === 1 ? '' : 's')) + '). Si preferís a otra persona, elegila en la lista.'; }
+      else aviso = 'Nadie de esta búsqueda tiene link de agenda cargado para ' + etapaAg + ': el mensaje lleva el link de la búsqueda.';
+    }
+  }
   if (etapaAg && String(entrevistadorElegido || '').trim()) {
     const u = leerUsuarios_().find(x => x.clave === usuClave_(entrevistadorElegido) && x.activo === 'SI');
     if (!u) return { ok: false, error: 'No encontré a ese entrevistador entre los usuarios habilitados.' };
