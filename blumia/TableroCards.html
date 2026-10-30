@@ -694,4 +694,7 @@ header h1{font-size:15px;line-height:1.25;flex:1 1 100%;min-width:0;display:-web
   iconize(document.body);
   window.blIconize=iconize;
 })();
+
+(function(){function fit(){try{var b=document.querySelector('.board');if(!b||b.offsetParent===null)return;if(window.innerWidth<=640){b.style.height='';return}var h=Math.max(300,Math.round(window.innerHeight-b.getBoundingClientRect().top-12));if(Math.abs((parseInt(b.style.height)||0)-h)>1)b.style.height=h+'px'}catch(e){}}
+window.addEventListener('resize',fit);window.addEventListener('load',fit);setInterval(fit,700);fit()})();
 </script>
