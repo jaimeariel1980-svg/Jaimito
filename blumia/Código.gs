@@ -329,7 +329,7 @@ function procesarConChatGPT(file, cfg, textoYaExtraido) {
 
     const promptSistema = `Sos un analista senior de headhunting. Analizá este CV para el siguiente perfil:
 
-${cfg.prompt_extra || ''}
+${cfg.prompt_extra || ''}${perfilFichaBloque_(cfg)}
 
 Devolvé SOLO JSON válido con este formato:
 {
@@ -853,7 +853,7 @@ function analizarPostulacionGPT(textoCV, bloqueDeclarado, cfg) {
   try {
     const promptSistema = `Sos un analista senior de headhunting. Analizá esta postulación para el siguiente perfil:
 
-${cfg.prompt_extra || ''}
+${cfg.prompt_extra || ''}${perfilFichaBloque_(cfg)}
 
 Tenés DOS fuentes: (A) los datos DECLARADOS por el candidato en el formulario, y (B) el texto del CV.
 Cruzá ambas. Si el candidato declara algo que el CV no respalda o contradice, reflejalo en la nota y en requisitos.

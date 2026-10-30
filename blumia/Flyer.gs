@@ -230,23 +230,7 @@ function flyerImagen_(perfilId, base64, fmt) {
 }
 
 // Valores cargados en el perfil del puesto (relevamiento) como texto «campo: valor», para que la IA tenga de dónde sacar desafíos y requisitos
-function flyerPerfilTexto_(cfg) {
-  try {
-    const u = ultimoPerfilDatos_(cfg);
-    if (!u) return '';
-    const d = JSON.parse(u.texto), K = PERFIL_CAMPOS_;
-    const L = [];
-    K.campos.forEach((c, idx) => {
-      if (NO_RELLENAR_PERFIL_.test(c.l + ' ' + c.s)) return;
-      let v = d.v ? d.v[idx] : '';
-      if (c.t === 'select') { const k = Number(v); v = (k > 0 && c.o && c.o[k]) ? c.o[k] : ''; }
-      v = String(v == null ? '' : v).trim();
-      if (!v) return;
-      L.push((c.s ? c.s + ' › ' : '') + (c.l || c.h || '') + ': ' + v);
-    });
-    return L.join('\n').slice(0, 14000);
-  } catch (e) { return ''; }
-}
+function flyerPerfilTexto_(cfg) { return perfilFicha_(cfg, 'candidato'); }
 
 // Opciones: { mostrarEmpresa: true|false }. Devuelve { badge, bajada, desafios[], requisitos[], linkedin, instagram, whatsapp }
 function flyerTextosIA_(perfilId, opciones) {
