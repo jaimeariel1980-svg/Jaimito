@@ -287,8 +287,8 @@ header{min-height:86px}
     var bancoBtn='<button class="mbtn alt" onclick="menuBanco('+c.fila+')">★ Enviar a banco</button>';
     var agBtn='<button class="mbtn alt" onclick="panelTog(\'agPanel\')">📅 Agendar</button>';
     
-    var notasEmp=/screening empresa|presencial empresa|avanza a empresa|entrevista empresa|reserva screening empresa|reserva presencial empresa/i.test(c.estado)?['screening-empresa','presencial-empresa'].map(function(ep){return '<div class="notarow"><span>'+(ep==='screening-empresa'?'Emp. screening':'Emp. presencial')+'</span>'+['A','B','C'].map(function(n){return '<button class="nb'+(String(ep==='screening-empresa'?c.notaScrEmp:c.notaPresEmp).trim()===n?' on '+n.replace('+','p'):'')+'" onclick="setNotaEmp('+c.fila+',\''+ep+'\',\''+n+'\',this)">'+n+'</button>';}).join('')+'</div>';}).join(''):'';
-    var notas='<div class="notabox"><div class="notatit">Poner nota manual</div>'+['cv','screening','competencias'].map(function(et){return '<div class="notarow"><span>'+({cv:'CV',screening:'Screening',competencias:'Competencias'}[et])+'</span>'+['A','B+','B','C'].map(function(n){return '<button class="nb'+(String({cv:c.nota,screening:c.notaScr,competencias:c.notaComp}[et]||'').trim()===n?' on '+n.replace('+','p'):'')+'" onclick="setNota('+c.fila+',\''+et+'\',\''+n+'\',this)">'+n+'</button>';}).join('')+'</div>';}).join('')+notasEmp+'</div>';
+    var notasEmp=/screening empresa|presencial empresa|avanza a empresa|entrevista empresa|reserva screening empresa|reserva presencial empresa/i.test(c.estado)?['screening-empresa','presencial-empresa'].map(function(ep){return '<div class="notarow"><span>'+(ep==='screening-empresa'?'Emp. screening':'Emp. presencial')+'</span>'+['A','B','C'].map(function(n){return '<button class="nb'+(String(ep==='screening-empresa'?c.notaScrEmp:c.notaPresEmp).trim()===n?' on '+n.replace('+','p'):'')+'" onclick="setNotaEmp('+c.fila+',\''+ep+'\',\''+n+'\',this)">'+n+'</button>';}).join('')+sinNotaBtn(c.fila,ep,ep==='screening-empresa'?c.notaScrEmp:c.notaPresEmp)+'</div>';}).join(''):'';
+    var notas='<div class="notabox"><div class="notatit">Poner nota manual</div>'+['cv','screening','competencias'].map(function(et){return '<div class="notarow"><span>'+({cv:'CV',screening:'Screening',competencias:'Competencias'}[et])+'</span>'+['A','B+','B','C'].map(function(n){return '<button class="nb'+(String({cv:c.nota,screening:c.notaScr,competencias:c.notaComp}[et]||'').trim()===n?' on '+n.replace('+','p'):'')+'" onclick="setNota('+c.fila+',\''+et+'\',\''+n+'\',this)">'+n+'</button>';}).join('')+sinNotaBtn(c.fila,et,{cv:c.nota,screening:c.notaScr,competencias:c.notaComp}[et])+'</div>';}).join('')+notasEmp+'</div>';
     var contacto=(c.contactado?'<div class="frow"><span class="fl">Último contacto</span><span class="fv">'+esc(c.contactado)+' <a href="#" onclick="borrarMarca('+c.fila+');return false" style="color:#B3261E;font-size:12px;font-weight:700;text-decoration:underline;margin-left:8px">✕ Borrar marca</a></span></div>':'')
       +'<div class="frow"><span class="fl">Registro de contactos</span><span class="fv" id="regCont" style="white-space:pre-line">cargando…</span></div>';
     var h='<div class="fwrap" style="margin:-24px"><div class="fh"><div style="font-size:16px;color:#0F3F27"><b>'+esc(c.estado)+'</b></div><div class="ecs">'+ecs+'</div></div>'
@@ -715,5 +715,20 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);setInt
   var st=document.createElement('style');st.id='motcss';
   st.textContent='.motd{margin:10px 28px 0;background:#fff;border:1.5px solid #D5E0CE;border-radius:8px;padding:0}.motd.falta{border-color:#E06666;background:#FDF0F0}.motd summary{cursor:pointer;padding:10px 14px;font-size:14px;color:#0F3F27}.motd .motb{padding:4px 14px 14px;display:grid;grid-template-columns:1fr 1fr;gap:4px 14px}.motd .motb label{display:flex;gap:8px;align-items:center;font-size:13px}.motd .motb .mo{grid-column:1/-1;flex-direction:column;align-items:stretch;margin-top:6px}.motd .motb .mo input{padding:7px;border:1.5px solid #D5E0CE;border-radius:8px}.motd .motb .obsb{grid-column:1/-1}@media(max-width:640px){.motd{margin:10px 14px 0}.motd .motb{grid-template-columns:1fr}}';
   document.head.appendChild(st);
+})();
+
+(function(){
+  var NOM={cv:'el análisis del CV',screening:'el screening',competencias:'las competencias','screening-empresa':'el screening con la empresa','presencial-empresa':'la entrevista final con la empresa'};
+  window.sinNotaBtn=function(f,et,nota){
+    if(!String(nota==null?'':nota).trim())return '';
+    return '<button class="nb nn" title="Dejar esta etapa sin nota (vuelve a cero)" onclick="quitarNota('+f+',\''+et+'\',this)">Sin nota</button>';
+  };
+  window.quitarNota=function(f,et,b){
+    blConfirm('¿Dejar '+(NOM[et]||'esta etapa')+' sin nota?\n\nSe borra la nota y, si el estado salía de ella, vuelve a la etapa anterior. El PDF del formulario queda en Drive.',function(){
+      b.disabled=true;b.textContent='…';
+      google.script.run.withSuccessHandler(function(){toast();cerrar();setTimeout(function(){window.top.location.reload();},800);}).withFailureHandler(function(e){b.disabled=false;b.textContent='Sin nota';blAlert(e.message||e);}).anularEtapa(PERFIL,f,et,quienSoy());
+    },{si:'Dejar sin nota',peligro:true});
+  };
+  var st=document.createElement('style');st.id='nncss';st.textContent='.nb.nn{width:auto;padding:0 10px;font-size:12px;margin-left:6px;background:#fff;color:#B3261E;border:1.5px solid #E7B4B0}.nb.nn:hover{background:#FDF0F0}';document.head.appendChild(st);
 })();
 </script>
