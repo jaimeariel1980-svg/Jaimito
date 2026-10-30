@@ -1,4 +1,4 @@
-const CFG_CAMPOS_ = ['nombre', 'nombre_perfil', 'empresa', 'empresa_candidatos', 'logo_cliente', 'preguntas_base', 'datos_internos', 'busqueda_ciega', 'banda_salarial', 'link_empresa_virtual', 'link_empresa_presencial', 'link_flyer', 'link_perfil'];
+const CFG_CAMPOS_ = ['nombre', 'nombre_perfil', 'empresa', 'empresa_candidatos', 'logo_cliente', 'preguntas_base', 'datos_internos', 'busqueda_ciega', 'banda_salarial', 'entrevistan', 'link_empresa_virtual', 'link_empresa_presencial', 'link_flyer', 'link_perfil'];
 
 /* Preguntas habituales propias: una lista general (pestaña Preguntas_Habituales) que se crea una vez y se tilda en cualquier búsqueda.
    Tildarla en una búsqueda la copia a las preguntas de esa búsqueda (Postulacion_Preguntas); destildarla la saca de esa búsqueda. */
@@ -44,7 +44,8 @@ function getConfigBusqueda_(pin, perfilId) {
   const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
   const datos = {};
   CFG_CAMPOS_.forEach(k => { datos[k] = typeof cfg[k] === 'string' ? cfg[k] : (cfg[k] == null ? '' : String(cfg[k])); });
-  return { logo: { claro: logoCliente_(cfg), color: logoClienteColor_(cfg), propio: !!String(cfg.logo_cliente || '').trim(), ciega: busquedaCiega_(cfg), empresa: empresaKey_(cfg) }, perfil: { propio: !!cfg.perfil_html, fecha: null }, extra: configExtraLeer_(ss, cfg, perfilId), datos: datos, prompt_extra: String(cfg.prompt_extra || ''), preguntas: getPreguntasPostulacion(perfilId), habituales: leerHabituales_(), plantillas: listarPlantillas_(ss, perfilId) };
+  const usuarios = leerUsuarios_().filter(u => u.activo === 'SI').map(u => ({ nombre: u.nombre, clave: u.clave, scr: usuHace_(u, 'screening'), comp: usuHace_(u, 'competencias') }));
+  return { usuariosEnt: usuarios, logo: { claro: logoCliente_(cfg), color: logoClienteColor_(cfg), propio: !!String(cfg.logo_cliente || '').trim(), ciega: busquedaCiega_(cfg), empresa: empresaKey_(cfg) }, perfil: { propio: !!cfg.perfil_html, fecha: null }, extra: configExtraLeer_(ss, cfg, perfilId), datos: datos, prompt_extra: String(cfg.prompt_extra || ''), preguntas: getPreguntasPostulacion(perfilId), habituales: leerHabituales_(), plantillas: listarPlantillas_(ss, perfilId) };
 }
 
 // Lo lento (carpeta de Drive, planilla de candidatos y versiones del perfil del puesto) se pide aparte, después de abrir el panel
@@ -93,6 +94,13 @@ function guardarConfigBusqueda_(pin, perfilId, p, quien) {
           if (L.some(x => x !== 'ninguna' && PREG_BASE_.indexOf(x) < 0)) throw new Error('Alguna pregunta fija no es válida.');
           if (!v) return; // sin dato = la búsqueda sigue mostrando todas las preguntas fijas
           poner(k, L.join(','), (base.datos || {})[k]); return;
+        }
+        if (k === 'entrevistan') {
+          let o = {};
+          if (v) { try { o = JSON.parse(v); } catch (e) { throw new Error('«Quién entrevista» no es válido.'); } }
+          const claves = leerUsuarios_().map(u => u.clave), ok = ['screening', 'competencias', 'screening,competencias', 'ninguna'];
+          Object.keys(o).forEach(c => { if (claves.indexOf(c) < 0 || ok.indexOf(String(o[c])) < 0) throw new Error('«Quién entrevista» tiene una persona o una etapa que no existe.'); });
+          poner(k, Object.keys(o).length ? JSON.stringify(o) : '', (base.datos || {})[k]); return;
         }
         if (k === 'banda_salarial') { const num = String(v).replace(/\D/g, ''); if (v && Number(num) < 1000) throw new Error('La banda salarial va en pesos, por ejemplo 13000000.'); poner(k, num, (base.datos || {})[k]); return; }
         poner(k, v, (base.datos || {})[k]);
