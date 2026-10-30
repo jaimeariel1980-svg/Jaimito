@@ -228,10 +228,8 @@ function azcuHerrAlertas_(){
       if(f.length) out.papeles.push({id:p.id, direccion:p.dir, faltan:f});
       if(p.dias===null || p.dias>30) out.sin_movimiento.push({id:p.id, direccion:p.dir, dias:p.dias});
     }
-    var props = (p.seg||[]).filter(function(s){ return /propuesta|oferta/i.test(s.res); });
-    if(props.length && azcuActiva_(p) && p.etapa!=='Reserva'){
-      var u = props[props.length-1], n = azcuNum_(u.fecha);
-      if(n && !/acept|rechaz/i.test(u.res)){ var dd = azcuDif_(hn, n); if(dd>=3 && dd<=30) out.propuestas_sin_respuesta.push({id:p.id, direccion:p.dir, cliente:u.cli, dias:dd}); }
+    if(azcuActiva_(p) && p.etapa!=='Reserva'){
+      azcuPropsActivas_(p).forEach(function(x){ var dd = azcuDif_(hn, x.n); if(dd>=3 && dd<=30) out.propuestas_sin_respuesta.push({id:p.id, direccion:p.dir, cliente:x.u.cli, dias:dd}); });
     }
     (p.seg||[]).forEach(function(s){
       var m = String(s.prox||'').match(/^Visita (\d{2}\/\d{2}\/\d{4}) (\d{2}:\d{2})/);
@@ -2471,18 +2469,22 @@ function azcuEncuestaAviso_(id){
     m[k] = Date.now(); azcuMapaSet_('AZCU_ENC', m);
   }catch(e){}
 }
+// una propuesta en curso por persona (propiedad + primer nombre o teléfono): la última de cada una que no está aceptada ni rechazada
+function azcuPropsActivas_(p){
+  var ult = {};
+  (p.seg||[]).forEach(function(s){ if(/propuesta|oferta/i.test(s.res)) ult[azcuSinAc_(s.cli).split(' ')[0] || String(s.tel||'').replace(/\D/g,'') || '-'] = s; });
+  return Object.keys(ult).map(function(k){ return {k:k, u:ult[k], n:azcuNum_(ult[k].fecha)}; }).filter(function(x){ return x.n && !/acept|rechaz/i.test(x.u.res); });
+}
 function azcuAvisoPropuestas(forzar){
   var h = +Utilities.formatDate(new Date(), AZCU_TZ, 'H');
   if(forzar!==true && (h<10 || h>=20 || azcuEnSilencio_())) return;
   var datos = azcuDatos_(), hn = azcuHoy_(), m = azcuMapaGet_('AZCU_PROP'), ahora = Date.now(), cambio = false;
   datos.forEach(function(p){
     if(!azcuActiva_(p) || p.etapa==='Reserva') return;
-    var props = (p.seg||[]).filter(function(s){ return /propuesta|oferta/i.test(s.res); });
-    if(!props.length) return;
-    var u = props[props.length-1], n = azcuNum_(u.fecha);
-    if(!n || /acept|rechaz/i.test(u.res)) return;
+    azcuPropsActivas_(p).forEach(function(x){
+    var u = x.u, n = x.n;
     var dd = azcuDif_(hn, n); if(dd<3 || dd>60) return;
-    var key = String(p.id).trim()+'|'+n;
+    var key = String(p.id).trim()+'|'+n+'|'+x.k;
     if(m[key] && ahora-m[key] < 3*86400000) return;
     var ve = String(p.vendedor||'').trim();
     try{
@@ -2490,6 +2492,7 @@ function azcuAvisoPropuestas(forzar){
         AZCU_WEB+'?pr='+encodeURIComponent(String(p.id).trim())+'&ci='+encodeURIComponent(u.cli||''), ve ? azcuDestinos_(ve, true) : null, !!ve);
       m[key] = ahora; cambio = true;
     }catch(e){}
+    });
   });
   if(cambio) azcuMapaSet_('AZCU_PROP', m);
 }
