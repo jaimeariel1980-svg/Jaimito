@@ -282,6 +282,7 @@ function registroApi_() {
     borrarMarcaContacto: { f: borrarMarcaContacto_ },
     copiaAhoraBlumia: { f: copiaAhoraBlumia_, admin: true },
     doGetKanban: { f: doGetKanban_ },
+    kanbanFirma: { f: kanbanFirma_ },
     eliminarCandidato: { f: eliminarCandidato_ },
     enviarABanco: { f: enviarABanco_ },
     enviarABusqueda: { f: enviarABusqueda_ },
