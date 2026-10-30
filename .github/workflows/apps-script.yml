@@ -19,17 +19,58 @@ permissions:
   contents: write
 concurrency: apps-script
 jobs:
+  # Decide qué proyectos tocar: solo esos arrancan trabajo (cada trabajo cuenta como mínimo 1 minuto de Actions aunque no haga nada)
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.m.outputs.matrix }}
+      any: ${{ steps.m.outputs.any }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Qué proyectos corresponden
+        id: m
+        env:
+          EV: ${{ github.event_name }}
+          PROY: ${{ inputs.proyecto }}
+        run: |
+          python3 - <<'PY'
+          import json, os, subprocess
+          ALL = [
+            {"id": "pami", "dir": "pami", "secret": "CLASPRC_PAMI", "depvar": "DEPLOYMENT_PAMI"},
+            {"id": "azcu", "dir": "appscript", "secret": "CLASPRC_AZCU", "depvar": "DEPLOYMENT_AZCU"},
+            {"id": "liq", "dir": "liquidaciones", "secret": "CLASPRC_PAMI", "depvar": "DEPLOYMENT_LIQ"},
+            {"id": "blumia", "dir": "blumia", "secret": "CLASPRC_BLUMIA", "depvar": "DEPLOYMENT_BLUMIA", "depid": "AKfycbytekPKN31bZLxczDVknMr433K9KflzmrR-dCWsC1hLlx2MO7tbw6SrMjFXa1PnucQo"},
+            {"id": "nj", "dir": "caja-obra", "secret": "CLASPRC_NJ", "depvar": "DEPLOYMENT_NJ", "depid": "AKfycbzSA249ZvCJvbUKpllHIpJwBfq7uTl6Lt6CDP8Vh3BjejJ6N7JuASWIP4mN81l96a899g"},
+          ]
+          ev = os.environ["EV"]
+          proy = os.environ.get("PROY", "")
+          sel = []
+          for p in ALL:
+              if ev == "workflow_dispatch":
+                  if p["id"] == proy:
+                      sel.append(p)
+                  continue
+              r = subprocess.run(["git", "rev-parse", "--verify", "-q", "origin/publicado-" + p["id"]], capture_output=True, text=True)
+              base = r.stdout.strip() or "HEAD~1"
+              if not os.path.isfile(p["dir"] + "/appsscript.json"):
+                  continue
+              d = subprocess.run(["git", "-c", "core.quotepath=false", "diff", "--name-only", base, "HEAD"], capture_output=True, text=True).stdout
+              if any(l.startswith(p["dir"] + "/") for l in d.splitlines()):
+                  sel.append(p)
+          with open(os.environ["GITHUB_OUTPUT"], "a") as o:
+              o.write("matrix=" + json.dumps(sel) + "\n")
+              o.write("any=" + ("true" if sel else "false") + "\n")
+          print("Proyectos a publicar:", [p["id"] for p in sel] or "ninguno")
+          PY
   clasp:
+    needs: plan
+    if: needs.plan.outputs.any == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - {id: pami, dir: pami, secret: CLASPRC_PAMI, depvar: DEPLOYMENT_PAMI}
-          - {id: azcu, dir: appscript, secret: CLASPRC_AZCU, depvar: DEPLOYMENT_AZCU}
-          - {id: liq, dir: liquidaciones, secret: CLASPRC_PAMI, depvar: DEPLOYMENT_LIQ}
-          - {id: blumia, dir: blumia, secret: CLASPRC_BLUMIA, depvar: DEPLOYMENT_BLUMIA, depid: AKfycbytekPKN31bZLxczDVknMr433K9KflzmrR-dCWsC1hLlx2MO7tbw6SrMjFXa1PnucQo}
-          - {id: nj, dir: caja-obra, secret: CLASPRC_NJ, depvar: DEPLOYMENT_NJ, depid: AKfycbzSA249ZvCJvbUKpllHIpJwBfq7uTl6Lt6CDP8Vh3BjejJ6N7JuASWIP4mN81l96a899g}
+        include: ${{ fromJSON(needs.plan.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v4
         with: {fetch-depth: 0}
