@@ -2531,6 +2531,7 @@ function syncCitasCalendar() {
       if (cal) leer(cal, u.nombre);
     });
   } catch (err) { Logger.log('Usuarios sin leer: ' + err.message); }
+  Logger.log('syncCitasCalendar: ' + eventos.length + ' eventos leídos');
   const norm = s => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,'');
   const perfiles = listarPerfiles().map(p => p.id).filter(id => id !== 'operaciones');
 
@@ -2569,7 +2570,7 @@ function syncCitasCalendar() {
         const suyos = eventos.filter(x => {
           const e = x.e;
           if (mailN && mailN.includes('@')) {
-            const invitados = e.getGuestList().map(g => g.getEmail().toLowerCase());
+            const invitados = e.getGuestList(true).map(g => g.getEmail().toLowerCase());
             if (invitados.includes(mailN)) return true;
           }
           const tit = e.getTitle();
