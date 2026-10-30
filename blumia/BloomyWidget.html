@@ -51,7 +51,7 @@ body:has(.modal-bg.show) #bmFab,body:has(.modal-bg.show) #bmTip,body:has(.modal-
   panel.innerHTML='<div id="bmHd"><span class="bm-mk">'+mark()+'</span><b>Bloomy<small>Asistente de esta búsqueda</small></b><button type="button" id="bmNew" title="Empezar de nuevo" aria-label="Empezar de nuevo">&#8635;</button><button type="button" id="bmX" aria-label="Cerrar">&#10005;</button></div><div id="bmBody"></div><div id="bmChips"></div><div id="bmFoot"><textarea id="bmIn" rows="1" placeholder="Escribile a Bloomy…"></textarea><button type="button" id="bmSend" aria-label="Enviar">&#10148;</button></div>';
   document.body.appendChild(panel);
   var body=panel.querySelector('#bmBody'),inp=panel.querySelector('#bmIn'),send=panel.querySelector('#bmSend'),chips=panel.querySelector('#bmChips'),busy=false;
-  var SUG=['¿Qué tengo para hacer hoy?','¿Quiénes están en screening?','Pasame el CV de…','Devolución del screening de…','Agendar a…'];
+  var SUG=['¿Qué tengo para hacer hoy?','¿Quiénes están en screening?','Pasame el CV de…','Cargar screening de…','Agendar a…'];
   function save(){try{sessionStorage.setItem(KEY,JSON.stringify(msgs.slice(-30)))}catch(e){}}
   function add(h,cls){var d=document.createElement('div');d.className=cls;d.innerHTML=h;body.appendChild(d);body.scrollTop=body.scrollHeight;return d}
   function pintar(){body.innerHTML='';if(!msgs.length)add('Hola, soy <b>Bloomy</b>. Te ayudo con esta búsqueda: consultar candidatos, pasarte el link del CV, armar la devolución del screening y agendar entrevistas. ¿Qué necesitás?','bm-m b');msgs.forEach(function(m){add(m.rol==='bot'?fmt(m.texto):esc(m.texto),'bm-m '+(m.rol==='bot'?'b':'u'));if(m.card)tarjeta(m.card)});chips.style.display=msgs.length?'none':'flex'}
@@ -62,9 +62,7 @@ body:has(.modal-bg.show) #bmFab,body:has(.modal-bg.show) #bmTip,body:has(.modal-
     var c=document.createElement('div');c.className='bm-card';
     if(a.tipo==='cv'){c.innerHTML='<h4>CV</h4>'+esc(a.nombre)+(a.url?'<div class="bm-row"><a class="bm-b p" target="_blank" rel="noopener" href="'+esc(a.url)+'">Abrir el CV</a></div>':'<p style="margin-top:6px">No encontré el CV de esta persona en la planilla.</p>')}
     else if(a.tipo==='abrir'){c.innerHTML='<h4>Ficha</h4>'+esc(a.nombre)+'<div class="bm-row"><button type="button" class="bm-b p">Abrir la ficha</button></div>';c.querySelector('button').onclick=function(){if(typeof ficha==='function'){panel.classList.remove('on');ficha(a.fila)}}}
-    else if(a.tipo==='devolucion'){c.innerHTML='<h4>Devolución del screening · '+esc(a.nombre)+'</h4><textarea>'+esc(a.mensaje)+'</textarea><div class="bm-row"><button type="button" class="bm-b" data-k="cp">Copiar</button>'+(a.tel?'<button type="button" class="bm-b p" data-k="wa">Abrir WhatsApp</button>':'<span style="font-size:12px;color:#666">Sin teléfono en la ficha</span>')+'</div>';
-      var ta=c.querySelector('textarea');c.querySelector('[data-k=cp]').onclick=function(){try{navigator.clipboard.writeText(ta.value);this.textContent='Copiado'}catch(e){ta.select();document.execCommand('copy');this.textContent='Copiado'}};
-      var w=c.querySelector('[data-k=wa]');if(w)w.onclick=function(){window.open('https://wa.me/'+a.tel+'?text='+encodeURIComponent(ta.value),'_blank')}}
+    else if(a.tipo==='screening'){c.innerHTML='<h4>Cargar screening</h4><b>'+esc(a.nombre)+'</b><p style="margin:6px 0 0;color:#555">Te voy preguntando lo mismo que el formulario y después se abre completo para revisarlo y guardarlo.</p><div class="bm-row"><button type="button" class="bm-b p">Empezar</button></div>';c.querySelector('button').onclick=function(){this.disabled=true;wizard(a)}}
     else if(a.tipo==='agendar'){c.innerHTML='<h4>Agendar '+esc(a.etapa)+'</h4><b>'+esc(a.nombre)+'</b><br>'+esc(fechaTxt(a.fecha,a.hora))+(a.entrevistador?' · con '+esc(a.entrevistador):'')+'<div class="bm-row"><button type="button" class="bm-b p" data-k="ok">Confirmar</button><button type="button" class="bm-b" data-k="no">Descartar</button></div><div class="bm-res" style="margin-top:8px"></div>';
       var res=c.querySelector('.bm-res'),ok=c.querySelector('[data-k=ok]');
       function ejecutar(forzar){ok.disabled=true;res.textContent='Agendando…';var q=Object.assign({},a,{forzar:!!forzar});
@@ -79,6 +77,43 @@ body:has(.modal-bg.show) #bmFab,body:has(.modal-bg.show) #bmTip,body:has(.modal-
     google.script.run.withSuccessHandler(function(r){busy=false;send.disabled=false;esp.remove();var m={rol:'bot',texto:r.texto};if(r.accion)m.card=r.accion;msgs.push(m);add(fmt(r.texto),'bm-m b');if(r.accion)tarjeta(r.accion);save()})
       .withFailureHandler(function(e){busy=false;send.disabled=false;esp.innerHTML='<span style="color:#B3261E">No pude responder: '+esc((e&&e.message)||e)+'</span>'})
       .bloomyChat(PERFIL,msgs.map(function(m){return {rol:m.rol,texto:m.texto}}),quienSoy())}
+
+  // ---- Cargar el screening conversando ----
+  var W=null;
+  function bot(h){return add(h,'bm-m b')}
+  function yo(t){return add(esc(t),'bm-m u')}
+  function btns(opts,fn,extra){var d=document.createElement('div');d.className='bm-row';opts.forEach(function(o){var b=document.createElement('button');b.type='button';b.className='bm-b'+(o.p?' p':'');b.textContent=o.t;b.onclick=function(){[].forEach.call(d.querySelectorAll('button'),function(x){x.disabled=true});fn(o)};d.appendChild(b)});body.appendChild(d);body.scrollTop=body.scrollHeight;return d}
+  function wizard(a){
+    var esp=bot('Armando las preguntas…');
+    google.script.run.withSuccessHandler(function(def){esp.remove();
+      W={def:def,fila:a.fila,i:0,resp:{eval:{},val:{},comentario:''},steps:[]};
+      def.eval.forEach(function(x){W.steps.push({k:'eval',x:x})});def.val.forEach(function(x){W.steps.push({k:'val',x:x})});W.steps.push({k:'com'});
+      bot('Dale, cargamos el screening de <b>'+esc(def.nombre)+'</b>. Son '+W.steps.length+' pasos; tocá una opción o «Saltear». Cuando termine se abre el formulario ya completo para que lo revises y lo guardes.');
+      sig()}).withFailureHandler(function(e){esp.innerHTML='<span style="color:#B3261E">'+esc((e&&e.message)||e)+'</span>'}).bloomyScreeningDef(PERFIL,a.fila)}
+  function salir(){W=null;bot('Listo, lo dejamos acá. No se guardó nada.')}
+  function sig(){
+    if(!W)return;
+    if(W.i>=W.steps.length)return fin();
+    var st=W.steps[W.i],n='<span style="color:#777;font-size:12px">('+(W.i+1)+'/'+W.steps.length+')</span> ';
+    if(st.k==='eval'){bot(n+'¿Cómo lo ves en <b>'+esc(st.x.label)+'</b>?');
+      btns([{t:'Alto',v:'alto',p:1},{t:'Medio',v:'medio'},{t:'Bajo',v:'bajo'},{t:'Saltear',v:''},{t:'Salir',s:1}],function(o){if(o.s)return salir();if(o.v){W.resp.eval[st.x.id]=o.v;yo(o.t)}else yo('Saltear');W.i++;sig()})}
+    else if(st.k==='val'){bot(n+'<b>'+esc(st.x.label)+'</b>');
+      btns(st.x.opts.map(function(t){return {t:t,v:t}}).concat([{t:'Saltear',v:''},{t:'Salir',s:1}]),function(o){if(o.s)return salir();if(o.v){W.resp.val[st.x.id]=o.v;yo(o.t)}else yo('Saltear');W.i++;sig()})}
+    else{bot(n+'¿Algún <b>comentario</b> de la entrevista? Escribilo (o dictalo con el micrófono de tu teclado) y tocá Seguir.');
+      var d=document.createElement('div');d.className='bm-card';d.innerHTML='<textarea placeholder="Observaciones relevantes de la entrevista…"></textarea><div class="bm-row"><button type="button" class="bm-b p" data-k="ok">Seguir</button><button type="button" class="bm-b" data-k="no">Sin comentario</button><button type="button" class="bm-b" data-k="ex">Salir</button></div>';body.appendChild(d);body.scrollTop=body.scrollHeight;
+      var ta=d.querySelector('textarea');ta.focus();
+      d.querySelector('[data-k=ok]').onclick=function(){W.resp.comentario=ta.value.trim();d.remove();if(W.resp.comentario)yo(W.resp.comentario);W.i++;sig()};
+      d.querySelector('[data-k=no]').onclick=function(){d.remove();yo('Sin comentario');W.i++;sig()};
+      d.querySelector('[data-k=ex]').onclick=function(){d.remove();salir()}}
+  }
+  function fin(){
+    var ne=Object.keys(W.resp.eval).length,nv=Object.keys(W.resp.val).length;
+    bot('Listo: <b>'+ne+'</b> criterios, <b>'+nv+'</b> validaciones'+(W.resp.comentario?' y el comentario':'')+'. Abrí el formulario, revisá el resultado que calcula y tocá <b>Guardar entrevista</b>.');
+    var d=btns([{t:'Abrir el formulario completo',p:1},{t:'Descartar'}],function(o){
+      if(o.t==='Descartar'){W=null;bot('Descartado. No se guardó nada.');return}
+      var w=null;try{w=window.open('about:blank','_blank');if(w){w.opener=null;w.document.write('<p style="font-family:sans-serif;padding:40px;text-align:center">Abriendo el formulario…</p>')}}catch(e){w=null}
+      var rp=W.resp,fila=W.fila;
+      google.script.run.withSuccessHandler(function(r){W=null;if(w){w.location.href=r.url}else{bot('Tu navegador bloqueó la ventana. <a href="'+esc(r.url)+'" target="_blank" rel="noopener">Abrir el formulario</a>')}}).withFailureHandler(function(e){if(w){try{w.close()}catch(x){}}bot('<span style="color:#B3261E">No pude preparar el formulario: '+esc((e&&e.message)||e)+'</span>')}).bloomyScreeningBorrador(PERFIL,fila,rp,quienSoy())})}
   send.onclick=enviar;inp.onkeydown=function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();enviar()}};
   fab.onclick=function(){panel.classList.add('on');tip.classList.remove('on');hand.classList.remove('on');pintar();setTimeout(function(){inp.focus()},50)};
   panel.querySelector('#bmX').onclick=function(){panel.classList.remove('on')};

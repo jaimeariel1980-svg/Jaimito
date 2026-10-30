@@ -51,6 +51,7 @@ function bloomyChat_(perfilId, mensajes, quien) {
     if (!nombre || /^Eliminado\|/.test(estado)) continue;
     cands.push({ fila: i + 1, nombre: nombre, estado: estado, cv: d[i][4] || '', scr: d[i][11] || '', comp: d[i][15] || '', zona: d[i][23] || '', cita: d[i][36] || '', ent: String(d[i][45] || ''), via: String(d[i][9] || '').trim(), eS: entEval[norm(nombre) + '|screening'] || '', eC: entEval[norm(nombre) + '|competencias'] || '' });
   }
+  const resumen = bloomyResumen_(cfg, sh, d, cands);
   const lista = cands.map(c => c.fila + ' | ' + c.nombre + ' | ' + (c.estado || '—') + ' | CV ' + (c.cv || '-') + ' · SCR ' + (c.scr || '-') + ' · COMP ' + (c.comp || '-') + (c.cita ? ' | cita ' + c.cita + (c.ent ? ' con ' + c.ent : '') : '') + (c.eS || c.eC ? ' | entrevistó' + (c.eS ? ' screening ' + c.eS : '') + (c.eC ? ' competencias ' + c.eC : '') : '') + (c.via ? ' | llegó por ' + c.via : '')).join('\n');
   // fichas completas de los candidatos nombrados en la conversación (hasta 2): resumen sin datos sensibles, contacto y screening cargado
   const conv = norm(msgs.slice(-4).map(m => m.texto).join(' '));
@@ -69,14 +70,14 @@ function bloomyChat_(perfilId, mensajes, quien) {
   try { entrevistadores = leerUsuarios_().filter(u => u.activo === 'SI' && (usuHace_(u, 'screening') || usuHace_(u, 'competencias'))).map(u => u.nombre); } catch (e) { }
   const hoy = Utilities.formatDate(new Date(), 'America/Argentina/Buenos_Aires', "EEEE dd/MM/yyyy HH:mm");
   const sistema = 'Sos Bloomy, el asistente del tablero de reclutamiento de Blumia Consulting. Hablás en español rioplatense, corto y directo. Trabajás solo con la búsqueda «' + (cfg.nombre_perfil || cfg.nombre || perfilId) + '». Hoy es ' + hoy + ' (hora de Argentina).\n' +
-    'REGLAS: 1) Usá solo los datos de abajo; si algo no está, decilo, no inventes. 2) Nunca menciones edad, género ni situación familiar. 3) Si hay dos candidatos que pueden ser a quien se refieren, preguntá. 4) Para preguntas de proceso (quién lo entrevistó, cuándo, en qué estado está, quién mandó el CV, por dónde llegó) respondé con los datos de la lista y de la FICHA, citando fecha y persona. 5) No escribas datos de contacto salvo que los pidan y estén en la FICHA. 6) Nunca digas que hiciste algo que cambia datos: solo proponés una acción y la persona la confirma con un botón.\n' +
+    'REGLAS: 1) Usá solo los datos de abajo; si algo no está, decilo, no inventes. 2) Nunca menciones edad, género ni situación familiar. 3) Si hay dos candidatos que pueden ser a quien se refieren, preguntá. 4) Para preguntas de proceso (quién lo entrevistó, cuándo, en qué estado está, quién mandó el CV, por dónde llegó) respondé con los datos de la lista y de la FICHA, citando fecha y persona. 5) Podés responder cuántos candidatos hay por etapa o nota, motivos de descarte, de dónde llegan, entrevistas próximas, quién entrevistó, qué falta cargar y datos de la búsqueda, con el RESUMEN y la lista; hacé las cuentas con cuidado. 5b) No escribas datos de contacto salvo que los pidan y estén en la FICHA. 6) Nunca digas que hiciste algo que cambia datos: solo proponés una acción y la persona la confirma con un botón.\n' +
     'ACCIONES (campo "accion", una sola por respuesta, o null): ' +
     '{"tipo":"cv","fila":N} para dar el link del CV; ' +
-    '{"tipo":"devolucion","fila":N,"mensaje":"..."} para redactar el mensaje de devolución del screening al candidato (cálido, profesional, 4-6 líneas, sin prometer contratación, sin nota ni puntajes, firmado «Equipo Blumia Consulting»; si no hay screening cargado, avisá y no lo armes); ' +
+    '{"tipo":"screening","fila":N} cuando quieren CARGAR o completar el screening de alguien (yo les voy preguntando lo mismo que pide el formulario: no lo cargues vos); '+
     '{"tipo":"agendar","fila":N,"etapa":"screening|competencias","fecha":"AAAA-MM-DD","hora":"HH:MM","entrevistador":"nombre o vacío"} para agendar (necesita fecha y hora claras; si falta algo, preguntá; entrevistadores posibles: ' + (entrevistadores.join(', ') || 'ninguno cargado') + '); ' +
     '{"tipo":"abrir","fila":N} para abrir la ficha.\n' +
     'FORMATO: respondé SOLO un JSON {"texto":"respuesta breve","accion":null o la acción}. "fila" es el número de la primera columna de la lista.\n\n' +
-    'CANDIDATOS (fila | nombre | estado | notas | cita | quién entrevistó | llegó por):\n' + lista + (fichas ? '\n\n' + fichas : '');
+    'RESUMEN DE LA BÚSQUEDA (datos reales, usalos para contestar cuántos, cómo viene, etc.):\n' + resumen + '\n\nCANDIDATOS (fila | nombre | estado | notas | cita | quién entrevistó | llegó por):\n' + lista + (fichas ? '\n\n' + fichas : '');
   const usuario = msgs.map(m => (m.rol === 'bot' ? 'Bloomy: ' : 'Usuario: ') + m.texto).join('\n');
   const crudo = procesarConClaude(sistema, usuario, 'bloomy');
   let o = null;
@@ -94,11 +95,7 @@ function bloomyAccion_(sh, d, a, entrevistadores) {
   const base = { tipo: String(a.tipo), fila: fila, nombre: String(r[1]).trim() };
   if (a.tipo === 'abrir') return base;
   if (a.tipo === 'cv') { const u = bloomyLinkCV_(sh, fila); return Object.assign(base, { url: u }); }
-  if (a.tipo === 'devolucion') {
-    const m = bloomyTexto_(a.mensaje).slice(0, 1800);
-    if (!m) return null;
-    return Object.assign(base, { mensaje: m, tel: String(r[2] || '').replace(/\D/g, '') });
-  }
+  if (a.tipo === 'screening') return base;
   if (a.tipo === 'agendar') {
     const etapa = a.etapa === 'competencias' ? 'competencias' : (a.etapa === 'screening' ? 'screening' : '');
     if (!etapa || !/^\d{4}-\d{2}-\d{2}$/.test(String(a.fecha)) || !/^\d{2}:\d{2}$/.test(String(a.hora))) return null;
@@ -116,4 +113,59 @@ function bloomyEjecutar_(perfilId, accion, quien) {
   const fila = filaCandidato_(sh, Number(accion.fila));
   if (String(sh.getRange(fila, 2).getValue() || '').trim() !== String(accion.nombre || '').trim()) throw new Error('El candidato cambió de lugar en la planilla. Pedímelo de nuevo.');
   return agendarCitaTablero_(perfilId, fila, accion.etapa === 'competencias' ? 'competencias' : 'screening', String(accion.fecha), String(accion.hora), 30, '', !!accion.forzar, quien, accion.entrevistador || '');
+}
+
+// resumen numérico de la búsqueda para el modelo (las cuentas las hace el código, no la IA)
+function bloomyResumen_(cfg, sh, d, cands) {
+  const cuenta = (arr) => { const o = {}; arr.forEach(x => { x = String(x || '').trim() || '—'; o[x] = (o[x] || 0) + 1; }); return Object.keys(o).sort((a, b) => o[b] - o[a]).map(k => k + ': ' + o[k]).join(' · '); };
+  const H = d[0], cMot = H.indexOf('Motivo de descarte');
+  const activos = cands.filter(c => !/^Descartad/i.test(c.estado));
+  const desc = cands.filter(c => /^Descartad/i.test(c.estado));
+  const motivos = [];
+  if (cMot >= 0) desc.forEach(c => String(d[c.fila - 1][cMot] || '').split(/;\s*/).forEach(m => { if (m.trim()) motivos.push(m.trim()); }));
+  const citas = cands.filter(c => c.cita).map(c => c.nombre + ' ' + c.cita + (c.ent ? ' (con ' + c.ent + ')' : '')).slice(0, 15);
+  const lineas = [
+    'Búsqueda: ' + (cfg.nombre_perfil || cfg.nombre || '') + ' · Estado: ' + (String(cfg.estado_busqueda || '').toUpperCase() === 'CERRADA' ? 'CERRADA' : 'ABIERTA') + ' · Banda salarial de referencia: ' + (cfg.banda_salarial || '—'),
+    'Total de CVs: ' + cands.length + ' · En proceso (no descartados): ' + activos.length + ' · Descartados: ' + desc.length,
+    'Por estado → ' + cuenta(cands.map(c => c.estado)),
+    'Notas de CV → ' + cuenta(cands.map(c => c.cv)),
+    'Notas de screening → ' + cuenta(cands.filter(c => c.scr).map(c => c.scr)),
+    'Notas de competencias → ' + cuenta(cands.filter(c => c.comp).map(c => c.comp)),
+    'Motivos de descarte → ' + (motivos.length ? cuenta(motivos) : 'ninguno cargado') + ' · Descartados sin motivo: ' + desc.filter(c => !cMot >= 0 || !String(d[c.fila - 1][cMot] || '').trim()).length,
+    'De dónde llegan → ' + cuenta(cands.map(c => c.via)),
+    'Citas agendadas → ' + (citas.length ? citas.join(' | ') : 'ninguna')
+  ];
+  return lineas.join('\n');
+}
+
+// ---- Cargar el screening conversando: Bloomy pregunta lo del formulario y deja un borrador que se abre ya completo ----
+function bloomyScreeningDef_(perfilId, fila) {
+  const sh = getSheet(getConfig(perfilId));
+  fila = filaCandidato_(sh, fila);
+  const D = getDatosPerfil_(perfilId);
+  return {
+    fila: fila,
+    nombre: String(sh.getRange(fila, 2).getValue() || '').trim(),
+    eval: (D.eval_items || []).map(x => ({ id: String(x.id), label: String(x.label || '') })),
+    val: (D.val_items || []).map(x => ({ id: String(x.id), label: String(x.label || ''), opts: (x.opts || []).map(String) }))
+  };
+}
+
+function bloomyScreeningBorrador_(perfilId, fila, resp, quien) {
+  const def = bloomyScreeningDef_(perfilId, fila);
+  const evalOk = {}, valOk = {};
+  const E = ['bajo', 'medio', 'alto'];
+  def.eval.forEach(x => { const v = resp && resp.eval ? String(resp.eval[x.id] || '') : ''; if (E.indexOf(v) >= 0) evalOk[x.id] = v; });
+  def.val.forEach(x => { const v = resp && resp.val ? String(resp.val[x.id] || '') : ''; if (x.opts.indexOf(v) >= 0) valOk[x.id] = v; });
+  const borrador = { eval: evalOk, val: valOk, comentario: bloomyTexto_(resp && resp.comentario).slice(0, 4000), nombre: def.nombre, entrevistador: bloomyTexto_(quien).slice(0, 60) };
+  const id = Utilities.getUuid();
+  CacheService.getScriptCache().put('bsb_' + id, JSON.stringify(borrador), 7200);
+  const url = URL_BASE() + '?tipo=screening&perfil=' + encodeURIComponent(perfilId) + '&nombre=' + encodeURIComponent(def.nombre) + '&entrevistador=' + encodeURIComponent(borrador.entrevistador) + '&borrador=' + id;
+  try { registrarHistorial_(getSheet(getConfig(perfilId)).getName(), def.nombre, 'Screening', 'Preparado con Bloomy (borrador sin guardar)', quien); } catch (e) { }
+  return { id: id, url: url };
+}
+
+function bloomyBorradorLeer_(id) {
+  const t = CacheService.getScriptCache().get('bsb_' + String(id || '').replace(/[^\w-]/g, ''));
+  return t ? JSON.parse(t) : null;
 }
