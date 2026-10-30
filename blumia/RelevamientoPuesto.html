@@ -874,7 +874,7 @@ var PERFIL_ID=<?!= JSON.stringify(perfilId) ?>;
 var PERFIL_TOKEN=<?!= JSON.stringify(token) ?>;
 var DATOS_GUARDADOS=<?!= datos ?>;
 var FECHA_GUARDADO=<?!= JSON.stringify(fecha) ?>;
-function controles(){return [].slice.call(document.querySelectorAll('input,textarea,select')).filter(function(e){return ['radio','checkbox','button'].indexOf(e.type)<0&&!e.closest('.pv');});}
+function controles(){return [].slice.call(document.querySelectorAll('input,textarea,select')).filter(function(e){return ['radio','checkbox','button','file'].indexOf(e.type)<0&&!e.closest('.pv')&&!e.closest('.ia-ui');});}
 function datosForm(){
   var pills={};
   [].forEach.call(document.querySelectorAll('.pills'),function(g){var l=[].slice.call(g.querySelectorAll('.pill'));pills[g.id]=l.findIndex(function(x){return x.classList.contains('on');});});
