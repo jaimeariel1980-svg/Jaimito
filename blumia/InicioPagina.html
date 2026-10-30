@@ -100,7 +100,7 @@ document.getElementById('stC').textContent=abiertas.reduce(function(a,b){return 
 var k=0;
 function ini(e){var w=String(e||'').trim().split(/\s+/).filter(Boolean);return ((w[0]||'?').charAt(0)+(w.length>1?w[1].charAt(0):(w[0]||'').charAt(1))).toUpperCase();}
 function colorEmp(e){var h=0,t=String(e||'');for(var i=0;i<t.length;i++)h=(h*31+t.charCodeAt(i))>>>0;return ['#FBE794','#F9BDBB','#DCE8D3','#BFE3DB'][h%4];}
-function tarjeta(b){return '<div class="card'+(b.cerrada?' cerr':'')+'" onclick="ir(\''+esc(b.id)+'\')"><div class="av" style="background:'+colorEmp(b.empresa)+'" aria-hidden="true">'+esc(ini(b.empresa))+'</div><div class="t"><b>'+esc(b.nombre)+'</b><small>'+b.n+' candidato'+(b.n===1?'':'s')+(b.cerrada?' · cerrada':'')+'</small></div>'+(esAdmin?'<button class="cl" title="Más opciones" aria-label="Más opciones de '+esc(b.nombre)+'" onclick="event.stopPropagation();menuTar(\''+esc(b.id)+'\')">⋯</button>':'')+'<span class="go">›</span></div>';}
+function tarjeta(b){return '<div class="card'+(b.cerrada?' cerr':'')+'" onclick="ir(\''+esc(b.id)+'\')"><div class="av" style="background:'+colorEmp(b.empresa)+'" aria-hidden="true">'+esc(ini(b.empresa))+'</div><div class="t"><b>'+esc(b.nombre)+'</b><small>'+b.n+' candidato'+(b.n===1?'':'s')+(b.cerrada?' · cerrada':'')+(b.ciega?' · 🔒 ciega':'')+'</small></div>'+(esAdmin?'<button class="cl" title="Más opciones" aria-label="Más opciones de '+esc(b.nombre)+'" onclick="event.stopPropagation();menuTar(\''+esc(b.id)+'\')">⋯</button>':'')+'<span class="go">›</span></div>';}
 var por={};DATOS.forEach(function(b){(por[b.empresa]=por[b.empresa]||[]).push(b);});
 var h='';
 Object.keys(por).sort().forEach(function(emp,ix){k=ix;
@@ -110,7 +110,14 @@ Object.keys(por).sort().forEach(function(emp,ix){k=ix;
 });
 document.getElementById('lista').innerHTML=h||'<div class="vacio">Todavía no hay búsquedas.'+(esAdmin?' Creá la primera con «➕ Nueva búsqueda».':'')+'</div>';
 }
-function menuTar(id){var b=DATOS.filter(function(x){return x.id===id;})[0];if(!b)return;blMenu(b.nombre,'',[[b.cerrada?'Reabrir búsqueda':'Cerrar búsqueda',function(){estado(id,!b.cerrada);}]]);}
+function menuTar(id){var b=DATOS.filter(function(x){return x.id===id;})[0];if(!b)return;blMenu(b.nombre,'',[[b.cerrada?'Reabrir búsqueda':'Cerrar búsqueda',function(){estado(id,!b.cerrada);}],[b.ciega?'Quitar búsqueda ciega (mostrar la empresa)':'Hacer búsqueda ciega (ocultar la empresa)',function(){ciega(id,!b.ciega);}]]);}
+function ciega(id,si){
+  var b=DATOS.filter(function(x){return x.id===id;})[0];if(!b)return;
+  var msg=si?'¿Hacer ciega «'+b.nombre+'»?\n\nLos candidatos dejan de ver el nombre y el logo de la empresa (postulación, mensajes, mails y flyer). Los informes y el tablero internos siguen con el nombre real.':'¿Quitar «ciega» de «'+b.nombre+'»? Los candidatos vuelven a ver el nombre y el logo de la empresa.';
+  blConfirm(msg,function(){
+  google.script.run.withSuccessHandler(function(){b.ciega=!!si;pintar();}).withFailureHandler(function(e){alert((e&&e.message)||e);}).cambiarCiegaBusqueda(id,!!si);
+  },{si:si?'Hacer ciega':'Quitar ciega'});
+}
 function estado(id,cerrar){
   var b=DATOS.filter(function(x){return x.id===id;})[0];if(!b)return;
   var msg=cerrar?'¿Cerrar «'+b.nombre+'»?\n\nLa página de postulación avisa que ya terminó y deja de recibir CVs por mail y por carpeta. Los candidatos y el tablero siguen disponibles. Podés reabrirla cuando quieras.':'¿Reabrir «'+b.nombre+'»? Vuelve a recibir postulaciones y CVs.';
