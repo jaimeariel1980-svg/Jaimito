@@ -2570,7 +2570,7 @@ function syncCitasCalendar() {
         const suyos = eventos.filter(x => {
           const e = x.e;
           if (mailN && mailN.includes('@')) {
-            const invitados = e.getGuestList(true).map(g => g.getEmail().toLowerCase());
+            const invitados = e.getGuestList().map(g => g.getEmail().toLowerCase());
             if (invitados.includes(mailN)) return true;
           }
           const tit = e.getTitle();
