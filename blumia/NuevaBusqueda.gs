@@ -7,7 +7,7 @@
       competencias y preguntas de postulación (mismo resultado que crearPerfilDirectorComercial).
    ============================================================ */
 
-const LINKS_AGENDA_ = ['link_screening', 'link_competencias', 'link_empresa_virtual', 'link_empresa_presencial'];
+const LINKS_AGENDA_ = ['link_empresa_virtual', 'link_empresa_presencial'];
 const CARPETA_MADRE_BUSQUEDAS_ = '18bhn7cD2PkcK_SldSfKHrjiieHvO3tYH';
 const ESTADOS_BUSQUEDA_ = ['Pendiente', 'Nuevo', 'Contactado', 'Avanza a screening', 'Screening agendado', 'Avanza a competencias', 'Competencias agendada',
   'Avanza a screening empresa', 'Screening empresa agendado', 'Avanza a presencial empresa', 'Entrevista empresa agendada',

@@ -1,4 +1,4 @@
-const CFG_CAMPOS_ = ['nombre', 'nombre_perfil', 'empresa', 'empresa_candidatos', 'logo_cliente', 'preguntas_base', 'datos_internos', 'busqueda_ciega', 'banda_salarial', 'link_screening', 'link_competencias', 'link_empresa_virtual', 'link_empresa_presencial', 'link_flyer', 'link_perfil'];
+const CFG_CAMPOS_ = ['nombre', 'nombre_perfil', 'empresa', 'empresa_candidatos', 'logo_cliente', 'preguntas_base', 'datos_internos', 'busqueda_ciega', 'banda_salarial', 'link_empresa_virtual', 'link_empresa_presencial', 'link_flyer', 'link_perfil'];
 
 /* Preguntas habituales propias: una lista general (pestaña Preguntas_Habituales) que se crea una vez y se tilda en cualquier búsqueda.
    Tildarla en una búsqueda la copia a las preguntas de esa búsqueda (Postulacion_Preguntas); destildarla la saca de esa búsqueda. */
