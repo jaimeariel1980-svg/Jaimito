@@ -2203,6 +2203,29 @@ function editarInteraccion(filaSeg, datos){
   _invalidaNovedades_();
   return {ok:true};
 }
+function unirInteresados(codigo, filas, nombre, tel, quien){
+  codigo = String(codigo||'').trim(); nombre = _limpiarTxt_(String(nombre||'').trim()); tel = String(tel||'').trim();
+  if(!codigo || !nombre || !filas || !filas.length || filas.length>200) throw new Error('Faltan datos para unir');
+  var lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try{
+    var seg = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento');
+    var h = seg.getRange(1,1,1,seg.getLastColumn()).getValues()[0], ci = h.indexOf('Interesado'), ct = h.indexOf('Teléfono'), n = 0, ult = seg.getLastRow(), desde = '';
+    if(ci<0) throw new Error('No encuentro la columna Interesado');
+    filas.forEach(function(f){
+      f = +f; if(!f || f<2 || f>ult) return;
+      var r = seg.getRange(f,1,1,Math.max(ci,ct)+1).getValues()[0];
+      if(String(r[0]).trim()!==codigo) return;
+      if(!desde) desde = String(r[ci]||'').trim();
+      seg.getRange(f,ci+1).setValue(nombre);
+      if(tel && ct>-1 && !String(r[ct]||'').trim()) seg.getRange(f,ct+1).setValue(tel);
+      n++;
+    });
+    if(!n) throw new Error('No encontré esas interacciones');
+    try{ _audit_('campos','🔗 Unió al interesado «'+desde+'» con «'+nombre+'» ('+n+' interacción'+(n===1?'':'es')+')', (typeof azcuMapaDirs_==='function'?(azcuMapaDirs_()[codigo]||''):''), quien||''); }catch(e){}
+    _invalidaNovedades_();
+    return {ok:true, n:n};
+  } finally { lock.releaseLock(); }
+}
 function eliminarPropiedad(codigo, quien){
   var mae=hojaMaestra_();
   var fila=_filaPorCodigo_(mae, codigo);
