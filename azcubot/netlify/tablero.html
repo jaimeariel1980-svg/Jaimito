@@ -1129,7 +1129,7 @@ function cargarForm(id, nombre, tel){
     '<label>Resultado<select id="cf_res" onchange="cfResTog()">'+resOpts+'</select></label>'+
     '<label id="cf_rpl" style="display:none">Nueva fecha y hora de la visita<input id="cf_cuando" type="datetime-local"></label>'+
     '<div id="cf_rpn" style="display:none;grid-column:1/-1;font-size:12px;color:var(--gris)">Actúa sobre la visita agendada de este interesado: no crea una fila nueva. Anotá el motivo en Observaciones.</div>'+
-    '<label>Próximo paso<input id="cf_prox" placeholder="Ej: coordinar visita"></label>'+
+    '<label>Próximo paso<input id="cf_prox" placeholder="Ej: llamar el lunes (las visitas se agendan desde Visitas)"></label>'+
     '<label style="grid-column:1/-1">Observaciones<textarea id="cf_obs" rows="2" placeholder="Comentarios..."></textarea></label>'+
   '</div>'+
   '<div class="dlbtns"><button class="btn g" id="cf_btn" onclick="guardarConsulta(\''+id+'\')">Registrar</button><button class="btn s" onclick="closeDL()">Cancelar</button></div></div>';

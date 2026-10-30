@@ -2088,11 +2088,27 @@ function guardarPropiedad(codigo, cambios){
 function _audit_(tipo, texto, dir, quien){ try{ if(typeof azcuAudit_==='function') azcuAudit_(tipo, texto, dir, quien); }catch(e){} }
 function _dirDe_(mae, fila, head){ try{ var r=mae.getRange(fila,1,1,head.length).getValues()[0], g=function(n){ var i=head.indexOf(n); return i>-1?r[i]:''; }; return _dirTexto_(g('Calle'),g('Número'),g('Piso'),g('Departamento'),g('Pasillo')); }catch(e){ return ''; } }
 function _invalidaNovedades_(){ try{ var c=CacheService.getScriptCache(); c.remove('azmov_90'); c.remove('azmov_30'); c.remove('azvis_60_60'); }catch(e){} try{ if(typeof azcuLimpiarCache_==='function') azcuLimpiarCache_(); }catch(e){} }
+// una interacción cuyo «próximo paso» es «Visita dd/mm/aaaa hh:mm» (no agendada, ni cancelada ni reprogramada) cuenta como visita pendiente
+function _proxVisita_(r){
+  if(/^visita (agendada|cancelada|reprogramada)$/i.test(String(r[5]||'').trim())) return null;
+  var m = String(r[6]||'').trim().match(/^Visita\s+(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})/i);
+  return m ? {n:+(m[3]+('0'+m[2]).slice(-2)+('0'+m[1]).slice(-2)), hh:('0'+m[4]).slice(-2)+':'+m[5]} : null;
+}
+function _mismaPersona_(r, cli, tel){
+  var a = _ndir_(r[3]).split(' ')[0], b = _ndir_(cli).split(' ')[0], t1 = String(r[4]||'').replace(/\D/g,''), t2 = String(tel||'').replace(/\D/g,'');
+  return (a && b && a===b) || (t1 && t2 && t1===t2);
+}
+// al cancelar una visita, los seguimientos pendientes (fecha de próximo contacto) de esa persona en esa propiedad dejan de avisar
+function _cerrarSeguimientos_(seg, cod, cli, tel){
+  var v = seg.getDataRange().getValues(), i;
+  for(i=1;i<v.length;i++) if(String(v[i][0]).trim()===cod && String(v[i][7]||'').trim() && _mismaPersona_(v[i], cli, tel)) seg.getRange(i+1, 8).setValue('');
+}
 function _visitaAgendadaDe_(codigo, cli){
   var seg = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento');
   if(!seg) throw new Error('No existe la pestaña Seguimiento');
   var v = seg.getDataRange().getValues(), i, ag = [], dirF = '';
-  function esAg(r){ return /^visita agendada$/i.test(String(r[5]).trim()); }
+  var hoyN = +Utilities.formatDate(new Date(), 'GMT-3', 'yyyyMMdd');
+  function esAg(r){ if(/^visita agendada$/i.test(String(r[5]).trim())) return true; var px = _proxVisita_(r); return !!px && px.n >= hoyN; }
   for(i=1;i<v.length;i++){
     if(String(v[i][0]).trim()===codigo && !dirF && String(v[i][12]||'').trim()) dirF = _ndir_(v[i][12]);
     if(esAg(v[i])) ag.push({fila:i+1, r:v[i], cli:String(v[i][3]||'').trim(), prox:String(v[i][6]||'').trim()});
@@ -2544,10 +2560,12 @@ function cancelarVisita(filaSeg, motivo, quien, reprog){
   var seg = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento');
   if(!seg || !filaSeg || filaSeg<2 || filaSeg>seg.getLastRow()) throw new Error('Esa visita ya no existe');
   var r = seg.getRange(filaSeg, 1, 1, Math.min(Math.max(seg.getLastColumn(),11),16)).getValues()[0];
-  if(String(r[5]).trim()!=='Visita agendada') throw new Error('Esa visita ya no está agendada');
+  var esAgV = String(r[5]).trim()==='Visita agendada', pxV = esAgV ? null : _proxVisita_(r);
+  if(!esAgV && !pxV) throw new Error('Esa visita ya no está agendada');
   var m = String(r[6]).match(/^Visita\s+(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})/), cod = String(r[0]).trim(), ext = /^EXT-/.test(cod), cli = String(r[3]||'').trim();
   var q = String(quien||'').trim(), mot = String(motivo||'').trim().slice(0,300), hoy = Utilities.formatDate(new Date(), 'GMT-3', 'dd/MM/yyyy'), previo = String(r[8]||'').trim();
-  seg.getRange(filaSeg, 6).setValue(reprog ? 'Visita reprogramada' : 'Visita cancelada');
+  if(pxV){ seg.getRange(filaSeg, 7).setValue(''); }
+  else seg.getRange(filaSeg, 6).setValue(reprog ? 'Visita reprogramada' : 'Visita cancelada');
   seg.getRange(filaSeg, 9).setValue((reprog ? '🔁 Reprogramada el ' : '🚫 Cancelada el ')+hoy+(q?' por '+q:'')+(mot?': '+mot:'')+(previo?' · '+previo:''));
   var borrado = false;
   try{
@@ -2559,6 +2577,7 @@ function cancelarVisita(filaSeg, motivo, quien, reprog){
     }
   }catch(e){ Logger.log('Cancelar visita - Calendar: '+e.message); }
   var dir = ext ? '🏢 '+String(r[12]||'').trim() : (typeof azcuMapaDirs_==='function' ? (azcuMapaDirs_()[cod]||'') : '');
+  if(!reprog){ try{ _cerrarSeguimientos_(seg, cod, cli, r[4]); }catch(e){ Logger.log('Cerrar seguimientos: '+e.message); } }
   _audit_('cancelvis', (reprog ? '🔁 Reprogramó la visita de ' : '🚫 Canceló la visita de ')+(cli||'—')+(m ? ' ('+m[1]+'/'+m[2]+' '+m[4]+':'+m[5]+')' : ''), dir, q);
   _invalidaNovedades_();
   return {ok:true, calendar:borrado};
