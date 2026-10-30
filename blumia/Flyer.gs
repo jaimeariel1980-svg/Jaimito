@@ -43,6 +43,7 @@ function flyerDatos_(perfilId) {
     puesto: puesto,
     empresa: busquedaCiega_(cfg) ? empresaParaCandidatos_(cfg) : empresa,
     ciega: busquedaCiega_(cfg),
+    logoCli: busquedaCiega_(cfg) ? '' : logoClienteDatos_(cfg),
     empresaNeutral: empresaParaCandidatos_(cfg),
     ubicacion: String(hero.ubicacion || ''),
     instancia: String(hero.instancia || ''),

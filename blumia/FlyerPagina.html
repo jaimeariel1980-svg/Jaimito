@@ -340,6 +340,7 @@ function porDefecto(){
 function cargarEstado(){
   S=porDefecto();
   if(DATOS.guardado){try{var g=JSON.parse(DATOS.guardado);for(var k in g){if(k==='txt'){for(var t in g.txt)S.txt[t]=g.txt[t]}else S[k]=g[k]}generado=true}catch(e){}}
+  if(!DATOS.guardado&&DATOS.logoCli&&!DATOS.ciega&&!S.cli)S.cli=DATOS.logoCli;
   if(S.colA==='#1A6645')S.colA='#0F3F27';if(S.colT==='#1A1A1A'&&!DATOS.guardado)S.colT='#0F3F27';
 }
 
