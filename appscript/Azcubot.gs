@@ -228,14 +228,12 @@ function azcuHerrAlertas_(){
       if(f.length) out.papeles.push({id:p.id, direccion:p.dir, faltan:f});
       if(p.dias===null || p.dias>30) out.sin_movimiento.push({id:p.id, direccion:p.dir, dias:p.dias});
     }
-    var props = (p.seg||[]).filter(function(s){ return /propuesta|oferta/i.test(s.res); });
-    if(props.length && azcuActiva_(p) && p.etapa!=='Reserva'){
-      var u = props[props.length-1], n = azcuNum_(u.fecha);
-      if(n && !/acept|rechaz/i.test(u.res)){ var dd = azcuDif_(hn, n); if(dd>=3 && dd<=30) out.propuestas_sin_respuesta.push({id:p.id, direccion:p.dir, cliente:u.cli, dias:dd}); }
+    if(azcuActiva_(p) && p.etapa!=='Reserva'){
+      azcuPropsActivas_(p).forEach(function(x){ var dd = azcuDif_(hn, x.n); if(dd>=3 && dd<=30) out.propuestas_sin_respuesta.push({id:p.id, direccion:p.dir, cliente:x.u.cli, dias:dd}); });
     }
     (p.seg||[]).forEach(function(s){
       var m = String(s.prox||'').match(/^Visita (\d{2}\/\d{2}\/\d{4}) (\d{2}:\d{2})/);
-      if(s.res==='Visita agendada' && m && azcuNum_(m[1])===hn) out.visitas_hoy.push({hora:m[2], id:p.id, direccion:p.dir, interesado:s.cli, telefono:s.tel});
+      if((s.res==='Visita agendada' || !/^Visita (cancelada|reprogramada)$/i.test(String(s.res||''))) && m && azcuNum_(m[1])===hn) out.visitas_hoy.push({hora:m[2], id:p.id, direccion:p.dir, interesado:s.cli, telefono:s.tel});
     });
   });
   try{
@@ -244,7 +242,7 @@ function azcuHerrAlertas_(){
       var mx = /^EXT-/.test(String(v[i][0]).trim()) && String(v[i][5]).trim()==='Visita agendada' ? String(v[i][6]).match(/^Visita (\d{2}\/\d{2}\/\d{4}) (\d{2}:\d{2})/) : null;
       if(mx && azcuNum_(mx[1])===hn) out.visitas_hoy.push({hora:mx[2], id:String(v[i][0]).trim(), direccion:'🏢 '+v[i][12]+(v[i][11] ? ' ('+v[i][11]+')' : ''), interesado:v[i][3], telefono:v[i][4], otra_inmobiliaria:true});
     }
-    for(i=1;i<v.length;i++) if(v[i][0]) ult[String(v[i][0]).trim()+'|'+(String(v[i][4]).replace(/\D/g,'')||azcuSinAc_(v[i][3]))] = v[i];
+    for(i=1;i<v.length;i++) if(v[i][0]) ult[azcuPersonaKey_(v[i])] = v[i];
     Object.keys(ult).forEach(function(k){
       var r = ult[k], n = azcuNum_(r[7]);
       if(!n || /cerrar/i.test(String(r[6])) || /no le interes/i.test(String(r[5]))) return;
@@ -1402,7 +1400,7 @@ function azcuGet_(id){
   return s;
 }
 var AZCU_PUB_ = ['obtenerDatosOFallar','extraerDatosDNI','extraerDatosPropiedad','extraerDatosEscritura','clasificarPaginasLegajo','precargarDatos','guardarEncuesta'];
-var AZCU_TB_ = ['obtenerUrlDocumento','obtenerConsultasWS','marcarConsultaWS','marcarReporteEnviado','revisarTextoIA','obtenerPropiedadesDoc','obtenerImagenes','obtenerPropiedades','guardarDocumento','getDatos','guardarPropiedad','registrarInteraccion','editarInteraccion','eliminarInteraccion','eliminarPropiedad','agendarVisita','registrarPropuesta','subirDocumento','bajarDocumento','novedadesTb','visitasTb','registrarVisitaExterna','cancelarVisita','papeleraTb','restaurarPapelera','borrarDocumento','obtenerEncuesta','enviarReportePropietario','generarInformeTokko','getAppUrl','getEncuestaUrl','probarAvisoTb','telegramEnlaceTb'];
+var AZCU_TB_ = ['obtenerUrlDocumento','obtenerConsultasWS','marcarConsultaWS','marcarReporteEnviado','revisarTextoIA','obtenerPropiedadesDoc','obtenerImagenes','obtenerPropiedades','guardarDocumento','getDatos','guardarPropiedad','registrarInteraccion','editarInteraccion','unirInteresados','eliminarInteraccion','eliminarPropiedad','agendarVisita','registrarPropuesta','subirDocumento','bajarDocumento','novedadesTb','visitasTb','registrarVisitaExterna','cancelarVisita','papeleraTb','restaurarPapelera','borrarDocumento','obtenerEncuesta','enviarReportePropietario','generarInformeTokko','getAppUrl','getEncuestaUrl','probarAvisoTb','telegramEnlaceTb'];
 function azcuApi(e){
   var raw = (e && e.parameter && e.parameter.payload) || (e && e.postData && e.postData.contents) || '{}', req = {}, out;
   if(e && e.parameter && e.parameter.tg && /"update_id"/.test(raw)){ try{ azcuTgUpdate_(e.parameter.tg, JSON.parse(raw)); }catch(eT){ Logger.log('Telegram: '+eT.message); } return ContentService.createTextOutput('{"ok":true}').setMimeType(ContentService.MimeType.JSON); }
@@ -1766,10 +1764,13 @@ function azcuVisitasData_(atras, adelante){
   var hn = azcuHoy_(), ahora = Date.now(), dirs = azcuMapaDirs_(), sh = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento'), v = sh ? sh.getDataRange().getValues() : [], out = [], real = {}, i, k;
   for(i=1;i<v.length;i++){
     var id0 = String(v[i][0]).trim();
-    if(id0 && String(v[i][2]).trim()==='Visita' && String(v[i][5]).trim()!=='Visita agendada' && !/cancelad|reprogramad/i.test(String(v[i][5]))){ (real[id0] = real[id0]||[]).push({n:azcuNum_(v[i][1]), nom:azcuSinAc_(v[i][3]), tel:String(v[i][4]).replace(/\D/g,'')}); }
+    if(id0 && String(v[i][2]).trim()==='Visita' && String(v[i][5]).trim()!=='Visita agendada' && !/cancelad|reprogramad/i.test(String(v[i][5]))){ (real[id0] = real[id0]||[]).push({i:i, n:azcuNum_(v[i][1]), nom:azcuSinAc_(v[i][3]), tel:String(v[i][4]).replace(/\D/g,'')}); }
   }
   for(i=1;i<v.length;i++){
     var r = v[i], id = String(r[0]).trim(), via = String(r[2]).trim(), res = String(r[5]).trim(), ag = res==='Visita agendada', can = res==='Visita cancelada' || res==='Visita reprogramada', rp = res==='Visita reprogramada', n, hh = '';
+    var px = (!ag && !can) ? _proxVisita_(r) : null;
+    if(px && new Date(azcuIsoN_(px.n)+'T'+px.hh+':00-03:00').getTime() < ahora) px = null;
+    if(px) ag = true;
     if(!id || (via!=='Visita' && !ag && !can)) continue;
     if(ag || can){ var m = String(r[6]).trim().match(/^Visita\s+(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})/i); if(m){ n = +(m[3]+('0'+m[2]).slice(-2)+('0'+m[1]).slice(-2)); hh = ('0'+m[4]).slice(-2)+':'+m[5]; } else n = azcuNum_(r[1]); }
     else n = azcuNum_(r[1]);
@@ -1777,7 +1778,7 @@ function azcuVisitasData_(atras, adelante){
     var dd = azcuDif_(n, hn); if(dd<-atras || dd>adelante) continue;
     var nom = azcuSinAc_(r[3]), tel = String(r[4]).replace(/\D/g,''), hecho = false, ext = /^EXT-/.test(id), e = 'r';
     if(ag){
-      (real[id]||[]).forEach(function(x){ if(hecho || (x.n!==null && x.n<n)) return; if((!nom && !tel) || (nom && x.nom===nom) || (tel && x.tel===tel)) hecho = true; });
+      (real[id]||[]).forEach(function(x){ if(hecho || x.i===i || (x.n!==null && x.n<n)) return; if((!nom && !tel) || (nom && x.nom===nom) || (tel && x.tel===tel)) hecho = true; });
       if(hecho) continue;
       e = new Date(azcuIsoN_(n)+'T'+(hh||'23:59')+':00-03:00').getTime() >= ahora ? 'a' : 'p';
     }
@@ -1849,13 +1850,15 @@ function azcuMarcaVendedor_(vend, cargo){
   }catch(e){}
 }
 
+// una persona = propiedad + primer nombre (o teléfono si no hay nombre): una fila con teléfono y otra sin él son la misma persona
+function azcuPersonaKey_(r){ return String(r[0]).trim()+'|'+(azcuSinAc_(r[3]).split(' ')[0] || String(r[4]).replace(/\D/g,'')); }
 function azcuAvisoSeguimiento(forzar){
   var h = +Utilities.formatDate(new Date(), AZCU_TZ, 'H');
   if(forzar!==true && (h<10 || h>=20 || azcuEnSilencio_())) return;
   var seg = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento');
   if(!seg || seg.getLastRow()<2) return;
   var v = seg.getDataRange().getValues(), hn = azcuHoy_(), ahora = Date.now(), envM = azcuMapaGet_('AZCU_SEG2'), ult = {}, i, datos = null, cambio = false;
-  for(i=1;i<v.length;i++) if(v[i][0]) ult[String(v[i][0]).trim()+'|'+(String(v[i][4]).replace(/\D/g,'')||azcuSinAc_(v[i][3]))] = v[i];
+  for(i=1;i<v.length;i++) if(v[i][0]) ult[azcuPersonaKey_(v[i])] = v[i];
   Object.keys(ult).forEach(function(k){
     var r = ult[k], n = azcuNum_(r[7]);
     if(!n || /cerrar/i.test(String(r[6])) || /no le interes/i.test(String(r[5])) || String(r[5]).trim()==='Visita agendada') return;
@@ -2466,18 +2469,22 @@ function azcuEncuestaAviso_(id){
     m[k] = Date.now(); azcuMapaSet_('AZCU_ENC', m);
   }catch(e){}
 }
+// una propuesta en curso por persona (propiedad + primer nombre o teléfono): la última de cada una que no está aceptada ni rechazada
+function azcuPropsActivas_(p){
+  var ult = {};
+  (p.seg||[]).forEach(function(s){ if(/propuesta|oferta/i.test(s.res)) ult[azcuSinAc_(s.cli).split(' ')[0] || String(s.tel||'').replace(/\D/g,'') || '-'] = s; });
+  return Object.keys(ult).map(function(k){ return {k:k, u:ult[k], n:azcuNum_(ult[k].fecha)}; }).filter(function(x){ return x.n && !/acept|rechaz/i.test(x.u.res); });
+}
 function azcuAvisoPropuestas(forzar){
   var h = +Utilities.formatDate(new Date(), AZCU_TZ, 'H');
   if(forzar!==true && (h<10 || h>=20 || azcuEnSilencio_())) return;
   var datos = azcuDatos_(), hn = azcuHoy_(), m = azcuMapaGet_('AZCU_PROP'), ahora = Date.now(), cambio = false;
   datos.forEach(function(p){
     if(!azcuActiva_(p) || p.etapa==='Reserva') return;
-    var props = (p.seg||[]).filter(function(s){ return /propuesta|oferta/i.test(s.res); });
-    if(!props.length) return;
-    var u = props[props.length-1], n = azcuNum_(u.fecha);
-    if(!n || /acept|rechaz/i.test(u.res)) return;
+    azcuPropsActivas_(p).forEach(function(x){
+    var u = x.u, n = x.n;
     var dd = azcuDif_(hn, n); if(dd<3 || dd>60) return;
-    var key = String(p.id).trim()+'|'+n;
+    var key = String(p.id).trim()+'|'+n+'|'+x.k;
     if(m[key] && ahora-m[key] < 3*86400000) return;
     var ve = String(p.vendedor||'').trim();
     try{
@@ -2485,6 +2492,7 @@ function azcuAvisoPropuestas(forzar){
         AZCU_WEB+'?pr='+encodeURIComponent(String(p.id).trim())+'&ci='+encodeURIComponent(u.cli||''), ve ? azcuDestinos_(ve, true) : null, !!ve);
       m[key] = ahora; cambio = true;
     }catch(e){}
+    });
   });
   if(cambio) azcuMapaSet_('AZCU_PROP', m);
 }
