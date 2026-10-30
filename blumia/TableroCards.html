@@ -272,12 +272,11 @@ header{min-height:86px}
     var btn=function(u,t){return u?'<a href="'+esc(u)+'" target="_blank" class="mbtn">'+t+'</a>':'';};
     var al='';
     (c.previos||[]).forEach(function(p){al+='<div class="'+(/^Descartad/i.test(p.estado)?'r':'')+'">↩ <b>Ya se postuló antes.</b> '+esc(p.busq)+': '+esc(p.estado)+'</div>';});
-    if(/^Descartad/i.test(c.estado))al+=c.motivo?'<div class="r">✖ Motivo de descarte: '+esc(String(c.motivo).replace(/;\s*/g,' · '))+' <a href="#" onclick="pedirMotivo('+c.fila+');return false">editar</a></div>':'<div>Descartado sin motivo cargado. <a href="#" onclick="pedirMotivo('+c.fila+');return false">Cargar motivo</a></div>';
     if(c.cita)al+='<div class="v">📅 Entrevista: '+esc(c.cita)+(c.citaCon?' · con '+esc(c.citaCon):'')+'</div>';
     if(/^pendiente$/i.test(c.estado))al+='<div>⏳ El CV todavía se está analizando.</div>';
     if(/^revisar$/i.test(c.estado))al+='<div>⚠ La IA pidió revisar este CV a mano.</div>';
     if(m.t==='act'&&dias(c)>=7&&!/agendad/i.test(c.estado))al+='<div class="r">🕒 '+dias(c)+' días sin movimiento en «'+esc(c.estado)+'».</div>';
-    avPendientes([c]).filter(function(x){return x.k.indexOf('sinmov')!==0;}).forEach(function(x){al+='<div class="'+(x.urg?'r':'')+'">'+x.ic+' '+esc(x.txt)+'</div>';});
+    avPendientes([c]).filter(function(x){return x.k.indexOf('sinmov')!==0&&x.k.indexOf('sinmotivo')!==0;}).forEach(function(x){al+='<div class="'+(x.urg?'r':'')+'">'+x.ic+' '+esc(x.txt)+'</div>';});
     var etapas=[['CV',c.nota],['Screening'+(c.scrPDF&&!String(c.notaScr||'').trim()?' · sin nota':''),c.notaScr],['Competencias'+(c.compPDF&&!String(c.notaComp||'').trim()?' · sin nota':''),c.notaComp],['Empresa',c.notaScrEmp],['Final',c.notaPresEmp]];
     var st=String(c.estado||''),ei=/sin screening/i.test(st)?0:/final|cliente|contratad|presencial empresa/i.test(st)?4:/empresa/i.test(st)?3:/competencia/i.test(st)?2:/screening|agendad/i.test(st)?1:0;
     if(c.notaPresEmp)ei=Math.max(ei,4);else if(c.notaScrEmp)ei=Math.max(ei,3);else if(c.notaComp||c.compPDF)ei=Math.max(ei,2);else if(c.notaScr||c.scrPDF)ei=Math.max(ei,1);
@@ -294,6 +293,7 @@ header{min-height:86px}
       +'<div class="frow"><span class="fl">Registro de contactos</span><span class="fv" id="regCont" style="white-space:pre-line">cargando…</span></div>';
     var h='<div class="fwrap" style="margin:-24px"><div class="fh"><div style="font-size:16px;color:#0F3F27"><b>'+esc(c.estado)+'</b></div><div class="ecs">'+ecs+'</div></div>'
       +(al?'<div class="fal">'+al+'</div>':'')
+      +motFichaHtml(c)
       +'<div class="fb"><div class="acts all">'+contBtn+cvBtn+agBtn+'<button class="mbtn alt mas-t" onclick="var b=this.nextElementSibling;b.classList.toggle(\'show\');this.textContent=b.classList.contains(\'show\')?\'Menos opciones ▴\':\'Más opciones ▾\'">Más opciones ▾</button><div class="mas-b">'+etapaBtn('screening',c.scrPDF,'Screening','📝 Cargar screening')+etapaBtn('competencias',c.compPDF,'Competencias','💼 Cargar competencias')+btn(c.postulacion,'📄 Ver postulación')+btn(c.informe,'📄 Ver informe')+genBtn+bancoBtn+'</div></div>'+agendarHtml(c)
       +'<div class="fpw"><button class="fpe" title="Editar datos del candidato" onclick="panelTog(\'edPanel\')">✏️</button><div class="fp"><div class="pn"><h4>Contacto</h4>'+row('Teléfono',esc(fmtTel(c.tel)))+row('Email',esc(c.mail))+row('Zona',esc(c.zona))+'</div>'
       +'<div class="pn"><h4>Postulación</h4>'+row('Recibido',esc(c.recibido))+row('Llegó por',esc(c.fuente))+row('Formación',esc(fmtForm(c.formacion)))+row('Pretensión',c.pretension?'$'+fmtMiles(c.pretension):'')+'</div></div></div>'+editarHtml(c)
@@ -697,4 +697,23 @@ header h1{font-size:15px;line-height:1.25;flex:1 1 100%;min-width:0;display:-web
 
 (function(){function fit(){try{var b=document.querySelector('.board');if(!b||b.offsetParent===null)return;if(window.innerWidth<=640){b.style.height='';return}var h=Math.max(300,Math.round(window.innerHeight-b.getBoundingClientRect().top-12));if(Math.abs((parseInt(b.style.height)||0)-h)>1)b.style.height=h+'px'}catch(e){}}
 window.addEventListener('resize',fit);window.addEventListener('load',fit);setInterval(fit,700);fit()})();
+
+(function(){
+  window.motFichaHtml=function(c){
+    if(!/^Descartad/i.test(c.estado))return '';
+    var ya=String(c.motivo||''),otro=(ya.match(/Otro: ([^;]+)/)||[])[1]||'',tiene=!!ya.trim();
+    var h='<details class="motd'+(tiene?'':' falta')+'"'+(tiene?'':' open')+'><summary><b>Motivo de descarte:</b> '+(tiene?esc(ya.replace(/;\s*/g,' · ')):'falta cargarlo')+'</summary><div class="motb">';
+    (typeof MOTIVOS!=='undefined'?MOTIVOS:[]).forEach(function(m){h+='<label><input type="checkbox" class="motf" value="'+esc(m)+'"'+(ya.indexOf(m)>-1?' checked':'')+'> '+esc(m)+'</label>';});
+    h+='<label class="mo">Otro (máximo tres palabras)<input id="motfOtro" value="'+esc(otro)+'"></label><div class="obsb"><button class="mbtn sm" onclick="guardarMotivoFicha('+c.fila+',this)">Guardar motivo</button></div></div></details>';
+    return h;
+  };
+  window.guardarMotivoFicha=function(f,b){
+    var sel=[].slice.call(document.querySelectorAll('.motf:checked')).map(function(x){return x.value;}),o=(document.getElementById('motfOtro')||{}).value||'';
+    b.disabled=true;b.textContent='Guardando…';
+    google.script.run.withSuccessHandler(function(){toast();cerrar();window.top.location.reload();}).withFailureHandler(function(e){b.disabled=false;b.textContent='Guardar motivo';blAlert(e.message||e);}).guardarMotivoDescarte(PERFIL,f,sel,o,quienSoy());
+  };
+  var st=document.createElement('style');st.id='motcss';
+  st.textContent='.motd{margin:10px 28px 0;background:#fff;border:1.5px solid #D5E0CE;border-radius:8px;padding:0}.motd.falta{border-color:#E06666;background:#FDF0F0}.motd summary{cursor:pointer;padding:10px 14px;font-size:14px;color:#0F3F27}.motd .motb{padding:4px 14px 14px;display:grid;grid-template-columns:1fr 1fr;gap:4px 14px}.motd .motb label{display:flex;gap:8px;align-items:center;font-size:13px}.motd .motb .mo{grid-column:1/-1;flex-direction:column;align-items:stretch;margin-top:6px}.motd .motb .mo input{padding:7px;border:1.5px solid #D5E0CE;border-radius:8px}.motd .motb .obsb{grid-column:1/-1}@media(max-width:640px){.motd{margin:10px 14px 0}.motd .motb{grid-template-columns:1fr}}';
+  document.head.appendChild(st);
+})();
 </script>
