@@ -1,0 +1,81 @@
+<style id="bloomycss">
+#bmFab{position:fixed;right:14px;bottom:118px;width:64px;height:64px;border-radius:50%;border:0;padding:0;background:#0F3F27;box-shadow:0 6px 18px rgba(15,63,39,.45);cursor:pointer;z-index:95;transition:transform .15s}
+#bmFab:hover{transform:scale(1.07)}#bmFab svg{width:100%;height:100%;display:block}
+#bmTip{position:fixed;right:88px;bottom:132px;background:#0F3F27;color:#fff;font:600 13px var(--font,sans-serif);padding:8px 13px;border-radius:12px 12px 2px 12px;z-index:95;box-shadow:0 4px 14px rgba(0,0,0,.2)}
+.bm-blink{animation:bmblink 4.5s infinite;transform-origin:center;transform-box:fill-box}
+@keyframes bmblink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.08)}}
+#bmPanel{position:fixed;top:0;right:0;bottom:0;width:420px;max-width:100vw;background:#EEF7EE;z-index:9100;display:none;flex-direction:column;box-shadow:-12px 0 40px rgba(15,63,39,.28);border-left:1px solid #D5E0CE;font-family:var(--font,sans-serif)}
+#bmPanel.on{display:flex}
+#bmHd{height:60px;background:#0F3F27;color:#fff;display:flex;align-items:center;gap:10px;padding:0 12px 0 14px;flex-shrink:0}
+#bmHd .bm-mk{width:38px;height:38px;border-radius:50%;background:#0F3F27;border:2px solid #FEE795;flex-shrink:0}
+#bmHd b{font-size:17px;flex:1}#bmHd small{display:block;font-size:11px;font-weight:500;opacity:.8}
+#bmHd button{background:none;border:0;color:#fff;font-size:20px;cursor:pointer;width:34px;height:34px;border-radius:8px}#bmHd button:hover{background:rgba(255,255,255,.16)}
+#bmBody{flex:1;overflow-y:auto;padding:16px 14px 8px}
+.bm-m{max-width:88%;margin:0 0 10px;padding:9px 13px;border-radius:12px;font-size:14px;line-height:1.45;white-space:pre-wrap;word-wrap:break-word}
+.bm-m.u{margin-left:auto;background:#0F3F27;color:#fff;border-radius:12px 12px 2px 12px}
+.bm-m.b{background:#fff;border:1px solid #D5E0CE;border-radius:12px 12px 12px 2px}
+.bm-card{background:#fff;border:1.5px solid #0F3F27;border-radius:12px;padding:12px;margin:0 0 12px;font-size:13px}
+.bm-card h4{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#0F3F27;margin-bottom:6px}
+.bm-card textarea{width:100%;min-height:120px;border:1.5px solid #D5E0CE;border-radius:8px;padding:8px;font:500 13px/1.45 var(--font,sans-serif);margin:6px 0;resize:vertical}
+.bm-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.bm-b{height:36px;border-radius:8px;border:1.5px solid #D5E0CE;background:#E3EEDC;color:#0F3F27;font:700 13px var(--font,sans-serif);padding:0 14px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+.bm-b.p{background:#0F3F27;color:#fff;border-color:#0F3F27}.bm-b:disabled{opacity:.6;cursor:default}
+#bmChips{display:flex;flex-wrap:wrap;gap:6px;padding:0 14px 8px}
+#bmChips button{border:1.5px solid #D5E0CE;background:#fff;border-radius:99px;padding:6px 12px;font:600 12px var(--font,sans-serif);color:#0F3F27;cursor:pointer}#bmChips button:hover{border-color:#0F3F27}
+#bmFoot{display:flex;gap:8px;padding:10px 14px 14px;border-top:1px solid #D5E0CE;background:#fff}
+#bmIn{flex:1;border:1.5px solid #D5E0CE;border-radius:8px;padding:9px 11px;font:500 14px var(--font,sans-serif);resize:none;height:42px}
+#bmSend{height:42px;width:46px;border:0;border-radius:8px;background:#0F3F27;color:#fff;font-size:18px;cursor:pointer}#bmSend:disabled{opacity:.5}
+body:has(.modal-bg.show) #bmFab,body:has(.modal-bg.show) #bmTip{display:none!important}
+@media(max-width:640px){#bmPanel{width:100vw;border:0}#bmFab{width:54px;height:54px;bottom:96px}#bmTip{display:none}}
+</style>
+<script id="bloomyjs">
+(function(){
+  var KEY='bloomy_'+(typeof PERFIL!=='undefined'?PERFIL:'x');
+  var msgs=[];try{msgs=JSON.parse(sessionStorage.getItem(KEY)||'[]')}catch(e){}
+  function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+  function fmt(s){return esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')}
+  function mark(cls){return '<svg class="'+(cls||'')+'" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="50" fill="#0F3F27"/><rect x="24" y="17" width="17" height="66" rx="6" fill="#FEE795"/><rect x="34" y="28" width="22" height="46" fill="#FEE795"/><circle cx="55" cy="35" r="19" fill="#FEE795"/><circle cx="56" cy="65" r="21" fill="#FEE795"/><g class="bm-blink"><ellipse cx="55" cy="35" rx="11" ry="12" fill="#fff"/><ellipse cx="56" cy="65" rx="13" ry="14" fill="#fff"/></g><circle class="bm-pp" data-cx="55" data-cy="35" cx="55" cy="35" r="5.5" fill="#0F1B33"/><circle class="bm-pp" data-cx="56" data-cy="65" cx="56" cy="65" r="6.5" fill="#0F1B33"/></svg>'}
+  var fab=document.createElement('button');fab.id='bmFab';fab.type='button';fab.title='Bloomy';fab.setAttribute('aria-label','Abrir Bloomy, el asistente');fab.innerHTML=mark();document.body.appendChild(fab);
+  var tip=document.createElement('div');tip.id='bmTip';tip.textContent='¿Te ayudo?';document.body.appendChild(tip);setTimeout(function(){tip.style.display='none'},9000);
+  var panel=document.createElement('div');panel.id='bmPanel';
+  panel.innerHTML='<div id="bmHd"><span class="bm-mk">'+mark()+'</span><b>Bloomy<small>Asistente de esta búsqueda</small></b><button type="button" id="bmNew" title="Empezar de nuevo" aria-label="Empezar de nuevo">&#8635;</button><button type="button" id="bmX" aria-label="Cerrar">&#10005;</button></div><div id="bmBody"></div><div id="bmChips"></div><div id="bmFoot"><textarea id="bmIn" rows="1" placeholder="Escribile a Bloomy…"></textarea><button type="button" id="bmSend" aria-label="Enviar">&#10148;</button></div>';
+  document.body.appendChild(panel);
+  var body=panel.querySelector('#bmBody'),inp=panel.querySelector('#bmIn'),send=panel.querySelector('#bmSend'),chips=panel.querySelector('#bmChips'),busy=false;
+  var SUG=['¿Qué tengo para hacer hoy?','¿Quiénes están en screening?','Pasame el CV de…','Devolución del screening de…','Agendar a…'];
+  function save(){try{sessionStorage.setItem(KEY,JSON.stringify(msgs.slice(-30)))}catch(e){}}
+  function add(h,cls){var d=document.createElement('div');d.className=cls;d.innerHTML=h;body.appendChild(d);body.scrollTop=body.scrollHeight;return d}
+  function pintar(){body.innerHTML='';if(!msgs.length)add('Hola, soy <b>Bloomy</b>. Te ayudo con esta búsqueda: consultar candidatos, pasarte el link del CV, armar la devolución del screening y agendar entrevistas. ¿Qué necesitás?','bm-m b');msgs.forEach(function(m){add(m.rol==='bot'?fmt(m.texto):esc(m.texto),'bm-m '+(m.rol==='bot'?'b':'u'));if(m.card)tarjeta(m.card)});chips.style.display=msgs.length?'none':'flex'}
+  chips.innerHTML=SUG.map(function(s){return '<button type="button">'+esc(s)+'</button>'}).join('');
+  [].forEach.call(chips.querySelectorAll('button'),function(b){b.onclick=function(){var t=b.textContent,pre=/…\s*$/.test(t);inp.value=t.replace(/…\s*$/,' ').trim()+(pre?' ':'');inp.focus();if(!pre)enviar()}});
+  function fechaTxt(f,h){var p=f.split('-'),d=new Date(+p[0],+p[1]-1,+p[2]);var dias=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];return dias[d.getDay()]+' '+p[2]+'/'+p[1]+' '+h}
+  function tarjeta(a){
+    var c=document.createElement('div');c.className='bm-card';
+    if(a.tipo==='cv'){c.innerHTML='<h4>CV</h4>'+esc(a.nombre)+(a.url?'<div class="bm-row"><a class="bm-b p" target="_blank" rel="noopener" href="'+esc(a.url)+'">Abrir el CV</a></div>':'<p style="margin-top:6px">No encontré el CV de esta persona en la planilla.</p>')}
+    else if(a.tipo==='abrir'){c.innerHTML='<h4>Ficha</h4>'+esc(a.nombre)+'<div class="bm-row"><button type="button" class="bm-b p">Abrir la ficha</button></div>';c.querySelector('button').onclick=function(){if(typeof ficha==='function'){panel.classList.remove('on');ficha(a.fila)}}}
+    else if(a.tipo==='devolucion'){c.innerHTML='<h4>Devolución del screening · '+esc(a.nombre)+'</h4><textarea>'+esc(a.mensaje)+'</textarea><div class="bm-row"><button type="button" class="bm-b" data-k="cp">Copiar</button>'+(a.tel?'<button type="button" class="bm-b p" data-k="wa">Abrir WhatsApp</button>':'<span style="font-size:12px;color:#666">Sin teléfono en la ficha</span>')+'</div>';
+      var ta=c.querySelector('textarea');c.querySelector('[data-k=cp]').onclick=function(){try{navigator.clipboard.writeText(ta.value);this.textContent='Copiado'}catch(e){ta.select();document.execCommand('copy');this.textContent='Copiado'}};
+      var w=c.querySelector('[data-k=wa]');if(w)w.onclick=function(){window.open('https://wa.me/'+a.tel+'?text='+encodeURIComponent(ta.value),'_blank')}}
+    else if(a.tipo==='agendar'){c.innerHTML='<h4>Agendar '+esc(a.etapa)+'</h4><b>'+esc(a.nombre)+'</b><br>'+esc(fechaTxt(a.fecha,a.hora))+(a.entrevistador?' · con '+esc(a.entrevistador):'')+'<div class="bm-row"><button type="button" class="bm-b p" data-k="ok">Confirmar</button><button type="button" class="bm-b" data-k="no">Descartar</button></div><div class="bm-res" style="margin-top:8px"></div>';
+      var res=c.querySelector('.bm-res'),ok=c.querySelector('[data-k=ok]');
+      function ejecutar(forzar){ok.disabled=true;res.textContent='Agendando…';var q=Object.assign({},a,{forzar:!!forzar});
+        google.script.run.withSuccessHandler(function(r){if(r&&r.conflicto){res.innerHTML='Hay otra entrevista a esa hora ('+esc((r.eventos||[]).join(', '))+'). <button type="button" class="bm-b" style="height:30px;margin-top:6px">Agendar igual</button>';res.querySelector('button').onclick=function(){ejecutar(true)};ok.disabled=false;return}
+          res.innerHTML='<b>Listo.</b> Agendado: '+esc(r.cita)+(r.invitado?' · invitación enviada al candidato':' · el candidato no tiene mail, avisale por WhatsApp')+'. Recargá el tablero (Ctrl+F5) para verlo.';ok.style.display='none';c.querySelector('[data-k=no]').style.display='none'})
+        .withFailureHandler(function(e){ok.disabled=false;res.innerHTML='<span style="color:#B3261E">'+esc((e&&e.message)||e)+'</span>'}).bloomyEjecutar(PERFIL,q,quienSoy())}
+      ok.onclick=function(){ejecutar(false)};c.querySelector('[data-k=no]').onclick=function(){c.remove()}}
+    else return;
+    body.appendChild(c);body.scrollTop=body.scrollHeight}
+  function enviar(){var t=inp.value.trim();if(!t||busy)return;inp.value='';busy=true;send.disabled=true;chips.style.display='none';
+    msgs.push({rol:'user',texto:t});add(esc(t),'bm-m u');var esp=add('Pensando…','bm-m b');save();
+    google.script.run.withSuccessHandler(function(r){busy=false;send.disabled=false;esp.remove();var m={rol:'bot',texto:r.texto};if(r.accion)m.card=r.accion;msgs.push(m);add(fmt(r.texto),'bm-m b');if(r.accion)tarjeta(r.accion);save()})
+      .withFailureHandler(function(e){busy=false;send.disabled=false;esp.innerHTML='<span style="color:#B3261E">No pude responder: '+esc((e&&e.message)||e)+'</span>'})
+      .bloomyChat(PERFIL,msgs.map(function(m){return {rol:m.rol,texto:m.texto}}),quienSoy())}
+  send.onclick=enviar;inp.onkeydown=function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();enviar()}};
+  fab.onclick=function(){panel.classList.add('on');tip.style.display='none';pintar();setTimeout(function(){inp.focus()},50)};
+  panel.querySelector('#bmX').onclick=function(){panel.classList.remove('on')};
+  panel.querySelector('#bmNew').onclick=function(){msgs=[];save();pintar()};
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&panel.classList.contains('on'))panel.classList.remove('on')});
+  // los ojitos siguen el mouse
+  var pps=[].slice.call(document.querySelectorAll('#bmFab .bm-pp'));
+  document.addEventListener('mousemove',function(e){var r=fab.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2,dx=e.clientX-cx,dy=e.clientY-cy,l=Math.sqrt(dx*dx+dy*dy)||1,k=Math.min(1,l/200)*3.2;pps.forEach(function(p){p.setAttribute('cx',(+p.getAttribute('data-cx'))+dx/l*k);p.setAttribute('cy',(+p.getAttribute('data-cy'))+dy/l*k)})});
+})();
+</script>
