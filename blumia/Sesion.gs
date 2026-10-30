@@ -323,6 +323,7 @@ function registroApi_() {
     bloomyBorradorLeer: { f: bloomyBorradorLeer_ },
     vaciarBusquedaInfo: { f: vaciarBusquedaInfo_, admin: true },
     vaciarBusqueda: { f: vaciarBusqueda_, admin: true },
+    perfilReferencia: { f: perfilReferencia_ },
     huntingListar: { f: huntingListar_ },
     huntingAgregar: { f: huntingAgregar_ },
     huntingActualizar: { f: huntingActualizar_ },

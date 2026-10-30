@@ -1,0 +1,41 @@
+<style id="prcss">
+.pr-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99997;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:28px 12px}
+.pr-box{background:#F6F8F4;border-radius:14px;max-width:760px;width:100%;color:#1a1a1a;font-family:'PP Pangram Sans',Poppins,sans-serif;box-shadow:0 18px 50px rgba(0,0,0,.3)}
+.pr-h{background:#0F3F27;color:#fff;border-radius:14px 14px 0 0;padding:16px 20px;display:flex;align-items:flex-start;gap:12px}
+.pr-h h3{margin:0;font-size:18px;line-height:1.25}.pr-h small{display:block;opacity:.8;font-size:12px;margin-top:3px;font-weight:400}
+.pr-h button{margin-left:auto;background:transparent;border:1px solid rgba(255,255,255,.5);color:#fff;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px}
+.pr-b{padding:14px 20px 20px}
+.pr-s{background:#fff;border:1px solid #DDE5DA;border-radius:12px;padding:12px 16px;margin-bottom:10px}
+.pr-s h4{margin:0 0 8px;font-size:12.5px;text-transform:uppercase;letter-spacing:.6px;color:#0F3F27}
+.pr-i{display:grid;grid-template-columns:190px 1fr;gap:4px 12px;padding:5px 0;border-top:1px solid #F0EEE9;font-size:13.5px;line-height:1.45}
+.pr-i:first-of-type{border-top:0}.pr-i b{color:#555;font-weight:700}.pr-i span{white-space:pre-wrap;word-break:break-word}
+.pr-n{font-size:12px;color:#777;margin:0 0 10px}
+.pr-btn{display:inline-block;margin:4px 8px 0 0;background:#fff;color:#1A6645;padding:4px 12px;border-radius:8px;font-size:12px;font-weight:800;border:0;cursor:pointer;font-family:inherit}
+@media(max-width:640px){.pr-i{grid-template-columns:1fr}.pr-box{border-radius:10px}.pr-bg{padding:8px}}
+@media print{.pr-bg{display:none!important}}
+</style>
+<script>
+/* Perfil del puesto como REFERENCIA (solo lectura): se abre desde el tablero, los formularios de screening y competencias y el hunting. */
+(function(){
+  function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function pid(){return typeof PERFIL_ID!=='undefined'?PERFIL_ID:(typeof PERFIL!=='undefined'?PERFIL:'');}
+  window.blPerfilRef=function(){
+    var id=pid();if(!id||typeof google==='undefined')return;
+    var bg=document.createElement('div');bg.className='pr-bg';
+    bg.innerHTML='<div class="pr-box"><div class="pr-h"><div><h3>📋 Perfil del puesto</h3><small>Cargando…</small></div><button type="button">Cerrar</button></div><div class="pr-b"></div></div>';
+    document.body.appendChild(bg);
+    var cerrar=function(){bg.remove();document.removeEventListener('keydown',esc2);};
+    var esc2=function(e){if(e.key==='Escape')cerrar();};
+    document.addEventListener('keydown',esc2);
+    bg.addEventListener('mousedown',function(e){if(e.target===bg)cerrar();});
+    bg.querySelector('.pr-h button').onclick=cerrar;
+    google.script.run.withSuccessHandler(function(r){
+      bg.querySelector('.pr-h h3').textContent='📋 '+(r.pos||'Perfil del puesto');
+      bg.querySelector('.pr-h small').textContent=r.vacio?'Todavía sin datos':'Perfil acordado con el cliente · versión del '+r.fecha+' · solo lectura';
+      var b=bg.querySelector('.pr-b');
+      if(r.vacio){b.innerHTML='<p class="pr-n">Esta búsqueda todavía no tiene el perfil del puesto cargado. Se completa desde el tablero: 📚 Búsqueda → Perfil del puesto.</p>';return;}
+      b.innerHTML='<p class="pr-n">Es la referencia de lo que busca el cliente. Para cambiarlo: 📚 Búsqueda → Perfil del puesto (en el tablero).</p>'+r.secciones.map(function(s){return '<div class="pr-s"><h4>'+esc(s.t)+'</h4>'+s.items.map(function(i){return '<div class="pr-i"><b>'+esc(i[0])+'</b><span>'+esc(i[1])+'</span></div>';}).join('')+'</div>';}).join('');
+    }).withFailureHandler(function(e){bg.querySelector('.pr-h small').textContent='No se pudo cargar: '+((e&&e.message)||e);}).perfilReferencia(id);
+  };
+})();
+</script>

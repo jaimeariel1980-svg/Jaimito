@@ -609,8 +609,18 @@ header h1{font-size:15px;line-height:1.25;flex:1 1 100%;min-width:0;display:-web
     var a=[].slice.call(document.querySelectorAll('.ddm a')).filter(function(x){return /verEnlaces/.test(x.getAttribute('onclick')||'');})[0];
     if(!a)return;
     function it(txt,url){if(!url)return;var n=document.createElement('a');n.textContent=txt;n.onclick=function(){window.open(url,'_blank');};a.parentNode.insertBefore(n,a);}
+    var pr=document.createElement('a');pr.textContent='📋 Ver perfil (referencia)';pr.onclick=function(){if(window.blPerfilRef)blPerfilRef();};a.parentNode.insertBefore(pr,a.parentNode.firstChild);
     it('📁 Carpeta de Drive',typeof ENLACE_CARPETA!=='undefined'?ENLACE_CARPETA:'');
     it('📊 Sheet de la búsqueda',typeof ENLACE_HOJA!=='undefined'?ENLACE_HOJA:'');
+  })();
+  // enlace de referencia al perfil del puesto arriba de cada ficha
+  (function(){
+    var f0=window.ficha;if(typeof f0!=='function')return;
+    window.ficha=function(){
+      var r=f0.apply(this,arguments),b=document.getElementById('mbody');
+      if(b&&!b.querySelector('.pr-lnk'))b.insertAdjacentHTML('afterbegin','<div class="pr-lnk" style="margin:0 0 6px;text-align:right"><a style="cursor:pointer;color:#1A6645;font-size:12px;font-weight:800" onclick="blPerfilRef()">📋 Perfil del puesto</a></div>');
+      return r;
+    };
   })();
   window.verEnlaces=function(){
     var L=typeof ENLACES!=='undefined'?ENLACES:[];

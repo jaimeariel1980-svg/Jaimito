@@ -2041,7 +2041,7 @@ function kanbanHTML_(perfilId) {
   let eb = {}; try { eb = enlacesBusqueda_(cfg); } catch (e) { }
   if (eb.carpeta) enlaces.push(['Carpeta de Drive de la búsqueda', eb.carpeta]);
   if (eb.hoja) enlaces.push(['Sheet de la búsqueda (pestaña de candidatos)', eb.hoja]);
-  try { const extra = '<script>var metEstado = ' + metEstado_.toString() + '; var BANDA_REF = ' + bandaRef + '; var URL_APP = ' + JSON.stringify(URL_BASE()) + '; var ENLACES = ' + JSON.stringify(enlaces).replace(/</g, '\\u003c') + '; var ENLACE_CARPETA = ' + JSON.stringify(eb.carpeta || '') + '; var ENLACE_HOJA = ' + JSON.stringify(eb.hoja || '') + ';</script>' + ['ConfigPanel', 'ResumenPanel', 'HuntingPanel', 'TableroCards', 'BloomyWidget'].map(f => HtmlService.createHtmlOutputFromFile(f).getContent()).join(''); html = html.replace(/<\/html>\s*$/, () => extra + '</html>'); } catch (e) { }
+  try { const extra = '<script>var metEstado = ' + metEstado_.toString() + '; var BANDA_REF = ' + bandaRef + '; var URL_APP = ' + JSON.stringify(URL_BASE()) + '; var ENLACES = ' + JSON.stringify(enlaces).replace(/</g, '\\u003c') + '; var ENLACE_CARPETA = ' + JSON.stringify(eb.carpeta || '') + '; var ENLACE_HOJA = ' + JSON.stringify(eb.hoja || '') + ';</script>' + ['ConfigPanel', 'ResumenPanel', 'PerfilRef', 'HuntingPanel', 'TableroCards', 'BloomyWidget'].map(f => HtmlService.createHtmlOutputFromFile(f).getContent()).join(''); html = html.replace(/<\/html>\s*$/, () => extra + '</html>'); } catch (e) { }
   lapT_('Sumar los paneles (configurar, resumen, tablero)');
   return HtmlService.createHtmlOutput(html)
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
