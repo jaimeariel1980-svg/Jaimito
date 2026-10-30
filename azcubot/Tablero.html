@@ -867,6 +867,18 @@ function verifBadge(estado){
   return '<span style="font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:12px;background:'+bg+';color:'+col+';white-space:nowrap;margin:0 6px" title="'+estado.replace(/"/g,'&quot;')+'">'+txt+'</span>';
 }
 function estColor(e){return {"En venta":"#eaf1fb;color:#0A3D91","Reservada":"#fdf3e0;color:#a9781f","Vendida":"#e6f6ec;color:#1f7a44","Baja":"#eef0f2;color:#5b6470","Otra inmobiliaria":"#fff1e0;color:#b4620a"}[e]||"#eee";}
+var FICHA_G={};
+function unirForm(id,gi){
+  var G=FICHA_G[id]||[],g=G[gi];if(!g)return;
+  var ops=G.map(function(x,i){return i===gi?'':'<option value="'+i+'">'+String(x.nombre).replace(/&/g,'&amp;').replace(/</g,'&lt;')+(x.tel?' · '+x.tel:'')+'</option>';}).join('');
+  document.getElementById('dlg').innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">Unir interesados</div><div class="sub">'+id+'</div></div><div class="fb"><div style="font-size:13px;margin-bottom:10px">Las '+g.rows.length+' interacción(es) de <b>'+String(g.nombre).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</b> pasan a esta persona (es la misma, anotada con otro nombre). No se borra nada.</div><div class="form"><label style="grid-column:1/-1">Dejar con el nombre de<select id="un_a">'+ops+'</select></label></div><div class="dlbtns"><button class="btn g" id="un_btn" onclick="unirOk(\''+id+'\','+gi+')">Unir</button><button class="btn s" onclick="closeDL()">Cancelar</button></div></div>';
+  document.getElementById('ov2').classList.add('on');
+}
+function unirOk(id,gi){
+  var G=FICHA_G[id]||[],g=G[gi],d=G[+document.getElementById('un_a').value];if(!g||!d)return;
+  var b=document.getElementById('un_btn');b.disabled=true;b.textContent='Uniendo…';
+  google.script.run.withSuccessHandler(function(){closeDL();recargar(true);}).withFailureHandler(function(e){alert('Error: '+(e&&e.message?e.message:e));b.disabled=false;b.textContent='Unir';}).unirInteresados(id,g.rows,d.nombre,d.tel,_yo());
+}
 function ficha(id){
   const p=DATA.find(x=>x.id===id);
   const sm=SIM[id]||{};
@@ -874,10 +886,12 @@ function ficha(id){
   if(p.seg.length){
     const byKey={};
     p.seg.forEach(s=>{const k=((s.tel&&(''+s.tel).replace(/\D/g,''))||(s.cli||'—').trim().toLowerCase());(byKey[k]=byKey[k]||[]).push(s);});
-    seg=Object.keys(byKey).map(function(k){
+    const kk=Object.keys(byKey);
+    FICHA_G[p.id]=kk.map(function(k){const a=byKey[k];return {nombre:(a.find(s=>s.cli)||{}).cli||'—',tel:(a.find(s=>s.tel)||{}).tel||'',rows:a.filter(s=>s._row).map(s=>s._row)};});
+    seg=kk.map(function(k,gi){
       const arr=byKey[k];const nombre=(arr.find(s=>s.cli)||{}).cli||'—';const tel=(arr.find(s=>s.tel)||{}).tel||'';
       const rows=arr.slice().reverse().map(s=>'<tr><td>'+s.fecha+'</td><td><span class="tag">'+s.tipo+'</span></td><td>'+s.res+(s.obs?'<div style="color:var(--gris);font-size:11px;margin-top:2px">'+s.obs+'</div>':'')+(s.cargo?'<div style="color:var(--gris);font-size:10.5px;margin-top:2px">cargó: '+s.cargo+'</div>':'')+'</td><td>'+(s.prox||'—')+(s._row?' <span onclick="editarForm(\''+p.id+'\','+s._row+')" style="cursor:pointer;color:var(--acento);font-size:11px;margin-left:4px">editar</span> <span onclick="borrarInteraccion(\''+p.id+'\','+s._row+')" style="cursor:pointer;color:var(--rojo);font-size:11px">borrar</span>':'')+'</td></tr>').join('');
-      return '<div style="margin-bottom:14px;border:1px solid var(--linea);border-radius:12px;padding:10px 12px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-weight:700;font-size:13.5px">'+nombre+'</span><span style="color:var(--gris);font-weight:400;font-size:12px">· '+arr.length+' interacción(es)</span>'+(tel?' · <a href="https://wa.me/'+wa(tel)+'" target="_blank">WhatsApp</a>':'')+'<button class="btn s" style="margin-left:auto;padding:3px 9px;font-size:11px" onclick="cargarForm(\''+p.id+'\',\''+encodeURIComponent(nombre)+'\',\''+encodeURIComponent(tel)+'\')">+ interacción</button></div><table><tr><th>Fecha</th><th>Vía</th><th>Resultado</th><th>Próx. paso</th></tr>'+rows+'</table></div>';
+      return '<div style="margin-bottom:14px;border:1px solid var(--linea);border-radius:12px;padding:10px 12px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-weight:700;font-size:13.5px">'+nombre+'</span><span style="color:var(--gris);font-weight:400;font-size:12px">· '+arr.length+' interacción(es)</span>'+(tel?' · <a href="https://wa.me/'+wa(tel)+'" target="_blank">WhatsApp</a>':'')+'<button class="btn s" style="margin-left:auto;padding:3px 9px;font-size:11px" onclick="cargarForm(\''+p.id+'\',\''+encodeURIComponent(nombre)+'\',\''+encodeURIComponent(tel)+'\')">+ interacción</button>'+(kk.length>1?'<button class="btn s" style="padding:3px 9px;font-size:11px" title="Es la misma persona anotada con otro nombre" onclick="unirForm(\''+p.id+'\','+gi+')">Unir con…</button>':'')+'</div><table><tr><th>Fecha</th><th>Vía</th><th>Resultado</th><th>Próx. paso</th></tr>'+rows+'</table></div>';
     }).join('');
   } else seg='<div class="empty">Sin consultas ni visitas registradas todavía.</div>';
   const av=p.pct===null?'—':'<div class="health" style="max-width:220px"><div class="t"><div class="f" style="width:'+p.pct+'%;background:'+healthC(p.pct)+'"></div></div><div class="p" title="Salud del aviso">aviso '+p.pct+'%</div></div>';
