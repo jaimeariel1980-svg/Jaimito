@@ -332,3 +332,7 @@ function api(token, nombre, args) {
   SES_ = u; QUIEN_ = u.nombre;
   return def.f.apply(null, Array.isArray(args) ? args : []);
 }
+
+function enlacesAgendaPersonas_() {
+  try { return leerUsuarios_().filter(u => u.activo === 'SI' && (u.linkScr || u.linkComp)).map(u => ['Agenda de ' + u.nombre, u.linkScr || u.linkComp]); } catch (e) { return []; }
+}
