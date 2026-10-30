@@ -1,0 +1,21 @@
+<script id="motivoform">
+(function(){
+  var LISTA=<?!= JSON.stringify(MOTIVOS_DESCARTE_) ?>;
+  window.mfPedir=function(cb){
+    var old=document.getElementById('mfBg');if(old)old.remove();
+    var bg=document.createElement('div');bg.id='mfBg';bg.className='ia-ui';
+    bg.style.cssText='position:fixed;inset:0;background:rgba(15,63,39,.55);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;font-family:var(--font,sans-serif)';
+    var h='<div style="background:#fff;border-radius:12px;max-width:460px;width:100%;max-height:90vh;overflow:auto;padding:22px;box-shadow:0 12px 40px rgba(0,0,0,.35)"><h3 style="font-size:18px;color:#0F3F27;margin:0 0 4px">Motivo de descarte</h3><p style="font-size:13px;color:#555;margin:0 0 12px">Con C hay que dejar al menos un motivo. Podés elegir más de uno.</p>';
+    LISTA.forEach(function(m,i){h+='<label style="display:flex;gap:8px;align-items:center;margin:6px 0;font-size:14px;cursor:pointer"><input type="checkbox" class="mfC" value="'+m.replace(/"/g,'&quot;')+'" style="width:18px;height:18px;accent-color:#0F3F27"> '+m+'</label>';});
+    h+='<label style="display:block;margin-top:10px;font-size:13px">Otro (máximo tres palabras)<input id="mfO" style="width:100%;padding:8px;border:1.5px solid #D5E0CE;border-radius:8px;margin-top:4px;font:inherit"></label><div id="mfE" style="color:#B3261E;font-size:13px;margin-top:8px;min-height:16px"></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px"><button type="button" id="mfN" style="height:40px;padding:0 16px;border:1.5px solid #D5E0CE;background:#E3EEDC;color:#0F3F27;border-radius:8px;font:700 13px inherit;cursor:pointer">Cancelar</button><button type="button" id="mfS" style="height:40px;padding:0 18px;border:0;background:#0F3F27;color:#fff;border-radius:8px;font:700 13px inherit;cursor:pointer">Guardar con este motivo</button></div></div>';
+    bg.innerHTML=h;document.body.appendChild(bg);
+    bg.querySelector('#mfN').onclick=function(){bg.remove();};
+    bg.querySelector('#mfS').onclick=function(){
+      var sel=[].slice.call(bg.querySelectorAll('.mfC:checked')).map(function(x){return x.value;}),o=bg.querySelector('#mfO').value.replace(/[<>;]/g,'').trim(),e=bg.querySelector('#mfE');
+      if(o.split(/\s+/).filter(Boolean).length>3){e.textContent='En «Otro» escribí el motivo con máximo tres palabras.';return;}
+      if(!sel.length&&!o){e.textContent='Elegí al menos un motivo.';return;}
+      bg.remove();cb({lista:sel,otro:o});
+    };
+  };
+})();
+</script>

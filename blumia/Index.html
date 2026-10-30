@@ -198,6 +198,7 @@ html,body{background:var(--bg);font-family:var(--font);color:var(--text);}
 
 <?!= HtmlService.createHtmlOutputFromFile('IAForm').getContent() ?>
 <?!= HtmlService.createHtmlOutputFromFile('EstadoForm').getContent() ?>
+<?!= HtmlService.createTemplateFromFile('MotivoForm').evaluate().getContent() ?>
 <script>window.EDIT_TIPO='competencias';</script>
 <?!= HtmlService.createHtmlOutputFromFile('EditorForm').getContent() ?>
 <script>
@@ -526,6 +527,9 @@ document.getElementById('btnGuardar').addEventListener('click', function() {
   let ponderacion = '';
   if (ajusteBtn) ponderacion = ajusteBtn.classList.contains('adj-alto') ? 'A' : ajusteBtn.classList.contains('adj-mbp') ? 'B+' : ajusteBtn.classList.contains('adj-mod') ? 'B' : ajusteBtn.classList.contains('adj-bajo') ? 'C' : '';
   const btn = this;
+  if (ponderacion === 'C' && !EDITAR && !window.__mot) { mfPedir(function(m){ window.__mot = m; btn.click(); }); return; }
+  const motivoC = ponderacion === 'C' ? (window.__mot || null) : null;
+  window.__mot = null;
   const guardar = function() {
     const ESTADO_EF = efCapturar();
     congelarValores();
@@ -549,7 +553,7 @@ document.getElementById('btnGuardar').addEventListener('click', function() {
         btn.textContent = 'Guardar entrevista';
         alert('Error al guardar: ' + err.message);
       })
-      .guardarEnPlanilla(cand, htmlSnap, ponderacion, PERFIL_ID, (function(){var el=document.getElementById('inp-entre');var v=el&&el.value?String(el.value).trim():'';if(v)return v;try{return localStorage.getItem('blumia_quien')||ENTR_INICIAL||'';}catch(e){return ENTR_INICIAL||'';}})(), ESTADO_EF, EDITAR);
+      .guardarEnPlanilla(cand, htmlSnap, ponderacion, PERFIL_ID, (function(){var el=document.getElementById('inp-entre');var v=el&&el.value?String(el.value).trim():'';if(v)return v;try{return localStorage.getItem('blumia_quien')||ENTR_INICIAL||'';}catch(e){return ENTR_INICIAL||'';}})(), ESTADO_EF, EDITAR, motivoC);
   };
   if (!ponderacion) blConfirm('No elegiste el «Ajuste al rol» (Alto / Alto con observación menor / Con observaciones / No ajusta): la entrevista se guarda pero la nota de competencias queda sin cargar.\n\n¿Guardar igual?', guardar, { si: 'Guardar igual' });
   else guardar();

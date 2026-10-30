@@ -44,3 +44,14 @@ function limpiarMotivoSiNoDescartado_(sh, fila, estado) {
   const c = colMotivo_(sh, false);
   if (c && String(sh.getRange(fila, c).getValue() || '').trim()) sh.getRange(fila, c).clearContent();
 }
+
+// motivo elegido en el formulario de screening o competencias al dar C: se guarda si el candidato quedó descartado; nunca hace fallar el guardado del formulario
+function motivoDesdeForm_(sheet, fila, m) {
+  try {
+    if (!m || !Array.isArray(m.lista)) return;
+    if (!/^Descartad/i.test(String(sheet.getRange(fila, 9).getValue() || '').trim())) return;
+    const texto = motivoNormBl_(m.lista, m.otro);
+    sheet.getRange(fila, colMotivo_(sheet, true)).setNumberFormat('@').setValue(texto);
+    registrarHistorial_(sheet.getName(), sheet.getRange(fila, 2).getValue(), 'Motivo de descarte', texto);
+  } catch (e) { console.error('No pude guardar el motivo del formulario: ' + e); }
+}

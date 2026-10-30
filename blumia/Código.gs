@@ -382,6 +382,7 @@ function procesarScreening_(data) {
   sheet.getRange(fila, 26).setValue('DEBUG resultado=' + data.resultado);
   registrarHistorial_(sheet.getName(), sheet.getRange(fila, 2).getValue(), data.editar ? 'Screening editado' : 'Screening', (data.editar ? (notaAntesScr || '—') + ' → ' + data.resultado : 'Formulario guardado · resultado ' + data.resultado) + (data.entrevistador ? ' · entrevistó ' + data.entrevistador : ''));
   if (!data.editar || aplicarEdicion_(sheet, fila, 'screening', notaAntesScr, data.resultado)) aplicarEstadoNota(sheet, fila, 'screening', data.resultado);
+  motivoDesdeForm_(sheet, fila, data.motivo);
   guardarEstadoEval_(cfg, perfilObligatorio_(data.perfil), data.nombre, 'screening', data.estado, data.resultado, data.entrevistador);
   try {
     const folder = DriveApp.getFolderById(cfg.folder_pdf_screening);
@@ -421,7 +422,7 @@ function logoParaPdf_(html) {
   return conFuentePdf_(html).replace(/(<img[^>]*class="hero-logo"[^>]*?src=")data:image\/[a-z]+;base64,[^"]+(")/, '$1https://azcubot.pages.dev/blumia-logo-blanco.png$2');
 }
 
-function guardarEnPlanilla_(nombreCandidato, htmlContent, ajustePonderacion, perfilId, quien, estadoJSON, editar) {
+function guardarEnPlanilla_(nombreCandidato, htmlContent, ajustePonderacion, perfilId, quien, estadoJSON, editar, motivo) {
   QUIEN_ = quien || '';
   try {
     console.log("Perfil recibido: " + perfilId);
@@ -465,6 +466,7 @@ function guardarEnPlanilla_(nombreCandidato, htmlContent, ajustePonderacion, per
     if (ajustePonderacion) sheet.getRange(fila, 16).setValue(ajustePonderacion);
     registrarHistorial_(sheet.getName(), sheet.getRange(fila, 2).getValue(), editar ? 'Competencias editado' : 'Competencias', editar ? (notaAntesComp || '—') + ' → ' + (ajustePonderacion || '—') : 'Formulario guardado' + (ajustePonderacion ? ' · resultado ' + ajustePonderacion : ''));
     if (ajustePonderacion && (!editar || aplicarEdicion_(sheet, fila, 'competencias', notaAntesComp, ajustePonderacion))) aplicarEstadoNota(sheet, fila, 'competencias', ajustePonderacion);
+    motivoDesdeForm_(sheet, fila, motivo);
     guardarEstadoEval_(cfg, perfilObligatorio_(perfilId), nombreCandidato, 'competencias', estadoJSON, ajustePonderacion, quien);
     sheet.getRange(fila, 17).setFormula('=HYPERLINK("' + pdf.getUrl() + '"; "Ver PDF")');
     
