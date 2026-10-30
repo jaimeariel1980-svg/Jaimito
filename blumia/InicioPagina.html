@@ -90,7 +90,7 @@ var cta='';
 if(esAdmin)cta+='<button class="pri" onclick="adAbrir(\'nueva\')">➕ Nueva búsqueda</button>';
 cta+='<a class="sec" href="#" onclick="window.top.location.href=URL_APP+\'?tipo=banco\';return false">★ Banco de talento</a>';
 document.getElementById('cta').innerHTML=cta;
-if(esAdmin){document.getElementById('gear').style.display='inline-block';document.getElementById('menu').innerHTML='<button onclick="adAbrir(\'usr\')">👥 Usuarios</button><button onclick="adAbrir(\'copia\')">💾 Copias de seguridad</button><button onclick="adAbrir(\'acc\')">📜 Accesos</button><button onclick="adAbrir(\'vel\')">⏱ Velocidad</button><button onclick="adAbrir(\'vac\')" style="color:#b3261e">🧹 Vaciar búsqueda</button>';}
+if(esAdmin){document.getElementById('gear').style.display='inline-block';document.getElementById('menu').innerHTML='<button onclick="adAbrir(\'usr\')">👥 Usuarios</button><button onclick="adAbrir(\'copia\')">💾 Copias de seguridad</button><button onclick="adAbrir(\'acc\')">📜 Accesos</button><button onclick="adAbrir(\'vel\')">⏱ Velocidad</button><button onclick="adAbrir(\'pes\')">👁 Pestañas del sheet</button><button onclick="adAbrir(\'vac\')" style="color:#b3261e">🧹 Vaciar búsqueda</button>';}
 function menuAdm(e){e.stopPropagation();document.getElementById('menu').classList.toggle('show');}
 document.addEventListener('click',function(){var m=document.getElementById('menu');if(m)m.classList.remove('show');});
 function pintar(){

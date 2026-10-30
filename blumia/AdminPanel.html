@@ -203,7 +203,7 @@
     ping(0);
   };
   function render(tab){
-    var T=[['usr','👥 Usuarios'],['copia','💾 Copia de seguridad'],['acc','📜 Accesos'],['vel','⏱ Diagnóstico de velocidad'],['vac','🧹 Vaciar búsqueda']];
+    var T=[['usr','👥 Usuarios'],['copia','💾 Copia de seguridad'],['acc','📜 Accesos'],['vel','⏱ Diagnóstico de velocidad'],['vac','🧹 Vaciar búsqueda'],['pes','👁 Pestañas del sheet']];
     var x=tab==='nueva'?'<h2>➕ Nueva búsqueda</h2>':'<h2>⚙ Administración</h2><div class="cf-help" style="margin:0 0 6px">Lo que no depende de una búsqueda en particular.</div><div class="cf-tabs">'+T.map(function(t){return '<button class="cf-tab'+(t[0]===tab?' on':'')+'" onclick="adTab(\''+t[0]+'\')">'+t[1]+'</button>';}).join('')+'</div>';
     if(tab==='nueva')x+=nbHtml();
     if(tab==='usr')x+='<div class="cf-help">Quién puede entrar. Los <b>administradores</b> configuran las búsquedas y manejan los usuarios; los <b>usuarios</b> trabajan con los candidatos. Por ahora se entra solo con nombre y apellido (sin PIN): escribí el nombre completo como lo va a poner la persona.</div><div id="cfUsr">Cargando…</div><div class="cf-foot"><button class="cf-close" onclick="adCerrar()">Cerrar</button></div>';
@@ -216,6 +216,10 @@
     if(tab==='vac'){
       var op2=(typeof DATOS!=='undefined'?DATOS:[]).map(function(b){return '<option value="'+esc(b.id)+'">'+esc(b.nombre)+(b.cerrada?' (cerrada)':'')+'</option>';}).join('');
       x+='<div class="cf-help">Borra <b>todos los candidatos</b> de una búsqueda, con su historial, contactos y evaluaciones, y manda sus archivos de Drive a la papelera (se recuperan 30 días desde la papelera de Drive). No toca la configuración, los formularios, el flyer ni el Banco de talento. Sirve para arrancar de cero después de las pruebas. Te va a pedir que escribas el nombre de la búsqueda para confirmar.</div><label>Búsqueda a vaciar</label><select id="adVacSel">'+op2+'</select><div class="cf-foot" style="justify-content:flex-start"><button class="cf-save" style="background:#b3261e;border-color:#b3261e" onclick="adVaciar(this)">🧹 Vaciar esta búsqueda…</button></div><div id="adVac"></div><div class="cf-foot"><button class="cf-close" onclick="adCerrar()">Cerrar</button></div>';
+    }
+    if(tab==='pes'){
+      var op3=(typeof DATOS!=='undefined'?DATOS:[]).map(function(b){return '<option value="'+esc(b.id)+'">'+esc(b.nombre)+(b.cerrada?' (cerrada)':'')+'</option>';}).join('');
+      x+='<div class="cf-help">Para quien trabaja directo en el sheet: deja <b>visible solo la pestaña de una búsqueda</b> y oculta todas las demás (configuración, usuarios, historial, otras búsquedas…). No cambia nada del sistema, que sigue funcionando igual. Ocultar es solo comodidad: quien tenga acceso al archivo puede volver a mostrarlas (Ver → Hojas ocultas). Para que alguien no vea otras búsquedas, hay que darle un archivo aparte.</div><label>Búsqueda que queda visible</label><select id="adPesSel">'+op3+'</select><div class="cf-foot" style="justify-content:flex-start"><button class="cf-save" onclick="adPestanas(this,1)">Dejar solo esta pestaña</button><button class="cf-close" onclick="adPestanas(this,0)">Mostrar todas las pestañas</button></div><div id="adPes"></div>';
     }
     document.getElementById('cfBox').innerHTML=x;
     if(tab==='usr')cfUsuarios();if(tab==='copia')adCopia();if(tab==='acc')adAccesos();
@@ -232,6 +236,13 @@
         google.script.run.withSuccessHandler(function(r){d.innerHTML='<div class="cf-help" style="color:#0F3F27;font-weight:700">Listo: se borraron '+r.candidatos+' candidatos, '+r.historial+' movimientos de historial y '+r.archivos+' archivos pasaron a la papelera de Drive.</div>';}).withFailureHandler(function(e){d.innerHTML='<div style="color:#B91C1C">'+esc((e&&e.message)||e)+'</div>';}).vaciarBusqueda(id,t,q);
       },{titulo:'Vaciar la búsqueda',si:'Borrar todo',peligro:true});
     }).withFailureHandler(function(e){b.disabled=false;d.innerHTML='<div style="color:#B91C1C">'+esc((e&&e.message)||e)+'</div>';}).vaciarBusquedaInfo(id);
+  };
+  window.adPestanas=function(b,solo){
+    var d=document.getElementById('adPes'),id=document.getElementById('adPesSel').value;
+    b.disabled=true;d.innerHTML='<div class="cf-help">Trabajando…</div>';
+    var ok=function(r){b.disabled=false;d.innerHTML='<div class="cf-help" style="color:#0F3F27;font-weight:700">'+(solo?'Listo: quedó visible solo «'+esc(r.visible)+'» ('+r.ocultas+' pestañas ocultas).':'Listo: se mostraron '+r.mostradas+' pestañas.')+'</div>';};
+    var ko=function(e){b.disabled=false;d.innerHTML='<div style="color:#B91C1C">'+esc((e&&e.message)||e)+'</div>';};
+    if(solo)google.script.run.withSuccessHandler(ok).withFailureHandler(ko).pestanasSheetSolo(id);else google.script.run.withSuccessHandler(ok).withFailureHandler(ko).pestanasSheetTodas();
   };
   window.adTab=function(t){sync();render(t);};
   window.adAbrir=function(t){document.getElementById('cfBg').classList.add('show');render(t||'nueva');};

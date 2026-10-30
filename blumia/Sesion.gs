@@ -323,6 +323,8 @@ function registroApi_() {
     bloomyBorradorLeer: { f: bloomyBorradorLeer_ },
     vaciarBusquedaInfo: { f: vaciarBusquedaInfo_, admin: true },
     vaciarBusqueda: { f: vaciarBusqueda_, admin: true },
+    pestanasSheetSolo: { f: pestanasSheetSolo_, admin: true },
+    pestanasSheetTodas: { f: pestanasSheetTodas_, admin: true },
     flyerTextosIA: { f: flyerTextosIA_ },
     flyerSocial: { f: flyerSocial_ },
     difusionGuardar: { f: difusionGuardar_, admin: true },
