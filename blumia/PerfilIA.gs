@@ -17,17 +17,18 @@ function promptPerfilIA_(campos, pills) {
     (c.t === 'select' ? ' · opciones: ' + opcionesSelect_(c).join(' | ') : '') +
     (c.t === 'date' ? ' · formato AAAA-MM-DD' : '') + (c.t === 'number' ? ' · solo número' : '')).join('\n');
   const lp = pills.map(g => '@' + g.id + ' ' + g.s + ' · opciones: ' + g.o.join(' | ')).join('\n');
-  return 'Sos consultor/a senior de selección de personal en Blumia Consulting (Argentina). Te paso el texto de un relevamiento o descripción de un puesto y la lista de campos de un formulario de «perfil del puesto». Completá SOLO los campos que el documento permite responder, con sus palabras ordenadas y claras (español rioplatense). No inventes datos, cifras, nombres ni requisitos: si el documento no lo dice, no incluyas ese campo. En los campos con opciones usá exactamente una de las opciones. Los campos de texto largo pueden llevar varias líneas.\n\nCAMPOS (número, tipo, sección › título):\n' + lc +
+  return 'Sos consultor/a senior de selección de personal en Blumia Consulting (Argentina). Te paso el texto de un relevamiento o descripción de un puesto (puede ser un documento o la transcripción automática de una reunión con el cliente, con errores, muletillas y frases cortadas: interpretala con criterio, sin inventar) y la lista de campos de un formulario de «perfil del puesto». Completá SOLO los campos que el documento permite responder, con sus palabras ordenadas y claras (español rioplatense). No inventes datos, cifras, nombres ni requisitos: si el documento no lo dice, no incluyas ese campo. En los campos con opciones usá exactamente una de las opciones. Los campos de texto largo pueden llevar varias líneas.\n\nCAMPOS (número, tipo, sección › título):\n' + lc +
     '\n\nBOTONES DE OPCIÓN (id, sección, opciones):\n' + lp +
-    '\n\nRespondé SOLO con un JSON válido, sin texto antes ni después ni markdown: {"c":{"<número>":"valor"},"p":{"<id sin @>":"opción"},"avisos":["datos importantes que el documento no decía o supuestos a confirmar"]}';
+    '\n\nRESUMEN GENERAL: además escribí en «resumen» un resumen ejecutivo del puesto de 8 a 14 líneas, en viñetas cortas con «• »: qué busca el cliente y por qué, contexto de la empresa y del área, las ideas clave que se dijeron, matices y prioridades que no entran en los campos y lo que quedó por definir o confirmar. Solo con lo que dice el texto; si es una reunión, atribuí lo que dijo el cliente («pidió», «mencionó»).' +
+    '\n\nRespondé SOLO con un JSON válido, sin texto antes ni después ni markdown: {"c":{"<número>":"valor"},"p":{"<id sin @>":"opción"},"resumen":"texto","avisos":["datos importantes que el documento no decía o supuestos a confirmar"]}';
 }
 
 // devuelve {c:{indice:valor|opcion}, p:{id:opcion}, avisos:[]} ya limpio y validado contra los campos
 function perfilIAValores_(campos, pills, texto) {
   texto = String(texto || '').replace(/\u0000/g, '').trim();
   if (texto.length < 200) throw new Error('El texto es muy corto para armar el perfil del puesto.');
-  const r = extraerJSON_(procesarConClaude(promptPerfilIA_(campos, pills), texto.slice(0, 60000), 'analisis'));
-  const out = { c: {}, p: {}, avisos: [] };
+  const r = extraerJSON_(procesarConClaude(promptPerfilIA_(campos, pills), texto.slice(0, 120000), 'analisis'));
+  const out = { c: {}, p: {}, avisos: [], resumen: String(r.resumen || '').replace(/[<>]/g, '').trim().slice(0, 6000) };
   const porI = {}; campos.forEach(c => porI[c.i] = c);
   Object.keys(r.c || {}).forEach(k => {
     const c = porI[k]; if (!c || NO_RELLENAR_PERFIL_.test(c.l + ' ' + c.s)) return;
@@ -50,7 +51,7 @@ function perfilIAValores_(campos, pills, texto) {
 }
 
 // Desde el formulario abierto con el acceso temporal del perfil (mismo control que guardarPerfilDatos)
-function completarPerfilIA(perfilId, tok, camposJson, pillsJson, texto) {
+function completarPerfilIA(perfilId, tok, camposJson, pillsJson, texto, esReunion) {
   if (!tok || CacheService.getScriptCache().get('pp_' + tok) !== String(perfilId)) throw new Error('Acceso vencido. Volvé a abrir el perfil.');
   let campos, pills;
   try { campos = JSON.parse(camposJson); pills = JSON.parse(pillsJson); } catch (e) { throw new Error('Datos del formulario inválidos.'); }
@@ -58,7 +59,22 @@ function completarPerfilIA(perfilId, tok, camposJson, pillsJson, texto) {
   const cut = (v, n) => String(v == null ? '' : v).slice(0, n);
   campos = campos.map(c => ({ i: Number(c.i), t: cut(c.t, 12), s: cut(c.s, 120), l: cut(c.l, 200), h: cut(c.h, 200), o: Array.isArray(c.o) ? c.o.slice(0, 40).map(x => cut(x, 120)) : undefined }));
   pills = pills.map(g => ({ id: cut(g.id, 40), s: cut(g.s, 120), o: (g.o || []).slice(0, 12).map(x => cut(x, 120)) }));
+  if (esReunion) guardarTranscripcionReunion_(perfilId, texto);
   return JSON.stringify(perfilIAValores_(campos, pills, texto));
+}
+
+// La transcripción de la reunión (no el audio) queda en la carpeta de la búsqueda: si falla la IA o hace falta volver a leerla, no se pierde
+function guardarTranscripcionReunion_(perfilId, texto) {
+  try {
+    const sello = Utilities.formatDate(new Date(), 'America/Argentina/Buenos_Aires', 'yyyy-MM-dd HH-mm');
+    carpetaPerfil_(getConfig(perfilId)).createFile('Reunión de relevamiento - transcripción ' + sello + '.txt', String(texto || '').slice(0, 400000), MimeType.PLAIN_TEXT);
+  } catch (e) { Logger.log('transcripción de la reunión: ' + e); }
+}
+
+// Un pedazo del audio de la reunión de relevamiento (grabada o subida desde el formulario del perfil). Mismo control de acceso que completarPerfilIA.
+function transcribirPerfilAudio(perfilId, tok, b64, mime) {
+  if (!tok || CacheService.getScriptCache().get('pp_' + tok) !== String(perfilId)) throw new Error('Acceso vencido. Volvé a abrir el perfil.');
+  return transcribirBlob_(b64, mime, 'Reunión de relevamiento de un perfil de puesto con el cliente, en castellano rioplatense.');
 }
 
 // Arma y guarda la primera versión del perfil del puesto de una búsqueda nueva (formato de guardarPerfilDatos: {v, p, n, pasos})

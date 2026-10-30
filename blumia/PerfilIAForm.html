@@ -45,7 +45,7 @@
   function sec(e){var c=e.closest('.card');var t=c&&c.querySelector('.card-title');return t?t.textContent.trim():'';}
   function lab(e){var f=e.closest('.f');var l=f&&f.querySelector('label');var t=l?l.textContent.trim():'';if(!t){var fb=e.closest('.fb');var fl=fb&&fb.querySelector('.fl-lbl');t=fl?fl.textContent.trim():'';}return t;}
   function lista(){
-    var cs=controles().filter(function(e){return !e.closest('.ia-bg');});
+    var cs=controles().filter(function(e){return !e.closest('.ia-bg')&&!e.hasAttribute('data-resumen');});
     var campos=cs.map(function(e,i){var o={i:i,t:e.tagName==='SELECT'?'select':(e.tagName==='TEXTAREA'?'textarea':(e.type||'text')),s:sec(e),l:lab(e),h:e.getAttribute('placeholder')||''};if(e.tagName==='SELECT')o.o=[].map.call(e.options,function(x){return x.text.trim();});return o;});
     var pills=[].map.call(document.querySelectorAll('.pills'),function(g){return {id:g.id,s:sec(g),o:[].map.call(g.querySelectorAll('.pill'),function(x){return x.textContent.trim();})};});
     return {campos:campos,pills:pills};
@@ -63,6 +63,9 @@
       var ix=ps.findIndex(function(x){return x.textContent.trim()===r.p[id];});
       if(ix>=0&&!ps.some(function(x){return x.classList.contains('on');})){ps.forEach(function(x,k){x.classList.toggle('on',k===ix);var rd=x.querySelector('input');if(rd)rd.checked=(k===ix);});n++;}
     });
+    var rs=document.querySelector('textarea[data-resumen]');
+    if(rs&&r.resumen&&!String(rs.value||'').trim()){rs.value=r.resumen;marca(rs);n++;}
+    try{compSync();}catch(e){}
     return n;
   }
   var HTML_MODAL='<div class="ia-box"><h3>✨ Completar el perfil con IA</h3><p>Subí el <b>Word</b> del puesto (o pegá el texto). La IA completa <b>solo los campos vacíos</b> con lo que el documento dice, y los marca con un borde verde para que los revises. Después tocá «Guardar cambios». No inventa datos: lo que no esté en el documento queda vacío.</p><input type="file" id="ia-file" accept=".docx,.txt"><textarea id="ia-txt" placeholder="…o pegá acá el texto del relevamiento"></textarea><div class="ia-row"><button id="ia-x">Cancelar</button><button class="go" id="ia-go">Completar</button></div></div>';
@@ -85,6 +88,61 @@
         alert('Listo: la IA completó '+n+' campos (marcados con borde verde).'+(r.avisos&&r.avisos.length?'\n\nLa IA avisa:\n- '+r.avisos.join('\n- '):'')+'\n\nRevisalos y tocá «Guardar cambios».');
       }).withFailureHandler(function(e){go.disabled=false;go.textContent='Completar';alert('No se pudo: '+((e&&e.message)||e));}).completarPerfilIA(PERFIL_ID,PERFIL_TOKEN,JSON.stringify(L.campos),JSON.stringify(L.pills),t);
     };
+  };
+  /* ---------- Reunión de relevamiento: grabada en vivo o subida (audio de Zoom) → transcripción → IA completa el perfil + resumen ---------- */
+  function progreso(titulo){
+    var bg=document.createElement('div');bg.className='ia-bg ia-ui show';
+    bg.innerHTML='<div class="ia-box"><h3>'+titulo+'</h3><p id="rp-st">Preparando…</p><textarea id="rp-tx" readonly style="display:none;min-height:140px"></textarea><div class="ia-row"><button id="rp-re" style="display:none">Reintentar con IA</button><button id="rp-x">Cerrar</button></div></div>';
+    document.body.appendChild(bg);
+    var ui={bg:bg,st:function(t){bg.querySelector('#rp-st').textContent=t;},tx:function(t){var a=bg.querySelector('#rp-tx');a.value=t;a.style.display='block';}};
+    bg.querySelector('#rp-x').onclick=function(){bg.remove();};
+    return ui;
+  }
+  function transcribirUno(parte){
+    return new Promise(function(ok,ko){google.script.run.withSuccessHandler(ok).withFailureHandler(ko).transcribirPerfilAudio(PERFIL_ID,PERFIL_TOKEN,parte.b64,parte.mime);});
+  }
+  function conReintento(parte){return transcribirUno(parte).catch(function(){return transcribirUno(parte);});}
+  function completarConTexto(texto,ui){
+    if(texto.length<200){ui.st('Se transcribió muy poco ('+texto.length+' caracteres): no alcanza para armar el perfil. Revisá que se haya grabado el audio de la reunión.');return;}
+    ui.st('La IA está leyendo la reunión y armando el perfil… (puede tardar uno o dos minutos)');
+    var L=lista(),re=ui.bg.querySelector('#rp-re');re.style.display='none';
+    google.script.run.withSuccessHandler(function(j){
+      var r=JSON.parse(j),n=aplicar(r);ui.bg.remove();
+      alert('Listo: la IA completó '+n+' campos (marcados con borde verde), incluido el resumen general del final.'+(r.avisos&&r.avisos.length?'\n\nLa IA avisa:\n- '+r.avisos.join('\n- '):'')+'\n\nRevisalos y tocá «Guardar cambios». La transcripción quedó guardada en la carpeta de la búsqueda en Drive.');
+    }).withFailureHandler(function(e){
+      ui.st('La transcripción está lista pero la IA no pudo completar el perfil: '+((e&&e.message)||e)+'. Podés reintentar; el texto está acá abajo y copiarlo no hace falta (queda en Drive).');ui.tx(texto);
+      re.style.display='';re.onclick=function(){completarConTexto(texto,ui);};
+    }).completarPerfilIA(PERFIL_ID,PERFIL_TOKEN,JSON.stringify(L.campos),JSON.stringify(L.pills),texto,true);
+  }
+  function transcribirPartes(partes,ui){
+    var acc=[],i=0;
+    (function sig(){
+      if(i>=partes.length){completarConTexto(acc.join(' ').trim(),ui);return;}
+      ui.st('Transcribiendo parte '+(i+1)+' de '+partes.length+'…');
+      conReintento(partes[i]).then(function(t){acc.push(t);i++;sig();},function(e){ui.st('No se pudo transcribir la parte '+(i+1)+': '+((e&&e.message)||e)+'.'+(acc.length?' Hasta acá se transcribió esto:':''));if(acc.length)ui.tx(acc.join(' '));});
+    })();
+  }
+  var bGr=document.createElement('button');bGr.type='button';bGr.textContent='🎙 Grabar la reunión y completar con IA';herr().appendChild(bGr);
+  bGr.onclick=function(){
+    var m=document.getElementById('hm');if(m)m.classList.remove('show');
+    blGrabar(function(partes){transcribirPartes(partes,progreso('🎙 Reunión de relevamiento'));});
+  };
+  var bSu=document.createElement('button');bSu.type='button';bSu.textContent='🎧 Subir el audio de la reunión (Zoom)';herr().appendChild(bSu);
+  bSu.onclick=function(){
+    var m=document.getElementById('hm');if(m)m.classList.remove('show');
+    var inp=document.createElement('input');inp.type='file';inp.accept='audio/*,video/*,.m4a,.mp3,.mp4,.wav,.webm,.ogg';inp.multiple=true;
+    inp.onchange=function(){
+      var fs=[].slice.call(inp.files||[]);if(!fs.length)return;
+      fs.sort(function(a,b){return a.name<b.name?-1:a.name>b.name?1:0;});
+      var ui=progreso('🎧 Audio de la reunión'),acc=[],k=0;
+      (function archivo(){
+        if(k>=fs.length){completarConTexto(acc.join(' ').trim(),ui);return;}
+        var f=fs[k];ui.st('Leyendo '+f.name+'… (puede tardar un minuto)');
+        blAudioTrozos(f,180,function(parte,i,tot){ui.st('Transcribiendo '+f.name+': parte '+(i+1)+' de '+tot+(fs.length>1?' (archivo '+(k+1)+' de '+fs.length+')':'')+'…');return conReintento(parte).then(function(t){acc.push(t);});})
+          .then(function(){k++;archivo();},function(e){ui.st((e&&e.message)||String(e));if(acc.length)ui.tx(acc.join(' '));});
+      })();
+    };
+    inp.click();
   };
 })();
 </script>

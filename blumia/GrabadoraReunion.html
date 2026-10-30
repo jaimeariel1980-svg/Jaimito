@@ -1,0 +1,77 @@
+<script>
+/* Grabadora de la reunión de relevamiento del perfil del puesto: ventanita que graba pestaña/pantalla + micrófono.
+   El audio no se guarda en el sistema; si no se puede entregar al perfil, se ofrece descargarlo. blGrabar(cb) → cb([{b64,mime}]) */
+(function(){
+  var CB={},W=null;
+  var POP=`<!doctype html><html><head><meta charset="utf-8"><title>Grabar reunión</title><style>
+body{font-family:Arial,sans-serif;margin:0;padding:20px;text-align:center;color:#1A1A1A;background:#F7F5F1}h3{margin:0 0 8px;color:#0F3F27}
+ol{text-align:left;font-size:13.5px;line-height:1.6;color:#444;margin:8px 0 14px;padding-left:22px}#st{font-size:14px;color:#555;min-height:36px;margin:6px 0}
+button{font-size:16px;font-weight:700;border:0;border-radius:8px;padding:14px 22px;cursor:pointer;color:#fff;background:#0F3F27;width:100%}button.r{background:#D9534F}#t{font-size:30px;font-weight:700;margin:10px 0;letter-spacing:2px}small{color:#555}
+</style></head><body><h3>Grabar la reunión de relevamiento</h3>
+<ol><li>Avisá a los participantes que se graba para completar el perfil.</li><li>Tocá <b>Empezar</b>.</li><li>Elegí la <b>pestaña de la reunión</b> y marcá <b>Compartir audio de la pestaña</b>. Si usás la app de Zoom en Windows: elegí <b>Pantalla completa</b> y marcá <b>Compartir audio del sistema</b>.</li><li>Permití el micrófono (se graba tu voz y la de los demás).</li><li>No cierres esta ventana ni la pantalla del perfil hasta terminar.</li></ol>
+<div id="st"></div><div id="t">0:00</div><button id="b">🎙 Empezar a grabar</button><div id="dl"></div>
+<p><small>Al terminar, tocá de nuevo. La IA transcribe y completa el perfil. El audio no se guarda en el sistema: si algo falla, podés descargarlo.</small></p>
+<script>(function(){
+var ID="__ID__",CH=600000,MAX=150*60*1000;
+function $(i){return document.getElementById(i);}var b=$("b"),st=$("st"),tm=$("t"),dl=$("dl");
+var ctx=null,dest=null,ss=[],mr=null,parts=[],cur=[],timer=null,ct=null,t0=0,fin=false,lost=false;
+window.__rec=false;
+function fmt(n){return Math.floor(n/60)+":"+("0"+(n%60)).slice(-2);}function msg(h){st.innerHTML=h;}
+function abierto(){try{return !!window.opener&&!window.opener.closed&&typeof window.opener.__blGrabLista==="function";}catch(e){return false;}}
+setInterval(function(){if(window.__rec&&!lost&&!abierto()){lost=true;msg("<b style=\\"color:#C0391B\\">Se cerró la pantalla del perfil.</b> Seguí grabando: al terminar vas a poder descargar el audio.");}},2000);
+window.onbeforeunload=function(){if(window.__rec)return "Hay una grabación en curso";};
+function limpiar(){window.__rec=false;ss.forEach(function(s){s.getTracks().forEach(function(t){t.stop();});});try{if(ctx)ctx.close();}catch(e){}clearInterval(timer);clearTimeout(ct);}
+function chunk(){cur=[];mr=new MediaRecorder(dest.stream,{mimeType:"audio/webm;codecs=opus",audioBitsPerSecond:24000});
+mr.ondataavailable=function(e){if(e.data&&e.data.size)cur.push(e.data);};
+mr.onstop=function(){if(cur.length)parts.push(new Blob(cur,{type:"audio/webm"}));if(fin)entregar();else chunk();};
+mr.start(2000);ct=setTimeout(function(){if(mr&&mr.state!=="inactive")mr.stop();},CH);}
+function terminar(){if(fin||!mr)return;fin=true;b.disabled=true;msg("Cerrando la grabación…");clearTimeout(ct);if(mr.state!=="inactive")mr.stop();else entregar();}
+function bajar(){dl.innerHTML="";parts.forEach(function(p,i){var a=document.createElement("a");a.href=URL.createObjectURL(p);a.download="reunion-parte-"+(i+1)+".webm";a.textContent="⬇ Descargar parte "+(i+1)+" de "+parts.length;a.style.cssText="display:block;margin:8px 0;font-weight:700;color:#0F3F27";dl.appendChild(a);});}
+function sinDestino(){msg("<b>No pude entregar el audio al perfil.</b> Descargalo y subilo desde el perfil: ⚙ → «Subir el audio de la reunión».");bajar();b.style.display="none";}
+function entregar(){limpiar();if(!parts.length){msg("No se grabó nada.");b.disabled=false;b.textContent="🎙 Probar de nuevo";b.className="";mr=null;fin=false;return;}
+if(!abierto()){sinDestino();return;}
+msg("Preparando el audio…");var out=[],i=0;(function sig(){if(i>=parts.length){try{window.opener.__blGrabLista(ID,out);msg("Listo. Podés cerrar esta ventana.");setTimeout(function(){window.close();},800);}catch(e){sinDestino();}return;}var fr=new FileReader();fr.onload=function(){out.push({b64:String(fr.result).split(",")[1],mime:"audio/webm"});i++;sig();};fr.readAsDataURL(parts[i]);})();}
+function err(m){msg(m);limpiar();b.disabled=false;b.textContent="🎙 Probar de nuevo";b.className="";mr=null;fin=false;parts=[];}
+b.onclick=function(){if(mr){terminar();return;}
+if(!navigator.mediaDevices||!window.MediaRecorder||!navigator.mediaDevices.getDisplayMedia){err("Este navegador no permite grabar la reunión. Usá Chrome o Edge en la computadora.");return;}
+navigator.mediaDevices.getDisplayMedia({video:true,audio:true}).then(function(tab){ss.push(tab);if(!tab.getAudioTracks().length){err("No llegó el audio. Volvé a empezar, elegí la pestaña (o la pantalla completa) y marcá <b>Compartir audio</b>.");return;}
+return navigator.mediaDevices.getUserMedia({audio:true}).then(function(mic){ss.push(mic);ctx=new (window.AudioContext||window.webkitAudioContext)();dest=ctx.createMediaStreamDestination();
+ctx.createMediaStreamSource(new MediaStream(tab.getAudioTracks())).connect(dest);ctx.createMediaStreamSource(mic).connect(dest);
+var vt=tab.getVideoTracks()[0];if(vt)vt.onended=terminar;
+parts=[];fin=false;dl.innerHTML="";window.__rec=true;chunk();t0=Date.now();timer=setInterval(function(){var n=Date.now()-t0;tm.textContent=fmt(Math.round(n/1000));if(n>MAX)terminar();},500);
+msg("Grabando… dejá esta ventana abierta.");b.textContent="⏹ Terminar y completar el perfil";b.className="r";});
+}).catch(function(e){err("No se pudo empezar ("+(e&&e.name||"error")+"). Si cancelaste la selección, volvé a empezar. Si falla el micrófono, tocá el candado de la barra de direcciones y permitilo.");});};
+})();<\/script></body></html>`;
+  window.__blGrabLista=function(id,partes){var f=CB[id];if(!f)return;delete CB[id];f(partes);};
+  window.blGrabar=function(cb){
+    var w=window.open('','reunion_blumia','width=520,height=660');
+    if(!w){alert('El navegador bloqueó la ventanita de grabación. Permití las ventanas emergentes para esta página y probá de nuevo.');return false;}
+    var enCurso=false;try{enCurso=!!w.__rec;}catch(e){}
+    if(enCurso){w.focus();alert('Ya hay una grabación en curso en esa ventanita. Terminala antes de empezar otra (si empezás de nuevo se pierde).');return false;}
+    W=w;var id=String(Date.now());CB[id]=cb;w.document.open();w.document.write(POP.replace('__ID__',id));w.document.close();return true;
+  };
+  /* Audio ya grabado (por ejemplo el .m4a de Zoom): se pasa a trozos de ~3 min en WAV 16 kHz mono y se entrega de a uno. */
+  function wav(pcm,sr){var n=pcm.length,b=new ArrayBuffer(44+n*2),v=new DataView(b);
+    function s(o,t){for(var i=0;i<t.length;i++)v.setUint8(o+i,t.charCodeAt(i));}
+    s(0,'RIFF');v.setUint32(4,36+n*2,true);s(8,'WAVE');s(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);s(36,'data');v.setUint32(40,n*2,true);
+    new Int16Array(b,44).set(pcm);return new Blob([b],{type:'audio/wav'});}
+  function b64De(blob){return new Promise(function(ok,ko){var fr=new FileReader();fr.onload=function(){ok(String(fr.result).split(',')[1]);};fr.onerror=ko;fr.readAsDataURL(blob);});}
+  window.blAudioTrozos=function(file,segs,cb){
+    var AC=window.AudioContext||window.webkitAudioContext;if(!AC)return Promise.reject(new Error('Este navegador no puede leer audio. Usá Chrome o Edge.'));
+    var ctx;try{ctx=new AC({sampleRate:16000});}catch(e){ctx=new AC();}
+    return file.arrayBuffer().then(function(ab){return ctx.decodeAudioData(ab);}).then(function(buf){
+      try{ctx.close();}catch(e){}
+      var sr=buf.sampleRate,ch=buf.numberOfChannels,datos=[];for(var c=0;c<ch;c++)datos.push(buf.getChannelData(c));
+      var SR=16000,totalOut=Math.floor(buf.length*SR/sr),paso=segs*SR,total=Math.ceil(totalOut/paso),ratio=sr/SR,i=0;
+      function sig(){
+        if(i>=total)return Promise.resolve(buf.duration);
+        var a=i*paso,e=Math.min(totalOut,a+paso),pcm=new Int16Array(e-a);
+        for(var k=0;k<pcm.length;k++){var p=Math.floor((a+k)*ratio),v=0;for(var c=0;c<ch;c++)v+=datos[c][p]||0;v/=ch;v=Math.max(-1,Math.min(1,v));pcm[k]=v<0?v*32768:v*32767;}
+        var n=i++;
+        return b64De(wav(pcm,SR)).then(function(b){return cb({b64:b,mime:'audio/wav'},n,total);}).then(sig);
+      }
+      return sig();
+    },function(){throw new Error('No pude leer ese archivo. Si es un video, probá con el archivo de solo audio (audio_only.m4a de Zoom).');});
+  };
+})();
+</script>

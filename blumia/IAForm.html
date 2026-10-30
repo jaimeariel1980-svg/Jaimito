@@ -80,13 +80,13 @@
   'function $(i){return document.getElementById(i);}var b=$("b"),st=$("st"),tm=$("t");',
   'var ctx=null,dest=null,ss=[],mr=null,parts=[],cur=[],timer=null,ct=null,t0=0,fin=false;',
   'function fmt(n){return Math.floor(n/60)+":"+("0"+(n%60)).slice(-2);}function msg(h){st.innerHTML=h;}',
-  'function limpiar(){ss.forEach(function(s){s.getTracks().forEach(function(t){t.stop();});});try{if(ctx)ctx.close();}catch(e){}clearInterval(timer);clearTimeout(ct);}',
+  'function limpiar(){window.__rec=false;ss.forEach(function(s){s.getTracks().forEach(function(t){t.stop();});});try{if(ctx)ctx.close();}catch(e){}clearInterval(timer);clearTimeout(ct);}',
   'function chunk(){cur=[];mr=new MediaRecorder(dest.stream,{mimeType:"audio/webm;codecs=opus",audioBitsPerSecond:24000});',
   'mr.ondataavailable=function(e){if(e.data&&e.data.size)cur.push(e.data);};',
   'mr.onstop=function(){if(cur.length)parts.push(new Blob(cur,{type:"audio/webm"}));if(fin)entregar();else chunk();};',
   'mr.start(2000);ct=setTimeout(function(){if(mr&&mr.state!=="inactive")mr.stop();},CH);}',
   'function terminar(){if(fin||!mr)return;fin=true;b.disabled=true;msg("Cerrando la grabación…");clearTimeout(ct);if(mr.state!=="inactive")mr.stop();else entregar();}',
-  'function entregar(){limpiar();if(!parts.length){msg("No se grabó nada.");b.disabled=false;b.textContent="🎙 Probar de nuevo";b.className="";mr=null;fin=false;return;}msg("Preparando el audio…");var out=[],i=0;(function sig(){if(i>=parts.length){try{window.opener.__entrevistaLista(ID,out);window.close();}catch(e){msg("No pude entregar el audio a la pantalla principal. Cerrá esta ventana y probá de nuevo.");}return;}var fr=new FileReader();fr.onload=function(){out.push({b64:String(fr.result).split(",")[1],mime:"audio/webm"});i++;sig();};fr.readAsDataURL(parts[i]);})();}',
+  'function entregar(){limpiar();if(!parts.length){msg("No se grabó nada.");b.disabled=false;b.textContent="🎙 Probar de nuevo";b.className="";mr=null;fin=false;return;}msg("Preparando el audio…");var out=[],i=0;(function sig(){if(i>=parts.length){try{window.opener.__entrevistaLista(ID,out);window.close();}catch(e){msg("<b>No pude entregar el audio al formulario</b> (¿se cerró?). Descargalo para no perderlo:");parts.forEach(function(p,k){var a=document.createElement("a");a.href=URL.createObjectURL(p);a.download="entrevista-parte-"+(k+1)+".webm";a.textContent="⬇ Descargar parte "+(k+1)+" de "+parts.length;a.style.cssText="display:block;margin:8px 0;font-weight:700";document.body.appendChild(a);});}return;}var fr=new FileReader();fr.onload=function(){out.push({b64:String(fr.result).split(",")[1],mime:"audio/webm"});i++;sig();};fr.readAsDataURL(parts[i]);})();}',
   'function err(m){msg(m);limpiar();b.disabled=false;b.textContent="🎙 Probar de nuevo";b.className="";mr=null;fin=false;parts=[];}',
   'b.onclick=function(){if(mr){terminar();return;}',
   'if(!navigator.mediaDevices||!window.MediaRecorder||!navigator.mediaDevices.getDisplayMedia){err("Este navegador no permite grabar la videollamada. Usá Chrome o Edge en la computadora.");return;}',
@@ -94,7 +94,7 @@
   'return navigator.mediaDevices.getUserMedia({audio:true}).then(function(mic){ss.push(mic);ctx=new (window.AudioContext||window.webkitAudioContext)();dest=ctx.createMediaStreamDestination();',
   'ctx.createMediaStreamSource(new MediaStream(tab.getAudioTracks())).connect(dest);ctx.createMediaStreamSource(mic).connect(dest);',
   'var vt=tab.getVideoTracks()[0];if(vt)vt.onended=terminar;',
-  'parts=[];fin=false;chunk();t0=Date.now();timer=setInterval(function(){var n=Date.now()-t0;tm.textContent=fmt(Math.round(n/1000));if(n>MAX)terminar();},500);',
+  'parts=[];fin=false;window.__rec=true;chunk();t0=Date.now();timer=setInterval(function(){var n=Date.now()-t0;tm.textContent=fmt(Math.round(n/1000));if(n>MAX)terminar();},500);',
   'msg("Grabando… dejá esta ventana abierta.");b.textContent="⏹ Terminar y completar el formulario";b.className="r";});',
   '}).catch(function(e){err("No se pudo empezar ("+(e&&e.name||"error")+"). Si cancelaste la selección, volvé a empezar. Si falla el micrófono, tocá el candado de la barra de direcciones y permitilo.");});};',
   '})();<\/script></body></html>'].join('\n');
@@ -102,6 +102,7 @@
     var w=window.open('','entrevista_blumia','width=500,height=600');
     if(!w){alert('El navegador bloqueó la ventanita de grabación. Permití las ventanas emergentes para esta página y probá de nuevo.');return false;}
     if(WREC&&!WREC.closed&&WREC===w){w.focus();alert('Ya hay una grabación en curso en esa ventanita. Terminala o cerrala antes de empezar otra.');return false;}
+    try{if(w.__rec){w.focus();alert('Hay una grabación en curso en esa ventanita (de otra pantalla). Terminala antes de empezar otra: si empezás de nuevo se pierde.');return false;}}catch(e){}
     WREC=w;var id=String(Date.now());ENT[id]=cb;w.document.open();w.document.write(POP2.replace('__ID__',id));w.document.close();return true;
   }
   window.__entrevistaLista=function(id,partes){var cb=ENT[id];if(!cb)return;delete ENT[id];cb(partes);};
