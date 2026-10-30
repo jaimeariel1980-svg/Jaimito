@@ -173,6 +173,7 @@ function doGetPagina_(e) {
     template.entrevistador = e.parameter.entrevistador || '';
     template.perfil = perfil;
     template.editar = e.parameter.editar === '1';
+    template.borrador = e.parameter.borrador || '';
     titulo = 'Screening Blumia';
   }
 

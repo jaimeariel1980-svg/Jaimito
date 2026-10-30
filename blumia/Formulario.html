@@ -162,6 +162,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text)}
 <script>
 const LOGO_BLANCO = '<?!= LOGO_BLUMIA_ ?>';
 const PERFIL_ID = '<?= perfil ?>';
+const BORRADOR = '<?= borrador ?>';
 const EDITAR = '<?= editar ?>' === 'true'; window.EDITAR = EDITAR; window.EF_TIPO = 'screening';
 const CAND_INICIAL = '<?= candidato ?>';
 const ENTR_INICIAL = '<?= entrevistador ?>';
@@ -297,6 +298,21 @@ function render() {
   buildVal();
   preseleccionarEntrevistadora();
   cargarLinkCV();
+  aplicarBorrador();
+}
+
+// respuestas que Bloomy fue preguntando por chat: se vuelcan en el formulario para revisarlas y guardar
+function aplicarBorrador() {
+  if (!BORRADOR || EDITAR) return;
+  google.script.run.withSuccessHandler(b => {
+    if (!b) { showToast('El borrador de Bloomy venció: cargalo de nuevo.'); return; }
+    const mapa = { 'Sí': 'si', 'No': 'no', 'A revisar': 'revisar', 'Alto': 'alto', 'Medio': 'medio', 'Bajo': 'bajo' };
+    Object.keys(b.eval || {}).forEach(id => { const el = document.getElementById('sel-' + id); if (el) { el.value = b.eval[id]; onEvalChange(id, el); } });
+    Object.keys(b.val || {}).forEach(id => { const t = b.val[id]; const p = document.querySelector('.pill[data-id="' + id + '"][data-val="' + (mapa[t] || String(t).toLowerCase()) + '"]'); if (p) pickPill(p); });
+    if (b.comentario) { const c = document.getElementById('comentario'); if (c) c.value = b.comentario; }
+    const f = document.getElementById('d-fecha'); if (f && !f.value) f.value = new Date().toISOString().slice(0, 10);
+    showToast('Cargado con Bloomy: revisá y tocá «Guardar entrevista».');
+  }).withFailureHandler(() => {}).bloomyBorradorLeer(BORRADOR);
 }
 
 function buildEval() {
