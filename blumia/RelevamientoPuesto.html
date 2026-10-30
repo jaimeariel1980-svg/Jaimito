@@ -555,15 +555,23 @@ footer{
     <div class="sec-head">
       <div class="eyebrow"><span>06 — Competencias</span></div>
       <h1 class="sec-title" style="position:relative;z-index:1;">Habilidades <em>clave</em></h1>
-      <p class="sec-desc" style="position:relative;z-index:1;">Hasta 5 competencias críticas para el éxito en el rol.</p>
+      <p class="sec-desc" style="position:relative;z-index:1;">Las competencias críticas para el éxito en el rol (hasta 10; podés agregar o sacar).</p>
     </div>
     <div class="card">
       <div class="card-title">Competencias requeridas</div>
-      <div class="cr"><div class="f"><label>Competencia 1</label><input type="text" placeholder="Ej: Liderazgo de equipos"></div><div class="f"><label>Nivel requerido</label><div class="sw"><select><option value="">Nivel…</option><option>Básico</option><option>Intermedio</option><option>Avanzado</option><option>Experto</option></select></div></div></div>
-      <div class="cr"><div class="f"><label>Competencia 2</label><input type="text" placeholder="Ej: Orientación a resultados"></div><div class="f"><label>Nivel requerido</label><div class="sw"><select><option value="">Nivel…</option><option>Básico</option><option>Intermedio</option><option>Avanzado</option><option>Experto</option></select></div></div></div>
-      <div class="cr"><div class="f"><label>Competencia 3</label><input type="text" placeholder="Ej: Comunicación efectiva"></div><div class="f"><label>Nivel requerido</label><div class="sw"><select><option value="">Nivel…</option><option>Básico</option><option>Intermedio</option><option>Avanzado</option><option>Experto</option></select></div></div></div>
-      <div class="cr"><div class="f"><label>Competencia 4</label><input type="text" placeholder="Ej: Pensamiento analítico"></div><div class="f"><label>Nivel requerido</label><div class="sw"><select><option value="">Nivel…</option><option>Básico</option><option>Intermedio</option><option>Avanzado</option><option>Experto</option></select></div></div></div>
-      <div class="cr"><div class="f"><label>Competencia 5</label><input type="text" placeholder="Ej: Adaptabilidad al cambio"></div><div class="f"><label>Nivel requerido</label><div class="sw"><select><option value="">Nivel…</option><option>Básico</option><option>Intermedio</option><option>Avanzado</option><option>Experto</option></select></div></div></div>
+      <div id="comp-list">
+      <div class="cr"><div class="f"><label>Competencia 1</label><input type="text" placeholder="Ej: Liderazgo de equipos"></div><div class="f"><label>Nivel requerido</label><div class="sw"><select><option value="">Nivel…</option><option>Básico</option><option>Intermedio</option><option>Avanzado</option><option>Experto</option></select></div></div><button type="button" class="addbtn" style="margin:0;padding:0 12px;height:40px" onclick="compDel(this)" aria-label="Sacar esta competencia" title="Sacar esta competencia">✕</button></div>
+      <div class="cr"><div class="f"><label>Competencia 2</label><input type="text" placeholder="Ej: Orientación a resultados"></div><div class="f"><label>Nivel requerido</label><div class="sw"><select><option value="">Nivel…</option><option>Básico</option><option>Intermedio</option><option>Avanzado</option><option>Experto</option></select></div></div><button type="button" class="addbtn" style="margin:0;padding:0 12px;height:40px" onclick="compDel(this)" aria-label="Sacar esta competencia" title="Sacar esta competencia">✕</button></div>
+      <div class="cr"><div class="f"><label>Competencia 3</label><input type="text" placeholder="Ej: Comunicación efectiva"></div><div class="f"><label>Nivel requerido</label><div class="sw"><select><option value="">Nivel…</option><option>Básico</option><option>Intermedio</option><option>Avanzado</option><option>Experto</option></select></div></div><button type="button" class="addbtn" style="margin:0;padding:0 12px;height:40px" onclick="compDel(this)" aria-label="Sacar esta competencia" title="Sacar esta competencia">✕</button></div>
+      <div class="cr"><div class="f"><label>Competencia 4</label><input type="text" placeholder="Ej: Pensamiento analítico"></div><div class="f"><label>Nivel requerido</label><div class="sw"><select><option value="">Nivel…</option><option>Básico</option><option>Intermedio</option><option>Avanzado</option><option>Experto</option></select></div></div><button type="button" class="addbtn" style="margin:0;padding:0 12px;height:40px" onclick="compDel(this)" aria-label="Sacar esta competencia" title="Sacar esta competencia">✕</button></div>
+      <div class="cr"><div class="f"><label>Competencia 5</label><input type="text" placeholder="Ej: Adaptabilidad al cambio"></div><div class="f"><label>Nivel requerido</label><div class="sw"><select><option value="">Nivel…</option><option>Básico</option><option>Intermedio</option><option>Avanzado</option><option>Experto</option></select></div></div><button type="button" class="addbtn" style="margin:0;padding:0 12px;height:40px" onclick="compDel(this)" aria-label="Sacar esta competencia" title="Sacar esta competencia">✕</button></div>
+      <div class="cr xtra" style="display:none"><div class="f"><label>Competencia 6</label><input type="text" placeholder="Otra competencia"></div><div class="f"><label>Nivel requerido</label><div class="sw"><select><option value="">Nivel…</option><option>Básico</option><option>Intermedio</option><option>Avanzado</option><option>Experto</option></select></div></div><button type="button" class="addbtn" style="margin:0;padding:0 12px;height:40px" onclick="compDel(this)" aria-label="Sacar esta competencia" title="Sacar esta competencia">✕</button></div>
+      <div class="cr xtra" style="display:none"><div class="f"><label>Competencia 7</label><input type="text" placeholder="Otra competencia"></div><div class="f"><label>Nivel requerido</label><div class="sw"><select><option value="">Nivel…</option><option>Básico</option><option>Intermedio</option><option>Avanzado</option><option>Experto</option></select></div></div><button type="button" class="addbtn" style="margin:0;padding:0 12px;height:40px" onclick="compDel(this)" aria-label="Sacar esta competencia" title="Sacar esta competencia">✕</button></div>
+      <div class="cr xtra" style="display:none"><div class="f"><label>Competencia 8</label><input type="text" placeholder="Otra competencia"></div><div class="f"><label>Nivel requerido</label><div class="sw"><select><option value="">Nivel…</option><option>Básico</option><option>Intermedio</option><option>Avanzado</option><option>Experto</option></select></div></div><button type="button" class="addbtn" style="margin:0;padding:0 12px;height:40px" onclick="compDel(this)" aria-label="Sacar esta competencia" title="Sacar esta competencia">✕</button></div>
+      <div class="cr xtra" style="display:none"><div class="f"><label>Competencia 9</label><input type="text" placeholder="Otra competencia"></div><div class="f"><label>Nivel requerido</label><div class="sw"><select><option value="">Nivel…</option><option>Básico</option><option>Intermedio</option><option>Avanzado</option><option>Experto</option></select></div></div><button type="button" class="addbtn" style="margin:0;padding:0 12px;height:40px" onclick="compDel(this)" aria-label="Sacar esta competencia" title="Sacar esta competencia">✕</button></div>
+      <div class="cr xtra" style="display:none"><div class="f"><label>Competencia 10</label><input type="text" placeholder="Otra competencia"></div><div class="f"><label>Nivel requerido</label><div class="sw"><select><option value="">Nivel…</option><option>Básico</option><option>Intermedio</option><option>Avanzado</option><option>Experto</option></select></div></div><button type="button" class="addbtn" style="margin:0;padding:0 12px;height:40px" onclick="compDel(this)" aria-label="Sacar esta competencia" title="Sacar esta competencia">✕</button></div>
+      </div>
+      <button type="button" class="addbtn" onclick="compAdd()">+ Agregar competencia</button>
     </div>
   </div>
 
@@ -867,7 +875,13 @@ var PERFIL_ID=<?!= JSON.stringify(perfilId) ?>;
 var PERFIL_TOKEN=<?!= JSON.stringify(token) ?>;
 var DATOS_GUARDADOS=<?!= datos ?>;
 var FECHA_GUARDADO=<?!= JSON.stringify(fecha) ?>;
-function controles(){return [].slice.call(document.querySelectorAll('input,textarea,select')).filter(function(e){return ['radio','checkbox','button','file'].indexOf(e.type)<0&&!e.closest('.pv')&&!e.closest('.ia-ui');});}
+function controles(){var a=[].slice.call(document.querySelectorAll('input,textarea,select')).filter(function(e){return ['radio','checkbox','button','file'].indexOf(e.type)<0&&!e.closest('.pv')&&!e.closest('.ia-ui');});return a.filter(function(e){return !e.closest('.xtra');}).concat(a.filter(function(e){return e.closest('.xtra');}));}
+function compFilas(){return [].slice.call(document.querySelectorAll('#comp-list .cr'));}
+function compTiene(r){var i=r.querySelector('input'),s=r.querySelector('select');return !!((i&&i.value.trim())||(s&&s.selectedIndex>0));}
+function compNum(){var k=0;compFilas().forEach(function(r){if(r.style.display==='none')return;k++;r.querySelector('label').textContent='Competencia '+k;});}
+function compSync(){var rs=compFilas(),hay=rs.some(compTiene);rs.forEach(function(r,i){r.style.display=(compTiene(r)||(!hay&&i<5))?'':'none';});compNum();}
+function compAdd(){var r=compFilas().filter(function(x){return x.style.display==='none';})[0];if(!r){avisoSistema('Máximo 10 competencias',false);return;}r.style.display='';compNum();var i=r.querySelector('input');if(i)i.focus();}
+function compDel(b){var r=b.closest('.cr');r.querySelector('input').value='';r.querySelector('select').selectedIndex=0;r.style.display='none';compNum();}
 function datosForm(){
   var pills={};
   [].forEach.call(document.querySelectorAll('.pills'),function(g){var l=[].slice.call(g.querySelectorAll('.pill'));pills[g.id]=l.findIndex(function(x){return x.classList.contains('on');});});
@@ -880,6 +894,7 @@ function aplicarDatos(d){
     controles().forEach(function(e,i){if(i>=d.v.length)return;if(e.tagName==='SELECT')e.selectedIndex=d.v[i];else e.value=d.v[i];});
     Object.keys(d.p||{}).forEach(function(id){var g=document.getElementById(id);if(!g)return;[].forEach.call(g.querySelectorAll('.pill'),function(x,k){x.classList.toggle('on',k===d.p[id]);var r=x.querySelector('input');if(r)r.checked=(k===d.p[id]);});});
   }catch(e){}
+  try{compSync();}catch(e){}
 }
 function avisoSistema(t,ok){
   var d=document.createElement('div');d.textContent=t;
