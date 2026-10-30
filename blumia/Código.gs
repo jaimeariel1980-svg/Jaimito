@@ -2441,6 +2441,7 @@ function avPendientes(L){
     else p('sinfecha','📅','Figura agendado para '+ep.n+' pero no está en el calendario');
   });
   L.forEach(function(c){if(!/reserva/i.test(c.estado)||/^Descartad|^Eliminado/i.test(c.estado))return;var mv=c.movMs,dm=mv?Math.floor((now-mv)/864e5):0;if(dm>=14)out.push({k:'reserva|'+c.fila,ic:'📌',txt:'En reserva hace '+dm+' días: ¿se retoma o se descarta?',f:c.fila,n:c.nombre,urg:false});});
+  L.forEach(function(c){if(/^Descartad/i.test(c.estado)&&!String(c.motivo||'').trim()&&c.movMs&&c.movMs>now-30*864e5)out.push({k:'sinmotivo|'+c.fila,ic:'✖',txt:'Descartado/a sin motivo: falta cargarlo',f:c.fila,n:c.nombre,urg:false});});
   out.sort(function(a,b){return (b.urg?1:0)-(a.urg?1:0);});
   return out;
 }
