@@ -2452,10 +2452,10 @@ function avNovedades(L){
   L.forEach(function(c){
     var s={e:c.estado,c:c.cita||'',n:(c.notaScr||'')+'|'+(c.notaComp||'')};snap[c.fila]=s;if(!prev)return;
     var a=prev[c.fila],p=function(ic,txt){nov.push({ic:ic,txt:txt,f:c.fila,n:c.nombre,h:cuando});};
-    if(!a){if(!/^Eliminado/.test(s.e))p('🆕','Nuevo CV recibido');return;}
+    if(!a){if(!/^Eliminado/.test(s.e))p('🆕','Nuevo CV recibido'+(/^Descartad/i.test(s.e)&&!c.motivo?' · ya descartado, SIN MOTIVO cargado':''));return;}
     if(s.e!==a.e&&!/^Eliminado/.test(s.e)){
       if(s.e==='Contratado')p('🎉','Contratado/a');
-      else if(/^Descartad/i.test(s.e))p('❌','Descartado/a: '+s.e.replace(/^Descartado\\s*/i,''));
+      else if(/^Descartad/i.test(s.e))p('❌','Descartado/a: '+s.e.replace(/^Descartado\\s*/i,'')+(c.motivo?'':' · SIN MOTIVO cargado (cargalo en la ficha)'));
       else p('🔄','Pasó a «'+s.e+'»'+(a.e?' (antes: '+a.e+')':''));
     }
     if(s.c&&s.c!==a.c)p('📅','Agendó para el '+s.c);
