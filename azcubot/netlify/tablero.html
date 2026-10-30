@@ -1130,6 +1130,7 @@ function cargarForm(id, nombre, tel){
     '<label id="cf_rpl" style="display:none">Nueva fecha y hora de la visita<input id="cf_cuando" type="datetime-local"></label>'+
     '<div id="cf_rpn" style="display:none;grid-column:1/-1;font-size:12px;color:var(--gris)">Actúa sobre la visita agendada de este interesado: no crea una fila nueva. Anotá el motivo en Observaciones.</div>'+
     '<label>Próximo paso<input id="cf_prox" placeholder="Ej: llamar el lunes (las visitas se agendan desde Visitas)"></label>'+
+    '<div style="grid-column:1/-1;font-size:12px;color:var(--gris)">¿Hay una visita nueva? Se agenda acá, no en «Próximo paso» (así queda en Visitas y en el Calendar). <button class="btn s" style="padding:3px 10px;font-size:12px;margin-left:4px" onclick="agendarForm(\''+id+'\',document.getElementById(\'cf_cli\').value,document.getElementById(\'cf_tel\').value)">Agendar visita</button></div>'+
     '<label style="grid-column:1/-1">Observaciones<textarea id="cf_obs" rows="2" placeholder="Comentarios..."></textarea></label>'+
   '</div>'+
   '<div class="dlbtns"><button class="btn g" id="cf_btn" onclick="guardarConsulta(\''+id+'\')">Registrar</button><button class="btn s" onclick="closeDL()">Cancelar</button></div></div>';
@@ -1763,15 +1764,15 @@ function pintarEncuesta(p,e){
     '<div class="dlbtns"><button class="btn s" onclick="closeDL()">Cerrar</button></div></div>';
   document.getElementById('ov2').classList.add('on');
 }
-function agendarForm(id){
+function agendarForm(id,nom,tel){
   var p=DATA.find(x=>x.id===id); if(!p)return;
   var _n=new Date(),hoy=new Date(_n.getTime()-_n.getTimezoneOffset()*60000).toISOString().slice(0,16);
   document.getElementById('dlg').innerHTML=
   '<div class="fh"><span class="x" onclick="closeDL()">x</span><div class="dir">Agendar visita</div><div class="sub">'+p.id+' · '+p.dir+'</div></div>'+
   '<div class="fb"><div class="form">'+
     '<label>Fecha y hora<input id="ag_fecha" type="datetime-local" value="'+hoy+'"></label>'+
-    '<label>Interesado<input id="ag_cli" placeholder="Nombre"></label>'+
-    '<label>Teléfono<input id="ag_tel" placeholder="+54 341 ..."></label>'+
+    '<label>Interesado<input id="ag_cli" placeholder="Nombre" value="'+String(nom||'').replace(/"/g,'&quot;')+'"></label>'+
+    '<label>Teléfono<input id="ag_tel" placeholder="+54 341 ..." value="'+String(tel||'').replace(/"/g,'&quot;')+'"></label>'+
     '<label>Email (opc.)<input id="ag_mail" type="email" placeholder="email del cliente"></label>'+
     '<details style="grid-column:1/-1;border:1px solid var(--linea);border-radius:12px;padding:8px 12px"><summary style="cursor:pointer;font-weight:600;font-size:13.5px">🤝 Viene por otra inmobiliaria</summary><div class="form" style="margin-top:10px"><label>Inmobiliaria<input id="ag_inmob" placeholder="Nombre de la inmobiliaria"></label><label>Colega<input id="ag_colega" placeholder="Nombre del colega"></label></div></details>'+
 
