@@ -2471,7 +2471,7 @@ function verAvisos(){
 }
 function avPopups(L){
   var cont=document.getElementById('avPop');
-  if(!cont){cont=document.createElement('div');cont.id='avPop';cont.style.cssText='position:fixed;bottom:14px;left:14px;z-index:150;display:flex;flex-direction:column-reverse;gap:8px;max-width:min(340px,calc(100vw - 110px))';document.body.appendChild(cont);}
+  if(!cont){cont=document.createElement('div');cont.id='avPop';cont.style.cssText='position:fixed;bottom:110px;left:14px;z-index:150;display:flex;flex-direction:column-reverse;gap:8px;max-width:min(340px,calc(100vw - 110px))';document.body.appendChild(cont);}
   var mk=function(x){var d=document.createElement('div');d.style.cssText='background:#fff;border-left:4px solid '+(x.urg?'#B91C1C':'#1A6645')+';box-shadow:0 4px 14px rgba(0,0,0,.2);border-radius:6px;padding:10px 12px;font-size:13px;cursor:pointer';d.innerHTML='<button type="button" aria-label="Cerrar aviso" style="float:right;border:none;background:none;font-size:16px;line-height:1;cursor:pointer;color:#777;margin:-4px -6px 0 8px;padding:4px" onclick="event.stopPropagation();this.parentNode.remove()">✕</button><b>'+x.ic+' '+avEsc(x.n)+'</b><br>'+avEsc(x.txt);d.onclick=function(){d.remove();if(x.panel)verAvisos();else if(x.f)avAbrir(x.f);};cont.appendChild(d);setTimeout(function(){if(d.parentNode)d.remove();},x.urg?15000:8000);};
   L.slice(0,5).forEach(mk);
   if(L.length>5)mk({ic:'🔔',n:'Y '+(L.length-5)+' más',txt:'Tocá para ver la lista',panel:1});
