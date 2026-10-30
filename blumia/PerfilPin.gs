@@ -69,7 +69,7 @@ function ultimoPerfilDatos_(cfg) {
   let mejor = null;
   while (it.hasNext()) { const f = it.next(); if (f.getName().indexOf('Perfil del puesto - datos ') === 0 && (!mejor || f.getDateCreated() > mejor.getDateCreated())) mejor = f; }
   if (!mejor) return null;
-  return { texto: mejor.getBlob().getDataAsString(), fecha: Utilities.formatDate(mejor.getDateCreated(), 'America/Argentina/Buenos_Aires', 'dd/MM/yyyy HH:mm') };
+  return { texto: normalizarPerfilDatos_(mejor.getBlob().getDataAsString()), fecha: Utilities.formatDate(mejor.getDateCreated(), 'America/Argentina/Buenos_Aires', 'dd/MM/yyyy HH:mm') };
 }
 
 /* Guarda una versión con fecha y hora del perfil del puesto (los valores del formulario) en la carpeta del perfil en Drive.
@@ -104,4 +104,14 @@ function diagnosticoPerfilPuesto() {
     const c = HtmlService.createTemplateFromFile(String(cfg.perfil_html)).evaluate().getContent();
     Logger.log('HTML cargado: ' + c.length + ' caracteres, contiene formulario: ' + (c.indexOf('Perfil del puesto') > -1 ? 'sí' : 'NO'));
   }
+}
+
+/* Versiones guardadas entre el 29/10 y el 30/10 traen un control de más al principio (el selector de archivo oculto de «Cargar copia»): los datos quedaban corridos un lugar
+   (el nombre del puesto aparecía vacío y los datos de la empresa en el campo siguiente). Se corrige al leerlas; las versiones nuevas ya no lo llevan. */
+function normalizarPerfilDatos_(txt) {
+  try {
+    const o = JSON.parse(txt);
+    if (o && Array.isArray(o.v) && Number(o.n) === 82 && o.v.length === 82 && String(o.v[0]) === '') { o.v.shift(); o.n = 81; return JSON.stringify(o); }
+  } catch (e) { }
+  return txt;
 }
