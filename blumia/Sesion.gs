@@ -298,6 +298,8 @@ function registroApi_() {
     informePDF: { f: informePDF_ },
     informeEnviar: { f: informeEnviar_ },
     rankingGuardar: { f: rankingGuardar_ },
+    bloomyChat: { f: bloomyChat_ },
+    bloomyEjecutar: { f: bloomyEjecutar_ },
     vaciarBusquedaInfo: { f: vaciarBusquedaInfo_, admin: true },
     vaciarBusqueda: { f: vaciarBusqueda_, admin: true },
     flyerTextosIA: { f: flyerTextosIA_ },

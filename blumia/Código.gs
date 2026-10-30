@@ -1365,7 +1365,8 @@ const IA_TAREAS_ = {
   analisis: { modelo: 'claude-sonnet-5-5', effort: 'medium', maxTokens: 12000 },
   informe:  { modelo: 'claude-opus-5-5',   effort: 'medium', maxTokens: 12000 },
   redactar: { modelo: 'claude-sonnet-5-5', effort: 'low',    maxTokens: 4000 },
-  cv:       { modelo: 'claude-sonnet-5-5', effort: 'low',    maxTokens: 4000 }
+  cv:       { modelo: 'claude-sonnet-5-5', effort: 'low',    maxTokens: 4000 },
+  bloomy:   { modelo: 'claude-haiku-5-5',  effort: 'low',    maxTokens: 2000 }
 };
 
 function procesarConClaude(promptSistema, contenidoUsuario, tarea) {
@@ -1390,13 +1391,12 @@ function llamarClaude_(promptSistema, contenidoUsuario, cfg) {
     method: 'post',
     headers: { 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
     contentType: 'application/json',
-    payload: JSON.stringify({
+    payload: JSON.stringify(Object.assign({
       model: cfg.modelo,
       max_tokens: cfg.maxTokens,
-      output_config: { effort: cfg.effort },
       system: promptSistema,
       messages: [{ role: 'user', content: contenidoUsuario }]
-    }),
+    }, /haiku/i.test(cfg.modelo) ? {} : { output_config: { effort: cfg.effort } })),
     muteHttpExceptions: true
   });
   let parsed;
@@ -2020,7 +2020,7 @@ function kanbanHTML_(perfilId) {
   if (!bandaRef) { try { bandaRef = Number(datosInformeBusqueda(perfilId).banda) || 0; } catch (e) { } }
   lapT_('Banda salarial (datos del informe)');
   const enlaces = [['Formulario de postulación (para los candidatos)', URL_WEBAPP + '?tipo=postulacion&perfil=' + encodeURIComponent(perfilId)], ['Tablero de esta búsqueda', URL_WEBAPP + '?tipo=kanban&perfil=' + encodeURIComponent(perfilId)], ['Difusión (flyer y textos)', flyer], ['Perfil del puesto (documento)', perfilPdf]].concat(enlacesAgendaPersonas_()).concat([['Agenda · entrevista con la empresa (virtual)', cfg.link_empresa_virtual], ['Agenda · entrevista con la empresa (presencial)', cfg.link_empresa_presencial]]).filter(x => typeof x[1] === 'string' && /^https?:\/\//i.test(x[1]));
-  try { const extra = '<script>var metEstado = ' + metEstado_.toString() + '; var BANDA_REF = ' + bandaRef + '; var URL_APP = ' + JSON.stringify(URL_BASE()) + '; var ENLACES = ' + JSON.stringify(enlaces).replace(/</g, '\\u003c') + ';</script>' + ['ConfigPanel', 'ResumenPanel', 'TableroCards'].map(f => HtmlService.createHtmlOutputFromFile(f).getContent()).join(''); html = html.replace(/<\/html>\s*$/, () => extra + '</html>'); } catch (e) { }
+  try { const extra = '<script>var metEstado = ' + metEstado_.toString() + '; var BANDA_REF = ' + bandaRef + '; var URL_APP = ' + JSON.stringify(URL_BASE()) + '; var ENLACES = ' + JSON.stringify(enlaces).replace(/</g, '\\u003c') + ';</script>' + ['ConfigPanel', 'ResumenPanel', 'TableroCards', 'BloomyWidget'].map(f => HtmlService.createHtmlOutputFromFile(f).getContent()).join(''); html = html.replace(/<\/html>\s*$/, () => extra + '</html>'); } catch (e) { }
   lapT_('Sumar los paneles (configurar, resumen, tablero)');
   return HtmlService.createHtmlOutput(html)
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
