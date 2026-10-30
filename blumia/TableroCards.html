@@ -94,7 +94,7 @@ header{min-height:86px}
     else if(c.pretension){pr='<div class="ln"><i>💰</i><span>$'+fmtMiles(c.pretension)+'</span></div>';}
     var t1='',cf=avFecha(c.cita);
     if(c.cita){var hoy=false;if(cf){var d0=new Date();d0.setHours(0,0,0,0);hoy=cf>=d0.getTime()&&cf<d0.getTime()+864e5;}t1+='<span class="tag cit'+(hoy?' hoy':'')+'">📅 '+esc(c.cita)+(c.citaCon?' · con '+esc(String(c.citaCon).split(' ')[0]):'')+'</span>';}
-    if(c.contactado)t1+='<span class="tag ctc">💬 '+esc(c.contactado)+' <button title="Borrar la marca de contacto" style="border:none;background:none;color:#7A5200;cursor:pointer;font-weight:800;padding:0 0 0 3px" onclick="event.stopPropagation();borrarMarca('+c.fila+')">✕</button></span>';
+    if(c.contactado)t1+='<span class="tag ctc" title="Ya se le escribió por WhatsApp">💬 Contactado · '+esc(c.contactado)+' <button title="Borrar la marca de contacto" style="border:none;background:none;color:#7A5200;cursor:pointer;font-weight:800;padding:0 0 0 3px" onclick="event.stopPropagation();borrarMarca('+c.fila+')">✕</button></span>';
     var fl='';
     if(/^pendiente$/i.test(c.estado))fl+='<span class="tag am">⏳ Analizando CV…</span>';
     if(/^revisar$/i.test(c.estado))fl+='<span class="tag am">⚠ Revisar CV</span>';
@@ -319,7 +319,7 @@ header{min-height:86px}
   window.agQuienPintar=function(){var s=document.getElementById('gaQuien'),l=document.getElementById('gaQL'),t=val('gaTipo');if(!s||!l)return;var ok=t==='screening'||t==='competencias';l.style.display=ok?'':'none';if(!ok){s.innerHTML='';return;}var E=window.AG_ENT||{yo:'',lista:[]},L=E.lista.filter(function(u){return u[t];}),yo=L.some(function(u){return u.nombre===E.yo;})?E.yo:'';s.innerHTML='<option value="">Sin asignar</option>'+L.map(function(u){return '<option value="'+esc(u.nombre)+'"'+(u.nombre===yo?' selected':'')+'>'+esc(u.nombre)+(u.nombre===E.yo?' (yo)':'')+'</option>';}).join('');};
   function val(id){var e=document.getElementById(id);return e?e.value:'';}
   function fail(b,t){return function(e){b.disabled=false;b.textContent=t;alert('No se pudo: '+((e&&e.message)||e));};}
-  function refrescar(){setTimeout(function(){window.top.location.reload();},300);}
+  function refrescar(){refrescarTablero();}
   window.guardarDatosC=function(f,b){
     var d={nombre:val('gdNom'),tel:val('gdTel'),dni:val('gdDni'),mail:val('gdMail'),formacion:val('gdFor'),zona:val('gdZon'),fuente:val('gdFue'),pretension:val('gdPre')},t=b.textContent;
     b.disabled=true;b.textContent='Guardando…';
@@ -710,7 +710,7 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);setInt
   window.guardarMotivoFicha=function(f,b){
     var sel=[].slice.call(document.querySelectorAll('.motf:checked')).map(function(x){return x.value;}),o=(document.getElementById('motfOtro')||{}).value||'';
     b.disabled=true;b.textContent='Guardando…';
-    google.script.run.withSuccessHandler(function(){toast();cerrar();window.top.location.reload();}).withFailureHandler(function(e){b.disabled=false;b.textContent='Guardar motivo';blAlert(e.message||e);}).guardarMotivoDescarte(PERFIL,f,sel,o,quienSoy());
+    google.script.run.withSuccessHandler(function(){toast();cerrar();refrescarTablero();}).withFailureHandler(function(e){b.disabled=false;b.textContent='Guardar motivo';blAlert(e.message||e);}).guardarMotivoDescarte(PERFIL,f,sel,o,quienSoy());
   };
   var st=document.createElement('style');st.id='motcss';
   st.textContent='.motd{margin:10px 28px 0;background:#fff;border:1.5px solid #D5E0CE;border-radius:8px;padding:0}.motd.falta{border-color:#E06666;background:#FDF0F0}.motd summary{cursor:pointer;padding:10px 14px;font-size:14px;color:#0F3F27}.motd .motb{padding:4px 14px 14px;display:grid;grid-template-columns:1fr 1fr;gap:4px 14px}.motd .motb label{display:flex;gap:8px;align-items:center;font-size:13px}.motd .motb .mo{grid-column:1/-1;flex-direction:column;align-items:stretch;margin-top:6px}.motd .motb .mo input{padding:7px;border:1.5px solid #D5E0CE;border-radius:8px}.motd .motb .obsb{grid-column:1/-1}@media(max-width:640px){.motd{margin:10px 14px 0}.motd .motb{grid-template-columns:1fr}}';
@@ -726,9 +726,36 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);setInt
   window.quitarNota=function(f,et,b){
     blConfirm('¿Dejar '+(NOM[et]||'esta etapa')+' sin nota?\n\nSe borra la nota y, si el estado salía de ella, vuelve a la etapa anterior. El PDF del formulario queda en Drive.',function(){
       b.disabled=true;b.textContent='…';
-      google.script.run.withSuccessHandler(function(){toast();cerrar();setTimeout(function(){window.top.location.reload();},800);}).withFailureHandler(function(e){b.disabled=false;b.textContent='Sin nota';blAlert(e.message||e);}).anularEtapa(PERFIL,f,et,quienSoy());
+      google.script.run.withSuccessHandler(function(){toast();cerrar();refrescarTablero();}).withFailureHandler(function(e){b.disabled=false;b.textContent='Sin nota';blAlert(e.message||e);}).anularEtapa(PERFIL,f,et,quienSoy());
     },{si:'Dejar sin nota',peligro:true});
   };
   var st=document.createElement('style');st.id='nncss';st.textContent='.nb.nn{width:auto;padding:0 10px;font-size:12px;margin-left:6px;background:#fff;color:#B3261E;border:1.5px solid #E7B4B0}.nb.nn:hover{background:#FDF0F0}';document.head.appendChild(st);
+})();
+
+/* Actualización sin recargar la página (30/10, pedido de Ariel: los demás no ven los cambios sin tocar F5): después de cada acción y cuando alguien cambia algo en la planilla
+   el tablero se vuelve a leer y a dibujar solo. Se revisa una «firma» barata cada 20 s y recién ahí se baja todo. Si hay una ficha abierta, espera a que se cierre. */
+(function(){
+  var firma=null,ocupado=false,pend=false;
+  function modalAbierto(){var m=document.getElementById('modal');return !!(m&&m.classList.contains('show'));}
+  function aplicar(r,cerrarModal){
+    var n;try{n=JSON.parse(r);}catch(e){window.top.location.reload();return;}
+    DATA_ALL.length=0;n.forEach(function(c){DATA_ALL.push(c);});
+    DATA.length=0;DATA_ALL.forEach(function(c){if(!/^Eliminado\|/.test(c.estado))DATA.push(c);});
+    if(cerrarModal&&typeof cerrar==='function')cerrar();
+    try{avRevisar(DATA_ALL);}catch(e){}
+    try{renderBoardN();}catch(e){window.top.location.reload();return;}
+    var f=document.getElementById('fNombre');
+  }
+  window.refrescarTablero=function(cerrarModal){
+    if(ocupado){pend=true;return;}ocupado=true;
+    google.script.run.withSuccessHandler(function(r){ocupado=false;aplicar(r,!!cerrarModal);firma=null;if(pend){pend=false;window.refrescarTablero();}})
+      .withFailureHandler(function(){ocupado=false;window.top.location.reload();}).doGetKanban(PERFIL);
+  };
+  setInterval(function(){
+    if(document.hidden||ocupado||modalAbierto())return;
+    ocupado=true;
+    google.script.run.withSuccessHandler(function(f){ocupado=false;if(firma===null){firma=f;return;}if(f!==firma){firma=f;window.refrescarTablero();}})
+      .withFailureHandler(function(){ocupado=false;}).kanbanFirma(PERFIL);
+  },20000);
 })();
 </script>
