@@ -44,7 +44,7 @@ function getConfigBusqueda_(pin, perfilId) {
   const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
   const datos = {};
   CFG_CAMPOS_.forEach(k => { datos[k] = typeof cfg[k] === 'string' ? cfg[k] : (cfg[k] == null ? '' : String(cfg[k])); });
-  return { perfil: { propio: !!cfg.perfil_html, fecha: null }, extra: configExtraLeer_(ss, cfg, perfilId), datos: datos, prompt_extra: String(cfg.prompt_extra || ''), preguntas: getPreguntasPostulacion(perfilId), habituales: leerHabituales_(), plantillas: listarPlantillas_(ss, perfilId) };
+  return { logo: { claro: logoCliente_(cfg), color: logoClienteColor_(cfg), propio: !!String(cfg.logo_cliente || '').trim(), ciega: busquedaCiega_(cfg), empresa: empresaKey_(cfg) }, perfil: { propio: !!cfg.perfil_html, fecha: null }, extra: configExtraLeer_(ss, cfg, perfilId), datos: datos, prompt_extra: String(cfg.prompt_extra || ''), preguntas: getPreguntasPostulacion(perfilId), habituales: leerHabituales_(), plantillas: listarPlantillas_(ss, perfilId) };
 }
 
 // Lo lento (carpeta de Drive, planilla de candidatos y versiones del perfil del puesto) se pide aparte, después de abrir el panel
@@ -206,4 +206,20 @@ function guardarPlantillas_(ss, perfilId, lista, quien) {
     }
   });
   if (antes.length) logForm_(ss, quien, perfilId, 'Plantillas', antes);
+}
+
+/* Logo del cliente subido desde ⚙ Configurar → Datos de la búsqueda. El navegador lo achica y arma dos versiones PNG (blanca para los encabezados verdes y a color para los fondos claros);
+   se guardan en Config (logo_cliente y logo_cliente_color) como imagen incrustada: cada celda aguanta hasta 50.000 caracteres. Vacío = quitar. */
+function guardarLogoCliente_(pin, perfilId, claro, color, quien) {
+  pinValido_(pin);
+  QUIEN_ = quien || '';
+  const ok = v => v === '' || (typeof v === 'string' && /^data:image\/png;base64,[A-Za-z0-9+\/=]+$/.test(v) && v.length <= 45000);
+  claro = String(claro || ''); color = String(color || '');
+  if (!ok(claro) || !ok(color)) throw new Error('El logo es demasiado pesado o no es un PNG. Probá con una imagen más chica.');
+  getConfig(perfilId);
+  setConfigCampo_(perfilId, 'logo_cliente', claro);
+  setConfigCampo_(perfilId, 'logo_cliente_color', color);
+  try { registrarHistorial_('(búsqueda)', String(getConfig(perfilId).nombre || perfilId), claro ? 'Logo del cliente cargado' : 'Logo del cliente quitado', 'Desde Configurar', quien); } catch (e) { }
+  const cfg = getConfig(perfilId);
+  return { ok: true, claro: logoCliente_(cfg), color: logoClienteColor_(cfg), propio: !!claro };
 }
