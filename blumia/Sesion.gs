@@ -180,7 +180,7 @@ function guardarEntrevistaUsuario_(nombre, mail, screening, competencias, linkSc
   if (mail && !/^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/.test(mail)) throw new Error('Ese mail no es válido.');
   const sh = usuariosHoja_();
   const url = v => { v = String(v || '').trim(); if (v && !/^https:\/\/[^\s<>"']{8,400}$/.test(v)) throw new Error('El link de agenda tiene que empezar con https:// y no puede llevar espacios.'); return v; };
-  linkScr = url(linkScr); linkComp = url(linkComp);
+  linkScr = url(linkScr || linkComp); linkComp = '';
   if (sh.getMaxColumns() < 12) sh.insertColumnsAfter(sh.getMaxColumns(), 12 - sh.getMaxColumns());
   if (!sh.getRange(1, 9).getValue()) { sh.getRange(1, 9, 1, 4).setValues([['mail', 'entrevista', 'link_screening', 'link_competencias']]).setFontWeight('bold').setBackground('#0F3F27').setFontColor('#fff'); }
   else if (!sh.getRange(1, 11).getValue()) { sh.getRange(1, 11, 1, 2).setValues([['link_screening', 'link_competencias']]).setFontWeight('bold').setBackground('#0F3F27').setFontColor('#fff'); }

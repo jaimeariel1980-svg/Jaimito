@@ -2797,7 +2797,7 @@ function armarComunicacion_(perfilId, fila, tipo, quien, entrevistadorElegido){
 
   const linkPorTipo = {
     'contacto-screening': cfg.link_screening,
-    'contacto-competencias': cfg.link_competencias,
+    'contacto-competencias': cfg.link_competencias || cfg.link_screening,
     'contacto-empresa-virtual': cfg.link_empresa_virtual,
     'contacto-empresa-presencial': cfg.link_empresa_virtual
   };
