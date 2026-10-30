@@ -1543,7 +1543,7 @@ function generarInformeCandidato_(perfilId, fila) {
 '</style></head><body contenteditable="true">'+
 '<div id="barra-guardar" contenteditable="false"><button onclick="guardarCambios()">💾 Guardar cambios</button></div>'+
 '<div class="page"><div class="body-cell">'+
-'<div class="hero"><img src="'+LOGO_URL+'" alt="Blumia"><div class="tag">Informe de Candidato · '+empresaInforme_(cfg)+'</div>'+
+'<div class="hero">'+heroLogoCli_(cfg,true)+'<img src="'+LOGO_URL+'" alt="Blumia"><div class="tag">Informe de Candidato · '+empresaInforme_(cfg)+'</div>'+
 '<div class="herorow"><div><h1>'+nombre+'</h1><div class="sub">'+posicion+'</div></div>'+cvBtn+'</div></div>'+
 '<div class="ficha-data">'+datosHTML+'</div>'+
 '<h3>Trayectoria y perfil</h3><p class="perfil-text">'+(d.perfil||'')+'</p>'+
@@ -1621,7 +1621,7 @@ function generarPDFClientes(perfilId) {
 
   const LOGO_URL = 'https://lh3.googleusercontent.com/d/1WdoIWop2mZ_KnSa9raQM1Xb5TFP2JvGO';
   const portada =
-    '<div class="cuadro-page"><div class="cuadro-hero"><img src="'+LOGO_URL+'"><div class="ctag">Informe de Candidatos · '+empresaInforme_(cfg)+'</div>'+
+    '<div class="cuadro-page"><div class="cuadro-hero">'+heroLogoCli_(cfg,true)+'<img src="'+LOGO_URL+'"><div class="ctag">Informe de Candidatos · '+empresaInforme_(cfg)+'</div>'+
     '<div class="ctitle">'+posicion+'</div></div>'+
     '<h3 class="cuadro-h3">Cuadro comparativo</h3>'+
     '<table class="cuadro"><thead><tr><th>Candidato</th><th>Localidad</th><th>Último empleo</th><th>Remuneración</th><th>Valoración</th></tr></thead>'+
@@ -2823,7 +2823,7 @@ function armarComunicacion_(perfilId, fila, tipo, quien, entrevistadorElegido){
 
   texto = firmaConPlaceholder_(texto).replace(/\[NOMBRE\]/g, nombre)
                .replace(/\[PUESTO\]/g, puesto)
-               .replace(/la empresa \[EMPRESA\]/g, EMPRESAS_CONOCIDAS_[empresa] ? 'la empresa ' + empresa : empresa)
+               .replace(/la empresa \[EMPRESA\]/g, empresaConocida_(empresa) ? 'la empresa ' + empresa : empresa)
                .replace(/\[EMPRESA\]/g, empresa)
                .replace(/\[ENTREVISTADOR\]/g, conQuien ? String(conQuien).split(' ')[0] : entrevistador)
                .replace(/\[LINK\]/g, link);

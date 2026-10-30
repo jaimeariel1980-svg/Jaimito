@@ -7,8 +7,16 @@
      `empresa_candidatos`, se usa tal cual (ej.: «una empresa cliente del sector Energía y Minería» o el nombre real);
      si no, para una empresa que no figura en EMPRESAS_CONOCIDAS_ no se revela el nombre: «una empresa cliente del sector <empresa>». */
 const EMPRESAS_CONOCIDAS_ = {
-  'MACS': { legal: 'MACS S.A.', logo: 'https://azcubot.pages.dev/macs-logo-blanco.png', hoja: 'Informe_Proceso' }
+  'MACS': { legal: 'MACS S.A.', logo: 'https://azcubot.pages.dev/macs-logo-blanco.png', hoja: 'Informe_Proceso' },
+  'ABECEB': { legal: 'ABECEB', logo: 'https://azcubot.pages.dev/abeceb-logo-blanco.png', logoColor: 'https://azcubot.pages.dev/abeceb-logo.png' }
 };
+
+// busca la empresa sin importar mayúsculas ni tildes («Abeceb», «ABECEB »)
+function empresaConocida_(e) {
+  const n = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+  const k = Object.keys(EMPRESAS_CONOCIDAS_).find(x => n(x) === n(e));
+  return k ? EMPRESAS_CONOCIDAS_[k] : null;
+}
 
 function empresaDefault_() {
   try { return PropertiesService.getScriptProperties().getProperty('EMPRESA_DEFAULT') || 'MACS'; } catch (e) { return 'MACS'; }
@@ -22,7 +30,8 @@ function empresaKey_(cfg) {
 
 function empresaInforme_(cfg) {
   const e = empresaKey_(cfg);
-  return EMPRESAS_CONOCIDAS_[e] ? EMPRESAS_CONOCIDAS_[e].legal : e;
+  const k = empresaConocida_(e);
+  return k ? k.legal : e;
 }
 
 /* Búsqueda ciega (Config.busqueda_ciega = SI): a los candidatos no se les muestra el nombre ni el logo de la empresa cliente
@@ -34,17 +43,30 @@ function empresaParaCandidatos_(cfg) {
   if (busquedaCiega_(cfg)) return x && x.toLowerCase() !== empresaKey_(cfg).toLowerCase() ? x : 'una empresa cliente';
   if (x) return x;
   const e = empresaKey_(cfg);
-  return EMPRESAS_CONOCIDAS_[e] ? e : 'una empresa cliente del sector ' + e;
+  return empresaConocida_(e) ? e : 'una empresa cliente del sector ' + e;
 }
 
 function logoConocido_(empresa) {
-  const k = EMPRESAS_CONOCIDAS_[empresa];
+  const k = empresaConocida_(empresa);
   return k && k.logo ? k.logo : '';
+}
+
+/* Logo a color de la empresa cliente (para fondos claros: informe de la búsqueda, flyer); si no hay uno a color, el claro de siempre. */
+function logoClienteColor_(cfg) {
+  const k = empresaConocida_(empresaKey_(cfg));
+  return k ? (k.logoColor || k.logo || '') : '';
+}
+
+/* Logo del cliente en el encabezado de un informe para el cliente: nada si la búsqueda es ciega o la empresa no tiene logo. claro = fondo oscuro (logo blanco). */
+function heroLogoCli_(cfg, claro) {
+  if (busquedaCiega_(cfg)) return '';
+  const u = claro ? logoCliente_(cfg) : logoClienteColor_(cfg);
+  return u ? '<img class="hero-cli" src="' + u + '" alt="" style="float:right;height:36px;max-width:160px;object-fit:contain;margin:2px 0 0 12px">' : '';
 }
 
 /* Nombre de la hoja del informe de proceso de una empresa. */
 function hojaProceso_(empresa) {
-  const e = empresa || empresaDefault_(), k = EMPRESAS_CONOCIDAS_[e];
+  const e = empresa || empresaDefault_(), k = empresaConocida_(e);
   return k && k.hoja ? k.hoja : 'Informe_Proceso_' + e;
 }
 
@@ -64,4 +86,20 @@ function enviarMailBlumia_(para, asunto, cuerpo, opciones) {
   if (alias) o.from = desde; else if (!o.replyTo) o.replyTo = desde;
   GmailApp.sendEmail(para, asunto, cuerpo, o);
   return { alias: alias, desde: alias ? desde : Session.getEffectiveUser().getEmail() };
+}
+
+/* Logo claro del cliente como imagen incrustada (data:) para el flyer: así la exportación a imagen no depende de permisos entre sitios. Vacío si la búsqueda no tiene logo. */
+function logoClienteDatos_(cfg) {
+  try {
+    const u = logoCliente_(cfg);
+    if (!u) return '';
+    const cache = CacheService.getScriptCache(), k = 'logocli_' + Utilities.base64EncodeWebSafe(u).slice(-40);
+    const c = cache.get(k);
+    if (c) return c;
+    const r = UrlFetchApp.fetch(u, { muteHttpExceptions: true });
+    if (r.getResponseCode() !== 200) return '';
+    const d = 'data:image/png;base64,' + Utilities.base64Encode(r.getContent());
+    if (d.length < 90000) cache.put(k, d, 21600);
+    return d;
+  } catch (e) { return ''; }
 }
