@@ -156,6 +156,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text)}
 
 <?!= HtmlService.createHtmlOutputFromFile('IAForm').getContent() ?>
 <?!= HtmlService.createHtmlOutputFromFile('EstadoForm').getContent() ?>
+<?!= HtmlService.createTemplateFromFile('MotivoForm').evaluate().getContent() ?>
 <script>window.EDIT_TIPO='screening';</script>
 <?!= HtmlService.createHtmlOutputFromFile('EditorForm').getContent() ?>
 <script>
@@ -449,6 +450,7 @@ function enviarALaPlanilla() {
   const ESTADO_EF = efCapturar();
 
   let cat = state.veredictoManual || state.letraAuto || 'C';
+  if (cat === 'C' && !EDITAR && !window.__mot) { mfPedir(function(m){ window.__mot = m; enviarALaPlanilla(); }); return; }
 
   const btn = document.getElementById('btn-save-sheet');
   btn.innerText = '⏳ GUARDANDO...';
@@ -525,8 +527,10 @@ function enviarALaPlanilla() {
       entrevistador: entrevistador,
       resultado: cat,
       comentarios: notas,
+      motivo: cat === 'C' ? (window.__mot || null) : null,
       htmlFull: clone.outerHTML
     });
+  window.__mot = null;
 }
 </script>
 </body>
