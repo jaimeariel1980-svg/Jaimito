@@ -604,6 +604,14 @@ header h1{font-size:15px;line-height:1.25;flex:1 1 100%;min-width:0;display:-web
 </script>
 <script>
 (function(){
+  // accesos directos a la carpeta de Drive y al sheet de la búsqueda, dentro del menú 📚 Búsqueda
+  (function(){
+    var a=[].slice.call(document.querySelectorAll('.ddm a')).filter(function(x){return /verEnlaces/.test(x.getAttribute('onclick')||'');})[0];
+    if(!a)return;
+    function it(txt,url){if(!url)return;var n=document.createElement('a');n.textContent=txt;n.onclick=function(){window.open(url,'_blank');};a.parentNode.insertBefore(n,a);}
+    it('📁 Carpeta de Drive',typeof ENLACE_CARPETA!=='undefined'?ENLACE_CARPETA:'');
+    it('📊 Sheet de la búsqueda',typeof ENLACE_HOJA!=='undefined'?ENLACE_HOJA:'');
+  })();
   window.verEnlaces=function(){
     var L=typeof ENLACES!=='undefined'?ENLACES:[];
     document.getElementById('mtit').textContent='🔗 Enlaces de la búsqueda';
