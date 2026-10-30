@@ -235,7 +235,7 @@ function azcuHerrAlertas_(){
     }
     (p.seg||[]).forEach(function(s){
       var m = String(s.prox||'').match(/^Visita (\d{2}\/\d{2}\/\d{4}) (\d{2}:\d{2})/);
-      if(s.res==='Visita agendada' && m && azcuNum_(m[1])===hn) out.visitas_hoy.push({hora:m[2], id:p.id, direccion:p.dir, interesado:s.cli, telefono:s.tel});
+      if((s.res==='Visita agendada' || !/^Visita (cancelada|reprogramada)$/i.test(String(s.res||''))) && m && azcuNum_(m[1])===hn) out.visitas_hoy.push({hora:m[2], id:p.id, direccion:p.dir, interesado:s.cli, telefono:s.tel});
     });
   });
   try{
@@ -244,7 +244,7 @@ function azcuHerrAlertas_(){
       var mx = /^EXT-/.test(String(v[i][0]).trim()) && String(v[i][5]).trim()==='Visita agendada' ? String(v[i][6]).match(/^Visita (\d{2}\/\d{2}\/\d{4}) (\d{2}:\d{2})/) : null;
       if(mx && azcuNum_(mx[1])===hn) out.visitas_hoy.push({hora:mx[2], id:String(v[i][0]).trim(), direccion:'🏢 '+v[i][12]+(v[i][11] ? ' ('+v[i][11]+')' : ''), interesado:v[i][3], telefono:v[i][4], otra_inmobiliaria:true});
     }
-    for(i=1;i<v.length;i++) if(v[i][0]) ult[String(v[i][0]).trim()+'|'+(String(v[i][4]).replace(/\D/g,'')||azcuSinAc_(v[i][3]))] = v[i];
+    for(i=1;i<v.length;i++) if(v[i][0]) ult[azcuPersonaKey_(v[i])] = v[i];
     Object.keys(ult).forEach(function(k){
       var r = ult[k], n = azcuNum_(r[7]);
       if(!n || /cerrar/i.test(String(r[6])) || /no le interes/i.test(String(r[5]))) return;
@@ -1766,10 +1766,13 @@ function azcuVisitasData_(atras, adelante){
   var hn = azcuHoy_(), ahora = Date.now(), dirs = azcuMapaDirs_(), sh = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento'), v = sh ? sh.getDataRange().getValues() : [], out = [], real = {}, i, k;
   for(i=1;i<v.length;i++){
     var id0 = String(v[i][0]).trim();
-    if(id0 && String(v[i][2]).trim()==='Visita' && String(v[i][5]).trim()!=='Visita agendada' && !/cancelad|reprogramad/i.test(String(v[i][5]))){ (real[id0] = real[id0]||[]).push({n:azcuNum_(v[i][1]), nom:azcuSinAc_(v[i][3]), tel:String(v[i][4]).replace(/\D/g,'')}); }
+    if(id0 && String(v[i][2]).trim()==='Visita' && String(v[i][5]).trim()!=='Visita agendada' && !/cancelad|reprogramad/i.test(String(v[i][5]))){ (real[id0] = real[id0]||[]).push({i:i, n:azcuNum_(v[i][1]), nom:azcuSinAc_(v[i][3]), tel:String(v[i][4]).replace(/\D/g,'')}); }
   }
   for(i=1;i<v.length;i++){
     var r = v[i], id = String(r[0]).trim(), via = String(r[2]).trim(), res = String(r[5]).trim(), ag = res==='Visita agendada', can = res==='Visita cancelada' || res==='Visita reprogramada', rp = res==='Visita reprogramada', n, hh = '';
+    var px = (!ag && !can) ? _proxVisita_(r) : null;
+    if(px && new Date(azcuIsoN_(px.n)+'T'+px.hh+':00-03:00').getTime() < ahora) px = null;
+    if(px) ag = true;
     if(!id || (via!=='Visita' && !ag && !can)) continue;
     if(ag || can){ var m = String(r[6]).trim().match(/^Visita\s+(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})/i); if(m){ n = +(m[3]+('0'+m[2]).slice(-2)+('0'+m[1]).slice(-2)); hh = ('0'+m[4]).slice(-2)+':'+m[5]; } else n = azcuNum_(r[1]); }
     else n = azcuNum_(r[1]);
@@ -1777,7 +1780,7 @@ function azcuVisitasData_(atras, adelante){
     var dd = azcuDif_(n, hn); if(dd<-atras || dd>adelante) continue;
     var nom = azcuSinAc_(r[3]), tel = String(r[4]).replace(/\D/g,''), hecho = false, ext = /^EXT-/.test(id), e = 'r';
     if(ag){
-      (real[id]||[]).forEach(function(x){ if(hecho || (x.n!==null && x.n<n)) return; if((!nom && !tel) || (nom && x.nom===nom) || (tel && x.tel===tel)) hecho = true; });
+      (real[id]||[]).forEach(function(x){ if(hecho || x.i===i || (x.n!==null && x.n<n)) return; if((!nom && !tel) || (nom && x.nom===nom) || (tel && x.tel===tel)) hecho = true; });
       if(hecho) continue;
       e = new Date(azcuIsoN_(n)+'T'+(hh||'23:59')+':00-03:00').getTime() >= ahora ? 'a' : 'p';
     }
@@ -1849,13 +1852,15 @@ function azcuMarcaVendedor_(vend, cargo){
   }catch(e){}
 }
 
+// una persona = propiedad + primer nombre (o teléfono si no hay nombre): una fila con teléfono y otra sin él son la misma persona
+function azcuPersonaKey_(r){ return String(r[0]).trim()+'|'+(azcuSinAc_(r[3]).split(' ')[0] || String(r[4]).replace(/\D/g,'')); }
 function azcuAvisoSeguimiento(forzar){
   var h = +Utilities.formatDate(new Date(), AZCU_TZ, 'H');
   if(forzar!==true && (h<10 || h>=20 || azcuEnSilencio_())) return;
   var seg = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento');
   if(!seg || seg.getLastRow()<2) return;
   var v = seg.getDataRange().getValues(), hn = azcuHoy_(), ahora = Date.now(), envM = azcuMapaGet_('AZCU_SEG2'), ult = {}, i, datos = null, cambio = false;
-  for(i=1;i<v.length;i++) if(v[i][0]) ult[String(v[i][0]).trim()+'|'+(String(v[i][4]).replace(/\D/g,'')||azcuSinAc_(v[i][3]))] = v[i];
+  for(i=1;i<v.length;i++) if(v[i][0]) ult[azcuPersonaKey_(v[i])] = v[i];
   Object.keys(ult).forEach(function(k){
     var r = ult[k], n = azcuNum_(r[7]);
     if(!n || /cerrar/i.test(String(r[6])) || /no le interes/i.test(String(r[5])) || String(r[5]).trim()==='Visita agendada') return;
