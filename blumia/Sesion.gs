@@ -288,6 +288,7 @@ function registroApi_() {
     activarPerfilPuesto: { f: activarPerfilPuesto_, admin: true },
     copiaInfo: { f: copiaInfo_, admin: true },
     cambiarEstadoBusqueda: { f: cambiarEstadoBusqueda_, admin: true },
+    cambiarCiegaBusqueda: { f: cambiarCiegaBusqueda_, admin: true },
     diagnosticoVelocidad: { f: diagnosticoVelocidad_, admin: true },
     listarAccesos: { f: listarAccesos_, admin: true },
     guardarDatosCandidato: { f: guardarDatosCandidato_ },

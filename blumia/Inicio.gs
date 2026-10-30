@@ -28,7 +28,7 @@ function inicioDatos_() {
   const col = k => H.indexOf(k);
   const filas = rows.slice(1).filter(r => r[0] && r[0] !== 'operaciones').map(r => {
     const g = k => { const c = col(k); return c >= 0 ? String(r[c] == null ? '' : r[c]).trim() : ''; };
-    return { id: String(r[0]), nombre: g('nombre') || g('nombre_perfil') || String(r[0]), empresa: g('empresa') || 'Sin empresa', hoja: g('hoja_nombre'), cerrada: g('estado_busqueda').toUpperCase() === 'CERRADA' };
+    return { id: String(r[0]), nombre: g('nombre') || g('nombre_perfil') || String(r[0]), empresa: g('empresa') || 'Sin empresa', hoja: g('hoja_nombre'), cerrada: g('estado_busqueda').toUpperCase() === 'CERRADA', ciega: g('busqueda_ciega').toUpperCase() === 'SI' };
   });
   const cnt = conteoCandidatos_(filas);
   filas.forEach(f => { f.n = cnt[f.id] || 0; delete f.hoja; });
@@ -97,4 +97,17 @@ function cambiarEstadoBusqueda_(perfilId, estado) {
   logForm_(SpreadsheetApp.openById(SHEET_MASTER_ID), (typeof SES_ !== 'undefined' && SES_ && SES_.nombre) || 'sin nombre', perfilId, 'Config', { estado_busqueda: antes });
   try { registrarHistorial_('(búsqueda)', String(cfg.nombre || perfilId), e === 'CERRADA' ? 'Búsqueda cerrada' : 'Búsqueda reabierta', 'Desde el Inicio', (typeof SES_ !== 'undefined' && SES_ && SES_.nombre) || 'sistema'); } catch (x) { }
   return { ok: true, estado: e };
+}
+
+// búsqueda ciega desde la tarjeta del Inicio: a los candidatos no se les muestra el nombre ni el logo de la empresa (lo mismo que la casilla de ⚙ Configurar → Datos de la búsqueda)
+function cambiarCiegaBusqueda_(perfilId, ciega) {
+  const nuevo = ciega ? 'SI' : 'NO';
+  const cfg = getConfig(perfilId);
+  const antes = busquedaCiega_(cfg) ? 'SI' : 'NO';
+  if (antes === nuevo) return { ok: true, ciega: !!ciega };
+  setConfigCampo_(perfilId, 'busqueda_ciega', nuevo);
+  const quien = (typeof SES_ !== 'undefined' && SES_ && SES_.nombre) || 'sin nombre';
+  try { logForm_(SpreadsheetApp.openById(SHEET_MASTER_ID), quien, perfilId, 'Config', { busqueda_ciega: antes }); } catch (e) { }
+  try { registrarHistorial_('(búsqueda)', String(cfg.nombre || perfilId), ciega ? 'Búsqueda ciega activada' : 'Búsqueda ciega desactivada', 'Desde el Inicio', quien); } catch (e) { }
+  return { ok: true, ciega: !!ciega };
 }
