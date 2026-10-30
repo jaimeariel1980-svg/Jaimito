@@ -282,6 +282,7 @@ function registroApi_() {
     getHistorialCandidato: { f: getHistorialCandidato_ },
     getLinkScreening: { f: getLinkScreening_ },
     guardarConfigBusqueda: { f: guardarConfigBusqueda_, admin: true },
+    guardarLogoCliente: { f: guardarLogoCliente_, admin: true },
     guardarHabituales: { f: guardarHabituales_, admin: true },
     proponerBusquedaIA: { f: proponerBusquedaIA_, admin: true },
     crearBusquedaIA: { f: crearBusquedaIA_, admin: true },

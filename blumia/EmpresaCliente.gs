@@ -53,6 +53,8 @@ function logoConocido_(empresa) {
 
 /* Logo a color de la empresa cliente (para fondos claros: informe de la búsqueda, flyer); si no hay uno a color, el claro de siempre. */
 function logoClienteColor_(cfg) {
+  const c = (cfg && typeof cfg.logo_cliente_color === 'string') ? cfg.logo_cliente_color.trim() : '';
+  if (/^https:\/\//i.test(c) || /^data:image\/png;base64,/i.test(c)) return c;
   const k = empresaConocida_(empresaKey_(cfg));
   return k ? (k.logoColor || k.logo || '') : '';
 }
@@ -93,6 +95,7 @@ function logoClienteDatos_(cfg) {
   try {
     const u = logoCliente_(cfg);
     if (!u) return '';
+    if (/^data:/i.test(u)) return u;
     const cache = CacheService.getScriptCache(), k = 'logocli_' + Utilities.base64EncodeWebSafe(u).slice(-40);
     const c = cache.get(k);
     if (c) return c;

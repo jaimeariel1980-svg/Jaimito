@@ -700,7 +700,7 @@ function getHeroPostulacion(perfilId) {
 // Una empresa de EMPRESAS_CONOCIDAS_ (MACS) que todavía no lo tiene cargado usa el logo publicado en la web de Azcu.
 function logoCliente_(cfg) {
   const l = (cfg && typeof cfg.logo_cliente === 'string') ? cfg.logo_cliente.trim() : '';
-  if (/^https:\/\//i.test(l)) return l;
+  if (/^https:\/\//i.test(l) || /^data:image\/png;base64,/i.test(l)) return l;
   return logoConocido_(empresaKey_(cfg));
 }
 
