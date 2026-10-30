@@ -120,7 +120,7 @@ function agendarCitaTablero_(perfilId, fila, tipo, fecha, hora, duracion, lugar,
   if (entrevistador && (tipo === 'screening' || tipo === 'competencias')) {
     const u = leerUsuarios_().find(x => x.clave === usuClave_(entrevistador) && x.activo === 'SI');
     if (!u) throw new Error('No encontré a ese entrevistador entre los usuarios habilitados.');
-    if (!usuHace_(u, tipo)) throw new Error(String(u.nombre).split(' ')[0] + ' no hace ' + (tipo === 'competencias' ? 'competencias' : 'screening') + '. Elegí a otra persona.');
+    if (!usuHaceEn_(u, tipo, perfilId)) throw new Error(String(u.nombre).split(' ')[0] + ' no hace ' + (tipo === 'competencias' ? 'competencias' : 'screening') + ' en esta búsqueda. Elegí a otra persona.');
     quienEntrevista = u;
   }
   const nomEnt = quienEntrevista ? quienEntrevista.nombre : '';

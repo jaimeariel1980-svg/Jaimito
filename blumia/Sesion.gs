@@ -168,6 +168,21 @@ function listarUsuarios_() {
 
 /* Quién entrevista (29/10): en «Usuarios», columna «mail» (su Google, para invitarlo al evento) y «entrevista» (qué etapas hace: vacío = screening y competencias,
    «screening», «competencias», «screening,competencias» o «ninguna»). */
+/* Quién entrevista EN UNA BÚSQUEDA (30/10, pedido de Ariel): Config.entrevistan es un JSON {clave de usuario: «screening,competencias» | «screening» | «competencias» | «ninguna»}
+   con las excepciones de esa búsqueda (se arma en ⚙ Configurar → Datos de la búsqueda). Quien no figura ahí sigue la regla general de Usuarios (usuHace_). */
+function entrevistanDe_(perfilId) {
+  try {
+    if (!perfilId) return {};
+    const t = String(getConfig(perfilId).entrevistan || '').trim();
+    return t ? (JSON.parse(t) || {}) : {};
+  } catch (e) { return {}; }
+}
+function usuHaceEn_(u, etapa, perfilId) {
+  const o = entrevistanDe_(perfilId), v = o[u.clave || usuClave_(u.nombre)];
+  if (typeof v === 'string') return v.split(',').map(x => x.trim()).indexOf(etapa) >= 0;
+  return usuHace_(u, etapa);
+}
+
 function usuHace_(u, etapa) {
   const e = String(u.entrevista || '');
   if (!e) return true;
@@ -192,8 +207,8 @@ function guardarEntrevistaUsuario_(nombre, mail, screening, competencias, linkSc
 }
 
 // Para el panel «Agendar» de la ficha: quién puede entrevistar cada etapa (sin mails) y quién es el usuario actual
-function entrevistadoresAgenda_() {
-  return { yo: SES_ ? SES_.nombre : '', lista: leerUsuarios_().filter(u => u.activo === 'SI').map(u => ({ nombre: u.nombre, screening: usuHace_(u, 'screening'), competencias: usuHace_(u, 'competencias'), linkScr: !!u.linkScr, linkComp: !!u.linkComp })) };
+function entrevistadoresAgenda_(perfilId) {
+  return { yo: SES_ ? SES_.nombre : '', lista: leerUsuarios_().filter(u => u.activo === 'SI').map(u => ({ nombre: u.nombre, screening: usuHaceEn_(u, 'screening', perfilId), competencias: usuHaceEn_(u, 'competencias', perfilId), linkScr: !!u.linkScr, linkComp: !!u.linkComp })) };
 }
 
 function usuarioPorNombre_(nombre) {

@@ -38,6 +38,24 @@
       +'<div style="font-size:13px;color:#555;flex:1;min-width:180px" id="cfLogoE">'+est+'</div></div>'
       +'<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="cf-mini" onclick="document.getElementById(\'cfLogoF\').click()">Subir logo</button><button type="button" class="cf-mini" id="cfLogoQ" onclick="cfLogoQuitar()"'+(prop?'':' style="display:none"')+'>Quitar logo propio</button><input type="file" id="cfLogoF" accept="image/png,image/jpeg,image/webp,image/svg+xml" style="display:none" onchange="cfLogoSubir(this)"></div>';
   }
+
+  // ---- Quién entrevista en ESTA búsqueda (excepciones a la regla general de Usuarios) ----
+  function entMapa(){try{return JSON.parse(CF.datos.entrevistan||'{}')||{};}catch(e){return {};}}
+  function entHtml(){
+    var U=CF.usuariosEnt||[],O=entMapa();if(!U.length)return '';
+    var h='<label style="margin-top:14px">Quién entrevista en esta búsqueda</label><div class="cf-help">Tildá qué etapas hace cada persona <b>en esta búsqueda</b>. Arranca con lo que tienen en Administración → Usuarios; si cambiás algo acá, vale solo para esta búsqueda (selector «Quién lo entrevista», link de agenda por WhatsApp y Agenda).</div><div style="display:grid;grid-template-columns:1fr auto auto;gap:6px 18px;align-items:center;max-width:460px">';
+    h+='<span></span><b style="font-size:12px">Screening</b><b style="font-size:12px">Competencias</b>';
+    U.forEach(function(u){var v=typeof O[u.clave]==='string'?O[u.clave]:null,sc=v===null?u.scr:v.split(',').indexOf('screening')>=0,co=v===null?u.comp:v.split(',').indexOf('competencias')>=0;
+      h+='<span>'+esc(u.nombre)+'</span><input type="checkbox" class="cfEnt" data-c="'+esc(u.clave)+'" data-e="screening"'+(sc?' checked':'')+' style="width:auto"><input type="checkbox" class="cfEnt" data-c="'+esc(u.clave)+'" data-e="competencias"'+(co?' checked':'')+' style="width:auto">';});
+    return h+'</div>';
+  }
+  function entSync(){
+    var U=CF.usuariosEnt||[];if(!U.length||!document.querySelector('.cfEnt'))return;var o={};
+    U.forEach(function(u){var sc=document.querySelector('.cfEnt[data-c="'+u.clave+'"][data-e="screening"]'),co=document.querySelector('.cfEnt[data-c="'+u.clave+'"][data-e="competencias"]');if(!sc||!co)return;
+      if(sc.checked===!!u.scr&&co.checked===!!u.comp)return;
+      o[u.clave]=sc.checked&&co.checked?'screening,competencias':(sc.checked?'screening':(co.checked?'competencias':'ninguna'));});
+    CF.datos.entrevistan=Object.keys(o).length?JSON.stringify(o):'';
+  }
   function logoArmar(img,max,cb){
     var w=img.naturalWidth||img.width,h=img.naturalHeight||img.height,k=Math.min(1,max/w,(max/2)/h);w=Math.max(1,Math.round(w*k));h=Math.max(1,Math.round(h*k));
     var c=document.createElement('canvas');c.width=w;c.height=h;var g=c.getContext('2d');g.drawImage(img,0,0,w,h);
@@ -121,6 +139,7 @@
     var dc=document.getElementById('cfdc');if(dc)CF.datos.busqueda_ciega=dc.checked?'SI':'NO';
     if((v=g('cfx_estado'))!==null)CF.extra.estado=v;if((v=g('cfx_cvia'))!==null)CF.extra.cv_ia=v;if((v=g('cfx_mail'))!==null)CF.extra.mail=v;
     Object.keys(CF.datos).forEach(function(k){if((v=g('cfd_'+k))!==null)CF.datos[k]=v;});
+    entSync();
     if(g('cfd_nombre')!==null&&CF.datos.nombre){CF.datos.nombre_perfil=CF.datos.nombre;CF.extra.hero.posicion=CF.datos.nombre;}
     CF.preguntas.forEach(function(q,i){if((v=g('cfq_e'+i))!==null){q.etiqueta=v;q.tipo=g('cfq_t'+i);q.opciones=g('cfq_o'+i);q.requerido=g('cfq_r'+i);}});
     CF.plantillas.forEach(function(t,i){if((v=g('cfp_'+i))!==null){t.texto=v;t.alcance=g('cfa_'+i);}});
@@ -148,6 +167,7 @@
     x+='<div class="cf-sec'+(tab==='dat'?' on':'')+'"><div class="cf-help">Datos de la búsqueda: nombre, empresa, links de agenda y puesto. Lo que cambies acá se ve en la página de postulación, en los mensajes a candidatos, en los informes y en el tablero. Los links tienen que empezar con https://. Al guardar se recarga el tablero.</div>';
     Object.keys(ETQ).forEach(function(k){x+='<label>'+ETQ[k]+'</label><input id="cfd_'+k+'" value="'+esc(CF.datos[k])+'">';});
     x+=logoHtml();
+    x+=entHtml();
     x+='<label style="display:flex;gap:8px;align-items:center;text-transform:none;margin-top:12px"><input type="checkbox" id="cfdc" style="width:auto"'+(String(CF.datos.busqueda_ciega||'').toUpperCase()==='SI'?' checked':'')+'> 🔒 <b>Búsqueda ciega</b>: no mostrar el nombre ni el logo de la empresa a los candidatos</label><div class="cf-help">Vale para <b>todo lo que ve el candidato</b>: la página de postulación (sin logo ni nombre de la empresa), los mensajes de WhatsApp y mail («una empresa cliente»), el flyer y los textos para LinkedIn, Instagram y WhatsApp. Los informes y el tablero internos siguen con el nombre real.</div>';
     x+='<label style="display:flex;gap:8px;align-items:center;text-transform:none"><input type="checkbox" id="cfdi" style="width:auto"'+(String(CF.datos.datos_internos||'').toUpperCase()!=='NO'?' checked':'')+'> Pedir <b>Edad</b> y <b>Situación familiar</b> en la guía de entrevista y mostrarlas en el informe (uso interno)</label>';
     var E=CF.extra,H=E.hero;

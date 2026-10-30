@@ -2366,7 +2366,7 @@ function menuWA(f){
   document.getElementById('mbody').innerHTML=h;
   waEntCargar();
 }
-function waEntCargar(){google.script.run.withSuccessHandler(function(r){var s=document.getElementById("waEnt");if(!s||!r)return;(r.lista||[]).forEach(function(u){var o=document.createElement("option");o.value=u.nombre;o.textContent=u.nombre+(u.linkScr||u.linkComp?"":" (sin links de agenda)");s.appendChild(o);});}).entrevistadoresAgenda();}
+function waEntCargar(){google.script.run.withSuccessHandler(function(r){var s=document.getElementById("waEnt");if(!s||!r)return;(r.lista||[]).forEach(function(u){var o=document.createElement("option");o.value=u.nombre;o.textContent=u.nombre+(u.linkScr||u.linkComp?"":" (sin links de agenda)");s.appendChild(o);});}).entrevistadoresAgenda(PERFIL);}
 function quienSoy(){var q='';try{q=localStorage.getItem('blumia_quien')||'';}catch(e){}return q;}
 function enviarWA(f,tipo,btn){
   btn.textContent='Preparando...';
@@ -2813,7 +2813,7 @@ function armarComunicacion_(perfilId, fila, tipo, quien, entrevistadorElegido){
   if (etapaAg && String(entrevistadorElegido || '').trim()) {
     const u = leerUsuarios_().find(x => x.clave === usuClave_(entrevistadorElegido) && x.activo === 'SI');
     if (!u) return { ok: false, error: 'No encontré a ese entrevistador entre los usuarios habilitados.' };
-    if (!usuHace_(u, etapaAg)) return { ok: false, error: String(u.nombre).split(' ')[0] + ' no hace ' + etapaAg + '. Elegí a otra persona.' };
+    if (!usuHaceEn_(u, etapaAg, perfilId)) return { ok: false, error: String(u.nombre).split(' ')[0] + ' no hace ' + etapaAg + ' en esta búsqueda. Elegí a otra persona.' };
     const propio = etapaAg === 'screening' ? (u.linkScr || u.linkComp) : (u.linkComp || u.linkScr);
     if (propio) link = propio; else aviso = String(u.nombre).split(' ')[0] + ' todavía no tiene cargado su link de agenda de ' + etapaAg + ': el mensaje lleva el link de la búsqueda.';
     conQuien = u.nombre;
