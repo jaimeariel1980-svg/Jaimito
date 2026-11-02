@@ -281,7 +281,7 @@ function huntingSubirPdf_(perfilId, id, b64, nombreArchivo, quien) {
   const file = huntCarpeta_(cfg).createFile(Utilities.newBlob(bytes, 'application/pdf', nom));
   const sheet = getSheet(cfg), recibidos = DriveApp.getFolderById(cfg.folder_recibidos);
   const datos = procesarConChatGPT(file, cfg);
-  if (!datos) { try { file.setTrashed(true); } catch (e) { } throw new Error('No pude leer ese PDF. Probá bajarlo de nuevo desde LinkedIn (Más → Guardar como PDF).'); }
+  if (!datos || datos.nombre === 'Error') { try { file.setTrashed(true); } catch (e) { } throw new Error('No pude leer ese PDF. Probá bajarlo de nuevo desde LinkedIn (Más → Guardar como PDF).'); }
   const repetido = esDuplicado(datos, sheet);
   if (!repetido) insertarFilaLibre(sheet, datos, file.getUrl(), new Date(), HUNT_FUENTE_);
   file.moveTo(recibidos);
