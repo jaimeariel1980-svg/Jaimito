@@ -209,7 +209,7 @@ function procesarMails(cfg) {
     thread.getMessages().forEach(msg => {
       msg.getAttachments().forEach(att => {
         const mime = att.getContentType();
-        if (mime.includes('pdf') || mime.includes('officedocument') || mime.includes('word')) {
+        if (esAdjuntoCV_(att)) {
           const file = folderRecibidos.createFile(att);
           const datos = procesarConChatGPT(file, cfg);
           if (datos && !esDuplicado(datos, sheet)) insertarFilaLibre(sheet, datos, file.getUrl(), msg.getDate(), 'Mail');
@@ -225,7 +225,7 @@ function procesarMails(cfg) {
           const fileId = link.match(/[a-zA-Z0-9_-]{20,}/)[0];
           const orig = DriveApp.getFileById(fileId);
           const mime = orig.getMimeType();
-          if (mime.includes('pdf') || mime.includes('officedocument') || mime.includes('word')) {
+          if (esFormatoCV_(mime)) {
             const file = folderRecibidos.createFile(orig.getBlob()).setName(orig.getName());
             const datos = procesarConChatGPT(file, cfg);
             if (datos && !esDuplicado(datos, sheet)) insertarFilaLibre(sheet, datos, file.getUrl(), msg.getDate(), 'Mail');
@@ -326,6 +326,29 @@ function esDuplicado(datos, sheet) {
 }
 
 
+/* ¿Qué archivos se pueden leer como CV? PDF, Word (.docx/.doc), Google Docs, OpenOffice (.odt), RTF, texto/HTML e imágenes (JPG, PNG, GIF, BMP, TIFF: se lee el texto con OCR de Drive, sirve para fotos y escaneos). */
+function esFormatoCV_(mime) {
+  mime = String(mime || '').toLowerCase();
+  return mime === 'application/vnd.google-apps.document' ||
+    /^application\/(pdf|msword|rtf|x-rtf)$|officedocument\.wordprocessingml|opendocument\.text|^text\/(plain|html|rtf)$|^image\/(jpeg|jpg|png|gif|bmp|tiff)$/.test(mime);
+}
+// Adjunto de mail que puede ser un CV: las imágenes chicas (logos de firma, íconos) se ignoran
+function esAdjuntoCV_(att) {
+  const mime = String(att.getContentType() || '').toLowerCase();
+  if (!esFormatoCV_(mime)) return false;
+  if (/^image\//.test(mime)) { try { return att.getSize() > 40000; } catch (e) { return false; } }
+  return true;
+}
+// Devuelve el texto del archivo, o null si el formato no se puede leer
+function textoDeArchivo_(file, nombreTemp) {
+  const mime = file.getMimeType();
+  if (mime === 'application/vnd.google-apps.document') return DocumentApp.openById(file.getId()).getBody().getText();
+  if (!esFormatoCV_(mime)) return null;
+  const tempFile = Drive.Files.create({ name: nombreTemp || 'Temp_CV', mimeType: MimeType.GOOGLE_DOCS }, file.getBlob(), { ocrLanguage: 'es' });
+  try { return DocumentApp.openById(tempFile.id).getBody().getText(); }
+  finally { try { Drive.Files.remove(tempFile.id); } catch (e) { } }
+}
+
 function procesarConChatGPT(file, cfg, textoYaExtraido) {
   try {
     let textoCV;
@@ -333,18 +356,11 @@ function procesarConChatGPT(file, cfg, textoYaExtraido) {
       // reutilizar texto extraído por el router → sin segunda conversión a Doc
       textoCV = String(textoYaExtraido).substring(0, 10000);
     } else {
-      // PDF, Word (.docx/.doc) y Google Docs; cualquier otra cosa no se puede leer
-      const mime = file.getMimeType();
-      if (mime === 'application/vnd.google-apps.document') {
-        textoCV = DocumentApp.openById(file.getId()).getBody().getText().substring(0, 10000);
-      } else if (mime === 'application/pdf' || /officedocument\.wordprocessingml|msword/.test(mime)) {
-        const blob = file.getBlob();
-        const tempFile = Drive.Files.create({ name: 'Temp_CV', mimeType: MimeType.GOOGLE_DOCS }, blob);
-        textoCV = DocumentApp.openById(tempFile.id).getBody().getText().substring(0, 10000);
-        Drive.Files.remove(tempFile.id);
-      } else return null;
+      const t = textoDeArchivo_(file, 'Temp_CV');
+      if (t === null) return null;
+      textoCV = t.substring(0, 10000);
     }
-    if (textoCV.trim().length < 100) throw new Error('PDF vacío o corrupto');
+    if (textoCV.trim().length < 100) throw new Error('Archivo vacío, ilegible o sin texto (si es una foto, que se lea nítida)');
 
     const promptSistema = `Sos un analista senior de headhunting. Analizá este CV para el siguiente perfil:
 
@@ -1045,15 +1061,7 @@ function etiquetarHilo_(thread, perfilId) {
 // --- extrae texto del CV (PDF / Google Doc / Word) ---
 function extraerTextoCV_(file) {
   try {
-    const mime = file.getMimeType();
-    if (mime === 'application/vnd.google-apps.document') {
-      return DocumentApp.openById(file.getId()).getBody().getText();
-    }
-    const blob = file.getBlob();
-    const tempFile = Drive.Files.create({ name: 'Temp_CV_router', mimeType: MimeType.GOOGLE_DOCS }, blob);
-    const texto = DocumentApp.openById(tempFile.id).getBody().getText();
-    Drive.Files.remove(tempFile.id);
-    return texto;
+    return textoDeArchivo_(file, 'Temp_CV_router') || '';
   } catch (e) {
     Logger.log('extraerTextoCV_ falló: ' + e.message);
     return '';
@@ -1136,7 +1144,7 @@ function procesarMailsRouter() {
       const asunto = msg.getSubject();
       msg.getAttachments().forEach(att => {
         const mime = att.getContentType();
-        if (!(mime.includes('pdf') || mime.includes('officedocument') || mime.includes('word'))) return;
+        if (!esAdjuntoCV_(att)) return;
 
         // 1) intentar por asunto (gratis)
         let perfil = rutearPorAsunto_(asunto);
@@ -1152,6 +1160,9 @@ function procesarMailsRouter() {
 
         // extraemos el texto UNA sola vez (se reutiliza para clasificar y analizar)
         const textoCV = extraerTextoCV_(file);
+
+        // 1a) una imagen sin texto legible (foto, logo, firma) no es un CV: se ignora sin avisos
+        if (/^image\//i.test(mime) && String(textoCV || '').trim().length < 250) { try { file.setTrashed(true); } catch (e) { } return; }
 
         // 1b) un adjunto que claramente no es un CV (factura, folleto, firma…) no se procesa como candidato
         if (!esCVProbable_(textoCV)) {
