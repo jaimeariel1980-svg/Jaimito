@@ -198,20 +198,23 @@ function huntingBorrar_(perfilId, id, quien) {
 const HUNT_MAIL_ = {
   'director-comercial': {
     asunto: 'Oportunidad ejecutiva | Dirección Comercial – Consultoría Estratégica',
-    cuerpo: 'Estimado/a [Nombre]:\n\nEspero que estés muy bien.\n\nDesde Blumia Consulting estamos liderando una búsqueda confidencial para incorporar un/a Director/a Comercial de Proyectos de Consultoría para el sector de Energía y Minería, en una firma de reconocida trayectoria en consultoría estratégica de negocios e inteligencia económica.\n\nSe trata de una posición de nueva creación, con reporte directo al CEO, cuyo principal desafío será impulsar el desarrollo de nuevos negocios en los sectores de Energía y Minería, identificando oportunidades, construyendo relaciones con decisores de alto nivel y desarrollando propuestas de consultoría de alto valor agregado.\n\nBuscamos un perfil con sólida trayectoria en desarrollo comercial B2B, experiencia en ventas consultivas de soluciones complejas, conocimiento del ecosistema energético y minero y una red activa de relacionamiento a nivel C-Level.\n\nLa posición ofrece la oportunidad de asumir un rol estratégico en el crecimiento de la firma, con autonomía, exposición a la alta dirección y participación directa en el desarrollo de negocios.\n\nLa posición está basada en CABA con modalidad híbrida y disponibilidad para viajes comerciales nacionales e internacionales.\n\nMe gustaría conocer si esta oportunidad podría resultar de tu interés y, en ese caso, coordinar una breve conversación para compartirte más detalles.\n\nDesde ya, muchas gracias por tu tiempo.\n\nSaludos cordiales,\n[Firma]'
+    cuerpo: 'Estimado/a [Nombre]:\n\nEspero que estés muy bien.\n\nDesde Blumia Consulting estamos liderando una búsqueda confidencial para incorporar un/a Director/a Comercial de Proyectos de Consultoría para el sector de Energía y Minería, en una firma de reconocida trayectoria en consultoría estratégica de negocios e inteligencia económica.\n\nSe trata de una posición de nueva creación, con reporte directo al CEO, cuyo principal desafío será impulsar el desarrollo de nuevos negocios en los sectores de Energía y Minería, identificando oportunidades, construyendo relaciones con decisores de alto nivel y desarrollando propuestas de consultoría de alto valor agregado.\n\nBuscamos un perfil con sólida trayectoria en desarrollo comercial B2B, experiencia en ventas consultivas de soluciones complejas, conocimiento del ecosistema energético y minero y una red activa de relacionamiento a nivel C-Level.\n\nLa posición ofrece la oportunidad de asumir un rol estratégico en el crecimiento de la firma, con autonomía, exposición a la alta dirección y participación directa en el desarrollo de negocios.\n\nLa posición está basada en CABA con modalidad híbrida y disponibilidad para viajes comerciales nacionales e internacionales.\n\nMe gustaría conocer si esta oportunidad podría resultar de tu interés y, en ese caso, coordinar una breve conversación para compartirte más detalles.\n\nDesde ya, muchas gracias por tu tiempo.\n\nSaludos cordiales,\n[Firma]',
+    firma: 'Flavia Jaime\nSocia Fundadora\nBlumia Consulting\nExecutive Search\nempleos@blumiaconsulting.com',
+    nota: 'Hola [Nombre], desde Blumia Consulting lideramos una búsqueda confidencial de Director/a Comercial en consultoría (Energía y Minería, CABA). Tu perfil podría encajar. ¿Conectamos? Flavia'
   }
 };
-function huntFirma_(quien) { return (String(quien || '').trim() || 'Equipo Blumia') + '\nBlumia Consulting\nExecutive Search\nempleos@blumiaconsulting.com'; }
+// La firma es siempre la de Flavia (Ariel, 2/11), no la de quien usa el tablero.
+function huntFirma_(perfilId) { const m = HUNT_MAIL_[perfilId]; return (m && m.firma) || 'Flavia Jaime\nBlumia Consulting\nExecutive Search\nempleos@blumiaconsulting.com'; }
 function huntMailModelo_(perfilId, o, quien) {
   const m = HUNT_MAIL_[perfilId]; if (!m) return null;
   const nombre = String(o.nombre || '').trim().split(/\s+/)[0] || '';
-  return { asunto: m.asunto, mail: m.cuerpo.replace('[Nombre]', nombre).replace('[Firma]', huntFirma_(quien)) };
+  return { asunto: m.asunto, mail: m.cuerpo.replace('[Nombre]', nombre).replace('[Firma]', huntFirma_(perfilId)) };
 }
-// Mail modelo sin elegir a nadie: queda [Nombre] para que el tablero lo reemplace al escribir el nombre (se usa antes de cargar a la persona)
+// Mensaje modelo (InMail / mensaje de LinkedIn) y nota de conexión, sin IA. Quedan [Nombre] para que el tablero lo reemplace al escribir el nombre.
 function huntingMailModelo_(perfilId, quien) {
   const m = HUNT_MAIL_[perfilId];
-  if (!m) throw new Error('Esta búsqueda todavía no tiene un mail modelo cargado.');
-  return { asunto: m.asunto, mail: m.cuerpo.replace('[Firma]', huntFirma_(quien)) };
+  if (!m) throw new Error('Esta búsqueda todavía no tiene un mensaje modelo cargado.');
+  return { asunto: m.asunto, mail: m.cuerpo.replace('[Firma]', huntFirma_(perfilId)), nota: m.nota || '' };
 }
 
 function huntingMensaje_(perfilId, id, tipo, nombrar, quien) {
