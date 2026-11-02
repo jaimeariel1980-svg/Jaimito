@@ -513,13 +513,17 @@ function layFix(){var f=FMT[S.fmt],W=f.W,mn=S.fmt==='ls'?40:48,cambio=false;
   rs=ver();var ps=rs.filter(function(r){return LAY_PRI.indexOf(r.k)>=0}).sort(function(a,b){return a.t-b.t});
   if(ps.some(function(r,i){return i&&r.t-ps[i-1].b<-2})){ps.forEach(function(r){var p=mvPos(r.k,false);if(p&&p.y){p.y=0;cambio=true}})}
   layLimpiar();mvAplicar();return cambio}
+function pegadosFaltan(){var out=[];[['litD','iD'],['litQ','iR']].forEach(function(p){var a=S[p[0]]||[],b=(S[p[1]]||[]).map(function(x){return irNorm(x)});if(b.length>=a.length)return;
+  a.forEach(function(x){var n=irNorm(x),k=n.slice(0,22);if(!b.some(function(y){return y.indexOf(k)>=0||n.indexOf(y.slice(0,22))>=0}))out.push({lista:p[1],t:x})})});return out}
+function irNorm(t){return String(t||'').toLowerCase().replace(/[^a-z0-9áéíóúñ ]+/g,' ').replace(/\s+/g,' ').trim()}
 function audItems(){var it=[];if(!S)return it;
+  try{var pf=pegadosFaltan();if(pf.length)it.push({n:'bad',t:'Del texto que pegaste faltan '+pf.length+' punto'+(pf.length>1?'s':'')+': «'+pf[0].t.slice(0,55)+(pf[0].t.length>55?'…':'')+'»'+(pf.length>1?' y otro'+(pf.length>2?'s':''):'')+'. Si los sacaste a propósito, pegá el texto de nuevo para borrar este aviso.',fx:['Volver a poner los que faltan',function(){clearTimeout(hTm);pushSnap();leerTextos();pf.forEach(function(x){S[x.lista].push(x.t)});setItems('iD',S.iD);setItems('iR',S.iR);ajustar();aplicar();marcar()}]})}catch(e){}
   if(hayRelleno())it.push({n:'bad',t:'Quedan textos de relleno («Completá los…»).',fx:['✨ Generar textos',function(){$('btnIA').click()}]});
   if(AUD.con)it.push({n:'warn',t:'El título se lee poco sobre la foto (contraste '+AUD.con.r.toFixed(1)+':1).',fx:['Mejorar contraste',audFixCon]});
   if(AUD.zon.length)it.push({n:'bad',t:AUD.zon.map(function(z){return z.label}).join(', ')+(AUD.zon.length>1?' quedan':' queda')+' donde Instagram lo tapa.',fx:['Mover a zona segura',audFixZon]});
   var sEf=parseFloat($('flyer').style.getPropertyValue('--s'))||1;
-  if(sEf<.8)it.push({n:'warn',t:'El texto quedó chico ('+Math.round(sEf*100)+'%) porque hay mucho: en el celular cuesta leerlo.',fx:['Dejar 3 y 4',audFixItems]});
-  else if((S.iD||[]).length>3||(S.iR||[]).length>4)it.push({n:'warn',t:'Hay más de 3 desafíos o más de 4 requisitos: en un flyer se leen mejor 3 y 4.',fx:['Dejar 3 y 4',audFixItems]});
+  if(sEf<.8)it.push({n:'warn',t:'El texto quedó chico ('+Math.round(sEf*100)+'%) porque hay mucho: en el celular cuesta leerlo. (No se recorta nada solo: si querés sacar algo, hacelo vos.)'});
+  else if((S.iD||[]).length>3||(S.iR||[]).length>4)it.push({n:'warn',t:'Hay más de 3 desafíos o más de 4 requisitos: en un flyer se leen mejor 3 y 4. (No se recorta nada solo.)'});
   try{var lm=layAnalizar();if(lm.length)it.push({n:'warn',t:lm.map(function(x){return x.t}).join(' '),fx:['Acomodar márgenes y espacios',function(){clearTimeout(hTm);pushSnap();layFix();aplicar();marcar();sucio=true}]})}catch(e){}
   if(!S.qr&&!String(S.txt.mail||'').trim())it.push({n:'bad',t:'No hay correo ni QR para postularse.',fx:[DATOS.mail?'Poner '+DATOS.mail:'Activar el QR',audFixMail]});
   if(S.qr&&String(S.qrUrl||'').length>60)it.push({n:'warn',t:'El QR queda denso (link largo): pegá un link corto o sacalo.',fx:['Sacar el QR',function(){S.qr=false;aplicar();marcar()}]});
@@ -531,9 +535,9 @@ function audRender(){var bt=$('audBt'),ls=$('audLs');if(!bt||!ls)return;var it=a
   ls.innerHTML=it.length?'':'<div class="okmsg">✔ No encontré problemas. Mirá la vista previa («👁 Vista previa») antes de publicar.</div>';
   it.forEach(function(x){var d=document.createElement('div');d.className='ai '+x.n;var sp=document.createElement('span');sp.textContent=x.t;d.appendChild(sp);if(x.fx){var b=document.createElement('button');b.type='button';b.className='bt';b.textContent=x.fx[0];b.onclick=function(){x.fx[1]()};d.appendChild(b)}ls.appendChild(d)})}
 function audMejorar(){leerTextos();clearTimeout(hTm);pushSnap();hHold=true;var b=$('audMej'),t=b.textContent;b.disabled=true;b.textContent='Mejorando…';
-  S.iD=(S.iD||[]).slice(0,3);S.iR=(S.iR||[]).slice(0,4);if(!S.qr&&!String(S.txt.mail||'').trim()&&DATOS.mail)S.txt.mail=DATOS.mail;S.ts=100;S.serif=true;S.logoManual=false;if(S.pos)delete S.pos[S.fmt];
+  if(!S.qr&&!String(S.txt.mail||'').trim()&&DATOS.mail)S.txt.mail=DATOS.mail;S.ts=100;S.serif=true;S.logoManual=false;if(S.pos)delete S.pos[S.fmt];
   pintarTextos();aplicar();
-  setTimeout(function(){fotoCalc();setTimeout(function(){if(AUD.con)audFixCon();layFix();zonas();setTimeout(function(){if(AUD.zon.length)audFixZon();hHold=false;pushSnap();b.disabled=false;b.textContent=t;sucio=true;audSoon();msg('Listo: dejé 3 y 3, el texto al 100 %, los bloques en su lugar y el contraste revisado. Si no te gusta, ↶ lo deshace todo junto.',true)},150)},450)},250)}
+  setTimeout(function(){fotoCalc();setTimeout(function(){if(AUD.con)audFixCon();layFix();zonas();setTimeout(function(){if(AUD.zon.length)audFixZon();hHold=false;pushSnap();b.disabled=false;b.textContent=t;sucio=true;audSoon();msg('Listo: texto al 100 %, bloques en su lugar y contraste revisado. No toqué ninguna palabra ni punto de tu texto. Si no te gusta, ↶ lo deshace todo junto.',true)},150)},450)},250)}
 function irEsc(t){return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;')}
 var IA_RES=null,IA_RONDA=1;
 function irClamp(v,lo,hi){v=Math.round(Number(v));return isNaN(v)?lo:Math.max(lo,Math.min(hi,v))}
@@ -545,7 +549,7 @@ function iaAplicarUna(a){if(!a||!a.tipo)return false;var p;
     case 'tamanoTexto':S.ts=irClamp(a.valor,70,130);return true;
     case 'tamanoBloque':if(!MV[a.bloque])return false;mvPos(a.bloque,true).s=irClamp(a.valor,40,200);return true;
     case 'mover':if(!MV[a.bloque])return false;p=mvPos(a.bloque,true);p.x+=irClamp(a.dx,-600,600);p.y+=irClamp(a.dy,-600,600);return true;
-    case 'dejarItems':var n=irClamp(a.n,2,4);S.iD=(S.iD||[]).slice(0,n);S.iR=(S.iR||[]).slice(0,n);setItems('iD',S.iD);setItems('iR',S.iR);return true;
+    case 'dejarItems':return false;
     case 'logoOscuro':S.logoManual=true;S.logoOsc=!!a.valor;return true;
     case 'altoPie':S.footK=irClamp(a.valor,60,150);return true;
     case 'serif':S.serif=!!a.valor;return true;
@@ -773,6 +777,7 @@ function litAplicar(){
   if(r.d.length)S.iD=r.d;if(r.q.length)S.iR=r.q;
   if(r.mail){t.mail=r.mail;S.qr=false}
   if(r.asunto)t.form='Postulate con el asunto '+r.asunto+' a:';else if(r.mail)t.form='Postulate enviándonos tu CV a:';
+  S.litD=r.d.slice();S.litQ=r.q.slice();
   generado=true;pintarTextos();aplicar();marcar();msg('Texto cargado tal cual. Revisá cómo quedó el acomodo.');
 }
 function guardar(){conRelleno(guardar_)}
