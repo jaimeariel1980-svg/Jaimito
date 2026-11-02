@@ -339,14 +339,34 @@ function esAdjuntoCV_(att) {
   if (/^image\//.test(mime)) { try { return att.getSize() > 40000; } catch (e) { return false; } }
   return true;
 }
+// Texto de un .docx leyendo el XML directo (sin pasar por Google Docs: más rápido y no falla por "Unexpected error while getting openById")
+function textoDeDocx_(blob) {
+  const partes = Utilities.unzip(blob.copyBlob().setContentType('application/zip'));
+  const limpiar = xml => xml.replace(/<\/w:p>/g, '\n').replace(/<w:tab\/>/g, '\t').replace(/<w:br[^>]*\/>/g, '\n').replace(/<[^>]+>/g, '')
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&');
+  const nombres = p => p.getName();
+  const cuerpo = partes.filter(p => nombres(p) === 'word/document.xml').map(p => limpiar(p.getDataAsString('UTF-8')));
+  const cabeceras = partes.filter(p => /^word\/header\d*\.xml$/.test(nombres(p))).map(p => limpiar(p.getDataAsString('UTF-8')));
+  return cabeceras.concat(cuerpo).join('\n');
+}
 // Devuelve el texto del archivo, o null si el formato no se puede leer
 function textoDeArchivo_(file, nombreTemp) {
   const mime = file.getMimeType();
   if (mime === 'application/vnd.google-apps.document') return DocumentApp.openById(file.getId()).getBody().getText();
   if (!esFormatoCV_(mime)) return null;
-  const tempFile = Drive.Files.create({ name: nombreTemp || 'Temp_CV', mimeType: MimeType.GOOGLE_DOCS }, file.getBlob(), { ocrLanguage: 'es' });
-  try { return DocumentApp.openById(tempFile.id).getBody().getText(); }
-  finally { try { Drive.Files.remove(tempFile.id); } catch (e) { } }
+  if (/officedocument\.wordprocessingml/.test(mime)) {
+    try { const t = textoDeDocx_(file.getBlob()); if (String(t).trim().length >= 100) return t; } catch (e) { Logger.log('docx directo falló: ' + e.message); }
+  }
+  // El resto (PDF, .doc, .odt, RTF, texto, imágenes) se convierte con Drive; las imágenes se leen con OCR
+  const opciones = /^image\//i.test(mime) ? { ocrLanguage: 'es' } : {};
+  const tempFile = Drive.Files.create({ name: nombreTemp || 'Temp_CV', mimeType: MimeType.GOOGLE_DOCS }, file.getBlob(), opciones);
+  try {
+    let ultimo = null;
+    for (let i = 0; i < 3; i++) { // a veces el documento convertido tarda un instante en estar disponible
+      try { return DocumentApp.openById(tempFile.id).getBody().getText(); } catch (e) { ultimo = e; Utilities.sleep(1500); }
+    }
+    throw ultimo;
+  } finally { try { Drive.Files.remove(tempFile.id); } catch (e) { } }
 }
 
 function procesarConChatGPT(file, cfg, textoYaExtraido) {
