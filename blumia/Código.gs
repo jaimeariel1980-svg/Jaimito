@@ -982,8 +982,14 @@ function unicaBusquedaAbierta_() {
   return a.length === 1 ? a[0].id : null;
 }
 
+// Código de referencia que va en el asunto del aviso («REF. BLUMIADIR-23»): identifica la búsqueda aunque haya varias abiertas.
+const CODIGOS_ASUNTO_ = { 'director-comercial': ['blumiadir'] };
 function rutearPorAsunto_(asunto) {
   if (!asunto) return null;
+  const aRef = String(asunto).toLowerCase().replace(/[^a-z0-9]+/g, '');
+  for (const pid in CODIGOS_ASUNTO_) {
+    if (CODIGOS_ASUNTO_[pid].some(k => aRef.indexOf(k) !== -1) && perfilesActivos_().some(p => p.id === pid)) return pid;
+  }
   const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
   const sh = ss.getSheetByName('Mail_Routing');
   if (!sh) return null;
