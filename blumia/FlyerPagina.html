@@ -201,6 +201,8 @@ input[type=range]{accent-color:#243D2C}
 
   <div class="sec"><h3>Textos con IA</h3>
     <label class="chk"><input type="checkbox" id="mostrarEmp"> Nombrar a la empresa en el flyer</label><div class="nota" id="notaCiega" style="display:none">Búsqueda ciega: la empresa no se nombra en ningún lado. Se cambia en ⚙ Configurar → Datos de la búsqueda.</div>
+    <label for="iaInstr" style="font-weight:700;font-size:12px;margin-top:8px;display:block">Instrucciones para Claude (opcional)</label>
+    <textarea id="iaInstr" rows="4" maxlength="1500" placeholder="Ej: tono cercano y profesional; destacar el espíritu emprendedor; no mencionar los viajes; título más corto" style="width:100%;box-sizing:border-box;border:1px solid #ccc;border-radius:8px;padding:8px;font:13px inherit;font-family:inherit;margin-bottom:8px"></textarea>
     <button class="bt ia full" id="btnIA">✨ Generar textos</button>
     <div class="nota" style="margin-top:6px">Redacta bajada, desafíos, requisitos y los posteos con lo que está cargado en el perfil del puesto. Después editás todo directo sobre el flyer.</div></div>
 
@@ -327,7 +329,7 @@ var S=null;
 function porDefecto(){
   var emp=!DATOS.ciega&&DATOS.empresa==='MACS';
   var nombre=emp?DATOS.empresa:DATOS.empresaNeutral;
-  return {fmt:'st',qr:false,guia:false,qrUrl:DATOS.linkPostulacion,mostrarEmpresa:emp,bg:'',cli:'',colT:'#0F3F27',colA:'#0F3F27',colF:'#0F3F27',colB:'#FEE795',aro:false,logoOsc:false,serif:true,
+  return {fmt:'st',instr:'',qr:false,guia:false,qrUrl:DATOS.linkPostulacion,mostrarEmpresa:emp,bg:'',cli:'',colT:'#0F3F27',colA:'#0F3F27',colF:'#0F3F27',colB:'#FEE795',aro:false,logoOsc:false,serif:true,
     ov:60,px:50,py:50,zoom:100,ts:100,logoH:110,cliH:80,bucOn:true,bucOp:100,
     txt:{badge:[DATOS.ubicacion].filter(Boolean).join(' · ')||'Presencial',busc:'Buscamos',cargo:DATOS.puesto,
       baj:nombre.charAt(0).toUpperCase()+nombre.slice(1)+' busca sumar a su equipo una persona para el puesto de '+DATOS.puesto+'.',
@@ -396,7 +398,7 @@ function aplicar(){
 function pintarPanel(){
   $('fSt').classList.toggle('on',S.fmt==='st');$('fLi').classList.toggle('on',S.fmt==='li');$('fLs').classList.toggle('on',S.fmt==='ls');$('fNota').textContent=FMT[S.fmt].nota;$('guia').checked=!!S.guia;$('guiaW').style.display=S.fmt==='st'?'flex':'none';
   $('logoC').classList.toggle('on',!S.logoOsc);$('logoO').classList.toggle('on',S.logoOsc);
-  if(DATOS.ciega){S.mostrarEmpresa=false;S.cli='';}$('mostrarEmp').checked=!!S.mostrarEmpresa;$('mostrarEmp').disabled=!!DATOS.ciega;if($('notaCiega'))$('notaCiega').style.display=DATOS.ciega?'block':'none';$('conQr').checked=!!S.qr;$('bucOn').checked=!!S.bucOn;$('qrUrl').value=S.qrUrl||'';
+  if(DATOS.ciega){S.mostrarEmpresa=false;S.cli='';}$('mostrarEmp').checked=!!S.mostrarEmpresa;if($('iaInstr'))$('iaInstr').value=S.instr||'';$('mostrarEmp').disabled=!!DATOS.ciega;if($('notaCiega'))$('notaCiega').style.display=DATOS.ciega?'block':'none';$('conQr').checked=!!S.qr;$('bucOn').checked=!!S.bucOn;$('qrUrl').value=S.qrUrl||'';
   var m={sOv:['ov','vOv','%'],sZ:['zoom','vZ','%'],sPx:['px','vPx','%'],sPy:['py','vPy','%'],sLg:['logoH','vLg','px'],sCl:['cliH','vCl','px'],sBo:['bucOp','vBo','%'],sTs:['ts','vTs','%']};
   for(var id in m){$(id).value=S[m[id][0]];$(m[id][1]).textContent=S[m[id][0]]+m[id][2]}
   var d=document.querySelectorAll('#cT .dot');for(var i=0;i<d.length;i++)d[i].classList.toggle('on',d[i].getAttribute('data-c')===S.colT);
@@ -678,6 +680,7 @@ function cableado(){
   $('logoC').onclick=function(){S.logoOsc=false;aplicar();marcar()};
   $('logoO').onclick=function(){S.logoOsc=true;aplicar();marcar()};
   $('mostrarEmp').onchange=function(){S.mostrarEmpresa=this.checked;marcar()};
+  $('iaInstr').oninput=function(){S.instr=this.value;marcar()};
   $('conQr').onchange=function(){
     leerTextos();S.qr=this.checked;
     var CQ='Te invitamos a postularte escaneando el QR o ingresando al enlace de la descripción.',SQ='Postulate desde el link que acompaña este posteo';
@@ -731,7 +734,7 @@ function generarIA(){
     if(r.badge)S.txt.badge=r.badge;if(r.bajada)S.txt.baj=r.bajada;
     if(r.desafios&&r.desafios.length)S.iD=r.desafios.slice(0,3);if(r.requisitos&&r.requisitos.length)S.iR=r.requisitos.slice(0,3);
     generado=true;pintarTextos();aplicar();marcar();msg('Textos listos. Revisalos y editá lo que haga falta.');
-  }).withFailureHandler(function(e){b.disabled=false;b.textContent='✨ Generar textos';msg((e&&e.message)||String(e),false)}).flyerTextosIA(DATOS.perfil,{mostrarEmpresa:S.mostrarEmpresa});
+  }).withFailureHandler(function(e){b.disabled=false;b.textContent='✨ Generar textos';msg((e&&e.message)||String(e),false)}).flyerTextosIA(DATOS.perfil,{mostrarEmpresa:S.mostrarEmpresa,instrucciones:S.instr||''});
 }
 
 function guardar(){conRelleno(guardar_)}
