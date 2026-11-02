@@ -47,6 +47,7 @@ textarea{width:100%;border:1.5px solid var(--l);border-radius:8px;padding:8px 10
 .badge{align-self:flex-start;background:#FBC67B;color:#1A1A1A;font-weight:700;font-size:calc(28px*var(--k)*var(--s));padding:.55em 1.1em;border-radius:3px}
 #tit{font-weight:800;line-height:1.02;letter-spacing:-.03em;font-size:calc(92px*var(--k)*var(--s));color:var(--tc)}
 #tit em{font-style:normal;color:var(--ac)}
+#busc{display:block;font-size:.6em;line-height:1.1;margin-bottom:.1em}
 #baj{font-weight:500;line-height:1.4;font-size:calc(30px*var(--k)*var(--s));color:var(--tc);max-width:960px}
 .secbox{border-left:6px solid var(--ac);padding-left:28px}
 .sectit{font-weight:800;color:var(--ac);font-size:calc(36px*var(--k)*var(--s));margin-bottom:.3em}
@@ -303,7 +304,7 @@ input[type=range]{accent-color:#243D2C}
   <div id="aro"></div><img id="bucle" alt=""><img id="logo" alt=""><img id="logoCli" alt="">
   <div id="cont">
     <div class="badge" id="badge" contenteditable="true"></div>
-    <h1 id="tit"><span id="busc" contenteditable="true"></span><br><em id="cargo" contenteditable="true"></em></h1>
+    <h1 id="tit"><span id="busc" contenteditable="true"></span><em id="cargo" contenteditable="true"></em></h1>
     <p id="baj" contenteditable="true"></p>
     <div class="secbox" id="secD"><div class="sectit" id="titD" contenteditable="true"></div><div id="iD"></div></div>
     <div class="secbox" id="secR"><div class="sectit" id="titR" contenteditable="true"></div><div id="iR"></div></div>
@@ -457,10 +458,10 @@ function armarPrompt(){var a=IA_AMB[$('iaAmb').value]||IA_AMB.oficina,f=IA_FMT[S
   return 'Fotografía realista, formato '+f[0]+'. '+a.charAt(0).toUpperCase()+a.slice(1)+', ambiente cálido y cercano. Luz natural, tonos verdes oscuros en el fondo, profundidad de campo suave, estilo fotografía corporativa editorial. Composición: '+f[1]+', sin elementos fuertes ni brillos, para poder poner texto encima. Sin texto, sin logos, sin carteles, sin marcas de agua. Rostros y manos naturales, sin deformaciones.';}
 function pintarPrompt(){var p=$('iaPrompt');if(p&&!iaEdit)p.value=armarPrompt();}
 function copiarTexto(t){try{navigator.clipboard.writeText(t).catch(function(){})}catch(e){}var e=document.createElement('textarea');e.value=t;e.style.position='fixed';e.style.opacity='0';document.body.appendChild(e);e.select();try{document.execCommand('copy')}catch(x){}e.remove()}
-var MV={logo:['#logo','Logo de Blumia'],cli:['#logoCli','Logo del cliente'],bucle:['#bucle','Cinta de marca'],aro:['#aro','Aro de marca'],badge:['#badge','Etiqueta (lugar y modalidad)'],tit:['#tit','Título'],baj:['#baj','Bajada'],secD:['#secD','Principales desafíos'],secR:['#secR','Requisitos'],qr:['#qrbox','QR'],fTxt:['#fTxt','Texto del pie'],arrow:['#arrow','Flecha del pie'],fMail:['#fMail','Correo del pie']};
-var mvSel='',mvDrag=null;var MVT=['badge','tit','baj','secD','secR','qr','fTxt','arrow','fMail'];
+var MV={logo:['#logo','Logo de Blumia'],cli:['#logoCli','Logo del cliente'],bucle:['#bucle','Cinta de marca'],aro:['#aro','Aro de marca'],badge:['#badge','Etiqueta (lugar y modalidad)'],busc:['#busc','«Buscamos»'],tit:['#tit','Título'],baj:['#baj','Bajada'],secD:['#secD','Principales desafíos'],secR:['#secR','Requisitos'],qr:['#qrbox','QR'],fTxt:['#fTxt','Texto del pie'],arrow:['#arrow','Flecha del pie'],fMail:['#fMail','Correo del pie']};
+var mvSel='',mvDrag=null;var MVT=['badge','busc','tit','baj','secD','secR','qr','fTxt','arrow','fMail'];
 function mvPos(k,crear){S.pos=S.pos||{};var f=S.pos[S.fmt];if(!f){if(!crear)return null;f=S.pos[S.fmt]={}}var p=f[k];if(!p&&crear)p=f[k]={x:0,y:0,s:100};return p||null}
-function mvAplicar(){Object.keys(MV).forEach(function(k){var e=document.querySelector(MV[k][0]);if(!e)return;var p=mvPos(k,false);e.classList.add('mvb');e.style.transformOrigin='0 0';e.style.transform=(p&&(p.x||p.y||p.s!==100))?'translate('+p.x+'px,'+p.y+'px) scale('+(p.s/100)+')':'';if(MVT.indexOf(k)>=0){e.style.fontWeight=(p&&p.b)?(k==='baj'?'700':'900'):'';e.style.textAlign=(p&&p.a&&p.a!=='justify')?p.a:'';}var c=p&&p.c;if(MVT.indexOf(k)>=0){if(c){e.style.color=c;['--tc','--ac','--ft','--ac2'].forEach(function(v){e.style.setProperty(v,c)})}else{e.style.color='';['--tc','--ac','--ft','--ac2'].forEach(function(v){e.style.removeProperty(v)})}}});
+function mvAplicar(){Object.keys(MV).forEach(function(k){var e=document.querySelector(MV[k][0]);if(!e)return;var p=mvPos(k,false);e.classList.add('mvb');e.style.transformOrigin='0 0';var ps=(k==='busc')?100:(p?p.s:100);e.style.transform=(p&&(p.x||p.y||ps!==100))?'translate('+p.x+'px,'+p.y+'px) scale('+(ps/100)+')':'';if(k==='busc')e.style.fontSize=(p&&p.s!==100)?(0.6*p.s/100)+'em':'';if(MVT.indexOf(k)>=0){e.style.fontWeight=(p&&p.b)?(k==='baj'?'700':'900'):'';e.style.textAlign=(p&&p.a&&p.a!=='justify')?p.a:'';}var c=p&&p.c;if(MVT.indexOf(k)>=0){if(c){e.style.color=c;['--tc','--ac','--ft','--ac2'].forEach(function(v){e.style.setProperty(v,c)})}else{e.style.color='';['--tc','--ac','--ft','--ac2'].forEach(function(v){e.style.removeProperty(v)})}}});
   Object.keys(MV).forEach(function(k){var e=document.querySelector(MV[k][0]);if(e)e.classList.toggle('mvsel',k===mvSel)});ftbPos();zonas();fotoAnalisis();}
 var MVC=['bucle','aro'];
 function mvElegir(k){mvSel=k||'';var p=k?mvPos(k,false):null;$('mvSel').textContent=k?MV[k][1]:'—';$('sMs').value=p?p.s:100;$('vMs').textContent=(p?p.s:100)+'%';
