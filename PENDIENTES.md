@@ -183,3 +183,7 @@ Hecha con el código real y 37 fichas de ejemplo; el modelo real (`gpt-4o-mini`)
 
 
 - **Blumia: el perfil del puesto como fuente del proceso (30/10, Ariel: «el perfil es dios de todo el proceso»)** — Hecho: CV/postulación, flyer y avisos, mensajes de hunting e informe leen el perfil (`PerfilFicha.gs`). **Falta (prioridad alta, lo hace Claude, conviene esperar al perfil completo tras la reunión)**: botón «Aplicar el perfil a la búsqueda» que proponga a partir del perfil los criterios y validaciones del screening, la lista de competencias con su nivel y las preguntas de postulación (se revisan y aceptan, nada se pisa solo); que Bloomy lea la ficha; aviso «el perfil cambió y hay cosas sin actualizar»; y un paso de hunting/ficha en la prueba automática. Ojo: si el perfil contradice «Requisitos para la IA», manda el perfil; conviene revisar `prompt_extra` de ABECEB cuando el perfil esté completo.
+
+
+## Límite de 200 versiones de Apps Script (2/11)
+- **Prioridad alta · lo hace Ariel:** en el proyecto Apps Script de Blumia (cuenta jaimeariel1980) borrar versiones viejas (Historial del proyecto) y avisar; después Claude vuelve a correr el workflow `blumia` (`publicar`). Hasta entonces **no están publicados** los PR 628 (mensaje modelo de Flavia + nota de conexión en Hunting) y 629 (ficha de Hunting). Revisar lo mismo en los otros proyectos (azcu, pami, liquidaciones): cada uno tiene su propio tope.
