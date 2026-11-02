@@ -189,8 +189,14 @@ function procesarTodo(perfilId) {
   procesarDriveManual(cfg);
 }
 
+// Cada corrida tiene 6 minutos en Apps Script: se corta a los 4,5 y lo que queda se procesa en la próxima (nada se pierde: lo no procesado sigue en su lugar).
+const T0_PROC_ = Date.now();
+function sinTiempo_() { return Date.now() - T0_PROC_ > 270000; }
+
 function procesarTodosLosPerfiles() {
-  procesarTodo_v2();
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) { Logger.log('Ya hay un procesamiento en curso: no arranco otro.'); return; }
+  try { procesarTodo_v2(); } finally { lock.releaseLock(); }
 }
 
 function procesarMails(cfg) {
@@ -212,7 +218,7 @@ function procesarMails(cfg) {
         if (esAdjuntoCV_(att)) {
           const file = folderRecibidos.createFile(att);
           const datos = procesarConChatGPT(file, cfg);
-          if (datos && !esDuplicado(datos, sheet)) insertarFilaLibre(sheet, datos, file.getUrl(), msg.getDate(), 'Mail');
+          if (datos && datos.nombre !== 'Error' && !esDuplicado(datos, sheet)) insertarFilaLibre(sheet, datos, file.getUrl(), msg.getDate(), 'Mail');
         }
       });
       const body = msg.getBody();
@@ -228,7 +234,7 @@ function procesarMails(cfg) {
           if (esFormatoCV_(mime)) {
             const file = folderRecibidos.createFile(orig.getBlob()).setName(orig.getName());
             const datos = procesarConChatGPT(file, cfg);
-            if (datos && !esDuplicado(datos, sheet)) insertarFilaLibre(sheet, datos, file.getUrl(), msg.getDate(), 'Mail');
+            if (datos && datos.nombre !== 'Error' && !esDuplicado(datos, sheet)) insertarFilaLibre(sheet, datos, file.getUrl(), msg.getDate(), 'Mail');
           }
         } catch (e) { console.log('Error link ' + link); }
       });
@@ -260,10 +266,15 @@ function procesarDriveManual(cfg) {
   const files = madre.getFiles();
 
   while (files.hasNext()) {
+    if (sinTiempo_()) { Logger.log('Se acabó el tiempo de esta corrida: el resto sigue en la carpeta y se procesa en la próxima.'); break; }
     const file = files.next();
     const datos = procesarConChatGPT(file, cfg);
-    if (!datos || datos.nombre === 'Error') {
-      cvNoLeido_(file, madre, datos ? ('No se pudo leer: ' + String(datos.resumen || '').slice(0, 150)) : 'Formato no soportado (tiene que ser PDF, Word o Google Doc)');
+    if (!datos) { cvNoLeido_(file, madre, 'Formato no soportado (tiene que ser PDF, Word, imagen, Google Doc, ODT, RTF o texto)'); continue; }
+    if (datos.nombre === 'Error') {
+      // Un error de la IA o de Google suele ser pasajero (muchos CVs juntos): se deja el archivo donde está y se reintenta en la próxima corrida; recién al 3.er intento se aparta
+      const m = /Intentos de lectura: (\d+)/.exec(file.getDescription() || ''), n = (m ? Number(m[1]) : 0) + 1;
+      if (n >= 3) cvNoLeido_(file, madre, 'No se pudo leer tras 3 intentos: ' + String(datos.resumen || '').slice(0, 150));
+      else file.setDescription('Intentos de lectura: ' + n);
       continue;
     }
     if (!esDuplicado(datos, sheet)) {
@@ -279,8 +290,10 @@ function procesarDriveManual(cfg) {
     while (subs.hasNext()) {
       const fs = subs.next().getFiles();
       while (fs.hasNext()) {
+        if (sinTiempo_()) break;
         const file = fs.next();
         const datos = procesarConChatGPT(file, cfg);
+        if (datos && datos.nombre === 'Error') continue; // error pasajero: se reintenta en la próxima corrida
         if (datos && !esDuplicado(datos, sheet)) { insertarFilaLibre(sheet, datos, file.getUrl(), file.getDateCreated(), HUNT_FUENTE_); huntingVincular_(pid, datos.nombre); }
         file.moveTo(recibidos);
       }
@@ -1158,7 +1171,10 @@ function procesarMailsRouter() {
   let ok = 0, sin = 0, noCv = 0;
   const avisos = []; // lo que necesita que alguien lo mire (se manda un solo mail al final)
 
+  const props = PropertiesService.getScriptProperties();
   threads.forEach(thread => {
+    if (sinTiempo_()) return; // el resto de los mails sigue sin la etiqueta y se toma en la próxima corrida
+    let fallo = false; // si la IA o Google fallan con un adjunto, el mail NO se marca como procesado y se reintenta
     const msgs = thread.getMessages();
     msgs.forEach(msg => {
       const asunto = msg.getSubject();
@@ -1211,12 +1227,25 @@ function procesarMailsRouter() {
         const cfg = getConfig(perfil);
         const sheet = getSheet(cfg);
         const datos = procesarConChatGPT(file, cfg, textoCV);
+        if (datos && datos.nombre === 'Error') {
+          fallo = true;
+          try { file.setTrashed(true); } catch (e) { } // en el reintento se vuelve a guardar: así no quedan copias repetidas
+          Logger.log('CV con error de lectura: ' + att.getName() + ' · ' + String(datos.resumen || '').slice(0, 150));
+          return;
+        }
         if (datos && !esDuplicado(datos, sheet)) {
           insertarFilaLibre(sheet, datos, file.getUrl(), msg.getDate(), 'Mail');
           ok++;
         }
       });
     });
+    const clave = 'INT_' + thread.getId();
+    if (fallo) {
+      const n = (Number(props.getProperty(clave)) || 0) + 1;
+      if (n < 3) { props.setProperty(clave, String(n)); return; }
+      avisos.push('No se pudo leer un adjunto tras 3 intentos (asunto: ' + (msgs[0] ? msgs[0].getSubject() : '') + ')');
+    }
+    props.deleteProperty(clave);
     thread.addLabel(label);
   });
 
@@ -1270,6 +1299,7 @@ function procesarTodo_v2() {
 
   // 2) DRIVE — barrido por perfil (el perfil ya está dado por la carpeta)
   perfilesActivos_().forEach(p => {
+    if (sinTiempo_()) return;
     try {
       const cfg = getConfig(p.id);
       procesarDriveManual(cfg);
