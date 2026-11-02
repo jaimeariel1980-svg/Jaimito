@@ -158,11 +158,13 @@ function flyerAccionOk_(a) {
   return r;
 }
 
-function flyerRevisarIA_(perfilId, base64, fmt, estado, ronda) {
+function flyerRevisarIA_(perfilId, base64, fmt, estado, ronda, instrucciones) {
   const cfg = getConfig(perfilId);
   const b64 = String(base64 || '').replace(/^data:image\/jpeg;base64,/, '');
   if (b64.length < 100 || b64.length > 6 * 1024 * 1024) throw new Error('La imagen para revisar no es válida o es demasiado grande.');
   const puesto = (typeof cfg.nombre === 'string' && cfg.nombre) ? cfg.nombre : perfilId;
+  const instr = limpiarTxt_(instrucciones).slice(0, 1500);
+  const instrDis = instr ? ' PEDIDO DEL EQUIPO (es lo más importante de esta revisión): «' + instr + '». Convertilo en sugerencias con su acción de la lista (colores, tamaños, posiciones, difuminado de la foto, qué mostrar u ocultar) y dá hasta 8 sugerencias en vez de 5; lo que pida y no se pueda hacer con las acciones, explicalo en «como» con accion = null; lo que pida sobre un texto, usá proponerTexto. Antes que tu criterio de diseño, cumplí el pedido; nunca pongas ni insinúes preferencias por edad, género u otras condiciones personales, ni nombres a la empresa si la búsqueda es ciega.' : '';
   const sistema = 'Sos director/a de arte de Blumia Consulting (consultora de RR. HH. de Argentina). Revisás flyers de búsquedas laborales que se publican en historias de Instagram, posteos de LinkedIn y mensajes de WhatsApp. ' +
     'Marca: verde #0F3F27, naranja #FBC67B, rosa #F9BDBB, amarillo #FEE795, celeste #B4E1E0; tipografía Pangram; estilo cálido, limpio y profesional. ' +
     'Mirá la imagen y respondé SOLO con un JSON válido, sin texto antes ni después, con esta forma exacta: ' +
@@ -176,7 +178,7 @@ function flyerRevisarIA_(perfilId, base64, fmt, estado, ronda) {
     '{"tipo":"zonaSegura"} (saca de las zonas de Instagram lo que esté tapado); {"tipo":"acomodar"} (centra, alinea al mismo margen, separa de los bordes y parejiza los espacios entre bloques; el editor lo hace con medidas exactas); {"tipo":"proponerTexto","bloque":"baj|fTxt|badge","texto":"texto nuevo, más corto"} (solo si el texto es muy largo o confuso). ' +
     'Bloques válidos: logo, cli, bucle, aro, badge, tit, baj, secD, secR, qr, fTxt, arrow, fMail. ' +
     (Number(ronda) >= 2 ? 'Esta es la SEGUNDA revisión, después de aplicar cambios: marcá solo lo que siga mal; si el flyer ya está bien (puntaje 8 o más) devolvé pocas o ninguna sugerencia. ' : '') +
-    'No inventes problemas: si algo está bien, decilo en el resumen. Español rioplatense, sin tecnicismos, con vos.';
+    'No inventes problemas: si algo está bien, decilo en el resumen. Español rioplatense, sin tecnicismos, con vos.' + instrDis;
   let est = '';
   try { est = JSON.stringify(estado || {}).slice(0, 1800); } catch (e) { }
   const usuario = [
@@ -189,7 +191,7 @@ function flyerRevisarIA_(perfilId, base64, fmt, estado, ronda) {
   return {
     puntaje: Math.max(1, Math.min(10, Math.round(Number(r.puntaje) || 0))),
     resumen: t(r.resumen, 200),
-    sugerencias: (Array.isArray(r.sugerencias) ? r.sugerencias : []).slice(0, 6).map(x => ({ prioridad: pr[String(x && x.prioridad).toLowerCase()] ? String(x.prioridad).toLowerCase() : 'media', que: t(x && x.que, 160), como: t(x && x.como, 220), accion: flyerAccionOk_(x && x.accion) })).filter(x => x.que)
+    sugerencias: (Array.isArray(r.sugerencias) ? r.sugerencias : []).slice(0, instr ? 8 : 6).map(x => ({ prioridad: pr[String(x && x.prioridad).toLowerCase()] ? String(x.prioridad).toLowerCase() : 'media', que: t(x && x.que, 160), como: t(x && x.como, 220), accion: flyerAccionOk_(x && x.accion) })).filter(x => x.que)
   };
 }
 

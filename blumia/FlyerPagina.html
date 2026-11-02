@@ -201,10 +201,11 @@ input[type=range]{accent-color:#243D2C}
 
   <div class="sec"><h3>Textos con IA</h3>
     <label class="chk"><input type="checkbox" id="mostrarEmp"> Nombrar a la empresa en el flyer</label><div class="nota" id="notaCiega" style="display:none">Búsqueda ciega: la empresa no se nombra en ningún lado. Se cambia en ⚙ Configurar → Datos de la búsqueda.</div>
-    <label for="iaInstr" style="font-weight:700;font-size:12px;margin-top:8px;display:block">Instrucciones para Claude (opcional)</label>
-    <textarea id="iaInstr" rows="4" maxlength="1500" placeholder="Ej: tono cercano y profesional; destacar el espíritu emprendedor; no mencionar los viajes; título más corto" style="width:100%;box-sizing:border-box;border:1px solid #ccc;border-radius:8px;padding:8px;font:13px inherit;font-family:inherit;margin-bottom:8px"></textarea>
+    <label for="iaInstr" style="font-weight:700;font-size:12px;margin-top:8px;display:block">Instrucciones para Claude: diseño y texto (opcional)</label>
+    <textarea id="iaInstr" rows="4" maxlength="1500" placeholder="Ej: título más grande y en blanco; foto más difuminada; menos texto; tono más cercano; no mencionar los viajes" style="width:100%;box-sizing:border-box;border:1px solid #ccc;border-radius:8px;padding:8px;font:13px inherit;font-family:inherit;margin-bottom:8px"></textarea>
     <button class="bt ia full" id="btnIA">✨ Generar textos</button>
-    <div class="nota" style="margin-top:6px">Redacta bajada, desafíos, requisitos y los posteos con lo que está cargado en el perfil del puesto. Después editás todo directo sobre el flyer.</div></div>
+    <button class="bt ia full" id="btnDis" style="margin-top:6px" title="Claude mira el flyer y cambia el diseño según lo que pediste (se deshace con ↶)">🎨 Aplicar al diseño</button>
+    <div class="nota" style="margin-top:6px">«Generar textos» redacta bajada, desafíos y requisitos con el perfil del puesto y tus instrucciones; «Aplicar al diseño» cambia colores, tamaños, posiciones y la foto según tus instrucciones. Después editás todo directo sobre el flyer.</div></div>
 
   <div class="sec"><h3>Acomodo</h3>
     <div class="nota" style="margin-bottom:6px">Tocá cualquier parte del flyer para cambiarle el color, el tamaño o la letra desde la barra que aparece al lado.</div>
@@ -568,9 +569,9 @@ function irPintar(r,aplicadas){IA_RES=r;var bx=$('irBox');var acts=0;(r.sugerenc
   if($('irAll'))$('irAll').onclick=function(){iaAplicarTodo(true)};
   [].forEach.call(bx.querySelectorAll('.irA'),function(b){b.onclick=function(){var x;if(b.getAttribute('data-t')!==null){x=r.sugerencias[+b.getAttribute('data-t')].accion;iaUsarTexto(x);b.textContent='✔ Usado';b.disabled=true;return}
     x=r.sugerencias[+b.getAttribute('data-i')].accion;clearTimeout(hTm);pushSnap();hHold=true;var ok=iaAplicarUna(x);aplicar();hHold=false;pushSnap();sucio=true;audSoon();b.textContent=ok?'✔ Aplicado':'No se pudo';b.disabled=true}})}
-function iaRevisar(ronda){IA_RONDA=ronda||1;var bx=$('irBox');$('iaRev').classList.add('show');bx.innerHTML='<div class="irCarga">🔎 Claude está mirando tu flyer'+(IA_RONDA>1?' otra vez, ya con los cambios':'')+'… (unos 20 segundos)</div>';leerTextos();
+function iaRevisar(ronda,instr){IA_RONDA=ronda||1;var bx=$('irBox');$('iaRev').classList.add('show');bx.innerHTML='<div class="irCarga">🔎 Claude está mirando tu flyer'+(IA_RONDA>1?' otra vez, ya con los cambios':'')+'… (unos 20 segundos)</div>';leerTextos();
   var fallo=function(m){bx.innerHTML='<div class="irCarga">No se pudo revisar: '+irEsc(m)+'</div><div class="irFoot"><button type="button" class="bt" id="irX">Cerrar</button></div>';$('irX').onclick=function(){$('iaRev').classList.remove('show')}};
-  capturar(function(c,url){google.script.run.withSuccessHandler(function(r){irPintar(r,0)}).withFailureHandler(function(e){fallo((e&&e.message)||e)}).flyerRevisar(DATOS.perfil,url,S.fmt,iaEstado(),IA_RONDA)},fallo,0.55,'image/jpeg',.82)}
+  capturar(function(c,url){google.script.run.withSuccessHandler(function(r){irPintar(r,0);if(instr&&(r.sugerencias||[]).some(function(x){return x.accion&&x.accion.tipo!=='proponerTexto'}))iaAplicarTodo(false)}).withFailureHandler(function(e){fallo((e&&e.message)||e)}).flyerRevisar(DATOS.perfil,url,S.fmt,iaEstado(),IA_RONDA,instr||'')},fallo,0.55,'image/jpeg',.82)}
 var mkUrl='',mkTab='fin';
 function mkAbrir(){$('mkBg').classList.add('show');$('mkStage').innerHTML='<div class="mkCarga">Armando la imagen…</div>';mkUrl='';
   leerTextos();capturar(function(c,url){mkUrl=url;mkPintar()},function(m){$('mkStage').innerHTML='<div class="mkCarga">'+m+'</div>'},0.6,'image/jpeg',.9)}
@@ -681,6 +682,7 @@ function cableado(){
   $('logoO').onclick=function(){S.logoOsc=true;aplicar();marcar()};
   $('mostrarEmp').onchange=function(){S.mostrarEmpresa=this.checked;marcar()};
   $('iaInstr').oninput=function(){S.instr=this.value;marcar()};
+  $('btnDis').onclick=function(){if(!String(S.instr||'').trim()){msg('Escribí primero qué querés cambiar del diseño (ej. «título más grande en blanco»).',false);$('iaInstr').focus();return}iaRevisar(1,S.instr)};
   $('conQr').onchange=function(){
     leerTextos();S.qr=this.checked;
     var CQ='Te invitamos a postularte escaneando el QR o ingresando al enlace de la descripción.',SQ='Postulate desde el link que acompaña este posteo';
