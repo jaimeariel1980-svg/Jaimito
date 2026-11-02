@@ -816,8 +816,16 @@ if(!window.festejar) window.festejar = function(msg,tipo){
     return {texto:'**'+out+'**'};
   }
   
+  function wzEsPedido(text){
+    var w = st.wz; if(!w || w.i<0 || !w.sp || !w.sp[w.i]) return false;
+    var sp = w.sp[w.i], t = ns(text), n = t.split(/\s+/).length;
+    if(sp.k==='obs' || sp.k==='motivo' || n<3) return false;
+    if(sp.kind==='opt' && (sp.opts||[]).some(function(x){ return ns(x.l)===t; })) return false;
+    return /^(necesito|quiero|quisiera|quer[ií]a|busc|mostr|cancel|reprogram|decime|dame|pasame|mandame|cargame|agendame|ayuda|me ayud|puedes|puedo|podes|como |cuando |cuanto |cual |donde |hay |tengo |que )/.test(t) || /\?\s*$/.test(t);
+  }
   function ask(text, atajo){
     st.menu = false;
+    if(st.wz && !atajo && wzEsPedido(text)){ st.wz = null; st.msgs.push({role:'assistant', content:'Dejé el paso a paso. Vamos con lo nuevo 👇', w:1}); }
     if(st.wz && !atajo){ wzIn(text); return; }
     text = (text||'').trim(); if(!text || st.busy) return;
     if(!atajo && /^(hola+|buenas|buen d[ií]a|buenos d[ií]as|buenas tardes|buenas noches|hey|che|gracias|muchas gracias|ok|oka|dale|listo|genial|perfecto|bien|joya|barbaro|bárbaro)[\s!.¡]*$/i.test(text)){
