@@ -205,6 +205,10 @@ input[type=range]{accent-color:#243D2C}
     <textarea id="iaInstr" rows="4" maxlength="1500" placeholder="Ej: título más grande y en blanco; foto más difuminada; menos texto; tono más cercano; no mencionar los viajes" style="width:100%;box-sizing:border-box;border:1px solid #ccc;border-radius:8px;padding:8px;font:13px inherit;font-family:inherit;margin-bottom:8px"></textarea>
     <button class="bt ia full" id="btnIA">✨ Generar textos</button>
     <button class="bt ia full" id="btnDis" style="margin-top:6px" title="Claude mira el flyer y cambia el diseño según lo que pediste (se deshace con ↶)">🎨 Aplicar al diseño</button>
+    <details style="margin-top:8px"><summary style="font-weight:700;font-size:12px;cursor:pointer">📋 Pegar mi texto tal cual (sin IA)</summary>
+      <textarea id="txtLit" rows="8" placeholder="Pegá el aviso completo: «Buscamos…», ubicación, bajada, Principales desafíos, Perfil requerido, Postulate…" style="width:100%;box-sizing:border-box;border:1px solid #ccc;border-radius:8px;padding:8px;font-size:13px;font-family:inherit;margin-top:6px"></textarea>
+      <button class="bt full" id="btnLit" style="margin-top:6px">Usar este texto en el flyer</button>
+      <div class="nota">Respeta tus palabras: reparte el texto en título, bajada, desafíos, requisitos y postulación sin cambiarlo.</div></details>
     <div class="nota" style="margin-top:6px">«Generar textos» redacta bajada, desafíos y requisitos con el perfil del puesto y tus instrucciones; «Aplicar al diseño» cambia colores, tamaños, posiciones y la foto según tus instrucciones. Después editás todo directo sobre el flyer.</div></div>
 
   <div class="sec"><h3>Acomodo</h3>
@@ -682,6 +686,7 @@ function cableado(){
   $('logoO').onclick=function(){S.logoOsc=true;aplicar();marcar()};
   $('mostrarEmp').onchange=function(){S.mostrarEmpresa=this.checked;marcar()};
   $('iaInstr').oninput=function(){S.instr=this.value;marcar()};
+  $('btnLit').onclick=litAplicar;
   $('btnDis').onclick=function(){if(!String(S.instr||'').trim()){msg('Escribí primero qué querés cambiar del diseño (ej. «título más grande en blanco»).',false);$('iaInstr').focus();return}iaRevisar(1,S.instr)};
   $('conQr').onchange=function(){
     leerTextos();S.qr=this.checked;
@@ -739,6 +744,36 @@ function generarIA(){
   }).withFailureHandler(function(e){b.disabled=false;b.textContent='✨ Generar textos';msg((e&&e.message)||String(e),false)}).flyerTextosIA(DATOS.perfil,{mostrarEmpresa:S.mostrarEmpresa,instrucciones:S.instr||''});
 }
 
+
+function litParsear(tx){
+  var L=String(tx||'').split(/\r?\n/).map(function(x){return x.replace(/^\s*[•·\-–✔✓*]+\s*/,'').trim()}).filter(Boolean);
+  var r={baj:[],d:[],q:[],post:[]},sec='h',m;
+  L.forEach(function(l){
+    if(/^principales\s+desaf/i.test(l)){r.titD=l;sec='d';return}
+    if(/^(perfil\s+requerido|requisitos)\b/i.test(l)){r.titR=/^requisitos/i.test(l)?'Requisitos':l;sec='q';return}
+    if(/^postul/i.test(l)||/^asunto\s*:/i.test(l)||/^ref\./i.test(l)){sec='p'}
+    if(sec==='h'){
+      if(/^buscamos\b/i.test(l)&&!r.cargo){r.cargo=l.replace(/^buscamos\s+/i,'').replace(/\.$/,'');return}
+      if(!r.badge&&r.cargo&&l.length<70&&/[|·]/.test(l)){r.badge=l;return}
+      if(!r.cargo&&/[|·]/.test(l))return;
+      if(r.cargo)r.baj.push(l);else if(!r.cargo)r.cargo=l;
+    }else if(sec==='d')r.d.push(l);else if(sec==='q')r.q.push(l);else r.post.push(l);
+  });
+  var p=r.post.join('\n');m=p.match(/[\w.+-]+@[\w-]+(\.[\w-]+)+/);r.mail=m?m[0]:'';
+  var as=p.match(/asunto\s*:\s*([^\n]+)/i);r.asunto=as?as[1].trim():'';
+  return r;
+}
+function litAplicar(){
+  var r=litParsear($('txtLit').value);
+  if(!r.cargo&&!r.d.length&&!r.q.length){msg('No encontré el aviso. Pegalo completo (con «Principales desafíos» y «Perfil requerido»).',false);return}
+  pushSnap();leerTextos();var t=S.txt;
+  if(r.cargo)t.cargo=r.cargo;if(r.badge)t.badge=r.badge;if(r.baj.length)t.baj=r.baj.join(' ');
+  if(r.titD)t.titD=r.titD;if(r.titR)t.titR=r.titR;
+  if(r.d.length)S.iD=r.d;if(r.q.length)S.iR=r.q;
+  if(r.mail){t.mail=r.mail;S.qr=false}
+  if(r.asunto)t.form='Postulate con el asunto '+r.asunto+' a:';else if(r.mail)t.form='Postulate enviándonos tu CV a:';
+  generado=true;pintarTextos();aplicar();marcar();msg('Texto cargado tal cual. Revisá cómo quedó el acomodo.');
+}
 function guardar(){conRelleno(guardar_)}
 function guardar_(){
   leerTextos();var b=$('btnSave');b.disabled=true;b.textContent='Guardando…';
