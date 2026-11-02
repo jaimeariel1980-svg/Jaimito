@@ -181,8 +181,27 @@ function huntingBorrar_(perfilId, id, quien) {
 
 /* Mensaje personalizado con IA: nota de conexión (hasta 300 caracteres) y mensaje directo. tipo: primero | seg1 | seg2.
    No inventa datos de su trayectoria, no habla de sueldo ni de criterios internos y respeta la búsqueda ciega. */
+// Mail modelo de Blumia para el primer acercamiento (texto de Flavia, 2/11): se usa tal cual, sin IA. [Nombre] y [Firma] se completan solos.
+const HUNT_MAIL_ = {
+  'director-comercial': {
+    asunto: 'Oportunidad ejecutiva | Dirección Comercial – Consultoría Estratégica',
+    cuerpo: 'Estimado/a [Nombre]:\n\nEspero que estés muy bien.\n\nDesde Blumia Consulting estamos liderando una búsqueda confidencial para incorporar un/a Director/a Comercial de Proyectos de Consultoría para el sector de Energía y Minería, en una firma de reconocida trayectoria en consultoría estratégica de negocios e inteligencia económica.\n\nSe trata de una posición de nueva creación, con reporte directo al CEO, cuyo principal desafío será impulsar el desarrollo de nuevos negocios en los sectores de Energía y Minería, identificando oportunidades, construyendo relaciones con decisores de alto nivel y desarrollando propuestas de consultoría de alto valor agregado.\n\nBuscamos un perfil con sólida trayectoria en desarrollo comercial B2B, experiencia en ventas consultivas de soluciones complejas, conocimiento del ecosistema energético y minero y una red activa de relacionamiento a nivel C-Level.\n\nLa posición ofrece la oportunidad de asumir un rol estratégico en el crecimiento de la firma, con autonomía, exposición a la alta dirección y participación directa en el desarrollo de negocios.\n\nLa posición está basada en CABA con modalidad híbrida y disponibilidad para viajes comerciales nacionales e internacionales.\n\nMe gustaría conocer si esta oportunidad podría resultar de tu interés y, en ese caso, coordinar una breve conversación para compartirte más detalles.\n\nDesde ya, muchas gracias por tu tiempo.\n\nSaludos cordiales,\n[Firma]'
+  }
+};
+function huntMailModelo_(perfilId, o, quien) {
+  const m = HUNT_MAIL_[perfilId]; if (!m) return null;
+  const nombre = String(o.nombre || '').trim().split(/\s+/)[0] || '';
+  const firma = (String(quien || '').trim() || 'Equipo Blumia') + '\nBlumia Consulting\nExecutive Search\nempleos@blumiaconsulting.com';
+  return { asunto: m.asunto, mail: m.cuerpo.replace('[Nombre]', nombre).replace('[Firma]', firma) };
+}
+
 function huntingMensaje_(perfilId, id, tipo, nombrar, quien) {
   const o = huntBuscar_(perfilId, id), cfg = getConfig(perfilId);
+  if (tipo === 'mail') {
+    const mm = huntMailModelo_(perfilId, o, quien);
+    if (!mm) throw new Error('Esta búsqueda todavía no tiene un mail modelo cargado.');
+    return { asunto: mm.asunto, mail: mm.mail, conexion: '', mensaje: '' };
+  }
   const hero = getHeroPostulacion(perfilId);
   let ubic = ''; try {
     const rows = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName('Perfiles_Hero').getDataRange().getValues();
