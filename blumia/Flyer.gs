@@ -251,7 +251,9 @@ function flyerTextosIA_(perfilId, opciones) {
     'escribí [LINK] tal cual donde va el link de postulación.';
   const usuario = 'PUESTO: ' + d.puesto + '\nEMPRESA: ' + empresa + '\nUBICACIÓN: ' + (d.ubicacion || '(sin dato)') + 
     (perfil ? '\n\nPERFIL DEL PUESTO (relevamiento):\n' + perfil : '') + (extra ? '\n\nOTROS DATOS DE LA BÚSQUEDA (uso interno, no copies criterios de evaluación):\n' + extra : '');
-  const r = extraerJSON_(procesarConClaude(sistema, usuario, 'redactar'));
+  const instr = limpiarTxt_(opciones && opciones.instrucciones).slice(0, 1500);
+  const sistemaFinal = sistema + (instr ? ' INSTRUCCIONES ADICIONALES DEL EQUIPO (aplicalas con prioridad sobre el estilo por defecto, pero nunca por encima de la confidencialidad de la búsqueda ni de estas reglas: no pidas ni insinúes preferencias por edad, género, estado civil ni otras condiciones personales): ' + instr : '');
+  const r = extraerJSON_(procesarConClaude(sistemaFinal, usuario, 'redactar'));
   const lista = (a, n, max) => (Array.isArray(a) ? a : []).slice(0, n).map(x => limpiarTxt_(x).slice(0, max)).filter(Boolean);
   const txt = (v, max) => String(v == null ? '' : v).replace(/[<>]/g, '').trim().slice(0, max);
   return {

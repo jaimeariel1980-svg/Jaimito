@@ -1383,7 +1383,7 @@ const IA_TAREAS_ = {
   analisis: { modelo: 'claude-sonnet-5-5', effort: 'medium', maxTokens: 12000 },
   informe:  { modelo: 'claude-opus-5-5',   effort: 'medium', maxTokens: 12000 },
   redactar: { modelo: 'claude-sonnet-5-5', effort: 'low',    maxTokens: 4000 },
-  cv:       { modelo: 'claude-sonnet-5-5', effort: 'low',    maxTokens: 4000 },
+  cv:       { modelo: 'claude-sonnet-5-5', effort: 'medium', maxTokens: 4000 },
   bloomy:   { modelo: 'claude-haiku-5-5',  effort: 'low',    maxTokens: 2000 }
 };
 
