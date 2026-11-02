@@ -336,6 +336,7 @@ Devolvé SOLO JSON válido con este formato:
   "nombre": "Nombre Real", "email": "correo@ejemplo.com", "telefono": "Numero", "dni": "Solo numeros",
   "formacion": "Máximo nivel + título (ej: Universitario completo - Lic. en RRHH)",
   "localidad": "Ciudad/localidad textual del CV",
+  "cargo_actual": "Cargo actual o más reciente", "empresa_actual": "Empresa actual o más reciente", "linkedin": "Link de LinkedIn si figura en el documento, si no \"\"",
   "nivel_ajuste": "A/B+/B/C",
   "justificacion": "Una sola oración corta explicando el porqué de la nota",
   "requisitos": { "zona": "", "liderazgo": "", "formacion": "", "genero": "", "edad": "", "exp_rubro": "" },
@@ -362,7 +363,10 @@ REGLAS:
       nivel_ajuste: String(content.nivel_ajuste || 'C'),
       justificacion: String(content.justificacion || ''),
       requisitos: formatearRequisitos(req, content.localidad),
-      resumen: String(content.resumen_experiencia || '')
+      resumen: String(content.resumen_experiencia || ''),
+      cargo: String(content.cargo_actual || ''),
+      empresa: String(content.empresa_actual || ''),
+      linkedin: String(content.linkedin || '')
     };
   } catch (e) {
     return { nombre: 'Error', email: 'Sin dato', formacion: 'Sin dato', zona: 'Sin dato', requisitos: 'Error', resumen: e.toString() };

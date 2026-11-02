@@ -8,7 +8,7 @@
    ============================================================ */
 
 const HOJA_HUNT_ = 'Hunting';
-const HUNT_COLS_ = ['id', 'perfil', 'nombre', 'cargo', 'empresa', 'linkedin', 'prioridad', 'estado', 'nivel', 'creado', 'contactado', 'ultimo_mov', 'seguimiento', 'quien', 'notas', 'mensaje', 'candidato', 'seguimientos'];
+const HUNT_COLS_ = ['id', 'perfil', 'nombre', 'cargo', 'empresa', 'linkedin', 'prioridad', 'estado', 'nivel', 'creado', 'contactado', 'ultimo_mov', 'seguimiento', 'quien', 'notas', 'mensaje', 'candidato', 'seguimientos', 'pdf', 'datos'];
 const HUNT_NIVEL_ = { 'Identificado': 0, 'Contactado': 1, 'Sin respuesta': 1, 'Respondió': 2, 'No le interesa': 2, 'Interesado': 3, 'En proceso': 4 };
 const HUNT_FUENTE_ = 'Hunting (LinkedIn)';
 
@@ -33,6 +33,12 @@ function huntHoja_() {
     sh.getRange(1, 1, 1, HUNT_COLS_.length).setValues([HUNT_COLS_]).setFontWeight('bold');
     sh.setFrozenRows(1);
     sh.getRange(2, 1, 1000, HUNT_COLS_.length).setNumberFormat('@'); // todo como texto: las fechas no se convierten solas
+  } else {
+    const n = sh.getLastColumn();
+    if (n < HUNT_COLS_.length) { // columnas nuevas (pdf, datos) en una hoja que ya existía
+      sh.getRange(1, n + 1, 1, HUNT_COLS_.length - n).setValues([HUNT_COLS_.slice(n)]).setFontWeight('bold');
+      sh.getRange(2, n + 1, 1000, HUNT_COLS_.length - n).setNumberFormat('@');
+    }
   }
   return sh;
 }
@@ -52,7 +58,14 @@ function huntLeerTodo_() {
   return out;
 }
 
-function huntItem_(o) { const x = Object.assign({}, o); delete x.fila; return x; }
+// Lo que viaja al tablero: sin el JSON del PDF (pesa). «tienePdf» habilita «Pasar a la búsqueda»; «nota» es la nota que la IA le puso al leer el PDF.
+function huntItem_(o) {
+  const x = Object.assign({}, o); delete x.fila;
+  x.tienePdf = !!(o.pdf && o.datos);
+  let nota = ''; try { nota = JSON.parse(o.datos || '{}').nivel_ajuste || ''; } catch (e) { }
+  x.nota = nota; delete x.datos;
+  return x;
+}
 
 function huntStats_(items) {
   const s = { identificados: 0, contactados: 0, respondieron: 0, interesados: 0, enProceso: 0, noInteresa: 0, sinRespuesta: 0, vencidos: 0 };
@@ -111,7 +124,7 @@ function huntingAgregar_(perfilId, personasJson, quien) {
       if ((url && urls[url.toLowerCase()]) || claves[k]) { repetidos++; return; }
       if (url) urls[url.toLowerCase()] = 1; claves[k] = 1;
       const pr = String(p && p.prioridad || '').toUpperCase() === 'B' ? 'B' : 'A';
-      filas.push(['h' + Utilities.getUuid().replace(/-/g, '').slice(0, 8), perfilId, nombre, cut(p && p.cargo, 120), empresa, url, pr, 'Identificado', 0, huntHoy_(), '', huntHoy_(), '', quien || '', cut(p && p.notas, 500), '', '', 0]);
+      filas.push(['h' + Utilities.getUuid().replace(/-/g, '').slice(0, 8), perfilId, nombre, cut(p && p.cargo, 120), empresa, url, pr, 'Identificado', 0, huntHoy_(), '', huntHoy_(), '', quien || '', cut(p && p.notas, 500), '', '', 0, '', '']);
     });
     if (filas.length) {
       const ini = Math.max(sh.getLastRow(), 1) + 1;
@@ -188,11 +201,17 @@ const HUNT_MAIL_ = {
     cuerpo: 'Estimado/a [Nombre]:\n\nEspero que estés muy bien.\n\nDesde Blumia Consulting estamos liderando una búsqueda confidencial para incorporar un/a Director/a Comercial de Proyectos de Consultoría para el sector de Energía y Minería, en una firma de reconocida trayectoria en consultoría estratégica de negocios e inteligencia económica.\n\nSe trata de una posición de nueva creación, con reporte directo al CEO, cuyo principal desafío será impulsar el desarrollo de nuevos negocios en los sectores de Energía y Minería, identificando oportunidades, construyendo relaciones con decisores de alto nivel y desarrollando propuestas de consultoría de alto valor agregado.\n\nBuscamos un perfil con sólida trayectoria en desarrollo comercial B2B, experiencia en ventas consultivas de soluciones complejas, conocimiento del ecosistema energético y minero y una red activa de relacionamiento a nivel C-Level.\n\nLa posición ofrece la oportunidad de asumir un rol estratégico en el crecimiento de la firma, con autonomía, exposición a la alta dirección y participación directa en el desarrollo de negocios.\n\nLa posición está basada en CABA con modalidad híbrida y disponibilidad para viajes comerciales nacionales e internacionales.\n\nMe gustaría conocer si esta oportunidad podría resultar de tu interés y, en ese caso, coordinar una breve conversación para compartirte más detalles.\n\nDesde ya, muchas gracias por tu tiempo.\n\nSaludos cordiales,\n[Firma]'
   }
 };
+function huntFirma_(quien) { return (String(quien || '').trim() || 'Equipo Blumia') + '\nBlumia Consulting\nExecutive Search\nempleos@blumiaconsulting.com'; }
 function huntMailModelo_(perfilId, o, quien) {
   const m = HUNT_MAIL_[perfilId]; if (!m) return null;
   const nombre = String(o.nombre || '').trim().split(/\s+/)[0] || '';
-  const firma = (String(quien || '').trim() || 'Equipo Blumia') + '\nBlumia Consulting\nExecutive Search\nempleos@blumiaconsulting.com';
-  return { asunto: m.asunto, mail: m.cuerpo.replace('[Nombre]', nombre).replace('[Firma]', firma) };
+  return { asunto: m.asunto, mail: m.cuerpo.replace('[Nombre]', nombre).replace('[Firma]', huntFirma_(quien)) };
+}
+// Mail modelo sin elegir a nadie: queda [Nombre] para que el tablero lo reemplace al escribir el nombre (se usa antes de cargar a la persona)
+function huntingMailModelo_(perfilId, quien) {
+  const m = HUNT_MAIL_[perfilId];
+  if (!m) throw new Error('Esta búsqueda todavía no tiene un mail modelo cargado.');
+  return { asunto: m.asunto, mail: m.cuerpo.replace('[Firma]', huntFirma_(quien)) };
 }
 
 function huntingMensaje_(perfilId, id, tipo, nombrar, quien) {
@@ -269,6 +288,80 @@ function huntingSubirPdf_(perfilId, id, b64, nombreArchivo, quien) {
     a.estado = 'En proceso'; a.nivel = 4; a.candidato = datos.nombre || a.nombre; a.seguimiento = ''; a.ultimo_mov = huntHoy_();
     huntEscribir_(huntHoja_(), a);
     huntHist_(perfilId, a, repetido ? 'Ya estaba en el tablero: se vinculó' : 'Pasó al proceso de selección (PDF de LinkedIn)', quien);
+  } finally { lock.releaseLock(); }
+  return { ok: true, candidato: datos.nombre || o.nombre, nota: datos.nivel_ajuste || '', repetido: !!repetido };
+}
+
+
+function huntCarpetaArchivos_(cfg) {
+  const madre = DriveApp.getFolderById(cfg.folder_madre);
+  const it = madre.getFoldersByName('Hunting - archivos'); // distinta de «Hunting»: esa la barre procesarDriveManual y metería a todos en el tablero
+  return it.hasNext() ? it.next() : madre.createFolder('Hunting - archivos');
+}
+
+/* Carga a una persona desde su PDF de LinkedIn («Más → Guardar como PDF»): la IA lo lee como a un CV y queda en la lista como «Identificado»
+   con nombre, cargo, empresa, link y nota. NO entra al tablero de candidatos hasta que se toca «Pasar a la búsqueda» (huntingPasar_).
+   Si ya estaba en la lista (mismo link o mismo nombre), le agrega el PDF a esa ficha. */
+function huntingCargarPdf_(perfilId, b64, nombreArchivo, quien) {
+  QUIEN_ = quien || '';
+  if (!b64 || String(b64).length > 14000000) throw new Error('El archivo está vacío o es muy pesado (máximo 10 MB).');
+  const cfg = getConfig(perfilId);
+  const bytes = Utilities.base64Decode(b64);
+  if (bytes.length < 5 || String.fromCharCode(bytes[0], bytes[1], bytes[2], bytes[3]) !== '%PDF') throw new Error('«' + (nombreArchivo || 'El archivo') + '» no es un PDF. Tiene que ser el perfil de LinkedIn (Más → Guardar como PDF).');
+  const nom = 'LinkedIn - ' + String(nombreArchivo || 'perfil').replace(/\.pdf$/i, '').replace(/[^\w\sáéíóúñÁÉÍÓÚÑ.-]/g, '').slice(0, 60) + '.pdf';
+  const file = huntCarpetaArchivos_(cfg).createFile(Utilities.newBlob(bytes, 'application/pdf', nom));
+  const datos = procesarConChatGPT(file, cfg);
+  if (!datos || datos.nombre === 'Error' || datos.nombre === 'No detectado') {
+    try { file.setTrashed(true); } catch (e) { }
+    throw new Error('No pude leer «' + (nombreArchivo || 'ese PDF') + '». Probá bajarlo de nuevo desde LinkedIn (Más → Guardar como PDF).');
+  }
+  let json = JSON.stringify(datos); if (json.length > 45000) { datos.resumen = String(datos.resumen || '').slice(0, 800); json = JSON.stringify(datos); }
+  const yaEnTablero = !!esDuplicado(datos, getSheet(cfg));
+  const cut = (v, n) => limpiarTxt_(v).slice(0, n);
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const sh = huntHoja_();
+    const todos = huntLeerTodo_().filter(o => o.perfil === perfilId);
+    const url = huntUrl_(datos.linkedin), nn = huntNorm_(datos.nombre);
+    const ex = todos.find(o => (url && o.linkedin && o.linkedin.toLowerCase() === url.toLowerCase()) || huntNorm_(o.nombre) === nn);
+    if (ex) {
+      ex.pdf = file.getUrl(); ex.datos = json; ex.ultimo_mov = huntHoy_();
+      if (!ex.cargo) ex.cargo = cut(datos.cargo, 120);
+      if (!ex.empresa) ex.empresa = cut(datos.empresa, 90);
+      if (!ex.linkedin) ex.linkedin = url;
+      huntEscribir_(sh, ex);
+      huntHist_(perfilId, ex, 'Se agregó su PDF de LinkedIn', quien);
+      return { id: ex.id, nombre: ex.nombre, existente: true, yaEnTablero: yaEnTablero, nota: datos.nivel_ajuste || '' };
+    }
+    const id = 'h' + Utilities.getUuid().replace(/-/g, '').slice(0, 8);
+    const fila = [id, perfilId, cut(datos.nombre, 90), cut(datos.cargo, 120), cut(datos.empresa, 90), url, 'A', 'Identificado', 0, huntHoy_(), '', huntHoy_(), '', quien || '', '', '', '', 0, file.getUrl(), json];
+    const ini = Math.max(sh.getLastRow(), 1) + 1;
+    sh.getRange(ini, 1, 1, HUNT_COLS_.length).setNumberFormat('@').setValues([fila]);
+    huntHist_(perfilId, { nombre: fila[2] }, 'Identificado (PDF de LinkedIn)' + (fila[4] ? ' · ' + fila[4] : ''), quien);
+    return { id: id, nombre: fila[2], existente: false, yaEnTablero: yaEnTablero, nota: datos.nivel_ajuste || '' };
+  } finally { lock.releaseLock(); }
+}
+
+/* «Pasar a la búsqueda»: la persona (que ya tiene su PDF cargado) entra al tablero de candidatos con «Llegó por: Hunting (LinkedIn)», sin volver a leer nada. */
+function huntingPasar_(perfilId, id, quien) {
+  QUIEN_ = quien || '';
+  const o = huntBuscar_(perfilId, id), cfg = getConfig(perfilId);
+  if (o.estado === 'En proceso') throw new Error('Ya está en el tablero de candidatos.');
+  if (!o.pdf || !o.datos) throw new Error('A esta persona le falta el PDF de LinkedIn. Subilo con «Subir PDF».');
+  let datos; try { datos = JSON.parse(o.datos); } catch (e) { throw new Error('Los datos del PDF están dañados. Subí el PDF de nuevo.'); }
+  const sheet = getSheet(cfg);
+  const repetido = esDuplicado(datos, sheet);
+  if (!repetido) insertarFilaLibre(sheet, datos, o.pdf, new Date(), HUNT_FUENTE_);
+  try {
+    const m = String(o.pdf).match(/[-\w]{25,}/);
+    if (m) DriveApp.getFileById(m[0]).moveTo(DriveApp.getFolderById(cfg.folder_recibidos));
+  } catch (e) { Logger.log('hunting pasar (mover pdf): ' + e); }
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const a = huntBuscar_(perfilId, id);
+    a.estado = 'En proceso'; a.nivel = 4; a.candidato = datos.nombre || a.nombre; a.seguimiento = ''; a.ultimo_mov = huntHoy_();
+    huntEscribir_(huntHoja_(), a);
+    huntHist_(perfilId, a, repetido ? 'Ya estaba en el tablero: se vinculó' : 'Pasó a la búsqueda (PDF de LinkedIn)', quien);
   } finally { lock.releaseLock(); }
   return { ok: true, candidato: datos.nombre || o.nombre, nota: datos.nivel_ajuste || '', repetido: !!repetido };
 }

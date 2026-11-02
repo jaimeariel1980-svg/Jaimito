@@ -48,7 +48,7 @@
 (function(){
   if(typeof google==='undefined'||!google.script||typeof PERFIL==='undefined')return;
   var ETAPAS=['Identificado','Contactado','Respondió','Interesado','En proceso'],CERR=['No le interesa','Sin respuesta'];
-  var DESC={'Identificado':'Mapeados, todavía sin contactar','Contactado':'Mensaje enviado, esperando respuesta','Respondió':'Hay conversación','Interesado':'Quiere avanzar: falta su perfil','En proceso':'Ya están en el tablero de candidatos'};
+  var DESC={'Identificado':'Mapeados, todavía sin contactar','Contactado':'Mensaje enviado, esperando respuesta','Respondió':'Hay conversación','Interesado':'Quiere avanzar: pasala a la búsqueda','En proceso':'Ya están en el tablero de candidatos'};
   var D={items:[],stats:null,hoy:''},abierta=false,cargando=false;
   function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
   function quien(){try{return quienSoy();}catch(e){return '';}}
@@ -80,19 +80,19 @@
     if(o.estado==='Identificado')acc=B('✉ Mensaje','msg','p')+B('Ya lo contacté','mov:Contactado');
     else if(o.estado==='Contactado')acc=B('✉ Seguimiento','msg','p')+B('Seguimiento enviado','mov:Contactado')+B('Respondió','mov:Respondió')+B('Sin respuesta','mov:Sin respuesta');
     else if(o.estado==='Respondió')acc=B('Le interesa','mov:Interesado','p')+B('No le interesa','mov:No le interesa');
-    else if(o.estado==='Interesado')acc=B('📄 Subir PDF de LinkedIn','pdf','p')+B('Ya no le interesa','mov:No le interesa');
+    else if(o.estado==='Interesado')acc=(o.tienePdf?B('➡ Pasar a la búsqueda','pasar','p'):B('📄 Subir PDF de LinkedIn','pdf','p'))+B('Ya no le interesa','mov:No le interesa');
     else if(o.estado==='En proceso')acc='';
     acc+=B('⋯','menu');
     return '<div class="hu-card '+esc(o.prioridad)+'"><div class="hu-n"><span>'+esc(o.nombre)+'</span><i class="hu-pr" title="Prioridad">'+esc(o.prioridad)+'</i></div>'+
       ((o.cargo||o.empresa)?'<div class="hu-s">'+esc(o.cargo)+(o.cargo&&o.empresa?' · ':'')+esc(o.empresa)+'</div>':'')+
-      (o.notas?'<div class="hu-s" style="color:#888">'+esc(o.notas)+'</div>':'')+
+      (o.nota?'<span class="hu-seg" title="Nota que le puso la IA al leer su PDF">Nota IA: '+esc(o.nota)+'</span> ':'')+(o.notas?'<div class="hu-s" style="color:#888">'+esc(o.notas)+'</div>':'')+
       (o.estado==='En proceso'&&o.candidato?'<div class="hu-s" style="color:#0F3F27;font-weight:700">En el tablero como «'+esc(o.candidato)+'»</div>':'')+seg+'<div class="hu-acc">'+acc+'</div></div>';
   }
   function pintar(){
     var p=document.getElementById('huntPage');if(!p)return;
     var it=D.items,s=D.stats||{identificados:0,contactados:0,respondieron:0,interesados:0,enProceso:0,vencidos:0};
-    var x='<div class="hu-top"><h2>🎯 Hunting</h2><button class="hu-btn p" data-a="nueva">+ Agregar persona</button><button class="hu-btn" data-a="lista">Pegar lista</button><button class="hu-btn" data-a="perfil">📋 Perfil del puesto</button></div>';
-    x+='<div class="hu-help"><b>Búsqueda directa.</b> Acá van las personas a las que abordamos antes de que se postulen: no están en el tablero de candidatos ni en sus números. Cuando alguien dice «me interesa», subí su perfil de LinkedIn (<i>Más → Guardar como PDF</i>) y pasa al tablero con <b>«Llegó por: Hunting (LinkedIn)»</b>. El embudo sale en el Resumen y en el informe del cliente.</div>';
+    var x='<div class="hu-top"><h2>🎯 Hunting</h2><button class="hu-btn p" data-a="pdfs">📄 Subir PDFs de LinkedIn</button><button class="hu-btn" data-a="mailm">✉ Mail modelo</button><button class="hu-btn" data-a="nueva">+ Agregar a mano</button><button class="hu-btn" data-a="lista">Pegar lista</button><button class="hu-btn" data-a="perfil">📋 Perfil del puesto</button></div>';
+    x+='<div class="hu-help"><b>Cómo se trabaja.</b> 1) En LinkedIn, <i>Más → Guardar como PDF</i> del perfil y subilo acá con <b>«Subir PDFs de LinkedIn»</b> (podés subir varios juntos): la IA lo lee y la persona queda cargada, sin tipear nada. 2) <b>«Mail modelo»</b> te da el mensaje listo para mandar (no hace falta cargar a nadie para verlo). 3) Seguila por las columnas. 4) Cuando le interesa, <b>«Pasar a la búsqueda»</b> la manda al tablero de candidatos con <b>«Llegó por: Hunting (LinkedIn)»</b>. Hasta ese momento no cuenta en los números del proceso. El embudo sale en el Resumen y en el informe del cliente.</div>';
     x+=kpis(s);
     x+='<div class="hu-board">'+ETAPAS.map(function(e){
       var l=it.filter(function(o){return o.estado===e;});
@@ -157,6 +157,50 @@
     if($('#hm-ya'))$('#hm-ya').onclick=function(){this.disabled=true;run('huntingMover',[PERFIL,o.id,'Contactado',quien()],function(){bg.remove();cargar();});};
     $('#hm-x').onclick=function(){bg.remove();};
   }
+
+  function pdfs(){
+    var inp=document.createElement('input');inp.type='file';inp.accept='application/pdf,.pdf';inp.multiple=true;
+    inp.onchange=function(){
+      var fs=[].slice.call(inp.files||[]);if(!fs.length)return;
+      var bg=modal('<h3>📄 Perfiles de LinkedIn</h3><p>La IA lee cada PDF (unos 20 a 40 segundos cada uno). No cierres esta pantalla.</p><div id="hp-l" style="font-size:13px;line-height:1.7"></div><div class="hu-row"><button class="go" id="hp-ok" disabled>Listo</button></div>');
+      var L=bg.querySelector('#hp-l'),ok=bg.querySelector('#hp-ok'),hechos=0,fallas=0;
+      L.innerHTML=fs.map(function(f,i){return '<div id="hp-'+i+'">⏳ '+esc(f.name)+'</div>';}).join('');
+      function una(i){
+        if(i>=fs.length){ok.disabled=false;ok.textContent=hechos?'Listo ('+hechos+' cargada'+(hechos===1?'':'s')+(fallas?', '+fallas+' con error':'')+')':'Cerrar';cargar();return;}
+        var f=fs[i],el=bg.querySelector('#hp-'+i);
+        if(f.size>10*1024*1024){el.innerHTML='❌ '+esc(f.name)+' · pesa más de 10 MB';fallas++;una(i+1);return;}
+        var fr=new FileReader();
+        fr.onload=function(){
+          run('huntingCargarPdf',[PERFIL,String(fr.result).split(',')[1],f.name,quien()],function(r){
+            hechos++;el.innerHTML='✅ <b>'+esc(r.nombre)+'</b>'+(r.nota?' · nota IA '+esc(r.nota):'')+(r.existente?' · ya estaba en la lista: se agregó el PDF':'')+(r.yaEnTablero?' · <span style="color:#B45309">ya figura en el tablero de candidatos</span>':'');una(i+1);
+          },function(e){fallas++;el.innerHTML='❌ '+esc(f.name)+' · '+esc((e&&e.message)||e);una(i+1);});
+        };
+        fr.onerror=function(){fallas++;el.innerHTML='❌ '+esc(f.name)+' · no pude leer el archivo';una(i+1);};
+        fr.readAsDataURL(f);
+      }
+      ok.onclick=function(){bg.remove();};
+      una(0);
+    };
+    inp.click();
+  }
+  function mailModelo(){
+    var bg=modal('<h3>✉ Mail modelo Blumia</h3><p>Escribí el nombre de la persona y copiá el mail. No hace falta tenerla cargada.</p><label>Nombre y apellido</label><input type="text" id="mm-n" placeholder="Ej: Juan Pablo Ceballos"><label>Asunto</label><input type="text" id="mm-a"><label>Mail</label><textarea id="mm-t" style="min-height:260px"></textarea><div class="hu-row"><button id="mm-ca">Copiar asunto</button><button class="go" id="mm-ct">Copiar mail</button><button id="mm-x">Cerrar</button></div>');
+    var $=function(s){return bg.querySelector(s);},base='';
+    function pon(){var p=String($('#mm-n').value||'').trim().split(/\s+/)[0]||'[Nombre]';$('#mm-t').value=base.split('[Nombre]').join(p);}
+    run('huntingMailModelo',[PERFIL,quien()],function(r){$('#mm-a').value=r.asunto||'';base=r.mail||'';pon();},function(e){bg.remove();aviso((e&&e.message)||String(e));});
+    $('#mm-n').oninput=pon;
+    $('#mm-ca').onclick=function(){copiar($('#mm-a').value,this);};
+    $('#mm-ct').onclick=function(){copiar($('#mm-t').value,this);};
+    $('#mm-x').onclick=function(){bg.remove();};
+    setTimeout(function(){$('#mm-n').focus();},50);
+  }
+  function pasar(o){
+    confirma('¿Pasar a '+o.nombre+' a la búsqueda? Entra al tablero de candidatos con «Llegó por: Hunting (LinkedIn)», con los datos que ya leyó la IA.',function(){
+      run('huntingPasar',[PERFIL,o.id,quien()],function(r){
+        aviso(r.candidato+' ya está en el tablero de candidatos'+(r.nota?' con nota '+r.nota:'')+(r.repetido?' (ya figuraba: se vinculó con el existente)':'')+'.',function(){cargar();try{if(typeof refrescarTablero==='function')refrescarTablero();}catch(e){}});
+      });
+    },{si:'Pasar'});
+  }
   function subirPdf(o){
     var inp=document.createElement('input');inp.type='file';inp.accept='application/pdf,.pdf';
     inp.onchange=function(){
@@ -177,10 +221,10 @@
     inp.click();
   }
   function menu(o){
-    var bg=modal('<h3>'+esc(o.nombre)+'</h3><div class="hu-row" style="justify-content:flex-start;flex-direction:column;align-items:stretch"><button data-a="edit">Editar datos</button>'+(o.linkedin?'<button data-a="li">Abrir LinkedIn</button>':'')+'<button data-a="msg">✉ Mensaje</button><label>Mover a otra etapa</label><select id="hmv"><option value="">Elegir…</option>'+ETAPAS.concat(CERR).map(function(e){return '<option'+(e===o.estado?' disabled':'')+'>'+e+'</option>';}).join('')+'</select><button data-a="del" style="border-color:#B91C1C;color:#B91C1C;margin-top:12px">Borrar de la lista</button><button data-a="x">Cerrar</button></div>');
+    var bg=modal('<h3>'+esc(o.nombre)+'</h3><div class="hu-row" style="justify-content:flex-start;flex-direction:column;align-items:stretch"><button data-a="edit">Editar datos</button>'+(o.linkedin?'<button data-a="li">Abrir LinkedIn</button>':'')+'<button data-a="msg">✉ Mensaje</button>'+(o.tienePdf&&o.estado!=='En proceso'?'<button data-a="pasar">➡ Pasar a la búsqueda</button>':'')+'<label>Mover a otra etapa</label><select id="hmv"><option value="">Elegir…</option>'+ETAPAS.concat(CERR).map(function(e){return '<option'+(e===o.estado?' disabled':'')+'>'+e+'</option>';}).join('')+'</select><button data-a="del" style="border-color:#B91C1C;color:#B91C1C;margin-top:12px">Borrar de la lista</button><button data-a="x">Cerrar</button></div>');
     bg.querySelector('#hmv').onchange=function(){var v=this.value;if(v){bg.remove();run('huntingMover',[PERFIL,o.id,v,quien()],function(){cargar();});}};
     bg.addEventListener('click',function(ev){var a=ev.target.getAttribute&&ev.target.getAttribute('data-a');if(!a)return;bg.remove();
-      if(a==='edit')formPersona(o);else if(a==='li')window.open(o.linkedin,'_blank');else if(a==='msg')mensaje(o);
+      if(a==='edit')formPersona(o);else if(a==='li')window.open(o.linkedin,'_blank');else if(a==='msg')mensaje(o);else if(a==='pasar')pasar(o);
       else if(a==='del')confirma('¿Borrar a '+o.nombre+' de la lista de hunting? Se elimina todo lo que guardamos de esa persona.',function(){run('huntingBorrar',[PERFIL,o.id,quien()],function(){cargar();});},{si:'Borrar',peligro:true});});
   }
 
@@ -226,8 +270,8 @@
   page.addEventListener('click',function(e){
     var b=e.target.closest('[data-a]');if(!b)return;
     var a=b.getAttribute('data-a'),id=b.getAttribute('data-id'),o=id?porId(id):null;
-    if(a==='nueva')formPersona();else if(a==='lista')pegarLista();else if(a==='perfil'){if(window.blPerfilRef)blPerfilRef();}
-    else if(a==='msg'&&o)mensaje(o);else if(a==='pdf'&&o)subirPdf(o);else if(a==='menu'&&o)menu(o);
+    if(a==='nueva')formPersona();else if(a==='pdfs')pdfs();else if(a==='mailm')mailModelo();else if(a==='lista')pegarLista();else if(a==='perfil'){if(window.blPerfilRef)blPerfilRef();}
+    else if(a==='msg'&&o)mensaje(o);else if(a==='pdf'&&o)subirPdf(o);else if(a==='pasar'&&o)pasar(o);else if(a==='menu'&&o)menu(o);
     else if(a.indexOf('mov:')===0&&o){b.disabled=true;run('huntingMover',[PERFIL,o.id,a.slice(4),quien()],function(){cargar();},function(er){b.disabled=false;aviso((er&&er.message)||String(er));});}
   });
   // el globito con los seguimientos de hoy se ve desde cualquier pestaña
