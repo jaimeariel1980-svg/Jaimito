@@ -338,7 +338,7 @@ function registroApi_() {
     difusionGuardar: { f: difusionGuardar_, admin: true },
     difusionTextos: { f: difusionTextosIA_, admin: true },
     flyerImagen: { f: flyerImagen_ },
-    flyerRevisar: { f: flyerRevisarIA_, admin: true },
+    flyerRevisar: { f: flyerRevisarIA_ },
     guardarFormularioPerfil: { f: guardarFormularioPerfil_, admin: true },
     guardarInformeEditado: { f: guardarInformeEditado_ },
     guardarMotivoDescarte: { f: guardarMotivoDescarte_ },
