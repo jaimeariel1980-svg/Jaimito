@@ -368,3 +368,17 @@ function huntingPasar_(perfilId, id, quien) {
   } finally { lock.releaseLock(); }
   return { ok: true, candidato: datos.nombre || o.nombre, nota: datos.nivel_ajuste || '', repetido: !!repetido };
 }
+
+/* Ficha de una persona de la lista: lo que la IA leyó de su PDF (nota, por qué, resumen, formación, zona, contacto) y el link al PDF.
+   No incluye «requisitos» (ahí van edad y género, que no se muestran). */
+function huntingFicha_(perfilId, id) {
+  const o = huntBuscar_(perfilId, id);
+  let d = {}; try { d = JSON.parse(o.datos || '{}'); } catch (e) { }
+  const v = x => { x = String(x == null ? '' : x).trim(); return /^sin dato$/i.test(x) ? '' : x; };
+  return {
+    id: o.id, nombre: o.nombre, cargo: o.cargo, empresa: o.empresa, linkedin: o.linkedin, estado: o.estado, notas: o.notas,
+    pdf: o.pdf || '', tienePdf: !!(o.pdf && o.datos),
+    nota: v(d.nivel_ajuste), justificacion: v(d.justificacion), resumen: v(d.resumen),
+    formacion: v(d.formacion), zona: v(d.zona), email: v(d.email), telefono: v(d.telefono)
+  };
+}

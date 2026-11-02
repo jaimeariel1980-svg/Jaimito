@@ -333,6 +333,7 @@ function registroApi_() {
     huntingSubirPdf: { f: huntingSubirPdf_ },
     huntingCargarPdf: { f: huntingCargarPdf_ },
     huntingPasar: { f: huntingPasar_ },
+    huntingFicha: { f: huntingFicha_ },
     huntingMailModelo: { f: huntingMailModelo_ },
     pestanasSheetSolo: { f: pestanasSheetSolo_, admin: true },
     pestanasSheetTodas: { f: pestanasSheetTodas_, admin: true },

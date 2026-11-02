@@ -82,8 +82,9 @@
     else if(o.estado==='Respondió')acc=B('Le interesa','mov:Interesado','p')+B('No le interesa','mov:No le interesa');
     else if(o.estado==='Interesado')acc=(o.tienePdf?B('➡ Pasar a la búsqueda','pasar','p'):B('📄 Subir PDF de LinkedIn','pdf','p'))+B('Ya no le interesa','mov:No le interesa');
     else if(o.estado==='En proceso')acc='';
+    acc=B('📄 Ficha','ficha')+acc;
     acc+=B('⋯','menu');
-    return '<div class="hu-card '+esc(o.prioridad)+'"><div class="hu-n"><span>'+esc(o.nombre)+'</span><i class="hu-pr" title="Prioridad">'+esc(o.prioridad)+'</i></div>'+
+    return '<div class="hu-card '+esc(o.prioridad)+'"><div class="hu-n"><span data-a="ficha" data-id="'+esc(o.id)+'" style="cursor:pointer" title="Ver ficha">'+esc(o.nombre)+'</span><i class="hu-pr" title="Prioridad">'+esc(o.prioridad)+'</i></div>'+
       ((o.cargo||o.empresa)?'<div class="hu-s">'+esc(o.cargo)+(o.cargo&&o.empresa?' · ':'')+esc(o.empresa)+'</div>':'')+
       (o.nota?'<span class="hu-seg" title="Nota que le puso la IA al leer su PDF">Nota IA: '+esc(o.nota)+'</span> ':'')+(o.notas?'<div class="hu-s" style="color:#888">'+esc(o.notas)+'</div>':'')+
       (o.estado==='En proceso'&&o.candidato?'<div class="hu-s" style="color:#0F3F27;font-weight:700">En el tablero como «'+esc(o.candidato)+'»</div>':'')+seg+'<div class="hu-acc">'+acc+'</div></div>';
@@ -186,6 +187,27 @@
     };
     inp.click();
   }
+  function ficha(o){
+    var bg=modal('<h3>'+esc(o.nombre)+'</h3><p id="hf-c">Cargando…</p>');
+    run('huntingFicha',[PERFIL,o.id],function(f){
+      var R=function(t,v){return v?'<label>'+t+'</label><div style="font-size:13.5px;line-height:1.5;white-space:pre-wrap">'+esc(v)+'</div>':'';};
+      var sub=[f.cargo,f.empresa].filter(Boolean).join(' · ');
+      var x='<h3 style="margin-bottom:2px">'+esc(f.nombre)+'</h3>'+(sub?'<p style="margin:0 0 6px">'+esc(sub)+'</p>':'')+
+        '<div style="margin:6px 0 4px"><span class="hu-seg">'+esc(f.estado)+'</span> '+(f.nota?'<span class="hu-seg" style="background:#E3EEDC;color:#0F3F27">Nota IA: '+esc(f.nota)+'</span>':'')+'</div>';
+      if(f.tienePdf){
+        x+=R('Por qué esa nota',f.justificacion)+R('Resumen de su experiencia',f.resumen)+R('Formación',f.formacion)+R('Zona',f.zona)+R('Contacto',[f.email,f.telefono].filter(Boolean).join(' · '));
+      }else x+='<p style="margin-top:10px">Todavía no tiene su PDF de LinkedIn cargado: sin eso la IA no puede leerlo. Subilo con «Subir PDFs de LinkedIn» (si ya está en la lista, se le agrega al mismo registro).</p>';
+      x+=R('Notas',f.notas);
+      x+='<div class="hu-row">'+(f.pdf?'<button class="go" id="hf-pdf">📄 Ver PDF</button>':'')+(f.linkedin?'<button id="hf-li">Abrir LinkedIn</button>':'')+'<button id="hf-m">✉ Mensaje</button>'+(f.tienePdf&&f.estado!=='En proceso'?'<button id="hf-p">➡ Pasar a la búsqueda</button>':'')+'<button id="hf-x">Cerrar</button></div>';
+      bg.querySelector('.hu-box').innerHTML=x;
+      var $=function(s){return bg.querySelector(s);};
+      if($('#hf-pdf'))$('#hf-pdf').onclick=function(){window.open(f.pdf,'_blank');};
+      if($('#hf-li'))$('#hf-li').onclick=function(){window.open(f.linkedin,'_blank');};
+      $('#hf-m').onclick=function(){bg.remove();mensaje(o);};
+      if($('#hf-p'))$('#hf-p').onclick=function(){bg.remove();pasar(o);};
+      $('#hf-x').onclick=function(){bg.remove();};
+    },function(e){bg.remove();aviso((e&&e.message)||String(e));});
+  }
   function pasar(o){
     confirma('¿Pasar a '+o.nombre+' a la búsqueda? Entra al tablero de candidatos con «Llegó por: Hunting (LinkedIn)», con los datos que ya leyó la IA.',function(){
       run('huntingPasar',[PERFIL,o.id,quien()],function(r){
@@ -263,7 +285,7 @@
     var b=e.target.closest('[data-a]');if(!b)return;
     var a=b.getAttribute('data-a'),id=b.getAttribute('data-id'),o=id?porId(id):null;
     if(a==='nueva')formPersona();else if(a==='pdfs')pdfs();else if(a==='mailm')mensaje(null);else if(a==='lista')pegarLista();else if(a==='perfil'){if(window.blPerfilRef)blPerfilRef();}
-    else if(a==='msg'&&o)mensaje(o);else if(a==='pdf'&&o)subirPdf(o);else if(a==='pasar'&&o)pasar(o);else if(a==='menu'&&o)menu(o);
+    else if(a==='ficha'&&o)ficha(o);else if(a==='msg'&&o)mensaje(o);else if(a==='pdf'&&o)subirPdf(o);else if(a==='pasar'&&o)pasar(o);else if(a==='menu'&&o)menu(o);
     else if(a.indexOf('mov:')===0&&o){b.disabled=true;run('huntingMover',[PERFIL,o.id,a.slice(4),quien()],function(){cargar();},function(er){b.disabled=false;aviso((er&&er.message)||String(er));});}
   });
   // el globito con los seguimientos de hoy se ve desde cualquier pestaña
