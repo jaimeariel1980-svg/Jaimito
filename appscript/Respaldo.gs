@@ -61,13 +61,24 @@ function azcuErroresDiario(){
 }
 
 // resumen semanal de los 👎 del chat (lunes 9 h): cuántas respuestas se marcaron y las primeras preguntas, para pasárselas a Claude
+// manda por mail el detalle de los 👎 (ya sin teléfonos ni mails) para que Claude los revise y corrija; destino: propiedad AZCU_FALLAS_MAIL o el mail de la gerencia en la pestaña Usuarios
+function azcuFallasMail_(l){
+  try{
+    var to = String(PropertiesService.getScriptProperties().getProperty('AZCU_FALLAS_MAIL')||'').trim();
+    if(!to){ var ms = []; azcuGerentes_().forEach(function(nm){ try{ var u = azcuUsuarioDe_(nm); if(u && u.mail && ms.indexOf(u.mail)<0) ms.push(u.mail); }catch(e){} }); to = ms.join(','); }
+    if(!to) return;
+    var cuerpo = l.slice(0, 40).map(function(x, i){ return (i+1)+'. '+Utilities.formatDate(x.f, AZCU_TZ, 'dd/MM/yyyy HH:mm')+' · '+x.u+' · '+x.m+'\nPREGUNTA: '+x.p.slice(0, 500)+'\nRESPUESTA: '+x.a.slice(0, 500); }).join('\n\n');
+    MailApp.sendEmail({to:to, subject:'[Azcu fallas] '+l.length+(l.length===1 ? ' respuesta marcada' : ' respuestas marcadas')+' del chat esta semana', body:'Respuestas del chat marcadas con 👎 en los últimos 7 días (sin teléfonos ni mails).\n\n'+cuerpo});
+  }catch(e){ Logger.log('azcuFallasMail_: '+e); }
+}
 function azcuFallasSemanal(){
   try{
     var sf = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Chat_Fallas');
     if(!sf || sf.getLastRow()<2) return;
     var desde = Date.now() - 7*24*3600000, l = [];
-    sf.getRange(2, 1, sf.getLastRow()-1, 3).getValues().forEach(function(r){ if(r[0] instanceof Date && r[0].getTime() >= desde) l.push({q:String(r[2]||'').slice(0, 70), u:String(r[1]||'')}); });
+    sf.getRange(2, 1, sf.getLastRow()-1, Math.min(Math.max(sf.getLastColumn(),3),5)).getValues().forEach(function(r){ if(r[0] instanceof Date && r[0].getTime() >= desde) l.push({q:String(r[2]||'').slice(0, 70), u:String(r[1]||''), f:r[0], p:String(r[2]||''), a:String(r[3]||''), m:String(r[4]||'')}); });
     if(!l.length) return;
+    azcuFallasMail_(l);
     var top = l.slice(0, 3).map(function(x){ return '«'+x.q+'»'+(x.u ? ' ('+x.u+')' : ''); }).join(' · ');
     var dest = []; azcuGerentes_().forEach(function(nm){ azcuDestinos_(nm, true).forEach(function(d){ if(dest.indexOf(d)<0) dest.push(d); }); });
     if(dest.length) azcuPush_('👎 '+l.length+(l.length===1 ? ' respuesta marcada' : ' respuestas marcadas')+' del chat esta semana', top+(l.length>3 ? ' y '+(l.length-3)+' más' : '')+'. Detalle en la pestaña Chat_Fallas: copiásela a Claude para que las arregle.', AZCU_WEB, dest, true, true);
