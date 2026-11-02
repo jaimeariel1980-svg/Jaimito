@@ -173,11 +173,12 @@ function flyerRevisarIA_(perfilId, base64, fmt, estado, ronda, instrucciones) {
     'ACCIONES (el editor las ejecuta solas; usá solo estas, con estos valores; si ninguna sirve, accion = null): ' +
     '{"tipo":"colorTitulo","color":"#FFFFFF"} (color de la paleta: #0F3F27 #1A1A1A #FFFFFF #FBC67B #FEE795 #F9BDBB #B4E1E0); ' +
     '{"tipo":"colorBloque","bloque":"baj","color":"#1A1A1A"}; {"tipo":"difuminado","valor":0-100} (más alto = la foto se funde más con el fondo claro); {"tipo":"tamanoTexto","valor":70-130}; ' +
-    '{"tipo":"tamanoBloque","bloque":"tit","valor":40-200}; {"tipo":"mover","bloque":"fMail","dx":-600..600,"dy":-600..600} (px en un lienzo de 1080 de ancho; dy negativo sube); {"tipo":"dejarItems","n":2-4}; ' +
+    '{"tipo":"tamanoBloque","bloque":"tit","valor":40-200}; {"tipo":"mover","bloque":"fMail","dx":-600..600,"dy":-600..600} (px en un lienzo de 1080 de ancho; dy negativo sube); ' +
     '{"tipo":"logoOscuro","valor":true|false}; {"tipo":"altoPie","valor":60-150}; {"tipo":"serif","valor":true|false}; {"tipo":"ocultar","bloque":"bucle|aro"}; {"tipo":"negrita","bloque":"baj","valor":true|false}; ' +
     '{"tipo":"zonaSegura"} (saca de las zonas de Instagram lo que esté tapado); {"tipo":"acomodar"} (centra, alinea al mismo margen, separa de los bordes y parejiza los espacios entre bloques; el editor lo hace con medidas exactas); {"tipo":"proponerTexto","bloque":"baj|fTxt|badge","texto":"texto nuevo, más corto"} (solo si el texto es muy largo o confuso). ' +
     'Bloques válidos: logo, cli, bucle, aro, badge, tit, baj, secD, secR, qr, fTxt, arrow, fMail. ' +
     (Number(ronda) >= 2 ? 'Esta es la SEGUNDA revisión, después de aplicar cambios: marcá solo lo que siga mal; si el flyer ya está bien (puntaje 8 o más) devolvé pocas o ninguna sugerencia. ' : '') +
+    'REGLA DE ORO: el texto del flyer es del equipo y está aprobado. Nunca propongas sacar, acortar, reescribir ni agregar puntos o palabras salvo que el pedido del equipo lo diga expresamente; tu trabajo es el diseño. ' +
     'No inventes problemas: si algo está bien, decilo en el resumen. Español rioplatense, sin tecnicismos, con vos.' + instrDis;
   let est = '';
   try { est = JSON.stringify(estado || {}).slice(0, 1800); } catch (e) { }
