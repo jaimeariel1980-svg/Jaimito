@@ -91,8 +91,8 @@
   function pintar(){
     var p=document.getElementById('huntPage');if(!p)return;
     var it=D.items,s=D.stats||{identificados:0,contactados:0,respondieron:0,interesados:0,enProceso:0,vencidos:0};
-    var x='<div class="hu-top"><h2>🎯 Hunting</h2><button class="hu-btn p" data-a="pdfs">📄 Subir PDFs de LinkedIn</button><button class="hu-btn" data-a="mailm">✉ Mail modelo</button><button class="hu-btn" data-a="nueva">+ Agregar a mano</button><button class="hu-btn" data-a="lista">Pegar lista</button><button class="hu-btn" data-a="perfil">📋 Perfil del puesto</button></div>';
-    x+='<div class="hu-help"><b>Cómo se trabaja.</b> 1) En LinkedIn, <i>Más → Guardar como PDF</i> del perfil y subilo acá con <b>«Subir PDFs de LinkedIn»</b> (podés subir varios juntos): la IA lo lee y la persona queda cargada, sin tipear nada. 2) <b>«Mail modelo»</b> te da el mensaje listo para mandar (no hace falta cargar a nadie para verlo). 3) Seguila por las columnas. 4) Cuando le interesa, <b>«Pasar a la búsqueda»</b> la manda al tablero de candidatos con <b>«Llegó por: Hunting (LinkedIn)»</b>. Hasta ese momento no cuenta en los números del proceso. El embudo sale en el Resumen y en el informe del cliente.</div>';
+    var x='<div class="hu-top"><h2>🎯 Hunting</h2><button class="hu-btn p" data-a="pdfs">📄 Subir PDFs de LinkedIn</button><button class="hu-btn" data-a="mailm">✉ Mensaje modelo</button><button class="hu-btn" data-a="nueva">+ Agregar a mano</button><button class="hu-btn" data-a="lista">Pegar lista</button><button class="hu-btn" data-a="perfil">📋 Perfil del puesto</button></div>';
+    x+='<div class="hu-help"><b>Cómo se trabaja.</b> 1) En LinkedIn, <i>Más → Guardar como PDF</i> del perfil y subilo acá con <b>«Subir PDFs de LinkedIn»</b> (podés subir varios juntos): la IA lo lee y la persona queda cargada, sin tipear nada. 2) <b>«Mensaje modelo»</b> te da el asunto y el texto de Flavia para pegar en un InMail (no hace falta cargar a nadie para verlo). 3) Seguila por las columnas. 4) Cuando le interesa, <b>«Pasar a la búsqueda»</b> la manda al tablero de candidatos con <b>«Llegó por: Hunting (LinkedIn)»</b>. Hasta ese momento no cuenta en los números del proceso. El embudo sale en el Resumen y en el informe del cliente.</div>';
     x+=kpis(s);
     x+='<div class="hu-board">'+ETAPAS.map(function(e){
       var l=it.filter(function(o){return o.estado===e;});
@@ -138,26 +138,29 @@
     try{navigator.clipboard.writeText(t).then(ok,function(){var a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove();ok();});}catch(e){var a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy');ok();}catch(x){}a.remove();}
   }
   function mensaje(o){
-    var tipo=o.estado==='Contactado'?(o.seguimientos>=1?'seg2':'seg1'):'primero';
-    var bg=modal('<h3>✉ Mensaje para '+esc(o.nombre)+'</h3><div class="hu-tp"><button data-t="primero">Primer mensaje</button><button data-t="seg1">Seguimiento 1</button><button data-t="seg2">Último seguimiento</button></div><label style="font-weight:600"><input type="checkbox" id="hm-n" checked style="width:auto;margin-right:6px">Nombrar a la empresa cliente (si la búsqueda es ciega, no se nombra igual)</label><div class="hu-row" style="margin-top:8px;justify-content:flex-start"><button class="go" id="hm-g">✨ Generar con IA</button><button id="hm-mm">✉ Mail modelo Blumia</button></div><div id="hm-mw" style="display:none"><label>Asunto del mail</label><input id="hm-ma" style="width:100%;box-sizing:border-box"><label>Mail (texto del modelo, sin cambios)</label><textarea id="hm-mt" style="min-height:220px"></textarea><div class="hu-row"><button id="hm-cma">Copiar asunto</button><button id="hm-cmt">Copiar mail</button></div></div><label>Nota para la invitación de conexión</label><textarea id="hm-c" style="min-height:70px" maxlength="300"></textarea><div class="hu-cnt" id="hm-cn">0 / 300</div><div class="hu-row" style="margin-top:4px"><button id="hm-cc">Copiar nota</button></div><label>Mensaje directo</label><textarea id="hm-m" style="min-height:150px"></textarea><div class="hu-row"><button id="hm-cm">Copiar mensaje</button>'+(o.linkedin?'<button id="hm-l">Abrir LinkedIn</button>':'')+(o.estado==='Identificado'?'<button class="go" id="hm-ya">Ya lo envié ✓</button>':'')+'<button id="hm-x">Cerrar</button></div>');
-    var $=function(s){return bg.querySelector(s);};
-    function marcar(){[].forEach.call(bg.querySelectorAll('.hu-tp button'),function(b){b.className=b.getAttribute('data-t')===tipo?'on':'';});}
-    marcar();
-    [].forEach.call(bg.querySelectorAll('.hu-tp button'),function(b){b.onclick=function(){tipo=b.getAttribute('data-t');marcar();};});
-    $('#hm-c').oninput=function(){$('#hm-cn').textContent=this.value.length+' / 300';};
-    $('#hm-g').onclick=function(){var g=this;g.disabled=true;g.textContent='La IA está escribiendo…';
-      run('huntingMensaje',[PERFIL,o.id,tipo,$('#hm-n').checked,quien()],function(r){g.disabled=false;g.textContent='✨ Generar de nuevo';$('#hm-c').value=r.conexion||'';$('#hm-cn').textContent=($('#hm-c').value.length)+' / 300';$('#hm-m').value=r.mensaje||'';},function(e){g.disabled=false;g.textContent='✨ Generar con IA';aviso((e&&e.message)||String(e));});};
-    $('#hm-mm').onclick=function(){var g=this;g.disabled=true;
-      run('huntingMensaje',[PERFIL,o.id,'mail',false,quien()],function(r){g.disabled=false;$('#hm-mw').style.display='block';$('#hm-ma').value=r.asunto||'';$('#hm-mt').value=r.mail||'';},function(e){g.disabled=false;aviso((e&&e.message)||String(e));});};
-    $('#hm-cma').onclick=function(){copiar($('#hm-ma').value,this);};
-    $('#hm-cmt').onclick=function(){copiar($('#hm-mt').value,this);};
-    $('#hm-cc').onclick=function(){copiar($('#hm-c').value,this);};
-    $('#hm-cm').onclick=function(){copiar($('#hm-m').value,this);};
-    if($('#hm-l'))$('#hm-l').onclick=function(){window.open(o.linkedin,'_blank');};
-    if($('#hm-ya'))$('#hm-ya').onclick=function(){this.disabled=true;run('huntingMover',[PERFIL,o.id,'Contactado',quien()],function(){bg.remove();cargar();});};
-    $('#hm-x').onclick=function(){bg.remove();};
+    var bg=modal('<h3>✉ Mensaje'+(o?' para '+esc(o.nombre):' modelo')+'</h3><p>Texto de Flavia, listo para pegar en un InMail (o en un mensaje de LinkedIn). La nota corta es para la invitación a conectar si no hay InMail.</p><label>Nombre y apellido</label><input type="text" id="mm-n" value="'+esc(o?o.nombre:'')+'" placeholder="Ej: Juan Pablo Ceballos"><label>Asunto</label><input type="text" id="mm-a"><label>Mensaje</label><textarea id="mm-t" style="min-height:240px"></textarea><div class="hu-row" style="margin-top:4px"><button id="mm-ca">Copiar asunto</button><button class="go" id="mm-ct">Copiar mensaje</button></div><label>Nota para la invitación a conectar</label><textarea id="mm-c" style="min-height:70px" maxlength="300"></textarea><div class="hu-cnt" id="mm-cn">0 / 300</div><div class="hu-row"><button id="mm-cc">Copiar nota</button></div>'+(o?'<details style="margin-top:12px"><summary style="cursor:pointer;font-weight:700;font-size:13px">✨ Redactar con IA (opcional)</summary><p style="margin-top:6px">La IA escribe un mensaje distinto, personalizado. El texto de Flavia de arriba es el oficial.</p><div class="hu-tp"><button data-t="primero">Primer mensaje</button><button data-t="seg1">Seguimiento 1</button><button data-t="seg2">Último seguimiento</button></div><div class="hu-row" style="margin-top:6px;justify-content:flex-start"><button class="go" id="hm-g">✨ Generar con IA</button></div><label>Nota de conexión (IA)</label><textarea id="hm-c" style="min-height:70px" maxlength="300"></textarea><div class="hu-row" style="margin-top:4px"><button id="hm-cc">Copiar nota</button></div><label>Mensaje directo (IA)</label><textarea id="hm-m" style="min-height:150px"></textarea><div class="hu-row"><button id="hm-cm">Copiar mensaje</button></div></details>':'')+'<div class="hu-row">'+(o&&o.linkedin?'<button id="mm-l">Abrir LinkedIn</button>':'')+(o&&o.estado==='Identificado'?'<button class="go" id="mm-ya">Ya lo envié ✓</button>':'')+'<button id="mm-x">Cerrar</button></div>');
+    var $=function(s){return bg.querySelector(s);},bm='',bn='';
+    function pon(){var p=String($('#mm-n').value||'').trim().split(/\s+/)[0]||'[Nombre]';$('#mm-t').value=bm.split('[Nombre]').join(p);$('#mm-c').value=bn.split('[Nombre]').join(p);$('#mm-cn').textContent=$('#mm-c').value.length+' / 300';}
+    run('huntingMailModelo',[PERFIL,quien()],function(r){$('#mm-a').value=r.asunto||'';bm=r.mail||'';bn=r.nota||'';pon();},function(e){bg.remove();aviso((e&&e.message)||String(e));});
+    $('#mm-n').oninput=pon;
+    $('#mm-c').oninput=function(){$('#mm-cn').textContent=this.value.length+' / 300';};
+    $('#mm-ca').onclick=function(){copiar($('#mm-a').value,this);};
+    $('#mm-ct').onclick=function(){copiar($('#mm-t').value,this);};
+    $('#mm-cc').onclick=function(){copiar($('#mm-c').value,this);};
+    if($('#mm-l'))$('#mm-l').onclick=function(){window.open(o.linkedin,'_blank');};
+    if($('#mm-ya'))$('#mm-ya').onclick=function(){this.disabled=true;run('huntingMover',[PERFIL,o.id,'Contactado',quien()],function(){bg.remove();cargar();});};
+    if(o){
+      var tipo=o.estado==='Contactado'?(o.seguimientos>=1?'seg2':'seg1'):'primero';
+      var marcar=function(){[].forEach.call(bg.querySelectorAll('.hu-tp button'),function(b){b.className=b.getAttribute('data-t')===tipo?'on':'';});};marcar();
+      [].forEach.call(bg.querySelectorAll('.hu-tp button'),function(b){b.onclick=function(){tipo=b.getAttribute('data-t');marcar();};});
+      $('#hm-g').onclick=function(){var g=this;g.disabled=true;g.textContent='La IA está escribiendo…';
+        run('huntingMensaje',[PERFIL,o.id,tipo,true,quien()],function(r){g.disabled=false;g.textContent='✨ Generar de nuevo';$('#hm-c').value=r.conexion||'';$('#hm-m').value=r.mensaje||'';},function(e){g.disabled=false;g.textContent='✨ Generar con IA';aviso((e&&e.message)||String(e));});};
+      $('#hm-cc').onclick=function(){copiar($('#hm-c').value,this);};
+      $('#hm-cm').onclick=function(){copiar($('#hm-m').value,this);};
+    }
+    $('#mm-x').onclick=function(){bg.remove();};
+    setTimeout(function(){if(!o)$('#mm-n').focus();},50);
   }
-
   function pdfs(){
     var inp=document.createElement('input');inp.type='file';inp.accept='application/pdf,.pdf';inp.multiple=true;
     inp.onchange=function(){
@@ -182,17 +185,6 @@
       una(0);
     };
     inp.click();
-  }
-  function mailModelo(){
-    var bg=modal('<h3>✉ Mail modelo Blumia</h3><p>Escribí el nombre de la persona y copiá el mail. No hace falta tenerla cargada.</p><label>Nombre y apellido</label><input type="text" id="mm-n" placeholder="Ej: Juan Pablo Ceballos"><label>Asunto</label><input type="text" id="mm-a"><label>Mail</label><textarea id="mm-t" style="min-height:260px"></textarea><div class="hu-row"><button id="mm-ca">Copiar asunto</button><button class="go" id="mm-ct">Copiar mail</button><button id="mm-x">Cerrar</button></div>');
-    var $=function(s){return bg.querySelector(s);},base='';
-    function pon(){var p=String($('#mm-n').value||'').trim().split(/\s+/)[0]||'[Nombre]';$('#mm-t').value=base.split('[Nombre]').join(p);}
-    run('huntingMailModelo',[PERFIL,quien()],function(r){$('#mm-a').value=r.asunto||'';base=r.mail||'';pon();},function(e){bg.remove();aviso((e&&e.message)||String(e));});
-    $('#mm-n').oninput=pon;
-    $('#mm-ca').onclick=function(){copiar($('#mm-a').value,this);};
-    $('#mm-ct').onclick=function(){copiar($('#mm-t').value,this);};
-    $('#mm-x').onclick=function(){bg.remove();};
-    setTimeout(function(){$('#mm-n').focus();},50);
   }
   function pasar(o){
     confirma('¿Pasar a '+o.nombre+' a la búsqueda? Entra al tablero de candidatos con «Llegó por: Hunting (LinkedIn)», con los datos que ya leyó la IA.',function(){
@@ -270,7 +262,7 @@
   page.addEventListener('click',function(e){
     var b=e.target.closest('[data-a]');if(!b)return;
     var a=b.getAttribute('data-a'),id=b.getAttribute('data-id'),o=id?porId(id):null;
-    if(a==='nueva')formPersona();else if(a==='pdfs')pdfs();else if(a==='mailm')mailModelo();else if(a==='lista')pegarLista();else if(a==='perfil'){if(window.blPerfilRef)blPerfilRef();}
+    if(a==='nueva')formPersona();else if(a==='pdfs')pdfs();else if(a==='mailm')mensaje(null);else if(a==='lista')pegarLista();else if(a==='perfil'){if(window.blPerfilRef)blPerfilRef();}
     else if(a==='msg'&&o)mensaje(o);else if(a==='pdf'&&o)subirPdf(o);else if(a==='pasar'&&o)pasar(o);else if(a==='menu'&&o)menu(o);
     else if(a.indexOf('mov:')===0&&o){b.disabled=true;run('huntingMover',[PERFIL,o.id,a.slice(4),quien()],function(){cargar();},function(er){b.disabled=false;aviso((er&&er.message)||String(er));});}
   });
