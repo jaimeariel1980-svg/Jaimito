@@ -243,6 +243,16 @@ function procesarMails(cfg) {
    Reemplazá tu procesarDriveManual por esta.
    ============================================================ */
 
+// Un archivo que no se pudo leer NO va a «CVs procesados» (parecía cargado y no estaba en el tablero): va a «No se pudo leer» y queda anotado en la pestaña «Sin clasificar».
+function cvNoLeido_(file, madre, motivo) {
+  try {
+    const it = madre.getFoldersByName('No se pudo leer');
+    const dest = it.hasNext() ? it.next() : madre.createFolder('No se pudo leer');
+    file.moveTo(dest);
+    hojaSinClasificar_().appendRow([new Date(), 'Carpeta de CVs', file.getName(), file.getUrl(), motivo]);
+  } catch (e) { Logger.log('cvNoLeido_: ' + e); }
+}
+
 function procesarDriveManual(cfg) {
   const sheet = getSheet(cfg);
   const madre = DriveApp.getFolderById(cfg.folder_madre);
@@ -252,7 +262,11 @@ function procesarDriveManual(cfg) {
   while (files.hasNext()) {
     const file = files.next();
     const datos = procesarConChatGPT(file, cfg);
-    if (datos && !esDuplicado(datos, sheet)) {
+    if (!datos || datos.nombre === 'Error') {
+      cvNoLeido_(file, madre, datos ? ('No se pudo leer: ' + String(datos.resumen || '').slice(0, 150)) : 'Formato no soportado (tiene que ser PDF, Word o Google Doc)');
+      continue;
+    }
+    if (!esDuplicado(datos, sheet)) {
       insertarFilaLibre(sheet, datos, file.getUrl(), file.getDateCreated(), 'CV directo');
     }
     file.moveTo(recibidos);
@@ -319,11 +333,16 @@ function procesarConChatGPT(file, cfg, textoYaExtraido) {
       // reutilizar texto extraído por el router → sin segunda conversión a Doc
       textoCV = String(textoYaExtraido).substring(0, 10000);
     } else {
-      if (file.getMimeType() !== 'application/pdf') return null;
-      const blob = file.getBlob();
-      const tempFile = Drive.Files.create({ name: 'Temp_CV', mimeType: MimeType.GOOGLE_DOCS }, blob);
-      textoCV = DocumentApp.openById(tempFile.id).getBody().getText().substring(0, 10000);
-      Drive.Files.remove(tempFile.id);
+      // PDF, Word (.docx/.doc) y Google Docs; cualquier otra cosa no se puede leer
+      const mime = file.getMimeType();
+      if (mime === 'application/vnd.google-apps.document') {
+        textoCV = DocumentApp.openById(file.getId()).getBody().getText().substring(0, 10000);
+      } else if (mime === 'application/pdf' || /officedocument\.wordprocessingml|msword/.test(mime)) {
+        const blob = file.getBlob();
+        const tempFile = Drive.Files.create({ name: 'Temp_CV', mimeType: MimeType.GOOGLE_DOCS }, blob);
+        textoCV = DocumentApp.openById(tempFile.id).getBody().getText().substring(0, 10000);
+        Drive.Files.remove(tempFile.id);
+      } else return null;
     }
     if (textoCV.trim().length < 100) throw new Error('PDF vacío o corrupto');
 
