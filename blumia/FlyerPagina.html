@@ -480,7 +480,7 @@ function ratioCol(c,bg){var n=parseInt(c.slice(1),16),L=lumRel(n>>16,(n>>8)&255,
 function audFixCon(){if(!AUD.con)return;var cand=['#FFFFFF','#0F3F27','#1A1A1A'],mejor=cand[0],mr=0;cand.forEach(function(c){var r=ratioCol(c,AUD.con.bg);if(r>mr){mr=r;mejor=c}});
   S.colT=mejor;var tp=mvPos('tit',false);if(tp)delete tp.c;if(mr<3)S.ov=Math.min(100,S.ov+25);aplicar();marcar()}
 function audFixZon(){var H=FMT.st.H;AUD.zon.forEach(function(z){var d=z.top<250?250-z.top+12:-(z.bottom-(H-250)+12);var p=mvPos(z.k,true);p.y=Math.round(p.y+d)});mvAplicar();marcar()}
-function audFixItems(){S.iD=(S.iD||[]).slice(0,3);S.iR=(S.iR||[]).slice(0,3);setItems('iD',S.iD);setItems('iR',S.iR);ajustar();aplicar();marcar()}
+function audFixItems(){S.iD=(S.iD||[]).slice(0,3);S.iR=(S.iR||[]).slice(0,4);setItems('iD',S.iD);setItems('iR',S.iR);ajustar();aplicar();marcar()}
 function audFixMail(){if(DATOS.mail){S.txt.mail=DATOS.mail;pintarTextos()}else S.qr=true;aplicar();marcar()}
 
 var LAY_GRP=[['tit','baj'],['secD','secR']],LAY_TXT=['tit','baj','secD','secR','fTxt'],LAY_PRI=['badge','tit','baj','secD','secR'],LAY_ETQ={badge:'La etiqueta',tit:'El título',baj:'La bajada',secD:'Los desafíos',secR:'Los requisitos',fTxt:'El texto del pie',fMail:'El correo',qr:'El QR',logo:'El logo',arrow:'La flecha'};
@@ -518,8 +518,8 @@ function audItems(){var it=[];if(!S)return it;
   if(AUD.con)it.push({n:'warn',t:'El título se lee poco sobre la foto (contraste '+AUD.con.r.toFixed(1)+':1).',fx:['Mejorar contraste',audFixCon]});
   if(AUD.zon.length)it.push({n:'bad',t:AUD.zon.map(function(z){return z.label}).join(', ')+(AUD.zon.length>1?' quedan':' queda')+' donde Instagram lo tapa.',fx:['Mover a zona segura',audFixZon]});
   var sEf=parseFloat($('flyer').style.getPropertyValue('--s'))||1;
-  if(sEf<.8)it.push({n:'warn',t:'El texto quedó chico ('+Math.round(sEf*100)+'%) porque hay mucho: en el celular cuesta leerlo.',fx:['Dejar 3 y 3',audFixItems]});
-  else if((S.iD||[]).length>3||(S.iR||[]).length>3)it.push({n:'warn',t:'Hay más de 3 desafíos o requisitos: en un flyer se leen mejor 3 y 3.',fx:['Dejar 3 y 3',audFixItems]});
+  if(sEf<.8)it.push({n:'warn',t:'El texto quedó chico ('+Math.round(sEf*100)+'%) porque hay mucho: en el celular cuesta leerlo.',fx:['Dejar 3 y 4',audFixItems]});
+  else if((S.iD||[]).length>3||(S.iR||[]).length>4)it.push({n:'warn',t:'Hay más de 3 desafíos o más de 4 requisitos: en un flyer se leen mejor 3 y 4.',fx:['Dejar 3 y 4',audFixItems]});
   try{var lm=layAnalizar();if(lm.length)it.push({n:'warn',t:lm.map(function(x){return x.t}).join(' '),fx:['Acomodar márgenes y espacios',function(){clearTimeout(hTm);pushSnap();layFix();aplicar();marcar();sucio=true}]})}catch(e){}
   if(!S.qr&&!String(S.txt.mail||'').trim())it.push({n:'bad',t:'No hay correo ni QR para postularse.',fx:[DATOS.mail?'Poner '+DATOS.mail:'Activar el QR',audFixMail]});
   if(S.qr&&String(S.qrUrl||'').length>60)it.push({n:'warn',t:'El QR queda denso (link largo): pegá un link corto o sacalo.',fx:['Sacar el QR',function(){S.qr=false;aplicar();marcar()}]});
@@ -531,7 +531,7 @@ function audRender(){var bt=$('audBt'),ls=$('audLs');if(!bt||!ls)return;var it=a
   ls.innerHTML=it.length?'':'<div class="okmsg">✔ No encontré problemas. Mirá la vista previa («👁 Vista previa») antes de publicar.</div>';
   it.forEach(function(x){var d=document.createElement('div');d.className='ai '+x.n;var sp=document.createElement('span');sp.textContent=x.t;d.appendChild(sp);if(x.fx){var b=document.createElement('button');b.type='button';b.className='bt';b.textContent=x.fx[0];b.onclick=function(){x.fx[1]()};d.appendChild(b)}ls.appendChild(d)})}
 function audMejorar(){leerTextos();clearTimeout(hTm);pushSnap();hHold=true;var b=$('audMej'),t=b.textContent;b.disabled=true;b.textContent='Mejorando…';
-  S.iD=(S.iD||[]).slice(0,3);S.iR=(S.iR||[]).slice(0,3);if(!S.qr&&!String(S.txt.mail||'').trim()&&DATOS.mail)S.txt.mail=DATOS.mail;S.ts=100;S.serif=true;S.logoManual=false;if(S.pos)delete S.pos[S.fmt];
+  S.iD=(S.iD||[]).slice(0,3);S.iR=(S.iR||[]).slice(0,4);if(!S.qr&&!String(S.txt.mail||'').trim()&&DATOS.mail)S.txt.mail=DATOS.mail;S.ts=100;S.serif=true;S.logoManual=false;if(S.pos)delete S.pos[S.fmt];
   pintarTextos();aplicar();
   setTimeout(function(){fotoCalc();setTimeout(function(){if(AUD.con)audFixCon();layFix();zonas();setTimeout(function(){if(AUD.zon.length)audFixZon();hHold=false;pushSnap();b.disabled=false;b.textContent=t;sucio=true;audSoon();msg('Listo: dejé 3 y 3, el texto al 100 %, los bloques en su lugar y el contraste revisado. Si no te gusta, ↶ lo deshace todo junto.',true)},150)},450)},250)}
 function irEsc(t){return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;')}
@@ -740,7 +740,7 @@ function generarIA(){
     function L(x){return String(x||'').split('[LINK]').join(link)}
     leerTextos();
     if(r.badge)S.txt.badge=r.badge;if(r.bajada)S.txt.baj=r.bajada;
-    if(r.desafios&&r.desafios.length)S.iD=r.desafios.slice(0,3);if(r.requisitos&&r.requisitos.length)S.iR=r.requisitos.slice(0,3);
+    if(r.desafios&&r.desafios.length)S.iD=r.desafios.slice(0,3);if(r.requisitos&&r.requisitos.length)S.iR=r.requisitos.slice(0,4);
     generado=true;pintarTextos();aplicar();marcar();msg('Textos listos. Revisalos y editá lo que haga falta.');
   }).withFailureHandler(function(e){b.disabled=false;b.textContent='✨ Generar textos';msg((e&&e.message)||String(e),false)}).flyerTextosIA(DATOS.perfil,{mostrarEmpresa:S.mostrarEmpresa,instrucciones:S.instr||''});
 }
