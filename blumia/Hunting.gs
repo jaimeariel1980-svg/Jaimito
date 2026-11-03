@@ -382,3 +382,164 @@ function huntingFicha_(perfilId, id) {
     formacion: v(d.formacion), zona: v(d.zona), email: v(d.email), telefono: v(d.telefono)
   };
 }
+
+
+/* ============================================================
+   EMPRESAS OBJETIVO (3/11, Ariel: «esta búsqueda no tenemos ni un CV»): el mapa de empresas donde buscar gente.
+   Se pega la tabla del Excel de hunting (con encabezados) y se trabaja empresa por empresa: estado, personas cargadas y búsqueda en LinkedIn.
+   Pestaña «Hunting_Empresas» (una fila por empresa y búsqueda). Las personas siguen en «Hunting» y se atan a la empresa por el nombre.
+   ============================================================ */
+const HOJA_HUNTE_ = 'Hunting_Empresas';
+const HUNTE_COLS_ = ['id', 'perfil', 'empresa', 'categoria', 'sectores', 'competidora', 'prioridad', 'evidencia', 'nota', 'estado', 'ultimo_mov', 'quien'];
+const HUNTE_ESTADOS_ = ['Sin revisar', 'En búsqueda', 'Revisada', 'Descartada'];
+
+function huntEHoja_() {
+  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+  let sh = ss.getSheetByName(HOJA_HUNTE_);
+  if (!sh) {
+    sh = ss.insertSheet(HOJA_HUNTE_);
+    sh.getRange(1, 1, 1, HUNTE_COLS_.length).setValues([HUNTE_COLS_]).setFontWeight('bold');
+    sh.setFrozenRows(1);
+    sh.getRange(2, 1, 1000, HUNTE_COLS_.length).setNumberFormat('@');
+  }
+  return sh;
+}
+
+function huntELeer_() {
+  const sh = huntEHoja_();
+  if (sh.getLastRow() < 2) return [];
+  const v = sh.getRange(2, 1, sh.getLastRow() - 1, HUNTE_COLS_.length).getValues();
+  const out = [];
+  v.forEach((r, i) => {
+    if (!String(r[0]).trim()) return;
+    const o = { fila: i + 2 };
+    HUNTE_COLS_.forEach((c, k) => { o[c] = r[k] instanceof Date ? Utilities.formatDate(r[k], 'America/Argentina/Buenos_Aires', 'yyyy-MM-dd') : String(r[k] == null ? '' : r[k]); });
+    out.push(o);
+  });
+  return out;
+}
+
+// Una persona pertenece a una empresa si los nombres coinciden o uno contiene al otro («NTT Data» ~ «NTT Data (ex Everis)»)
+function huntMismaEmpresa_(a, b) {
+  const x = huntNorm_(a), y = huntNorm_(b);
+  if (!x || !y) return false;
+  return x === y || (x.length >= 4 && y.length >= 4 && (x.indexOf(y) >= 0 || y.indexOf(x) >= 0));
+}
+
+function huntingEmpresasListar_(perfilId) {
+  const emp = huntELeer_().filter(e => e.perfil === perfilId);
+  const pers = huntLeerTodo_().filter(o => o.perfil === perfilId);
+  const items = emp.map(e => {
+    const ps = pers.filter(p => huntMismaEmpresa_(p.empresa, e.empresa));
+    const x = Object.assign({}, e); delete x.fila;
+    x.personas = ps.length; x.contactadas = ps.filter(p => p.nivel >= 1).length; x.interesadas = ps.filter(p => p.nivel >= 3).length;
+    return x;
+  });
+  const alta = items.filter(e => e.prioridad === 'Alta');
+  const stats = {
+    total: items.length, alta: alta.length, altaRevisadas: alta.filter(e => e.estado === 'Revisada').length,
+    enBusqueda: items.filter(e => e.estado === 'En búsqueda').length, revisadas: items.filter(e => e.estado === 'Revisada').length,
+    personas: items.reduce((n, e) => n + e.personas, 0), conPersonas: items.filter(e => e.personas > 0).length
+  };
+  return { items: items, stats: stats };
+}
+
+// Separa texto copiado de Excel/Sheets (tabuladores, con comillas para las celdas con saltos de línea)
+function huntParseTsv_(txt) {
+  const filas = []; let fila = [], cel = '', q = false;
+  const t = String(txt || '').replace(/\r\n?/g, '\n');
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i];
+    if (q) { if (c === '"') { if (t[i + 1] === '"') { cel += '"'; i++; } else q = false; } else cel += c; }
+    else if (c === '"' && cel === '') q = true;
+    else if (c === '\t') { fila.push(cel); cel = ''; }
+    else if (c === '\n') { fila.push(cel); filas.push(fila); fila = []; cel = ''; }
+    else cel += c;
+  }
+  fila.push(cel); filas.push(fila);
+  return filas.filter(f => f.some(x => String(x).trim()));
+}
+
+/* Carga empresas pegando la tabla (con encabezados: Empresa, Categoría, Sectores que atiende, Competidor directo…, Prioridad…, Evidencia, Nota; sin encabezados:
+   Empresa | Categoría | Prioridad | Competidora | Nota). Si la tabla trae «Candidato identificado» / «Cargo actual» / «Perfil de LinkedIn», esas personas pasan a la lista de personas. */
+function huntingEmpresasAgregar_(perfilId, texto, quien) {
+  getConfig(perfilId);
+  const filas = huntParseTsv_(texto);
+  if (!filas.length) throw new Error('No hay nada para cargar. Copiá la tabla del Excel (con la fila de encabezados) y pegala.');
+  if (filas.length > 400) throw new Error('Son demasiadas filas de una vez (máximo 400).');
+  const n = h => huntNorm_(h);
+  const cab = filas[0].map(n);
+  const tieneCab = cab.some(h => h === 'empresa');
+  const col = {};
+  if (tieneCab) {
+    cab.forEach((h, i) => {
+      if (h === 'empresa' && col.empresa == null) col.empresa = i;
+      else if (h.indexOf('categor') === 0 && col.categoria == null) col.categoria = i;
+      else if (h.indexOf('sectores') === 0 && col.sectores == null) col.sectores = i;
+      else if (h.indexOf('competidor') === 0 && col.competidora == null) col.competidora = i;
+      else if (h.indexOf('prioridad') === 0 && col.prioridad == null) col.prioridad = i;
+      else if (h.indexOf('evidencia') === 0 && col.evidencia == null) col.evidencia = i;
+      else if (h === 'nota' && col.nota == null) col.nota = i;
+      else if (h.indexOf('candidato identificado') === 0) col.cand = i;
+      else if (h.indexOf('cargo actual') === 0) col.cargo = i;
+      else if (h.indexOf('perfil de linkedin') === 0) col.li = i;
+      else if (h === 'estado' && col.estadoX == null) col.estadoX = i;
+    });
+  } else { col.empresa = 0; col.categoria = 1; col.prioridad = 2; col.competidora = 3; col.nota = 4; }
+  if (col.empresa == null) throw new Error('No encuentro la columna «Empresa».');
+  const cut = (v, k) => limpiarTxt_(v).slice(0, k);
+  const get = (f, k) => (col[k] == null ? '' : String(f[col[k]] == null ? '' : f[col[k]]));
+  const prio = v => { const x = huntNorm_(v); return x.indexOf('alta') === 0 ? 'Alta' : x.indexOf('media') === 0 ? 'Media' : x.indexOf('baja') === 0 ? 'Baja' : ''; };
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  let agregadas = 0, repetidas = 0; const personas = [];
+  try {
+    const sh = huntEHoja_();
+    const ex = huntELeer_().filter(e => e.perfil === perfilId);
+    const vistos = {}; ex.forEach(e => { vistos[huntNorm_(e.empresa)] = 1; });
+    const nuevas = [];
+    filas.slice(tieneCab ? 1 : 0).forEach(f => {
+      const nombre = cut(get(f, 'empresa'), 120);
+      if (nombre.length < 2) return;
+      const k = huntNorm_(nombre);
+      const cand = cut(get(f, 'cand'), 90);
+      if (cand) personas.push({ nombre: cand, cargo: cut(get(f, 'cargo'), 120), empresa: nombre, linkedin: get(f, 'li'), prioridad: 'A' });
+      if (vistos[k]) { repetidas++; return; }
+      vistos[k] = 1;
+      const comp = /^(si|sí|s)$/i.test(String(get(f, 'competidora')).trim()) ? 'Sí' : '';
+      const nota = [cut(get(f, 'nota'), 300), cut(get(f, 'evidencia'), 120)].filter(x => x && !/^fuente web$/i.test(x)).join(' · ').slice(0, 400);
+      const est = HUNTE_ESTADOS_.indexOf(get(f, 'estadoX')) >= 0 ? get(f, 'estadoX') : 'Sin revisar';
+      nuevas.push(['e' + Utilities.getUuid().replace(/-/g, '').slice(0, 8), perfilId, nombre, cut(get(f, 'categoria'), 120), cut(get(f, 'sectores'), 150), comp, prio(get(f, 'prioridad')), '', nota, est, huntHoy_(), quien || '']);
+    });
+    if (nuevas.length) {
+      const ini = Math.max(sh.getLastRow(), 1) + 1;
+      sh.getRange(ini, 1, nuevas.length, HUNTE_COLS_.length).setNumberFormat('@').setValues(nuevas);
+      agregadas = nuevas.length;
+      try { registrarHistorial_(getConfig(perfilId).hoja_nombre, 'Hunting', 'Empresas objetivo', agregadas + ' empresas cargadas', quien); } catch (e) { }
+    }
+  } finally { lock.releaseLock(); }
+  let pers = null;
+  if (personas.length) { try { pers = huntingAgregar_(perfilId, JSON.stringify(personas), quien); } catch (e) { Logger.log('empresas → personas: ' + e); } }
+  return { agregadas: agregadas, repetidas: repetidas, personas: pers ? pers.agregadas : 0 };
+}
+
+function huntingEmpresaEstado_(perfilId, id, estado, quien) {
+  if (HUNTE_ESTADOS_.indexOf(estado) < 0) throw new Error('Estado inválido.');
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const e = huntELeer_().find(x => x.id === id && x.perfil === perfilId);
+    if (!e) throw new Error('No encontré esa empresa (¿otra persona la borró?).');
+    e.estado = estado; e.ultimo_mov = huntHoy_(); if (!e.quien) e.quien = quien || '';
+    huntEHoja_().getRange(e.fila, 1, 1, HUNTE_COLS_.length).setNumberFormat('@').setValues([HUNTE_COLS_.map(c => e[c] == null ? '' : e[c])]);
+    return { ok: true };
+  } finally { lock.releaseLock(); }
+}
+
+function huntingEmpresaBorrar_(perfilId, id, quien) {
+  const lock = LockService.getScriptLock(); lock.waitLock(20000);
+  try {
+    const e = huntELeer_().find(x => x.id === id && x.perfil === perfilId);
+    if (!e) throw new Error('No encontré esa empresa.');
+    huntEHoja_().deleteRow(e.fila);
+    return { ok: true };
+  } finally { lock.releaseLock(); }
+}
