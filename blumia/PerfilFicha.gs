@@ -52,7 +52,8 @@ function perfilFichaBloque_(cfg) {
   const f = perfilFicha_(cfg, 'cv');
   if (!f) return '';
   return '\n\nFICHA DEL PUESTO acordada con el cliente (perfil del puesto). Usala como contexto principal del puesto; los campos marcados «Excluyente» pesan más que los demás. Si algo contradice los requisitos de arriba, priorizá esta ficha. ' +
-    'No uses edad, género, estado civil, situación familiar ni nacionalidad para puntuar ni para decidir.\n' + f.slice(0, 7000) + '\n';
+    'No uses edad, género, estado civil, situación familiar ni nacionalidad para puntuar ni para decidir. ' +
+    'ZONA: si la ficha fija una zona de residencia o de trabajo (ej. «Lugar de residencia requerido»), compará la localidad del CV con esa zona; si queda afuera, la zona es «Fuera» (y si la ficha la marca excluyente, tenelo en cuenta en la nota).\n' + f.slice(0, 7000) + '\n';
 }
 
 /* Perfil del puesto para CONSULTAR (referencia en el tablero, en los formularios de screening y competencias, en el hunting…):
