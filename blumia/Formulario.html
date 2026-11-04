@@ -353,9 +353,11 @@ function buildVal() {
   const c = document.getElementById('val-container');
   DATOS.val_items.forEach(item => {
     const tipoMap = { 'Sí': 'si', 'No': 'no', 'A revisar': 'revisar', 'Alto': 'alto', 'Medio': 'medio', 'Bajo': 'bajo' };
+    // opciones con otras palabras (ej. Avanzado / Intermedio / Básico) usan los mismos colores que Alto / Medio / Bajo: sin esto no se veía que estaban elegidas
+    const claseMap = { 'avanzado': 'alto', 'intermedio': 'medio', 'básico': 'bajo', 'basico': 'bajo', 'excelente': 'alto', 'bueno': 'medio', 'regular': 'medio', 'malo': 'bajo' };
     const row = document.createElement('div');
     row.className = 'val-row';
-    const pills = item.opts.map(t => `<div class="pill" data-id="${item.id}" data-val="${tipoMap[t] || t.toLowerCase()}" data-cls="active-${tipoMap[t] || t.toLowerCase()}" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();pickPill(this)}" onclick="pickPill(this)">${t}</div>`).join('');
+    const pills = item.opts.map(t => `<div class="pill" data-id="${item.id}" data-val="${tipoMap[t] || t.toLowerCase()}" data-cls="active-${tipoMap[t] || claseMap[t.toLowerCase()] || t.toLowerCase()}" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();pickPill(this)}" onclick="pickPill(this)">${t}</div>`).join('');
     row.innerHTML = `<div class="val-label">${item.label}</div><div class="pill-group">${pills}</div>`;
     c.appendChild(row);
   });
