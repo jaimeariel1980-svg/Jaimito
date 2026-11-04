@@ -122,7 +122,7 @@ r=R(sim(F({19:['14:23:48','14:23:51','14:23:54','17:49:12']}),ag({hab:{19:'6/13'
 r=R(sim(F({30:['5:49:36','12:39:58']}),ag({hab:{30:'6/13'},ext:{30:'13/19'}}))[0]);assert.strictEqual(r.est,'A REVISAR');
 // 35) control contra el reporte de Enfermería
 let ce=run(`compararEnfermeria_([['Servicio','Legajo','Apellido','Día','Habitual','Horario Extra','Hs 50%','Hs 100%'],['G','1','PEREZ','5','23/6','19/23','3','1'],['G','2','GOMEZ','6','6/13','13/19','6','0']],[['G','1','PEREZ',5,'23/6','','','','',3,1,'AUTORIZADA',''],['G','2','GOMEZ',6,'6/13','','','','',0,0,'A REVISAR','las fichadas no cubren la franja']])`);
-assert.deepStrictEqual(ce.filas.map(r=>[r[0],r[8]]),[['2',-6]]);assert.deepStrictEqual(ce.tot,[9,1,3,1]);
+assert.deepStrictEqual(ce.filas.map(r=>[r[0],r[8]]),[['2',-6]]);assert.deepStrictEqual(ce.tot,[9,1,3,1]);assert.strictEqual(ce.porFila[1].mot,'Coincide');assert.ok(/no llegan al horario/.test(ce.porFila[2].mot));
 // 16) identidad
 const f2=F({5:['6:58','19:10']});f2[5]['1'].nombre='ALONSO Cecilia';
 assert.strictEqual(R(sim(f2,ag({hab:{5:'7/14'},ext:{5:'14/19'}}))[0]).est,'REVISAR IDENTIDAD');

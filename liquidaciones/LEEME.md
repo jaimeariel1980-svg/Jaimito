@@ -21,7 +21,7 @@ Reglas completas: `docs/CONTEXTO.md`, `docs/TRASPASO.md`. Motor viejo de agosto 
 - Consolidado mensual GRH: reconversión, endoso y tope (CONFIG `tope_extra`, 30).
 - Reconversión: es **todo el bloque o nada**. Si hizo más al 50 de lo autorizado y no usó nada del 100, se reconvierten todas las horas del 100 al 50 (ej. expte 10/6, hizo 16 al 50 → reconversión 6). Si usó aunque sea una hora del 100, no se reconvierte: todo el excedente va como endoso (pedir a otro agente). Igual al revés (50 → 100).
 - Cambios de turno sin informar: se pagan igual y la fila sale marcada «HORARIO DISTINTO AL PROGRAMADO… (cambio de turno sin informar en la planilla)». Incluye a quien no fichó su turno pero sí la extra.
-- Control contra Enfermería: si la planilla de horarios tiene la pestaña «Reporte Extras Global», al liquidar se arma `CONTROL_ENFERMERIA` con los días donde lo que liquida Enfermería (franja declarada) difiere de lo liquidado por fichada, y el porqué.
+- Control contra Enfermería: si la planilla de horarios tiene la pestaña «Reporte Extras Global», al liquidar se arma `CONTROL_ENFERMERIA` con los días donde lo que liquida Enfermería (franja declarada) difiere de lo liquidado por fichada, y el porqué. Además escribe esas diferencias al lado de cada fila de «Reporte Extras Global» (columnas Liquidación 50/100, Diferencia, Qué se encontró, **Validación del jefe** con lista desplegable y Comentario del jefe) para que el jefe las valide. Lo que el jefe elige se guarda en la pestaña oculta `_VALID_JEFE` y se repone en cada liquidación (aunque Enfermería vuelva a generar el reporte y borre las columnas).
 - Tests del cálculo: `node liquidaciones/docs/test_liquidaciones.js`.
 
 ## Resumen del mes
