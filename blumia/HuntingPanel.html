@@ -169,11 +169,8 @@
     $('#mm-n').oninput=pon;
     $('#mm-ca').onclick=function(){copiar($('#mm-a').value,this);};
     $('#mm-ct').onclick=function(){copiar($('#mm-t').value,this);};
-<<<<<<< HEAD
     $('#mm-cj').onclick=function(){copiar('Asunto: '+$('#mm-a').value+'\n\n'+$('#mm-t').value,this);};
     $('#mm-wa').onclick=function(){wsp($('#mm-t').value);};
-=======
->>>>>>> origin/claude/recruitment-automation-google-b1Ric
     if($('#mm-l'))$('#mm-l').onclick=function(){window.open(o.linkedin,'_blank');};
     if($('#mm-ya'))$('#mm-ya').onclick=function(){this.disabled=true;run('huntingMover',[PERFIL,o.id,'Contactado',quien()],function(){bg.remove();cargar();});};
     if(o){
