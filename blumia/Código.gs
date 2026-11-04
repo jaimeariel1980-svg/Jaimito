@@ -2930,6 +2930,7 @@ function empresasYPerfiles(actual){
   const cEst = rows[0].indexOf('estado_busqueda');
   for(let i=1;i<rows.length;i++){
     if(!rows[i][0]) continue;
+    if(rows[i][0] === 'operaciones' && rows[i][0] !== actual) continue; // búsqueda heredada: tampoco figura en el Inicio
     const e = rows[i][9] || 'Sin empresa';
     const cerr = cEst >= 0 && String(rows[i][cEst]||'').toUpperCase().trim() === 'CERRADA';
     if (cerr && actual && rows[i][0] !== actual) continue;
@@ -2942,7 +2943,7 @@ function busquedaCerradaHTML_(perfil) {
   const rows = configValores_(), cEst = rows[0].indexOf('estado_busqueda');
   let nombre = perfil; const abiertas = [];
   for (let i = 1; i < rows.length; i++) {
-    if (!rows[i][0]) continue;
+    if (!rows[i][0] || (rows[i][0] === 'operaciones' && rows[i][0] !== perfil)) continue;
     const cerr = cEst >= 0 && String(rows[i][cEst] || '').toUpperCase().trim() === 'CERRADA';
     if (rows[i][0] === perfil) nombre = rows[i][1] || perfil; else if (!cerr) abiertas.push({ id: rows[i][0], n: rows[i][1] || rows[i][0], e: rows[i][9] || '' });
   }
