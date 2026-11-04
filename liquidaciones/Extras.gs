@@ -415,12 +415,14 @@ function liquidarExtras() {
   out = out.map(function (r) {
     var m = mens[r[1]], primera = m && !visto[r[1]];
     if (primera) visto[r[1]] = 1;
-    return r.concat(primera ? [m.g ? m.g.a50 : '', m.g ? m.g.a100 : '', m.c.total, m.c.pagar, m.c.alerta] : ['', '', '', '', '']);
+    return r.slice(0, 13).concat([motivoClaro_([r], null)], r.slice(13)).concat(primera ? [m.g ? m.g.a50 : '', m.g ? m.g.a100 : '', m.c.total, m.c.pagar, m.c.alerta] : ['', '', '', '', '']);
   });
 
-  var cab = ['Servicio', 'Legajo', 'Apellido', 'Día', 'Turno', 'Entrada', 'Salida', 'Aut. Jefatura', 'Franja realizada', 'Hs 50%', 'Hs 100%', 'Estado', 'Condición', 'Fichadas del día', 'Horario en tarjeta reloj',
+  var cab = ['Servicio', 'Legajo', 'Apellido', 'Día', 'Turno', 'Entrada', 'Salida', 'Aut. Jefatura', 'Franja realizada', 'Hs 50%', 'Hs 100%', 'Estado', 'Condición', 'Por qué (en simple)', 'Fichadas del día', 'Horario en tarjeta reloj',
              'Expte 50% (mes)', 'Expte 100% (mes)', 'Total hecho (mes)', 'A pagar mes (tope ' + cfg.tope + ')', 'Alerta del mes'];
   var h = escribir_(SpreadsheetApp.openById(ID_BASE), 'LIQUIDACION', cab, out, 5, 9);
+  if (out.length) h.getRange(2, 14, out.length, 1).setWrap(true);
+  h.setColumnWidth(14, 360);
   pintarLiquidacion_(h, out, cab.length);
   escribirResumen_(filas, mens, grh, cfg);
   var cambios = registrarCambios_(hojas, cfg), ctrl = val ? cerrarValidacion_(cfg, filas, val) : '';
@@ -454,7 +456,7 @@ function pintarLiquidacion_(h, filas, nc) {
   h.getRange(2, 12, filas.length, 1).setBackgrounds(est).setFontWeight('bold').setHorizontalAlignment('center');
   h.getRange(2, 4, filas.length, 8).setHorizontalAlignment('center');
   h.getRange(2, 10, filas.length, 2).setNumberFormat('0.0');
-  var hr = h.getRange(2, 15, filas.length, 1), fc = hr.getValues().map(function (v) { return [/≠/.test(v[0]) ? '#c62828' : '#000000']; });
+  var hr = h.getRange(2, 16, filas.length, 1), fc = hr.getValues().map(function (v) { return [/≠/.test(v[0]) ? '#c62828' : '#000000']; });
   hr.setFontColors(fc);
   for (var i = 1; i < filas.length; i++) {
     if (tipoFila_(filas[i]) !== tipoFila_(filas[i - 1])) h.getRange(i + 1, 1, 1, nc).setBorder(null, null, true, null, null, null, '#555555', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);

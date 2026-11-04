@@ -199,9 +199,10 @@ function motivoClaro_(rows, e) {
     var hs = (+r[9] || 0) + (+r[10] || 0), fichado = r[5] && r[6] ? r[5] + ' a ' + r[6] : '';
     if (r[11] === 'AUTORIZADA') {
       if (/por el jefe/.test(c)) return c.replace(/^EXTRA NO INFORMADA · /, 'Extra no informada ') + ': se pagan ' + hs + ' h.';
+      if (/noche del/.test(c)) return 'La extra ' + fz + ' está cargada en un día pero la hizo la noche siguiente (fichó ' + fichado + '). Se pagan ' + hs + ' h. Revisar en qué día va cargada.';
       if (/HORARIO DISTINTO/.test(c)) return 'Trabajó en otro horario que el de la planilla (fichó ' + fichado + '). Se pagan ' + hs + ' h por lo fichado. Falta informar el cambio de turno.';
       if (/menos que lo autorizado/.test(c)) return 'Hizo menos horas que las autorizadas: la extra era ' + fz + ' y fichó ' + fichado + '. Se pagan ' + hs + ' h.';
-      if (/:30/.test(fz)) {
+      if (/:30/.test(fz) && e) {
         var w0 = parseTurno(fz.replace(' a ', '/')), m0 = horaToMin(r[5]), antes = w0 && m0 !== null && m0 <= w0.ini - 10 && m0 > w0.ini - 180;
         return 'La extra autorizada es ' + fz + ': son ' + hs + ' h' + (antes ? ' (entró antes, a las ' + r[5] + ', pero se paga solo lo autorizado)' : '') + '. La planilla de horarios dice ' + (e.h50 + e.h100) + ' h.';
       }
