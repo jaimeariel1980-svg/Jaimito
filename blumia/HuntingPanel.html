@@ -111,7 +111,7 @@
     if(vista==='empresas'){pintarEmpresas();return;}
     var p=document.getElementById('huntPage');if(!p)return;
     var it=D.items,s=D.stats||{identificados:0,contactados:0,respondieron:0,interesados:0,enProceso:0,vencidos:0};
-    var x='<div class="hu-top"><h2>🎯 Hunting</h2>'+vistaBtns()+'<button class="hu-btn p" data-a="pdfs">📄 Subir PDFs de LinkedIn</button><button class="hu-btn" data-a="mailm">✉ Mensaje modelo</button><button class="hu-btn" data-a="nueva">+ Agregar a mano</button><button class="hu-btn" data-a="lista">Pegar lista</button><button class="hu-btn" data-a="perfil">📋 Perfil del puesto</button></div>';
+    var x='<div class="hu-top"><h2>🎯 Hunting</h2>'+vistaBtns()+'<button class="hu-btn p" data-a="pdfs">📄 Subir PDFs de LinkedIn</button><button class="hu-btn" data-a="mailm">✉ Mensaje modelo</button><button class="hu-btn" data-a="mensajes">✏️ Editar mensajes</button><button class="hu-btn" data-a="nueva">+ Agregar a mano</button><button class="hu-btn" data-a="lista">Pegar lista</button><button class="hu-btn" data-a="perfil">📋 Perfil del puesto</button></div>';
     x+='<div class="hu-help"><b>Cómo se trabaja.</b> 1) En LinkedIn, <i>Más → Guardar como PDF</i> del perfil y subilo acá con <b>«Subir PDFs de LinkedIn»</b> (podés subir varios juntos): la IA lo lee y la persona queda cargada, sin tipear nada. 2) <b>«Mensaje modelo»</b> te da el asunto y el texto de Flavia para pegar en un InMail (no hace falta cargar a nadie para verlo). 3) Seguila por las columnas. 4) Cuando le interesa, <b>«Pasar a la búsqueda»</b> la manda al tablero de candidatos con <b>«Llegó por: Hunting (LinkedIn)»</b>. Hasta ese momento no cuenta en los números del proceso. El embudo sale en el Resumen y en el informe del cliente.</div>';
     x+=kpis(s);
     x+='<div class="hu-board">'+ETAPAS.map(function(e){
@@ -369,7 +369,7 @@
     if(a==='ebusq'&&oe){window.open(urlLinkedin(oe),'_blank');if(oe.estado==='Sin revisar'){run('huntingEmpresaEstado',[PERFIL,oe.id,'En búsqueda',quien()],function(){cargarEmpresas();});}return;}
     if(a==='eper'&&oe){formPersona(null,{empresa:oe.empresa});return;}
     if(a==='emenu'&&oe){empresaMenu(oe);return;}
-    if(a==='nueva')formPersona();else if(a==='pdfs')pdfs();else if(a==='mailm')mensaje(null);else if(a==='lista')pegarLista();else if(a==='perfil'){if(window.blPerfilRef)blPerfilRef();}
+    if(a==='nueva')formPersona();else if(a==='pdfs')pdfs();else if(a==='mailm')mensaje(null);else if(a==='mensajes'){if(window.cfMensajes)cfMensajes();}else if(a==='lista')pegarLista();else if(a==='perfil'){if(window.blPerfilRef)blPerfilRef();}
     else if(a==='ficha'&&o)ficha(o);else if(a==='msg'&&o)mensaje(o);else if(a==='pdf'&&o)subirPdf(o);else if(a==='pasar'&&o)pasar(o);else if(a==='menu'&&o)menu(o);
     else if(a.indexOf('mov:')===0&&o){b.disabled=true;run('huntingMover',[PERFIL,o.id,a.slice(4),quien()],function(){cargar();},function(er){b.disabled=false;aviso((er&&er.message)||String(er));});}
   });
