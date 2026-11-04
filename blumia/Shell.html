@@ -82,10 +82,12 @@ function entrar() {
   var n = $('n').value.trim(), p = $('p') ? $('p').value.trim() : '';
   if (!n || (USA_PIN && !p)) { msg(USA_PIN ? 'Completá tu nombre y tu PIN.' : 'Escribí tu nombre y apellido.'); return; }
   $('b').disabled = true; msg('');
+  var resp = false, espera = setTimeout(function () { if (resp) return; $('b').disabled = false; msg('El servidor no responde. Probá en una ventana de incógnito o en otro navegador: suele ser una extensión (bloqueador de anuncios) o el bloqueo de cookies de terceros de Google.'); }, 25000);
   R0.withSuccessHandler(function (r) {
+    resp = true; clearTimeout(espera);
     ls('bl_ult', r.nombre); guardarSesion(r);
     if (r.debeCambiar) formPin(); else cargar();
-  }).withFailureHandler(function (e) { $('b').disabled = false; msg(E(e)); }).login(n, p);
+  }).withFailureHandler(function (e) { resp = true; clearTimeout(espera); $('b').disabled = false; msg(E(e)); }).login(n, p);
 }
 function formPin() {
   $('v').innerHTML = '<h1>Elegí tu PIN</h1><p class="s">Hola ' + NOM + '. Tu PIN actual es temporal: elegí uno propio de 4 a 6 números.</p><label for="p1">PIN nuevo</label><input id="p1" type="password" inputmode="numeric" maxlength="6"><label for="p2">Repetilo</label><input id="p2" type="password" inputmode="numeric" maxlength="6"><div class="er" id="er"></div><button id="b" onclick="guardarPin()">Guardar y entrar</button>';
