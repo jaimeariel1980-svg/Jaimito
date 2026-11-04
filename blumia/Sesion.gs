@@ -346,6 +346,7 @@ function registroApi_() {
     flyerSocial: { f: flyerSocial_ },
     difusionGuardar: { f: difusionGuardar_, admin: true },
     difusionTextos: { f: difusionTextosIA_, admin: true },
+    redactarMensaje: { f: redactarMensajeIA_, admin: true },
     flyerImagen: { f: flyerImagen_ },
     flyerRevisar: { f: flyerRevisarIA_ },
     guardarFormularioPerfil: { f: guardarFormularioPerfil_, admin: true },
