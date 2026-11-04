@@ -230,12 +230,11 @@
   function formBloque(t){
     var nom=t==='screening'?'screening':'competencias';
     return '<div style="background:#E6F2EC;border:1px solid #BFD9CB;border-radius:12px;padding:14px 16px;margin-bottom:14px"><div style="font-weight:800;color:#0F3F27;margin-bottom:6px">Formulario de '+nom+' en pestaña aparte</div>'
-      +'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="cf-save" onclick="cfFormAbrir(\''+t+'\',1)">✏️ Abrir y editar el formulario</button><button class="cf-save" style="background:#fff;color:#0F3F27;border:1px solid #0F3F27" onclick="cfFormAbrir(\''+t+'\',0)">Abrir para completarlo</button><button class="cf-save" style="background:#fff;color:#0F3F27;border:1px solid #0F3F27" onclick="cfFormLink(\''+t+'\')">🔗 Copiar link para enviarlo</button></div>'
-      +'<div class="cf-help" style="margin-top:8px">Se abre el formulario real con el editor ya desplegado (encabezado, '+(t==='screening'?'criterios, datos a validar y puntajes':'competencias y preguntas')+'). El link para enviar abre el formulario en blanco: quien lo recibe escribe el nombre de la persona entrevistada.</div></div>';
+      +'<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="cf-save" onclick="cfFormAbrir(\''+t+'\',1)">✏️ Abrir y editar el formulario</button><button class="cf-save" style="background:#fff;color:#0F3F27;border:1px solid #0F3F27" onclick="cfFormAbrir(\''+t+'\',0)">Abrir para completarlo</button></div>'
+      +'<div class="cf-help" style="margin-top:8px">Se abre el formulario real con el editor ya desplegado (encabezado, '+(t==='screening'?'criterios, datos a validar y puntajes':'competencias y preguntas')+'). </div></div>';
   }
   window.cfFormUrl=function(t,ed){return URL_APP+'?tipo='+t+'&perfil='+encodeURIComponent(PERFIL)+(ed?'&editarform=1':'');};
   window.cfFormAbrir=function(t,ed){window.open(cfFormUrl(t,ed),'_blank');};
-  window.cfFormLink=function(t){var u=cfFormUrl(t,0);try{navigator.clipboard.writeText(u).then(function(){blAlert('Link copiado:\n'+u);},function(){blAlert('Copialo desde acá:\n'+u);});}catch(e){blAlert('Copialo desde acá:\n'+u);}};
   function scrHtml(){
     if(!FD)return cargando();
     var h=FD.hero,x=formBloque('screening')+'<div class="cf-help">El <b>formulario de screening</b> de esta búsqueda: criterios con su peso, datos a validar con el candidato y los puntajes que definen la nota (A, B+, B). Se aplica a las evaluaciones nuevas; las ya guardadas no cambian. También se puede editar con el lápiz ✏️ dentro del formulario.</div>';
