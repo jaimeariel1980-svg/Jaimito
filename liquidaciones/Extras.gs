@@ -91,7 +91,7 @@ function turnoDia_(a, d) {
   if (d < 1 || d > _diasMes) {
     return turnoReloj_(a.leg, d);
   }
-  if (a.lic[d] && licVigente_(a.lic[d], d)) return null;
+  if (a.lic[d] && licVigente_(a.lic[d], d)) return parseTurno(a.lic[d]);
   var c = a.cam[d], t = c ? parseTurno(c) : null;
   if (c && !t) return null;
   return t || parseTurno(a.hab[d]);
@@ -278,30 +278,32 @@ function procesarAgente_(a, serv, cfg, ctx, filas) {
     }
 
     if (fer || esCola_(a, d)) continue;
-    var t = turnoCompleto_(a, d);
-    if (!t && sadofe) {
-      var dw = new Date(ctx.anio, ctx.mes - 1, d).getDay(), js = dw > 0 && dw < 6 ? jornadaFichada_(a, d, cfg) : null;
-      if (!js || js.estado === 'sin') continue;
-      if (js.estado === 'omision') { filas.push(base.concat([js.ent || '', js.sal || '', '', '', 0, 0, 'A REVISAR', 'SADOFE en día de semana · omisión: ' + js.nota + ' (no se paga)'])); continue; }
-      var rs = calcularExtraTramos([[js.ri, js.rf]], cd);
-      if (rs.h50 + rs.h100 > 0) filas.push(base.concat([js.ent, js.sal, '', horaAbs_(js.ri) + ' a ' + horaAbs_(js.rf), rs.h50, rs.h100, 'A REVISAR', 'extra NO autorizada (no hay franja declarada) · SADOFE trabajó un día de semana']));
-      continue;
+    var t = turnoCompleto_(a, d), j = jornadaFichada_(a, d, cfg);
+    if (!j || j.estado === 'sin') continue;
+    var tramo = null, motivo = '';
+    if (!t) {
+      var dw = new Date(ctx.anio, ctx.mes - 1, d).getDay();
+      if (sadofe && (dw === 0 || dw === 6)) continue;
+      motivo = sadofe ? 'SADOFE trabajó un día de semana' : a.lic[d] && licVigente_(a.lic[d], d) ? 'fichó con licencia cargada (' + a.lic[d] + ')' : 'trabajó en su día de franco (' + turnoTxt + ')';
+      if (j.estado !== 'ok') continue;
+      tramo = [j.ri, j.rf];
+    } else {
+      if (j.estado !== 'ok') continue;
+      var dur = t.fin - t.ini, rel = turnoReloj_(a.leg, d, cfg);
+      if (rel && Math.abs(rel.ini - t.ini) <= 60) dur = Math.max(dur, rel.fin - rel.ini);
+      if (Math.abs(j.m0 - t.ini) <= 60) { if (j.m1 - (Math.max(t.ini, j.m0) + dur) >= 60) tramo = [Math.max(t.ini, j.m0) + dur, j.m1]; }
+      else if (j.m1 - j.m0 - dur >= 60) tramo = j.m1 > t.fin ? [j.m0 + dur, j.m1] : [j.m0, j.m1 - dur];
+      if (!tramo) continue;
+      var decl = parseFranjas(a.ext[d + 1]).map(function (w) { return { ini: w.ini + 1440, fin: w.fin + 1440 }; })
+        .concat(parseFranjas(a.ext[d - 1]).map(function (w) { return { ini: w.ini - 1440, fin: w.fin - 1440 }; }));
+      if (decl.some(function (w) { return w.ini < tramo[1] && w.fin > tramo[0]; })) continue;
+      motivo = 'trabajó ' + horas_([[j.m0, j.m1]]) + ' h, más que su turno ' + turnoTxt;
     }
-    if (!t) continue;
-    var M = marcasAbs_(a.leg, d, t.ini - 240, t.fin + 480, cfg);
-    if (M.length < 2 || M[0].m > t.ini + 180) continue;
-    var ult = M[M.length - 1].m;
-    var tr = tramosPares_([M[0], M[M.length - 1]], t.fin, Infinity);
-    if (!tr.length || ult - t.fin < 60) continue;
-    var decl = parseFranjas(a.ext[d + 1]).map(function (w) { return { ini: w.ini + 1440, fin: w.fin + 1440 }; });
-    if (decl.some(function (w) { return w.ini < ult && w.fin > t.fin; })) continue;
-    var rel = turnoReloj_(a.leg, d, cfg);
-    if (rel && rel.ini <= t.ini + 60 && rel.fin >= ult - TOLERANCIA) continue;
     if (ident()) { filas.push(base.concat(['', '', '', '', '', '', 'REVISAR IDENTIDAD', 'fichada: ' + nf])); continue; }
-    var rn = calcularExtraTramos(tr, cd);
+    var rn = calcularExtraTramos([tramo], cd);
     if (rn.h50 + rn.h100 <= 0) continue;
-    filas.push(base.concat([M[0].t, M[M.length - 1].t, '', textoTramos_(tr), rn.h50, rn.h100, 'A REVISAR',
-      'extra NO autorizada (no hay franja declarada)']));
+    filas.push(base.concat([j.ent, j.sal, '', textoTramos_([tramo]), rn.h50, rn.h100, 'A REVISAR',
+      'EXTRA NO INFORMADA · ' + motivo + ' (no hay franja en la planilla): se paga solo si la autoriza el jefe de Enfermería']));
   }
   agregarFichas_(filas, n0, a.leg, _diasMes, cfg);
 }
@@ -341,6 +343,7 @@ function liquidarExtras() {
 
   var filas = [];
   hojas.forEach(function (h) { h.ags.forEach(function (a) { procesarAgente_(a, h.nombre, cfg, ctx, filas); }); });
+  var val = abrirValidacion_(cfg, filas);
 
   var grh = cfg.idGrh ? leerGRH_(cfg.idGrh) : null, mens = {};
   filas.forEach(function (r) {
@@ -367,88 +370,9 @@ function liquidarExtras() {
   var h = escribir_(SpreadsheetApp.openById(ID_BASE), 'LIQUIDACION', cab, out, 5, 9);
   pintarLiquidacion_(h, out, cab.length);
   escribirResumen_(filas, mens, grh, cfg);
-  var cambios = registrarCambios_(hojas, cfg), ctrl = controlEnfermeria_(cfg, filas);
+  var cambios = registrarCambios_(hojas, cfg), ctrl = val ? cerrarValidacion_(cfg, filas, val) : '';
   var aut = filas.filter(function (r) { return r[11] === 'AUTORIZADA'; }).length;
   avisar_('LIQUIDACION lista: ' + out.length + ' filas (' + aut + ' autorizadas) · ' + Object.keys(mens).length + ' agentes' + (cfg.fichadasAuto ? '\nFichadas: ' + cfg.fichadasAuto : '') + (grh ? '\nExpediente: ' + Object.keys(grh).length + ' agentes de Enfermería con horas autorizadas' : '\nSin expediente (consolidado) en CONFIG: no se controla lo autorizado.') + (cambios ? '\n' + cambios : '') + ctrl + notaMeses_());
-}
-
-var CAB_CTRL_ = ['Liquidación 50%', 'Liquidación 100%', 'Diferencia (h)', 'Fichadas del día (tarjeta reloj)', 'Qué se encontró', 'Validación del jefe', 'Comentario del jefe'];
-var VAL_JEFE_ = ['De acuerdo con la liquidación', 'Pagar lo del reporte', 'Hay que corregir la planilla', 'Lo reviso'];
-
-function controlEnfermeria_(cfg, filas) {
-  var hoja = SpreadsheetApp.openById(cfg.idHorarios).getSheetByName('Reporte Extras Global');
-  if (!hoja) return '';
-  var datos = hoja.getDataRange().getDisplayValues(), x = compararEnfermeria_(datos, filas, function (leg, d) {
-    var m = marcasDia_(leg, d, cfg).map(function (z) { return z.t; });
-    return m.length ? m.join(' · ') : 'sin fichadas';
-  });
-  if (!x) return '';
-  var val = validacionesJefe_(datos, x), nota = '';
-  try { marcarReporteEnf_(hoja, datos, x, val); nota = '\nLas diferencias quedaron también en «Reporte Extras Global» de la planilla de horarios, para que el jefe las valide.'; }
-  catch (e) { nota = '\nNo pude escribir las diferencias en la planilla de horarios (' + e.message + '): revisá que esta cuenta pueda editarla.'; }
-  guardarValJefe_(val);
-  var cab = ['Legajo', 'Apellido', 'Día', 'Franja (Enfermería)', 'Enf. 50%', 'Enf. 100%', 'Liquidación 50%', 'Liquidación 100%', 'Diferencia (h)', 'Fichadas del día (tarjeta reloj)', 'Qué se encontró', 'Validación del jefe', 'Comentario del jefe'];
-  var rows = x.filas.map(function (r) { var v = val[r[11]] || ['', '']; return r.slice(0, 11).concat(v); });
-  var h = escribir_(SpreadsheetApp.openById(ID_BASE), 'CONTROL_ENFERMERIA', cab, rows, 10, 13);
-  if (rows.length) {
-    h.getRange(2, 1, rows.length, cab.length).setBorder(true, true, true, true, true, true, '#c8c8c8', SpreadsheetApp.BorderStyle.SOLID).setWrap(true).setVerticalAlignment('top')
-      .setBackgrounds(rows.map(function (r) { return new Array(cab.length).fill(r[8] < 0 ? '#fbd9d9' : '#fff3b8'); }));
-    h.setColumnWidth(10, 260); h.setColumnWidth(11, 420);
-  }
-  var t = x.tot.map(function (v) { return Math.round(v * 10) / 10; });
-  return '\nControl contra el reporte de Enfermería: ' + rows.length + ' días distintos (pestaña CONTROL_ENFERMERIA). Enfermería ' + t[0] + ' h al 50 y ' + t[1] + ' al 100; liquidación ' + t[2] + ' y ' + t[3] + '.' + nota;
-}
-
-function colCtrl_(hdr) {
-  var c0 = hdr.indexOf(CAB_CTRL_[0]);
-  if (c0 < 0) { c0 = hdr.length; while (c0 > 0 && !String(hdr[c0 - 1]).trim()) c0--; }
-  return c0;
-}
-
-function validacionesJefe_(datos, x) {
-  var val = {}, h = SpreadsheetApp.openById(ID_BASE).getSheetByName('_VALID_JEFE'), c0 = colCtrl_(datos[x.h]);
-  if (h) h.getDataRange().getValues().forEach(function (r) { if (r[0] && r[0] !== 'clave') val[r[0]] = [r[1], r[2]]; });
-  var iv = datos[x.h].indexOf('Validación del jefe'), ic = datos[x.h].indexOf('Comentario del jefe');
-  if (iv >= 0) for (var i in x.porFila) {
-    var r = datos[i], v = [r[iv] || '', ic >= 0 ? r[ic] || '' : ''];
-    if (v[0] || v[1]) val[x.porFila[i].k] = v;
-  }
-  return val;
-}
-
-function guardarValJefe_(val) {
-  var ss = SpreadsheetApp.openById(ID_BASE), h = ss.getSheetByName('_VALID_JEFE') || ss.insertSheet('_VALID_JEFE');
-  var rows = [['clave', 'validación', 'comentario']].concat(Object.keys(val).map(function (k) { return [k, val[k][0], val[k][1]]; }));
-  h.clear(); h.getRange(1, 1, rows.length, 3).setNumberFormat('@').setValues(rows); h.hideSheet();
-}
-
-function marcarReporteEnf_(hoja, datos, x, val) {
-  var c0 = colCtrl_(datos[x.h]), fin = datos.length, ultima = hoja.getMaxRows();
-  while (fin > x.h + 1 && !String(datos[fin - 1][x.c.leg]).trim()) fin--;
-  var n = fin - x.h - 1;
-  if (hoja.getMaxColumns() < c0 + CAB_CTRL_.length) hoja.insertColumnsAfter(hoja.getMaxColumns(), c0 + CAB_CTRL_.length - hoja.getMaxColumns());
-  if (ultima > x.h + 1) hoja.getRange(x.h + 2, c0 + 1, ultima - x.h - 1, CAB_CTRL_.length).clearContent().clearFormat().clearDataValidations();
-  hoja.getRange(x.h + 1, c0 + 1, 1, CAB_CTRL_.length).setValues([CAB_CTRL_]).setFontWeight('bold').setBackground('#f4b183').setWrap(true);
-  var vals = [], fondos = [], dif = [];
-  for (var i = x.h + 1; i < fin; i++) {
-    var p = x.porFila[i];
-    if (!p) { vals.push(['', '', '', '', '', '', '']); fondos.push(new Array(7).fill(null)); continue; }
-    var v = p.dif === '' ? ['', ''] : (val[p.k] || ['', '']);
-    vals.push([p.n50, p.n100, p.dif, p.fich, p.mot, v[0], v[1]]);
-    fondos.push(new Array(7).fill(p.dif === '' ? null : p.dif < 0 ? '#fbd9d9' : '#fff3b8'));
-    if (p.dif !== '') dif.push(i + 1);
-  }
-  if (n > 0) {
-    hoja.getRange(x.h + 2, c0 + 1, n, 7).setNumberFormat('@').setValues(vals).setBackgrounds(fondos).setWrap(true).setVerticalAlignment('top');
-    hoja.getRange(x.h + 2, c0 + 3, n, 1).setFontWeight('bold');
-    var regla = SpreadsheetApp.newDataValidation().requireValueInList(VAL_JEFE_, true).setAllowInvalid(false).build();
-    dif.forEach(function (fila) { hoja.getRange(fila, c0 + 6).setDataValidation(regla); });
-  }
-  if (x.solo.length) {
-    var txt = 'También en la liquidación y NO en este reporte (no están en la fila Extra de la planilla): ' + x.solo.map(function (s) { return s.ape + ' día ' + s.dia + ' (' + (s.n50 + s.n100) + ' h, fichadas ' + s.fich + '): ' + s.mot; }).join(' · ');
-    hoja.getRange(fin + 2, c0 + 1).setValue(txt).setWrap(true).setFontWeight('bold').setBackground('#fff3b8');
-  }
-  hoja.setColumnWidth(c0 + 4, 240); hoja.setColumnWidth(c0 + 5, 360); hoja.setColumnWidth(c0 + 6, 190); hoja.setColumnWidth(c0 + 7, 220);
 }
 
 function escribir_(ss, nombre, cab, filas, textoDesde, textoHasta) {

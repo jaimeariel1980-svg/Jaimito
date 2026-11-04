@@ -13,6 +13,8 @@ Lo mantiene Claude. Prioridad: 🔴 urgente · 🟠 importante · 🟡 cuando se
 - 🟡 Auditar también `pami/`, `pami-real/`, `liquidaciones/`, `caja-obra/` (NJ Arquitectura: `TABLERO_PIN`, bot Anita). — *Claude*
 
 ## Liquidaciones PAMI I
+- 🟠 **Mail del jefe de Enfermería**: compartirle la planilla de horarios (para que decida en «Reporte Extras Global»). El mes que viene: armar una validación para todos los servicios (hoy es solo el jefe de Enfermería). — *Ariel*
+- 🟡 Resta J. (4 piso) no tiene turnos cargados en la planilla de octubre («-») y ficha noches: salen como extras no informadas. — *Ariel*
 - 🟡 **Reporte Extras Global de Enfermería** cuenta mal las medias horas (13.30/17 = 4, 7/17:30 = 10) y paga franjas sin mirar fichadas (Villalba 30, Bordenave 29, Gruning 22, Moya 23): revisarlo con Enfermería usando la pestaña CONTROL_ENFERMERIA. — *Ariel*
 - 🟠 **Planilla de horarios de octubre**: cargar los cambios de turno que faltan (Sarba 1, 5, 6, 7 trabajó 12–19 con planilla 17/24) y revisar a Mandarini (Terapia 6/13 pero la tarjeta reloj dice 06:00 a 14:00; si es supervisora va en SUP y deja de entrar en extras y feriados). — *Ariel*
 - 🟠 **Tarjetas reloj de septiembre y noviembre** con el mismo nombre que la de octubre en el Drive de dotacionpp1: sin ellas, el día 1 y el 31 pueden salir como omisión (la liquidación avisa). — *Ariel*

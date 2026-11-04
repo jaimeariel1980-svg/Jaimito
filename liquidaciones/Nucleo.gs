@@ -124,9 +124,10 @@ function horaAbs_(m) {
 }
 
 var TIPOS_FILA = [
-  ['AUTORIZADA (se paga)', '#ffffff', function (e, c) { return e === 'AUTORIZADA' && !/HORARIO DISTINTO/.test(c); }],
+  ['AUTORIZADA (se paga)', '#ffffff', function (e, c) { return e === 'AUTORIZADA' && !/HORARIO DISTINTO|por el jefe/.test(c); }],
+  ['AUTORIZADA por el jefe de Enfermería (extra no informada u omisión justificada)', '#d9ead3', function (e, c) { return e === 'AUTORIZADA' && /por el jefe/.test(c); }],
   ['AUTORIZADA con horario distinto al programado (se paga; cargar el cambio)', '#fde2a7', function (e, c) { return e === 'AUTORIZADA' && /HORARIO DISTINTO/.test(c); }],
-  ['Extra NO autorizada (fichó de más sin franja cargada)', '#ffe8c7', function (e, c) { return /NO autorizada/.test(c); }],
+  ['Extra no informada (fichó de más sin franja en la planilla): la decide el jefe', '#ffe8c7', function (e, c) { return /NO autorizada|NO INFORMADA/.test(c); }],
   ['Omisión / no fichó la extra', '#fbd9d9', function (e, c) { return /omisión|no fichó|no cubren|ilegible/.test(c); }],
   ['Fichadas dudosas (impares o con hueco): revisar a mano', '#fff3b8', function (e, c) { return /impar|revisar a mano/i.test(c); }],
   ['Franja dentro del turno (no es extra)', '#e9e0f7', function (e, c) { return /dentro del turno/.test(c); }],
@@ -196,6 +197,7 @@ function motivoClaro_(rows, e) {
     var c = String(r[12] || ''), fz = r[7] || 'la extra', fich = '';
     var hs = (+r[9] || 0) + (+r[10] || 0), fichado = r[5] && r[6] ? r[5] + ' a ' + r[6] : '';
     if (r[11] === 'AUTORIZADA') {
+      if (/por el jefe/.test(c)) return c.replace(/^EXTRA NO INFORMADA · /, 'Extra no informada ') + ': se pagan ' + hs + ' h.';
       if (/HORARIO DISTINTO/.test(c)) return 'Trabajó en otro horario que el de la planilla (fichó ' + fichado + '). Se pagan ' + hs + ' h por lo fichado. Falta informar el cambio de turno.';
       if (/menos que lo autorizado/.test(c)) return 'Hizo menos horas que las autorizadas: la extra era ' + fz + ' y fichó ' + fichado + '. Se pagan ' + hs + ' h.';
       if (/:30/.test(fz)) return 'La extra ' + fz + ' tiene media hora: son ' + hs + ' h (el reporte cuenta ' + (e.h50 + e.h100) + ').';
@@ -204,13 +206,15 @@ function motivoClaro_(rows, e) {
     if (/no cubren/.test(c)) return 'Las fichadas (' + fichado + ') no llegan al horario de la extra ' + fz + ': no se paga.' + fich;
     if (/no fichó la extra/.test(c)) return 'No hay fichadas en el horario de la extra ' + fz + ': no se paga.' + fich;
     if (/omisión|una sola fichada/.test(c)) return 'Falta la entrada o la salida en el reloj: con una sola fichada no se paga.' + fich;
-    if (/NO autorizada/.test(c)) return 'Fichó horas de más sin extra cargada en la planilla: no se paga.' + fich;
+    if (/NO autorizada|NO INFORMADA/.test(c)) return 'Extra no informada: ' + c.replace(/^.*?NO INFORMADA · /, '').replace(/ \(no hay franja.*$/, '') + ' (fichó ' + fichado + '). No está en la planilla: se paga solo si la autorizás.';
     if (/dentro del turno/.test(c)) return 'La extra ' + fz + ' cae dentro de su propio turno: no es extra.';
     if (/ilegible/.test(c)) return 'No se entiende la franja escrita en la planilla.';
     if (r[11] === 'REVISAR IDENTIDAD') return 'El nombre de la fichada no coincide con el agente: revisar.';
     return c || r[11];
   }).join(' · ');
 }
+
+var MARCA_NO_REPORTE = 'NO ESTÁ EN EL REPORTE';
 
 function compararEnfermeria_(rep, filas, fichDe) {
   var num = function (x) { return parseFloat(String(x || '0').replace(',', '.')) || 0; }, h = -1, c = {};
@@ -219,15 +223,16 @@ function compararEnfermeria_(rep, filas, fichDe) {
     if (f.indexOf('LEGAJO') >= 0 && f.indexOf('DIA') >= 0) {
       h = i;
       f.forEach(function (x, j) {
-        if (/^LIQUIDACION|^DIFERENCIA|^QUE SE|^VALIDACION|^COMENTARIO|^FICHADAS/.test(x)) return; if (x === 'LEGAJO') c.leg = j; else if (x === 'APELLIDO') c.ape = j; else if (x === 'DIA') c.dia = j;
+        if (/^LIQUIDACION|^DIFERENCIA|^QUE SE|^VALIDACION|^COMENTARIO|^FICHADAS|^DECISION|^CONFORMIDAD/.test(x)) return; if (x === 'LEGAJO') c.leg = j; else if (x === 'APELLIDO') c.ape = j; else if (x === 'DIA') c.dia = j;
         else if (/EXTRA/.test(x)) c.fr = j; else if (/50/.test(rep[i][j])) c.a50 = j; else if (/100/.test(rep[i][j])) c.a100 = j;
       });
     }
   }
   if (h < 0) return null;
-  var E = {}, N = {}, k, fila = {};
+  var E = {}, N = {}, k, fila = {}, marca = {};
   rep.slice(h + 1).forEach(function (r, i) {
     var leg = String(r[c.leg]).trim();
+    if (String(r[0]).trim() === MARCA_NO_REPORTE) { if (/^\d+$/.test(leg)) marca[h + 1 + i] = leg + '|' + (+r[c.dia]); return; }
     if (!/^\d+$/.test(leg) || !+r[c.dia]) return;
     k = leg + '|' + (+r[c.dia]);
     if (!(k in fila)) fila[k] = h + 1 + i;
@@ -245,12 +250,13 @@ function compararEnfermeria_(rep, filas, fichDe) {
     var e = E[k] || { h50: 0, h100: 0, fr: [] }, n = N[k] || { h50: 0, h100: 0, rows: [] }, b = E[k] || N[k];
     tot[0] += e.h50; tot[1] += e.h100; tot[2] += n.h50; tot[3] += n.h100;
     var igual = Math.abs(e.h50 - n.h50) < 0.01 && Math.abs(e.h100 - n.h100) < 0.01;
-    var dif = Math.round((n.h50 + n.h100 - e.h50 - e.h100) * 10) / 10, mot = igual ? '' : motivoClaro_(n.rows, e), fi = '';
-    if (!igual) fi = n.rows.length && n.rows[0][13] ? String(n.rows[0][13]).replace(/^\[|\]$/g, '') : fichDe ? fichDe(b.leg, b.dia) : '';
-    if (k in fila) porFila[fila[k]] = { k: k, n50: n.h50, n100: n.h100, dif: igual ? '' : dif, mot: igual ? 'Coincide' : mot, fich: fi };
-    else if (!igual) solo.push({ k: k, leg: b.leg, ape: b.ape, dia: b.dia, n50: n.h50, n100: n.h100, dif: dif, mot: mot, fich: fi });
+    var jefe = n.rows.some(function (r) { return /por el jefe/.test(r[12]); }), ver = !igual || jefe;
+    var dif = Math.round((n.h50 + n.h100 - e.h50 - e.h100) * 10) / 10, mot = ver ? motivoClaro_(n.rows, e) : '', fi = '';
+    if (ver) fi = n.rows.length && n.rows[0][13] ? String(n.rows[0][13]).replace(/^\[|\]$/g, '') : fichDe ? fichDe(b.leg, b.dia) : '';
+    if (k in fila) porFila[fila[k]] = { k: k, n50: n.h50, n100: n.h100, dif: igual ? '' : dif, mot: ver ? mot : 'Coincide', fich: fi };
+    else if (ver || n.rows.some(function (r) { return /NO INFORMADA/.test(r[12]); })) solo.push({ k: k, leg: b.leg, ape: b.ape, dia: b.dia, serv: n.rows.length ? n.rows[0][0] : '', turno: n.rows.length ? n.rows[0][4] : '', n50: n.h50, n100: n.h100, dif: dif, mot: mot || motivoClaro_(n.rows, e), fich: fi || (n.rows.length && n.rows[0][13] ? String(n.rows[0][13]).replace(/^\[|\]$/g, '') : ''), noInf: n.rows.some(function (r) { return /NO INFORMADA/.test(r[12]); }) });
     if (!igual) out.push([b.leg, b.ape, b.dia, e.fr.join(' + '), e.h50, e.h100, n.h50, n.h100, dif, fi, mot, k]);
   });
   out.sort(function (a, b) { return String(a[1]).localeCompare(String(b[1])) || a[2] - b[2]; });
-  return { filas: out, tot: tot, h: h, c: c, porFila: porFila, solo: solo };
+  return { filas: out, tot: tot, h: h, c: c, porFila: porFila, solo: solo, marca: marca, E: E };
 }

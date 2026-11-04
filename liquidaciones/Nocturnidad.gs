@@ -1,4 +1,4 @@
-function jornadaFichada_(a, d, cfg) {
+function jornadaFichada_(a, d, cfg, sinPrev) {
   if (esCola_(a, d)) return null;
   var t = turnoCompleto_(a, d), prevFin = -Infinity, prox = Infinity;
   bloquesTurno_(a, d).forEach(function (b) {
@@ -10,6 +10,10 @@ function jornadaFichada_(a, d, cfg) {
     var vec = bloquesTurno_(a, d).concat([[-1440, d - 1], [1440, d + 1]].reduce(function (s, o) { return s.concat(parseFranjas(a.ext[o[1]]).map(function (w) { return { ini: w.ini + o[0], fin: w.fin + o[0] }; })); }, []));
     prevFin = -Infinity; prox = Infinity;
     vec.forEach(function (b) { if (b.ini < 0 && b.fin > prevFin) prevFin = b.fin; if (b.ini > 0 && b.ini < prox) prox = b.ini; });
+    if (!sinPrev && !turnoCompleto_(a, d - 1)) {
+      var jp = jornadaFichada_(a, d - 1, cfg, true);
+      if (jp && jp.estado === 'ok' && jp.rf >= 1440) prevFin = Math.max(prevFin, jp.rf - 1440 - 120);
+    }
     var G = [], g = [];
     marcasAbs_(a.leg, d, Math.max(prevFin + 180, 0), Math.min(prox - 60, 2160), cfg).forEach(function (x) {
       if (g.length && x.m - g[g.length - 1].m > 840) { G.push(g); g = []; }

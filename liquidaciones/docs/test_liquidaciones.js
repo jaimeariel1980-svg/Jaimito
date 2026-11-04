@@ -1,7 +1,7 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert');
 const dir=__dirname+'/..';
 const ctx={Logger:{log(){}},SpreadsheetApp:{}};vm.createContext(ctx);
-['Nucleo.gs','Config.gs','Extras.gs','Nocturnidad.gs','Feriados.gs'].forEach(f=>vm.runInContext(fs.readFileSync(dir+'/'+f,'utf8'),ctx,{filename:f}));
+['Nucleo.gs','Config.gs','Extras.gs','Nocturnidad.gs','Feriados.gs','Validacion.gs'].forEach(f=>vm.runInContext(fs.readFileSync(dir+'/'+f,'utf8'),ctx,{filename:f}));
 const run=c=>{const v=vm.runInContext('JSON.stringify('+c+')',ctx);return v===undefined?undefined:JSON.parse(v)};
 const H=(s)=>{const m=s.split(':');return +m[0]*60+(+m[1]||0)};
 // parse
@@ -55,7 +55,7 @@ let rows=sim(F({5:['17:55'],6:['6:02']}),ag({hab:{5:'18/24'},ext:{6:'0/6'}}));
 assert.strictEqual(rows.length,1);r=R(rows[0]);assert.deepStrictEqual([r.h50,r.h100,r.ent,r.sal],[0,6,'17:55(-1)','6:02']);assert.ok(/17:55\(-1\)/.test(r.fich));
 // 5) sin declarar, fichó de más: 7/14 sale 17:05 => A REVISAR no autorizada 3h
 rows=sim(F({6:['6:58','17:05']}),ag({hab:{6:'7/14'}}));
-assert.strictEqual(rows.length,1);r=R(rows[0]);assert.ok(/NO autorizada/.test(r.cond));assert.deepStrictEqual([r.h50,r.ent,r.sal],[3,'6:58','17:05']);
+assert.strictEqual(rows.length,1);r=R(rows[0]);assert.ok(/NO INFORMADA/.test(r.cond));assert.deepStrictEqual([r.h50,r.ent,r.sal],[3,'6:58','17:05']);
 // 6) turno noche normal => nada; feriado no genera
 assert.strictEqual(sim(F({5:['22:55'],6:['6:03']}),ag({hab:{5:'23/6'}})).length,0);
 assert.strictEqual(sim(F({12:['6:58','17:05']}),ag({hab:{12:'7/14'}})).length,0);
@@ -123,14 +123,27 @@ r=R(sim(F({30:['5:49:36','12:39:58']}),ag({hab:{30:'6/13'},ext:{30:'13/19'}}))[0
 // 35) control contra el reporte de Enfermería
 let ce=run(`compararEnfermeria_([['Servicio','Legajo','Apellido','Día','Habitual','Horario Extra','Hs 50%','Hs 100%'],['G','1','PEREZ','5','23/6','19/23','3','1'],['G','2','GOMEZ','6','6/13','13/19','6','0']],[['G','1','PEREZ',5,'23/6','','','','',3,1,'AUTORIZADA',''],['G','2','GOMEZ',6,'6/13','','','','',0,0,'A REVISAR','las fichadas no cubren la franja']])`);
 assert.deepStrictEqual(ce.filas.map(r=>[r[0],r[8]]),[['2',-6]]);assert.deepStrictEqual(ce.tot,[9,1,3,1]);assert.strictEqual(ce.porFila[1].mot,'Coincide');assert.ok(/no llegan al horario/.test(ce.porFila[2].mot));
+// 36) EXTRAS NO INFORMADAS: corrido y con más horas que el turno; en franco; licencia que en realidad es un cambio
+sx=sim(F({5:['10:00','19:30']}),ag({hab:{5:'6/13'}}));assert.ok(/NO INFORMADA/.test(sx[0][12]));assert.deepStrictEqual([sx[0][8],sx[0][9]],['17:00 a 19:30',2.5]);
+assert.strictEqual(sim(F({5:['12:00','19:05']}),ag({hab:{5:'6/13'}})).length,0);
+assert.strictEqual(sim(F({6:['6:59:25','14:05:23']}),ag({hab:{6:'6/13'}})).length,0);
+sx=sim(F({8:['6:58','14:02']}),ag({hab:{5:'6/13',6:'6/13',7:'6/13',8:'F'}}));assert.ok(/día de franco/.test(sx[0][12]));assert.strictEqual(sx[0][9],7);
+assert.strictEqual(sim(F({8:['6:50:54','13:38:25']}),ag({hab:{8:'F',5:'6/13',6:'6/13'},lic:{8:'C/H 7 a.m. a 2 p.m.'}})).length,0);
+// RESTA: noches seguidas sin turno: la salida de la noche anterior no es entrada
+sx=sim(F({17:['19:53:03'],18:['6:06:02','19:50'],19:['6:04']}),ag({hab:{1:'7/14',2:'7/14',3:'7/14'}}));assert.deepStrictEqual(sx.map(x=>[x[3],x[5]]),[[17,'19:53:03'],[18,'19:50']]);
+// 37) decisiones del jefe: autoriza una extra no informada y justifica una omisión
+let fd=run(`(function(){var f=[['G','1','PEREZ',8,'F','6:58','14:02','','06:58 a 14:02',7,0,'A REVISAR','EXTRA NO INFORMADA · trabajó en su día de franco (F) (no hay franja en la planilla)'],['G','2','GOMEZ',9,'23/6','19:13','','19:00 a 23:00','',0,0,'A REVISAR','omisión: una sola fichada, no corresponde extra']];
+aplicarDecisiones_(f,{'1|8':['Autorizo la extra no informada',''],'2|9':['Omisión justificada: pagar la franja','nota 123']},{'2|9':{h50:3,h100:1,fr:['19/23']}});return f;})()`);
+assert.deepStrictEqual([fd[0][11],fd[0][9],fd[1][11],fd[1][9],fd[1][10]],['AUTORIZADA',7,'AUTORIZADA',3,1]);assert.ok(/nota 123/.test(fd[1][12]));
 // 16) identidad
 const f2=F({5:['6:58','19:10']});f2[5]['1'].nombre='ALONSO Cecilia';
 assert.strictEqual(R(sim(f2,ag({hab:{5:'7/14'},ext:{5:'14/19'}}))[0]).est,'REVISAR IDENTIDAD');
 // 18) orden y colores: autorizada primero (blanco), luego cada tipo
 assert.strictEqual(run("tipoFila_(['','','','','','','','','',1,0,'AUTORIZADA',''])"),0);
-assert.strictEqual(run("tipoFila_(['','','','','','','','','',0,0,'A REVISAR','omisión: una sola fichada'])"),3);
-assert.strictEqual(run("tipoFila_(['','','','','','','','','',4,0,'A REVISAR','extra NO autorizada (no hay franja declarada)'])"),2);
-assert.strictEqual(run("tipoFila_(['','','','','','','','','',3,0,'AUTORIZADA','HORARIO DISTINTO AL PROGRAMADO'])"),1);
+assert.strictEqual(run("tipoFila_(['','','','','','','','','',0,0,'A REVISAR','omisión: una sola fichada'])"),4);
+assert.strictEqual(run("tipoFila_(['','','','','','','','','',4,0,'A REVISAR','extra NO autorizada (no hay franja declarada)'])"),3);
+assert.strictEqual(run("tipoFila_(['','','','','','','','','',3,0,'AUTORIZADA','HORARIO DISTINTO AL PROGRAMADO'])"),2);
+assert.strictEqual(run("tipoFila_(['','','','','','','','','',3,0,'AUTORIZADA','EXTRA NO INFORMADA · AUTORIZADA por el jefe de Enfermería'])"),1);
 // 19) horario de la tarjeta vs turno de la planilla
 const fh=F({1:['11:57:56','22:12:41']});fh[1]['1'].horario='12:00 a 19:00';
 r=sim(fh,ag({hab:{1:'17/24'},ext:{1:'19/22'}}))[0];assert.strictEqual(r[14],'12:00 a 19:00 ≠ planilla 17/24');
