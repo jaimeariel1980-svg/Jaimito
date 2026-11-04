@@ -194,13 +194,37 @@ function noLabFijos_(anio, mes) {
 
 function motivoClaro_(rows, e) {
   if (!rows.length) return 'No figura como extra en la liquidación (no hay franja cargada en la planilla o no hay fichadas ese día).';
-  return rows.map(function (r) {
+  return rows.map(function (r) { var q = queRevisar_(r); return motivoFila_(r, e) + (q ? ' ➜ REVISAR: ' + q : ''); }).join(' · ');
+}
+
+function queRevisar_(r) {
+  var c = String(r[12] || ''), h = String(r[14] || '').split(' · ')[0].replace(/ ≠ planilla.*/, '');
+  if (r[11] === 'REVISAR IDENTIDAD') return 'el nombre de la tarjeta reloj no coincide con el del legajo: confirmar que sea la misma persona.';
+  if (r[11] === 'AUTORIZADA' && /HORARIO DISTINTO/.test(c)) return 'cargar el cambio de turno en la planilla de horarios.';
+  if (r[11] === 'AUTORIZADA' && /noche del/.test(c)) return 'cargar la extra en el día correcto de la planilla.';
+  if (r[11] === 'AUTORIZADA') return '';
+  if (/SIN DATOS DEL RELOJ/.test(c)) return 'pedir a quien maneja el reloj el registro de ese día (en la Tarjeta sale #N/A). Con el registro, el jefe puede marcar «El reloj tiene el registro».';
+  if (/NO INFORMADA|NO autorizada/.test(c)) {
+    if (/licencia cargada/.test(c)) return 'tiene licencia cargada y vino a trabajar. ¿Terminó antes la licencia? Corregirla en la planilla. Si además hizo horas de más, que el jefe decida si las autoriza.';
+    if (/\d{1,2}:\d{2} a \d{1,2}:\d{2}/.test(h)) return 'la tarjeta reloj le asigna ' + h + ' ese día y en la planilla no tiene turno. ¿Cambió de turno? Si era su turno, cargarlo en la planilla (no es extra). Si fue una extra, que el jefe la autorice.';
+    return '¿lo llamaron para cubrir? Si fue una extra, cargarla en la planilla o que el jefe la autorice. Si no, no se paga.';
+  }
+  if (/no fichó la extra|no cubren/.test(c)) return 'la extra está cargada pero según el reloj no la hizo. Si no se hizo, sacarla de la planilla. Si la hizo y falta la fichada, el jefe puede justificar la omisión con la nota.';
+  if (/omisión|una sola fichada/.test(c)) return 'falta una fichada. Si trabajó, el jefe tiene que justificar la omisión con la nota.';
+  if (/dentro del turno/.test(c)) return 'la extra está cargada dentro de su propio turno. Corregir la franja en la planilla.';
+  if (/ilegible/.test(c)) return 'corregir cómo está escrita la franja en la planilla (ej. 13/17).';
+  if (/menos de 1 h/.test(c)) return 'nada: menos de 1 h no se paga.';
+  return 'mirar la fila con el jefe.';
+}
+
+function motivoFila_(r, e) {
+  if (true) {
     var c = String(r[12] || ''), fz = r[7] || 'la extra', fich = '';
     var hs = (+r[9] || 0) + (+r[10] || 0), fichado = r[5] && r[6] ? r[5] + ' a ' + r[6] : '';
     if (r[11] === 'AUTORIZADA') {
       if (/por el jefe/.test(c)) return c.replace(/^EXTRA NO INFORMADA · /, 'Extra no informada ') + ': se pagan ' + hs + ' h.';
-      if (/noche del/.test(c)) return 'La extra ' + fz + ' está cargada en un día pero la hizo la noche siguiente (fichó ' + fichado + '). Se pagan ' + hs + ' h. Revisar en qué día va cargada.';
-      if (/HORARIO DISTINTO/.test(c)) return 'Trabajó en otro horario que el de la planilla (fichó ' + fichado + '). Se pagan ' + hs + ' h por lo fichado. Falta informar el cambio de turno.';
+      if (/noche del/.test(c)) return 'La extra ' + fz + ' está cargada en un día pero la hizo la noche siguiente (fichó ' + fichado + '). Se pagan ' + hs + ' h.';
+      if (/HORARIO DISTINTO/.test(c)) return 'Trabajó en otro horario que el de la planilla (fichó ' + fichado + '). Se pagan ' + hs + ' h por lo fichado.';
       if (/menos que lo autorizado/.test(c)) return 'Hizo menos horas que las autorizadas: la extra era ' + fz + ' y fichó ' + fichado + '. Se pagan ' + hs + ' h.';
       if (/:30/.test(fz) && e) {
         var w0 = parseTurno(fz.replace(' a ', '/')), m0 = horaToMin(r[5]), antes = w0 && m0 !== null && m0 <= w0.ini - 10 && m0 > w0.ini - 180;
@@ -217,7 +241,7 @@ function motivoClaro_(rows, e) {
     if (/ilegible/.test(c)) return 'No se entiende la franja escrita en la planilla.';
     if (r[11] === 'REVISAR IDENTIDAD') return 'El nombre de la fichada no coincide con el agente: revisar.';
     return c || r[11];
-  }).join(' · ');
+  }
 }
 
 var MARCA_NO_REPORTE = 'NO ESTÁ EN EL REPORTE';
