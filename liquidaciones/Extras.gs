@@ -203,7 +203,10 @@ function textoNA_(dias) {
 }
 
 function presencia_(a, d, w, cfg, turnos) {
-  var bIni = w.ini, bFin = w.fin, contiguo = false, B = turnos || bloquesTurno_(a, d);
+  var B = (turnos || bloquesTurno_(a, d)).concat([[-1440, d - 1], [1440, d + 1]].reduce(function (s, o) {
+    return s.concat(parseFranjas(a.ext[o[1]]).map(function (x) { return { ini: x.ini + o[0], fin: x.fin + o[0] }; }));
+  }, []));
+  var bIni = w.ini, bFin = w.fin, contiguo = false;
   B.forEach(function (t) {
     if (Math.abs(t.fin - w.ini) <= 30) { bIni = Math.min(bIni, t.ini); contiguo = true; }
     if (Math.abs(t.ini - w.fin) <= 30) { bFin = Math.max(bFin, t.fin); contiguo = true; }
