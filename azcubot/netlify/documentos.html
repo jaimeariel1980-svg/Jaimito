@@ -453,6 +453,28 @@ function _ponerProps(lista){
   });
   var pre=_propUrl();
   if(pre && PROPIEDADES[pre]){ sel.value=pre; var n=document.getElementById('propInfo'); if(!n){ n=document.createElement('div'); n.id='propInfo'; n.style.cssText='margin-top:8px;font-size:13px;color:#2a5'; sel.parentNode.appendChild(n); } n.textContent='✓ Datos cargados de: '+PROPIEDADES[pre].etiqueta; }
+  window.__PROPLISTAS=1; intentarEditar();
+}
+function _limpiarHtml(h){
+  var d=new DOMParser().parseFromString('<div>'+h+'</div>','text/html'), r=d.body.firstChild;
+  r.querySelectorAll('script,style,iframe,object,embed,link,meta').forEach(function(x){ x.remove(); });
+  r.querySelectorAll('*').forEach(function(x){ Array.from(x.attributes).forEach(function(a){ if(/^on/i.test(a.name) || /javascript:/i.test(a.value)) x.removeAttribute(a.name); }); });
+  return r.innerHTML;
+}
+function _editUrl(){
+  try{ var q=new URLSearchParams(location.search).get('edit'); if(q) return q; }catch(e){}
+  return window.__EDIT||'';
+}
+function intentarEditar(){
+  var id=_editUrl(); if(!id || window.__EDITANDO) return; window.__EDITANDO=1;
+  google.script.run.withSuccessHandler(function(r){
+    try{
+      var d=JSON.parse(r.borrador); if(!DOCS[d.docSel]) throw new Error('tipo de documento desconocido');
+      elegir(d.docSel); esCompartida=!!d.esCompartida; var sp=document.getElementById('propSel'); if(d.propKey && PROPIEDADES[d.propKey]) sp.value=d.propKey;
+      window.__DOCID=r.id; document.getElementById('editor').innerHTML=_limpiarHtml(d.html||''); document.getElementById('edAI').innerHTML='';
+      paso(3); mostrarAviso('Editando «'+r.nombre+'» (versión '+r.version+'). Al generar el PDF se guarda como una versión nueva.', null);
+    }catch(e){ alert('No pude abrir el borrador: '+e.message); }
+  }).withFailureHandler(function(e){ alert('No pude abrir el documento: '+(e&&e.message?e.message:e)); }).borradorDocGenerado(id);
 }
 function _propUrl(){
   try{ var q=new URLSearchParams(location.search).get('prop'); if(q) return q; }catch(e){}
@@ -461,7 +483,7 @@ function _propUrl(){
 function cargarPropiedades(){
   var sel=document.getElementById('propSel');
   sel.innerHTML='<option value="">Cargando propiedades...</option>';
-  try{ if(!_propUrl() && window.google && google.script && google.script.url && google.script.url.getLocation) google.script.url.getLocation(function(l){ if(l && l.parameter && l.parameter.prop){ window.__PROP=l.parameter.prop; var sl=document.getElementById('propSel'); if(PROPIEDADES[__PROP]) sl.value=__PROP; } }); }catch(e){}
+  try{ if(window.google && google.script && google.script.url && google.script.url.getLocation) google.script.url.getLocation(function(l){ if(l && l.parameter && l.parameter.edit){ window.__EDIT=l.parameter.edit; if(window.__PROPLISTAS) intentarEditar(); } if(!_propUrl() && l && l.parameter && l.parameter.prop){ window.__PROP=l.parameter.prop; var sl=document.getElementById('propSel'); if(PROPIEDADES[__PROP]) sl.value=__PROP; } }); }catch(e){}
   function viejo(){
     google.script.run
       .withSuccessHandler(_ponerProps)
@@ -1055,11 +1077,19 @@ function generarPDF(){
 
   var nombreArch = DOCS[docSel].nombre.replace(/[^A-Za-z]/g,'-')+'-Azcuenaga-'+Date.now()+'.pdf';
   descargarPDF(doc, nombreArch);
-  var b64 = doc.output('datauristring').split(',')[1];
-  google.script.run
-    .withSuccessHandler(function(r){ if(r && r.ok){ mostrarAviso('✓ Guardado en Drive: '+r.nombre, r.url); } })
-    .withFailureHandler(function(err){ mostrarAviso('⚠ Se descargó, pero no se pudo guardar en Drive: '+err.message, null); })
-    .guardarDocumento(nombreArch, b64);
+  var b64 = doc.output('datauristring').split(',')[1], propK = document.getElementById('propSel').value, quien = ''; try{ quien = (localStorage.getItem('azcu_nombre')||'').trim(); }catch(e){}
+  if(propK){
+    var borr = JSON.stringify({docSel:docSel, propKey:propK, esCompartida:esCompartida, html:document.getElementById('editor').innerHTML});
+    google.script.run
+      .withSuccessHandler(function(r){ if(r && r.ok){ window.__DOCID=r.id; mostrarAviso('✓ Guardado en la ficha de la propiedad (versión '+r.version+'). Podés volver a editarlo desde ahí.', r.url); } })
+      .withFailureHandler(function(err){ mostrarAviso('⚠ Se descargó, pero no se pudo guardar en la ficha: '+err.message, null); })
+      .guardarDocumentoPropiedad(propK, docSel, DOCS[docSel].nombre, nombreArch, b64, borr, quien, window.__DOCID||'');
+  } else {
+    google.script.run
+      .withSuccessHandler(function(r){ if(r && r.ok){ mostrarAviso('✓ Guardado en Drive: '+r.nombre, r.url); } })
+      .withFailureHandler(function(err){ mostrarAviso('⚠ Se descargó, pero no se pudo guardar en Drive: '+err.message, null); })
+      .guardarDocumento(nombreArch, b64);
+  }
 }
 
 function descargarPDF(doc, nombre){
