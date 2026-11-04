@@ -111,7 +111,7 @@ header{min-height:86px}
     var enE=c.entComp?['Competencias',c.entComp]:(c.entScr?['Screening',c.entScr]:null);var pxE=(c.prox&&!String(c.notaComp||'').trim()&&m.t==='act')?c.prox:'';
     return '<div class="card '+notaCls(n)+'" data-fila="'+c.fila+'" onclick="ficha('+c.fila+')">'
       +'<div class="top"><b>'+esc(c.nombre)+'</b><div class="bdg">'+(n?'<span class="nota '+notaClsBadge(n)+'">'+esc(n)+'</span><small>'+ep+'</small>'+(ep==='CV'&&c.cvPorque?'<small class="ia" title="Nota puesta por la IA al leer el CV">criterio IA</small>':''):'')+'</div></div>'+fo+ub+pr
-      +rk+(t1?'<div class="ln"><i>🗓</i><div class="tags">'+t1+'</div></div>':'')+(fl?'<div class="ln"><i>⚑</i><div class="tags">'+fl+'</div></div>':'')+(enE?'<div class="ent" title="Quién hizo la última entrevista: '+esc(enE[1])+' ('+enE[0].toLowerCase()+')">Entrevistó <b>'+esc(String(enE[1]).split(' ')[0])+'</b> · '+enE[0].toLowerCase()+'</div>':'')+(pxE?'<div class="ent prx" title="Quién hace la próxima entrevista (competencias)">Próxima: <b>'+esc(String(pxE).split(' ')[0])+'</b> · competencias</div>':'')+'</div>';
+      +rk+(t1?'<div class="ln"><i>🗓</i><div class="tags">'+t1+'</div></div>':'')+(fl?'<div class="ln"><i>⚑</i><div class="tags">'+fl+'</div></div>':'')+(enE?'<div class="ent" title="Quién hizo la última entrevista: '+esc(enE[1])+' ('+enE[0].toLowerCase()+')">Entrevistó <b>'+esc(String(enE[1]).split(' ')[0])+'</b> · '+enE[0].toLowerCase()+'</div>':'')+(pxE?'<div class="ent prx" title="Quién hace la próxima entrevista">Próxima: <b>'+esc(String(pxE).split(' ')[0])+'</b> · '+proxEtapa(c)+'</div>':'')+'</div>';
   };
   function rkGuardar(l,ant){google.script.run.withSuccessHandler(function(){toast();}).withFailureHandler(function(e){DATA.forEach(function(c){c.ordenCli=ant[c.fila]||0;});renderBoardN();blAlert('No se pudo guardar el orden: '+((e&&e.message)||e));}).rankingGuardar(PERFIL,l.map(function(f){var c=DATA.find(function(x){return x.fila===f;});return {fila:f,val:c&&c.valCli||'Se ajusta'};}));}
   window.rkVal=function(fila,v){var c=DATA.find(function(x){return x.fila===fila;});if(!c)return;var ant={};DATA.forEach(function(x){ant[x.fila]=x.ordenCli;});c.valCli=v;
@@ -317,15 +317,17 @@ header{min-height:86px}
     return '<div class="edp" id="agPanel" hidden><div class="ggrid"><label class="gl">Tipo<select id="gaTipo"><option value="screening">Screening</option><option value="competencias">Competencias</option><option value="empresa-virtual">Empresa (virtual)</option><option value="empresa-presencial">Empresa (presencial)</option></select></label><label class="gl" id="gaQL">Quién entrevista<select id="gaQuien" data-prox="'+esc(c.prox||'')+'"></select></label>'+inp('gaFec','Día',hoy,'date')+inp('gaHor','Hora','10:00','time')+'<label class="gl">Duración<select id="gaDur"><option>30</option><option>45</option><option>60</option><option>90</option></select></label>'+inp('gaLug','Lugar / link (opcional)','')+'</div><div class="obsb"><span class="hint">Se crea en el calendario de Blumia, queda registrado en la ficha y se invita por mail al candidato y a quien entrevista (si tienen mail).</span><button class="mbtn sm" onclick="agendarC('+c.fila+',this)">Agendar</button></div></div>';
   }
   window.panelTog=function(id){var e=document.getElementById(id);if(!e)return;['edPanel','agPanel'].forEach(function(k){var x=document.getElementById(k);if(x&&k!==id)x.hidden=true;});e.hidden=!e.hidden;if(id==='agPanel'&&!e.hidden)agQuienCargar();};
+  function proxEtapa(c){return (String(c.notaScr||'').trim()||/competenc/i.test(c.estado||''))?'competencias':'screening';}
+  window.proxEtapa=proxEtapa;
   function proxFichaHtml(c){
     var m=metEstado(c.estado)||{t:'act',lv:0};
-    if(m.t!=='act'||m.lv<2||String(c.notaComp||'').trim())return '';
+    if(m.t!=='act'||!/screening|competenc/i.test(c.estado||'')||String(c.notaComp||'').trim())return '';
     return '<div class="frow"><span class="fl">Próxima entrevista</span><span class="fv"><select id="proxSel" data-f="'+c.fila+'" data-v="'+esc(c.prox||'')+'" onchange="proxGuardar(this)" style="height:34px;border:1px solid #bbb;border-radius:8px;padding:0 8px;font:inherit"><option value="">Sin asignar</option>'+(c.prox?'<option value="'+esc(c.prox)+'" selected>'+esc(c.prox)+'</option>':'')+'</select> <span style="color:#6b7a70;font-size:12px">(competencias)</span></span></div>';
   }
   window.proxCargar=function(){
     var s=document.getElementById('proxSel');if(!s)return;
-    var go=function(){var E=window.AG_ENT||{lista:[]},v=s.getAttribute('data-v')||'';
-      var L=E.lista.filter(function(u){return u.competencias;}).map(function(u){return String(u.nombre).split(' ')[0];});
+    var go=function(){var E=window.AG_ENT||{lista:[]},v=s.getAttribute('data-v')||'',cc=DATA.find(function(x){return x.fila===Number(s.getAttribute('data-f'));}),et=cc?proxEtapa(cc):'competencias';
+      var L=E.lista.filter(function(u){return u[et];}).map(function(u){return String(u.nombre).split(' ')[0];});
       if(v&&L.indexOf(v)<0)L.push(v);
       s.innerHTML='<option value="">Sin asignar</option>'+L.map(function(n){return '<option value="'+esc(n)+'"'+(n===v?' selected':'')+'>'+esc(n)+'</option>';}).join('');};
     if(window.AG_ENT){go();return;}
@@ -377,7 +379,7 @@ header{min-height:86px}
       var gr={},orden=[];SF.forEach(function(c){var k=pn(c.prox);if(!gr[k]){gr[k]={n:String(c.prox).split(' ')[0],L:[]};orden.push(k);}gr[k].L.push(c);});
       sf='<div class="sec" style="margin-top:16px">Asignados, todavía sin fecha</div>';
       orden.forEach(function(k){var g=gr[k];sf+='<div style="margin:8px 0 2px;font-weight:800;font-size:13px;color:#0F3F27">'+esc(g.n)+' <span style="color:#777;font-weight:600">· '+g.L.length+' candidato'+(g.L.length===1?'':'s')+'</span></div>';
-        g.L.forEach(function(c){sf+='<div class="frow" style="cursor:pointer" onclick="ficha('+c.fila+')"><span class="fl">sin fecha</span><span class="fv"><b>'+esc(c.nombre)+'</b> · '+esc(c.estado)+' · competencias</span></div>';});});
+        g.L.forEach(function(c){sf+='<div class="frow" style="cursor:pointer" onclick="ficha('+c.fila+')"><span class="fl">sin fecha</span><span class="fv"><b>'+esc(c.nombre)+'</b> · '+esc(c.estado)+' · '+proxEtapa(c)+'</span></div>';});});
     }
     document.getElementById('mtit').textContent='📅 Agenda de entrevistas';
     document.getElementById('mbody').innerHTML=sel+(h||(SF.length?'':'<div style="padding:20px;color:#777">No hay entrevistas agendadas por delante.</div>'))+sf;
