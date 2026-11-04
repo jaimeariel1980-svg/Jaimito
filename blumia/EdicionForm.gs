@@ -46,7 +46,7 @@ function guardarFormularioPerfil_(pin, perfilId, p, quien) {
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
-    const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+    const ss = ssAbrir_(SHEET_MASTER_ID);
 
     if (p.eval) {
       if (!p.eval.length) throw new Error('El screening necesita al menos un criterio.');

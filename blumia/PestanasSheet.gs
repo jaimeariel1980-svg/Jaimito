@@ -5,7 +5,7 @@
 
 function pestanasSheetSolo_(perfilId) {
   const cfg = getConfig(perfilId);
-  const ss = SpreadsheetApp.openById(cfg.sheet_id);
+  const ss = ssAbrir_(cfg.sheet_id);
   const dejar = ss.getSheetByName(cfg.hoja_nombre);
   if (!dejar) throw new Error('No encontré la pestaña de esa búsqueda en el sheet.');
   if (dejar.isSheetHidden()) dejar.showSheet();
@@ -16,7 +16,7 @@ function pestanasSheetSolo_(perfilId) {
 }
 
 function pestanasSheetTodas_() {
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+  const ss = ssAbrir_(SHEET_MASTER_ID);
   let n = 0;
   ss.getSheets().forEach(s => { if (s.isSheetHidden()) { s.showSheet(); n++; } });
   return { ok: true, mostradas: n };

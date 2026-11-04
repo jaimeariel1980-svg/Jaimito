@@ -54,7 +54,7 @@ function resumenBusquedas(perfilId) {
 
 // escribe un campo de la fila de la búsqueda en Config (crea la columna si falta)
 function setConfigCampo_(perfilId, campo, valor) {
-  const sh = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName('Config');
+  const sh = ssAbrir_(SHEET_MASTER_ID).getSheetByName('Config');
   const data = sh.getDataRange().getValues();
   const fila = data.findIndex((r, i) => i > 0 && r[0] === perfilId) + 1;
   if (!fila) throw new Error('Perfil no encontrado: ' + perfilId);
@@ -69,7 +69,7 @@ function datosInformeBusqueda(perfilId) {
   let banda = String(cfg.banda_salarial || '').replace(/\D/g, '');
   // Director Comercial (Energía y Minería): búsqueda de $ 13.000.000 mensuales; se carga sola la primera vez (cuando todavía no existe la columna) y se cambia desde ⚙ Configurar
   if (!banda && perfilId === 'director-comercial' && cfg.banda_salarial === undefined) { banda = '13000000'; try { setConfigCampo_(perfilId, 'banda_salarial', banda); } catch (e) { } }
-  const sh = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName(hojaProceso_(empresaKey_(cfg)));
+  const sh = ssAbrir_(SHEET_MASTER_ID).getSheetByName(hojaProceso_(empresaKey_(cfg)));
   const nombre = (listarPerfiles().filter(p => p.id === perfilId)[0] || {}).nombre;
   let industrias = '';
   if (sh && sh.getLastRow() > 1) {
@@ -86,7 +86,7 @@ function guardarBandaSalarial(pin, perfilId, texto) {
   const num = Number(String(texto).replace(/\D/g, ''));
   if (!num || num < 1000) throw new Error('Escribí la banda en pesos, por ejemplo 13000000.');
   setConfigCampo_(perfilId, 'banda_salarial', num);
-  const sh = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName(hojaProceso_(empresaKey_(cfg)));
+  const sh = ssAbrir_(SHEET_MASTER_ID).getSheetByName(hojaProceso_(empresaKey_(cfg)));
   const nombre = (listarPerfiles().filter(p => p.id === perfilId)[0] || {}).nombre;
   if (sh && sh.getLastRow() > 1) {
     const i = sh.getDataRange().getValues().findIndex(r => r[0] === nombre);

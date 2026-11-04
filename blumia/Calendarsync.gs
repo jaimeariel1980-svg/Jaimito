@@ -1,5 +1,5 @@
 function syncCalendarConfirmados() {
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+  const ss = ssAbrir_(SHEET_MASTER_ID);
   const cal = CalendarApp.getCalendarById('blumiaconsulting@gmail.com');
   const ini = new Date();
   const fin = new Date(ini.getTime() + 15 * 24 * 60 * 60 * 1000);

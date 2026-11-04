@@ -8,7 +8,7 @@ function URL_BASE() { return ScriptApp.getService().getUrl(); }
 let CFG_MEMO_ = null;
 function configValores_() {
   if (CFG_MEMO_ && CFG_MEMO_.v) return CFG_MEMO_.v;
-  const config = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName('Config');
+  const config = ssAbrir_(SHEET_MASTER_ID).getSheetByName('Config');
   if (!config) throw new Error('Falta pestaña Config. Corré setupInicial()');
   const v = config.getDataRange().getValues();
   if (CFG_MEMO_) CFG_MEMO_.v = v;
@@ -30,13 +30,17 @@ function listarPerfiles() {
   return config.slice(1).filter(r => r[0]).map(r => ({ id: r[0], nombre: r[1] }));
 }
 
+/* Abrir una planilla por id cuesta entre 150 y 500 ms cada vez (medición del 4/11: el tablero la abría 5 veces). Se abre una sola vez por ejecución. */
+const SS_ABIERTAS_ = {};
+function ssAbrir_(id) { return SS_ABIERTAS_[id] || (SS_ABIERTAS_[id] = SpreadsheetApp.openById(id)); }
+
 function getSheet(cfg) {
-  return SpreadsheetApp.openById(cfg.sheet_id).getSheetByName(cfg.hoja_nombre);
+  return ssAbrir_(cfg.sheet_id).getSheetByName(cfg.hoja_nombre);
 }
 
 function getDatosPerfil_(perfilId) {
   const cfg = getConfig(perfilId);
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+  const ss = ssAbrir_(SHEET_MASTER_ID);
   const leer = (nombre) => {
     const sh = ss.getSheetByName(nombre);
     if (!sh) return [];
@@ -709,14 +713,14 @@ function aplicarEstadoNota(sheet, fila, etapa, nota) {
 
 function crearTriggers() {
   ScriptApp.getProjectTriggers().forEach(t => ScriptApp.deleteTrigger(t));
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+  const ss = ssAbrir_(SHEET_MASTER_ID);
   ScriptApp.newTrigger('syncCalendarConfirmados').timeBased().everyMinutes(15).create();
   ScriptApp.newTrigger('procesarTodosLosPerfiles').timeBased().everyMinutes(30).create();
   ScriptApp.newTrigger('onEditDescartado').forSpreadsheet(ss).onEdit().create();
   console.log('Triggers OK');
 }
 function getPreguntasPostulacion(perfilId) {
-  const sh = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName('Postulacion_Preguntas');
+  const sh = ssAbrir_(SHEET_MASTER_ID).getSheetByName('Postulacion_Preguntas');
   if (!sh) return [];
   const rows = sh.getDataRange().getValues();
   if (rows.length < 2) return [];
@@ -785,7 +789,7 @@ function registrarErrorPostulacion(payload, err) {
 
   // 1) hoja "Errores"
   try {
-    const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+    const ss = ssAbrir_(SHEET_MASTER_ID);
     let sh = ss.getSheetByName('Errores');
     if (!sh) {
       sh = ss.insertSheet('Errores');
@@ -812,7 +816,7 @@ function registrarErrorPostulacion(payload, err) {
 }
 function getHeroPostulacion(perfilId) {
   try {
-    const rows = SpreadsheetApp.openById(SHEET_MASTER_ID)
+    const rows = ssAbrir_(SHEET_MASTER_ID)
       .getSheetByName('Perfiles_Hero').getDataRange().getValues();
     const headers = rows[0];
     const fila = rows.slice(1).find(r => r[0] === perfilId);
@@ -852,7 +856,7 @@ function preguntasBase_(cfg) {
 const URL_WEBAPP = 'https://script.google.com/macros/s/AKfycbytekPKN31bZLxczDVknMr433K9KflzmrR-dCWsC1hLlx2MO7tbw6SrMjFXa1PnucQo/exec';
 
 function generarTodosLosLinks() {
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+  const ss = ssAbrir_(SHEET_MASTER_ID);
   let sh = ss.getSheetByName('Links');
   if (!sh) sh = ss.insertSheet('Links');
   sh.clear();
@@ -1018,7 +1022,7 @@ REGLAS DE LA NOTA (nivel_ajuste):
   }
 }
 function setupPostulacionAsync() {
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+  const ss = ssAbrir_(SHEET_MASTER_ID);
   const estados = ['Pendiente', 'Nuevo', 'Contactado', 'Entrevista agendada', 'Entrevistado',
                    'Avanza', 'En evaluación cliente', 'Oferta', 'Contratado', 'Descartado', 'Revisar'];
   const reglaEstado = SpreadsheetApp.newDataValidation().requireValueInList(estados, true).build();
@@ -1086,7 +1090,7 @@ function formatearRequisitos(req, localidad) {
 
 // --- perfiles activos leídos de Config (excluye operaciones / vacíos) ---
 function perfilesActivos_() {
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+  const ss = ssAbrir_(SHEET_MASTER_ID);
   const cfg = ss.getSheetByName('Config').getDataRange().getValues();
   const cEst = cfg[0].indexOf('estado_busqueda');
   const out = [];
@@ -1112,7 +1116,7 @@ function rutearPorAsunto_(asunto) {
   for (const pid in CODIGOS_ASUNTO_) {
     if (CODIGOS_ASUNTO_[pid].some(k => aRef.indexOf(k) !== -1) && perfilesActivos_().some(p => p.id === pid)) return pid;
   }
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+  const ss = ssAbrir_(SHEET_MASTER_ID);
   const sh = ss.getSheetByName('Mail_Routing');
   if (!sh) return null;
   const a = asunto.toLowerCase();
@@ -1200,7 +1204,7 @@ Si el CV no encaja claramente con ninguno, devolvé perfil_id null y confianza b
 
 // --- hoja de descartes de ruteo ---
 function hojaSinClasificar_() {
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+  const ss = ssAbrir_(SHEET_MASTER_ID);
   let sh = ss.getSheetByName('Sin clasificar');
   if (!sh) {
     sh = ss.insertSheet('Sin clasificar');
@@ -1211,7 +1215,7 @@ function hojaSinClasificar_() {
 
 // --- ROUTER: barre la casilla UNA vez y decide el perfil por CV ---
 function procesarMailsRouter() {
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+  const ss = ssAbrir_(SHEET_MASTER_ID);
   const LABEL = 'Procesado-Blumia';
   let label = GmailApp.getUserLabelByName(LABEL);
   if (!label) label = GmailApp.createLabel(LABEL);
@@ -1872,7 +1876,7 @@ function setupColumnasCliente() {
 function generarHTMLProceso(empresa) {
   empresa = empresa || empresaDefault_();
   const nombreEmp = empresaInforme_({ empresa: empresa });
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+  const ss = ssAbrir_(SHEET_MASTER_ID);
   const sh = ss.getSheetByName(hojaProceso_(empresa));
   if (!sh) throw new Error('Corré primero generarInformeProceso');
   const filas = sh.getDataRange().getValues();
@@ -2022,7 +2026,7 @@ function menuPDFClienteActivo() {
 }
 function generarInformeProceso(empresa) {
   empresa = empresa || empresaDefault_();
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+  const ss = ssAbrir_(SHEET_MASTER_ID);
   let sh = ss.getSheetByName(hojaProceso_(empresa));
   const existe = !!sh;
   if (!sh) sh = ss.insertSheet(hojaProceso_(empresa));
@@ -2076,7 +2080,7 @@ function generarInformeProceso(empresa) {
 }
 function completarProcesoIA(empresa) {
   empresa = empresa || empresaDefault_();
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+  const ss = ssAbrir_(SHEET_MASTER_ID);
   const sh = ss.getSheetByName(hojaProceso_(empresa));
   if (!sh) { Logger.log('Corré primero generarInformeProceso'); return; }
   const filas = sh.getDataRange().getValues();
@@ -2954,7 +2958,7 @@ function busquedaCerradaHTML_(perfil) {
   return HtmlService.createHtmlOutput(html).setTitle('Búsqueda cerrada | Blumia').addMetaTag('viewport', 'width=device-width, initial-scale=1').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 function crearPestanaPlantillas(){
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+  const ss = ssAbrir_(SHEET_MASTER_ID);
   let sh = ss.getSheetByName('Plantillas');
   if(sh){ Logger.log('Ya existe la pestaña Plantillas'); return; }
   sh = ss.insertSheet('Plantillas');
@@ -3049,7 +3053,7 @@ function armarComunicacion_(perfilId, fila, tipo, quien, entrevistadorElegido){
   return {ok:true, url:url, texto:texto, aviso:aviso};
 }
 function crearPestanaBanco(){
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+  const ss = ssAbrir_(SHEET_MASTER_ID);
   let sh = ss.getSheetByName('Banco');
   if(sh){ Logger.log('Ya existe la pestaña Banco'); return; }
   sh = ss.insertSheet('Banco');
@@ -3065,7 +3069,7 @@ function enviarABanco_(perfilId, fila, categoria, seniority, notaBanco, quien){
   QUIEN_ = quien || '';
   const cfg = getConfig(perfilId);
   const sh = getSheet(cfg);
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+  const ss = ssAbrir_(SHEET_MASTER_ID);
   const banco = ss.getSheetByName('Banco');
   if(!banco) return {ok:false, error:'Falta la pestaña Banco'};
 
@@ -3136,7 +3140,7 @@ function enviarABanco_(perfilId, fila, categoria, seniority, notaBanco, quien){
   return {ok:true};
 }
 function doGetBanco(){
-  const banco = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName('Banco');
+  const banco = ssAbrir_(SHEET_MASTER_ID).getSheetByName('Banco');
   if(!banco) return '[]';
   const d = banco.getDataRange().getValues();
   const H = d[0];
@@ -3368,7 +3372,7 @@ function bancoHTML(desde){
     .addMetaTag('viewport','width=device-width, initial-scale=1');
 }
 function borrarDelBanco_(fila, nombre){
-  const b = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName('Banco');
+  const b = ssAbrir_(SHEET_MASTER_ID).getSheetByName('Banco');
   const v = String(b.getRange(fila, 2).getValue() || '').trim();
   if(v.toLowerCase() !== String(nombre||'').toLowerCase().trim()){
     return {ok:false, error:'La fila no coincide con el nombre. Actualizá la página y probá de nuevo.'};
@@ -3377,7 +3381,7 @@ function borrarDelBanco_(fila, nombre){
   return {ok:true};
 }
 function enviarABusqueda_(filaBanco, perfilDestino){
-  const banco = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName('Banco');
+  const banco = ssAbrir_(SHEET_MASTER_ID).getSheetByName('Banco');
   const d = banco.getDataRange().getValues();
   const H = d[0];
   const idx = {}; H.forEach(function(h,i){ if(h) idx[h] = i; });

@@ -34,7 +34,7 @@ function vaciarBusqueda_(perfilId, confirmacion, quien) {
   let archivos = 0;
   Object.keys(ids).forEach(id => { try { DriveApp.getFileById(id).setTrashed(true); archivos++; } catch (e) { } });
 
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+  const ss = ssAbrir_(SHEET_MASTER_ID);
   const quitar = (nomHoja, fn, cols) => {
     const s = ss.getSheetByName(nomHoja);
     if (!s || s.getLastRow() < 2) return 0;

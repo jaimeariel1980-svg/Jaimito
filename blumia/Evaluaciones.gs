@@ -6,7 +6,7 @@ const HOJA_EVAL_ = 'Evaluaciones';
 function evalNorm_(s) { return String(s || '').toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' '); }
 
 function evalHoja_() {
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+  const ss = ssAbrir_(SHEET_MASTER_ID);
   let sh = ss.getSheetByName(HOJA_EVAL_);
   if (!sh) {
     sh = ss.insertSheet(HOJA_EVAL_);
@@ -47,14 +47,17 @@ function aplicarEdicion_(sheet, fila, etapa, notaAntes, notaNueva) {
 // {<nombre normalizado>|<etapa>: entrevistador} de una búsqueda (el que se eligió en el formulario; si falta, quien guardó)
 function entrevistadoresEval_(perfilId) {
   const out = {};
+  const cache = CacheService.getScriptCache(), ck = 'entev_' + perfilId;
+  try { const c = cache.get(ck); if (c) return JSON.parse(c); } catch (e) { }
   try {
-    const sh = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName(HOJA_EVAL_);
+    const sh = ssAbrir_(SHEET_MASTER_ID).getSheetByName(HOJA_EVAL_);
     if (!sh || sh.getLastRow() < 2) return out;
     sh.getRange(2, 1, sh.getLastRow() - 1, Math.max(7, Math.min(sh.getLastColumn(), 8))).getValues().forEach(r => {
       if (String(r[1]) !== String(perfilId)) return;
       const e = String(r[7] || r[5] || '').trim();
       if (e) out[evalNorm_(r[2]) + '|' + r[3]] = e;
     });
+    try { cache.put(ck, JSON.stringify(out), 120); } catch (e) { }
   } catch (e) { }
   return out;
 }
@@ -72,9 +75,11 @@ function guardarEstadoEval_(cfg, perfilId, nombre, etapa, estadoJSON, nota, quie
     }
     const vals = [new Date(), perfilId, nombre, etapa, nota || '', quienHist_(quien), id];
     if (fila) sh.getRange(fila, 1, 1, 7).setValues([vals]); else sh.appendRow(vals);
+    try { CacheService.getScriptCache().remove('entev_' + perfilId); } catch (e) { }
     // quién entrevistó (el entrevistador que se elige en el formulario; col. 8), para mostrarlo en la tarjeta
     const ent = String(quien == null ? '' : quien).replace(/[<>]/g, '').trim().slice(0, 60);
     if (ent) { if (sh.getMaxColumns() < 8) sh.insertColumnsAfter(sh.getMaxColumns(), 8 - sh.getMaxColumns()); sh.getRange(fila || sh.getLastRow(), 8).setValue(ent); if (!sh.getRange(1, 8).getValue()) sh.getRange(1, 8).setValue('entrevistador'); }
+    try { CacheService.getScriptCache().remove('entev_' + perfilId); } catch (e) { }
   } catch (e) { console.error('No pude guardar las respuestas de la evaluación: ' + e); }
 }
 

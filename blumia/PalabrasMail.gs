@@ -8,7 +8,7 @@ const PALABRAS_MAIL_ = {
 };
 
 function blumiaCargarPalabrasMail() {
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+  const ss = ssAbrir_(SHEET_MASTER_ID);
   let sh = ss.getSheetByName('Mail_Routing');
   if (!sh) { sh = ss.insertSheet('Mail_Routing'); sh.appendRow(['perfil', 'palabras_asunto']); }
   const out = [];

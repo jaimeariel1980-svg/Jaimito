@@ -35,7 +35,7 @@ function promptNuevaBusqueda_(empresas) {
 
 function empresasConocidas_() {
   try {
-    const rows = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName('Config').getDataRange().getValues();
+    const rows = ssAbrir_(SHEET_MASTER_ID).getSheetByName('Config').getDataRange().getValues();
     const c = rows[0].indexOf('empresa');
     if (c < 0) return [];
     const s = {};
@@ -46,7 +46,7 @@ function empresasConocidas_() {
 
 function idLibre_(base) {
   const ids = {};
-  SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName('Config').getDataRange().getValues().slice(1).forEach(r => { ids[String(r[0])] = 1; });
+  ssAbrir_(SHEET_MASTER_ID).getSheetByName('Config').getDataRange().getValues().slice(1).forEach(r => { ids[String(r[0])] = 1; });
   let id = base || 'busqueda', n = 2;
   while (ids[id]) id = (base || 'busqueda') + '-' + n++;
   return id;
@@ -119,7 +119,7 @@ function crearBusquedaIA_(pin, prop, quien, texto) {
   const lock = LockService.getScriptLock();
   lock.waitLock(30000);
   try {
-    const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+    const ss = ssAbrir_(SHEET_MASTER_ID);
     const id = idLibre_(slugBusqueda_(p.nombre));
     const hojaNombre = p.nombre.replace(/[\[\]\*\?\:\/\\]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
     if (ss.getSheetByName(hojaNombre)) throw new Error('Ya existe una pestaña llamada «' + hojaNombre + '». Cambiá el nombre del puesto.');

@@ -26,7 +26,7 @@ function huntUrl_(u) {
 }
 
 function huntHoja_() {
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+  const ss = ssAbrir_(SHEET_MASTER_ID);
   let sh = ss.getSheetByName(HOJA_HUNT_);
   if (!sh) {
     sh = ss.insertSheet(HOJA_HUNT_);
@@ -228,7 +228,7 @@ const HUNT_GENERAL_ = {
   'hunting-primer-contacto': 'Asunto: Oportunidad ejecutiva | [PUESTO]\n\nEstimado/a [NOMBRE]:\n\nEspero que estés muy bien.\n\nDesde Blumia Consulting estamos liderando una búsqueda confidencial para incorporar un/a [PUESTO] en [EMPRESA].\n\n(Contá acá en 2 o 3 párrafos qué se busca, por qué es una buena oportunidad y dónde está basada la posición. Podés usar «✨ Redactar con IA» con tus instrucciones.)\n\nMe gustaría conocer si esta oportunidad podría resultar de tu interés y, en ese caso, coordinar una breve conversación para compartirte más detalles.\n\nDesde ya, muchas gracias por tu tiempo.\n\nSaludos cordiales,\nFlavia Jaime\nSocia Fundadora\nBlumia Consulting\nExecutive Search\nempleos@blumiaconsulting.com'
 };
 function asegurarPlantillasHunting_(perfilId) {
-  const sh = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName('Plantillas');
+  const sh = ssAbrir_(SHEET_MASTER_ID).getSheetByName('Plantillas');
   if (!sh) return;
   const cp = colPerfilPlantillas_(sh);
   const data = sh.getDataRange().getValues();
@@ -263,7 +263,7 @@ function huntingMensaje_(perfilId, id, tipo, nombrar, quien) {
   }
   const hero = getHeroPostulacion(perfilId);
   let ubic = ''; try {
-    const rows = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName('Perfiles_Hero').getDataRange().getValues();
+    const rows = ssAbrir_(SHEET_MASTER_ID).getSheetByName('Perfiles_Hero').getDataRange().getValues();
     const f = rows.slice(1).find(r => r[0] === perfilId); const k = rows[0].indexOf('ubicacion'); ubic = f && k >= 0 ? String(f[k] || '') : '';
   } catch (e) { }
   const ciega = busquedaCiega_(cfg);
@@ -431,7 +431,7 @@ const HUNTE_COLS_ = ['id', 'perfil', 'empresa', 'categoria', 'sectores', 'compet
 const HUNTE_ESTADOS_ = ['Sin revisar', 'En búsqueda', 'Revisada', 'Descartada'];
 
 function huntEHoja_() {
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+  const ss = ssAbrir_(SHEET_MASTER_ID);
   let sh = ss.getSheetByName(HOJA_HUNTE_);
   if (!sh) {
     sh = ss.insertSheet(HOJA_HUNTE_);

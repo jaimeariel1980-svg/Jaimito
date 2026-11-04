@@ -5,7 +5,7 @@ const MENSAJE_MARCAS_ = ['[NOMBRE]', '[PUESTO]', '[EMPRESA]', '[ENTREVISTADOR]',
 const HOJA_INSTR_IA_ = 'Instrucciones_IA';
 
 function instrIAHoja_(crear) {
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+  const ss = ssAbrir_(SHEET_MASTER_ID);
   let sh = ss.getSheetByName(HOJA_INSTR_IA_);
   if (!sh && crear) { sh = ss.insertSheet(HOJA_INSTR_IA_); sh.getRange(1, 1, 1, 5).setValues([['perfil', 'clave', 'texto', 'quien', 'fecha']]).setFontWeight('bold'); sh.setFrozenRows(1); }
   return sh;

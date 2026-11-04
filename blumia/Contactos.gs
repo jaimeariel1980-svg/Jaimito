@@ -1,7 +1,7 @@
 const HOJA_REG_CONT_ = 'Registro_Contactos';
 
 function hojaRegCont_() {
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+  const ss = ssAbrir_(SHEET_MASTER_ID);
   let sh = ss.getSheetByName(HOJA_REG_CONT_);
   if (!sh) {
     sh = ss.insertSheet(HOJA_REG_CONT_);
@@ -26,7 +26,7 @@ function registrarContactoManual_(perfilId, fila, tipo, quien) {
 
 function borrarContactoRegistro_(perfilId, fila, fechaTxt) {
   const nombre = String(getSheet(getConfig(perfilId)).getRange(fila, 2).getValue() || '').trim();
-  const sh = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName(HOJA_REG_CONT_);
+  const sh = ssAbrir_(SHEET_MASTER_ID).getSheetByName(HOJA_REG_CONT_);
   if (!sh || sh.getLastRow() < 2) return { ok: false };
   const d = sh.getRange(2, 1, sh.getLastRow() - 1, 7).getValues();
   for (let i = d.length - 1; i >= 0; i--) {
@@ -37,7 +37,7 @@ function borrarContactoRegistro_(perfilId, fila, fechaTxt) {
 
 function getContactosRegistro_(perfilId, fila) {
   const nombre = String(getSheet(getConfig(perfilId)).getRange(fila, 2).getValue() || '').trim();
-  const sh = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName(HOJA_REG_CONT_);
+  const sh = ssAbrir_(SHEET_MASTER_ID).getSheetByName(HOJA_REG_CONT_);
   if (!sh || sh.getLastRow() < 2) return [];
   return sh.getRange(2, 1, sh.getLastRow() - 1, 7).getValues()
     .filter(r => r[1] === perfilId && String(r[3]).trim() === nombre)
