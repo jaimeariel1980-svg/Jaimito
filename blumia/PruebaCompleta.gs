@@ -18,7 +18,7 @@ function blumiaPruebaCompleta() {
 
 function blumiaLimpiarPruebas() {
   if (PropertiesService.getScriptProperties().getProperty('BLUMIA_PRUEBAS') !== 'SI') throw new Error('Cargá BLUMIA_PRUEBAS = SI para limpiar.');
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+  const ss = ssAbrir_(SHEET_MASTER_ID);
   const d = ss.getSheetByName('Config').getDataRange().getValues();
   const ids = d.slice(1).map(r => String(r[0] || '')).filter(id => id.indexOf(PRUEBA_PREFIJO_) === 0);
   const log = [];
@@ -64,7 +64,7 @@ function pruebaCompleta_(op) {
       c.cfg = getConfig(c.id);
       ['folder_madre', 'folder_recibidos', 'folder_pdf_screening', 'folder_pdf_competencias', 'hoja_nombre'].forEach(k => requiere(c.cfg[k], 'Falta ' + k + ' en Config'));
       DriveApp.getFolderById(c.cfg.folder_pdf_screening);
-      requiere(SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName(c.cfg.hoja_nombre), 'No se creó la pestaña de candidatos');
+      requiere(ssAbrir_(SHEET_MASTER_ID).getSheetByName(c.cfg.hoja_nombre), 'No se creó la pestaña de candidatos');
       requiere(listarPerfiles().some(p => p.id === c.id), 'No aparece en la lista de búsquedas');
       requiere(getPreguntasPostulacion(c.id).length === 1, 'Las preguntas de postulación no se cargaron');
       return 'OK';
@@ -275,7 +275,7 @@ function pruebaCompleta_(op) {
 }
 
 function pruebaInforme_(res) {
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+  const ss = ssAbrir_(SHEET_MASTER_ID);
   let sh = ss.getSheetByName('Pruebas_Blumia');
   if (!sh) { sh = ss.insertSheet('Pruebas_Blumia'); sh.appendRow(['Fecha', 'Paso', 'Resultado', 'Detalle', 'ms']); sh.getRange(1, 1, 1, 5).setFontWeight('bold'); }
   const fecha = new Date(), mal = res.filter(r => r[1] !== 'OK').length;
@@ -293,7 +293,7 @@ function limpiarPrueba_(c, log, forzar) {
   const id = String(c.id || '');
   if (!forzar && id.indexOf(PRUEBA_PREFIJO_) !== 0) throw new Error('Por seguridad solo se borran búsquedas de prueba.');
   const hacer = (que, fn) => { try { const n = fn(); log.push(que + (n === undefined ? '' : ' (' + n + ')')); } catch (e) { log.push('No pude ' + que + ': ' + String(e && e.message || e).slice(0, 120)); } };
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+  const ss = ssAbrir_(SHEET_MASTER_ID);
   let cfg = null;
   try { cfg = getConfig(id); } catch (e) { }
   const nombreBusq = cfg ? String(cfg.nombre || cfg.nombre_perfil || '') : '';
@@ -364,7 +364,7 @@ function asegurarPruebaSemanal_() {
 function blumiaBorrarBusquedaLogistica() {
   if (PropertiesService.getScriptProperties().getProperty('BLUMIA_PRUEBAS') !== 'SI') throw new Error('Cargá BLUMIA_PRUEBAS = SI para borrar.');
   const norm = t => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  const d = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName('Config').getDataRange().getValues(), H = d[0];
+  const d = ssAbrir_(SHEET_MASTER_ID).getSheetByName('Config').getDataRange().getValues(), H = d[0];
   const col = k => H.indexOf(k);
   const hit = d.slice(1).filter(r => r[0] && ['nombre', 'nombre_perfil', 'hoja_nombre'].some(k => col(k) >= 0 && /gerente.*logistic|logistic/.test(norm(r[col(k)]))));
   if (hit.length !== 1) throw new Error('Esperaba encontrar UNA búsqueda de logística y encontré ' + hit.length + ': ' + hit.map(r => r[0]).join(', ') + '. No borré nada.');

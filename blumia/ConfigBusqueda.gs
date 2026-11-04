@@ -5,7 +5,7 @@ const CFG_CAMPOS_ = ['nombre', 'nombre_perfil', 'empresa', 'empresa_candidatos',
 const HOJA_HAB_ = 'Preguntas_Habituales';
 
 function leerHabituales_() {
-  const sh = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName(HOJA_HAB_);
+  const sh = ssAbrir_(SHEET_MASTER_ID).getSheetByName(HOJA_HAB_);
   if (!sh || sh.getLastRow() < 2) return [];
   return sh.getRange(2, 1, sh.getLastRow() - 1, 4).getValues().filter(r => String(r[0]).trim())
     .map(r => ({ etiqueta: String(r[0]), tipo: String(r[1]) === 'select' ? 'select' : 'texto', opciones: String(r[2] || ''), requerido: String(r[3]) === 'NO' ? 'NO' : 'SI' }));
@@ -28,7 +28,7 @@ function guardarHabituales_(pin, lista, quien) {
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
-    const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+    const ss = ssAbrir_(SHEET_MASTER_ID);
     let sh = ss.getSheetByName(HOJA_HAB_);
     if (!sh) { sh = ss.insertSheet(HOJA_HAB_); sh.getRange(1, 1, 1, 4).setValues([['etiqueta', 'tipo', 'opciones', 'requerido']]).setFontWeight('bold'); }
     if (sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, 4).clearContent();
@@ -41,7 +41,7 @@ function guardarHabituales_(pin, lista, quien) {
 function getConfigBusqueda_(pin, perfilId) {
   pinValido_(pin);
   const cfg = getConfig(perfilId);
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+  const ss = ssAbrir_(SHEET_MASTER_ID);
   const datos = {};
   CFG_CAMPOS_.forEach(k => { datos[k] = typeof cfg[k] === 'string' ? cfg[k] : (cfg[k] == null ? '' : String(cfg[k])); });
   const usuarios = leerUsuarios_().filter(u => u.activo === 'SI').map(u => ({ nombre: u.nombre, clave: u.clave, scr: usuHace_(u, 'screening'), comp: usuHace_(u, 'competencias') }));
@@ -62,7 +62,7 @@ function guardarConfigBusqueda_(pin, perfilId, p, quien) {
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
-    const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+    const ss = ssAbrir_(SHEET_MASTER_ID);
 
     const base = p.base || {};
     if (p.datos || p.prompt_extra !== undefined) {
@@ -157,7 +157,7 @@ function firmaConPlaceholder_(t) {
 
 // devuelve {texto, propia}: el texto propio de la búsqueda si existe, si no el general
 function plantillaTexto_(clave, perfilId) {
-  const sh = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName('Plantillas');
+  const sh = ssAbrir_(SHEET_MASTER_ID).getSheetByName('Plantillas');
   if (!sh || sh.getLastRow() < 2) return { texto: '', propia: false };
   const data = sh.getDataRange().getValues();
   const c = data[0].indexOf('perfil');
@@ -236,7 +236,7 @@ function guardarLogoCliente_(pin, perfilId, claro, color, quien) {
 /* Ventana «Mensajes» del tablero (4/11, Ariel: «tendría que ser algo aparte»): los textos para copiar o enviar, abiertos a todos los usuarios.
    Editarlos sigue siendo de ⚙ Configurar → Mensajes (solo administradores). */
 function mensajesLista_(perfilId) {
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID), cfg = getConfig(perfilId);
+  const ss = ssAbrir_(SHEET_MASTER_ID), cfg = getConfig(perfilId);
   const items = listarPlantillas_(ss, perfilId).filter(t => t.clave !== 'hunting-nota-conexion').map(t => ({ clave: t.clave, canal: t.canal, texto: t.texto, propia: t.propia }));
   const puesto = String(cfg.nombre_perfil || cfg.nombre || perfilId);
   return { items: items, puesto: puesto, empresa: empresaParaCandidatos_(cfg) };

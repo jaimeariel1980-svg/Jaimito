@@ -21,7 +21,7 @@ function enlacesBusqueda_(cfg) {
   const enlaces = {};
   try { enlaces.carpeta = DriveApp.getFolderById(cfg.folder_madre).getParents().next().getUrl(); } catch (e) { }
   try {
-    const sh = SpreadsheetApp.openById(cfg.sheet_id).getSheetByName(cfg.hoja_nombre);
+    const sh = ssAbrir_(cfg.sheet_id).getSheetByName(cfg.hoja_nombre);
     enlaces.hoja = 'https://docs.google.com/spreadsheets/d/' + cfg.sheet_id + '/edit#gid=' + sh.getSheetId();
   } catch (e) { }
   return enlaces;

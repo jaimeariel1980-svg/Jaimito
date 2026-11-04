@@ -15,7 +15,7 @@ const flyerImagenFmt_ = fmt => 'Flyer - imagen ' + fmt + '.jpg';
 
 function flyerHero_(perfilId) {
   try {
-    const rows = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName('Perfiles_Hero').getDataRange().getValues();
+    const rows = ssAbrir_(SHEET_MASTER_ID).getSheetByName('Perfiles_Hero').getDataRange().getValues();
     const fila = rows.slice(1).find(r => r[0] === perfilId);
     if (!fila) return {};
     const o = {}; rows[0].forEach((h, i) => o[h] = fila[i]);

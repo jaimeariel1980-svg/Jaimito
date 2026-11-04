@@ -27,7 +27,7 @@ function firmar_(txt) { return Utilities.base64EncodeWebSafe(Utilities.computeHm
 
 function accesoLog_(usuario, evento, detalle) {
   try {
-    const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+    const ss = ssAbrir_(SHEET_MASTER_ID);
     let sh = ss.getSheetByName(HOJA_ACC_);
     if (!sh) {
       sh = ss.insertSheet(HOJA_ACC_);
@@ -39,7 +39,7 @@ function accesoLog_(usuario, evento, detalle) {
 }
 
 function usuariosHoja_() {
-  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+  const ss = ssAbrir_(SHEET_MASTER_ID);
   let sh = ss.getSheetByName(HOJA_USU_);
   if (sh) return sh;
   sh = ss.insertSheet(HOJA_USU_);

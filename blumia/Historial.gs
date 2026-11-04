@@ -12,7 +12,7 @@ function quienHist_(q) {
 
 function registrarHistorial_(hoja, candidato, tipo, detalle, quien) {
   try {
-    const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
+    const ss = ssAbrir_(SHEET_MASTER_ID);
     let sh = ss.getSheetByName(HOJA_HIST_);
     if (!sh) {
       sh = ss.insertSheet(HOJA_HIST_);
@@ -20,11 +20,12 @@ function registrarHistorial_(hoja, candidato, tipo, detalle, quien) {
       sh.setFrozenRows(1);
     }
     sh.appendRow([new Date(), String(hoja), String(candidato || ''), String(tipo), String(detalle || '').slice(0, 480), quienHist_(quien)]);
+    try { CacheService.getScriptCache().remove('movs_' + String(hoja)); } catch (e) { }
   } catch (e) { }
 }
 
 function leerHistorial_(hoja, candidato, limite) {
-  const sh = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName(HOJA_HIST_);
+  const sh = ssAbrir_(SHEET_MASTER_ID).getSheetByName(HOJA_HIST_);
   if (!sh || sh.getLastRow() < 2) return [];
   const n = Math.min(sh.getLastRow() - 1, 4000);
   const d = sh.getRange(sh.getLastRow() - n + 1, 1, n, 6).getValues();
@@ -49,8 +50,10 @@ function getHistorialBusqueda_(perfilId) {
 // último movimiento de cada candidato de una hoja: {nombre: milisegundos}
 function ultimosMovimientos_(hoja) {
   const out = {};
+  const cache = CacheService.getScriptCache(), ck = 'movs_' + hoja;
+  try { const c = cache.get(ck); if (c) return JSON.parse(c); } catch (e) { }
   try {
-    const sh = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName(HOJA_HIST_);
+    const sh = ssAbrir_(SHEET_MASTER_ID).getSheetByName(HOJA_HIST_);
     if (!sh || sh.getLastRow() < 2) return out;
     const n = Math.min(sh.getLastRow() - 1, 6000);
     sh.getRange(sh.getLastRow() - n + 1, 1, n, 4).getValues().forEach(r => {
@@ -58,6 +61,7 @@ function ultimosMovimientos_(hoja) {
       const t = new Date(r[0]).getTime();
       if (t > (out[String(r[2]).trim()] || 0)) out[String(r[2]).trim()] = t;
     });
+    try { cache.put(ck, JSON.stringify(out), 120); } catch (e) { }
   } catch (e) { }
   return out;
 }
