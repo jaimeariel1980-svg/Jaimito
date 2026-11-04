@@ -101,6 +101,7 @@ header{min-height:86px}
     (c.previos||[]).slice(0,1).forEach(function(p){fl+='<span class="tag '+(/^Descartad/i.test(p.estado)?'rj':'am')+'" title="Ya se postuló antes">↩ Ya se postuló · '+esc(p.busq)+': '+esc(p.estado)+'</span>';});
     if(m.t==='act'&&dias(c)>=DIAS_ALERTA&&!/agendad/i.test(c.estado))fl+='<span class="tag rj">🕒 '+dias(c)+' d sin movimiento</span>';
     if(/recomend|referid/i.test(c.fuente||''))fl+='<span class="tag zok" title="'+esc(c.fuente)+'">⭐ Recomendado</span>';
+    if(c.nota==='C'&&en[1]==='CV'&&c.cvPorque)fl+='<span class="tag rj" title="'+esc(c.cvPorque)+'">🤖 IA descarta el CV: '+esc(String(c.cvPorque).replace(/^\s*C\s*[:\-–]\s*/i,'').slice(0,60))+(String(c.cvPorque).length>66?'…':'')+'</span>';
     fl+=tagsTarjeta(c);
     if(c.ordenCli>0)fl+='<span class="tag zok" title="Orden en el PDF para el cliente">N.º '+c.ordenCli+' en el ranking</span>';
     var rk='';
@@ -297,7 +298,7 @@ header{min-height:86px}
       +'<div class="fb"><div class="acts all">'+contBtn+cvBtn+agBtn+'<button class="mbtn alt mas-t" onclick="var b=this.nextElementSibling;b.classList.toggle(\'show\');this.textContent=b.classList.contains(\'show\')?\'Menos opciones ▴\':\'Más opciones ▾\'">Más opciones ▾</button><div class="mas-b">'+etapaBtn('screening',c.scrPDF,'Screening','📝 Cargar screening')+etapaBtn('competencias',c.compPDF,'Competencias','💼 Cargar competencias')+btn(c.postulacion,'📄 Ver postulación')+btn(c.informe,'📄 Ver informe')+genBtn+bancoBtn+'</div></div>'+agendarHtml(c)
       +'<div class="fpw"><button class="fpe" title="Editar datos del candidato" onclick="panelTog(\'edPanel\')">✏️</button><div class="fp"><div class="pn"><h4>Contacto</h4>'+row('Teléfono',esc(fmtTel(c.tel)))+row('Email',esc(c.mail))+row('Zona',esc(c.zona))+'</div>'
       +'<div class="pn"><h4>Postulación</h4>'+row('Recibido',esc(c.recibido))+row('Llegó por',esc(c.fuente))+row('Formación',esc(fmtForm(c.formacion)))+row('Pretensión',c.pretension?'$'+fmtMiles(c.pretension):'')+'</div></div></div>'+editarHtml(c)
-      +(c.resumen?'<div class="sec">Análisis del CV</div><div class="fres" style="margin:0">'+esc(c.resumen)+'</div>':'')
+      +((c.resumen||c.cvPorque)?'<div class="sec">Análisis del CV</div>'+(c.cvPorque?'<div class="cvpq'+(c.nota==='C'?' c':'')+'"><b>Por qué la IA puso '+esc(c.nota||'esa nota')+':</b> '+esc(String(c.cvPorque).replace(/^\s*(A|B\+|B|C)\s*[:\-–]\s*/i,''))+'</div>':'')+(c.resumen?'<div class="fres" style="margin:0">'+esc(c.resumen)+'</div>':''):'')
       +'<div class="sec">Calificaciones</div>'+notas+proxFichaHtml(c)+((c.entScr||c.entComp)?row('Entrevistó',[c.entScr?esc(c.entScr)+' (screening)':'',c.entComp?esc(c.entComp)+' (competencias)':''].filter(Boolean).join(' · ')):'')
       +((c.cita||c.historial)?'<div class="sec">Entrevistas (calendario)</div>'+row('Cita agendada',esc(c.cita)+(c.citaCon?' · con '+esc(c.citaCon):''))+(c.historial?'<div style="white-space:pre-line;font-size:13px">'+esc(c.historial)+'</div>':''):'')
       +'<div class="sec">Contacto con el candidato</div>'+contacto
@@ -667,6 +668,7 @@ header h1{font-size:15px;line-height:1.25;flex:1 1 100%;min-width:0;display:-web
 <style id="icons">
 .ic{display:inline-block;width:1.15em;height:1.15em;vertical-align:-.2em;line-height:1;flex:none;margin-right:.4em}.ic.z{margin-right:0}
 .ic svg{position:static!important;width:100%!important;height:100%!important;max-width:none!important;inset:auto!important;transform:none!important;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;display:block}
+.cvpq{margin:0 0 8px;padding:9px 12px;border-radius:8px;background:#F3F8F1;border:1px solid #D5E0CE;font-size:13px;line-height:1.35;color:#0F3F27}.cvpq.c{background:#FDF0F0;border-color:#E06666;color:#7a1f1f}
 .card .ent.prx{margin-top:2px;color:#7A5A00}.card .ent.prx b{color:#7A5A00}
 .card .ent{margin-top:6px;font-size:11px;color:#6b7a70;line-height:1.2}.card .ent b{color:#0F3F27;font-weight:700}
 </style>
