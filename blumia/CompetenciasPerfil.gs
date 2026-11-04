@@ -1,6 +1,6 @@
 /* Competencias del formulario a partir del perfil del puesto (4/11, Ariel: «las competencias del formulario no son las del perfil»).
    Lee las competencias que se acordaron con el cliente (hasta 10, con su nivel requerido) y propone la lista del formulario con una descripción y 3 preguntas de ejemplos concretos
-   por competencia (Claude). NO guarda nada: la pantalla las carga en el editor para que la persona las revise y toque «Guardar cambios». Mismo criterio de siempre (pesos 1 y 2): Experto = 2, el resto = 1; se puede cambiar a mano en el editor. */
+   por competencia (Claude). NO guarda nada: la pantalla las carga en el editor para que la persona las revise y toque «Guardar cambios». Todas con peso 1 (valen lo mismo, así no hay escala que explicar); se puede cambiar a mano en el editor. */
 function competenciasDelPerfil_(perfilId) {
   const cfg = getConfig(perfilId);
   const u = ultimoPerfilDatos_(cfg);
@@ -12,7 +12,7 @@ function competenciasDelPerfil_(perfilId) {
     if (!nom) return;
     const i = nom.indexOf(':');
     const n = (i > 0 ? nom.slice(0, i) : nom).trim(), d = (i > 0 ? nom.slice(i + 1) : '').trim();
-    base.push({ nombre: n.slice(0, 120), descripcion: d.slice(0, 300), peso: (Number(niv) || 0) >= 4 ? 2 : 1 });
+    base.push({ nombre: n.slice(0, 120), descripcion: d.slice(0, 300), peso: 1 });
   };
   for (let k = 0; k < 5; k++) poner(v[46 + 2 * k], v[47 + 2 * k]);
   for (let k = 0; k < 5; k++) poner(v[81 + 2 * k], v[82 + 2 * k]);

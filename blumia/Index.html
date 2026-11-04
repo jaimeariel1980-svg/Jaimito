@@ -76,6 +76,7 @@ html,body{background:var(--bg);font-family:var(--font);color:var(--text);}
 .comp-card{background:var(--white);border:1px solid var(--line);padding:32px;position:relative;transition:.2s;border-radius:4px;}
 .comp-header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:8px;}
 .comp-name{font-size:18px;font-weight:800;letter-spacing:-0.01em;color:var(--green);flex:1;}
+.pesos-iguales .peso-pill,.pesos-iguales .peso-col,.pesos-iguales .th-peso,.pesos-iguales .guide-peso{display:none!important}
 .peso-pill{display:flex;align-items:center;gap:6px;background:var(--glight);color:var(--green);padding:6px 12px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;flex-shrink:0;}
 .peso-pill input{width:38px;border:none;background:transparent;font-family:var(--font);font-size:13px;font-weight:800;color:var(--green);outline:none;text-align:center;border-bottom:1px dashed var(--green);padding:0;}
 .comp-desc{font-size:14px;color:var(--mid);line-height:1.5;margin-bottom:20px;font-style:italic;}
@@ -321,7 +322,7 @@ function render() {
   </div>
   <div class="guide-box">
     <div class="guide-title">Guía para el entrevistador</div>
-    <div class="guide-text">Cada competencia tiene un peso (podés cambiarlo en el número). El peso se aplica al puntaje final.</div>
+    <div class="guide-text guide-peso">Cada competencia tiene un peso (podés cambiarlo en el número). El peso se aplica al puntaje final.</div>
     <div class="star-grid">
       <div class="star-item"><span class="star-letter">A: ACCIÓN</span><span class="star-desc">(¿Cómo lo abordaste?)</span></div>
       <div class="star-item"><span class="star-letter">B: PENSAMIENTO</span><span class="star-desc">(¿Por qué elegiste ese enfoque?)</span></div>
@@ -329,7 +330,7 @@ function render() {
       <div class="star-item"><span class="star-letter">D: APRENDIZAJE</span><span class="star-desc">(¿Qué te llevaste de la experiencia?)</span></div>
       <div class="star-item"><span class="star-letter">E: APLICACIÓN</span><span class="star-desc">(¿Has vuelto a utilizar lo aprendido?)</span></div>
     </div>
-    <div class="guide-note">El cambio de peso solo afecta a este candidato. El peso oficial se cambia en ⚙ Configurar → Competencias.</div>
+    <div class="guide-note guide-peso">El cambio de peso solo afecta a este candidato. El peso oficial se cambia en ⚙ Configurar → Competencias.</div>
   </div>
 
   <div class="section">
@@ -355,7 +356,7 @@ function render() {
         <thead>
           <tr>
             <th>Competencia</th>
-            <th>Peso</th>
+            <th class="th-peso">Peso</th>
             <th>No demuestra</th>
             <th>Señales de desarrollo</th>
             <th>Demuestra efectividad</th>
@@ -389,6 +390,7 @@ function render() {
   </div>
 </div>`;
 
+  document.body.classList.toggle('pesos-iguales', comps.every(c => Number(c.peso) === Number(comps[0].peso)));
   preseleccionarEntrevistadora();
   bindEvents();
   mostrarBotonScreening();
