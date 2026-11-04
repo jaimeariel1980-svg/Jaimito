@@ -128,6 +128,7 @@ var TIPOS_FILA = [
   ['AUTORIZADA por el jefe de Enfermería (extra no informada u omisión justificada)', '#d9ead3', function (e, c) { return e === 'AUTORIZADA' && /por el jefe/.test(c); }],
   ['AUTORIZADA con horario distinto al programado (se paga; cargar el cambio)', '#fde2a7', function (e, c) { return e === 'AUTORIZADA' && /HORARIO DISTINTO/.test(c); }],
   ['Extra no informada (fichó de más sin franja en la planilla): la decide el jefe', '#ffe8c7', function (e, c) { return /NO autorizada|NO INFORMADA/.test(c); }],
+  ['Sin datos del reloj (#N/A en la tarjeta): no es omisión, pedir el registro', '#d0e0e3', function (e, c) { return /SIN DATOS DEL RELOJ/.test(c); }],
   ['Omisión / no fichó la extra', '#fbd9d9', function (e, c) { return /omisión|no fichó|no cubren|ilegible/.test(c); }],
   ['Fichadas dudosas (impares o con hueco): revisar a mano', '#fff3b8', function (e, c) { return /impar|revisar a mano/i.test(c); }],
   ['Franja dentro del turno (no es extra)', '#e9e0f7', function (e, c) { return /dentro del turno/.test(c); }],
@@ -206,6 +207,7 @@ function motivoClaro_(rows, e) {
       }
       return 'Se pagan ' + hs + ' h según las fichadas (' + fichado + ').';
     }
+    if (/SIN DATOS DEL RELOJ/.test(c)) return c.replace('SIN DATOS DEL RELOJ: el', 'Sin datos del reloj: el') + '.';
     if (/no cubren/.test(c)) return 'Las fichadas (' + fichado + ') no llegan al horario de la extra ' + fz + ': no se paga.' + fich;
     if (/no fichó la extra/.test(c)) return 'No hay fichadas en el horario de la extra ' + fz + ': no se paga.' + fich;
     if (/omisión|una sola fichada/.test(c)) return 'Falta la entrada o la salida en el reloj: con una sola fichada no se paga.' + fich;

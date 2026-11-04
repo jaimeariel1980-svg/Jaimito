@@ -38,7 +38,7 @@ c=run('consolidarGRH_(20,16,10,6,true,30)');assert.strictEqual(c.pagar,30);asser
 c=run('consolidarGRH_(5,0,0,0,false,30)');assert.strictEqual(c.alerta,'NO FIGURA EN EL EXPEDIENTE (5 h sin autorización)');
 // procesarAgente_ con fichadas simuladas
 const base={idFichadas:'x'};
-const sim=(fich,a)=>{for(let i=1;i<=31;i++)fich[i]=fich[i]||{};ctx._f=fich;ctx._a=a;return run(`(function(){_fich=_f;_diasMes=31;var out=[];var c={anio:2026,mes:10,feriados:{"10-12":1},noLab:{}};procesarAgente_(_a,"GUARDIA",{},c,out);return out;})()`)};
+const sim=(fich,a)=>{for(let i=1;i<=31;i++)fich[i]=fich[i]||{'1':{marcas:[],txt:[],nombre:'PEREZ Juan'}};ctx._f=fich;ctx._a=a;return run(`(function(){_fich=_f;_diasMes=31;var out=[];var c={anio:2026,mes:10,feriados:{"10-12":1},noLab:{}};procesarAgente_(_a,"GUARDIA",{},c,out);return out;})()`)};
 const ag=(o)=>Object.assign({leg:'1',ape:'PEREZ',hab:{},cam:{},ext:{},lic:{}},o);
 const F=(o)=>{const x={};for(const d in o)x[d]={'1':{marcas:o[d].map(H),txt:o[d].slice(),nombre:'PEREZ Juan'}};return x};
 const R=(r)=>({ent:r[5],sal:r[6],fr:r[8],h50:r[9],h100:r[10],est:r[11],cond:r[12],fich:r[13]});
@@ -135,12 +135,16 @@ sx=sim(F({17:['19:53:03'],18:['6:06:02','19:50'],19:['6:04']}),ag({hab:{1:'7/14'
 let fd=run(`(function(){var f=[['G','1','PEREZ',8,'F','6:58','14:02','','06:58 a 14:02',7,0,'A REVISAR','EXTRA NO INFORMADA · trabajó en su día de franco (F) (no hay franja en la planilla)'],['G','2','GOMEZ',9,'23/6','19:13','','19:00 a 23:00','',0,0,'A REVISAR','omisión: una sola fichada, no corresponde extra']];
 aplicarDecisiones_(f,{'1|8':['Autorizo la extra no informada',''],'2|9':['Omisión justificada: pagar la franja','nota 123']},{'2|9':{h50:3,h100:1,fr:['19/23']}});return f;})()`);
 assert.deepStrictEqual([fd[0][11],fd[0][9],fd[1][11],fd[1][9],fd[1][10]],['AUTORIZADA',7,'AUTORIZADA',3,1]);assert.ok(/nota 123/.test(fd[1][12]));
+// 38) #N/A: el agente no figura en la tarjeta del día siguiente (sábado) => no es omisión, sin datos del reloj
+let fna=F({9:['6:00:30','19:13:00']});fna[10]={};
+r=R(sim(fna,ag({hab:{8:'23/6',9:'23/6'},ext:{9:'19/23'}}))[0]);assert.ok(/SIN DATOS DEL RELOJ/.test(r.cond));assert.ok(/día 10/.test(r.cond));assert.strictEqual(r.h50,0);
+assert.strictEqual(run("tipoFila_(['','','','','','','','','',0,0,'A REVISAR','SIN DATOS DEL RELOJ: el agente no figura en la tarjeta del día 10 (sale #N/A). No es omisión'])"),4);
 // 16) identidad
 const f2=F({5:['6:58','19:10']});f2[5]['1'].nombre='ALONSO Cecilia';
 assert.strictEqual(R(sim(f2,ag({hab:{5:'7/14'},ext:{5:'14/19'}}))[0]).est,'REVISAR IDENTIDAD');
 // 18) orden y colores: autorizada primero (blanco), luego cada tipo
 assert.strictEqual(run("tipoFila_(['','','','','','','','','',1,0,'AUTORIZADA',''])"),0);
-assert.strictEqual(run("tipoFila_(['','','','','','','','','',0,0,'A REVISAR','omisión: una sola fichada'])"),4);
+assert.strictEqual(run("tipoFila_(['','','','','','','','','',0,0,'A REVISAR','omisión: una sola fichada'])"),5);
 assert.strictEqual(run("tipoFila_(['','','','','','','','','',4,0,'A REVISAR','extra NO autorizada (no hay franja declarada)'])"),3);
 assert.strictEqual(run("tipoFila_(['','','','','','','','','',3,0,'AUTORIZADA','HORARIO DISTINTO AL PROGRAMADO'])"),2);
 assert.strictEqual(run("tipoFila_(['','','','','','','','','',3,0,'AUTORIZADA','EXTRA NO INFORMADA · AUTORIZADA por el jefe de Enfermería'])"),1);
@@ -163,7 +167,7 @@ c=run('consolidarGRH_(15.5,0,10,6,true,30)');assert.deepStrictEqual([c.total,c.p
 assert.strictEqual(run("colorAlerta_('reconversión 6h (todo el 100 al 50)')"),'#fff3b8');
 // 23) NOCTURNIDAD
 assert.strictEqual(run('minNoche_(1380,1800)'),420);assert.strictEqual(run('minNoche_(1080,1800)'),540);assert.strictEqual(run('minNoche_(360,780)'),0);
-const noc=(fich,a)=>{for(let i=1;i<=31;i++)fich[i]=fich[i]||{};ctx._f=fich;ctx._a=a;return run(`(function(){_fich=_f;_diasMes=31;_mes=10;_anio=2026;var f=[],g={};procesarNocheAgente_(_a,"GUARDIA",{},f,g);return {f:f,g:g};})()`)};
+const noc=(fich,a)=>{for(let i=1;i<=31;i++)fich[i]=fich[i]||{'1':{marcas:[],txt:[],nombre:'PEREZ Juan'}};ctx._f=fich;ctx._a=a;return run(`(function(){_fich=_f;_diasMes=31;_mes=10;_anio=2026;var f=[],g={};procesarNocheAgente_(_a,"GUARDIA",{},f,g);return {f:f,g:g};})()`)};
 // 23/6 entró 22:55 salió 6:03(+1) => 7 h (desde las 23)
 let n=noc(F({5:['22:55:10'],6:['6:03:20']}),ag({hab:{5:'23/6'}}));assert.deepStrictEqual([n.f[0][9],n.f[0][5],n.f[0][6]],[7,'22:55:10','6:03:20(+1)']);
 // 18/06 => 9 h nocturnas (21 a 6)
@@ -198,8 +202,16 @@ let fm=F({31:['22:55']});fm[32]={'1':{marcas:[363],txt:['6:03:00'],nombre:'PEREZ
 n=noc(fm,ag({hab:{31:'23/6'}}));assert.strictEqual(n.f[0][9],7);
 // 32) SARBA nocturnidad: 17/24 pero fichó 12:03-22:04 con extra 19/22 => 0 h nocturnas (21-22 es extra)
 n=noc(F({5:['12:03:15','22:04:47']}),ag({hab:{5:'17/24'},ext:{5:'19/22'}}));assert.strictEqual(n.f[0][9],0);
+// 38b) #N/A en nocturnidad
+fna=F({9:['22:55']});fna[10]={};n=noc(fna,ag({hab:{9:'23/6'}}));assert.ok(/^SIN DATOS DEL RELOJ/.test(n.f[0][10]));assert.deepStrictEqual([n.g['1'].na,n.g['1'].omis],[[9],[]]);
+// si el día figura pero sin la marca, sigue siendo omisión
+n=noc(F({9:['22:55']}),ag({hab:{9:'23/6'}}));assert.ok(/^OMISIÓN/.test(n.f[0][10]));
+// turno nocturno sin ninguna fila en el reloj ese día ni el siguiente => se avisa
+fna=F({});fna[9]={};fna[10]={};n=noc(fna,ag({hab:{9:'23/6'}}));assert.ok(/día 9 y 10/.test(n.f[0][10]));
+// agente que no figura en ningún día del reloj => una sola fila de aviso
+fna={};for(let i=1;i<=31;i++)fna[i]={};n=noc(fna,ag({hab:{3:'23/6',4:'23/6'}}));assert.strictEqual(n.f.length,1);assert.ok(/todo el mes/.test(n.f[0][10]));assert.strictEqual(n.f[0].length,13);
 // 24) FERIADOS (12/10 feriado)
-const fer=(fich,a)=>{for(let i=1;i<=31;i++)fich[i]=fich[i]||{};ctx._f=fich;ctx._a=a;return run(`(function(){_fich=_f;_diasMes=31;_mes=10;_anio=2026;var c={anio:2026,mes:10,feriados:{"10-12":1},noLab:{}},f=[],g={};feriadoAgente_(_a,"GUARDIA",{},c,f,g);return {f:f,g:g};})()`)};
+const fer=(fich,a)=>{for(let i=1;i<=31;i++)fich[i]=fich[i]||{'1':{marcas:[],txt:[],nombre:'PEREZ Juan'}};ctx._f=fich;ctx._a=a;return run(`(function(){_fich=_f;_diasMes=31;_mes=10;_anio=2026;var c={anio:2026,mes:10,feriados:{"10-12":1},noLab:{}},f=[],g={};feriadoAgente_(_a,"GUARDIA",{},c,f,g);return {f:f,g:g};})()`)};
 // 6/13 el feriado, fichó 5:55-13:05 => 7 h (dentro del turno)
 let q=fer(F({12:['5:55','13:05']}),ag({hab:{12:'6/13'}}));assert.deepStrictEqual([q.f.length,q.f[0][9]],[1,7]);
 // feriado: programado 6/13, fichó 13:00-20:00 sin cambio => 7 h y aviso amarillo
