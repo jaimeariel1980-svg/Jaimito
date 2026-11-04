@@ -99,7 +99,8 @@
   };
   window.cfDeshacerRed=function(i){var ta=document.getElementById('cfp_'+i);if(ta&&PLPREV[i]!==undefined){ta.value=PLPREV[i];var u=document.getElementById('cfu_'+i);if(u)u.style.display='none';}};
   window.cfCerrar=function(){document.getElementById('cfBg').classList.remove('show');};
-  var SOC=null,SOCcarga=false;
+  var SOC=null,SOCcarga=false,SOCERR='';
+  window.cfDifReintentar=function(){SOCERR='';SOC=null;SOCcarga=false;render('flyer');};
   var DIF_LIM={whatsapp:1000,linkedin:3000,instagram:2200,correo:3000},DIF_K=['linkedin','instagram','whatsapp','correo'];
   function difWa(t){return (/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)?'https://wa.me/?text=':'https://web.whatsapp.com/send?text=')+encodeURIComponent(t);}
   function difVal(k){var e=document.getElementById('cfs_'+k);return e?e.value:(SOC&&SOC[k])||'';}
@@ -125,7 +126,8 @@
     if(hay&&typeof blConfirm==='function')blConfirm('Ya hay textos escritos. Si generás de nuevo se reemplazan todos. ¿Seguir?',go,{si:'Generar de nuevo'});else go();
   };
   function flyerTextos(){
-    if(!SOC){if(!SOCcarga){SOCcarga=true;google.script.run.withSuccessHandler(function(d){SOC=d||{};SOCcarga=false;render('flyer');}).withFailureHandler(function(){SOC={};SOCcarga=false;render('flyer');}).flyerSocial(PERFIL);}return '<div class="cf-help" style="margin-top:12px">Cargando…</div>';}
+    if(SOCERR)return '<div class="cf-help" style="margin-top:12px;color:#B91C1C"><b>No se pudieron cargar los textos de difusión.</b><br>'+esc(SOCERR)+'</div><button class="cf-save" style="margin-top:10px" onclick="cfDifReintentar()">Reintentar</button>';
+    if(!SOC){if(!SOCcarga){SOCcarga=true;google.script.run.withSuccessHandler(function(d){SOC=d||{};SOCcarga=false;render('flyer');}).withFailureHandler(function(e){SOC=null;SOCcarga=false;SOCERR=(e&&e.message)||String(e)||'Error desconocido';render('flyer');}).flyerSocial(PERFIL);}return '<div class="cf-help" style="margin-top:12px">Cargando…</div>';}
     var h='<h3 style="margin:6px 0 2px;font-size:16px">Textos para publicar</h3><div class="cf-help">Editá directo acá. Al tocar «Enviar» o «Publicar» el texto se copia, se guarda y se abre la red.</div>';
     h+='<div style="margin:12px 0 4px"><b style="font-size:14px">Instrucciones para Claude (opcional)</b></div><textarea id="cfs_instr" style="width:100%;min-height:70px;font:inherit;font-size:14px;padding:10px;border:1px solid #D5E0CE;border-radius:10px;resize:vertical" placeholder="Ej.: tono más cercano · destacá que es una posición nueva · que no mencione el sector · más corto">'+String(SOC.instr||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</textarea><div class="cf-help">Valen para «✨ Generar con IA» (los cuatro textos). Se guardan con «Guardar textos».</div>';
     [['whatsapp','WhatsApp',8,'Enviar por WhatsApp'],['linkedin','LinkedIn',14,'Publicar en LinkedIn'],['instagram','Instagram',10,'Abrir Instagram'],['correo','Correo (la primera línea es el asunto)',12,'Abrir en Gmail']].forEach(function(k){var t=SOC[k[0]]||'';
