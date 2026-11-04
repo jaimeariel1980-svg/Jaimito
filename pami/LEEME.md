@@ -75,3 +75,6 @@ Ejecutar `verificarInstalacion()`. Las páginas muestran el error real. Si la UR
 ## Avisos del tablero (🔔)
 - Botón **🔔 Avisos** con contador. **Pendientes**: falta contactar, contactado hace 2+ días sin agendar, agendado sin fecha, entrevista en los próximos 30 min, entrevista pasada sin formulario cargado, etapa incompleta, falta resumen ET, en reserva hace 15+ días. **Novedades** (desde la última actualización, por navegador): nuevo CV, contratado, descartado en la técnica, técnica cargada por el jefe, documentación recibida.
 - Aparecen como **avisos emergentes** (arriba a la derecha) al actualizar; los urgentes una vez por día. Con «Activar avisos del navegador» también llegan con la pestaña minimizada. El tablero se actualiza solo cada 3 min. Las etiquetas de las tarjetas se mantienen y se suman «⏳ Sin respuesta hace N d» y «📝 Falta cargar …».
+
+## Descartar a alguien ya contratado
+- Desde la ficha, marcando motivo y Guardar (con confirmación): pasa a **Descartado post contratación** (estado propio, para no confundirlo con no haber pasado la técnica). Motivo sugerido: "Documentación incompleta". "Reactivar" lo devuelve a Contratado.
