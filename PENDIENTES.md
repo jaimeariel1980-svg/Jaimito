@@ -12,6 +12,12 @@ Lo mantiene Claude. Prioridad: 🔴 urgente · 🟠 importante · 🟡 cuando se
 - 🟡 CSP y `X-Frame-Options` (`_headers` en Cloudflare, sacar `ALLOWALL`), escapar mails HTML, mensajes de error genéricos, `drive.file` en vez de `drive`. — *Claude*
 - 🟡 Auditar también `pami/`, `pami-real/`, `liquidaciones/`, `caja-obra/` (NJ Arquitectura: `TABLERO_PIN`, bot Anita). — *Claude*
 
+## Liquidaciones PAMI I
+- 🔴 **Regla de reconversión**: hoy reconvierte solo lo que sobra (ej. Silva 12/4 vs expte 10/6 → 2 h). Ariel dice que tiene que ser «el total al 50 o al 100»: falta que confirme cómo (ejemplo con números). — *Ariel decide / Claude*
+- 🟠 **Planilla de horarios de octubre**: cargar los cambios de turno que faltan (Sarba 1, 5, 6, 7 trabajó 12–19 con planilla 17/24) y revisar a Mandarini (Terapia 6/13 pero la tarjeta reloj dice 06:00 a 14:00; si es supervisora va en SUP y deja de entrar en extras y feriados). — *Ariel*
+- 🟠 **Tarjetas reloj de septiembre y noviembre** con el mismo nombre que la de octubre en el Drive de dotacionpp1: sin ellas, el día 1 y el 31 pueden salir como omisión (la liquidación avisa). — *Ariel*
+- 🟡 Beanato 9/10: en la tarjeta reloj no figura en la pestaña del día 10 (falta la salida). Revisarlo en el reloj. — *Ariel*
+
 ## PAMI
 - 🔴 **PAMI llegó al tope de 200 versiones de Apps Script** (27/10): el código del ⚙ Configurar se subió pero la web (`/exec`) sigue con la versión anterior (el botón no aparece). Hay que borrar versiones viejas desde el editor de Apps Script de PAMI (cuenta dotacionpp1: Historial del proyecto → borrar las viejas) y volver a publicar (Actions → Apps Script → `pami` → `publicar`). Después, agrupar los cambios: cada merge a `pami/` gasta una versión. — *Ariel (borrar) + Claude (publicar)*
 
