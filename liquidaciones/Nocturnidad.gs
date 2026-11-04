@@ -7,7 +7,18 @@ function jornadaFichada_(a, d, cfg) {
     if (b.ini >= fin && b.ini < prox) prox = b.ini;
   });
   if (!t) {
-    var S = marcasAbs_(a.leg, d, Math.max(prevFin + 1, 0), Math.min(prox - 240, 2160), cfg).filter(function (x, i, arr) { return i > 0 || x.m < 1440; });
+    var vec = bloquesTurno_(a, d).concat([[-1440, d - 1], [1440, d + 1]].reduce(function (s, o) { return s.concat(parseFranjas(a.ext[o[1]]).map(function (w) { return { ini: w.ini + o[0], fin: w.fin + o[0] }; })); }, []));
+    prevFin = -Infinity; prox = Infinity;
+    vec.forEach(function (b) { if (b.ini < 0 && b.fin > prevFin) prevFin = b.fin; if (b.ini > 0 && b.ini < prox) prox = b.ini; });
+    var G = [], g = [];
+    marcasAbs_(a.leg, d, Math.max(prevFin + 180, 0), Math.min(prox - 60, 2160), cfg).forEach(function (x) {
+      if (g.length && x.m - g[g.length - 1].m > 840) { G.push(g); g = []; }
+      g.push(x);
+    });
+    if (g.length) G.push(g);
+    G = G.filter(function (x) { return x[0].m < 1440; });
+    if (G.length > 1 && G[0].length === 1) G.shift();
+    var S = G[0] || [];
     if (!S.length || S[0].m >= 1440) return null;
     var rs = { t: null, ent: S[0].t };
     if (S.length === 1) { rs.estado = 'omision'; rs.nota = 'falta la salida'; return rs; }
@@ -35,7 +46,7 @@ function horasReales_(a, d, j) {
   if (!t) return { distinto: false, pz: [{ ini: j.ri, fin: j.rf }] };
   var e0 = t.ini, e1 = t.fin;
   ex.forEach(function (w) { if (w.ini < e0 && w.fin >= e0 - 30) e0 = w.ini; if (w.fin > e1 && w.ini <= e1 + 30) e1 = w.fin; });
-  if (j.m0 < e0 - 60 || j.m1 > e1 + 60) return { distinto: true, pz: restar_({ ini: j.m0, fin: j.m1 }, ex) };
+  if (j.m0 < e0 - 60 || j.m1 > e1 + 60) return { distinto: true, pz: restar_({ ini: j.m0, fin: j.m1 }, ex.map(function (w) { return { ini: w.ini - TOLERANCIA, fin: w.fin + TOLERANCIA }; })).filter(function (p) { return p.fin - p.ini > TOLERANCIA; }) };
   return { distinto: false, pz: j.rf > j.ri ? [{ ini: j.ri, fin: j.rf }] : [] };
 }
 
@@ -102,5 +113,5 @@ function liquidarNocturnidad() {
   }
   var tot = res.reduce(function (s, r) { return s + r[3]; }, 0), om = res.reduce(function (s, r) { return s + r[5]; }, 0);
   avisar_('NOCTURNIDAD lista: ' + res.length + ' agentes · ' + Math.round(tot * 10) / 10 + ' hs nocturnas' + (om ? ' · ' + om + ' omisiones (no se pagan, en rojo)' : '') +
-    '\nDetalle por jornada en NOCTURNIDAD_DETALLE.' + (cfg.fichadasAuto ? '\nFichadas: ' + cfg.fichadasAuto : ''));
+    '\nDetalle por jornada en NOCTURNIDAD_DETALLE.' + (cfg.fichadasAuto ? '\nFichadas: ' + cfg.fichadasAuto : '') + notaMeses_());
 }

@@ -1,7 +1,14 @@
-var RX_FRANJA = /(\d{1,2})(?::(\d{2}))?\s*\/\s*(\d{1,2})(?::(\d{2}))?/g;
+var RX_FRANJA = /(\d{1,2})(?:[:.](\d{2}))?\s*\/\s*(\d{1,2})(?:[:.](\d{2}))?/g;
+
+function ampm_(s) {
+  var h = function (x, ap) { x = +x % 12; return /p/i.test(ap) ? x + 12 : x; };
+  return String(s || '').replace(/(\d{1,2})(?:[:.](\d{2}))?\s*([ap])\.?\s*m\.?\s*a\s*(\d{1,2})(?:[:.](\d{2}))?\s*([ap])\.?\s*m\.?/i, function (x, h1, m1, a1, h2, m2, a2) {
+    return h(h1, a1) + ':' + (m1 || '00') + '/' + h(h2, a2) + ':' + (m2 || '00');
+  }).replace(/^\s*C\/H\s*/i, '');
+}
 
 function parseTurno(s) {
-  var m = String(s || '').replace(/^'/, '').trim().match(/^(\d{1,2})(?::(\d{2}))?\s*\/\s*(\d{1,2})(?::(\d{2}))?$/);
+  var m = ampm_(String(s || '').replace(/^'/, '').trim()).trim().match(/^(\d{1,2})(?:[:.](\d{2}))?\s*\/\s*(\d{1,2})(?:[:.](\d{2}))?$/);
   if (!m || +m[1] > 24 || +m[3] > 24) return null;
   var ini = +m[1] * 60 + (+m[2] || 0), fin = +m[3] * 60 + (+m[4] || 0);
   if (fin <= ini) fin += 1440;
@@ -116,7 +123,8 @@ function horaAbs_(m) {
 }
 
 var TIPOS_FILA = [
-  ['AUTORIZADA (se paga)', '#ffffff', function (e) { return e === 'AUTORIZADA'; }],
+  ['AUTORIZADA (se paga)', '#ffffff', function (e, c) { return e === 'AUTORIZADA' && !/HORARIO DISTINTO/.test(c); }],
+  ['AUTORIZADA con horario distinto al programado (se paga; cargar el cambio)', '#fde2a7', function (e, c) { return e === 'AUTORIZADA' && /HORARIO DISTINTO/.test(c); }],
   ['Extra NO autorizada (fichó de más sin franja cargada)', '#ffe8c7', function (e, c) { return /NO autorizada/.test(c); }],
   ['Omisión / no fichó la extra', '#fbd9d9', function (e, c) { return /omisión|no fichó|no cubren|ilegible/.test(c); }],
   ['Fichadas dudosas (impares o con hueco): revisar a mano', '#fff3b8', function (e, c) { return /impar|revisar a mano/i.test(c); }],

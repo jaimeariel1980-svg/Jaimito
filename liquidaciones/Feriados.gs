@@ -59,5 +59,5 @@ function liquidarFeriados() {
     h.getRange(2, 4, res.length, 1).setNumberFormat('0.0').setFontWeight('bold');
   }
   var tot = res.reduce(function (s, r) { return s + r[3]; }, 0);
-  avisar_('FERIADOS lista (días ' + dias.join(', ') + '): ' + res.length + ' agentes · ' + Math.round(tot * 10) / 10 + ' hs de feriado.\nDetalle por jornada en FERIADOS_DETALLE.');
+  avisar_('FERIADOS lista (días ' + dias.join(', ') + '): ' + res.length + ' agentes · ' + Math.round(tot * 10) / 10 + ' hs de feriado.\nDetalle por jornada en FERIADOS_DETALLE.' + notaMeses_());
 }
