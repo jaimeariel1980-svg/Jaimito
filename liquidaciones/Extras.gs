@@ -32,10 +32,24 @@ function fichDia_(n, cfg) {
     for (var r = 1; r < d.length; r++) {
       var leg = String(d[r][0]).trim();
       if (!/^\d+$/.test(leg)) continue;
-      var mk = [];
-      for (var c = 7; c <= 12; c++) { var t = String(d[r][c]).trim(), m = horaToMin(t); if (m !== null) mk.push({ m: m, t: t }); }
-      mk.sort(function (a, b) { return a.m - b.m; });
-      if (!out[leg] || mk.length > out[leg].marcas.length) out[leg] = { marcas: mk.map(function (x) { return x.m; }), txt: mk.map(function (x) { return x.t; }), nombre: String(d[r][1]).trim(), horario: String(d[r][5]).trim() };
+      var o = out[leg] || (out[leg] = { mk: [], nombre: String(d[r][1]).trim(), horario: '', nov: [], filas: 0 }), propias = 0;
+      for (var c = 7; c <= 12; c++) {
+        var t = String(d[r][c]).trim(), m = horaToMin(t);
+        if (m !== null && !o.mk.some(function (x) { return x.t === t; })) { o.mk.push({ m: m, t: t }); propias++; }
+      }
+      o.filas++;
+      var h = String(d[r][5]).trim();
+      if (!o.horario || (propias && /\d/.test(h))) o.horario = h;
+      [d[r][3], d[r][6], d[r][15]].forEach(function (z) {
+        z = String(z || '').trim();
+        if (z && !/^(OK|-|AUSENTE|Vencido|Aprobado)$/i.test(z) && o.nov.indexOf(z) < 0) o.nov.push(z);
+      });
+    }
+    for (var l in out) {
+      var x = out[l];
+      x.mk.sort(function (a, b) { return a.m - b.m; });
+      x.marcas = x.mk.map(function (z) { return z.m; }); x.txt = x.mk.map(function (z) { return z.t; });
+      x.novedad = x.nov.join(' · ');
     }
   }
   return (_fich[n] = out);
@@ -149,12 +163,11 @@ function agregarFichas_(filas, desde, leg, d, cfg) {
 }
 
 function horarioReloj_(leg, d, turnoTxt, cfg) {
-  var x = fichDia_(d, cfg)[leg], h = x ? x.horario : '';
-  var m = String(h).match(/(\d{1,2}):(\d{2})\s*a\s*(\d{1,2}):(\d{2})/);
-  if (!m) return h;
-  var r = parseTurno(m[1] + ':' + m[2] + '/' + m[3] + ':' + m[4]), t = parseTurno(turnoTxt);
-  if (!t) return h;
-  return Math.abs(r.ini - t.ini) > 30 || Math.abs(r.fin - t.fin) > 30 ? h + ' ≠ planilla ' + turnoTxt : h;
+  var x = fichDia_(d, cfg)[leg], h = x ? x.horario : '', nov = x && x.novedad ? ' · Novedad del reloj: ' + x.novedad : '';
+  var m = String(h).match(/(\d{1,2}):(\d{2})\s*a\s*(\d{1,2}):(\d{2})/), t = parseTurno(turnoTxt);
+  if (!m || !t) return h + nov;
+  var r = parseTurno(m[1] + ':' + m[2] + '/' + m[3] + ':' + m[4]);
+  return (Math.abs(r.ini - t.ini) > 30 || Math.abs(r.fin - t.fin) > 30 ? h + ' ≠ planilla ' + turnoTxt : h) + nov;
 }
 
 function turnoReloj_(leg, d, cfg) {

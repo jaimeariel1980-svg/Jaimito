@@ -257,7 +257,7 @@ function compararEnfermeria_(rep, filas, fichDe) {
     var igual = Math.abs(e.h50 - n.h50) < 0.01 && Math.abs(e.h100 - n.h100) < 0.01;
     var jefe = n.rows.some(function (r) { return /por el jefe/.test(r[12]); }), ver = !igual || jefe;
     var dif = Math.round((n.h50 + n.h100 - e.h50 - e.h100) * 10) / 10, mot = ver ? motivoClaro_(n.rows, e) : '', fi = '';
-    if (ver) fi = n.rows.length && n.rows[0][13] ? String(n.rows[0][13]).replace(/^\[|\]$/g, '') : fichDe ? fichDe(b.leg, b.dia) : '';
+    if (ver) fi = n.rows.length && n.rows[0][13] ? String(n.rows[0][13]).replace(/^\[|\]$/g, '') + (/Novedad del reloj: /.test(n.rows[0][14]) ? ' · ' + String(n.rows[0][14]).replace(/^.*?Novedad del reloj: /, 'Novedad del reloj: ') : '') : fichDe ? fichDe(b.leg, b.dia) : '';
     if (k in fila) porFila[fila[k]] = { k: k, n50: n.h50, n100: n.h100, dif: igual ? '' : dif, mot: ver ? mot : 'Coincide', fich: fi };
     else if (ver || n.rows.some(function (r) { return /NO INFORMADA/.test(r[12]); })) solo.push({ k: k, leg: b.leg, ape: b.ape, dia: b.dia, serv: n.rows.length ? n.rows[0][0] : '', turno: n.rows.length ? n.rows[0][4] : '', n50: n.h50, n100: n.h100, dif: dif, mot: mot || motivoClaro_(n.rows, e), fich: fi || (n.rows.length && n.rows[0][13] ? String(n.rows[0][13]).replace(/^\[|\]$/g, '') : ''), noInf: n.rows.some(function (r) { return /NO INFORMADA/.test(r[12]); }) });
     if (!igual) out.push([b.leg, b.ape, b.dia, e.fr.join(' + '), e.h50, e.h100, n.h50, n.h100, dif, fi, mot, k]);

@@ -146,6 +146,13 @@ r=R(sim(F({19:['23:57:13'],20:['6:00:08']}),ag({hab:{3:'F'},ext:{20:'0/6'}}))[0]
 // 40) GRUNING: extra 19/24 el 21 + 0/6 el 22, fichó 18:43 del 21 a 6:04 del 22 => se pagan las dos (5 h y 6 h)
 let gr=sim(F({21:['18:43:17'],22:['6:04:34']}),ag({hab:{18:'18/06',24:'18/06',25:'18/06'},ext:{21:'19/24',22:'0/6'}})).map(R);
 assert.deepStrictEqual(gr.map(r=>[r.est,r.h50+r.h100]),[['AUTORIZADA',5],['AUTORIZADA',6]]);
+// 41) MUÑOZ: dos filas en la tarjeta (Anexo y Policlínico) => se juntan las fichadas: 6:01 a 18:00 => extra 13/18 completa
+r=run(`(function(){_fich={};_ssFich={getSheetByName:function(){return {getDataRange:function(){return {getDisplayValues:function(){return [
+['Legajo','Agente','Loc','Código','Fecha','Horario','Estado','F1','F2','F3','F4','F5','F6','D','H','Obs'],
+['62318','MUÑOZ','ROSARIO 9 Policlinico I','Debe compensar los 420 minutos','19/10','06:00 a 13:00','','14:23:48','14:23:51','14:23:54','17:49:12','-','-','','',''],
+['62318','MUÑOZ','ROSARIO 14 Anexo I','OK','19/10','06:00 a 13:00','','6:01:37','14:21:04','17:52:40','18:00:11','-','-','','','']];}};}};}};_diasMes=31;var x=fichDia_(19,{});return {t:x['62318'].txt,n:x['62318'].novedad};})()`);
+assert.deepStrictEqual(r.t,['6:01:37','14:21:04','14:23:48','14:23:51','14:23:54','17:49:12','17:52:40','18:00:11']);assert.strictEqual(r.n,'Debe compensar los 420 minutos');
+r=R(sim(F({19:['6:01:37','14:21:04','14:23:48','17:49:12','17:52:40','18:00:11']}),ag({hab:{19:'6/13'},ext:{19:'13/18'}}))[0]);assert.deepStrictEqual([r.est,r.h50],['AUTORIZADA',5]);
 // 16) identidad
 const f2=F({5:['6:58','19:10']});f2[5]['1'].nombre='ALONSO Cecilia';
 assert.strictEqual(R(sim(f2,ag({hab:{5:'7/14'},ext:{5:'14/19'}}))[0]).est,'REVISAR IDENTIDAD');

@@ -91,7 +91,7 @@ function procesarNocheAgente_(a, serv, cfg, filas, acum) {
       g.omis.push(d);
       filas.push([serv, a.leg, a.ape, d, turno, x.ent || '', x.sal || '', franja, '', 0, 'OMISIÓN: ' + x.nota + ' (no se paga)']);
     } else {
-      g.min += x.min; g.jor++;
+      g.min += x.min; if (x.min > 0) g.jor++;
       if (x.distinto) g.dist.push(d);
       filas.push([serv, a.leg, a.ape, d, turno, x.ent, x.sal, franja, x.min ? horaAbs_(x.ri) + ' a ' + horaAbs_(x.rf) : '', Math.round(x.min / 6) / 10,
         x.distinto ? 'HORARIO DISTINTO AL PROGRAMADO (sin cambio cargado): se pagan ' + Math.round(x.min / 6) / 10 + ' h nocturnas de lo fichado' : x.min < x.noche ? 'OK · cumplió ' + Math.round(x.min / 6) / 10 + ' de ' + Math.round(x.noche / 6) / 10 + ' h nocturnas del turno' : 'OK']);
