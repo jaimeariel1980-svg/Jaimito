@@ -383,6 +383,43 @@ header{min-height:86px}
     document.getElementById('mbody').innerHTML=sel+(h||(SF.length?'':'<div style="padding:20px;color:#777">No hay entrevistas agendadas por delante.</div>'))+sf;
     document.getElementById('modal').classList.add('show');
   };
+  /* Ventana «Mensajes» (4/11, Ariel: «tendría que ser algo aparte»): los textos para copiar o enviar. Editarlos es de ⚙ Configurar → Mensajes (administradores). */
+  var MSG_T={'hunting-primer-contacto':'🎯 Hunting · primer contacto','contacto-screening':'Invitación a screening','contacto-competencias':'Invitación a competencias','contacto-empresa-virtual':'Invitación a entrevista con la empresa (virtual)','contacto-empresa-presencial':'Invitación a entrevista con la empresa (presencial)','descarte-sin':'Descarte sin entrevista','descarte-post':'Descarte después de entrevistar','descarte-competencias':'Descarte en competencias','descarte-empresa':'Descarte después de la empresa'};
+  window.abrirMensajes=function(){
+    document.getElementById('mtit').textContent='✉ Mensajes';
+    document.getElementById('mbody').innerHTML='<div style="padding:20px;color:#777">Cargando…</div>';
+    document.getElementById('modal').classList.add('show');
+    google.script.run.withSuccessHandler(function(r){window.MSG_D=r;pintarMensajes();}).withFailureHandler(function(e){document.getElementById('mbody').innerHTML='<div style="padding:20px;color:#B3261E">No se pudieron cargar los mensajes: '+esc((e&&e.message)||e)+'</div>';}).mensajesLista(PERFIL);
+  };
+  function pintarMensajes(){
+    var D=window.MSG_D||{items:[]},adm=!(typeof blRol==='function')||blRol()==='Administrador';
+    var L=D.items.slice().sort(function(a,b){return (/^hunting-/.test(a.clave)?0:1)-(/^hunting-/.test(b.clave)?0:1);});
+    var h='<div class="cf-help" style="font-size:13px;color:#555;margin-bottom:8px">Elegí el mensaje, copialo o mandalo por WhatsApp o Gmail. Te pide el nombre y completa el puesto, la empresa y tu nombre.'+(adm?' <a href="#" onclick="msgEditar();return false" style="font-weight:800;color:#1A6645">✏️ Editar los textos</a>':'')+'</div>';
+    L.forEach(function(t,i){h+='<details class="msgd" style="border:1.5px solid #D5E0CE;border-radius:12px;margin:8px 0;padding:0 12px"><summary style="cursor:pointer;padding:11px 0;font-weight:800;font-size:14px;color:#0F3F27">'+esc(MSG_T[t.clave]||t.clave)+' <span style="font-weight:600;color:#888;font-size:12px">· '+esc(t.canal)+'</span></summary><div style="white-space:pre-wrap;font-size:13px;background:#F6FAF4;border-radius:8px;padding:10px;margin-bottom:8px">'+esc(t.texto)+'</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px"><button class="mbtn sm" onclick="msgEnviar('+i+',\'copiar\',this)">Copiar</button><button class="mbtn sm" onclick="msgEnviar('+i+',\'wa\',this)">Enviar por WhatsApp</button><button class="mbtn sm" onclick="msgEnviar('+i+',\'mail\',this)">Abrir en Gmail</button></div></details>';});
+    if(!L.length)h+='<div style="padding:20px;color:#777">Todavía no hay mensajes cargados.</div>';
+    window.MSG_L=L;
+    document.getElementById('mbody').innerHTML=h;
+  }
+  window.msgEditar=function(){cerrar();if(window.cfAbrir)cfAbrir('msg');};
+  window.msgEnviar=function(i,modo,b){
+    var t=(window.MSG_L||[])[i];if(!t)return;var D=window.MSG_D||{};
+    var hecho=function(txt){
+      var yo=String(quienSoy()||'').trim().split(' ')[0];
+      txt=txt.split('[PUESTO]').join(D.puesto||'[PUESTO]').split('[EMPRESA]').join(D.empresa||'una empresa cliente').split('[ENTREVISTADOR]').join(yo||'[ENTREVISTADOR]');
+      var falta=/\[LINK\]/.test(txt)?'Ojo: quedó [LINK] sin completar (se completa solo al enviar desde la ficha del candidato).':'';
+      if(modo==='copiar'){
+        var ok=function(){var o=b.textContent;b.textContent='¡Copiado!';setTimeout(function(){b.textContent=o;},1500);if(falta)blAlert(falta);};
+        try{navigator.clipboard.writeText(txt).then(ok,function(){ok();});}catch(x){ok();}
+      }else if(modo==='wa'){
+        window.open((/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)?'https://wa.me/?text=':'https://web.whatsapp.com/send?text=')+encodeURIComponent(txt.replace(/^\s*Asunto:[^\n]*\n+/i,'')),'_blank');if(falta)blAlert(falta);
+      }else{
+        var m=txt.match(/^\s*Asunto:\s*(.+)/i),su=m?m[1].trim():'',cu=m?txt.replace(m[0],'').trim():txt;
+        window.open('https://mail.google.com/mail/?view=cm&fs=1&su='+encodeURIComponent(su)+'&body='+encodeURIComponent(cu),'_blank');if(falta)blAlert(falta);
+      }
+    };
+    if(/\[NOMBRE\]/.test(t.texto))blPrompt('¿A quién se lo mandás? Escribí el nombre de pila (reemplaza [NOMBRE]).','',function(n){hecho(t.texto.split('[NOMBRE]').join(String(n||'').trim()||'[NOMBRE]'));},{si:'Seguir'});
+    else hecho(t.texto);
+  };
   window.copiaAhora=function(){google.script.run.withSuccessHandler(function(r){alert('Copia hecha ('+r.fecha+'). Está en Drive, carpeta «Copias de seguridad Blumia». También se hace sola todos los días.');}).withFailureHandler(function(e){alert('No se pudo: '+((e&&e.message)||e));}).copiaAhoraBlumia('sesion');};
   window.guardarObs=function(f,b){
     var t=document.getElementById('gObs').value;b.disabled=true;b.textContent='Guardando…';

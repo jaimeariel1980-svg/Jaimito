@@ -115,26 +115,6 @@
   function difGuardar(cb,silencio){var o={linkedin:difVal('linkedin'),instagram:difVal('instagram'),whatsapp:difVal('whatsapp'),correo:difVal('correo'),instr:difVal('instr')};google.script.run.withSuccessHandler(function(){DIF_K.concat(['instr']).forEach(function(k){SOC[k]=o[k];});if(!silencio)difMsg('Textos guardados.');if(cb)cb();}).withFailureHandler(function(e){difMsg('No se pudo guardar: '+((e&&e.message)||e),false);}).difusionGuardar(PERFIL,o);}
   window.cfDifGuardar=function(){difMsg('Guardando…');difGuardar();};
   window.cfDifContar=function(k){var e=document.getElementById('cfs_'+k),c=document.getElementById('cfc_'+k);if(!e||!c)return;var n=e.value.length;c.textContent=n+' / '+DIF_LIM[k]+' caracteres';c.style.color=n>DIF_LIM[k]?'#B91C1C':'#777';};
-  window.cfPlEnviar=function(i,modo,b){
-    var e=document.getElementById('cfp_'+i);if(!e)return;
-    var t=String(e.value||'');if(!t.trim()){blAlert('El mensaje está vacío.');return;}
-    var hecho=function(txt){
-      var D=CF.datos||{},yo=String(typeof quienSoy==='function'?quienSoy():'').trim().split(' ')[0];
-      txt=txt.split('[PUESTO]').join(D.nombre||'[PUESTO]').split('[EMPRESA]').join(D.empresa_candidatos||'una empresa cliente').split('[ENTREVISTADOR]').join(yo||'[ENTREVISTADOR]');
-      var falta=/\[LINK\]/.test(txt)?' Ojo: quedó [LINK] sin completar (se completa solo al enviar desde la ficha del candidato).':'';
-      if(modo==='copiar'){
-        var ok=function(){var o=b.textContent;b.textContent='¡Copiado!';setTimeout(function(){b.textContent=o;},1500);if(falta)blAlert(falta.trim());};
-        try{navigator.clipboard.writeText(txt).then(ok,function(){e.select();document.execCommand('copy');ok();});}catch(x){e.select();document.execCommand('copy');ok();}
-      }else if(modo==='wa'){
-        window.open(difWa(txt.replace(/^\s*Asunto:[^\n]*\n+/i,'')),'_blank');if(falta)blAlert(falta.trim());
-      }else{
-        var m=txt.match(/^\s*Asunto:\s*(.+)/i),su=m?m[1].trim():'',cu=m?txt.replace(m[0],'').trim():txt;
-        window.open('https://mail.google.com/mail/?view=cm&fs=1&su='+encodeURIComponent(su)+'&body='+encodeURIComponent(cu),'_blank');if(falta)blAlert(falta.trim());
-      }
-    };
-    if(/\[NOMBRE\]/.test(t))blPrompt('¿A quién se lo mandás? Escribí el nombre de pila (reemplaza [NOMBRE]).','',function(n){hecho(t.split('[NOMBRE]').join(String(n||'').trim()||'[NOMBRE]'));},{si:'Seguir'});
-    else hecho(t);
-  };
   window.cfDifCopiar=function(k,b){var e=document.getElementById('cfs_'+k);if(!e)return;e.select();var ok=function(){var o=b.textContent;b.textContent='¡Copiado!';setTimeout(function(){b.textContent=o;},1500);};try{navigator.clipboard.writeText(e.value).then(ok,function(){document.execCommand('copy');ok();});}catch(x){document.execCommand('copy');ok();}};
   window.cfDifCompartir=function(k){
     var t=difVal(k);if(!t.trim()){difMsg('Primero escribí o generá el texto.',false);return;}
@@ -213,7 +193,7 @@
     x+=foot('post')+'</div>';
     x+='<div class="cf-sec'+(tab==='msg'?' on':'')+'"><div class="cf-help">Textos de los WhatsApp y mails. Por defecto cada cambio vale <b>solo para esta búsqueda</b>; si elegís «Todas las búsquedas» cambia el texto general. Se completan solos: [NOMBRE] [PUESTO] [EMPRESA] [ENTREVISTADOR] (quien envía) y [LINK] (agenda).</div><div class="cf-help"><b>Guardar para:</b> «Solo esta búsqueda» deja ese texto propio de esta búsqueda (las demás no cambian). «Todas las búsquedas» cambia el texto general, que usan todas las que no tengan uno propio. Cada mensaje tiene sus propias instrucciones para la IA.</div>';
     var HL={'hunting-primer-contacto':'🎯 Hunting · primer contacto (mail, LinkedIn y WhatsApp)'},ord=CF.plantillas.map(function(t,i){return i;}).sort(function(a,b){var ha=/^hunting-/.test(CF.plantillas[a].clave)?0:1,hb=/^hunting-/.test(CF.plantillas[b].clave)?0:1;return ha-hb||a-b;});
-    ord.forEach(function(i){var t=CF.plantillas[i];x+='<div class="cf-pl"><b>'+esc(HL[t.clave]||t.clave)+'</b> <span style="color:#888;font-size:12px">· '+esc(t.canal)+'</span> <span style="font-size:11px;font-weight:700;color:'+(t.propia?'#0F3F27':'#888')+'">'+(t.propia?'· texto propio de esta búsqueda':'· texto general')+'</span><textarea id="cfp_'+i+'" style="min-height:120px;margin-top:6px">'+esc(t.texto)+'</textarea>'+instrBloque('msg_'+i,t.clave,'cfRedactar('+i+',this)','cfDeshacerRed('+i+')',i)+'<div style="display:flex;gap:10px;align-items:center;margin-top:6px"><label style="margin:0">Guardar para:</label><select id="cfa_'+i+'" style="width:auto"><option value="esta">Solo esta búsqueda</option><option value="todas">Todas las búsquedas</option></select>'+(t.propia?'<button class="cf-mini" onclick="cfVolver('+i+')">↺ Volver al texto general</button>':'')+'</div><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="cf-mini" onclick="cfPlEnviar('+i+',\'copiar\',this)">Copiar</button><button class="cf-mini" onclick="cfPlEnviar('+i+',\'wa\',this)">Enviar por WhatsApp</button><button class="cf-mini" onclick="cfPlEnviar('+i+',\'mail\',this)">Abrir en Gmail</button></div></div>';});
+    ord.forEach(function(i){var t=CF.plantillas[i];x+='<div class="cf-pl"><b>'+esc(HL[t.clave]||t.clave)+'</b> <span style="color:#888;font-size:12px">· '+esc(t.canal)+'</span> <span style="font-size:11px;font-weight:700;color:'+(t.propia?'#0F3F27':'#888')+'">'+(t.propia?'· texto propio de esta búsqueda':'· texto general')+'</span><textarea id="cfp_'+i+'" style="min-height:120px;margin-top:6px">'+esc(t.texto)+'</textarea>'+instrBloque('msg_'+i,t.clave,'cfRedactar('+i+',this)','cfDeshacerRed('+i+')',i)+'<div style="display:flex;gap:10px;align-items:center;margin-top:6px"><label style="margin:0">Guardar para:</label><select id="cfa_'+i+'" style="width:auto"><option value="esta">Solo esta búsqueda</option><option value="todas">Todas las búsquedas</option></select>'+(t.propia?'<button class="cf-mini" onclick="cfVolver('+i+')">↺ Volver al texto general</button>':'')+'</div></div>';});
     x+=foot('msg')+'</div>';
     x+='<div class="cf-sec'+(tab==='dat'?' on':'')+'"><div class="cf-help">Datos de la búsqueda: nombre, empresa, links de agenda y puesto. Lo que cambies acá se ve en la página de postulación, en los mensajes a candidatos, en los informes y en el tablero. Los links tienen que empezar con https://. Al guardar se recarga el tablero.</div>';
     Object.keys(ETQ).forEach(function(k){x+='<label>'+ETQ[k]+'</label><input id="cfd_'+k+'" value="'+esc(CF.datos[k])+'">';});

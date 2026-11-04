@@ -232,3 +232,12 @@ function guardarLogoCliente_(pin, perfilId, claro, color, quien) {
   const cfg = getConfig(perfilId);
   return { ok: true, claro: logoCliente_(cfg), color: logoClienteColor_(cfg), propio: !!claro };
 }
+
+/* Ventana «Mensajes» del tablero (4/11, Ariel: «tendría que ser algo aparte»): los textos para copiar o enviar, abiertos a todos los usuarios.
+   Editarlos sigue siendo de ⚙ Configurar → Mensajes (solo administradores). */
+function mensajesLista_(perfilId) {
+  const ss = SpreadsheetApp.openById(SHEET_MASTER_ID), cfg = getConfig(perfilId);
+  const items = listarPlantillas_(ss, perfilId).filter(t => t.clave !== 'hunting-nota-conexion').map(t => ({ clave: t.clave, canal: t.canal, texto: t.texto, propia: t.propia }));
+  const puesto = String(cfg.nombre_perfil || cfg.nombre || perfilId);
+  return { items: items, puesto: puesto, empresa: empresaParaCandidatos_(cfg) };
+}
