@@ -91,6 +91,9 @@ function linkIncompleto_() {
     .setTitle('Link incompleto | Blumia').addMetaTag('viewport', 'width=device-width, initial-scale=1').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
+// Abrir ⚙ Configurar directo al entrar al tablero (?tipo=kanban&perfil=…&abrir=config&tab=…): se usa para abrirlo en una pestaña aparte o compartir el enlace
+let ABRIR_CFG_ = '';
+
 function doGetPagina_(e) {
   const tipo = e?.parameter?.tipo;
   const perfil = e?.parameter?.perfil || '';
@@ -153,6 +156,7 @@ function doGetPagina_(e) {
   } else if (tipo === 'inicio') {
     return inicioHTML_();
   } else if (tipo === 'kanban') {
+    ABRIR_CFG_ = e.parameter.abrir === 'config' ? String(e.parameter.tab || 'ia').replace(/[^a-z]/g, '').slice(0, 12) : '';
     return kanbanHTML(perfil);
   } else if (tipo === 'banco') {
     return bancoHTML(e.parameter.desde || '');
@@ -2170,11 +2174,11 @@ function kanbanHTML_(perfilId) {
   bandaRef = Number(String(cfg.banda_salarial || '').replace(/\D/g, '')) || 0; // lo normal: sale de Config sin abrir otra planilla
   if (!bandaRef) { try { bandaRef = Number(datosInformeBusqueda(perfilId).banda) || 0; } catch (e) { } }
   lapT_('Banda salarial (datos del informe)');
-  const enlaces = [['Formulario de postulación (para los candidatos)', URL_WEBAPP + '?tipo=postulacion&perfil=' + encodeURIComponent(perfilId)], ['Tablero de esta búsqueda', URL_WEBAPP + '?tipo=kanban&perfil=' + encodeURIComponent(perfilId)], ['Difusión (flyer y textos)', flyer], ['Perfil del puesto (documento)', perfilPdf]].concat(enlacesAgendaPersonas_()).concat([['Agenda · entrevista con la empresa (virtual)', cfg.link_empresa_virtual], ['Agenda · entrevista con la empresa (presencial)', cfg.link_empresa_presencial]]).filter(x => typeof x[1] === 'string' && /^https?:\/\//i.test(x[1]));
+  const enlaces = [['Formulario de postulación (para los candidatos)', URL_WEBAPP + '?tipo=postulacion&perfil=' + encodeURIComponent(perfilId)], ['Tablero de esta búsqueda', URL_WEBAPP + '?tipo=kanban&perfil=' + encodeURIComponent(perfilId)], ['Configurar esta búsqueda (abre directo)', URL_WEBAPP + '?tipo=kanban&perfil=' + encodeURIComponent(perfilId) + '&abrir=config'], ['Difusión (flyer y textos)', flyer], ['Perfil del puesto (documento)', perfilPdf]].concat(enlacesAgendaPersonas_()).concat([['Agenda · entrevista con la empresa (virtual)', cfg.link_empresa_virtual], ['Agenda · entrevista con la empresa (presencial)', cfg.link_empresa_presencial]]).filter(x => typeof x[1] === 'string' && /^https?:\/\//i.test(x[1]));
   let eb = {}; try { eb = enlacesBusqueda_(cfg); } catch (e) { }
   if (eb.carpeta) enlaces.push(['Carpeta de Drive de la búsqueda', eb.carpeta]);
   if (eb.hoja) enlaces.push(['Sheet de la búsqueda (pestaña de candidatos)', eb.hoja]);
-  try { const extra = '<script>var metEstado = ' + metEstado_.toString() + '; var BANDA_REF = ' + bandaRef + '; var URL_APP = ' + JSON.stringify(URL_BASE()) + '; var ENLACES = ' + JSON.stringify(enlaces).replace(/</g, '\\u003c') + '; var ENLACE_CARPETA = ' + JSON.stringify(eb.carpeta || '') + '; var ENLACE_HOJA = ' + JSON.stringify(eb.hoja || '') + ';</script>' + ['ConfigPanel', 'ResumenPanel', 'PerfilRef', 'HuntingPanel', 'TableroCards', 'BloomyWidget'].map(f => HtmlService.createHtmlOutputFromFile(f).getContent()).join(''); html = html.replace(/<\/html>\s*$/, () => extra + '</html>'); } catch (e) { }
+  try { const extra = '<script>var metEstado = ' + metEstado_.toString() + '; var BANDA_REF = ' + bandaRef + '; var URL_APP = ' + JSON.stringify(URL_BASE()) + '; var ENLACES = ' + JSON.stringify(enlaces).replace(/</g, '\\u003c') + '; var ENLACE_CARPETA = ' + JSON.stringify(eb.carpeta || '') + '; var ENLACE_HOJA = ' + JSON.stringify(eb.hoja || '') + '; var ABRIR_CFG = ' + JSON.stringify(ABRIR_CFG_ || '') + ';</script>' + ['ConfigPanel', 'ResumenPanel', 'PerfilRef', 'HuntingPanel', 'TableroCards', 'BloomyWidget'].map(f => HtmlService.createHtmlOutputFromFile(f).getContent()).join(''); html = html.replace(/<\/html>\s*$/, () => extra + '</html>'); } catch (e) { }
   lapT_('Sumar los paneles (configurar, resumen, tablero)');
   return HtmlService.createHtmlOutput(html)
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
@@ -2489,6 +2493,7 @@ function flyMsg(t){var e=document.getElementById('fyMsg');if(e)e.textContent=t;}
 function flyEnv(k){var t=flyTx(k);if(!t.trim()){blAlert('Todavía no hay ese texto. Se arma en ⚙ Configurar → Difusión.');return;}flyCp(t);var R=window.FLY_R||{},im=window.FLY_URL||R.imagen;
 if(k==='whatsapp'){window.open((/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)?'https://wa.me/?text=':'https://web.whatsapp.com/send?text=')+encodeURIComponent(t+(im?'\\n\\n'+im:'')),'_blank');flyMsg('Se abrió WhatsApp'+(im?' con el texto y el link del flyer':'')+': elegí a quién enviarlo.');}
 else if(k==='linkedin'){window.open('https://www.linkedin.com/feed/?shareActive=true&text='+encodeURIComponent(t),'_blank');flyMsg('Se abrió LinkedIn. Si el texto no aparece, pegalo (Ctrl+V); la imagen se adjunta a mano.');}
+else if(k==='correo'){var m=t.match(/^\\s*Asunto:\\s*(.+)/i),su=m?m[1].trim():'',cu=m?t.replace(m[0],'').trim():t;window.open('https://mail.google.com/mail/?view=cm&fs=1&su='+encodeURIComponent(su)+'&body='+encodeURIComponent(cu),'_blank');flyMsg('Se abrió Gmail con el asunto y el texto: agregá los destinatarios.');}
 else{window.open('https://www.instagram.com/','_blank');flyMsg('Te copié el texto. En Instagram creá el posteo, adjuntá la imagen y pegalo (Ctrl+V).');}}
 function flyVista(v,idx){var R=window.FLY_R||{},B=document.getElementById('mbody');
 var tab=function(k,txt){return '<button class="btn" style="flex:1;'+(v===k?'background:#0F3F27;color:#fff':'')+'" onclick="flyVista(\\''+k+'\\')">'+txt+'</button>';};
@@ -2499,7 +2504,7 @@ if(!L.length){h+='<div style="padding:8px 0">Todavía no hay un flyer terminado 
 else{var i=Math.min(idx||0,L.length-1),I=L[i];window.FLY_URL=I.url;
 if(L.length>1){h+='<div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">';L.forEach(function(x,j){h+='<button class="btn" style="'+(j===i?'background:#0F3F27;color:#fff':'')+'" onclick="flyVista(\\'flyer\\','+j+')">'+x.label+'</button>';});h+='</div>';}
 h+='<div style="text-align:center"><img src="https://drive.google.com/thumbnail?id='+I.id+'&sz=w900" alt="Flyer de la búsqueda" style="max-width:100%;max-height:56vh;border-radius:8px;border:1px solid #ddd"></div><div style="font-size:12px;color:#666;margin:8px 0">'+(I.label?'Formato: <b>'+I.label+'</b> · ':'')+'guardado '+(I.fecha||'')+'. Si hiciste cambios en el editor y no tocaste «Guardar en Drive», esta imagen no los tiene.</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px"><button class="btn" onclick="flyEnv(\\'whatsapp\\')">💬 Enviar por WhatsApp</button><button class="btn" onclick="flyEnv(\\'linkedin\\')">💼 Publicar en LinkedIn</button><button class="btn" onclick="flyEnv(\\'instagram\\')">📷 Abrir Instagram</button><button class="btn" onclick="window.open(\\''+I.url+'\\',\\'_blank\\')">🖼 Abrir imagen</button></div>';}}
-else{[['whatsapp','WhatsApp','Enviar por WhatsApp',6],['linkedin','LinkedIn','Publicar en LinkedIn',10],['instagram','Instagram','Abrir Instagram',8]].forEach(function(k){var t=R[k[0]]||'';
+else{[['whatsapp','WhatsApp','Enviar por WhatsApp',6],['linkedin','LinkedIn','Publicar en LinkedIn',10],['instagram','Instagram','Abrir Instagram',8],['correo','Correo','Abrir en Gmail',9]].forEach(function(k){var t=R[k[0]]||'';
 h+='<div style="margin:12px 0 4px;font-weight:700;font-size:13px">'+k[1]+'</div><textarea id="fyT_'+k[0]+'" rows="'+k[3]+'" style="width:100%;font:inherit;font-size:13px;line-height:1.45;padding:10px;border:1px solid #D5E0CE;border-radius:8px;box-sizing:border-box">'+String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</textarea><div style="display:flex;gap:8px;margin-top:4px;flex-wrap:wrap"><button class="btn" onclick="flyCp(flyTx(\\''+k[0]+'\\'));flyMsg(\\'Copiado.\\')">Copiar</button><button class="btn" style="background:#0F3F27;color:#fff" onclick="flyEnv(\\''+k[0]+'\\')">'+k[2]+'</button></div>';});}
 h+='<div id="fyMsg" style="font-size:12px;color:#0F3F27;margin-top:10px;min-height:16px"></div>';B.innerHTML=h;}
 function verFlyer(v){window.FLY_URL='';var T=document.getElementById('mtit'),B=document.getElementById('mbody');T.textContent='📢 Difusión';B.innerHTML='Cargando…';document.getElementById('modal').classList.add('show');
