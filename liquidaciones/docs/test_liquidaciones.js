@@ -27,7 +27,13 @@ assert.ok(run('apellidoCoincide("YACUZZI","YACCUZZI Maria")'));
 assert.ok(run('apellidoCoincide("DELLABARCA","BARCA DELLA Juan")'));
 assert.ok(!run('apellidoCoincide("LOMBARDO","ALONSO Cecilia")'));
 // consolidado GRH
-let c=run('consolidarGRH_(12,2,10,6,true,30)');assert.strictEqual(c.alerta,'reconversión 2h');
+// reconversión: es todo el bloque o nada. Hizo 12 al 50 y 2 al 100 con expte 10/6 => no se reconvierte, endoso 2
+let c=run('consolidarGRH_(12,2,10,6,true,30)');assert.deepStrictEqual([c.reconv,c.endoso,c.alerta],[0,2,'endoso 2h (pedir a otro agente)']);
+// 100 sin usar: se reconvierten las 6 enteras
+c=run('consolidarGRH_(14,0,10,6,true,30)');assert.deepStrictEqual([c.reconv,c.endoso],[6,0]);
+c=run('consolidarGRH_(20,0,10,6,true,30)');assert.deepStrictEqual([c.reconv,c.endoso],[6,4]);
+// al revés: hizo solo al 100 con expte 10/6
+c=run('consolidarGRH_(0,12,10,6,true,30)');assert.deepStrictEqual([c.reconv,c.endoso],[10,0]);
 c=run('consolidarGRH_(20,16,10,6,true,30)');assert.strictEqual(c.pagar,30);assert.ok(/EXCEDE/.test(c.alerta));
 c=run('consolidarGRH_(5,0,0,0,false,30)');assert.strictEqual(c.alerta,'NO FIGURA EN EL EXPEDIENTE (5 h sin autorización)');
 // procesarAgente_ con fichadas simuladas
@@ -110,6 +116,13 @@ sx=sim(F({6:['6:58','14:02']}),ag(sad));assert.ok(/SADOFE trabajó un día de se
 let fmd=F({5:['5:47:37','14:04:22']});fmd[5]['1'].horario='06:00 a 14:00';
 assert.strictEqual(sim(fmd,ag({hab:{5:'6/13'}})).length,0);
 assert.strictEqual(sim(F({5:['5:47:37','14:04:22']}),ag({hab:{5:'6/13'}})).length,1);
+// 34) MUÑOZ: planilla 6/13 + extra 13/18, no vino a la mañana y fichó 14:23-17:49 => se paga lo fichado (3,5 h: 17:49 entra en la tolerancia) y se marca
+r=R(sim(F({19:['14:23:48','14:23:51','14:23:54','17:49:12']}),ag({hab:{19:'6/13'},ext:{19:'13/18'}}))[0]);assert.deepStrictEqual([r.est,r.h50],['AUTORIZADA',3.5]);assert.ok(/HORARIO DISTINTO/.test(r.cond));
+// VILLALBA: se fue 12:39 antes de la extra 13/19 => no se paga
+r=R(sim(F({30:['5:49:36','12:39:58']}),ag({hab:{30:'6/13'},ext:{30:'13/19'}}))[0]);assert.strictEqual(r.est,'A REVISAR');
+// 35) control contra el reporte de Enfermería
+let ce=run(`compararEnfermeria_([['Servicio','Legajo','Apellido','Día','Habitual','Horario Extra','Hs 50%','Hs 100%'],['G','1','PEREZ','5','23/6','19/23','3','1'],['G','2','GOMEZ','6','6/13','13/19','6','0']],[['G','1','PEREZ',5,'23/6','','','','',3,1,'AUTORIZADA',''],['G','2','GOMEZ',6,'6/13','','','','',0,0,'A REVISAR','las fichadas no cubren la franja']])`);
+assert.deepStrictEqual(ce.filas.map(r=>[r[0],r[8]]),[['2',-6]]);assert.deepStrictEqual(ce.tot,[9,1,3,1]);
 // 16) identidad
 const f2=F({5:['6:58','19:10']});f2[5]['1'].nombre='ALONSO Cecilia';
 assert.strictEqual(R(sim(f2,ag({hab:{5:'7/14'},ext:{5:'14/19'}}))[0]).est,'REVISAR IDENTIDAD');
@@ -132,9 +145,9 @@ assert.deepStrictEqual(g,{'62319':{a50:10,a100:6,ape:'NIEVA'}});
 g=run(`parsearGRH_([['Planilla'],['NRO','Nombre','Área','HS 100','HS 50'],[]])`);assert.deepStrictEqual(g,{});
 g=run(`parsearGRH_([['División Enfermería'],['Legajo','Agente','Área','','','','','Hs 50 %','Hs 100 %'],[57696,'CANALES','ENFERMERIA','','','','',12,0]])`);
 assert.deepStrictEqual(g,{'57696':{a50:12,a100:0,ape:'CANALES'}});
-// 22) consolidado mensual: Burgos 15,5 al 50 con GRH 10/6 => reconversión 5,5, sin endoso
-c=run('consolidarGRH_(15.5,0,10,6,true,30)');assert.deepStrictEqual([c.total,c.pagar,c.reconv,c.endoso,c.alerta],[15.5,15.5,5.5,0,'reconversión 5.5h']);
-assert.strictEqual(run("colorAlerta_('reconversión 5.5h')"),'#fff3b8');
+// 22) consolidado mensual: Burgos 15,5 al 50 con GRH 10/6 => reconversión de las 6 del 100, sin endoso
+c=run('consolidarGRH_(15.5,0,10,6,true,30)');assert.deepStrictEqual([c.total,c.pagar,c.reconv,c.endoso,c.alerta],[15.5,15.5,6,0,'reconversión 6h (todo el 100 al 50)']);
+assert.strictEqual(run("colorAlerta_('reconversión 6h (todo el 100 al 50)')"),'#fff3b8');
 // 23) NOCTURNIDAD
 assert.strictEqual(run('minNoche_(1380,1800)'),420);assert.strictEqual(run('minNoche_(1080,1800)'),540);assert.strictEqual(run('minNoche_(360,780)'),0);
 const noc=(fich,a)=>{for(let i=1;i<=31;i++)fich[i]=fich[i]||{};ctx._f=fich;ctx._a=a;return run(`(function(){_fich=_f;_diasMes=31;_mes=10;_anio=2026;var f=[],g={};procesarNocheAgente_(_a,"GUARDIA",{},f,g);return {f:f,g:g};})()`)};

@@ -188,9 +188,14 @@ function presencia_(a, d, w, cfg, turnos) {
   });
   var eDesde = contiguo ? bIni - 240 : w.ini - 180, eHasta = contiguo ? bIni + 180 : w.ini + 180, fin = contiguo ? bFin : w.fin, prox = Infinity;
   B.forEach(function (t) { if (t.ini >= fin + 30) prox = Math.min(prox, t.ini); });
-  var M = marcasAbs_(a.leg, d, eDesde, Math.min(fin + 480, prox - 240), cfg);
+  var M = marcasAbs_(a.leg, d, eDesde, Math.min(fin + 480, prox - 240), cfg), sinTurno = false;
+  if (contiguo && (!M.length || M[0].m > eHasta)) {
+    M = marcasAbs_(a.leg, d, w.ini - 180, Math.min(w.fin + 480, prox - 240), cfg).filter(function (x) { return x.m >= w.ini - 180; });
+    if (M.length && M[0].m <= w.ini + 180) sinTurno = true;
+    eHasta = w.ini + 180;
+  }
   if (!M.length || M[0].m > eHasta) return { estado: 'sin' };
-  var res = { ent: M[0].t, sal: M.length > 1 ? M[M.length - 1].t : '', n: M.length };
+  var res = { ent: M[0].t, sal: M.length > 1 ? M[M.length - 1].t : '', n: M.length, sinTurno: sinTurno };
   if (M.length === 1) { res.estado = 'omision'; return res; }
   res.estado = 'ok'; res.intermedias = M.length - 2;
   res.tramos = tramosPares_([M[0], M[M.length - 1]], w.ini, w.fin);
@@ -247,7 +252,7 @@ function procesarAgente_(a, serv, cfg, ctx, filas) {
             var ti = Math.round(jr.m0 / 60) * 60;
             real = bloquesTurno_(a, d).filter(function (b) { return b.ini !== tp.ini; }).concat([{ ini: ti, fin: ti + tp.fin - tp.ini }]);
             piezas = restar_(w0, real.concat(parseFranjas(a.ext[d - 1]).map(function (w) { return { ini: w.ini - 1440, fin: w.fin - 1440 }; })));
-            nd = 'HORARIO DISTINTO AL PROGRAMADO: fichó ' + jr.ent + ' a ' + jr.sal + ' y la planilla dice ' + turnoTxt + '; se tomó turno ' + minToHora(ti) + ' a ' + minToHora(ti + tp.fin - tp.ini) + ' (cargar el cambio)';
+            nd = 'HORARIO DISTINTO AL PROGRAMADO: fichó ' + jr.ent + ' a ' + jr.sal + ' y la planilla dice ' + turnoTxt + '; se tomó turno ' + minToHora(ti) + ' a ' + minToHora(ti + tp.fin - tp.ini) + ' (cambio de turno sin informar en la planilla)';
           }
         }
         if (!piezas.length) {
@@ -262,6 +267,7 @@ function procesarAgente_(a, serv, cfg, ctx, filas) {
           if (!pr.tramos.length) { filas.push(base.concat([pr.ent, pr.sal, txt, '', 0, 0, 'A REVISAR', 'las fichadas no cubren la franja (no se paga)'])); return; }
           var r = calcularExtraTramos(pr.tramos, cd), fz = textoTramos_(pr.tramos);
           if (pr.intermedias > 0) cond += (cond ? ' + ' : '') + pr.intermedias + ' fichada(s) intermedia(s), no cuentan: jornada completa';
+          if (pr.sinTurno) cond += (cond ? ' + ' : '') + 'HORARIO DISTINTO AL PROGRAMADO: no fichó el turno ' + turnoTxt + ', solo la extra (cambio de turno sin informar en la planilla)';
           if (pr.tolerancia) cond += (cond ? ' + ' : '') + 'diferencia de minutos (hasta ' + TOLERANCIA + "') tolerada: se paga la franja";
           if (r.total < w.fin - w.ini) cond += (cond ? ' + ' : '') + 'realizó menos que lo autorizado';
           if (r.h50 + r.h100 <= 0) { filas.push(base.concat([pr.ent, pr.sal, txt, fz, 0, 0, 'A REVISAR', 'menos de 1 h (no se paga)'])); return; }
@@ -361,9 +367,22 @@ function liquidarExtras() {
   var h = escribir_(SpreadsheetApp.openById(ID_BASE), 'LIQUIDACION', cab, out, 5, 9);
   pintarLiquidacion_(h, out, cab.length);
   escribirResumen_(filas, mens, grh, cfg);
-  var cambios = registrarCambios_(hojas, cfg);
+  var cambios = registrarCambios_(hojas, cfg), ctrl = controlEnfermeria_(cfg, filas);
   var aut = filas.filter(function (r) { return r[11] === 'AUTORIZADA'; }).length;
-  avisar_('LIQUIDACION lista: ' + out.length + ' filas (' + aut + ' autorizadas) · ' + Object.keys(mens).length + ' agentes' + (cfg.fichadasAuto ? '\nFichadas: ' + cfg.fichadasAuto : '') + (grh ? '\nExpediente: ' + Object.keys(grh).length + ' agentes de Enfermería con horas autorizadas' : '\nSin expediente (consolidado) en CONFIG: no se controla lo autorizado.') + (cambios ? '\n' + cambios : '') + notaMeses_());
+  avisar_('LIQUIDACION lista: ' + out.length + ' filas (' + aut + ' autorizadas) · ' + Object.keys(mens).length + ' agentes' + (cfg.fichadasAuto ? '\nFichadas: ' + cfg.fichadasAuto : '') + (grh ? '\nExpediente: ' + Object.keys(grh).length + ' agentes de Enfermería con horas autorizadas' : '\nSin expediente (consolidado) en CONFIG: no se controla lo autorizado.') + (cambios ? '\n' + cambios : '') + ctrl + notaMeses_());
+}
+
+function controlEnfermeria_(cfg, filas) {
+  var hoja = SpreadsheetApp.openById(cfg.idHorarios).getSheetByName('Reporte Extras Global');
+  if (!hoja) return '';
+  var x = compararEnfermeria_(hoja.getDataRange().getDisplayValues(), filas);
+  if (!x) return '';
+  var cab = ['Legajo', 'Apellido', 'Día', 'Franja (Enfermería)', 'Enf. 50%', 'Enf. 100%', 'Liquidación 50%', 'Liquidación 100%', 'Diferencia (h)', 'Por qué (liquidación)'];
+  var h = escribir_(SpreadsheetApp.openById(ID_BASE), 'CONTROL_ENFERMERIA', cab, x.filas, 10, 10);
+  if (x.filas.length) h.getRange(2, 1, x.filas.length, cab.length).setBorder(true, true, true, true, true, true, '#c8c8c8', SpreadsheetApp.BorderStyle.SOLID)
+    .setBackgrounds(x.filas.map(function (r) { return new Array(cab.length).fill(r[8] < 0 ? '#fbd9d9' : '#fff3b8'); }));
+  var t = x.tot.map(function (v) { return Math.round(v * 10) / 10; });
+  return '\nControl contra el reporte de Enfermería: ' + x.filas.length + ' días distintos (pestaña CONTROL_ENFERMERIA). Enfermería ' + t[0] + ' h al 50 y ' + t[1] + ' al 100; liquidación ' + t[2] + ' y ' + t[3] + '.';
 }
 
 function escribir_(ss, nombre, cab, filas, textoDesde, textoHasta) {
