@@ -283,6 +283,14 @@ function procesarAgente_(a, serv, cfg, ctx, filas) {
             nd = 'HORARIO DISTINTO AL PROGRAMADO: fichó ' + jr.ent + ' a ' + jr.sal + ' y la planilla dice ' + turnoTxt + '; se tomó turno ' + minToHora(ti) + ' a ' + minToHora(ti + tp.fin - tp.ini) + ' (cambio de turno sin informar en la planilla)';
           }
         }
+        if (w0.ini === 0 && w0.fin <= 720 && !parseFranjas(a.ext[d + 1]).some(function (w) { return w.ini < w0.fin; })) {
+          var ok = function (p) { var r = presencia_(a, d, p, cfg, real); return r.estado === 'ok' && r.tramos.length; };
+          var p1 = restar_({ ini: 1440, fin: w0.fin + 1440 }, bloques);
+          if (!(piezas.length && piezas.every(ok)) && p1.length && p1.every(ok)) {
+            piezas = p1;
+            nd = (nd ? nd + ' + ' : '') + 'extra ' + txt + ' cargada el día ' + d + ' pero hecha la noche del ' + d + ' al ' + (d + 1) + ': se paga esa noche (revisar en qué día va cargada)';
+          }
+        }
         if (!piezas.length) {
           filas.push(base.concat([hE, hS, txt, '', 0, 0, 'A REVISAR', 'la franja declarada cae dentro del turno o de otra extra (no es extra)']));
           return;

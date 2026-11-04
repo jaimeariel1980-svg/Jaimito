@@ -139,6 +139,10 @@ assert.deepStrictEqual([fd[0][11],fd[0][9],fd[1][11],fd[1][9],fd[1][10]],['AUTOR
 let fna=F({9:['6:00:30','19:13:00']});fna[10]={};
 r=R(sim(fna,ag({hab:{8:'23/6',9:'23/6'},ext:{9:'19/23'}}))[0]);assert.ok(/SIN DATOS DEL RELOJ/.test(r.cond));assert.ok(/día 10/.test(r.cond));assert.strictEqual(r.h50,0);
 assert.strictEqual(run("tipoFila_(['','','','','','','','','',0,0,'A REVISAR','SIN DATOS DEL RELOJ: el agente no figura en la tarjeta del día 10 (sale #N/A). No es omisión'])"),4);
+// 39) MOYA: extra 0/6 cargada el 23 pero hecha la noche del 23 al 24 (23:23 a 6:01) => se paga esa noche, marcada
+r=R(sim(F({23:['23:23:16'],24:['6:01:17','17:50:55']}),ag({hab:{24:'18/06',3:'18/06',4:'18/06'},ext:{23:'0/6'}}))[0]);assert.deepStrictEqual([r.est,r.h100],['AUTORIZADA',6]);assert.ok(/noche del 23 al 24/.test(r.cond));
+// ACUÑA: 0/6 cargada el 20 y hecha 23:57 del 19 a 6:00 del 20 => sigue igual (sin marca)
+r=R(sim(F({19:['23:57:13'],20:['6:00:08']}),ag({hab:{3:'F'},ext:{20:'0/6'}}))[0]);assert.deepStrictEqual([r.est,r.h100],['AUTORIZADA',6]);assert.ok(!/noche del/.test(r.cond));
 // 16) identidad
 const f2=F({5:['6:58','19:10']});f2[5]['1'].nombre='ALONSO Cecilia';
 assert.strictEqual(R(sim(f2,ag({hab:{5:'7/14'},ext:{5:'14/19'}}))[0]).est,'REVISAR IDENTIDAD');
