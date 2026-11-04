@@ -276,6 +276,7 @@ function registroApi_() {
     agendarCitaTablero: { f: agendarCitaTablero_ },
     analizarEntrevista: { f: analizarEntrevista_ },
     anularEtapa: { f: anularEtapa_ },
+    reanalizarCV: { f: reanalizarCV_ },
     asignarProximo: { f: asignarProximo_ },
     armarComunicacion: { f: armarComunicacion_ },
     borrarContactoRegistro: { f: borrarContactoRegistro_ },

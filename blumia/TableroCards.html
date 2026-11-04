@@ -299,6 +299,7 @@ header{min-height:86px}
       +'<div class="fpw"><button class="fpe" title="Editar datos del candidato" onclick="panelTog(\'edPanel\')">✏️</button><div class="fp"><div class="pn"><h4>Contacto</h4>'+row('Teléfono',esc(fmtTel(c.tel)))+row('Email',esc(c.mail))+row('Zona',esc(c.zona))+'</div>'
       +'<div class="pn"><h4>Postulación</h4>'+row('Recibido',esc(c.recibido))+row('Llegó por',esc(c.fuente))+row('Formación',esc(fmtForm(c.formacion)))+row('Pretensión',c.pretension?'$'+fmtMiles(c.pretension):'')+'</div></div></div>'+editarHtml(c)
       +((c.resumen||c.cvPorque)?'<div class="sec">Análisis del CV</div>'+(c.cvPorque?'<div class="cvpq'+(c.nota==='C'?' c':'')+'"><b>Por qué la IA puso '+esc(c.nota||'esa nota')+':</b> '+esc(String(c.cvPorque).replace(/^\s*(A|B\+|B|C)\s*[:\-–]\s*/i,''))+'</div>':'')+(c.resumen?'<div class="fres" style="margin:0">'+esc(c.resumen)+'</div>':''):'')
+      +(c.cv?'<div class="rean"><button class="mbtn alt" title="Vuelve a leer el CV con el criterio y el perfil de hoy" onclick="reanalizarCV('+c.fila+',this)">🔄 Reanalizar CV con la IA</button></div>':'')
       +'<div class="sec">Calificaciones</div>'+notas+proxFichaHtml(c)+((c.entScr||c.entComp)?row('Entrevistó',[c.entScr?esc(c.entScr)+' (screening)':'',c.entComp?esc(c.entComp)+' (competencias)':''].filter(Boolean).join(' · ')):'')
       +((c.cita||c.historial)?'<div class="sec">Entrevistas (calendario)</div>'+row('Cita agendada',esc(c.cita)+(c.citaCon?' · con '+esc(c.citaCon):''))+(c.historial?'<div style="white-space:pre-line;font-size:13px">'+esc(c.historial)+'</div>':''):'')
       +'<div class="sec">Contacto con el candidato</div>'+contacto
@@ -769,6 +770,12 @@ window.addEventListener('resize',fit);window.addEventListener('load',fit);setInt
       b.disabled=true;b.textContent='…';
       google.script.run.withSuccessHandler(function(){toast();cerrar();refrescarTablero();}).withFailureHandler(function(e){b.disabled=false;b.textContent='Sin nota';blAlert(e.message||e);}).anularEtapa(PERFIL,f,et,quienSoy());
     },{si:'Dejar sin nota',peligro:true});
+  };
+  window.reanalizarCV=function(f,b){
+    blConfirm('¿Reanalizar el CV con la IA?\n\nVuelve a leer el CV con el criterio y el perfil de hoy y actualiza la nota, el motivo, el resumen y la zona. Si la persona ya avanzó de etapa, el estado no se mueve. Tarda unos segundos.',function(){
+      var t=b.textContent;b.disabled=true;b.textContent='Analizando…';
+      google.script.run.withSuccessHandler(function(r){b.disabled=false;b.textContent=t;toast();cerrar();refrescarTablero();blAlert('Listo: nota '+r.nota+(r.cambioEstado?' · pasó a «'+r.estado+'»':'')+'.');}).withFailureHandler(function(e){b.disabled=false;b.textContent=t;blAlert(e.message||e);}).reanalizarCV(PERFIL,f,quienSoy());
+    },{si:'Reanalizar'});
   };
   var st=document.createElement('style');st.id='nncss';st.textContent='.nb.nn{width:auto;padding:0 10px;font-size:12px;margin-left:6px;background:#fff;color:#B3261E;border:1.5px solid #E7B4B0}.nb.nn:hover{background:#FDF0F0}';document.head.appendChild(st);
 })();
