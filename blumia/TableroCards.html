@@ -68,6 +68,7 @@ header{min-height:86px}
 <script>
 (function(){
   var DIAS_ALERTA=7,KF='';
+  window.proxEtapa=function(c){return (String(c.notaScr||'').trim()||/competenc/i.test(c.estado||''))?'competencias':'screening';}; // se usa al dibujar las tarjetas: tiene que existir antes del primer dibujo
   var COLS_PUROS=COLS; // [titulo, estados]
   function esc(s){return avEsc(s);}
   function notaCls(n){n=String(n||'').trim();return n==='A'?'cA':n==='B+'?'cBp':n==='B'?'cB':n==='C'?'cC':'';}
