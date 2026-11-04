@@ -179,7 +179,7 @@ function listarPlantillas_(ss, perfilId) {
   const c = data[0].indexOf('perfil');
   const out = [];
   data.slice(1).forEach(r => {
-    if (!r[0] || (c >= 0 && String(r[c] || '').trim())) return;
+    if (!r[0] || r[0] === 'hunting-nota-conexion' || (c >= 0 && String(r[c] || '').trim())) return;
     const ef = plantillaTexto_(String(r[0]), perfilId);
     out.push({ clave: String(r[0]), canal: String(r[1]), texto: firmaConPlaceholder_(ef.texto), propia: ef.propia, general: firmaConPlaceholder_(r[3]) });
   });
