@@ -320,7 +320,7 @@ function esSadofe_(a, ctx) {
 
 function cargarHorarios_(cfg, todos) {
   _fich = {}; _ssFich = null; _adj = {}; _cfgF = cfg; _diasMes = new Date(cfg.anio, cfg.mes, 0).getDate();
-  var excl = (todos ? ['LISTAS'] : cfg.excluidas).concat(['LIQUIDACION', 'NOCTURNIDAD', 'CONFIG']);
+  var excl = (todos ? ['LISTAS'] : cfg.excluidas).concat(['LIQUIDACION', 'NOCTURNIDAD', 'CONFIG', 'REPORTE EXTRAS GLOBAL', HOJA_VAL_.toUpperCase()]);
   var hojas = [], fdo = {};
   SpreadsheetApp.openById(cfg.idHorarios).getSheets().forEach(function (h) {
     if (excl.indexOf(h.getName().trim().toUpperCase()) >= 0) return;
@@ -343,7 +343,7 @@ function liquidarExtras() {
 
   var filas = [];
   hojas.forEach(function (h) { h.ags.forEach(function (a) { procesarAgente_(a, h.nombre, cfg, ctx, filas); }); });
-  var val = abrirValidacion_(cfg, filas);
+  var val = abrirValidacion_(cfg, filas, hojas, ctx);
 
   var grh = cfg.idGrh ? leerGRH_(cfg.idGrh) : null, mens = {};
   filas.forEach(function (r) {

@@ -202,14 +202,14 @@ function motivoClaro_(rows, e) {
       if (/menos que lo autorizado/.test(c)) return 'Hizo menos horas que las autorizadas: la extra era ' + fz + ' y fichó ' + fichado + '. Se pagan ' + hs + ' h.';
       if (/:30/.test(fz)) {
         var w0 = parseTurno(fz.replace(' a ', '/')), m0 = horaToMin(r[5]), antes = w0 && m0 !== null && m0 <= w0.ini - 10 && m0 > w0.ini - 180;
-        return 'La extra autorizada es ' + fz + ': son ' + hs + ' h' + (antes ? ' (entró antes, a las ' + r[5] + ', pero se paga solo lo autorizado)' : '') + '. El reporte cuenta ' + (e.h50 + e.h100) + ' h porque no toma bien la media hora.';
+        return 'La extra autorizada es ' + fz + ': son ' + hs + ' h' + (antes ? ' (entró antes, a las ' + r[5] + ', pero se paga solo lo autorizado)' : '') + '. La planilla de horarios dice ' + (e.h50 + e.h100) + ' h.';
       }
       return 'Se pagan ' + hs + ' h según las fichadas (' + fichado + ').';
     }
     if (/no cubren/.test(c)) return 'Las fichadas (' + fichado + ') no llegan al horario de la extra ' + fz + ': no se paga.' + fich;
     if (/no fichó la extra/.test(c)) return 'No hay fichadas en el horario de la extra ' + fz + ': no se paga.' + fich;
     if (/omisión|una sola fichada/.test(c)) return 'Falta la entrada o la salida en el reloj: con una sola fichada no se paga.' + fich;
-    if (/NO autorizada|NO INFORMADA/.test(c)) return 'Extra no informada: ' + c.replace(/^.*?NO INFORMADA · /, '').replace(/ \(no hay franja.*$/, '') + ' (fichó ' + fichado + '). No está en la planilla: se paga solo si la autorizás.';
+    if (/NO autorizada|NO INFORMADA/.test(c)) return 'Extra no informada: ' + c.replace(/^.*?NO INFORMADA · /, '').replace(/ \(no hay franja.*$/, '') + ' (fichó ' + fichado + '). No está cargada en la planilla: si la autorizás se pagan ' + (+r[9] || 0) + ' h al 50 % y ' + (+r[10] || 0) + ' h al 100 %.';
     if (/dentro del turno/.test(c)) return 'La extra ' + fz + ' cae dentro de su propio turno: no es extra.';
     if (/ilegible/.test(c)) return 'No se entiende la franja escrita en la planilla.';
     if (r[11] === 'REVISAR IDENTIDAD') return 'El nombre de la fichada no coincide con el agente: revisar.';
