@@ -157,14 +157,20 @@
     var ok=function(){if(btn){var o=btn.textContent;btn.textContent='¡Copiado!';setTimeout(function(){btn.textContent=o;},1500);}};
     try{navigator.clipboard.writeText(t).then(ok,function(){var a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove();ok();});}catch(e){var a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();try{document.execCommand('copy');ok();}catch(x){}a.remove();}
   }
+  function wsp(t){
+    t=String(t||'').trim();if(!t){aviso('Todavía no hay mensaje para enviar.');return;}
+    window.open((/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent)?'https://wa.me/?text=':'https://web.whatsapp.com/send?text=')+encodeURIComponent(t),'_blank');
+  }
   function mensaje(o){
-    var bg=modal('<h3>✉ Mensaje'+(o?' para '+esc(o.nombre):' modelo')+'</h3><p>Texto de Flavia, listo para pegar en un InMail (o en un mensaje de LinkedIn).</p><label>Nombre y apellido</label><input type="text" id="mm-n" value="'+esc(o?o.nombre:'')+'" placeholder="Ej: Juan Pablo Ceballos"><label>Asunto</label><input type="text" id="mm-a"><label>Mensaje</label><textarea id="mm-t" style="min-height:240px"></textarea><div class="hu-row" style="margin-top:4px"><button id="mm-ca">Copiar asunto</button><button class="go" id="mm-ct">Copiar mensaje</button></div>'+(o?'<details style="margin-top:12px"><summary style="cursor:pointer;font-weight:700;font-size:13px">✨ Redactar con IA (opcional)</summary><p style="margin-top:6px">La IA escribe un mensaje distinto, personalizado. El texto de Flavia de arriba es el oficial.</p><div class="hu-tp"><button data-t="primero">Primer mensaje</button><button data-t="seg1">Seguimiento 1</button><button data-t="seg2">Último seguimiento</button></div><div class="hu-row" style="margin-top:6px;justify-content:flex-start"><button class="go" id="hm-g">✨ Generar con IA</button></div><label>Mensaje directo (IA)</label><textarea id="hm-m" style="min-height:150px"></textarea><div class="hu-row"><button id="hm-cm">Copiar mensaje</button></div></details>':'')+'<div class="hu-row">'+(o&&o.linkedin?'<button id="mm-l">Abrir LinkedIn</button>':'')+(o&&o.estado==='Identificado'?'<button class="go" id="mm-ya">Ya lo envié ✓</button>':'')+'<button id="mm-x">Cerrar</button></div>');
+    var bg=modal('<h3>✉ Mensaje'+(o?' para '+esc(o.nombre):' modelo')+'</h3><p>Texto de Flavia, listo para pegar en un InMail (o en un mensaje de LinkedIn).</p><label>Nombre y apellido</label><input type="text" id="mm-n" value="'+esc(o?o.nombre:'')+'" placeholder="Ej: Juan Pablo Ceballos"><label>Asunto</label><input type="text" id="mm-a"><label>Mensaje</label><textarea id="mm-t" style="min-height:240px"></textarea><div class="hu-row" style="margin-top:4px"><button id="mm-ca">Copiar asunto</button><button class="go" id="mm-ct">Copiar mensaje</button><button id="mm-cj">Copiar asunto y mensaje</button><button id="mm-wa">Enviar por WhatsApp</button></div>'+(o?'<details style="margin-top:12px"><summary style="cursor:pointer;font-weight:700;font-size:13px">✨ Redactar con IA (opcional)</summary><p style="margin-top:6px">La IA escribe un mensaje distinto, personalizado. El texto de Flavia de arriba es el oficial.</p><div class="hu-tp"><button data-t="primero">Primer mensaje</button><button data-t="seg1">Seguimiento 1</button><button data-t="seg2">Último seguimiento</button></div><div class="hu-row" style="margin-top:6px;justify-content:flex-start"><button class="go" id="hm-g">✨ Generar con IA</button></div><label>Mensaje directo (IA)</label><textarea id="hm-m" style="min-height:150px"></textarea><div class="hu-row"><button id="hm-cm">Copiar mensaje</button><button id="hm-wa">Enviar por WhatsApp</button></div></details>':'')+'<div class="hu-row">'+(o&&o.linkedin?'<button id="mm-l">Abrir LinkedIn</button>':'')+(o&&o.estado==='Identificado'?'<button class="go" id="mm-ya">Ya lo envié ✓</button>':'')+'<button id="mm-x">Cerrar</button></div>');
     var $=function(s){return bg.querySelector(s);},bm='';
     function pon(){var p=String($('#mm-n').value||'').trim().split(/\s+/)[0]||'[Nombre]';$('#mm-t').value=bm.split('[Nombre]').join(p);}
     run('huntingMailModelo',[PERFIL,quien()],function(r){$('#mm-a').value=r.asunto||'';bm=r.mail||'';pon();},function(e){bg.remove();aviso((e&&e.message)||String(e));});
     $('#mm-n').oninput=pon;
     $('#mm-ca').onclick=function(){copiar($('#mm-a').value,this);};
     $('#mm-ct').onclick=function(){copiar($('#mm-t').value,this);};
+    $('#mm-cj').onclick=function(){copiar('Asunto: '+$('#mm-a').value+'\n\n'+$('#mm-t').value,this);};
+    $('#mm-wa').onclick=function(){wsp($('#mm-t').value);};
     if($('#mm-l'))$('#mm-l').onclick=function(){window.open(o.linkedin,'_blank');};
     if($('#mm-ya'))$('#mm-ya').onclick=function(){this.disabled=true;run('huntingMover',[PERFIL,o.id,'Contactado',quien()],function(){bg.remove();cargar();});};
     if(o){
@@ -174,6 +180,7 @@
       $('#hm-g').onclick=function(){var g=this;g.disabled=true;g.textContent='La IA está escribiendo…';
         run('huntingMensaje',[PERFIL,o.id,tipo,true,quien()],function(r){g.disabled=false;g.textContent='✨ Generar de nuevo';$('#hm-m').value=r.mensaje||'';},function(e){g.disabled=false;g.textContent='✨ Generar con IA';aviso((e&&e.message)||String(e));});};
       $('#hm-cm').onclick=function(){copiar($('#hm-m').value,this);};
+    $('#hm-wa').onclick=function(){wsp($('#hm-m').value);};
     }
     $('#mm-x').onclick=function(){bg.remove();};
     setTimeout(function(){if(!o)$('#mm-n').focus();},50);
