@@ -741,6 +741,7 @@ header h1{font-size:15px;line-height:1.25;flex:1 1 100%;min-width:0;display:-web
 window.addEventListener('resize',fit);window.addEventListener('load',fit);setInterval(fit,700);fit()})();
 
 (function(){
+  function esc(s){return avEsc(s);}
   window.motFichaHtml=function(c){
     if(!/^Descartad/i.test(c.estado))return '';
     var ya=String(c.motivo||''),otro=(ya.match(/Otro: ([^;]+)/)||[])[1]||'',tiene=!!ya.trim();
