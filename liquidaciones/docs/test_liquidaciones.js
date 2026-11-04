@@ -143,6 +143,9 @@ assert.strictEqual(run("tipoFila_(['','','','','','','','','',0,0,'A REVISAR','S
 r=R(sim(F({23:['23:23:16'],24:['6:01:17','17:50:55']}),ag({hab:{24:'18/06',3:'18/06',4:'18/06'},ext:{23:'0/6'}}))[0]);assert.deepStrictEqual([r.est,r.h100],['AUTORIZADA',6]);assert.ok(/noche del 23 al 24/.test(r.cond));
 // ACUÑA: 0/6 cargada el 20 y hecha 23:57 del 19 a 6:00 del 20 => sigue igual (sin marca)
 r=R(sim(F({19:['23:57:13'],20:['6:00:08']}),ag({hab:{3:'F'},ext:{20:'0/6'}}))[0]);assert.deepStrictEqual([r.est,r.h100],['AUTORIZADA',6]);assert.ok(!/noche del/.test(r.cond));
+// 40) GRUNING: extra 19/24 el 21 + 0/6 el 22, fichó 18:43 del 21 a 6:04 del 22 => se pagan las dos (5 h y 6 h)
+let gr=sim(F({21:['18:43:17'],22:['6:04:34']}),ag({hab:{18:'18/06',24:'18/06',25:'18/06'},ext:{21:'19/24',22:'0/6'}})).map(R);
+assert.deepStrictEqual(gr.map(r=>[r.est,r.h50+r.h100]),[['AUTORIZADA',5],['AUTORIZADA',6]]);
 // 16) identidad
 const f2=F({5:['6:58','19:10']});f2[5]['1'].nombre='ALONSO Cecilia';
 assert.strictEqual(R(sim(f2,ag({hab:{5:'7/14'},ext:{5:'14/19'}}))[0]).est,'REVISAR IDENTIDAD');
