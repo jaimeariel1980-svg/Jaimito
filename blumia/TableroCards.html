@@ -298,13 +298,13 @@ header{min-height:86px}
       +'<div class="fpw"><button class="fpe" title="Editar datos del candidato" onclick="panelTog(\'edPanel\')">✏️</button><div class="fp"><div class="pn"><h4>Contacto</h4>'+row('Teléfono',esc(fmtTel(c.tel)))+row('Email',esc(c.mail))+row('Zona',esc(c.zona))+'</div>'
       +'<div class="pn"><h4>Postulación</h4>'+row('Recibido',esc(c.recibido))+row('Llegó por',esc(c.fuente))+row('Formación',esc(fmtForm(c.formacion)))+row('Pretensión',c.pretension?'$'+fmtMiles(c.pretension):'')+'</div></div></div>'+editarHtml(c)
       +(c.resumen?'<div class="sec">Análisis del CV</div><div class="fres" style="margin:0">'+esc(c.resumen)+'</div>':'')
-      +'<div class="sec">Calificaciones</div>'+notas+proxFichaHtml(c)+((c.entScr||c.entComp)?row('Entrevistó',[c.entScr?esc(c.entScr)+' (screening)':'',c.entComp?esc(c.entComp)+' (competencias)':''].filter(Boolean).join(' · ')):'')
+      +'<div class="sec">Calificaciones</div>'+notas+((c.prox&&!String(c.notaComp||'').trim())?row('Próxima entrevista','<b>'+esc(c.prox)+'</b> (competencias)'):'')+((c.entScr||c.entComp)?row('Entrevistó',[c.entScr?esc(c.entScr)+' (screening)':'',c.entComp?esc(c.entComp)+' (competencias)':''].filter(Boolean).join(' · ')):'')
       +((c.cita||c.historial)?'<div class="sec">Entrevistas (calendario)</div>'+row('Cita agendada',esc(c.cita)+(c.citaCon?' · con '+esc(c.citaCon):''))+(c.historial?'<div style="white-space:pre-line;font-size:13px">'+esc(c.historial)+'</div>':''):'')
       +'<div class="sec">Contacto con el candidato</div>'+contacto
       +'<div class="sec">Observaciones</div><textarea id="gObs" rows="3" placeholder="Ampliá cualquier dato del candidato">'+esc(c.obs||'')+'</textarea><div class="obsb"><button class="mbtn sm" id="gObsB" onclick="guardarObs('+c.fila+',this)">Guardar</button></div>'
       +'<div class="sec">Historial</div><div id="histCand" style="font-size:13px">cargando…</div><div class="fdel"><button title="Eliminar a este candidato" onclick="eliminar('+c.fila+')">🗑 Eliminar candidato</button></div></div></div>';
     document.getElementById('mtit').textContent=c.nombre;document.getElementById('mbody').innerHTML=h;document.getElementById('modal').classList.add('show');
-    cargarRegCont(f);cargarHist(f);proxCargar();
+    cargarRegCont(f);cargarHist(f);
   };
   function inp(id,l,v,t){return '<label class="gl">'+l+'<input id="'+id+'" type="'+(t||'text')+'" value="'+esc(v||'')+'"></label>';}
   function editarHtml(c){
@@ -315,25 +315,6 @@ header{min-height:86px}
     return '<div class="edp" id="agPanel" hidden><div class="ggrid"><label class="gl">Tipo<select id="gaTipo"><option value="screening">Screening</option><option value="competencias">Competencias</option><option value="empresa-virtual">Empresa (virtual)</option><option value="empresa-presencial">Empresa (presencial)</option></select></label><label class="gl" id="gaQL">Quién entrevista<select id="gaQuien" data-prox="'+esc(c.prox||'')+'"></select></label>'+inp('gaFec','Día',hoy,'date')+inp('gaHor','Hora','10:00','time')+'<label class="gl">Duración<select id="gaDur"><option>30</option><option>45</option><option>60</option><option>90</option></select></label>'+inp('gaLug','Lugar / link (opcional)','')+'</div><div class="obsb"><span class="hint">Se crea en el calendario de Blumia, queda registrado en la ficha y se invita por mail al candidato y a quien entrevista (si tienen mail).</span><button class="mbtn sm" onclick="agendarC('+c.fila+',this)">Agendar</button></div></div>';
   }
   window.panelTog=function(id){var e=document.getElementById(id);if(!e)return;['edPanel','agPanel'].forEach(function(k){var x=document.getElementById(k);if(x&&k!==id)x.hidden=true;});e.hidden=!e.hidden;if(id==='agPanel'&&!e.hidden)agQuienCargar();};
-  function proxFichaHtml(c){
-    var m=metEstado(c.estado)||{t:'act',lv:0};
-    if(m.t!=='act'||m.lv<2||String(c.notaComp||'').trim())return '';
-    return '<div class="frow"><span class="fl">Próxima entrevista</span><span class="fv"><select id="proxSel" data-f="'+c.fila+'" data-v="'+esc(c.prox||'')+'" onchange="proxGuardar(this)" style="height:34px;border:1px solid #bbb;border-radius:8px;padding:0 8px;font:inherit"><option value="">Sin asignar</option>'+(c.prox?'<option value="'+esc(c.prox)+'" selected>'+esc(c.prox)+'</option>':'')+'</select> <span style="color:#6b7a70;font-size:12px">(competencias)</span></span></div>';
-  }
-  window.proxCargar=function(){
-    var s=document.getElementById('proxSel');if(!s)return;
-    var go=function(){var E=window.AG_ENT||{lista:[]},v=s.getAttribute('data-v')||'';
-      var L=E.lista.filter(function(u){return u.competencias;}).map(function(u){return String(u.nombre).split(' ')[0];});
-      if(v&&L.indexOf(v)<0)L.push(v);
-      s.innerHTML='<option value="">Sin asignar</option>'+L.map(function(n){return '<option value="'+esc(n)+'"'+(n===v?' selected':'')+'>'+esc(n)+'</option>';}).join('');};
-    if(window.AG_ENT){go();return;}
-    google.script.run.withSuccessHandler(function(r){window.AG_ENT=r||{yo:'',lista:[]};go();}).withFailureHandler(function(){}).entrevistadoresAgenda(PERFIL);
-  };
-  window.proxGuardar=function(s){
-    var f=Number(s.getAttribute('data-f')),v=s.value,c=DATA.find(function(x){return x.fila===f;}),ant=s.getAttribute('data-v')||'';
-    s.disabled=true;
-    google.script.run.withSuccessHandler(function(){s.disabled=false;s.setAttribute('data-v',v);if(c)c.prox=v;renderBoardN();toast();}).withFailureHandler(function(e){s.disabled=false;s.value=ant;blAlert('No se pudo guardar: '+((e&&e.message)||e));}).asignarProximo(PERFIL,f,v,quienSoy());
-  };
   window.agQuienCargar=function(){var go=function(){var t=document.getElementById('gaTipo');if(t&&!t._ag){t._ag=1;t.addEventListener('change',agQuienPintar);}agQuienPintar();};if(window.AG_ENT){go();return;}google.script.run.withSuccessHandler(function(r){window.AG_ENT=r||{yo:'',lista:[]};go();}).withFailureHandler(function(){window.AG_ENT={yo:'',lista:[]};go();}).entrevistadoresAgenda(PERFIL);};
   window.agQuienPintar=function(){var s=document.getElementById('gaQuien'),l=document.getElementById('gaQL'),t=val('gaTipo');if(!s||!l)return;var ok=t==='screening'||t==='competencias';l.style.display=ok?'':'none';if(!ok){s.innerHTML='';return;}var E=window.AG_ENT||{yo:'',lista:[]},L=E.lista.filter(function(u){return u[t];}),yo=L.some(function(u){return u.nombre===E.yo;})?E.yo:'',px=String(s.getAttribute('data-prox')||'').toLowerCase();if(t==='competencias'&&px){var pu=L.filter(function(u){return String(u.nombre).split(' ')[0].toLowerCase()===px;})[0];if(pu)yo=pu.nombre;}s.innerHTML='<option value="">Sin asignar</option>'+L.map(function(u){return '<option value="'+esc(u.nombre)+'"'+(u.nombre===yo?' selected':'')+'>'+esc(u.nombre)+(u.nombre===E.yo?' (yo)':'')+'</option>';}).join('');};
   function val(id){var e=document.getElementById(id);return e?e.value:'';}
