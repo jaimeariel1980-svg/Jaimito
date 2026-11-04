@@ -116,6 +116,41 @@ function difusionGuardar_(perfilId, t) {
   return { fecha: Utilities.formatDate(new Date(), 'America/Argentina/Buenos_Aires', 'dd/MM/yyyy HH:mm') };
 }
 
+// Redacta UN solo texto de difusión (linkedin / instagram / whatsapp / correo) con SUS instrucciones; no toca los otros ni el diseño del flyer
+function difusionRedactarUno_(perfilId, canal, textoActual, instrucciones) {
+  const specs = {
+    linkedin: 'posteo para LinkedIn: por defecto máx. 900 caracteres, con saltos de línea, 2 o 3 emojis como mucho, termina invitando a postularse en [LINK]',
+    instagram: 'posteo para Instagram: por defecto máx. 600 caracteres, con 4 o 5 hashtags, invita a postularse en el link de la bio o por [LINK]',
+    whatsapp: 'mensaje corto para difundir por WhatsApp: por defecto máx. 450 caracteres, con [LINK]',
+    correo: 'MAIL para difundir la búsqueda entre contactos: la primera línea es «Asunto: …»; por defecto máx. 1100 caracteres, saludo «Hola:», 2 o 3 párrafos cortos con qué se busca y por qué vale la pena, cierre que invita a postularse en [LINK], firmado «Equipo de Blumia Consulting»'
+  };
+  if (!specs[canal]) throw new Error('Canal no válido.');
+  const cfg = getConfig(perfilId), d = flyerDatos_(perfilId);
+  let g = {};
+  try { g = JSON.parse(d.guardado || '{}') || {}; } catch (e) { }
+  const mostrar = ((g.mostrarEmpresa !== undefined) ? !!g.mostrarEmpresa : d.empresa === 'MACS') && !d.ciega;
+  const empresa = mostrar ? d.empresa : d.empresaNeutral;
+  const perfil = flyerPerfilTexto_(cfg);
+  const extra = (typeof cfg.prompt_extra === 'string') ? cfg.prompt_extra.slice(0, 5000) : '';
+  if (!perfil && !extra) throw new Error('Esta búsqueda todavía no tiene datos para redactar: cargá el perfil del puesto en ⚙ Configurar.');
+  const instr = limpiarTxt_(instrucciones).slice(0, 1500);
+  const actual = String(textoActual == null ? '' : textoActual).replace(/[<>]/g, '').trim().slice(0, 4000);
+  const sistema = 'Sos redactor/a de avisos de empleo de Blumia Consulting (Argentina). Escribís UN solo texto: ' + specs[canal] + '. ' +
+    'Español rioplatense profesional (vos); lenguaje inclusivo con barra cuando el puesto lo requiera (Coordinador/a). No inventes datos que no estén en el material; no pongas sueldo, banda salarial, puntajes ni criterios internos. ' +
+    'El nombre de la empresa es exactamente «' + empresa + '»' + (mostrar ? '' : ' (es confidencial: no nombres ni insinúes qué empresa es)') + '. Escribí [LINK] tal cual donde va el link de postulación. ' +
+    'No pidas ni insinúes preferencias por edad, género, estado civil ni otras condiciones personales. ' +
+    (instr ? reglasInstrIA_() + ' Si hay un texto actual, partí de él y modificalo según las instrucciones; si no hay, armalo de cero. ' : 'Si hay un texto actual, mejoralo; si no hay, armalo de cero. ') +
+    'Devolvé SOLO un JSON válido: {"texto":"…","cambios":["una línea por cada instrucción: qué hiciste"],"aviso":"solo si no pudiste cumplir algo y por qué; si no, vacío"}.';
+  const usuario = (instr ? 'INSTRUCCIONES (OBLIGATORIAS, cumplilas todas):\n' + instr + '\n\n' : '') +
+    'PUESTO: ' + d.puesto + '\nEMPRESA: ' + empresa + '\nUBICACIÓN: ' + (d.ubicacion || '(sin dato)') +
+    '\n\nTEXTO ACTUAL:\n' + (actual || '(vacío)') +
+    (perfil ? '\n\nPERFIL DEL PUESTO (relevamiento):\n' + perfil : '') + (extra ? '\n\nOTROS DATOS DE LA BÚSQUEDA (uso interno, no copies criterios de evaluación):\n' + extra : '');
+  const r = extraerJSON_(procesarConClaude(sistema, usuario, 'analisis'));
+  const texto = String(r.texto == null ? '' : r.texto).replace(/[<>]/g, '').trim().slice(0, canal === 'linkedin' ? 3000 : 2200).replace(/\[LINK\]/g, d.linkPostulacion);
+  if (texto.length < 10) throw new Error('La IA no devolvió un texto. Probá de nuevo.');
+  return { texto: texto, cambios: (Array.isArray(r.cambios) ? r.cambios : []).map(c => limpiarTxt_(c).slice(0, 200)).filter(Boolean).slice(0, 8), aviso: String(r.aviso || '').slice(0, 400) };
+}
+
 // Redacta solo los tres textos de difusión (no toca el diseño del flyer)
 function difusionTextosIA_(perfilId, instrucciones) {
   const d = flyerDatos_(perfilId);
