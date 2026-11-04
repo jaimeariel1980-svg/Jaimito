@@ -26,7 +26,7 @@ function conteoCandidatos_(filas) {
 function inicioDatos_() {
   const rows = configValores_(), H = rows[0];
   const col = k => H.indexOf(k);
-  const filas = rows.slice(1).filter(r => r[0] && r[0] !== 'operaciones').map(r => {
+  const filas = rows.slice(1).filter(r => r[0]).map(r => {
     const g = k => { const c = col(k); return c >= 0 ? String(r[c] == null ? '' : r[c]).trim() : ''; };
     return { id: String(r[0]), nombre: g('nombre') || g('nombre_perfil') || String(r[0]), empresa: g('empresa') || 'Sin empresa', hoja: g('hoja_nombre'), cerrada: g('estado_busqueda').toUpperCase() === 'CERRADA', ciega: g('busqueda_ciega').toUpperCase() === 'SI' };
   });
