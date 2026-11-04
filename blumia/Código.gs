@@ -474,6 +474,15 @@ function guardarProximo_(sheet, fila, texto, avanza, quien) {
   registrarHistorial_(sheet.getName(), sheet.getRange(fila, 2).getValue(), 'Próximo entrevistador', nom ? 'Competencias a cargo de ' + nom : 'Sin próximo entrevistador (el screening no avanza)', quien);
 }
 
+// Asignar o cambiar el próximo entrevistador desde la ficha (sirve para quien ya pasó el screening antes de que existiera el campo)
+function asignarProximo_(perfilId, fila, nombre, quien) {
+  QUIEN_ = quien || '';
+  const sh = getSheet(getConfig(perfilId));
+  fila = filaCandidato_(sh, fila);
+  guardarProximo_(sh, fila, nombre, true, quien || 'sistema');
+  return { ok: true };
+}
+
 function procesarScreening_(data) {
   QUIEN_ = String(data.entrevistador || '');
   const cfg = getConfig(perfilObligatorio_(data.perfil));
