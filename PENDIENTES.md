@@ -197,3 +197,12 @@ Hecha con el código real y 37 fichas de ejemplo; el modelo real (`gpt-4o-mini`)
 
 ## Límite de 200 versiones de Apps Script (2/11)
 - **Prioridad alta · lo hace Ariel:** en el proyecto Apps Script de Blumia (cuenta jaimeariel1980) borrar versiones viejas (Historial del proyecto) y avisar; después Claude vuelve a correr el workflow `blumia` (`publicar`). Hasta entonces **no están publicados** los PR 628 (mensaje modelo de Flavia + nota de conexión en Hunting) y 629 (ficha de Hunting). Revisar lo mismo en los otros proyectos (azcu, pami, liquidaciones): cada uno tiene su propio tope.
+
+
+## Blumia · ABECEB (4/11)
+- **Prioridad media · lo hace Ariel:** reanalizar o poner nota a mano a los candidatos de ABECEB que viven fuera del AMBA (se analizaron con el criterio viejo; el nuevo de zona vale para CVs nuevos).
+- **Prioridad media · lo hace Ariel:** en ⚙ Configurar → Competencias de ABECEB usar «↻ Traer las competencias del perfil» y «Guardar cambios» (el formulario tenía las 5 de la plantilla vieja).
+- **Prioridad media · Claude o Ariel:** agregar «vive en AMBA» como dato a validar del screening de ABECEB (el screening no se arma solo desde el perfil; hoy se edita a mano con ✏️).
+- **Prioridad baja · lo hace Ariel:** cerrar las búsquedas viejas de MACS (coord-rrhh, operaciones, analistas) desde 🏠 Inicio para que el aviso de «búsqueda cerrada» y el selector solo muestren ABECEB.
+- **Prioridad media · Claude:** decidir si se suman versiones por mail de los mensajes de contacto (contacto-screening / competencias / empresa) en Mensajes.
+- **Prioridad media · lo hace Ariel:** Analía no puede ingresar (queda en la pantalla de login): probar en incógnito o con otro navegador y avisar.
