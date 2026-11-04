@@ -87,7 +87,7 @@ function flyerSocial_(perfilId) {
     try { const it = carpeta.getFilesByName(flyerImagenFmt_(fm)); if (it.hasNext()) { const fi = it.next(); imagenes.push({ fmt: fm, label: FLYER_FORMATOS_[fm], url: fi.getUrl(), id: fi.getId(), ts: fi.getLastUpdated().getTime(), fecha: Utilities.formatDate(fi.getLastUpdated(), 'America/Argentina/Buenos_Aires', 'dd/MM/yyyy HH:mm') }); } } catch (e) { }
   });
   imagenes.sort((a, b) => b.ts - a.ts); // la más reciente primero
-  const out = { linkedin: rep(s.linkedin), instagram: rep(s.instagram), whatsapp: rep(s.whatsapp), link: link, fecha: fecha, imagen: imagen, imagenId: imagenId, imagenes: imagenes };
+  const out = { linkedin: rep(s.linkedin), instagram: rep(s.instagram), whatsapp: rep(s.whatsapp), correo: rep(s.correo), link: link, fecha: fecha, imagen: imagen, imagenId: imagenId, imagenes: imagenes };
   try { cache.put(ck, JSON.stringify(out), 600); } catch (e) { }
   return out;
 }
@@ -106,7 +106,7 @@ function difusionGuardar_(perfilId, t) {
   const f = flyerArchivo_(cfg);
   let g = {};
   if (f) { try { g = JSON.parse(f.getBlob().getDataAsString()) || {}; } catch (e) { g = {}; } }
-  g.social = { linkedin: lim(t && t.linkedin, 3000), instagram: lim(t && t.instagram, 2200), whatsapp: lim(t && t.whatsapp, 1000) };
+  g.social = { linkedin: lim(t && t.linkedin, 3000), instagram: lim(t && t.instagram, 2200), whatsapp: lim(t && t.whatsapp, 1000), correo: lim(t && t.correo, 3000) };
   const txt = JSON.stringify(g);
   if (txt.length > FLYER_MAX_BYTES_) throw new Error('No se pudo guardar: el archivo del flyer es demasiado grande.');
   if (f) f.setContent(txt); else carpetaPerfil_(cfg).createFile(FLYER_ARCHIVO_, txt, MimeType.PLAIN_TEXT);
@@ -124,7 +124,7 @@ function difusionTextosIA_(perfilId) {
   const mostrar = (g.mostrarEmpresa !== undefined) ? !!g.mostrarEmpresa : d.empresa === 'MACS';
   const r = flyerTextosIA_(perfilId, { mostrarEmpresa: mostrar });
   const rep = t => String(t || '').replace(/\[LINK\]/g, d.linkPostulacion);
-  return { linkedin: rep(r.linkedin), instagram: rep(r.instagram), whatsapp: rep(r.whatsapp) };
+  return { linkedin: rep(r.linkedin), instagram: rep(r.instagram), whatsapp: rep(r.whatsapp), correo: rep(r.correo) };
 }
 
 // Revisión de diseño con IA: Claude mira la imagen del flyer, da sugerencias y, en cada una, una acción concreta que el editor puede aplicar solo.
@@ -244,10 +244,10 @@ function flyerTextosIA_(perfilId, opciones) {
   const perfil = flyerPerfilTexto_(cfg);
   const extra = (typeof cfg.prompt_extra === 'string') ? cfg.prompt_extra.slice(0, 5000) : '';
   if (!perfil && !extra) throw new Error('Esta búsqueda todavía no tiene datos para redactar el flyer: cargá el perfil del puesto en ⚙ Configurar (o escribí los textos a mano en la pantalla).');
-  const sistema = 'Sos redactor/a de avisos de empleo de Blumia Consulting (Argentina). Con los datos de una búsqueda armás el texto de un flyer y tres posteos. ' +
+  const sistema = 'Sos redactor/a de avisos de empleo de Blumia Consulting (Argentina). Con los datos de una búsqueda armás el texto de un flyer y posteos y un mail. ' +
     'Respondé SOLO con un JSON válido, sin texto antes ni después ni markdown, con esta forma exacta: ' +
     '{"badge":"ubicación · modalidad (máx. 40 caracteres, ej. «Pilar · Presencial»)","bajada":"2 o 3 frases (máx. 280 caracteres) que presentan a la empresa y qué busca","desafios":["4 o 5 ítems, cada uno máx. 95 caracteres, empiezan con verbo en infinitivo"],"requisitos":["4 ítems, cada uno máx. 95 caracteres"],' +
-    '"linkedin":"posteo para LinkedIn (máx. 900 caracteres, con saltos de línea, 2 o 3 emojis como mucho, termina invitando a postularse en [LINK])","instagram":"posteo para Instagram (máx. 600 caracteres, con 4 o 5 hashtags, invita a postularse en el link de la bio o por [LINK])","whatsapp":"mensaje corto para difundir por WhatsApp (máx. 450 caracteres, con [LINK])"}. ' +
+    '"linkedin":"posteo para LinkedIn (máx. 900 caracteres, con saltos de línea, 2 o 3 emojis como mucho, termina invitando a postularse en [LINK])","instagram":"posteo para Instagram (máx. 600 caracteres, con 4 o 5 hashtags, invita a postularse en el link de la bio o por [LINK])","whatsapp":"mensaje corto para difundir por WhatsApp (máx. 450 caracteres, con [LINK])","correo":"mail para difundir la búsqueda entre contactos (máx. 1100 caracteres): la primera línea es «Asunto: …», después saludo «Hola:», 2 o 3 párrafos cortos con qué se busca y por qué vale la pena, y un cierre que invita a postularse en [LINK], firmado «Equipo de Blumia Consulting»"}. ' +
     'Reglas: español rioplatense profesional (vos); usá lenguaje inclusivo con barra cuando el puesto lo requiera (Coordinador/a); ' +
     'no inventes datos que no estén en el material; no pongas sueldo, banda salarial, puntajes ni criterios internos de evaluación; ' +
     'el nombre de la empresa es exactamente «' + empresa + '»' + (mostrar ? '' : ' (es confidencial: no nombres ni insinúes qué empresa es)') + '; ' +
@@ -262,6 +262,6 @@ function flyerTextosIA_(perfilId, opciones) {
   return {
     badge: txt(r.badge, 60), bajada: txt(r.bajada, 400),
     desafios: lista(r.desafios, 6, 140), requisitos: lista(r.requisitos, 6, 140),
-    linkedin: txt(r.linkedin, 1500), instagram: txt(r.instagram, 1000), whatsapp: txt(r.whatsapp, 800)
+    linkedin: txt(r.linkedin, 1500), instagram: txt(r.instagram, 1000), whatsapp: txt(r.whatsapp, 800), correo: txt(r.correo, 1800)
   };
 }
