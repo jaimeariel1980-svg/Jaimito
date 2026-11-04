@@ -74,6 +74,7 @@ function getDatosPerfil_(perfilId) {
       preguntas: String(r.preguntas || '').split('|').map(s => s.trim()).filter(Boolean)
     })),
     datosInternos: String(cfg.datos_internos || '').toUpperCase() !== 'NO',
+    proximos: (function () { try { return leerUsuarios_().filter(u => u.activo === 'SI' && usuHaceEn_(u, 'competencias', perfilId)).map(u => String(u.nombre).split(' ')[0]); } catch (e) { return []; } })(),
     entrevistadoras: String(hero.entrevistadoras || entrevistadoresDefault_().join(',')).split(',').map(s => s.trim()).filter(Boolean)
   };
 }
@@ -94,7 +95,7 @@ function doGetPagina_(e) {
   const tipo = e?.parameter?.tipo;
   const perfil = e?.parameter?.perfil || '';
   let template, titulo;
-  const tipoQuePideBusqueda = ['competencias', 'postulacion', 'kanban', 'flyer', 'perfilpuesto', 'pdfcliente', 'informe', 'procesohtml', 'informebusqueda'].indexOf(tipo) >= 0 || (!tipo && !!e?.parameter?.nombre);
+  const tipoQuePideBusqueda = ['competencias', 'screening', 'postulacion', 'kanban', 'flyer', 'perfilpuesto', 'pdfcliente', 'informe', 'procesohtml', 'informebusqueda'].indexOf(tipo) >= 0 || (!tipo && !!e?.parameter?.nombre);
   if (!perfil && tipoQuePideBusqueda) return linkIncompleto_();
 
   if (tipo === 'competencias') {
@@ -103,6 +104,7 @@ function doGetPagina_(e) {
     template.entrevistador = e.parameter.entrevistador || '';
     template.perfil = perfil;
     template.editar = e.parameter.editar === '1';
+    template.editarform = e.parameter.editarform === '1';
     titulo = 'Evaluación de Competencias | Blumia';
   } else if (tipo === 'postulacion') {
     let cerrada = false;
@@ -174,6 +176,7 @@ function doGetPagina_(e) {
     template.perfil = perfil;
     template.editar = e.parameter.editar === '1';
     template.borrador = e.parameter.borrador || '';
+    template.editarform = e.parameter.editarform === '1';
     titulo = 'Screening Blumia';
   }
 
@@ -441,6 +444,36 @@ REGLAS:
   }
 }
 
+/* «Próximo entrevistador» (4/11, Ariel): al guardar el screening con A o B+ se elige quién hace la etapa siguiente; queda en la columna «Próximo entrevistador» de la hoja de candidatos */
+function colProximo_(sh, crear) {
+  const h = sh.getRange(1, 1, 1, Math.max(sh.getLastColumn(), 1)).getValues()[0];
+  let c = h.indexOf('Próximo entrevistador') + 1;
+  if (!c && crear) {
+    c = Math.max(sh.getLastColumn(), 46) + 1;
+    if (sh.getMaxColumns() < c) sh.insertColumnsAfter(sh.getMaxColumns(), c - sh.getMaxColumns());
+    sh.getRange(1, c).setValue('Próximo entrevistador').setFontWeight('bold');
+  }
+  return c;
+}
+function proximoNombre_(txt) {
+  const t = String(txt || '').replace(/[<>"=+@]/g, '').trim().slice(0, 40);
+  if (!t) return '';
+  try {
+    const u = leerUsuarios_().find(x => x.activo === 'SI' && (x.clave === usuClave_(t) || String(x.nombre).split(' ')[0].toLowerCase() === t.toLowerCase()));
+    if (u) return String(u.nombre).split(' ')[0];
+  } catch (e) { }
+  return t;
+}
+function guardarProximo_(sheet, fila, texto, avanza, quien) {
+  const nom = avanza ? proximoNombre_(texto) : '';
+  const c = colProximo_(sheet, !!nom);
+  if (!c) return;
+  const ant = String(sheet.getRange(fila, c).getValue() || '');
+  if (ant === nom) return;
+  sheet.getRange(fila, c).setValue(nom);
+  registrarHistorial_(sheet.getName(), sheet.getRange(fila, 2).getValue(), 'Próximo entrevistador', nom ? 'Competencias a cargo de ' + nom : 'Sin próximo entrevistador (el screening no avanza)', quien);
+}
+
 function procesarScreening_(data) {
   QUIEN_ = String(data.entrevistador || '');
   const cfg = getConfig(perfilObligatorio_(data.perfil));
@@ -471,6 +504,7 @@ function procesarScreening_(data) {
   registrarHistorial_(sheet.getName(), sheet.getRange(fila, 2).getValue(), data.editar ? 'Screening editado' : 'Screening', (data.editar ? (notaAntesScr || '—') + ' → ' + data.resultado : 'Formulario guardado · resultado ' + data.resultado) + (data.entrevistador ? ' · entrevistó ' + data.entrevistador : ''));
   if (!data.editar || aplicarEdicion_(sheet, fila, 'screening', notaAntesScr, data.resultado)) aplicarEstadoNota(sheet, fila, 'screening', data.resultado);
   motivoDesdeForm_(sheet, fila, data.motivo);
+  try { guardarProximo_(sheet, fila, data.proximo, data.resultado === 'A' || data.resultado === 'B+', data.entrevistador || 'sistema'); } catch (e) { Logger.log('próximo entrevistador: ' + e); }
   guardarEstadoEval_(cfg, perfilObligatorio_(data.perfil), data.nombre, 'screening', data.estado, data.resultado, data.entrevistador);
   try {
     const folder = DriveApp.getFolderById(cfg.folder_pdf_screening);
@@ -2127,7 +2161,7 @@ function kanbanHTML_(perfilId) {
   bandaRef = Number(String(cfg.banda_salarial || '').replace(/\D/g, '')) || 0; // lo normal: sale de Config sin abrir otra planilla
   if (!bandaRef) { try { bandaRef = Number(datosInformeBusqueda(perfilId).banda) || 0; } catch (e) { } }
   lapT_('Banda salarial (datos del informe)');
-  const enlaces = [['Formulario de postulación (para los candidatos)', URL_WEBAPP + '?tipo=postulacion&perfil=' + encodeURIComponent(perfilId)], ['Tablero de esta búsqueda', URL_WEBAPP + '?tipo=kanban&perfil=' + encodeURIComponent(perfilId)], ['Difusión (flyer y textos)', flyer], ['Perfil del puesto (documento)', perfilPdf]].concat(enlacesAgendaPersonas_()).concat([['Agenda · entrevista con la empresa (virtual)', cfg.link_empresa_virtual], ['Agenda · entrevista con la empresa (presencial)', cfg.link_empresa_presencial]]).filter(x => typeof x[1] === 'string' && /^https?:\/\//i.test(x[1]));
+  const enlaces = [['Formulario de postulación (para los candidatos)', URL_WEBAPP + '?tipo=postulacion&perfil=' + encodeURIComponent(perfilId)], ['Tablero de esta búsqueda', URL_WEBAPP + '?tipo=kanban&perfil=' + encodeURIComponent(perfilId)], ['Formulario de screening (sin candidato)', URL_WEBAPP + '?tipo=screening&perfil=' + encodeURIComponent(perfilId)], ['Formulario de competencias (sin candidato)', URL_WEBAPP + '?tipo=competencias&perfil=' + encodeURIComponent(perfilId)], ['Difusión (flyer y textos)', flyer], ['Perfil del puesto (documento)', perfilPdf]].concat(enlacesAgendaPersonas_()).concat([['Agenda · entrevista con la empresa (virtual)', cfg.link_empresa_virtual], ['Agenda · entrevista con la empresa (presencial)', cfg.link_empresa_presencial]]).filter(x => typeof x[1] === 'string' && /^https?:\/\//i.test(x[1]));
   let eb = {}; try { eb = enlacesBusqueda_(cfg); } catch (e) { }
   if (eb.carpeta) enlaces.push(['Carpeta de Drive de la búsqueda', eb.carpeta]);
   if (eb.hoja) enlaces.push(['Sheet de la búsqueda (pestaña de candidatos)', eb.hoja]);
@@ -2191,6 +2225,7 @@ function doGetKanban_(perfilId) {
   const out = [];
   const cMot = d[0].indexOf('Motivo de descarte');
   const cObs = d[0].indexOf('Observaciones');
+  const cProx = d[0].indexOf('Próximo entrevistador') + 1;
   const entEval = entrevistadoresEval_(perfilId);
   const movs = ultimosMovimientos_(sh.getName());
   lapT_('Leer el historial de movimientos');
@@ -2207,7 +2242,7 @@ function doGetKanban_(perfilId) {
       tel: d[i][2] || '', dni: String(d[i][3] || ''), mail: d[i][21] || '',
       resumen: d[i][6] || '', cv: cvs[i - 1] || '',
       informe: link(i + 1, 33),
-      scrPDF: link(i + 1, 13), compPDF: link(i + 1, 17), postulacion: link(i + 1, 31), entScr: entEval[evalNorm_(d[i][1]) + '|screening'] || '', entComp: entEval[evalNorm_(d[i][1]) + '|competencias'] || '', cita: d[i][36] || '', citaCon: String(d[i][45] || ''), historial: d[i][37] || '', mailDescarte: d[i][39] || '', fuente: String(d[i][9] || ''), contactado: d[i][40] || '', notaScrEmp: d[i][43] || '', notaPresEmp: d[i][44] || '', notaScrEmp: d[i][43] || '', notaPresEmp: d[i][44] || '', ordenCli: Number(d[i][34]) || 0, valCli: String(d[i][35] || ''), formacion: d[i][22] || '', requisitos: d[i][5] || '', pretNum: (function(){var m=String(d[i][5]||'').match(/Remuneraci[oó]n pretendida:\s*\$?\s*([\d.\s]+)/i);return m?Number(m[1].replace(/[.\s]/g,'')):0;})()
+      scrPDF: link(i + 1, 13), compPDF: link(i + 1, 17), postulacion: link(i + 1, 31), entScr: entEval[evalNorm_(d[i][1]) + '|screening'] || '', entComp: entEval[evalNorm_(d[i][1]) + '|competencias'] || '', cita: d[i][36] || '', citaCon: String(d[i][45] || ''), prox: cProx ? String(d[i][cProx - 1] || '') : '', historial: d[i][37] || '', mailDescarte: d[i][39] || '', fuente: String(d[i][9] || ''), contactado: d[i][40] || '', notaScrEmp: d[i][43] || '', notaPresEmp: d[i][44] || '', notaScrEmp: d[i][43] || '', notaPresEmp: d[i][44] || '', ordenCli: Number(d[i][34]) || 0, valCli: String(d[i][35] || ''), formacion: d[i][22] || '', requisitos: d[i][5] || '', pretNum: (function(){var m=String(d[i][5]||'').match(/Remuneraci[oó]n pretendida:\s*\$?\s*([\d.\s]+)/i);return m?Number(m[1].replace(/[.\s]/g,'')):0;})()
     });
   }
   return JSON.stringify(out);
@@ -2921,7 +2956,15 @@ function armarComunicacion_(perfilId, fila, tipo, quien, entrevistadorElegido){
   // «Automático»: se propone a quien tenga menos entrevistas en los próximos 14 días entre los que hacen esa etapa en esta búsqueda
   if (String(entrevistadorElegido || '') === 'auto') {
     entrevistadorElegido = '';
-    if (etapaAg) {
+    let asig = '';
+    if (etapaAg === 'competencias') {
+      try {
+        const cp = colProximo_(sh, false), nomA = cp ? String(sh.getRange(fila, cp).getValue() || '').trim() : '';
+        const ua = nomA ? leerUsuarios_().find(x => x.activo === 'SI' && String(x.nombre).split(' ')[0].toLowerCase() === nomA.toLowerCase() && usuHaceEn_(x, 'competencias', perfilId)) : null;
+        if (ua) { entrevistadorElegido = ua.nombre; asig = ua.nombre; aviso = 'Asignada en el screening: se mandó el link de ' + nomA + '.'; }
+      } catch (e) { }
+    }
+    if (etapaAg && !asig) {
       const sug = entrevistadorSugerido_(perfilId, etapaAg);
       if (sug) { entrevistadorElegido = sug.nombre; aviso = 'Automático: se mandó el link de ' + String(sug.nombre).split(' ')[0] + ' (' + (sug.n === 0 ? 'no tiene entrevistas próximas' : sug.n + ' entrevista' + (sug.n === 1 ? '' : 's') + ' próxima' + (sug.n === 1 ? '' : 's')) + '). Si preferís a otra persona, elegila en la lista.'; }
       else aviso = 'Nadie de esta búsqueda tiene link de agenda cargado para ' + etapaAg + ': el mensaje lleva el link de la búsqueda.';

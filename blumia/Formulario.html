@@ -88,6 +88,10 @@ body{font-family:var(--font);background:var(--bg);color:var(--text)}
 .score-aside-num{font-size:28px;font-weight:800;letter-spacing:-0.04em;color:var(--dark);line-height:1}
 .score-aside-max{font-size:10px;color:var(--light);font-weight:600;margin-top:2px}
 .veredicto-manual{margin-top:16px;background:var(--bg);border:1.5px dashed var(--line);border-radius:2px;padding:14px 16px}
+.prox-box{margin-top:14px;background:#FEF3D8;border:1.5px solid #FBC67B;border-radius:8px;padding:14px 16px}
+.prox-box label{display:block;font-size:12px;font-weight:800;color:#7a5500;margin-bottom:8px}
+.prox-box select{font:600 14px 'PP Pangram Sans',Poppins,Arial,sans-serif;padding:10px 12px;border:1.5px solid #FBC67B;border-radius:8px;background:#fff;min-width:240px;max-width:100%}
+.prox-ayuda{font-size:11px;color:#7a5500;margin-top:6px}
 .veredicto-manual-label{font-size:9px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:var(--mid);margin-bottom:10px}
 .vd-opts{display:flex;gap:8px}
 .vd-btn{border:1.5px solid var(--line);border-radius:2px;background:var(--white);padding:8px 16px;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--mid);cursor:pointer;transition:all .12s;font-family:var(--font)}
@@ -158,7 +162,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text)}
 <?!= HtmlService.createHtmlOutputFromFile('PerfilRef').getContent() ?>
 <?!= HtmlService.createHtmlOutputFromFile('EstadoForm').getContent() ?>
 <?!= HtmlService.createTemplateFromFile('MotivoForm').evaluate().getContent() ?>
-<script>window.EDIT_TIPO='screening';</script>
+<script>window.EDIT_TIPO='screening';window.EDIT_AUTO='<?= editarform ?>'==='true';</script>
 <?!= HtmlService.createHtmlOutputFromFile('EditorForm').getContent() ?>
 <script>
 const LOGO_BLANCO = '<?!= LOGO_BLUMIA_ ?>';
@@ -284,6 +288,11 @@ function render() {
         <button class="vd-btn" style="color:var(--light);font-size:10px" onclick="resetVeredicto()">↺ Auto</button>
       </div>
     </div>
+    ${(DATOS.proximos||[]).length ? `<div class="prox-box ia-ui" id="prox-box" style="display:none">
+      <label for="d-proximo">Si avanza: ¿quién hace la entrevista de competencias?</label>
+      <select id="d-proximo"><option value="">— Sin asignar —</option>${DATOS.proximos.map(e => `<option value="${e}">${e}</option>`).join('')}</select>
+      <div class="prox-ayuda">Queda en la tarjeta del candidato («Próxima: …») y en la agenda de esa persona.</div>
+    </div>` : ''}
     <div class="criterio-box">
       <div style="font-size:10px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:var(--mid)">Umbrales automáticos</div>
       <div class="criterio-item"><div class="criterio-dot" style="background:var(--green)"></div><span style="color:var(--green)">≥ ${fmtN(Number(h.criterio_avanza) || 9)} — A (Avanza)</span></div>
@@ -410,6 +419,7 @@ function aplicarVeredicto(letra, esManual) {
   const v = VEREDICTOS[letra];
   document.querySelectorAll('.semaforo-dot').forEach(d => d.classList.remove('on'));
   document.getElementById('dot-' + v.color).classList.add('on');
+  const pb = document.getElementById('prox-box'); if (pb) pb.style.display = (letra === 'A' || letra === 'B+') ? 'block' : 'none';
   const t = document.getElementById('res-titulo');
   t.textContent = v.titulo;
   t.className = 'resultado-titulo ' + v.cls;
@@ -475,6 +485,7 @@ function enviarALaPlanilla() {
   const btn = document.getElementById('btn-save-sheet');
   btn.innerText = '⏳ GUARDANDO...';
   btn.disabled = true;
+  const proximo = (cat === 'A' || cat === 'B+') ? (document.getElementById('d-proximo')?.value || '') : '';
 
   // forzar que los select de eval reflejen su valor elegido antes de clonar
   DATOS.eval_items.forEach(item => {
@@ -528,14 +539,16 @@ function enviarALaPlanilla() {
   clone.querySelectorAll('.topbar,.toast,.veredicto-manual,.ia-ui').forEach(el => el.remove());
   clone.querySelectorAll('.hero-logo').forEach(el => { el.style.display = 'block'; });
 
+  blGuardando('Guardando la entrevista…');
   google.script.run
     .withSuccessHandler(() => {
+      blGuardado('¡Entrevista guardada!' + (proximo ? ' Próxima: ' + proximo + '.' : ''));
       showToast('¡Entrevista guardada!');
       btn.innerHTML = '✅ ¡LISTO!';
       setTimeout(() => { btn.innerHTML = 'Guardar entrevista'; btn.disabled = false; }, 3000);
     })
     .withFailureHandler(err => {
-      alert('Falló el guardado: ' + err.message);
+      blGuardadoError('No se pudo guardar: ' + err.message);
       btn.innerHTML = '❌ REINTENTAR';
       btn.disabled = false;
     })
@@ -545,6 +558,7 @@ function enviarALaPlanilla() {
       estado: ESTADO_EF,
       nombre: nombre,
       entrevistador: entrevistador,
+      proximo: proximo,
       resultado: cat,
       comentarios: notas,
       motivo: cat === 'C' ? (window.__mot || null) : null,
