@@ -57,8 +57,8 @@ function aplicarDecisiones_(filas, dec, E) {
 
 function cerrarValidacion_(cfg, filas, v) {
   var x = compararEnfermeria_(v.rep, filas, function (leg, d) {
-    var m = marcasDia_(leg, d, cfg).map(function (z) { return z.t; });
-    return m.length ? m.join(' · ') : 'sin fichadas';
+    var m = marcasDia_(leg, d, cfg).map(function (z) { return z.t; }), x = fichDia_(d, cfg)[leg];
+    return (m.length ? m.join(' · ') : 'sin fichadas') + (x && x.novedad ? ' · Novedad del reloj: ' + x.novedad : '');
   });
   var pend = pendientesJefe_(x, v.dec), nota = '';
   var conf = v.dec.CONFORMIDAD || ['', '', ''];
