@@ -91,6 +91,51 @@ function anularEtapa_(perfilId, fila, etapa, quien) {
   return { ok: true, estado: nuevoEstado };
 }
 
+/* ---- Reanalizar el CV con la IA (4/11, Ariel: «¿a dónde reanalizo?»): vuelve a leer el CV de Drive con el criterio y el perfil de hoy y actualiza nota, motivo, resumen y zona.
+   No toca nombre, teléfono, mail ni DNI. El estado solo se mueve si todavía dependía del CV (Nuevo / Revisar / Avanza a screening / Descartado sin screening). ---- */
+function reanalizarCV_(perfilId, fila, quien) {
+  QUIEN_ = quien || '';
+  const cfg = getConfig(perfilId), sh = getSheet(cfg);
+  fila = filaCandidato_(sh, fila);
+  const celCV = sh.getRange(fila, 8);
+  let url = '';
+  const f = String(celCV.getFormula() || '').match(/HYPERLINK\("([^"]+)"/i);
+  if (f) url = f[1];
+  if (!url) { const rt = celCV.getRichTextValue(); if (rt && rt.getLinkUrl()) url = rt.getLinkUrl(); }
+  if (!url) url = String(celCV.getValue() || '');
+  const m = url.match(/[?&]id=([-\w]{25,})/) || url.match(/[-\w]{25,}/);
+  if (!m) throw new Error('Este candidato no tiene un CV en Drive para reanalizar.');
+  const cvId = m[1] || m[0];
+  const file = DriveApp.getFileById(cvId);
+  const reqAnt = String(sh.getRange(fila, 6).getValue() || ''), iDecl = reqAnt.indexOf(' || DECLARADO: ');
+  let d;
+  if (iDecl > -1) { // vino de una postulación: se vuelve a analizar el CV junto con lo que declaró
+    const decl = reqAnt.slice(iDecl + 15);
+    const r = analizarPostulacionGPT(textoDeCV(cvId), decl.split(' · ').join('\n'), cfg);
+    if (!r || !r.ok) throw new Error((r && r.error) || 'La IA no pudo analizar el CV. Probá de nuevo en un rato.');
+    d = Object.assign({}, r, { requisitos: r.requisitos + ' || DECLARADO: ' + decl });
+  } else {
+    d = procesarConChatGPT(file, cfg);
+    if (!d || d.nombre === 'Error') throw new Error('La IA no pudo leer el CV. Probá de nuevo en un rato.');
+  }
+  const notaAnt = String(sh.getRange(fila, 5).getValue() || '').trim();
+  const celdaNota = sh.getRange(fila, 5);
+  celdaNota.setValue(d.nivel_ajuste);
+  celdaNota.setNote(d.justificacion || '');
+  sh.getRange(fila, 6).setValue(d.requisitos);
+  sh.getRange(fila, 7).setValue(d.resumen);
+  if (d.zona) sh.getRange(fila, 24).setValue(d.zona);
+  const estado = String(sh.getRange(fila, 9).getValue() || '').trim();
+  let nuevo = estado;
+  if (['', 'Nuevo', 'Revisar', 'Avanza a screening', 'Descartado sin screening'].indexOf(estado) > -1) {
+    aplicarEstadoNota(sh, fila, 'cv', d.nivel_ajuste);
+    nuevo = String(sh.getRange(fila, 9).getValue() || '').trim();
+    limpiarMotivoSiNoDescartado_(sh, fila, nuevo);
+  }
+  registrarHistorial_(sh.getName(), sh.getRange(fila, 2).getValue(), 'CV reanalizado', 'Nota ' + (notaAnt || '—') + ' → ' + d.nivel_ajuste + (nuevo !== estado ? ' · «' + estado + '» → «' + nuevo + '»' : ''));
+  return { ok: true, nota: d.nivel_ajuste, estado: nuevo, cambioEstado: nuevo !== estado };
+}
+
 /* ---- Agendar una entrevista desde el tablero (C3): crea el evento en el Calendar de Blumia y deja la cita en la ficha ---- */
 const AGENDA_TIPOS_ = {
   'screening': { titulo: 'Screening Blumia', estado: 'Screening agendado' },
