@@ -172,6 +172,7 @@ function plantillaTexto_(clave, perfilId) {
 }
 
 function listarPlantillas_(ss, perfilId) {
+  try { asegurarPlantillasHunting_(perfilId); } catch (e) { Logger.log('plantillas de hunting: ' + e); }
   const sh = ss.getSheetByName('Plantillas');
   if (!sh || sh.getLastRow() < 2) return [];
   const data = sh.getDataRange().getValues();

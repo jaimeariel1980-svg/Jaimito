@@ -12,6 +12,7 @@ function redactarMensajeIA_(perfilId, clave, textoActual, instrucciones, canal) 
   const sistema = 'Sos redactor/a de mensajes de selección de personal de Blumia Consulting (Argentina). Escribís el texto de una plantilla que el equipo le manda a candidatos. ' +
     (esMail ? 'Es un MAIL: saludo, 2 o 3 párrafos cortos y cierre; sin asunto (el asunto se arma aparte); ' : 'Es un WHATSAPP: tono cercano y profesional, breve (máx. 600 caracteres salvo que las instrucciones pidan otra cosa), pocos emojis; ') +
     'español rioplatense (vos). ' +
+    (/^hunting/.test(clave) ? 'Este mensaje es el PRIMER CONTACTO DE HUNTING (mail, mensaje de LinkedIn o WhatsApp a una persona que todavía no se postuló): conservá la primera línea «Asunto: …» y la firma del texto actual, tono ejecutivo y cordial, sin sueldos y sin nombrar a la empresa cliente. En [NOMBRE] va el nombre de la persona. ' : '') +
     'Marcas que se completan solas al enviar y que tenés que escribir TAL CUAL, entre corchetes: [NOMBRE] (nombre de la persona), [PUESTO], [EMPRESA], [ENTREVISTADOR] (quien envía y firma) y [LINK] (link de agenda). ' +
     'Conservá todas las marcas que ya tiene el texto actual (si tiene [LINK], el mensaje nuevo también). Nunca escribas el nombre real de la empresa: usá [EMPRESA]. ' +
     'No inventes datos (fechas, horarios, sueldos, condiciones) que no estén en el texto actual o en las instrucciones. No preguntes ni insinúes nada sobre edad, género, estado civil, hijos ni otros datos personales protegidos. ' +
