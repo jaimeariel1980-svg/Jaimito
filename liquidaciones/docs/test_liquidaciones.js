@@ -106,6 +106,10 @@ sx=sim(F({6:['0:02:52','16:58:35'],7:['0:06:40']}),ag(sad));assert.deepStrictEqu
 assert.strictEqual(sim(F({30:['23:16:26'],31:['6:00:36']}),ag({hab:{31:'18/06',3:'18/06',4:'18/06',10:'18/06'},ext:{31:'0/6'}})).filter(x=>x[3]===30).length,0);
 // SADOFE que de verdad trabaja un martes sin franja => extra a revisar
 sx=sim(F({6:['6:58','14:02']}),ag(sad));assert.ok(/SADOFE trabajó un día de semana/.test(sx[0][12]));
+// 33) MANDARINI: planilla 6/13 pero la tarjeta reloj dice 06:00 a 14:00 y ficha 5:47-14:04 => no es extra no autorizada
+let fmd=F({5:['5:47:37','14:04:22']});fmd[5]['1'].horario='06:00 a 14:00';
+assert.strictEqual(sim(fmd,ag({hab:{5:'6/13'}})).length,0);
+assert.strictEqual(sim(F({5:['5:47:37','14:04:22']}),ag({hab:{5:'6/13'}})).length,1);
 // 16) identidad
 const f2=F({5:['6:58','19:10']});f2[5]['1'].nombre='ALONSO Cecilia';
 assert.strictEqual(R(sim(f2,ag({hab:{5:'7/14'},ext:{5:'14/19'}}))[0]).est,'REVISAR IDENTIDAD');

@@ -89,8 +89,7 @@ function licVigente_(txt, d) {
 
 function turnoDia_(a, d) {
   if (d < 1 || d > _diasMes) {
-    var x = fichDia_(d)[a.leg], m = x && String(x.horario).match(/(\d{1,2}):(\d{2})\s*a\s*(\d{1,2}):(\d{2})/);
-    return m ? parseTurno(m[1] + ':' + m[2] + '/' + m[3] + ':' + m[4]) : null;
+    return turnoReloj_(a.leg, d);
   }
   if (a.lic[d] && licVigente_(a.lic[d], d)) return null;
   var c = a.cam[d], t = c ? parseTurno(c) : null;
@@ -156,6 +155,11 @@ function horarioReloj_(leg, d, turnoTxt, cfg) {
   var r = parseTurno(m[1] + ':' + m[2] + '/' + m[3] + ':' + m[4]), t = parseTurno(turnoTxt);
   if (!t) return h;
   return Math.abs(r.ini - t.ini) > 30 || Math.abs(r.fin - t.fin) > 30 ? h + ' ≠ planilla ' + turnoTxt : h;
+}
+
+function turnoReloj_(leg, d, cfg) {
+  var x = fichDia_(d, cfg)[leg], m = x && String(x.horario).match(/(\d{1,2}):(\d{2})\s*a\s*(\d{1,2}):(\d{2})/);
+  return m ? parseTurno(m[1] + ':' + m[2] + '/' + m[3] + ':' + m[4]) : null;
 }
 
 function bloquesTurno_(a, d) {
@@ -285,6 +289,8 @@ function procesarAgente_(a, serv, cfg, ctx, filas) {
     if (!tr.length || ult - t.fin < 60) continue;
     var decl = parseFranjas(a.ext[d + 1]).map(function (w) { return { ini: w.ini + 1440, fin: w.fin + 1440 }; });
     if (decl.some(function (w) { return w.ini < ult && w.fin > t.fin; })) continue;
+    var rel = turnoReloj_(a.leg, d, cfg);
+    if (rel && rel.ini <= t.ini + 60 && rel.fin >= ult - TOLERANCIA) continue;
     if (ident()) { filas.push(base.concat(['', '', '', '', '', '', 'REVISAR IDENTIDAD', 'fichada: ' + nf])); continue; }
     var rn = calcularExtraTramos(tr, cd);
     if (rn.h50 + rn.h100 <= 0) continue;
