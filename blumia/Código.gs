@@ -2235,6 +2235,8 @@ function doGetKanban_(perfilId) {
   const cMot = d[0].indexOf('Motivo de descarte');
   const cObs = d[0].indexOf('Observaciones');
   const cProx = d[0].indexOf('Próximo entrevistador') + 1;
+  let notasCV = [];
+  try { if (d.length > 1) notasCV = sh.getRange(2, 5, d.length - 1, 1).getNotes(); } catch (e) { }
   const entEval = entrevistadoresEval_(perfilId);
   const movs = ultimosMovimientos_(sh.getName());
   lapT_('Leer el historial de movimientos');
@@ -2251,7 +2253,7 @@ function doGetKanban_(perfilId) {
       tel: d[i][2] || '', dni: String(d[i][3] || ''), mail: d[i][21] || '',
       resumen: d[i][6] || '', cv: cvs[i - 1] || '',
       informe: link(i + 1, 33),
-      scrPDF: link(i + 1, 13), compPDF: link(i + 1, 17), postulacion: link(i + 1, 31), entScr: entEval[evalNorm_(d[i][1]) + '|screening'] || '', entComp: entEval[evalNorm_(d[i][1]) + '|competencias'] || '', cita: d[i][36] || '', citaCon: String(d[i][45] || ''), prox: cProx ? String(d[i][cProx - 1] || '') : '', historial: d[i][37] || '', mailDescarte: d[i][39] || '', fuente: String(d[i][9] || ''), contactado: d[i][40] || '', notaScrEmp: d[i][43] || '', notaPresEmp: d[i][44] || '', notaScrEmp: d[i][43] || '', notaPresEmp: d[i][44] || '', ordenCli: Number(d[i][34]) || 0, valCli: String(d[i][35] || ''), formacion: d[i][22] || '', requisitos: d[i][5] || '', pretNum: (function(){var m=String(d[i][5]||'').match(/Remuneraci[oó]n pretendida:\s*\$?\s*([\d.\s]+)/i);return m?Number(m[1].replace(/[.\s]/g,'')):0;})()
+      scrPDF: link(i + 1, 13), compPDF: link(i + 1, 17), postulacion: link(i + 1, 31), entScr: entEval[evalNorm_(d[i][1]) + '|screening'] || '', entComp: entEval[evalNorm_(d[i][1]) + '|competencias'] || '', cita: d[i][36] || '', citaCon: String(d[i][45] || ''), prox: cProx ? String(d[i][cProx - 1] || '') : '', cvPorque: String((notasCV[i - 1] || [''])[0] || '').slice(0, 400), historial: d[i][37] || '', mailDescarte: d[i][39] || '', fuente: String(d[i][9] || ''), contactado: d[i][40] || '', notaScrEmp: d[i][43] || '', notaPresEmp: d[i][44] || '', notaScrEmp: d[i][43] || '', notaPresEmp: d[i][44] || '', ordenCli: Number(d[i][34]) || 0, valCli: String(d[i][35] || ''), formacion: d[i][22] || '', requisitos: d[i][5] || '', pretNum: (function(){var m=String(d[i][5]||'').match(/Remuneraci[oó]n pretendida:\s*\$?\s*([\d.\s]+)/i);return m?Number(m[1].replace(/[.\s]/g,'')):0;})()
     });
   }
   return JSON.stringify(out);
@@ -2664,6 +2666,7 @@ function notaManual_(perfilId, fila, etapa, nota, quien) {
   const sh = getSheet(getConfig(perfilId));
   const col = {cv:5, screening:12, competencias:16}[etapa];
   sh.getRange(fila, col).setValue(nota);
+  if (etapa === 'cv') { try { sh.getRange(fila, col).setNote(''); } catch (e) { } } // la nota la puso una persona: ya no vale el motivo que había escrito la IA
   aplicarEstadoNota(sh, fila, etapa, nota);
   const est = String(sh.getRange(fila, 9).getValue() || '').trim();
   limpiarMotivoSiNoDescartado_(sh, fila, est);
