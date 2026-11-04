@@ -366,7 +366,7 @@ function citaObj_(txt) {
 function poliEf_(r) { return String(r[COL.policlinico - 1] || String(r[COL.polSug - 1] || '').split(' · ')[0]).trim(); }
 
 const ESTADOS_TECNICA = ['Avanza a entrevista técnica', 'Entrevista técnica agendada'];
-const ESTADOS_POST_TECNICA = ['Contratado', 'Descartado en entrevista técnica', 'Reserva entrevista técnica'];
+const ESTADOS_POST_TECNICA = ['Contratado', 'Descartado en entrevista técnica', 'Reserva entrevista técnica', 'Descartado post contratación'];
 
 function permiteTecnico_(r) {
   const est = String(r[COL.estado - 1]).trim(), evaluado = String(r[COL.notaP2 - 1] || '').trim() && ESTADOS_POST_TECNICA.indexOf(est) > -1;
@@ -513,12 +513,16 @@ function guardarCandidato(k, fila, c) {
   if (c.accion === 'descartar' || c.accion === 'reactivar') {
     const est = String(sh.getRange(fila, COL.estado).getValue()).trim();
     const desc = /^Descartad/i.test(est);
+    let est2 = false;
     if (c.accion === 'descartar' && !desc) {
-      if (est === 'Contratado') throw new Error('Está contratado/a: no se puede descartar');
       if (!String(c.motivo || '').trim()) throw new Error('Elegí el motivo de descarte');
+      // Contratado que se cae después (ej. no presentó la documentación): estado propio, distinto de no pasar la técnica.
+      if (est === 'Contratado') { moverEstado(k, fila, 'Descartado post contratación'); est2 = true; }
       const i = ESTADOS_COL.findIndex(e => e[1].indexOf(est) > -1);
-      const etapa = /competencias/i.test(est) && /^Reserva/i.test(est) ? 'competencias' : /t[eé]cnica/i.test(est) && /^Reserva/i.test(est) ? 'pami2' : ETAPAS[i < 0 ? 0 : Math.min(i, 3)];
-      moverEstado(k, fila, estadoPorNota_(etapa, 'C'));
+      const etapa = est2 ? null : /competencias/i.test(est) && /^Reserva/i.test(est) ? 'competencias' : /t[eé]cnica/i.test(est) && /^Reserva/i.test(est) ? 'pami2' : ETAPAS[i < 0 ? 0 : Math.min(i, 3)];
+      if (etapa) moverEstado(k, fila, estadoPorNota_(etapa, 'C'));
+    } else if (c.accion === 'reactivar' && est === 'Descartado post contratación') {
+      moverEstado(k, fila, 'Contratado');
     } else if (c.accion === 'reactivar' && desc) {
       const i = ['sin screening', 'post screening', 'en competencias', 'en entrevista técnica'].findIndex(x => est === 'Descartado ' + x);
       moverEstado(k, fila, ESTADOS_COL[i < 0 ? 0 : i][2]);

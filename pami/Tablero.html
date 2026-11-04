@@ -655,7 +655,8 @@ function guardar(f,acc){
   var c=byFila(f);
   if(motFicha()===null){alert(MOT.valor('gMo').msg);return;}
   var o={busq:document.getElementById('gB').value,motivo:motFicha(),turno:[].slice.call(document.querySelectorAll('#gT input:checked')).map(function(x){return x.value;}).join('; '),policlinico:document.getElementById('gP').value,coment:document.getElementById('gM').value};
-  if(!acc&&o.motivo&&!/^Descartad|^Contratado/.test(c.estado))acc='descartar';
+  if(!acc&&o.motivo&&!/^Descartad/.test(c.estado))acc='descartar';
+  if(acc==='descartar'&&c.estado==='Contratado'&&!confirm('¿Estás seguro que querés descartar a '+c.nombre+'? Está Contratado/a.\n\nPasa a «Descartado post contratación» con el motivo elegido. Se puede revertir con Reactivar.'))return;
   if(acc){o.accion=acc;if(acc==='reactivar')o.motivo='';else if(!o.motivo){alert('Elegí al menos un motivo de descarte.');return;}}
   var rec=defRec(c.busq);
   if(rec){var t=document.getElementById('rcT').value;o.recTipo=t;o.recPor=t?(rec[t]?[].slice.call(document.querySelectorAll('#rcS input:checked')).map(function(x){return x.value;}).join('; '):document.getElementById('rcN').value.trim()):'';}
@@ -839,7 +840,7 @@ function vistaTecnica(){
   v.innerHTML='<div class="hdr"><div class="in"><span class="lg w"></span><div class="prod">Entrevista técnica<small class="ver">'+esc(D.poli||'')+'</small></div><span class="sp"></span><button class="cta" onclick="cambiarPinTec()">🔑 PIN</button> <button class="cta" onclick="cerrarSesion()">Salir</button></div></div>'+
     '<div style="max-width:900px;margin:0 auto;padding:18px 16px 60px"><div style="font-size:14px;color:#5D6B82;margin-bottom:14px">Hola <b>'+esc(D.user)+'</b>. '+(D.poli?(NP?NP+' candidato'+(NP===1?'':'s')+' para entrevista técnica en '+esc(D.poli)+'.':'No hay candidatos para entrevista técnica en '+esc(D.poli)+' por ahora.'):'Todavía no tenés un policlínico asignado. Avisale al administrador.')+'</div>'+tecListado(L)+'</div>';
 }
-var VP=false,VPP='',POST_TEC=['Contratado','Descartado en entrevista técnica','Reserva entrevista técnica'];
+var VP=false,VPP='',POST_TEC=['Contratado','Descartado en entrevista técnica','Reserva entrevista técnica','Descartado post contratación'];
 function tecListado(L){
   var pend=L.filter(function(c){return !c.notaTec;}),ev=L.filter(function(c){return c.notaTec;});
   return tecAgenda(pend)+pend.map(tecCard).join('')+'<div style="margin-top:22px;background:#EEF7F1;border:1px solid #BFE3CC;border-radius:8px;padding:12px 14px"><div style="font-weight:800;color:#1E8E5A;font-size:15px;margin-bottom:'+(ev.length?'10px':'0')+'">✅ Entrevistas técnicas ya cargadas ('+ev.length+')'+(ev.length?' · ver o editar la evaluación':'')+'</div>'+(ev.length?ev.map(tecCard).join(''):'<div style="font-size:13px;color:#5D6B82;margin-top:4px">Todavía no hay entrevistas técnicas cargadas. Cuando cargues una, el candidato aparece acá y la podés ver o editar.</div>')+'</div>';
