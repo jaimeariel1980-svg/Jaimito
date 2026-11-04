@@ -358,7 +358,11 @@ header{min-height:86px}
     fil=(typeof fil==='string')?fil:(window.AG_FIL||'');window.AG_FIL=fil;
     var ahora=Date.now()-36e5,L=[],yo=quienSoy();
     DATA.forEach(function(c){var d=parseCita(c.cita);if(d&&d.getTime()>=ahora)L.push({d:d,c:c});});
+    var pn=function(n){return String(n||'').trim().split(' ')[0].toLowerCase();};
+    var SF=DATA.filter(function(c){var m=metEstado(c.estado)||{t:'act'};return c.prox&&!parseCita(c.cita)&&!String(c.notaComp||'').trim()&&m.t==='act';});
     var pers=[];L.forEach(function(x){var p=x.c.citaCon||'';if(p&&pers.indexOf(p)<0)pers.push(p);});
+    SF.forEach(function(c){if(!pers.some(function(p){return pn(p)===pn(c.prox);}))pers.push(c.prox);});
+    SF=SF.filter(function(c){return !fil||(fil==='__yo'?pn(c.prox)===pn(yo):fil==='__sin'?false:pn(c.prox)===pn(fil));});
     L=L.filter(function(x){var p=x.c.citaCon||'';return !fil||(fil==='__yo'?p===yo:fil==='__sin'?!p:p===fil);});
     L.sort(function(a,b){return a.d-b.d;});
     var dias=['dom','lun','mar','mié','jue','vie','sáb'],h='',ult='';
@@ -368,8 +372,15 @@ header{min-height:86px}
       if(k!==ult){ult=k;h+='<div class="sec" style="margin-top:12px">'+dias[x.d.getDay()]+' '+String(x.d.getDate()).padStart(2,'0')+'/'+String(x.d.getMonth()+1).padStart(2,'0')+'</div>';}
       h+='<div class="frow" style="cursor:pointer" onclick="ficha('+x.c.fila+')"><span class="fl">'+String(x.d.getHours()).padStart(2,'0')+':'+String(x.d.getMinutes()).padStart(2,'0')+'</span><span class="fv"><b>'+esc(x.c.nombre)+'</b> · '+esc(x.c.estado)+(x.c.citaCon?' · con '+esc(x.c.citaCon):'')+'</span></div>';
     });
+    var sf='';
+    if(SF.length){
+      var gr={},orden=[];SF.forEach(function(c){var k=pn(c.prox);if(!gr[k]){gr[k]={n:String(c.prox).split(' ')[0],L:[]};orden.push(k);}gr[k].L.push(c);});
+      sf='<div class="sec" style="margin-top:16px">Asignados, todavía sin fecha</div>';
+      orden.forEach(function(k){var g=gr[k];sf+='<div style="margin:8px 0 2px;font-weight:800;font-size:13px;color:#0F3F27">'+esc(g.n)+' <span style="color:#777;font-weight:600">· '+g.L.length+' candidato'+(g.L.length===1?'':'s')+'</span></div>';
+        g.L.forEach(function(c){sf+='<div class="frow" style="cursor:pointer" onclick="ficha('+c.fila+')"><span class="fl">sin fecha</span><span class="fv"><b>'+esc(c.nombre)+'</b> · '+esc(c.estado)+' · competencias</span></div>';});});
+    }
     document.getElementById('mtit').textContent='📅 Agenda de entrevistas';
-    document.getElementById('mbody').innerHTML=sel+(h||'<div style="padding:20px;color:#777">No hay entrevistas agendadas por delante.</div>');
+    document.getElementById('mbody').innerHTML=sel+(h||(SF.length?'':'<div style="padding:20px;color:#777">No hay entrevistas agendadas por delante.</div>'))+sf;
     document.getElementById('modal').classList.add('show');
   };
   window.copiaAhora=function(){google.script.run.withSuccessHandler(function(r){alert('Copia hecha ('+r.fecha+'). Está en Drive, carpeta «Copias de seguridad Blumia». También se hace sola todos los días.');}).withFailureHandler(function(e){alert('No se pudo: '+((e&&e.message)||e));}).copiaAhoraBlumia('sesion');};
