@@ -206,3 +206,6 @@ Hecha con el código real y 37 fichas de ejemplo; el modelo real (`gpt-4o-mini`)
 - **Prioridad baja · lo hace Ariel:** cerrar las búsquedas viejas de MACS (coord-rrhh, operaciones, analistas) desde 🏠 Inicio para que el aviso de «búsqueda cerrada» y el selector solo muestren ABECEB.
 - **Prioridad media · Claude:** decidir si se suman versiones por mail de los mensajes de contacto (contacto-screening / competencias / empresa) en Mensajes.
 - **Prioridad media · lo hace Ariel:** Analía no puede ingresar (queda en la pantalla de login): probar en incógnito o con otro navegador y avisar.
+
+- **Prioridad alta · lo hace Ariel:** cargar el mail de Google de Flavia y de Analía en Inicio → ⚙ Administración → Usuarios (sin eso no les llega la invitación ni el recordatorio de 30 min).
+- **Prioridad media · Claude:** probar con la primera reserva real que (a) el disparador del calendario de Blumia se creó y (b) `addGuest` funciona sobre un evento creado por la página de citas; si no, revisar el registro de ejecuciones de `agendaVigilar`.

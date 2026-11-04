@@ -478,7 +478,7 @@ function guardarProximo_(sheet, fila, texto, avanza, quien) {
   const ant = String(sheet.getRange(fila, c).getValue() || '');
   if (ant === nom) return;
   sheet.getRange(fila, c).setValue(nom);
-  registrarHistorial_(sheet.getName(), sheet.getRange(fila, 2).getValue(), 'Próximo entrevistador', nom ? 'Competencias a cargo de ' + nom : 'Sin próximo entrevistador (el screening no avanza)', quien);
+  registrarHistorial_(sheet.getName(), sheet.getRange(fila, 2).getValue(), 'Próximo entrevistador', nom ? 'Próxima entrevista a cargo de ' + nom : 'Sin próximo entrevistador', quien);
 }
 
 // Asignar o cambiar el próximo entrevistador desde la ficha (sirve para quien ya pasó el screening antes de que existiera el campo)
@@ -1340,6 +1340,7 @@ function reintentarSinClasificar_(LABEL) {
 function procesarTodo_v2() {
   asegurarCopiaDiaria_();
   asegurarPruebaSemanal_();
+  asegurarDisparadoresAgenda_();
   // 1) MAIL — barrido único con router (decide perfil solo)
   try {
     procesarMailsRouter();
@@ -2523,7 +2524,7 @@ function menuWA(f){
   var h='<div style="font-size:13px;margin-bottom:12px;color:#555">Elegí qué mensaje enviar a <b>'+c.nombre+'</b>:</div>';
   ops.forEach(function(o){h+='<button class="mbtn wa" style="display:block;width:100%;margin-bottom:8px;text-align:left" onclick="enviarWA('+f+',\\''+o[0]+'\\',this)">'+o[1]+'</button>';});
   h+='<button class="mbtn alt" style="width:100%;margin-top:6px" onclick="ficha('+f+')">← Volver</button>';
-  h='<div style="margin-bottom:14px;padding:10px;border-radius:8px;background:#E3EEDC"><label for="waEnt" style="font-size:12px;font-weight:700;display:block;margin-bottom:4px">Quién lo entrevista (para screening y competencias)</label><select id="waEnt" style="height:38px;width:100%;border:1.5px solid #D5E0CE;border-radius:8px;padding:0 8px;font:inherit;background:#fff"><option value="auto" selected>Automático: quien tenga menos entrevistas próximas</option><option value="">Link de agenda de la búsqueda (sin persona)</option></select><div style="font-size:11px;color:#555;margin-top:4px">«Automático» reparte entre quienes hacen esa etapa en esta búsqueda y manda <b>un solo link</b>, el de esa persona. También podés elegir a alguien: el mensaje lleva <b>su</b> link y queda anotado en el historial.</div></div>'+h;
+  h='<div style="margin-bottom:14px;padding:10px;border-radius:8px;background:#E3EEDC"><label for="waEnt" style="font-size:12px;font-weight:700;display:block;margin-bottom:4px">Quién lo entrevista (para screening y competencias)</label><select id="waEnt" style="height:38px;width:100%;border:1.5px solid #D5E0CE;border-radius:8px;padding:0 8px;font:inherit;background:#fff"><option value="auto" selected>Automático: quien tenga menos entrevistas próximas</option></select><div style="font-size:11px;color:#555;margin-top:4px">Siempre queda <b>asignada una persona</b> (a ella le llega el aviso cuando el candidato reserva, y 30 minutos antes). «Automático» reparte entre quienes hacen esa etapa en esta búsqueda; también podés elegir a alguien.</div></div>'+h;
   document.getElementById('mtit').textContent='WhatsApp · '+c.nombre;
   document.getElementById('mbody').innerHTML=h;
   waEntCargar();
@@ -2993,11 +2994,11 @@ function armarComunicacion_(perfilId, fila, tipo, quien, entrevistadorElegido){
   if (String(entrevistadorElegido || '') === 'auto') {
     entrevistadorElegido = '';
     let asig = '';
-    if (etapaAg === 'competencias') {
+    if (etapaAg) {
       try {
         const cp = colProximo_(sh, false), nomA = cp ? String(sh.getRange(fila, cp).getValue() || '').trim() : '';
-        const ua = nomA ? leerUsuarios_().find(x => x.activo === 'SI' && String(x.nombre).split(' ')[0].toLowerCase() === nomA.toLowerCase() && usuHaceEn_(x, 'competencias', perfilId)) : null;
-        if (ua) { entrevistadorElegido = ua.nombre; asig = ua.nombre; aviso = 'Asignada en el screening: se mandó el link de ' + nomA + '.'; }
+        const ua = nomA ? leerUsuarios_().find(x => x.activo === 'SI' && String(x.nombre).split(' ')[0].toLowerCase() === nomA.toLowerCase() && usuHaceEn_(x, etapaAg, perfilId)) : null;
+        if (ua) { entrevistadorElegido = ua.nombre; asig = ua.nombre; aviso = 'Ya estaba asignada: se mandó el link de ' + nomA + '.'; }
       } catch (e) { }
     }
     if (etapaAg && !asig) {
@@ -3013,6 +3014,16 @@ function armarComunicacion_(perfilId, fila, tipo, quien, entrevistadorElegido){
     const propio = etapaAg === 'screening' ? (u.linkScr || u.linkComp) : (u.linkComp || u.linkScr);
     if (propio) link = propio; else aviso = String(u.nombre).split(' ')[0] + ' todavía no tiene cargado su link de agenda de ' + etapaAg + ': el mensaje lleva el link de la búsqueda.';
     conQuien = u.nombre;
+  }
+
+  // Ariel, 4/11: el link de agenda no se manda sin entrevistador asignado (es a quien le llega el aviso cuando el candidato reserva)
+  if (etapaAg) {
+    if (!String(conQuien || '').trim()) return { ok: false, error: 'Antes de mandar el link de agenda tenés que asignar quién entrevista, así le llega el aviso cuando el candidato reserve. Elegí a la persona en «Quién lo entrevista».' };
+    try { guardarProximo_(sh, fila, conQuien, true, entrevistador); } catch (e) { Logger.log('asignar entrevistador: ' + e); }
+    try {
+      const uq = leerUsuarios_().find(x => x.clave === usuClave_(conQuien));
+      if (uq && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(uq.mail || '').trim())) aviso = (aviso ? aviso + ' ' : '') + '⚠ ' + String(uq.nombre).split(' ')[0] + ' no tiene mail cargado en Usuarios (Inicio → ⚙ Administración): no le va a llegar el aviso de la entrevista.';
+    } catch (e) { }
   }
 
   let texto = plantillaTexto_(tipo, perfilId).texto;
