@@ -31,6 +31,7 @@ function jornadaFichada_(a, d, cfg, sinPrev) {
   }
   var M = marcasAbs_(a.leg, d, Math.max(t.ini - 480, prevFin + 1), Math.min(t.fin + 480, prox - 240), cfg);
   var r = { t: t };
+  r.na = faltaReloj_(a.leg, d, t.ini, t.fin, cfg);
   if (!M.length) { r.estado = 'sin'; return r; }
   if (M[0].m > t.ini + 180 && !(M.length > 1 && M[M.length - 1].m > t.fin + 60)) {
     var cerca = M.filter(function (x) { return x.m >= t.fin - 180; });
@@ -68,13 +69,25 @@ function nocheAgenteDia_(a, d, cfg) {
 }
 
 function procesarNocheAgente_(a, serv, cfg, filas, acum) {
+  if (!enReloj_(a.leg, cfg)) {
+    var dn = []; for (var x0 = 1; x0 <= _diasMes; x0++) { var tn = turnoCompleto_(a, x0); if (tn && !esCola_(a, x0) && minNoche_(tn.ini, tn.fin) > 0) dn.push(x0); }
+    if (!dn.length) return;
+    acum[a.leg] = { ape: a.ape, serv: {}, min: 0, jor: 0, omis: [], dist: [], na: dn };
+    acum[a.leg].serv[serv] = 1;
+    filas.push([serv, a.leg, a.ape, dn[0], a.hab[dn[0]] || '', '', '', '', '', 0, NO_RELOJ_ + ' (' + dn.length + ' turnos nocturnos en la planilla)', '[sin datos]', '']);
+    return;
+  }
   for (var d = 1; d <= _diasMes; d++) {
     var x = nocheAgenteDia_(a, d, cfg);
-    if (!x || x.estado === 'sin') continue;
-    var g = acum[a.leg] || (acum[a.leg] = { ape: a.ape, serv: {}, min: 0, jor: 0, omis: [], dist: [] });
+    var na = x && x.estado !== 'ok' && x.na && x.na.length;
+    if (!x || (x.estado === 'sin' && !na)) continue;
+    var g = acum[a.leg] || (acum[a.leg] = { ape: a.ape, serv: {}, min: 0, jor: 0, omis: [], dist: [], na: [] });
     g.serv[serv] = 1;
     var turno = a.cam[d] || a.hab[d] || '-', franja = minToHora(x.t.ini) + ' a ' + minToHora(x.t.fin);
-    if (x.estado === 'omision') {
+    if (na) {
+      g.na.push(d);
+      filas.push([serv, a.leg, a.ape, d, turno, x.ent || '', x.sal || '', franja, '', 0, textoNA_(x.na)]);
+    } else if (x.estado === 'omision') {
       g.omis.push(d);
       filas.push([serv, a.leg, a.ape, d, turno, x.ent || '', x.sal || '', franja, '', 0, 'OMISIÓN: ' + x.nota + ' (no se paga)']);
     } else {
@@ -97,7 +110,7 @@ function liquidarNocturnidad() {
   var hd = escribir_(ss, 'NOCTURNIDAD_DETALLE', cabD, filas, 5, 9);
   if (filas.length) {
     hd.getRange(2, 1, filas.length, cabD.length).setBorder(true, true, true, true, true, true, '#c8c8c8', SpreadsheetApp.BorderStyle.SOLID)
-      .setBackgrounds(filas.map(function (r) { return new Array(cabD.length).fill(/^OMISIÓN/.test(r[10]) ? '#fbd9d9' : /^HORARIO DISTINTO/.test(r[10]) ? '#fff3b8' : '#ffffff'); }));
+      .setBackgrounds(filas.map(function (r) { return new Array(cabD.length).fill(/^SIN DATOS/.test(r[10]) ? '#d0e0e3' : /^OMISIÓN/.test(r[10]) ? '#fbd9d9' : /^HORARIO DISTINTO/.test(r[10]) ? '#fff3b8' : '#ffffff'); }));
     hd.getRange(2, 10, filas.length, 1).setNumberFormat('0.0');
   }
 
@@ -105,6 +118,7 @@ function liquidarNocturnidad() {
     var g = acum[l], hs = Math.round(g.min / 6) / 10;
     var al = [];
     if (g.omis.length) al.push('omisión en ' + g.omis.length + ' jornada(s): no se pagan');
+    if (g.na.length) al.push(g.jor || g.omis.length ? 'SIN DATOS DEL RELOJ (#N/A en la tarjeta) los días ' + g.na.join(', ') + ': no se pagan hasta tener el registro' : 'SIN DATOS DEL RELOJ: no figura en la tarjeta reloj en todo el mes (revisar el legajo)');
     if (g.dist.length) al.push('horario distinto al programado los días ' + g.dist.join(', ') + ' (cargar el cambio en la planilla)');
     return [l, g.ape, Object.keys(g.serv).join(', '), hs, g.jor, g.omis.length, g.omis.join(', '), al.join(' · ') || 'OK'];
   }).sort(function (a, b) { return String(a[1]).localeCompare(String(b[1])); });
@@ -112,7 +126,7 @@ function liquidarNocturnidad() {
   var h = escribir_(ss, 'NOCTURNIDAD', cab, res);
   if (res.length) {
     h.getRange(2, 1, res.length, cab.length).setBorder(true, true, true, true, true, true, '#c8c8c8', SpreadsheetApp.BorderStyle.SOLID)
-      .setBackgrounds(res.map(function (r) { return new Array(cab.length).fill(r[5] ? '#fbd9d9' : /horario distinto/.test(r[7]) ? '#fff3b8' : '#ffffff'); }));
+      .setBackgrounds(res.map(function (r) { return new Array(cab.length).fill(/SIN DATOS/.test(r[7]) ? '#d0e0e3' : r[5] ? '#fbd9d9' : /horario distinto/.test(r[7]) ? '#fff3b8' : '#ffffff'); }));
     h.getRange(2, 4, res.length, 1).setNumberFormat('0.0').setFontWeight('bold');
   }
   var tot = res.reduce(function (s, r) { return s + r[3]; }, 0), om = res.reduce(function (s, r) { return s + r[5]; }, 0);

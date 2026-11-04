@@ -180,6 +180,28 @@ function tramosPares_(M, ini, fin) {
 
 var TOLERANCIA = 15;
 
+function enReloj_(leg, cfg) {
+  for (var n = 1; n <= _diasMes; n++) if (fichDia_(n, cfg)[leg]) return true;
+  return false;
+}
+
+var NO_RELOJ_ = 'SIN DATOS DEL RELOJ: el legajo no figura en la tarjeta reloj en todo el mes (revisar el legajo o si ficha en otro lado). No se paga';
+
+function faltaReloj_(leg, d, ini, fin, cfg) {
+  var out = [];
+  if (!enReloj_(leg, cfg)) return out;
+  for (var o = Math.floor(ini / 1440); o <= Math.floor((fin - 1) / 1440); o++) {
+    var n = d + o;
+    if (n >= 1 && n <= _diasMes + 1 && !fichDia_(n, cfg)[leg]) out.push(n);
+  }
+  return out;
+}
+
+function textoNA_(dias) {
+  return 'SIN DATOS DEL RELOJ: el agente no figura en la tarjeta del día ' + dias.map(function (n) { return n > _diasMes ? '1 del mes siguiente' : n; }).join(' y ') +
+    ' (sale #N/A). No es omisión: no se paga hasta tener el registro';
+}
+
 function presencia_(a, d, w, cfg, turnos) {
   var bIni = w.ini, bFin = w.fin, contiguo = false, B = turnos || bloquesTurno_(a, d);
   B.forEach(function (t) {
@@ -194,9 +216,10 @@ function presencia_(a, d, w, cfg, turnos) {
     if (M.length && M[0].m <= w.ini + 180) sinTurno = true;
     eHasta = w.ini + 180;
   }
-  if (!M.length || M[0].m > eHasta) return { estado: 'sin' };
+  var na = function () { return faltaReloj_(a.leg, d, Math.min(bIni, w.ini), Math.max(fin, w.fin), cfg); };
+  if (!M.length || M[0].m > eHasta) return { estado: 'sin', na: na() };
   var res = { ent: M[0].t, sal: M.length > 1 ? M[M.length - 1].t : '', n: M.length, sinTurno: sinTurno };
-  if (M.length === 1) { res.estado = 'omision'; return res; }
+  if (M.length === 1) { res.estado = 'omision'; res.na = na(); return res; }
   res.estado = 'ok'; res.intermedias = M.length - 2;
   res.tramos = tramosPares_([M[0], M[M.length - 1]], w.ini, w.fin);
   if (res.tramos.length) {
@@ -218,6 +241,10 @@ function horas_(tr) {
 function procesarAgente_(a, serv, cfg, ctx, filas) {
   _mes = ctx.mes; _anio = ctx.anio;
   var sadofe = esSadofe_(a, ctx);
+  if (!enReloj_(a.leg, cfg)) {
+    for (var dx = 1; dx <= _diasMes; dx++) if (a.ext[dx]) filas.push([serv, a.leg, a.ape, dx, a.cam[dx] || a.hab[dx] || '-', '', '', a.ext[dx], '', 0, 0, 'A REVISAR', NO_RELOJ_, '[sin datos]', '']);
+    return;
+  }
   var n0 = filas.length;
   for (var d = 1; d <= _diasMes; d++) {
     if (d > 1) agregarFichas_(filas, n0, a.leg, d - 1, cfg);
@@ -230,7 +257,8 @@ function procesarAgente_(a, serv, cfg, ctx, filas) {
 
     if (ctx.noLab[claveFecha_(new Date(ctx.anio, ctx.mes - 1, d))]) {
       var jn = jornadaFichada_(a, d, cfg);
-      if (!jn || jn.estado === 'sin') continue;
+      if (!jn || (jn.estado === 'sin' && !(jn.na && jn.na.length))) continue;
+      if (jn.estado !== 'ok' && jn.na && jn.na.length) { filas.push(base.concat([jn.ent || '', jn.sal || '', 'día no laborable', '', 0, 0, 'A REVISAR', textoNA_(jn.na)])); continue; }
       if (ident()) { filas.push(base.concat(['', '', '', '', '', '', 'REVISAR IDENTIDAD', 'fichada: ' + nf])); continue; }
       if (jn.estado === 'omision') { filas.push(base.concat([jn.ent || '', jn.sal || '', 'día no laborable', '', 0, 0, 'A REVISAR', 'omisión: ' + jn.nota + ' (no se paga)'])); continue; }
       var a0 = jn.m0 !== undefined ? jn.m0 : jn.ri, a1 = jn.m1 !== undefined ? jn.m1 : jn.rf, rl = calcularExtraTramos([[a0, a1]], cd);
@@ -262,6 +290,7 @@ function procesarAgente_(a, serv, cfg, ctx, filas) {
         piezas.forEach(function (w) {
           var cond = [nd, fer ? 'feriado' : ''].filter(Boolean).join(' + '), pr = presencia_(a, d, w, cfg, real);
           if (!nd && (w.ini !== w0.ini || w.fin !== w0.fin)) cond += (cond ? ' + ' : '') + 'se descontó lo que cae dentro del turno';
+          if (pr.estado !== 'ok' && pr.na && pr.na.length) { filas.push(base.concat([pr.ent || hE, '', txt, '', 0, 0, 'A REVISAR', textoNA_(pr.na)])); return; }
           if (pr.estado === 'sin') { filas.push(base.concat([hE, hS, txt, '', 0, 0, 'A REVISAR', 'no fichó la extra (no se paga)' + (cond ? ' · ' + cond : '')])); return; }
           if (pr.estado === 'omision') { filas.push(base.concat([pr.ent, '', txt, '', 0, 0, 'A REVISAR', 'omisión: una sola fichada, no corresponde extra'])); return; }
           if (!pr.tramos.length) { filas.push(base.concat([pr.ent, pr.sal, txt, '', 0, 0, 'A REVISAR', 'las fichadas no cubren la franja (no se paga)'])); return; }

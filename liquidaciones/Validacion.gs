@@ -1,5 +1,5 @@
 var CAB_CTRL_ = ['Liquidación 50%', 'Liquidación 100%', 'Diferencia (h)', 'Fichadas del día (tarjeta reloj)', 'Qué se encontró', 'Decisión del jefe', 'Comentario del jefe (n.º de nota si corresponde)'];
-var DEC_DIF_ = ['Conforme con la liquidación', 'Omisión justificada: pagar la franja', 'Corregir la planilla de horarios'];
+var DEC_DIF_ = ['Conforme con la liquidación', 'Omisión justificada: pagar la franja', 'Corregir la planilla de horarios', 'El reloj tiene el registro: pagar la franja'];
 var DEC_NOINF_ = ['Autorizo la extra no informada', 'No autorizo'];
 var CONF_TIT_ = 'CONFORMIDAD DEL JEFE DE ENFERMERÍA';
 
@@ -48,9 +48,9 @@ function aplicarDecisiones_(filas, dec, E) {
     var nota = d[1] ? ' (' + d[1] + ')' : '';
     if (d[0] === DEC_NOINF_[0] && /NO INFORMADA/.test(r[12]) && r[11] !== 'AUTORIZADA') {
       r[11] = 'AUTORIZADA'; r[12] = 'EXTRA NO INFORMADA · AUTORIZADA por el jefe de Enfermería' + nota;
-    } else if (d[0] === DEC_DIF_[1] && E[k] && !hechos[k] && r[11] !== 'AUTORIZADA') {
+    } else if ((d[0] === DEC_DIF_[1] || d[0] === DEC_DIF_[3]) && E[k] && !hechos[k] && r[11] !== 'AUTORIZADA') {
       hechos[k] = 1; r[9] = E[k].h50; r[10] = E[k].h100; r[11] = 'AUTORIZADA';
-      r[12] = 'OMISIÓN JUSTIFICADA por el jefe de Enfermería: se paga la franja ' + E[k].fr.join(' + ') + nota;
+      r[12] = (d[0] === DEC_DIF_[3] ? 'REGISTRO DEL RELOJ VERIFICADO' : 'OMISIÓN JUSTIFICADA') + ' por el jefe de Enfermería: se paga la franja ' + E[k].fr.join(' + ') + nota;
     }
   });
 }
