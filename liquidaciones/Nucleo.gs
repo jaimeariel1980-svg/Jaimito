@@ -89,16 +89,17 @@ function apellidoCoincide(apeGrilla, nomFichada) {
 }
 
 function consolidarGRH_(real50, real100, aut50, aut100, hayGRH, tope) {
-  real50 = Math.round(real50 * 10) / 10; real100 = Math.round(real100 * 10) / 10;
-  var total = Math.round((real50 + real100) * 10) / 10, totalAut = aut50 + aut100;
-  var reconv = Math.round(Math.min(Math.max(0, real50 - aut50), Math.max(0, aut100 - real100)) * 10) / 10;
-  var pagar = Math.min(total, tope);
-  var endoso = Math.max(0, Math.round((pagar - totalAut) * 10) / 10);
-  var recorte = Math.max(0, Math.round((total - tope) * 10) / 10);
+  var r1 = function (x) { return Math.round(x * 10) / 10; };
+  real50 = r1(real50); real100 = r1(real100);
+  var total = r1(real50 + real100), cap50 = aut50, cap100 = aut100, reconv = 0, dir = '';
+  if (real50 > aut50 && real100 === 0 && aut100 > 0) { reconv = aut100; cap50 += aut100; cap100 = 0; dir = 'todo el 100 al 50'; }
+  else if (real100 > aut100 && real50 === 0 && aut50 > 0) { reconv = aut50; cap100 += aut50; cap50 = 0; dir = 'todo el 50 al 100'; }
+  var pagar = Math.min(total, tope), recorte = Math.max(0, r1(total - tope));
+  var endoso = Math.max(0, r1(Math.max(0, real50 - cap50) + Math.max(0, real100 - cap100) - recorte));
   var al = [];
   if (!hayGRH) al.push('NO FIGURA EN EL EXPEDIENTE (' + total + ' h sin autorización)');
-  if (reconv > 0) al.push('reconversión ' + reconv + 'h');
-  if (hayGRH && endoso > 0) al.push('endoso ' + endoso + 'h');
+  if (reconv > 0) al.push('reconversión ' + reconv + 'h (' + dir + ')');
+  if (hayGRH && endoso > 0) al.push('endoso ' + endoso + 'h (pedir a otro agente)');
   if (recorte > 0) al.push('EXCEDE ' + tope + ' (-' + recorte + 'h)');
   return { total: total, pagar: pagar, reconv: reconv, endoso: hayGRH ? endoso : 0, recorte: recorte, alerta: al.length ? al.join(' + ') : 'OK' };
 }
@@ -187,4 +188,44 @@ var NO_LAB_FIJOS = { 2026: ['11-13', '12-7'] };
 
 function noLabFijos_(anio, mes) {
   return (NO_LAB_FIJOS[anio] || []).filter(function (k) { return +k.split('-')[0] === mes; });
+}
+
+function compararEnfermeria_(rep, filas) {
+  var num = function (x) { return parseFloat(String(x || '0').replace(',', '.')) || 0; }, h = -1, c = {};
+  for (var i = 0; i < Math.min(rep.length, 20) && h < 0; i++) {
+    var f = rep[i].map(function (x) { return normaliza_(x); });
+    if (f.indexOf('LEGAJO') >= 0 && f.indexOf('DIA') >= 0) {
+      h = i;
+      f.forEach(function (x, j) {
+        if (x === 'LEGAJO') c.leg = j; else if (x === 'APELLIDO') c.ape = j; else if (x === 'DIA') c.dia = j;
+        else if (/EXTRA/.test(x)) c.fr = j; else if (/50/.test(rep[i][j])) c.a50 = j; else if (/100/.test(rep[i][j])) c.a100 = j;
+      });
+    }
+  }
+  if (h < 0) return null;
+  var E = {}, N = {}, k;
+  rep.slice(h + 1).forEach(function (r) {
+    var leg = String(r[c.leg]).trim();
+    if (!/^\d+$/.test(leg) || !+r[c.dia]) return;
+    k = leg + '|' + (+r[c.dia]);
+    var e = E[k] || (E[k] = { leg: leg, ape: r[c.ape], dia: +r[c.dia], fr: [], h50: 0, h100: 0 });
+    e.fr.push(r[c.fr]); e.h50 += num(r[c.a50]); e.h100 += num(r[c.a100]);
+  });
+  filas.forEach(function (r) {
+    k = r[1] + '|' + r[3];
+    var n = N[k] || (N[k] = { leg: r[1], ape: r[2], dia: r[3], h50: 0, h100: 0, por: [] });
+    if (r[11] === 'AUTORIZADA') { n.h50 += +r[9] || 0; n.h100 += +r[10] || 0; }
+    n.por.push(r[11] + (r[12] ? ': ' + r[12] : ''));
+  });
+  var out = [], tot = [0, 0, 0, 0];
+  Object.keys(E).concat(Object.keys(N).filter(function (x) { return !E[x]; })).forEach(function (k) {
+    var e = E[k] || { h50: 0, h100: 0, fr: [] }, n = N[k] || { h50: 0, h100: 0, por: [] }, b = E[k] || N[k];
+    tot[0] += e.h50; tot[1] += e.h100; tot[2] += n.h50; tot[3] += n.h100;
+    if (Math.abs(e.h50 - n.h50) < 0.01 && Math.abs(e.h100 - n.h100) < 0.01) return;
+    var dif = Math.round((n.h50 + n.h100 - e.h50 - e.h100) * 10) / 10;
+    out.push([b.leg, b.ape, b.dia, e.fr.join(' + '), e.h50, e.h100, n.h50, n.h100, dif,
+      n.por.length ? n.por.join(' | ') : 'no aparece en la liquidación (sin franja de extra en la planilla o sin fichadas)']);
+  });
+  out.sort(function (a, b) { return String(a[1]).localeCompare(String(b[1])) || a[2] - b[2]; });
+  return { filas: out, tot: tot };
 }
