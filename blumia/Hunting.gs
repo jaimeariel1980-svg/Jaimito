@@ -198,7 +198,7 @@ function huntingBorrar_(perfilId, id, quien) {
 const HUNT_MAIL_ = {
   'director-comercial': {
     asunto: 'Oportunidad ejecutiva | Dirección Comercial – Consultoría de Negocios',
-    cuerpo: 'Estimado/a [Nombre]:\n\nEspero que estés muy bien.\n\nDesde Blumia Consulting estamos liderando una búsqueda confidencial para incorporar un/a Director/a Comercial de Proyectos de Consultoría para el sector de Energía y Minería, en una firma de reconocida trayectoria en consultoría de negocios.\n\nSe trata de una posición de nueva creación, con reporte directo al CEO, cuyo principal desafío será impulsar el desarrollo de nuevos negocios en los sectores de Energía y Minería, identificando oportunidades, construyendo relaciones con decisores de alto nivel y desarrollando propuestas de consultoría de alto valor agregado.\n\nBuscamos un perfil con sólida trayectoria en desarrollo comercial B2B, experiencia en ventas consultivas de soluciones complejas, conocimiento del ecosistema energético y minero y una red activa de relacionamiento a nivel C-Level.\n\nLa posición ofrece la oportunidad de asumir un rol estratégico en el crecimiento de la firma, con autonomía, exposición a la alta dirección y participación directa en el desarrollo de negocios.\n\nLa posición está basada en CABA con modalidad híbrida y disponibilidad para viajes comerciales nacionales e internacionales.\n\nMe gustaría conocer si esta oportunidad podría resultar de tu interés y, en ese caso, coordinar una breve conversación para compartirte más detalles.\n\nDesde ya, muchas gracias por tu tiempo.\n\nSaludos cordiales,\n[Firma]',
+    cuerpo: 'Estimado/a [Nombre]:\n\nEspero que estés muy bien.\n\nDesde Blumia Consulting estamos liderando una búsqueda confidencial para incorporar un/a Director/a Comercial de Proyectos de Consultoría para el sector de Energía y Minería, en una firma de reconocida trayectoria en consultoría de negocios.\n\nSe trata de una posición de nueva creación, con reporte directo al CEO, cuyo principal desafío será impulsar el desarrollo de nuevas soluciones de alto valor para la toma de decisiones estratégicas para el desarrollo de negocios.\n\nBuscamos un perfil con sólida trayectoria en desarrollo comercial B2B, experiencia en ventas consultivas de soluciones complejas, conocimiento del ecosistema energético y minero y una red activa de relacionamiento a nivel C-Level.\n\nLa posición ofrece la oportunidad de asumir un rol estratégico en el crecimiento de la firma, con autonomía, exposición a la alta dirección y participación directa en el desarrollo de negocios.\n\nLa posición está basada en CABA con modalidad híbrida y se requiere disponibilidad para viajes comerciales nacionales e internacionales.\n\nMe gustaría conocer si esta oportunidad podría resultar de tu interés y, en ese caso, coordinar una breve conversación para compartirte más detalles.\n\nDesde ya, muchas gracias por tu tiempo.\n\nSaludos cordiales,\n[Firma]',
     firma: 'Flavia Jaime\nSocia Fundadora\nBlumia Consulting\nExecutive Search\nempleos@blumiaconsulting.com',
     nota: 'Hola [Nombre], desde Blumia Consulting lideramos una búsqueda confidencial de Director/a Comercial en consultoría (Energía y Minería, CABA). Tu perfil podría encajar. ¿Conectamos? Flavia'
   }
@@ -206,15 +206,56 @@ const HUNT_MAIL_ = {
 // La firma es siempre la de Flavia (Ariel, 2/11), no la de quien usa el tablero.
 function huntFirma_(perfilId) { const m = HUNT_MAIL_[perfilId]; return (m && m.firma) || 'Flavia Jaime\nBlumia Consulting\nExecutive Search\nempleos@blumiaconsulting.com'; }
 function huntMailModelo_(perfilId, o, quien) {
-  const m = HUNT_MAIL_[perfilId]; if (!m) return null;
+  const t = huntTextos_(perfilId); if (!t) return null;
   const nombre = String(o.nombre || '').trim().split(/\s+/)[0] || '';
-  return { asunto: m.asunto, mail: m.cuerpo.replace('[Nombre]', nombre).replace('[Firma]', huntFirma_(perfilId)) };
+  return { asunto: t.asunto, mail: t.cuerpo.replace(/\[Nombre\]/g, nombre) };
+}
+/* El primer contacto de hunting vive en ⚙ Configurar → Mensajes («hunting-primer-contacto»: primera línea «Asunto: …», después el cuerpo) y la nota corta de conexión en «hunting-nota-conexion».
+   Se pueden cambiar sin tocar código (solo esta búsqueda o todas) y con «✨ Redactar con IA». Si la hoja no los tiene, se siembran desde HUNT_MAIL_ (migración de una sola vez). Devuelve {asunto, cuerpo, nota} con [Nombre] para que el tablero lo reemplace. */
+function huntTextos_(perfilId) {
+  try { asegurarPlantillasHunting_(perfilId); } catch (e) { Logger.log('plantillas de hunting: ' + e); }
+  const cfg = getConfig(perfilId);
+  const puesto = (typeof cfg.nombre_perfil === 'string' && cfg.nombre_perfil) ? cfg.nombre_perfil : perfilId;
+  const arma = t => String(t || '').replace(/\[NOMBRE\]/g, '[Nombre]').replace(/\[PUESTO\]/g, puesto).replace(/\[EMPRESA\]/g, empresaParaCandidatos_(cfg));
+  let principal = plantillaTexto_('hunting-primer-contacto', perfilId).texto;
+  const nota = arma(plantillaTexto_('hunting-nota-conexion', perfilId).texto);
+  const m = HUNT_MAIL_[perfilId];
+  if (!String(principal || '').trim() && !m) return null;
+  if (!String(principal || '').trim()) return { asunto: m.asunto, cuerpo: m.cuerpo.replace('[Firma]', huntFirma_(perfilId)), nota: m.nota || '' };
+  principal = arma(principal);
+  const mm = principal.match(/^\s*Asunto:\s*(.+)\n+/i);
+  return { asunto: mm ? mm[1].trim() : (m ? m.asunto : 'Oportunidad ejecutiva'), cuerpo: (mm ? principal.slice(mm[0].length) : principal).trim(), nota: nota || (m && m.nota) || '' };
+}
+const HUNT_GENERAL_ = {
+  'hunting-primer-contacto': 'Asunto: Oportunidad ejecutiva | [PUESTO]\n\nEstimado/a [NOMBRE]:\n\nEspero que estés muy bien.\n\nDesde Blumia Consulting estamos liderando una búsqueda confidencial para incorporar un/a [PUESTO] en [EMPRESA].\n\n(Contá acá en 2 o 3 párrafos qué se busca, por qué es una buena oportunidad y dónde está basada la posición. Podés usar «✨ Redactar con IA» con tus instrucciones.)\n\nMe gustaría conocer si esta oportunidad podría resultar de tu interés y, en ese caso, coordinar una breve conversación para compartirte más detalles.\n\nDesde ya, muchas gracias por tu tiempo.\n\nSaludos cordiales,\nFlavia Jaime\nSocia Fundadora\nBlumia Consulting\nExecutive Search\nempleos@blumiaconsulting.com',
+  'hunting-nota-conexion': 'Hola [NOMBRE], desde Blumia Consulting lideramos una búsqueda confidencial de [PUESTO]. Tu perfil podría encajar. ¿Conectamos? Flavia'
+};
+function asegurarPlantillasHunting_(perfilId) {
+  const sh = SpreadsheetApp.openById(SHEET_MASTER_ID).getSheetByName('Plantillas');
+  if (!sh) return;
+  const cp = colPerfilPlantillas_(sh);
+  const data = sh.getDataRange().getValues();
+  const hay = (clave, propia) => data.slice(1).some(r => r[0] === clave && (propia ? String(r[cp - 1] || '').trim() === perfilId : !String(r[cp - 1] || '').trim()));
+  const nuevas = [];
+  Object.keys(HUNT_GENERAL_).forEach(k => { if (!hay(k, false)) nuevas.push([k, 'Hunting · mail, LinkedIn y WhatsApp', '', HUNT_GENERAL_[k], '']); });
+  const m = HUNT_MAIL_[perfilId];
+  if (m) {
+    if (!hay('hunting-primer-contacto', true)) nuevas.push(['hunting-primer-contacto', 'Hunting · mail, LinkedIn y WhatsApp', '', 'Asunto: ' + m.asunto + '\n\n' + m.cuerpo.replace('[Firma]', huntFirma_(perfilId)).replace(/\[Nombre\]/g, '[NOMBRE]'), perfilId]);
+    if (m.nota && !hay('hunting-nota-conexion', true)) nuevas.push(['hunting-nota-conexion', 'Hunting · mail, LinkedIn y WhatsApp', '', m.nota.replace(/\[Nombre\]/g, '[NOMBRE]'), perfilId]);
+  }
+  if (!nuevas.length) return;
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) return;
+  try {
+    const ancho = Math.max(cp, 4);
+    nuevas.forEach(f => { const fila = [f[0], f[1], f[2], f[3]]; while (fila.length < ancho) fila.push(''); fila[cp - 1] = f[4]; sh.getRange(sh.getLastRow() + 1, 1, 1, ancho).setNumberFormat('@').setValues([fila]); });
+  } finally { lock.releaseLock(); }
 }
 // Mensaje modelo (InMail / mensaje de LinkedIn) y nota de conexión, sin IA. Quedan [Nombre] para que el tablero lo reemplace al escribir el nombre.
 function huntingMailModelo_(perfilId, quien) {
-  const m = HUNT_MAIL_[perfilId];
-  if (!m) throw new Error('Esta búsqueda todavía no tiene un mensaje modelo cargado.');
-  return { asunto: m.asunto, mail: m.cuerpo.replace('[Firma]', huntFirma_(perfilId)), nota: m.nota || '' };
+  const t = huntTextos_(perfilId);
+  if (!t) throw new Error('Esta búsqueda todavía no tiene un mensaje modelo cargado (⚙ Configurar → Mensajes).');
+  return { asunto: t.asunto, mail: t.cuerpo, nota: t.nota };
 }
 
 function huntingMensaje_(perfilId, id, tipo, nombrar, quien) {

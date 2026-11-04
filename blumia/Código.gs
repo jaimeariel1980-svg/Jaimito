@@ -156,6 +156,9 @@ function doGetPagina_(e) {
   } else if (tipo === 'inicio') {
     return inicioHTML_();
   } else if (tipo === 'kanban') {
+    let cerradaK = false;
+    try { cerradaK = estadoBusqueda_(getConfig(perfil)) === 'CERRADA'; } catch (err) { }
+    if (cerradaK && e.parameter.ver !== '1') return busquedaCerradaHTML_(perfil);
     ABRIR_CFG_ = e.parameter.abrir === 'config' ? String(e.parameter.tab || 'ia').replace(/[^a-z]/g, '').slice(0, 12) : '';
     return kanbanHTML(perfil);
   } else if (tipo === 'banco') {
@@ -2161,7 +2164,7 @@ function kanbanHTML_(perfilId) {
   lapT_('Leer la configuración de la búsqueda');
   const data = doGetKanban_(perfilId);
   KANBAN_KB_ = Math.round(data.length / 1024);
-  const empresas = JSON.stringify(empresasYPerfiles());
+  const empresas = JSON.stringify(empresasYPerfiles(perfilId)); // las cerradas no se ofrecen en el selector (salvo la que está abierta)
   lapT_('Lista de búsquedas para el selector');
   const empresaActual = empresaKey_(cfg);
   const flyer = URL_WEBAPP + '?tipo=flyer&perfil=' + encodeURIComponent(perfilId); // editor de flyer propio (el link viejo de Config se ve adentro)
@@ -2921,7 +2924,7 @@ function previaDescartes_(perfilId) {
     textoPost: 'Hola [NOMBRE], ¿cómo estás?\n\nAnte todo, gracias por el tiempo que compartimos durante la entrevista y por tu buena predisposición a lo largo del proceso.\n\nDespués de evaluar a todos los candidatos, en esta ocasión decidimos avanzar con otros perfiles que se ajustaban más a los requerimientos específicos de la búsqueda de ' + puesto + '. Así que no vamos a continuar con tu candidatura en este proceso.\n\nFue un gusto conocerte. Tu perfil queda en nuestra base y te vamos a tener presente para futuras búsquedas que puedan encajar mejor con tu experiencia.\n\nTe deseamos mucho éxito en tus próximos pasos profesionales.\n\nSaludos,\nEquipo de Blumia Consulting'
   };
 }
-function empresasYPerfiles(){
+function empresasYPerfiles(actual){
   const rows = configValores_();
   const emp = {};
   const cEst = rows[0].indexOf('estado_busqueda');
@@ -2929,9 +2932,25 @@ function empresasYPerfiles(){
     if(!rows[i][0]) continue;
     const e = rows[i][9] || 'Sin empresa';
     const cerr = cEst >= 0 && String(rows[i][cEst]||'').toUpperCase().trim() === 'CERRADA';
+    if (cerr && actual && rows[i][0] !== actual) continue;
     (emp[e]=emp[e]||[]).push([rows[i][0], rows[i][1] + (cerr ? ' · cerrada' : '')]);
   }
   return emp;
+}
+/* Una búsqueda CERRADA no se abre de golpe en el tablero (Ariel, 4/11: «abre casi siempre ahí y nos confundimos»): se muestra este aviso con las búsquedas abiertas y, aparte, «Ver igual». */
+function busquedaCerradaHTML_(perfil) {
+  const rows = configValores_(), cEst = rows[0].indexOf('estado_busqueda');
+  let nombre = perfil; const abiertas = [];
+  for (let i = 1; i < rows.length; i++) {
+    if (!rows[i][0]) continue;
+    const cerr = cEst >= 0 && String(rows[i][cEst] || '').toUpperCase().trim() === 'CERRADA';
+    if (rows[i][0] === perfil) nombre = rows[i][1] || perfil; else if (!cerr) abiertas.push({ id: rows[i][0], n: rows[i][1] || rows[i][0], e: rows[i][9] || '' });
+  }
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const base = URL_WEBAPP + '?tipo=kanban&perfil=';
+  const botones = abiertas.map(a => '<button class="p" onclick="ir(\'' + base + encodeURIComponent(a.id) + '\')">' + esc(a.n) + (a.e ? ' <small>· ' + esc(a.e) + '</small>' : '') + '</button>').join('') || '<p>No hay búsquedas abiertas.</p>';
+  const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Búsqueda cerrada | Blumia</title><style>body{margin:0;background:#EEF7EE;font-family:Poppins,Arial,sans-serif;color:#0F3F27;display:flex;justify-content:center;padding:28px 16px}.bx{background:#fff;border-radius:12px;max-width:520px;width:100%;padding:28px;box-shadow:0 6px 24px rgba(15,63,39,.12)}h1{font-size:22px;margin:0 0 6px}.cr{display:inline-block;background:#FDECEA;color:#B91C1C;font-weight:800;font-size:12px;border-radius:999px;padding:4px 10px;margin-bottom:10px}p{color:#555;font-size:14px;line-height:1.45}button{display:block;width:100%;text-align:left;border:1.5px solid #0F3F27;background:#fff;color:#0F3F27;border-radius:8px;padding:13px 14px;font:700 15px inherit;font-family:inherit;margin:8px 0;cursor:pointer}button.p{background:#0F3F27;color:#fff}button.s{border-color:#bbb;color:#666;font-weight:600;font-size:13px;margin-top:18px}small{opacity:.75;font-weight:500}</style></head><body><div class="bx"><span class="cr">BÚSQUEDA CERRADA</span><h1>' + esc(nombre) + '</h1><p>Esta búsqueda ya está cerrada. Para no confundirnos, elegí con cuál querés trabajar:</p>' + botones + '<button class="s" onclick="ir(\'' + base + encodeURIComponent(perfil) + '&ver=1\')">Ver igual esta búsqueda cerrada (solo para consultar)</button></div><script>function ir(u){try{window.top.location.href=u;}catch(e){location.href=u;}}<\/script></body></html>';
+  return HtmlService.createHtmlOutput(html).setTitle('Búsqueda cerrada | Blumia').addMetaTag('viewport', 'width=device-width, initial-scale=1').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 function crearPestanaPlantillas(){
   const ss = SpreadsheetApp.openById(SHEET_MASTER_ID);
