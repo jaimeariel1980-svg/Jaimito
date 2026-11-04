@@ -133,6 +133,12 @@ jobs:
         working-directory: ${{ matrix.dir }}
         run: |
           clasp push -f
-          git push -q -f origin "HEAD:refs/heads/publicado-${{ matrix.id }}"   # marca lo último publicado para el chequeo de la próxima vez
+          # marca lo último publicado para el chequeo de la próxima vez (con reintentos: GitHub a veces rechaza el push con un error pasajero)
+          MARCA=0
+          for i in 1 2 3 4 5; do
+            if git push -q -f origin "HEAD:refs/heads/publicado-${{ matrix.id }}"; then MARCA=1; break; fi
+            echo "No se pudo marcar lo publicado (intento $i de 5); reintento..."; sleep $((i * 6))
+          done
           DEP="${{ vars[matrix.depvar] || matrix.depid }}"
           if [ -n "$DEP" ]; then clasp deploy -i "$DEP" -d "GitHub ${{ github.sha }}"; else echo "sin deployment (proyecto con menú)"; fi
+          if [ "$MARCA" != 1 ]; then echo "::error::El deploy se hizo, pero GitHub no dejó marcar lo publicado (rama publicado-${{ matrix.id }}). Avisar para marcarla a mano."; exit 1; fi
