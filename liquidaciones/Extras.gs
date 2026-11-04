@@ -1,10 +1,32 @@
-var _fich = {}, _ssFich = null, _diasMes = 31, _mes = 1, _anio = 2026;
+var _cfgF = null, _fich = {}, _ssFich = null, _diasMes = 31, _mes = 1, _anio = 2026, _adj = {};
+
+function hojaFich_(n, cfg) {
+  if (n >= 1 && n <= _diasMes) {
+    if (!_ssFich) _ssFich = SpreadsheetApp.openById(cfg.idFichadas);
+    return _ssFich.getSheetByName(String(n));
+  }
+  if (n !== 0 && n !== _diasMes + 1) return null;
+  var k = n ? 'sig' : 'ant';
+  if (!(k in _adj)) {
+    var mes = _mes + (n ? 1 : -1), anio = _anio;
+    if (mes < 1) { mes = 12; anio--; } else if (mes > 12) { mes = 1; anio++; }
+    try { var f = buscarFichadas_(mes, anio); _adj[k] = SpreadsheetApp.openById(f.getId()); _adj[k + 'Nom'] = f.getName(); } catch (e) { _adj[k] = null; }
+  }
+  return _adj[k] && _adj[k].getSheetByName(String(n ? 1 : new Date(_anio, _mes - 1, 0).getDate()));
+}
+
+function notaMeses_() {
+  var m = [];
+  if (_adj.ant === null) m.push('No encontré la tarjeta reloj del mes anterior: las jornadas que empezaron el último día de ese mes y terminan el 1 pueden salir mal.');
+  if (_adj.sig === null) m.push('No encontré la tarjeta reloj del mes siguiente: las jornadas del último día que terminan el 1 del mes que viene salen como omisión.');
+  return m.length ? '\n⚠ ' + m.join('\n⚠ ') : '';
+}
 
 function fichDia_(n, cfg) {
-  if (n < 1 || n > _diasMes) return {};
   if (_fich[n]) return _fich[n];
-  if (!_ssFich) _ssFich = SpreadsheetApp.openById(cfg.idFichadas);
-  var out = {}, hoja = _ssFich.getSheetByName(String(n));
+  if (n < 0 || n > _diasMes + 1) return {};
+  var out = {}, hoja = null;
+  try { hoja = hojaFich_(n, cfg || _cfgF); } catch (e) { }
   if (hoja) {
     var d = hoja.getDataRange().getDisplayValues();
     for (var r = 1; r < d.length; r++) {
@@ -66,6 +88,10 @@ function licVigente_(txt, d) {
 }
 
 function turnoDia_(a, d) {
+  if (d < 1 || d > _diasMes) {
+    var x = fichDia_(d)[a.leg], m = x && String(x.horario).match(/(\d{1,2}):(\d{2})\s*a\s*(\d{1,2}):(\d{2})/);
+    return m ? parseTurno(m[1] + ':' + m[2] + '/' + m[3] + ':' + m[4]) : null;
+  }
   if (a.lic[d] && licVigente_(a.lic[d], d)) return null;
   var c = a.cam[d], t = c ? parseTurno(c) : null;
   if (c && !t) return null;
@@ -148,20 +174,27 @@ function tramosPares_(M, ini, fin) {
   return out;
 }
 
-function presencia_(a, d, w, cfg) {
-  var bIni = w.ini, bFin = w.fin, contiguo = false;
-  bloquesTurno_(a, d).forEach(function (t) {
+var TOLERANCIA = 15;
+
+function presencia_(a, d, w, cfg, turnos) {
+  var bIni = w.ini, bFin = w.fin, contiguo = false, B = turnos || bloquesTurno_(a, d);
+  B.forEach(function (t) {
     if (Math.abs(t.fin - w.ini) <= 30) { bIni = Math.min(bIni, t.ini); contiguo = true; }
     if (Math.abs(t.ini - w.fin) <= 30) { bFin = Math.max(bFin, t.fin); contiguo = true; }
   });
   var eDesde = contiguo ? bIni - 240 : w.ini - 180, eHasta = contiguo ? bIni + 180 : w.ini + 180, fin = contiguo ? bFin : w.fin, prox = Infinity;
-  bloquesTurno_(a, d).forEach(function (t) { if (t.ini >= fin + 30) prox = Math.min(prox, t.ini); });
+  B.forEach(function (t) { if (t.ini >= fin + 30) prox = Math.min(prox, t.ini); });
   var M = marcasAbs_(a.leg, d, eDesde, Math.min(fin + 480, prox - 240), cfg);
   if (!M.length || M[0].m > eHasta) return { estado: 'sin' };
   var res = { ent: M[0].t, sal: M.length > 1 ? M[M.length - 1].t : '', n: M.length };
   if (M.length === 1) { res.estado = 'omision'; return res; }
   res.estado = 'ok'; res.intermedias = M.length - 2;
   res.tramos = tramosPares_([M[0], M[M.length - 1]], w.ini, w.fin);
+  if (res.tramos.length) {
+    var t0 = res.tramos[0], t1 = res.tramos[res.tramos.length - 1];
+    if (t0[0] > w.ini && t0[0] - w.ini <= TOLERANCIA) { t0[0] = w.ini; res.tolerancia = 1; }
+    if (t1[1] < w.fin && w.fin - t1[1] <= TOLERANCIA) { t1[1] = w.fin; res.tolerancia = 1; }
+  }
   return res;
 }
 
@@ -203,19 +236,29 @@ function procesarAgente_(a, serv, cfg, ctx, filas) {
       var bloques = bloquesTurno_(a, d).concat(parseFranjas(a.ext[d - 1]).map(function (w) { return { ini: w.ini - 1440, fin: w.fin - 1440 }; }));
       var hoy = marcasDia_(a.leg, d, cfg), hE = hoy.length ? hoy[0].t : '', hS = hoy.length > 1 ? hoy[hoy.length - 1].t : '';
       fr.forEach(function (w0) {
-        var txt = minToHora(w0.ini) + ' a ' + minToHora(w0.fin), piezas = restar_(w0, bloques);
+        var txt = minToHora(w0.ini) + ' a ' + minToHora(w0.fin), piezas = restar_(w0, bloques), real = null, nd = '';
+        if (!piezas.length) {
+          var tp = turnoCompleto_(a, d), jr = tp && jornadaFichada_(a, d, cfg);
+          if (jr && jr.estado === 'ok' && (jr.m0 < tp.ini - 60 || jr.m0 > tp.ini + 60)) {
+            var ti = Math.round(jr.m0 / 60) * 60;
+            real = bloquesTurno_(a, d).filter(function (b) { return b.ini !== tp.ini; }).concat([{ ini: ti, fin: ti + tp.fin - tp.ini }]);
+            piezas = restar_(w0, real.concat(parseFranjas(a.ext[d - 1]).map(function (w) { return { ini: w.ini - 1440, fin: w.fin - 1440 }; })));
+            nd = 'HORARIO DISTINTO AL PROGRAMADO: fichó ' + jr.ent + ' a ' + jr.sal + ' y la planilla dice ' + turnoTxt + '; se tomó turno ' + minToHora(ti) + ' a ' + minToHora(ti + tp.fin - tp.ini) + ' (cargar el cambio)';
+          }
+        }
         if (!piezas.length) {
           filas.push(base.concat([hE, hS, txt, '', 0, 0, 'A REVISAR', 'la franja declarada cae dentro del turno o de otra extra (no es extra)']));
           return;
         }
         piezas.forEach(function (w) {
-          var cond = fer ? 'feriado' : '', pr = presencia_(a, d, w, cfg);
-          if (w.ini !== w0.ini || w.fin !== w0.fin) cond += (cond ? ' + ' : '') + 'se descontó lo que cae dentro del turno';
+          var cond = [nd, fer ? 'feriado' : ''].filter(Boolean).join(' + '), pr = presencia_(a, d, w, cfg, real);
+          if (!nd && (w.ini !== w0.ini || w.fin !== w0.fin)) cond += (cond ? ' + ' : '') + 'se descontó lo que cae dentro del turno';
           if (pr.estado === 'sin') { filas.push(base.concat([hE, hS, txt, '', 0, 0, 'A REVISAR', 'no fichó la extra (no se paga)' + (cond ? ' · ' + cond : '')])); return; }
           if (pr.estado === 'omision') { filas.push(base.concat([pr.ent, '', txt, '', 0, 0, 'A REVISAR', 'omisión: una sola fichada, no corresponde extra'])); return; }
           if (!pr.tramos.length) { filas.push(base.concat([pr.ent, pr.sal, txt, '', 0, 0, 'A REVISAR', 'las fichadas no cubren la franja (no se paga)'])); return; }
           var r = calcularExtraTramos(pr.tramos, cd), fz = textoTramos_(pr.tramos);
           if (pr.intermedias > 0) cond += (cond ? ' + ' : '') + pr.intermedias + ' fichada(s) intermedia(s), no cuentan: jornada completa';
+          if (pr.tolerancia) cond += (cond ? ' + ' : '') + 'diferencia de minutos (hasta ' + TOLERANCIA + "') tolerada: se paga la franja";
           if (r.total < w.fin - w.ini) cond += (cond ? ' + ' : '') + 'realizó menos que lo autorizado';
           if (r.h50 + r.h100 <= 0) { filas.push(base.concat([pr.ent, pr.sal, txt, fz, 0, 0, 'A REVISAR', 'menos de 1 h (no se paga)'])); return; }
           filas.push(base.concat([pr.ent, pr.sal, txt, fz, r.h50, r.h100, 'AUTORIZADA', cond]));
@@ -262,7 +305,7 @@ function esSadofe_(a, ctx) {
 }
 
 function cargarHorarios_(cfg, todos) {
-  _fich = {}; _ssFich = null; _diasMes = new Date(cfg.anio, cfg.mes, 0).getDate();
+  _fich = {}; _ssFich = null; _adj = {}; _cfgF = cfg; _diasMes = new Date(cfg.anio, cfg.mes, 0).getDate();
   var excl = (todos ? ['LISTAS'] : cfg.excluidas).concat(['LIQUIDACION', 'NOCTURNIDAD', 'CONFIG']);
   var hojas = [], fdo = {};
   SpreadsheetApp.openById(cfg.idHorarios).getSheets().forEach(function (h) {
@@ -314,7 +357,7 @@ function liquidarExtras() {
   escribirResumen_(filas, mens, grh, cfg);
   var cambios = registrarCambios_(hojas, cfg);
   var aut = filas.filter(function (r) { return r[11] === 'AUTORIZADA'; }).length;
-  avisar_('LIQUIDACION lista: ' + out.length + ' filas (' + aut + ' autorizadas) · ' + Object.keys(mens).length + ' agentes' + (cfg.fichadasAuto ? '\nFichadas: ' + cfg.fichadasAuto : '') + (grh ? '\nExpediente: ' + Object.keys(grh).length + ' agentes de Enfermería con horas autorizadas' : '\nSin expediente (consolidado) en CONFIG: no se controla lo autorizado.') + (cambios ? '\n' + cambios : ''));
+  avisar_('LIQUIDACION lista: ' + out.length + ' filas (' + aut + ' autorizadas) · ' + Object.keys(mens).length + ' agentes' + (cfg.fichadasAuto ? '\nFichadas: ' + cfg.fichadasAuto : '') + (grh ? '\nExpediente: ' + Object.keys(grh).length + ' agentes de Enfermería con horas autorizadas' : '\nSin expediente (consolidado) en CONFIG: no se controla lo autorizado.') + (cambios ? '\n' + cambios : '') + notaMeses_());
 }
 
 function escribir_(ss, nombre, cab, filas, textoDesde, textoHasta) {

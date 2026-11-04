@@ -67,8 +67,10 @@ assert.deepStrictEqual([r.est,r.h50,r.fr,r.ent,r.sal],['AUTORIZADA',5,'07:00 a 1
 // 11) 3 fichadas (una en el medio) => se paga igual
 r=R(sim(F({5:['6:00','13:00','17:10']}),ag({hab:{5:'6/13'},ext:{5:'13/17'}}))[0]);
 assert.deepStrictEqual([r.est,r.h50],['AUTORIZADA',4]);
-// 12) SARBA: extra dentro del propio turno => no es extra
-r=R(sim(F({1:['11:57','22:12']}),ag({hab:{1:'17/24'},ext:{1:'19/22'}}))[0]);assert.ok(/dentro del turno/.test(r.cond));
+// 12) SARBA: planilla 17/24 pero fichó 11:57-22:12 sin cambio cargado => turno real 12-19, extra 19-22 se paga y se marca
+r=R(sim(F({1:['11:57','22:12']}),ag({hab:{1:'17/24'},ext:{1:'19/22'}}))[0]);assert.deepStrictEqual([r.est,r.h50,r.h100],['AUTORIZADA',3,0]);assert.ok(/HORARIO DISTINTO/.test(r.cond));
+// franja dentro del turno y fichadas acordes al turno => no es extra
+r=R(sim(F({1:['16:57','0:02']}),ag({hab:{1:'17/24'},ext:{1:'19/22'}}))[0]);assert.ok(/dentro del turno/.test(r.cond));
 // 13) PAY/NIETO: 0/6 que es la cola de un 23/6 del día anterior => no es extra; si el día anterior era franco, se paga una vez
 r=R(sim(F({9:['23:53'],10:['6:05']}),ag({hab:{9:'23/6'},ext:{10:'0/6'}}))[0]);assert.ok(/dentro del turno/.test(r.cond));
 r=R(sim(F({9:['23:53'],10:['6:05']}),ag({hab:{9:'F'},ext:{10:'0/6'}}))[0]);assert.deepStrictEqual([r.est,r.h100,r.ent,r.sal],['AUTORIZADA',6,'23:53(-1)','6:05']);
@@ -84,13 +86,34 @@ r=R(rows[1]);assert.deepStrictEqual([r.est,r.h50,r.h100,r.ent,r.sal],['AUTORIZAD
 r=R(sim(F({8:['18:48:58'],9:['6:02:30']}),ag({hab:{8:'23/6'},ext:{8:'19/23'},lic:{8:'LAO al 30/10/2026'}}))[0]);assert.deepStrictEqual([r.est,r.h50,r.h100],['AUTORIZADA',3,1]);
 // extra en franco 19/23, al otro día entra 5:50 a su 6/13: no se mezcla esa entrada
 r=R(sim(F({5:['18:55','23:05'],6:['5:50','13:02']}),ag({hab:{5:'F',6:'6/13'},ext:{5:'19/23'}}))[0]);assert.deepStrictEqual([r.est,r.h50,r.h100],['AUTORIZADA',3,1]);
+// 27) BEANATO: entró 19:03 a su extra 19/23 + turno 23/6 => tolerancia de minutos, se paga la franja entera (3 al 50 + 1 al 100)
+r=R(sim(F({7:['19:03:13'],8:['6:00:32']}),ag({hab:{7:'23/6',8:'23/6'},ext:{7:'19/23'}}))[0]);assert.deepStrictEqual([r.est,r.h50,r.h100],['AUTORIZADA',3,1]);assert.ok(/tolerada/.test(r.cond));
+// 19:20 ya no se tolera
+r=R(sim(F({7:['19:20'],8:['6:00']}),ag({hab:{7:'23/6'},ext:{7:'19/23'}}))[0]);assert.deepStrictEqual([r.h50,r.h100],[2.5,1]);
+// 28) GALARZA / MOYA: franja con punto 13.30/17 y 13.30/17.30
+r=R(sim(F({16:['13:18'],17:['0:03']}),ag({hab:{16:'17/24'},ext:{16:'13.30/17'}}))[0]);assert.deepStrictEqual([r.est,r.h50],['AUTORIZADA',3.5]);
+r=R(sim(F({21:['13:28:22','17:43:04']}),ag({hab:{21:'F'},ext:{21:'13.30/17.30'}}))[0]);assert.deepStrictEqual([r.est,r.h50],['AUTORIZADA',4]);
+// 29) cambio escrito «C/H 12 p.m. a 7 p.m.»
+assert.deepStrictEqual(run("parseTurno('C/H 12 p.m. a 7 p.m.')"),{ini:720,fin:1140});assert.deepStrictEqual(run("parseTurno('C/H 6 a.m. a 1 p.m.')"),{ini:360,fin:780});
+// 30) SADOFE nocturno (18/06 sáb y dom): la salida 6:08 del lunes es del turno del domingo => no es «una sola fichada»
+const sad={hab:{3:'18/06',4:'18/06',10:'18/06',11:'18/06',17:'18/06',18:'18/06',24:'18/06',25:'18/06'}};
+assert.strictEqual(sim(F({4:['17:55'],5:['6:08:17']}),ag(sad)).length,0);
+// SADOFE con extra 0/6 declarada el martes: entra 23:57 del lunes => no es extra del lunes (se paga una vez, el martes)
+let sx=sim(F({5:['23:57:13'],6:['6:00:08']}),ag(Object.assign({},sad,{ext:{6:'0/6'}})));assert.deepStrictEqual(sx.map(x=>[x[3],x[11]]),[[6,'AUTORIZADA']]);
+// GARDEANO: planilla franco, fichó 0:02 (salida de antes) · 16:58 · 0:06(+1) => jornada 16:58 a 0:06, no 24 h
+sx=sim(F({6:['0:02:52','16:58:35'],7:['0:06:40']}),ag(sad));assert.deepStrictEqual([sx[0][3],sx[0][5],sx[0][6]],[6,'16:58:35','0:06:40(+1)']);
+// YACUZZI: extra 0/6 del sábado, entró 23:16 del viernes => no es omisión del viernes
+assert.strictEqual(sim(F({30:['23:16:26'],31:['6:00:36']}),ag({hab:{31:'18/06',3:'18/06',4:'18/06',10:'18/06'},ext:{31:'0/6'}})).filter(x=>x[3]===30).length,0);
+// SADOFE que de verdad trabaja un martes sin franja => extra a revisar
+sx=sim(F({6:['6:58','14:02']}),ag(sad));assert.ok(/SADOFE trabajó un día de semana/.test(sx[0][12]));
 // 16) identidad
 const f2=F({5:['6:58','19:10']});f2[5]['1'].nombre='ALONSO Cecilia';
 assert.strictEqual(R(sim(f2,ag({hab:{5:'7/14'},ext:{5:'14/19'}}))[0]).est,'REVISAR IDENTIDAD');
 // 18) orden y colores: autorizada primero (blanco), luego cada tipo
 assert.strictEqual(run("tipoFila_(['','','','','','','','','',1,0,'AUTORIZADA',''])"),0);
-assert.strictEqual(run("tipoFila_(['','','','','','','','','',0,0,'A REVISAR','omisión: una sola fichada'])"),2);
-assert.strictEqual(run("tipoFila_(['','','','','','','','','',4,0,'A REVISAR','extra NO autorizada (no hay franja declarada)'])"),1);
+assert.strictEqual(run("tipoFila_(['','','','','','','','','',0,0,'A REVISAR','omisión: una sola fichada'])"),3);
+assert.strictEqual(run("tipoFila_(['','','','','','','','','',4,0,'A REVISAR','extra NO autorizada (no hay franja declarada)'])"),2);
+assert.strictEqual(run("tipoFila_(['','','','','','','','','',3,0,'AUTORIZADA','HORARIO DISTINTO AL PROGRAMADO'])"),1);
 // 19) horario de la tarjeta vs turno de la planilla
 const fh=F({1:['11:57:56','22:12:41']});fh[1]['1'].horario='12:00 a 19:00';
 r=sim(fh,ag({hab:{1:'17/24'},ext:{1:'19/22'}}))[0];assert.strictEqual(r[14],'12:00 a 19:00 ≠ planilla 17/24');
@@ -140,6 +163,11 @@ n=noc(F({5:['17:00:12'],6:['0:00:40']}),ag({hab:{5:'23/6'}}));assert.strictEqual
 n=noc(F({5:['17:00'],6:['0:00']}),ag({hab:{5:'23/6'},cam:{5:'17/24'}}));assert.strictEqual(n.f[0][9],3);assert.ok(!/DISTINTO/.test(n.f[0][10]));
 // extra declarada antes del turno: no es horario distinto
 n=noc(F({5:['18:59'],6:['6:04']}),ag({hab:{5:'23/6'},ext:{5:'19/23'}}));assert.ok(!/DISTINTO/.test(n.f[0][10]));
+// 31) fin de mes: entra el 31 a las 22:55 y sale el 1 del mes siguiente (otra tarjeta)
+let fm=F({31:['22:55']});fm[32]={'1':{marcas:[363],txt:['6:03:00'],nombre:'PEREZ',horario:''}};
+n=noc(fm,ag({hab:{31:'23/6'}}));assert.strictEqual(n.f[0][9],7);
+// 32) SARBA nocturnidad: 17/24 pero fichó 12:03-22:04 con extra 19/22 => 0 h nocturnas (21-22 es extra)
+n=noc(F({5:['12:03:15','22:04:47']}),ag({hab:{5:'17/24'},ext:{5:'19/22'}}));assert.strictEqual(n.f[0][9],0);
 // 24) FERIADOS (12/10 feriado)
 const fer=(fich,a)=>{for(let i=1;i<=31;i++)fich[i]=fich[i]||{};ctx._f=fich;ctx._a=a;return run(`(function(){_fich=_f;_diasMes=31;_mes=10;_anio=2026;var c={anio:2026,mes:10,feriados:{"10-12":1},noLab:{}},f=[],g={};feriadoAgente_(_a,"GUARDIA",{},c,f,g);return {f:f,g:g};})()`)};
 // 6/13 el feriado, fichó 5:55-13:05 => 7 h (dentro del turno)

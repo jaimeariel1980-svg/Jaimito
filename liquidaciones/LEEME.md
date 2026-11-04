@@ -12,6 +12,10 @@ Reglas completas: `docs/CONTEXTO.md`, `docs/TRASPASO.md`. Motor viejo de agosto 
 - Extra declarada (fila Extra) = techo. Se paga el solapamiento con lo fichado, hachazo (piso 1 h, bloques de 30 min) y recargos (L-V 50%, 22–06 100%, sáb desde 13 h 100%, dom y feriado 100%).
 - Fichadas: se muestran tal cual la tarjeta reloj (con segundos); columna "Fichadas del día" con todas las marcas. Jornada = de la primera a la última fichada (las intermedias no cuentan: nunca se trabaja cortado). Una sola fichada = omisión, nunca hay extra.
 - Extra declarada que cae dentro del turno (o en la cola de una noche del día anterior) se descuenta.
+- Tolerancia de minutos: si la entrada o la salida difiere hasta 15' de la franja autorizada, se paga la franja entera (ej. 19:03 a una extra 19/23 = 4 h).
+- Horario distinto al programado: si la franja cae dentro del turno de la planilla pero lo fichado está corrido más de 1 h (sin Cambio cargado), se toma el turno real desde la entrada fichada con la misma duración y se paga la franja. Fila en naranja claro «HORARIO DISTINTO…»: cargar el cambio en la planilla.
+- Franjas y cambios se leen con «:» o «.» (13.30/17) y en formato «C/H 12 p.m. a 7 p.m.».
+- Fin y principio de mes: el sistema busca solo la tarjeta reloj del mes anterior y del siguiente (mismo nombre, otro mes) para la salida del último día y la entrada del día 1. Si no la encuentra, avisa al terminar.
 - Feriado = día con `FDO` en la planilla o en CONFIG `feriados_extra`.
 - Fichó de más sin extra declarada → fila `A REVISAR` (no se paga). Declarada sin fichada → `A REVISAR`. Apellido que no coincide con la fichada → `REVISAR IDENTIDAD`.
 - Consolidado mensual GRH: reconversión, endoso y tope (CONFIG `tope_extra`, 30).
@@ -41,6 +45,7 @@ Cada corrida guarda una foto de las extras cargadas (pestaña oculta `_FOTO_EXTR
 - En horas extra, la jornada completa fichada se paga como extra: 50% hasta las 13 y 100% después (y de noche).
 
 ## SADOFE en día de semana
+- La salida del turno nocturno del fin de semana (ej. 6:08 del lunes) y la entrada a una extra del día siguiente (ej. 23:57 para un 0/6) no cuentan como jornada del día hábil.
 - Si un SADOFE ficha un día hábil sin turno: lo fichado es extra. Con franja declarada → AUTORIZADA; sin franja → A REVISAR (extra NO autorizada).
 
 ## Pendiente
