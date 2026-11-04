@@ -101,7 +101,7 @@ header{min-height:86px}
     (c.previos||[]).slice(0,1).forEach(function(p){fl+='<span class="tag '+(/^Descartad/i.test(p.estado)?'rj':'am')+'" title="Ya se postuló antes">↩ Ya se postuló · '+esc(p.busq)+': '+esc(p.estado)+'</span>';});
     if(m.t==='act'&&dias(c)>=DIAS_ALERTA&&!/agendad/i.test(c.estado))fl+='<span class="tag rj">🕒 '+dias(c)+' d sin movimiento</span>';
     if(/recomend|referid/i.test(c.fuente||''))fl+='<span class="tag zok" title="'+esc(c.fuente)+'">⭐ Recomendado</span>';
-    if(c.nota==='C'&&en[1]==='CV'&&c.cvPorque)fl+='<span class="tag rj" title="'+esc(c.cvPorque)+'">🤖 IA descarta el CV: '+esc(String(c.cvPorque).replace(/^\s*C\s*[:\-–]\s*/i,'').slice(0,60))+(String(c.cvPorque).length>66?'…':'')+'</span>';
+    if(c.nota==='C'&&en[1]==='CV'&&c.cvPorque)fl+='<span class="tag rj" title="'+esc(c.cvPorque)+'">🤖 IA descarta el CV</span>';
     fl+=tagsTarjeta(c);
     if(c.ordenCli>0)fl+='<span class="tag zok" title="Orden en el PDF para el cliente">N.º '+c.ordenCli+' en el ranking</span>';
     var rk='';
