@@ -376,14 +376,25 @@ function _editUrl(){
   try{ var q=new URLSearchParams(location.search).get('edit'); if(q) return q; }catch(e){}
   return window.__EDIT||'';
 }
+function _verUrl(){
+  try{ if(new URLSearchParams(location.search).get('ver')) return '1'; }catch(e){}
+  return window.__VER||'';
+}
+function _camposRaw(){
+  var o={}; document.querySelectorAll('#campos input[data-campo]').forEach(function(i){ o[i.getAttribute('data-campo')]=i.value; }); return o;
+}
 function intentarEditar(){
   var id=_editUrl(); if(!id || window.__EDITANDO) return; window.__EDITANDO=1;
   google.script.run.withSuccessHandler(function(r){
     try{
       var d=JSON.parse(r.borrador); if(!DOCS[d.docSel]) throw new Error('tipo de documento desconocido');
       elegir(d.docSel); esCompartida=!!d.esCompartida; var sp=document.getElementById('propSel'); if(d.propKey && PROPIEDADES[d.propKey]) sp.value=d.propKey;
+      document.getElementById('compartida').checked=esCompartida;
+      if(d.campos){ try{ completar(); document.querySelectorAll('#campos input[data-campo]').forEach(function(i){ var k=i.getAttribute('data-campo'); if(d.campos[k]!=null) i.value=d.campos[k]; }); }catch(e){} }
       window.__DOCID=r.id; document.getElementById('editor').innerHTML=_limpiarHtml(d.html||''); document.getElementById('edAI').innerHTML='';
-      paso(3); mostrarAviso('Editando «'+r.nombre+'» (versión '+r.version+'). Al generar el PDF se guarda como una versión nueva.', null);
+      paso(3);
+      if(_verUrl()){ window.__SOLOVER=1; generarPDF(); mostrarAviso('Documento «'+r.nombre+'» (versión '+r.version+'). Si no se abrió solo, usá el link «Abrilo desde acá».', null); return; }
+      mostrarAviso('Editando «'+r.nombre+'» (versión '+r.version+'). Al generar el PDF se guarda como una versión nueva.', null);
     }catch(e){ alert('No pude abrir el borrador: '+e.message); }
   }).withFailureHandler(function(e){ alert('No pude abrir el documento: '+(e&&e.message?e.message:e)); }).borradorDocGenerado(id);
 }
@@ -394,7 +405,7 @@ function _propUrl(){
 function cargarPropiedades(){
   var sel=document.getElementById('propSel');
   sel.innerHTML='<option value="">Cargando propiedades...</option>';
-  try{ if(window.google && google.script && google.script.url && google.script.url.getLocation) google.script.url.getLocation(function(l){ if(l && l.parameter && l.parameter.edit){ window.__EDIT=l.parameter.edit; if(window.__PROPLISTAS) intentarEditar(); } if(!_propUrl() && l && l.parameter && l.parameter.prop){ window.__PROP=l.parameter.prop; var sl=document.getElementById('propSel'); if(PROPIEDADES[__PROP]) sl.value=__PROP; } }); }catch(e){}
+  try{ if(window.google && google.script && google.script.url && google.script.url.getLocation) google.script.url.getLocation(function(l){ if(l && l.parameter && l.parameter.edit){ window.__EDIT=l.parameter.edit; if(l.parameter.ver) window.__VER='1'; if(window.__PROPLISTAS) intentarEditar(); } if(!_propUrl() && l && l.parameter && l.parameter.prop){ window.__PROP=l.parameter.prop; var sl=document.getElementById('propSel'); if(PROPIEDADES[__PROP]) sl.value=__PROP; } }); }catch(e){}
   function viejo(){
     google.script.run
       .withSuccessHandler(_ponerProps)
@@ -988,9 +999,10 @@ function generarPDF(){
 
   var nombreArch = DOCS[docSel].nombre.replace(/[^A-Za-z]/g,'-')+'-Azcuenaga-'+Date.now()+'.pdf';
   descargarPDF(doc, nombreArch);
+  if(window.__SOLOVER) return;
   var b64 = doc.output('datauristring').split(',')[1], propK = document.getElementById('propSel').value, quien = ''; try{ quien = (localStorage.getItem('azcu_nombre')||'').trim(); }catch(e){}
   if(propK){
-    var borr = JSON.stringify({docSel:docSel, propKey:propK, esCompartida:esCompartida, html:document.getElementById('editor').innerHTML});
+    var borr = JSON.stringify({docSel:docSel, propKey:propK, esCompartida:esCompartida, campos:_camposRaw(), html:document.getElementById('editor').innerHTML});
     google.script.run
       .withSuccessHandler(function(r){ if(r && r.ok){ window.__DOCID=r.id; mostrarAviso('✓ Guardado en la ficha de la propiedad (versión '+r.version+'). Podés volver a editarlo desde ahí.', r.url); } })
       .withFailureHandler(function(err){ mostrarAviso('⚠ Se descargó, pero no se pudo guardar en la ficha: '+err.message, null); })

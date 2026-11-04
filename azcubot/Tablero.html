@@ -1008,16 +1008,16 @@ function cargarDocsGen(id){
   var pinta=function(l){
     var h='<h3 class="sec">Documentos generados</h3>';
     if(!l.length) h+='<div style="font-size:12.5px;color:var(--gris);margin-bottom:8px">Todavía no se generó ninguno desde esta propiedad.</div>';
-    else h+=l.map(function(d){return '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;border:1px solid var(--linea);border-radius:12px;padding:9px 12px;margin-bottom:8px"><div style="flex:1;min-width:180px"><div style="font-weight:700;font-size:13.5px">'+esc(d.nombre)+(d.version>1?' <span style="font-weight:500;color:var(--gris)">· versión '+d.version+'</span>':'')+'</div><div style="font-size:11.5px;color:var(--gris)">'+esc(d.fecha)+(d.quien?' · '+esc(d.quien):'')+'</div></div><button class="btn p" style="padding:5px 12px;font-size:12px" onclick="editDoc(\''+esc(d.id)+'\')">Editar</button><a class="btn s" style="padding:5px 12px;font-size:12px;text-decoration:none" href="'+esc(d.pdf)+'" target="_blank" rel="noopener">Ver PDF</a></div>';}).join('');
+    else h+=l.map(function(d){return '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;border:1px solid var(--linea);border-radius:12px;padding:9px 12px;margin-bottom:8px"><div style="flex:1;min-width:180px"><div style="font-weight:700;font-size:13.5px">'+esc(d.nombre)+(d.version>1?' <span style="font-weight:500;color:var(--gris)">· versión '+d.version+'</span>':'')+'</div><div style="font-size:11.5px;color:var(--gris)">'+esc(d.fecha)+(d.quien?' · '+esc(d.quien):'')+'</div></div><button class="btn p" style="padding:5px 12px;font-size:12px" onclick="editDoc(\''+esc(d.id)+'\')">Editar</button><button class="btn s" style="padding:5px 12px;font-size:12px" onclick="editDoc(\''+esc(d.id)+'\',1)">Ver PDF</button></div>';}).join('');
     h+='<button class="btn s" style="margin-bottom:6px" onclick="genDoc(\''+id+'\')">+ Generar documento</button>';
     c.innerHTML=h;
   };
   pinta([]);
   google.script.run.withSuccessHandler(function(l){ if(document.getElementById('docsGen')===c) pinta(Array.isArray(l)?l:[]); }).withFailureHandler(function(){}).docsGeneradosDe(id);
 }
-function editDoc(docId){
+function editDoc(docId,ver){
   google.script.run.withSuccessHandler(function(url){
-    window.open(url+'?app=documentos&edit='+encodeURIComponent(docId),'_blank');
+    window.open(url+'?app=documentos&edit='+encodeURIComponent(docId)+(ver?'&ver=1':''),'_blank');
   }).getAppUrl();
 }
 function genDoc(id){
