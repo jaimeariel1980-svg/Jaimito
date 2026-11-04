@@ -45,7 +45,7 @@ function getConfigBusqueda_(pin, perfilId) {
   const datos = {};
   CFG_CAMPOS_.forEach(k => { datos[k] = typeof cfg[k] === 'string' ? cfg[k] : (cfg[k] == null ? '' : String(cfg[k])); });
   const usuarios = leerUsuarios_().filter(u => u.activo === 'SI').map(u => ({ nombre: u.nombre, clave: u.clave, scr: usuHace_(u, 'screening'), comp: usuHace_(u, 'competencias') }));
-  return { usuariosEnt: usuarios, logo: { claro: logoCliente_(cfg), color: logoClienteColor_(cfg), propio: !!String(cfg.logo_cliente || '').trim(), ciega: busquedaCiega_(cfg), empresa: empresaKey_(cfg) }, perfil: { propio: !!cfg.perfil_html, fecha: null }, extra: configExtraLeer_(ss, cfg, perfilId), datos: datos, prompt_extra: String(cfg.prompt_extra || ''), preguntas: getPreguntasPostulacion(perfilId), habituales: leerHabituales_(), plantillas: listarPlantillas_(ss, perfilId) };
+  return { usuariosEnt: usuarios, logo: { claro: logoCliente_(cfg), color: logoClienteColor_(cfg), propio: !!String(cfg.logo_cliente || '').trim(), ciega: busquedaCiega_(cfg), empresa: empresaKey_(cfg) }, perfil: { propio: !!cfg.perfil_html, fecha: null }, extra: configExtraLeer_(ss, cfg, perfilId), datos: datos, prompt_extra: String(cfg.prompt_extra || ''), preguntas: getPreguntasPostulacion(perfilId), habituales: leerHabituales_(), plantillas: listarPlantillas_(ss, perfilId), instrIA: instrIALeer_(perfilId) };
 }
 
 // Lo lento (carpeta de Drive, planilla de candidatos y versiones del perfil del puesto) se pide aparte, después de abrir el panel
