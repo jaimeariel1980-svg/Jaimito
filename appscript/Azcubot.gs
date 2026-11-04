@@ -2178,6 +2178,13 @@ function azcuMedir(){
   Logger.log('\n===== MEDICIÓN DE VELOCIDAD =====\n'+r.join('\n')+'\n=================================');
 }
 
+// un solo domicilio si todos viven en el mismo; si son distintos, uno por propietario («X y Y, respectivamente»; con nombres entre paréntesis si a alguno le falta)
+function azcuDomVend_(nom, dom){
+  var doms = dom.filter(String), uniq = doms.filter(function(x, i){ return doms.indexOf(x) === i; });
+  if(uniq.length < 2) return uniq[0] || '';
+  if(doms.length === nom.length) return doms.join(' y ')+', respectivamente';
+  return nom.map(function(n, i){ return dom[i] ? dom[i]+' ('+n+')' : ''; }).filter(String).join(' y ');
+}
 function obtenerPropiedadesDoc(){
   var mae = hojaMaestra_();
   if(mae.getLastRow()<2) return [];
@@ -2195,7 +2202,7 @@ function obtenerPropiedadesDoc(){
     out.push({
       id:id, etiqueta:(dir||'(sin dirección)')+' — '+id,
       direccion:dir+(extra ? ', '+extra : ''), propietario:nom.join(' y '), dni_propietario:dni.filter(String).join(' y '),
-      domicilio_propietario:dom.filter(String)[0]||'', dominio:g('Inscripción del dominio'), matricula:g('Inscripción del dominio'),
+      domicilio_propietario:azcuDomVend_(nom, dom), dominio:g('Inscripción del dominio'), matricula:g('Inscripción del dominio'),
       descripcion_inmueble:desc, precio:precio, ciudad:g('Ciudad'), mail:mail.filter(String)[0]||'', celular:tel.filter(String)[0]||''
     });
   }
