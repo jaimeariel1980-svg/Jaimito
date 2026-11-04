@@ -200,7 +200,10 @@ function motivoClaro_(rows, e) {
       if (/por el jefe/.test(c)) return c.replace(/^EXTRA NO INFORMADA · /, 'Extra no informada ') + ': se pagan ' + hs + ' h.';
       if (/HORARIO DISTINTO/.test(c)) return 'Trabajó en otro horario que el de la planilla (fichó ' + fichado + '). Se pagan ' + hs + ' h por lo fichado. Falta informar el cambio de turno.';
       if (/menos que lo autorizado/.test(c)) return 'Hizo menos horas que las autorizadas: la extra era ' + fz + ' y fichó ' + fichado + '. Se pagan ' + hs + ' h.';
-      if (/:30/.test(fz)) return 'La extra ' + fz + ' tiene media hora: son ' + hs + ' h (el reporte cuenta ' + (e.h50 + e.h100) + ').';
+      if (/:30/.test(fz)) {
+        var w0 = parseTurno(fz.replace(' a ', '/')), m0 = horaToMin(r[5]), antes = w0 && m0 !== null && m0 <= w0.ini - 10 && m0 > w0.ini - 180;
+        return 'La extra autorizada es ' + fz + ': son ' + hs + ' h' + (antes ? ' (entró antes, a las ' + r[5] + ', pero se paga solo lo autorizado)' : '') + '. El reporte cuenta ' + (e.h50 + e.h100) + ' h porque no toma bien la media hora.';
+      }
       return 'Se pagan ' + hs + ' h según las fichadas (' + fichado + ').';
     }
     if (/no cubren/.test(c)) return 'Las fichadas (' + fichado + ') no llegan al horario de la extra ' + fz + ': no se paga.' + fich;
