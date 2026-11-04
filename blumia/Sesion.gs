@@ -348,6 +348,7 @@ function registroApi_() {
     flyerImagen: { f: flyerImagen_ },
     flyerRevisar: { f: flyerRevisarIA_ },
     guardarFormularioPerfil: { f: guardarFormularioPerfil_, admin: true },
+    competenciasDelPerfil: { f: competenciasDelPerfil_, admin: true },
     guardarInformeEditado: { f: guardarInformeEditado_ },
     guardarMotivoDescarte: { f: guardarMotivoDescarte_ },
     guardarObservaciones: { f: guardarObservaciones_ },

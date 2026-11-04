@@ -2,7 +2,7 @@
 .ed-fab{position:fixed;right:18px;bottom:18px;z-index:9000;background:#1A6645;color:#fff;border:none;border-radius:24px;padding:11px 18px;font:700 13px/1 'PP Pangram Sans','Poppins',sans-serif;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.25)}
 .ed-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9100;display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 10px}
 .ed-bg.show{display:flex}
-.ed-box{background:#fff;border-radius:12px;max-width:860px;width:100%;padding:22px 24px;font-family:'PP Pangram Sans','Poppins',sans-serif;color:#222}
+.ed-box{background:#fff;border-radius:12px;max-width:1000px;width:100%;padding:22px 24px;font-family:'PP Pangram Sans','Poppins',sans-serif;color:#222}
 .ed-box h2{margin:0 0 4px;font-size:20px;color:#1A6645}
 .ed-box .ed-sub{font-size:12px;color:#666;margin-bottom:14px}
 .ed-box h3{margin:20px 0 8px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#1A6645}
@@ -41,6 +41,7 @@ function edAbrir(){
     comps:(DATOS.competencias||[]).map(function(c){return {id:c.id,nombre:c.nombre,descripcion:c.descripcion,peso:c.peso,preguntas:(c.preguntas||[]).join('\n')};})};
   edRender();document.getElementById('edBg').classList.add('show');
 }
+if(window.EDIT_AUTO){var edT=setInterval(function(){if(typeof DATOS!=='undefined'&&DATOS){clearInterval(edT);edAbrir();}},300);}
 function edCerrar(){document.getElementById('edBg').classList.remove('show');}
 function edSync(){
   var g=function(id){var e=document.getElementById(id);return e?e.value:'';};
@@ -58,12 +59,12 @@ function edBtns(k,i){return '<div style="display:flex;gap:4px"><button class="ed
 function edRender(){
   var h=ED.hero,s=ED.tipo==='screening',x='<h2>✏️ Editar '+(s?'screening':'competencias')+'</h2><div class="ed-sub">Perfil: <b>'+edEsc(PERFIL_ID)+'</b>. Los cambios valen para todas las evaluaciones nuevas de esta búsqueda. Las ya guardadas no se modifican.</div>'
    +'<div class="ed-aviso">Al guardar se recarga el formulario: lo que hayas cargado de un candidato se pierde. Guardá o imprimí antes si hace falta.</div>';
-  if(s){
-    x+='<h3>Datos del puesto</h3><div class="ed-row">'
+  {
+    x+='<h3>Encabezado del formulario</h3><div class="ed-row">'
      +'<div class="grow"><label>Empresa</label><input id="edh_empresa" style="width:100%" value="'+edEsc(h.empresa)+'"></div>'
      +'<div class="grow"><label>Posición</label><input id="edh_posicion" style="width:100%" value="'+edEsc(h.posicion)+'"></div>'
      +'<div class="grow"><label>Ubicación</label><input id="edh_ubicacion" style="width:100%" value="'+edEsc(h.ubicacion)+'"></div>'
-     +'<div class="grow"><label>Instancia</label><input id="edh_instancia" style="width:100%" value="'+edEsc(h.instancia)+'"></div></div>';
+     +'<div class="grow"><label>Instancia (etiqueta interna)</label><input id="edh_instancia" style="width:100%" value="'+edEsc(h.instancia)+'"></div></div>';
   }
   x+='<h3>Entrevistadoras</h3><div class="ed-row"><div class="grow"><label>Nombres separados por coma</label><input id="edh_entrevistadoras" style="width:100%" value="'+edEsc(h.entrevistadoras)+'"></div></div>';
   if(s){
@@ -78,12 +79,28 @@ function edRender(){
      +'<div><label>B+ desde</label><input class="w" id="edh_criterio_bplus" value="'+edEsc(h.criterio_bplus)+'"></div>'
      +'<div><label>B desde (debajo es C)</label><input class="w" id="edh_criterio_reserva" value="'+edEsc(h.criterio_reserva)+'"></div></div>';
   }else{
-    x+='<h3>Competencias (una pregunta por línea)</h3>';
+    x+='<h3>Competencias (una pregunta por línea)</h3><div class="ed-aviso" style="background:#E6F2EC;color:#14502F">Las competencias tienen que ser las acordadas con el cliente en el perfil del puesto. <button class="ed-mini" style="margin-left:6px" id="edTraer" onclick="edTraerPerfil()">↻ Traer las competencias del perfil del puesto</button></div>';
     ED.comps.forEach(function(c,i){x+='<div class="ed-row" style="display:block"><div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px"><div class="grow"><label>Competencia</label><input id="edc_n'+i+'" style="width:100%" value="'+edEsc(c.nombre)+'"></div><div><label>Peso</label><input class="w" id="edc_p'+i+'" value="'+edEsc(c.peso)+'"></div>'+edBtns('comps',i)+'</div><label>Descripción</label><textarea id="edc_d'+i+'">'+edEsc(c.descripcion)+'</textarea><label style="margin-top:6px">Preguntas</label><textarea id="edc_q'+i+'" style="min-height:90px">'+edEsc(c.preguntas)+'</textarea></div>';});
     x+='<button class="ed-add" onclick="edAgregar(\'comps\')">+ Agregar competencia</button>';
   }
   x+='<div class="ed-foot"><button class="ed-cancel" onclick="edCerrar()">Cancelar</button><button class="ed-save" id="edSave" onclick="edGuardar()">Guardar cambios</button></div>';
   document.getElementById('edBox').innerHTML=x;
+}
+function edTraerPerfil(){
+  edSync();
+  var b=document.getElementById('edTraer');
+  blConfirm('Se reemplaza la lista de competencias de abajo por las del perfil del puesto (con preguntas sugeridas por IA, que podés corregir). Todavía no se guarda nada: revisás y tocás «Guardar cambios». ¿Seguimos?',function(){
+    if(b){b.disabled=true;b.textContent='Armando… (puede tardar medio minuto)';}
+    google.script.run.withSuccessHandler(function(r){
+      if(b){b.disabled=false;b.textContent='↻ Traer las competencias del perfil del puesto';}
+      ED.comps=(r.comps||[]).map(function(c){return {id:'',nombre:c.nombre,descripcion:c.descripcion,peso:c.peso,preguntas:(c.preguntas||[]).join('\n')};});
+      edRender();
+      blAlert(r.conIA?'Listo: cargué '+ED.comps.length+' competencias del perfil (versión del '+r.fecha+'). Revisá las descripciones y preguntas y tocá «Guardar cambios».':'Cargué '+ED.comps.length+' competencias del perfil, pero la IA no pudo sugerir preguntas: completalas a mano y tocá «Guardar cambios».');
+    }).withFailureHandler(function(e){
+      if(b){b.disabled=false;b.textContent='↻ Traer las competencias del perfil del puesto';}
+      blAlert((e&&e.message)||String(e));
+    }).competenciasDelPerfil(PERFIL_ID);
+  },{si:'Traer'});
 }
 function edGuardar(){
   edSync();var q=edQuien();if(!q)return;var pin=edPin();if(!pin)return;
@@ -93,7 +110,7 @@ function edGuardar(){
     p.eval=ED.eval.map(function(e){return {id:e.id,label:e.label,peso:e.peso};});
     p.val=ED.val.map(function(v){return {id:v.id,label:v.label,opts:String(v.opts).split('|')};});
   }else{
-    p.hero={entrevistadoras:h.entrevistadoras};
+    p.hero={empresa:h.empresa,posicion:h.posicion,ubicacion:h.ubicacion,instancia:h.instancia,entrevistadoras:h.entrevistadoras};
     p.comps=ED.comps.map(function(c){return {id:c.id,nombre:c.nombre,descripcion:c.descripcion,peso:c.peso,preguntas:String(c.preguntas).split('\n')};});
   }
   var b=document.getElementById('edSave');b.disabled=true;b.textContent='Guardando...';

@@ -200,7 +200,7 @@ html,body{background:var(--bg);font-family:var(--font);color:var(--text);}
 <?!= HtmlService.createHtmlOutputFromFile('PerfilRef').getContent() ?>
 <?!= HtmlService.createHtmlOutputFromFile('EstadoForm').getContent() ?>
 <?!= HtmlService.createTemplateFromFile('MotivoForm').evaluate().getContent() ?>
-<script>window.EDIT_TIPO='competencias';</script>
+<script>window.EDIT_TIPO='competencias';window.EDIT_AUTO='<?= editarform ?>'==='true';</script>
 <?!= HtmlService.createHtmlOutputFromFile('EditorForm').getContent() ?>
 <script>
 const LOGO_BLANCO = '<?!= LOGO_BLUMIA_ ?>';
@@ -544,16 +544,17 @@ document.getElementById('btnGuardar').addEventListener('click', function() {
     restaurarTextareas();
     btn.disabled = true;
     btn.textContent = 'Procesando...';
+    blGuardando('Guardando la entrevista…');
     google.script.run
       .withSuccessHandler(() => {
         btn.disabled = false;
         btn.textContent = 'Guardar entrevista';
-        alert('Entrevista guardada ✓' + (ponderacion ? ' · ponderación ' + ponderacion : ''));
+        blGuardado('¡Entrevista guardada!' + (ponderacion ? ' Ponderación ' + ponderacion + '.' : ''));
       })
       .withFailureHandler(err => {
         btn.disabled = false;
         btn.textContent = 'Guardar entrevista';
-        alert('Error al guardar: ' + err.message);
+        blGuardadoError('Error al guardar: ' + err.message);
       })
       .guardarEnPlanilla(cand, htmlSnap, ponderacion, PERFIL_ID, (function(){var el=document.getElementById('inp-entre');var v=el&&el.value?String(el.value).trim():'';if(v)return v;try{return localStorage.getItem('blumia_quien')||ENTR_INICIAL||'';}catch(e){return ENTR_INICIAL||'';}})(), ESTADO_EF, EDITAR, motivoC);
   };
