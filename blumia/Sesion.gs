@@ -341,6 +341,7 @@ function registroApi_() {
     huntingEmpresaEstado: { f: huntingEmpresaEstado_ },
     huntingEmpresaBorrar: { f: huntingEmpresaBorrar_ },
     huntingMailModelo: { f: huntingMailModelo_ },
+    mensajesLista: { f: mensajesLista_ },
     pestanasSheetSolo: { f: pestanasSheetSolo_, admin: true },
     pestanasSheetTodas: { f: pestanasSheetTodas_, admin: true },
     flyerTextosIA: { f: flyerTextosIA_ },
