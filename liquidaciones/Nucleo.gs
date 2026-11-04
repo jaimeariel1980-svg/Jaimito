@@ -190,6 +190,28 @@ function noLabFijos_(anio, mes) {
   return (NO_LAB_FIJOS[anio] || []).filter(function (k) { return +k.split('-')[0] === mes; });
 }
 
+function motivoClaro_(rows, e) {
+  if (!rows.length) return 'No figura como extra en la liquidación (no hay franja cargada en la planilla o no hay fichadas ese día).';
+  return rows.map(function (r) {
+    var c = String(r[12] || ''), fz = r[7] || 'la extra', fich = r[13] ? ' Fichadas del día: ' + String(r[13]).replace(/^\[|\]$/g, '') + '.' : '';
+    var hs = (+r[9] || 0) + (+r[10] || 0), fichado = r[5] && r[6] ? r[5] + ' a ' + r[6] : '';
+    if (r[11] === 'AUTORIZADA') {
+      if (/HORARIO DISTINTO/.test(c)) return 'Trabajó en otro horario que el de la planilla (fichó ' + fichado + '). Se pagan ' + hs + ' h por lo fichado. Falta informar el cambio de turno.';
+      if (/menos que lo autorizado/.test(c)) return 'Hizo menos horas que las autorizadas: la extra era ' + fz + ' y fichó ' + fichado + '. Se pagan ' + hs + ' h.';
+      if (/:30/.test(fz)) return 'La extra ' + fz + ' tiene media hora: son ' + hs + ' h (el reporte cuenta ' + (e.h50 + e.h100) + ').';
+      return 'Se pagan ' + hs + ' h según las fichadas (' + fichado + ').';
+    }
+    if (/no cubren/.test(c)) return 'Las fichadas (' + fichado + ') no llegan al horario de la extra ' + fz + ': no se paga.' + fich;
+    if (/no fichó la extra/.test(c)) return 'No hay fichadas en el horario de la extra ' + fz + ': no se paga.' + fich;
+    if (/omisión|una sola fichada/.test(c)) return 'Falta la entrada o la salida en el reloj: con una sola fichada no se paga.' + fich;
+    if (/NO autorizada/.test(c)) return 'Fichó horas de más sin extra cargada en la planilla: no se paga.' + fich;
+    if (/dentro del turno/.test(c)) return 'La extra ' + fz + ' cae dentro de su propio turno: no es extra.';
+    if (/ilegible/.test(c)) return 'No se entiende la franja escrita en la planilla.';
+    if (r[11] === 'REVISAR IDENTIDAD') return 'El nombre de la fichada no coincide con el agente: revisar.';
+    return c || r[11];
+  }).join(' · ');
+}
+
 function compararEnfermeria_(rep, filas) {
   var num = function (x) { return parseFloat(String(x || '0').replace(',', '.')) || 0; }, h = -1, c = {};
   for (var i = 0; i < Math.min(rep.length, 20) && h < 0; i++) {
@@ -197,35 +219,37 @@ function compararEnfermeria_(rep, filas) {
     if (f.indexOf('LEGAJO') >= 0 && f.indexOf('DIA') >= 0) {
       h = i;
       f.forEach(function (x, j) {
-        if (x === 'LEGAJO') c.leg = j; else if (x === 'APELLIDO') c.ape = j; else if (x === 'DIA') c.dia = j;
+        if (/^LIQUIDACION|^DIFERENCIA|^QUE SE|^VALIDACION|^COMENTARIO/.test(x)) return; if (x === 'LEGAJO') c.leg = j; else if (x === 'APELLIDO') c.ape = j; else if (x === 'DIA') c.dia = j;
         else if (/EXTRA/.test(x)) c.fr = j; else if (/50/.test(rep[i][j])) c.a50 = j; else if (/100/.test(rep[i][j])) c.a100 = j;
       });
     }
   }
   if (h < 0) return null;
-  var E = {}, N = {}, k;
-  rep.slice(h + 1).forEach(function (r) {
+  var E = {}, N = {}, k, fila = {};
+  rep.slice(h + 1).forEach(function (r, i) {
     var leg = String(r[c.leg]).trim();
     if (!/^\d+$/.test(leg) || !+r[c.dia]) return;
     k = leg + '|' + (+r[c.dia]);
+    if (!(k in fila)) fila[k] = h + 1 + i;
     var e = E[k] || (E[k] = { leg: leg, ape: r[c.ape], dia: +r[c.dia], fr: [], h50: 0, h100: 0 });
     e.fr.push(r[c.fr]); e.h50 += num(r[c.a50]); e.h100 += num(r[c.a100]);
   });
   filas.forEach(function (r) {
     k = r[1] + '|' + r[3];
-    var n = N[k] || (N[k] = { leg: r[1], ape: r[2], dia: r[3], h50: 0, h100: 0, por: [] });
+    var n = N[k] || (N[k] = { leg: r[1], ape: r[2], dia: r[3], h50: 0, h100: 0, rows: [] });
     if (r[11] === 'AUTORIZADA') { n.h50 += +r[9] || 0; n.h100 += +r[10] || 0; }
-    n.por.push(r[11] + (r[12] ? ': ' + r[12] : ''));
+    n.rows.push(r);
   });
-  var out = [], tot = [0, 0, 0, 0];
+  var out = [], tot = [0, 0, 0, 0], porFila = {}, solo = [];
   Object.keys(E).concat(Object.keys(N).filter(function (x) { return !E[x]; })).forEach(function (k) {
-    var e = E[k] || { h50: 0, h100: 0, fr: [] }, n = N[k] || { h50: 0, h100: 0, por: [] }, b = E[k] || N[k];
+    var e = E[k] || { h50: 0, h100: 0, fr: [] }, n = N[k] || { h50: 0, h100: 0, rows: [] }, b = E[k] || N[k];
     tot[0] += e.h50; tot[1] += e.h100; tot[2] += n.h50; tot[3] += n.h100;
-    if (Math.abs(e.h50 - n.h50) < 0.01 && Math.abs(e.h100 - n.h100) < 0.01) return;
-    var dif = Math.round((n.h50 + n.h100 - e.h50 - e.h100) * 10) / 10;
-    out.push([b.leg, b.ape, b.dia, e.fr.join(' + '), e.h50, e.h100, n.h50, n.h100, dif,
-      n.por.length ? n.por.join(' | ') : 'no aparece en la liquidación (sin franja de extra en la planilla o sin fichadas)']);
+    var igual = Math.abs(e.h50 - n.h50) < 0.01 && Math.abs(e.h100 - n.h100) < 0.01;
+    var dif = Math.round((n.h50 + n.h100 - e.h50 - e.h100) * 10) / 10, mot = igual ? '' : motivoClaro_(n.rows, e);
+    if (k in fila) porFila[fila[k]] = { k: k, n50: n.h50, n100: n.h100, dif: igual ? '' : dif, mot: igual ? 'Coincide' : mot };
+    else if (!igual) solo.push({ k: k, leg: b.leg, ape: b.ape, dia: b.dia, n50: n.h50, n100: n.h100, dif: dif, mot: mot });
+    if (!igual) out.push([b.leg, b.ape, b.dia, e.fr.join(' + '), e.h50, e.h100, n.h50, n.h100, dif, mot, k]);
   });
   out.sort(function (a, b) { return String(a[1]).localeCompare(String(b[1])) || a[2] - b[2]; });
-  return { filas: out, tot: tot };
+  return { filas: out, tot: tot, h: h, c: c, porFila: porFila, solo: solo };
 }

@@ -372,17 +372,79 @@ function liquidarExtras() {
   avisar_('LIQUIDACION lista: ' + out.length + ' filas (' + aut + ' autorizadas) · ' + Object.keys(mens).length + ' agentes' + (cfg.fichadasAuto ? '\nFichadas: ' + cfg.fichadasAuto : '') + (grh ? '\nExpediente: ' + Object.keys(grh).length + ' agentes de Enfermería con horas autorizadas' : '\nSin expediente (consolidado) en CONFIG: no se controla lo autorizado.') + (cambios ? '\n' + cambios : '') + ctrl + notaMeses_());
 }
 
+var CAB_CTRL_ = ['Liquidación 50%', 'Liquidación 100%', 'Diferencia (h)', 'Qué se encontró (fichadas)', 'Validación del jefe', 'Comentario del jefe'];
+var VAL_JEFE_ = ['De acuerdo con la liquidación', 'Pagar lo del reporte', 'Hay que corregir la planilla', 'Lo reviso'];
+
 function controlEnfermeria_(cfg, filas) {
   var hoja = SpreadsheetApp.openById(cfg.idHorarios).getSheetByName('Reporte Extras Global');
   if (!hoja) return '';
-  var x = compararEnfermeria_(hoja.getDataRange().getDisplayValues(), filas);
+  var datos = hoja.getDataRange().getDisplayValues(), x = compararEnfermeria_(datos, filas);
   if (!x) return '';
-  var cab = ['Legajo', 'Apellido', 'Día', 'Franja (Enfermería)', 'Enf. 50%', 'Enf. 100%', 'Liquidación 50%', 'Liquidación 100%', 'Diferencia (h)', 'Por qué (liquidación)'];
-  var h = escribir_(SpreadsheetApp.openById(ID_BASE), 'CONTROL_ENFERMERIA', cab, x.filas, 10, 10);
-  if (x.filas.length) h.getRange(2, 1, x.filas.length, cab.length).setBorder(true, true, true, true, true, true, '#c8c8c8', SpreadsheetApp.BorderStyle.SOLID)
-    .setBackgrounds(x.filas.map(function (r) { return new Array(cab.length).fill(r[8] < 0 ? '#fbd9d9' : '#fff3b8'); }));
+  var val = validacionesJefe_(datos, x), nota = '';
+  try { marcarReporteEnf_(hoja, datos, x, val); nota = '\nLas diferencias quedaron también en «Reporte Extras Global» de la planilla de horarios, para que el jefe las valide.'; }
+  catch (e) { nota = '\nNo pude escribir las diferencias en la planilla de horarios (' + e.message + '): revisá que esta cuenta pueda editarla.'; }
+  guardarValJefe_(val);
+  var cab = ['Legajo', 'Apellido', 'Día', 'Franja (Enfermería)', 'Enf. 50%', 'Enf. 100%', 'Liquidación 50%', 'Liquidación 100%', 'Diferencia (h)', 'Qué se encontró', 'Validación del jefe', 'Comentario del jefe'];
+  var rows = x.filas.map(function (r) { var v = val[r[10]] || ['', '']; return r.slice(0, 10).concat(v); });
+  var h = escribir_(SpreadsheetApp.openById(ID_BASE), 'CONTROL_ENFERMERIA', cab, rows, 10, 12);
+  if (rows.length) {
+    h.getRange(2, 1, rows.length, cab.length).setBorder(true, true, true, true, true, true, '#c8c8c8', SpreadsheetApp.BorderStyle.SOLID).setWrap(true).setVerticalAlignment('top')
+      .setBackgrounds(rows.map(function (r) { return new Array(cab.length).fill(r[8] < 0 ? '#fbd9d9' : '#fff3b8'); }));
+    h.setColumnWidth(10, 420);
+  }
   var t = x.tot.map(function (v) { return Math.round(v * 10) / 10; });
-  return '\nControl contra el reporte de Enfermería: ' + x.filas.length + ' días distintos (pestaña CONTROL_ENFERMERIA). Enfermería ' + t[0] + ' h al 50 y ' + t[1] + ' al 100; liquidación ' + t[2] + ' y ' + t[3] + '.';
+  return '\nControl contra el reporte de Enfermería: ' + rows.length + ' días distintos (pestaña CONTROL_ENFERMERIA). Enfermería ' + t[0] + ' h al 50 y ' + t[1] + ' al 100; liquidación ' + t[2] + ' y ' + t[3] + '.' + nota;
+}
+
+function colCtrl_(hdr) {
+  var c0 = hdr.indexOf(CAB_CTRL_[0]);
+  if (c0 < 0) { c0 = hdr.length; while (c0 > 0 && !String(hdr[c0 - 1]).trim()) c0--; }
+  return c0;
+}
+
+function validacionesJefe_(datos, x) {
+  var val = {}, h = SpreadsheetApp.openById(ID_BASE).getSheetByName('_VALID_JEFE'), c0 = colCtrl_(datos[x.h]);
+  if (h) h.getDataRange().getValues().forEach(function (r) { if (r[0] && r[0] !== 'clave') val[r[0]] = [r[1], r[2]]; });
+  if (datos[x.h].indexOf(CAB_CTRL_[0]) >= 0) for (var i in x.porFila) {
+    var r = datos[i], v = [r[c0 + 4] || '', r[c0 + 5] || ''];
+    if (v[0] || v[1]) val[x.porFila[i].k] = v;
+  }
+  return val;
+}
+
+function guardarValJefe_(val) {
+  var ss = SpreadsheetApp.openById(ID_BASE), h = ss.getSheetByName('_VALID_JEFE') || ss.insertSheet('_VALID_JEFE');
+  var rows = [['clave', 'validación', 'comentario']].concat(Object.keys(val).map(function (k) { return [k, val[k][0], val[k][1]]; }));
+  h.clear(); h.getRange(1, 1, rows.length, 3).setNumberFormat('@').setValues(rows); h.hideSheet();
+}
+
+function marcarReporteEnf_(hoja, datos, x, val) {
+  var c0 = colCtrl_(datos[x.h]), fin = datos.length, ultima = hoja.getMaxRows();
+  while (fin > x.h + 1 && !String(datos[fin - 1][x.c.leg]).trim()) fin--;
+  var n = fin - x.h - 1;
+  if (hoja.getMaxColumns() < c0 + CAB_CTRL_.length) hoja.insertColumnsAfter(hoja.getMaxColumns(), c0 + CAB_CTRL_.length - hoja.getMaxColumns());
+  if (ultima > x.h + 1) hoja.getRange(x.h + 2, c0 + 1, ultima - x.h - 1, CAB_CTRL_.length).clearContent().clearFormat().clearDataValidations();
+  hoja.getRange(x.h + 1, c0 + 1, 1, CAB_CTRL_.length).setValues([CAB_CTRL_]).setFontWeight('bold').setBackground('#f4b183').setWrap(true);
+  var vals = [], fondos = [], dif = [];
+  for (var i = x.h + 1; i < fin; i++) {
+    var p = x.porFila[i];
+    if (!p) { vals.push(['', '', '', '', '', '']); fondos.push(new Array(6).fill(null)); continue; }
+    var v = p.dif === '' ? ['', ''] : (val[p.k] || ['', '']);
+    vals.push([p.n50, p.n100, p.dif, p.mot, v[0], v[1]]);
+    fondos.push(new Array(6).fill(p.dif === '' ? null : p.dif < 0 ? '#fbd9d9' : '#fff3b8'));
+    if (p.dif !== '') dif.push(i + 1);
+  }
+  if (n > 0) {
+    hoja.getRange(x.h + 2, c0 + 1, n, 6).setValues(vals).setBackgrounds(fondos).setWrap(true).setVerticalAlignment('top');
+    hoja.getRange(x.h + 2, c0 + 3, n, 1).setFontWeight('bold');
+    var regla = SpreadsheetApp.newDataValidation().requireValueInList(VAL_JEFE_, true).setAllowInvalid(false).build();
+    dif.forEach(function (fila) { hoja.getRange(fila, c0 + 5).setDataValidation(regla); });
+  }
+  if (x.solo.length) {
+    var txt = 'También en la liquidación y NO en este reporte (no están en la fila Extra de la planilla): ' + x.solo.map(function (s) { return s.ape + ' día ' + s.dia + ' (' + (s.n50 + s.n100) + ' h): ' + s.mot; }).join(' · ');
+    hoja.getRange(fin + 2, c0 + 1).setValue(txt).setWrap(true).setFontWeight('bold').setBackground('#fff3b8');
+  }
+  hoja.setColumnWidth(c0 + 4, 380); hoja.setColumnWidth(c0 + 5, 190); hoja.setColumnWidth(c0 + 6, 220);
 }
 
 function escribir_(ss, nombre, cab, filas, textoDesde, textoHasta) {
