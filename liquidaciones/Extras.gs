@@ -337,7 +337,9 @@ function procesarAgente_(a, serv, cfg, ctx, filas) {
     if (!t) {
       var dw = new Date(ctx.anio, ctx.mes - 1, d).getDay();
       if (sadofe && (dw === 0 || dw === 6)) continue;
-      motivo = sadofe ? 'SADOFE trabajó un día de semana' : a.lic[d] && licVigente_(a.lic[d], d) ? 'fichó con licencia cargada (' + a.lic[d] + ')' : 'trabajó en su día de franco (' + turnoTxt + ')';
+      var conLic = a.lic[d] && licVigente_(a.lic[d], d), th = conLic && (parseTurno(a.cam[d]) || parseTurno(a.hab[d]));
+      if (th && j.ri >= th.ini - 60 && j.rf <= th.fin + 60) continue;
+      motivo = sadofe ? 'SADOFE trabajó un día de semana' : conLic ? 'fichó con licencia cargada (' + a.lic[d] + ')' : 'trabajó en su día de franco (' + turnoTxt + ')';
       if (j.estado !== 'ok') continue;
       tramo = [j.ri, j.rf];
     } else {
@@ -416,7 +418,8 @@ function liquidarExtras() {
   out = out.map(function (r, i) {
     var m = mens[r[1]], primera = m && !visto[r[1]];
     if (primera) visto[r[1]] = 1;
-    return r.slice(0, 11).concat([TIPOS_FILA[tipos[i]][3], motivoFila_(r, null), queRevisar_(r)], r.slice(13)).concat(primera ? [m.g ? m.g.a50 : '', m.g ? m.g.a100 : '', m.c.total, m.c.pagar, m.c.alerta] : ['', '', '', '', '']);
+    var nov = String(r[14] || '').match(/Novedad del reloj: (.*)$/);
+    return r.slice(0, 11).concat([TIPOS_FILA[tipos[i]][3], motivoFila_(r, null) + (nov ? ' Novedad del reloj ese día: «' + nov[1] + '».' : ''), queRevisar_(r)], r.slice(13)).concat(primera ? [m.g ? m.g.a50 : '', m.g ? m.g.a100 : '', m.c.total, m.c.pagar, m.c.alerta] : ['', '', '', '', '']);
   });
 
   var cab = ['Servicio', 'Legajo', 'Apellido', 'Día', 'Turno', 'Entrada', 'Salida', 'Aut. Jefatura', 'Franja realizada', 'Hs 50%', 'Hs 100%', '¿Se paga?', 'Qué pasó', 'Qué hay que hacer', 'Fichadas del día', 'Horario en tarjeta reloj',

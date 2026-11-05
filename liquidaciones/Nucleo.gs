@@ -216,7 +216,6 @@ function queRevisar_(r) {
   var fichado = r[5] && r[6] ? r[5] + ' a ' + r[6] : r[5] || '';
   var dj = c.match(/ · DECISIÓN DEL JEFE: «([^»]*)»/);
   if (dj && /Corregir la planilla/.test(dj[1])) return 'Enfermería: corregir en la planilla de horarios la extra del día ' + d + ' (' + fz + '), como pidió el jefe.';
-  if (dj && /licencia cargada/.test(c)) return 'Enfermería: el día ' + d + ' figura con licencia «' + ((c.match(/licencia cargada \(([^)]*)\)/) || [, ''])[1]) + '» pero fichó ' + fichado + '. Si la licencia terminó antes, sacarla de la fila «Licencias» desde el día ' + d + '.';
   if (dj) return 'Nada: ya lo decidió el jefe.';
   if (r[11] === 'REVISAR IDENTIDAD') return 'Confirmar que la tarjeta reloj del día ' + d + ' sea de esta persona (el nombre no coincide con el legajo).';
   if (r[11] === 'AUTORIZADA' && /por el jefe/.test(c)) return 'Nada: ya lo decidió el jefe.';
