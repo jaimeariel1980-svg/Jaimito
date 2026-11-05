@@ -822,6 +822,18 @@ function verDoc(){
     }
   }
 
+  if(docSel==='autorizacion'){
+    var _ia=leerDatos(), _na=String(_ia.propietario||'').split(/\s*,\s*|\s+y\s+/).filter(String), _da=String(_ia.dni_propietario||'').split(/\s*[;,]\s*|\s+y\s+/).filter(String);
+    if(_na.length>1 && _na.length===_da.length){
+      var _dom=String(_ia.domicilio_propietario||'').trim(), _doms=/,\s*respectivamente\s*$/i.test(_dom) ? _dom.replace(/,\s*respectivamente\s*$/i,'').split(/\s+y\s+/) : null;
+      var _pa=_na.map(function(n,i){ return n+', D.N.I. '+_da[i]+((_doms && _doms.length===_na.length) ? ', domiciliado/a en '+_doms[i] : ''); });
+      var _ent=_pa.slice(0,-1).join('; ')+' y '+_pa[_pa.length-1];
+      var _comun=(_doms && _doms.length===_na.length) ? '' : (_dom ? ', todos domiciliados en '+_dom : '');
+      texto=texto.replace(/entre \{propietario\}, D\.N\.I\. \{dni_propietario\}, domiciliada en \{domicilio_propietario\}, en su caracter de PARTE PROPIETARIA/, 'entre '+_ent+_comun+', en su caracter de PARTE PROPIETARIA');
+      texto=texto.replace(/________________________          ________________________\n\s*PARTE PROPIETARIA\s+ADMINISTRACIÓN AZCUÉNAGA/, _na.map(function(n,i){ return '_____________________________\n'+n+'\nD.N.I. '+_da[i]+'\n(PARTE PROPIETARIA)'; }).join('\n\n\n')+'\n\n\n_____________________________\nADMINISTRACIÓN AZCUÉNAGA');
+    }
+  }
+
   // Detectar campos vacios
   var faltantes=[];
   (texto.match(/\{([^}]+)\}/g)||[]).forEach(function(m){
