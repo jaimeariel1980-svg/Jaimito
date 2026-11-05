@@ -153,6 +153,8 @@ r=run(`(function(){_fich={};_ssFich={getSheetByName:function(){return {getDataRa
 ['62318','MUÑOZ','ROSARIO 14 Anexo I','OK','19/10','06:00 a 13:00','','6:01:37','14:21:04','17:52:40','18:00:11','-','-','','','']];}};}};}};_diasMes=31;var x=fichDia_(19,{});return {t:x['62318'].txt,n:x['62318'].novedad};})()`);
 assert.deepStrictEqual(r.t,['6:01:37','14:21:04','14:23:48','14:23:51','14:23:54','17:49:12','17:52:40','18:00:11']);assert.strictEqual(r.n,'Debe compensar los 420 minutos');
 r=R(sim(F({19:['6:01:37','14:21:04','14:23:48','17:49:12','17:52:40','18:00:11']}),ag({hab:{19:'6/13'},ext:{19:'13/18'}}))[0]);assert.deepStrictEqual([r.est,r.h50],['AUTORIZADA',5]);
+// 42) SANTARELLI: licencia cargada ese día pero fichó dentro de su turno (vino y se retiró con ART) => no es extra
+assert.strictEqual(sim(F({27:['6:02:35','11:25:11']}),ag({hab:{27:'6/13'},lic:{27:'ART'}})).length,0);
 // 16) identidad
 const f2=F({5:['6:58','19:10']});f2[5]['1'].nombre='ALONSO Cecilia';
 assert.strictEqual(R(sim(f2,ag({hab:{5:'7/14'},ext:{5:'14/19'}}))[0]).est,'REVISAR IDENTIDAD');
