@@ -124,16 +124,16 @@ function horaAbs_(m) {
 }
 
 var TIPOS_FILA = [
-  ['AUTORIZADA (se paga)', '#ffffff', function (e, c) { return e === 'AUTORIZADA' && !/HORARIO DISTINTO|por el jefe/.test(c); }],
-  ['AUTORIZADA por el jefe de Enfermería (extra no informada u omisión justificada)', '#d9ead3', function (e, c) { return e === 'AUTORIZADA' && /por el jefe/.test(c); }],
-  ['AUTORIZADA con horario distinto al programado (se paga; cargar el cambio)', '#fde2a7', function (e, c) { return e === 'AUTORIZADA' && /HORARIO DISTINTO/.test(c); }],
-  ['Extra no informada (fichó de más sin franja en la planilla): la decide el jefe', '#ffe8c7', function (e, c) { return /NO autorizada|NO INFORMADA/.test(c); }],
-  ['Sin datos del reloj (#N/A en la tarjeta): no es omisión, pedir el registro', '#d0e0e3', function (e, c) { return /SIN DATOS DEL RELOJ/.test(c); }],
-  ['Omisión / no fichó la extra', '#fbd9d9', function (e, c) { return /omisión|no fichó|no cubren|ilegible/.test(c); }],
-  ['Fichadas dudosas (impares o con hueco): revisar a mano', '#fff3b8', function (e, c) { return /impar|revisar a mano/i.test(c); }],
-  ['Franja dentro del turno (no es extra)', '#e9e0f7', function (e, c) { return /dentro del turno/.test(c); }],
-  ['Menos de 1 h (no se paga)', '#ececec', function (e, c) { return /menos de 1 h/.test(c); }],
-  ['Revisar identidad', '#d7e6fb', function (e) { return e === 'REVISAR IDENTIDAD'; }],
+  ['SE PAGA · todo en orden', '#ffffff', function (e, c) { return e === 'AUTORIZADA' && !/HORARIO DISTINTO|noche del|por el jefe/.test(c); }],
+  ['SE PAGA · lo decidió el jefe de Enfermería (extra autorizada, omisión justificada o registro verificado)', '#d9ead3', function (e, c) { return e === 'AUTORIZADA' && /por el jefe/.test(c); }],
+  ['SE PAGA · pero hay que corregir la planilla de horarios (cambio de turno sin cargar o extra cargada en otro día)', '#dbe9f9', function (e, c) { return e === 'AUTORIZADA' && /HORARIO DISTINTO|noche del/.test(c); }],
+  ['TODAVÍA NO SE PAGA · extra no informada (no está en la planilla): la decide el jefe', '#ffe0b2', function (e, c) { return /NO autorizada|NO INFORMADA/.test(c); }],
+  ['TODAVÍA NO SE PAGA · sin datos del reloj (#N/A en la tarjeta): pedir el registro', '#d0e0e3', function (e, c) { return /SIN DATOS DEL RELOJ/.test(c); }],
+  ['NO SE PAGA · omisión o no hizo la extra', '#fbd9d9', function (e, c) { return /omisión|no fichó|no cubren|ilegible/.test(c); }],
+  ['NO SE PAGA · fichadas dudosas: revisar a mano', '#fff3b8', function (e, c) { return /impar|revisar a mano/i.test(c); }],
+  ['NO SE PAGA · la extra cae dentro de su turno', '#e9e0f7', function (e, c) { return /dentro del turno/.test(c); }],
+  ['NO SE PAGA · menos de 1 h', '#ececec', function (e, c) { return /menos de 1 h/.test(c); }],
+  ['NO SE PAGA · revisar identidad', '#d7e6fb', function (e) { return e === 'REVISAR IDENTIDAD'; }],
   ['Otro: revisar', '#f4f4f4', function () { return true; }]
 ];
 
@@ -222,7 +222,7 @@ function motivoFila_(r, e) {
     var c = String(r[12] || ''), fz = r[7] || 'la extra', fich = '';
     var hs = (+r[9] || 0) + (+r[10] || 0), fichado = r[5] && r[6] ? r[5] + ' a ' + r[6] : '';
     if (r[11] === 'AUTORIZADA') {
-      if (/por el jefe/.test(c)) return c.replace(/^EXTRA NO INFORMADA · /, 'Extra no informada ') + ': se pagan ' + hs + ' h.';
+      if (/por el jefe/.test(c)) return c.replace(/^EXTRA NO INFORMADA · /, 'Extra no informada ').replace(/: se paga la franja .*$/, '') + ': se pagan ' + hs + ' h.';
       if (/noche del/.test(c)) return 'La extra ' + fz + ' está cargada en un día pero la hizo la noche siguiente (fichó ' + fichado + '). Se pagan ' + hs + ' h.';
       if (/HORARIO DISTINTO/.test(c)) return 'Trabajó en otro horario que el de la planilla (fichó ' + fichado + '). Se pagan ' + hs + ' h por lo fichado.';
       if (/menos que lo autorizado/.test(c)) return 'Hizo menos horas que las autorizadas: la extra era ' + fz + ' y fichó ' + fichado + '. Se pagan ' + hs + ' h.';
