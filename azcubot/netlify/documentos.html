@@ -275,6 +275,16 @@ var DOCS = {
 "_____________________________          _____________________________\n"+
 "        PARTE VENDEDORA                          PARTE COMPRADORA"
   },
+  conformidadsena: {
+    nombre:"Conformidad de se\u00f1a", desc:"El propietario acepta la se\u00f1a de la venta", activo:true,
+    titulo:"CONFORMIDAD DE SE\u00d1A POR VENTA AUTORIZADA",
+    texto:
+"CONFORMIDAD DE SE\u00d1A POR VENTA AUTORIZADA\n\n"+
+"En la ciudad de Rosario, provincia de Santa Fe, a {fecha}, el/la Sr./Sra. {propietario}, D.N.I. Nro. {dni_propietario}, como titular de la propiedad del inmueble sito en calle {direccion} de esta ciudad, presta su total conformidad y acepta en todos sus t\u00e9rminos la se\u00f1a penitenciaria de compra-venta recibida el d\u00eda {fecha_sena}, por Administraci\u00f3n Azcu\u00e9naga, representada por Silvina Novillo CI 2352.\n\n\n"+
+"_____________________________\n"+
+"{propietario}\n"+
+"(PROPIETARIO VENDEDOR)"
+  },
   autorizacion: {
     nombre:"Autorización de venta", desc:"Derechos de venta", activo:true,
     titulo:"AUTORIZACIÓN DE VENTA",
@@ -639,6 +649,7 @@ function campoHTML(c, val, esAuto){
     fecha_fin:'Fecha de finalización',
     fecha_escritura:'Fecha de escritura',
     fecha_boleto:'Fecha del boleto',
+    fecha_sena:'Fecha en que se recibi\u00f3 la se\u00f1a',
     dia:'Día', mes:'Mes', anio:'Año',
     // personas
     interesado:'Interesado',
@@ -675,7 +686,7 @@ function campoHTML(c, val, esAuto){
   var full = (c==='direccion'||c==='monto_letras'||c==='precio_letras'||c==='sena_letras'||c==='descripcion_inmueble') ? ' full' : '';
   var tag = esAuto && val ? '<span class="tag auto">del sistema</span>' : (!esAuto ? '<span class="tag op">operación</span>' : '');
   var cls = esAuto && val ? ' auto' : '';
-  var tipo = (c==='fecha'||c==='fecha_inicio'||c==='fecha_fin'||c==='fecha_escritura'||c==='fecha_boleto') ? ' type="date"' : '';
+  var tipo = (c==='fecha'||c==='fecha_inicio'||c==='fecha_fin'||c==='fecha_escritura'||c==='fecha_boleto'||c==='fecha_sena') ? ' type="date"' : '';
 
   // Campos de MONTO (solo numeros) que disparan la conversion a letras
   var PARES = { monto_reserva:'monto_letras', precio_total:'precio_letras', precio_venta:'precio_letras', sena:'sena_letras' };
@@ -867,7 +878,7 @@ function leerDatos(){
     delete d['fecha_doc'];
   }
   // Fechas sueltas (date) -> formato dd/mm/aaaa legible
-  ['fecha','fecha_inicio','fecha_fin','fecha_escritura','fecha_boleto'].forEach(function(k){
+  ['fecha','fecha_inicio','fecha_fin','fecha_escritura','fecha_boleto','fecha_sena'].forEach(function(k){
     if(d[k] && /^\d{4}-\d{2}-\d{2}$/.test(d[k])){
       var q=d[k].split('-'); d[k]=q[2]+'/'+q[1]+'/'+q[0];
     }
