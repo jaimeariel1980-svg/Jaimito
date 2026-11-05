@@ -95,13 +95,39 @@ function consolidarGRH_(real50, real100, aut50, aut100, hayGRH, tope) {
   if (real50 > aut50 && real100 === 0 && aut100 > 0) { reconv = aut100; cap50 += aut100; cap100 = 0; dir = 'todo el 100 al 50'; }
   else if (real100 > aut100 && real50 === 0 && aut50 > 0) { reconv = aut50; cap100 += aut50; cap50 = 0; dir = 'todo el 50 al 100'; }
   var pagar = Math.min(total, tope), recorte = Math.max(0, r1(total - tope));
-  var endoso = Math.max(0, r1(Math.max(0, real50 - cap50) + Math.max(0, real100 - cap100) - recorte));
+  var e50 = Math.max(0, real50 - cap50), e100 = Math.max(0, real100 - cap100), rc = recorte;
+  var q = Math.min(rc, e100); e100 -= q; rc -= q; e50 = Math.max(0, e50 - rc);
+  e50 = r1(e50); e100 = r1(e100);
+  var endoso = r1(e50 + e100);
   var al = [];
   if (!hayGRH) al.push('NO FIGURA EN EL EXPEDIENTE (' + total + ' h sin autorización)');
   if (reconv > 0) al.push('reconversión ' + reconv + 'h (' + dir + ')');
-  if (hayGRH && endoso > 0) al.push('endoso ' + endoso + 'h (pedir a otro agente)');
+  if (hayGRH && endoso > 0) al.push('endoso ' + endoso + 'h (' + [e50 ? e50 + 'h al 50 %' : '', e100 ? e100 + 'h al 100 %' : ''].filter(Boolean).join(' y ') + ': pedir a otro agente)');
   if (recorte > 0) al.push('EXCEDE ' + tope + ' (-' + recorte + 'h)');
-  return { total: total, pagar: pagar, reconv: reconv, endoso: hayGRH ? endoso : 0, recorte: recorte, alerta: al.length ? al.join(' + ') : 'OK' };
+  return { total: total, pagar: pagar, reconv: reconv, endoso: hayGRH ? endoso : 0, e50: hayGRH ? e50 : 0, e100: hayGRH ? e100 : 0,
+    sobra50: hayGRH ? r1(Math.max(0, cap50 - real50)) : 0, sobra100: hayGRH ? r1(Math.max(0, cap100 - real100)) : 0, recorte: recorte, alerta: al.length ? al.join(' + ') : 'OK' };
+}
+
+function sugerirEndosos_(cs, info) {
+  var out = {};
+  [['e50', 'sobra50', '50 %'], ['e100', 'sobra100', '100 %']].forEach(function (k) {
+    var nec = Object.keys(cs).filter(function (l) { return cs[l][k[0]] > 0; }).sort(function (a, b) { return cs[b][k[0]] - cs[a][k[0]]; });
+    var sob = {}; Object.keys(cs).forEach(function (l) { if (cs[l][k[1]] > 0) sob[l] = cs[l][k[1]]; });
+    nec.forEach(function (l) {
+      var falta = cs[l][k[0]], partes = [];
+      Object.keys(sob).filter(function (d) { return d !== l && sob[d] > 0; })
+        .sort(function (a, b) { return ((info[b] || {}).serv === (info[l] || {}).serv) - ((info[a] || {}).serv === (info[l] || {}).serv) || sob[b] - sob[a]; })
+        .forEach(function (d) {
+          if (falta <= 0) return;
+          var t = Math.min(falta, sob[d]); t = Math.round(t * 10) / 10;
+          partes.push(t + ' h al ' + k[2] + ' a ' + ((info[d] || {}).ape || d) + ' (leg. ' + d + (info[d] && info[d].serv ? ', ' + info[d].serv : '') + ': le quedan ' + sob[d] + ' h al ' + k[2] + ' sin usar)');
+          sob[d] = Math.round((sob[d] - t) * 10) / 10; falta = Math.round((falta - t) * 10) / 10;
+        });
+      if (falta > 0) partes.push('faltan ' + falta + ' h al ' + k[2] + ': nadie tiene horas sin usar');
+      out[l] = (out[l] ? out[l] + ' · ' : '') + 'Pedir endoso: ' + partes.join('; ');
+    });
+  });
+  return out;
 }
 
 function restar_(w, bloques) {

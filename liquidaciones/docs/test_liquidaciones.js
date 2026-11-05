@@ -28,7 +28,7 @@ assert.ok(run('apellidoCoincide("DELLABARCA","BARCA DELLA Juan")'));
 assert.ok(!run('apellidoCoincide("LOMBARDO","ALONSO Cecilia")'));
 // consolidado GRH
 // reconversión: es todo el bloque o nada. Hizo 12 al 50 y 2 al 100 con expte 10/6 => no se reconvierte, endoso 2
-let c=run('consolidarGRH_(12,2,10,6,true,30)');assert.deepStrictEqual([c.reconv,c.endoso,c.alerta],[0,2,'endoso 2h (pedir a otro agente)']);
+let c=run('consolidarGRH_(12,2,10,6,true,30)');assert.deepStrictEqual([c.reconv,c.endoso,c.alerta],[0,2,'endoso 2h (2h al 50 %: pedir a otro agente)']);assert.deepStrictEqual([c.e50,c.e100,c.sobra50,c.sobra100],[2,0,0,4]);
 // 100 sin usar: se reconvierten las 6 enteras
 c=run('consolidarGRH_(14,0,10,6,true,30)');assert.deepStrictEqual([c.reconv,c.endoso],[6,0]);
 c=run('consolidarGRH_(20,0,10,6,true,30)');assert.deepStrictEqual([c.reconv,c.endoso],[6,4]);
@@ -155,6 +155,9 @@ assert.deepStrictEqual(r.t,['6:01:37','14:21:04','14:23:48','14:23:51','14:23:54
 r=R(sim(F({19:['6:01:37','14:21:04','14:23:48','17:49:12','17:52:40','18:00:11']}),ag({hab:{19:'6/13'},ext:{19:'13/18'}}))[0]);assert.deepStrictEqual([r.est,r.h50],['AUTORIZADA',5]);
 // 42) SANTARELLI: licencia cargada ese día pero fichó dentro de su turno (vino y se retiró con ART) => no es extra
 assert.strictEqual(sim(F({27:['6:02:35','11:25:11']}),ag({hab:{27:'6/13'},lic:{27:'ART'}})).length,0);
+// 43) endoso: a quién pedirlo (al que le sobran horas de esa categoría, primero del mismo servicio)
+let se=run(`sugerirEndosos_({'1':consolidarGRH_(14,1,10,6,true,30),'2':consolidarGRH_(3,0,10,6,true,30),'3':consolidarGRH_(0,0,10,6,true,30)},{'1':{ape:'SARBA',serv:'4 piso'},'2':{ape:'LOPEZ',serv:'4 piso'},'3':{ape:'GOMEZ',serv:'2 piso'}})`);
+assert.ok(/^Pedir endoso: 4 h al 50 % a LOPEZ/.test(se['1']));
 // 16) identidad
 const f2=F({5:['6:58','19:10']});f2[5]['1'].nombre='ALONSO Cecilia';
 assert.strictEqual(R(sim(f2,ag({hab:{5:'7/14'},ext:{5:'14/19'}}))[0]).est,'REVISAR IDENTIDAD');
