@@ -432,14 +432,14 @@ function liquidarExtras() {
     var rel = r[5] && r[6] ? 'Entró ' + r[5] + ' · salió ' + r[6] : r[5] ? 'Solo una fichada: ' + r[5] : 'Sin fichadas';
     if (/SIN DATOS DEL RELOJ/.test(c)) rel += ' · ' + (c.match(/no figura en la tarjeta del día [^(]*/) || ['no figura en la tarjeta del día siguiente'])[0].trim() + ' (#N/A)';
     if (nov) rel += ' · Novedad: «' + nov[1] + '»';
-    return r.slice(0, 11).concat([r[13], lab, plan, rel, motivoFila_(r, null), queRevisar_(r)], r.slice(14)).concat(primera ? [m.g ? m.g.a50 : '', m.g ? m.g.a100 : '', m.c.total, m.c.pagar, m.c.alerta] : ['', '', '', '', '']);
+    return r.slice(0, 11).concat([r[13], r[11], r[14] || '', lab, plan, rel, motivoFila_(r, null), queRevisar_(r)], r.slice(15)).concat(primera ? [m.g ? m.g.a50 : '', m.g ? m.g.a100 : '', m.c.total, m.c.pagar, m.c.alerta] : ['', '', '', '', '']);
   });
 
-  var cab = ['Servicio', 'Legajo', 'Apellido', 'Día', 'Turno', 'Entrada', 'Salida', 'Aut. Jefatura', 'Franja realizada', 'Hs 50%', 'Hs 100%', 'Fichadas del día', '¿Se paga?', 'La planilla dice', 'El reloj dice', 'Qué pasó', 'Qué hay que hacer', 'Horario en tarjeta reloj',
+  var cab = ['Servicio', 'Legajo', 'Apellido', 'Día', 'Turno', 'Entrada', 'Salida', 'Aut. Jefatura', 'Franja realizada', 'Hs 50%', 'Hs 100%', 'Fichadas del día', 'Estado', 'Horario en tarjeta reloj', '¿Se paga?', 'La planilla dice', 'El reloj dice', 'Qué pasó', 'Qué hay que hacer',
              'Expte 50% (mes)', 'Expte 100% (mes)', 'Total hecho (mes)', 'A pagar mes (tope ' + cfg.tope + ')', 'Alerta del mes'];
   var h = escribir_(SpreadsheetApp.openById(ID_BASE), 'LIQUIDACION', cab, out, 5, 9);
-  if (out.length) h.getRange(2, 12, out.length, 6).setWrap(true);
-  h.setColumnWidth(12, 200); h.setColumnWidth(13, 320); h.setColumnWidth(14, 200); h.setColumnWidth(15, 220); h.setColumnWidth(16, 340); h.setColumnWidth(17, 300);
+  if (out.length) h.getRange(2, 12, out.length, 8).setWrap(true);
+  [[12, 200], [13, 120], [14, 200], [15, 320], [16, 200], [17, 220], [18, 340], [19, 300]].forEach(function (w) { h.setColumnWidth(w[0], w[1]); });
   pintarLiquidacion_(h, out, cab.length, tipos);
   escribirResumen_(filas, mens, grh, cfg, sug, info);
   var cambios = registrarCambios_(hojas, cfg), ctrl = val ? cerrarValidacion_(cfg, filas, val) : '';
@@ -473,7 +473,7 @@ function pintarLiquidacion_(h, filas, nc, tipos) {
   h.getRange(2, 13, filas.length, 1).setBackgrounds(est).setFontWeight('bold').setHorizontalAlignment('center');
   h.getRange(2, 4, filas.length, 8).setHorizontalAlignment('center');
   h.getRange(2, 10, filas.length, 2).setNumberFormat('0.0');
-  var hr = h.getRange(2, 18, filas.length, 1), fc = hr.getValues().map(function (v) { return [/≠/.test(v[0]) ? '#c62828' : '#000000']; });
+  var hr = h.getRange(2, 14, filas.length, 1), fc = hr.getValues().map(function (v) { return [/≠/.test(v[0]) ? '#c62828' : '#000000']; });
   hr.setFontColors(fc);
   for (var i = 1; i < filas.length; i++) {
     if (tipos[i] !== tipos[i - 1]) h.getRange(i + 1, 1, 1, nc).setBorder(null, null, true, null, null, null, '#555555', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
@@ -548,10 +548,15 @@ function escribirResumen_(filas, mens, grh, cfg, sug, inf) {
     return [l, i.ape, Object.keys(i.serv).join(', ') || (inf[l] || {}).serv || '', m ? Math.round(m.r50 * 10) / 10 : 0, m ? Math.round(m.r100 * 10) / 10 : 0, c.total,
             g ? g.a50 : '', g ? g.a100 : '', c.reconv || '', c.e50 || '', c.e100 || '', c.recorte || '', c.pagar, pend[l] || '', al.replace(/ → Pedir endoso.*$/, ''), sug[l] || '',
             m ? '' : [c.sobra50 ? c.sobra50 + ' h al 50 %' : '', c.sobra100 ? c.sobra100 + ' h al 100 %' : ''].filter(Boolean).join(' y '),
-            u ? '=HYPERLINK("' + u + '","Ver en la planilla")' : ''];
+            u ? 'Ver en la planilla' : '', u || ''];
   }).sort(function (a, b) { return String(a[1]).localeCompare(String(b[1])); });
   RESUMEN_CAB_[12] = 'A pagar (tope ' + cfg.tope + ')';
+  var links = rows.map(function (r) { return r.pop(); });
   var ss = SpreadsheetApp.openById(ID_BASE), h = escribir_(ss, 'RESUMEN', RESUMEN_CAB_, rows), nc = RESUMEN_CAB_.length;
+  if (rows.length) h.getRange(2, nc, rows.length, 1).setRichTextValues(links.map(function (u) {
+    var b = SpreadsheetApp.newRichTextValue().setText(u ? 'Ver en la planilla' : '');
+    return [u ? b.setLinkUrl(u).build() : b.build()];
+  }));
   if (rows.length) {
     h.getRange(2, 1, rows.length, nc).setBorder(true, true, true, true, true, true, '#c8c8c8', SpreadsheetApp.BorderStyle.SOLID)
       .setBackgrounds(rows.map(function (r) { return new Array(nc).fill(colorAlerta_(r[14])); }));
