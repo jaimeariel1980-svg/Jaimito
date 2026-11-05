@@ -165,6 +165,8 @@ select:focus{outline:none;border-color:var(--accent);}
 </style>
 </head>
 <body>
+<div id="cargaOv" style="display:none;position:fixed;inset:0;z-index:99999;background:#f1f3f8;align-items:center;justify-content:center;flex-direction:column;gap:12px;font:600 16px Inter,Arial,sans-serif;color:#1b3866"><div style="width:34px;height:34px;border:4px solid #cfd8ea;border-top-color:#1b3866;border-radius:50%;animation:ovg 1s linear infinite"></div><div id="cargaTxt">Abriendo el documento...</div></div>
+<style>@keyframes ovg{to{transform:rotate(360deg)}}</style>
 <div class="top">
   <img id="topLogo" alt="Azcuénaga" style="height:44px;background:#fff;padding:5px 9px;border-radius:8px;display:none;">
   <span class="brand" id="brandTxt">AZCUÉNAGA<small>INMOBILIARIA</small></span>
@@ -482,29 +484,32 @@ function _verUrl(){
 function _camposRaw(){
   var o={}; document.querySelectorAll('#campos input[data-campo]').forEach(function(i){ o[i.getAttribute('data-campo')]=i.value; }); return o;
 }
+function _ov(t){ var o=document.getElementById('cargaOv'); if(!o) return; if(t===false){ o.style.display='none'; return; } document.getElementById('cargaTxt').textContent=t||'Abriendo el documento...'; o.style.display='flex'; }
 function intentarEditar(){
   var id=_editUrl(); if(!id || window.__EDITANDO) return; window.__EDITANDO=1;
+  var ver=!!_verUrl(); _ov(ver?'Preparando el PDF...':'Abriendo el documento...');
   google.script.run.withSuccessHandler(function(r){
     try{
       var d=JSON.parse(r.borrador); if(!DOCS[d.docSel]) throw new Error('tipo de documento desconocido');
+      if(ver){ elegir(d.docSel); window.__DOCID=r.id; document.getElementById('editor').innerHTML=_limpiarHtml(d.html||''); paso(3); window.__SOLOVER=1; generarPDF(); _ov(false); mostrarAviso('Documento «'+r.nombre+'» (versión '+r.version+'). Si no se descargó, usá el link «Abrilo desde acá».', null); return; }
       elegir(d.docSel); esCompartida=!!d.esCompartida; var sp=document.getElementById('propSel'); if(d.propKey && PROPIEDADES[d.propKey]) sp.value=d.propKey;
       document.getElementById('compartida').checked=esCompartida;
       if(d.campos){ try{ completar(); document.querySelectorAll('#campos input[data-campo]').forEach(function(i){ var k=i.getAttribute('data-campo'); if(d.campos[k]!=null) i.value=d.campos[k]; }); }catch(e){} }
       window.__DOCID=r.id; document.getElementById('editor').innerHTML=_limpiarHtml(d.html||''); document.getElementById('edAI').innerHTML='';
-      paso(3);
-      if(_verUrl()){ window.__SOLOVER=1; generarPDF(); mostrarAviso('Documento «'+r.nombre+'» (versión '+r.version+'). Si no se abrió solo, usá el link «Abrilo desde acá».', null); return; }
+      paso(3); _ov(false);
       mostrarAviso('Editando «'+r.nombre+'» (versión '+r.version+'). Al generar el PDF se guarda como una versión nueva.', null);
-    }catch(e){ alert('No pude abrir el borrador: '+e.message); }
-  }).withFailureHandler(function(e){ alert('No pude abrir el documento: '+(e&&e.message?e.message:e)); }).borradorDocGenerado(id);
+    }catch(e){ _ov(false); alert('No pude abrir el borrador: '+e.message); }
+  })  .withFailureHandler(function(e){ _ov(false); alert('No pude abrir el documento: '+(e&&e.message?e.message:e)); }).borradorDocGenerado(id);
 }
 function _propUrl(){
   try{ var q=new URLSearchParams(location.search).get('prop'); if(q) return q; }catch(e){}
   return window.__PROP||'';
 }
 function cargarPropiedades(){
+  if(_editUrl()){ _ov(_verUrl()?'Preparando el PDF...':'Abriendo el documento...'); if(_verUrl()) intentarEditar(); }
   var sel=document.getElementById('propSel');
   sel.innerHTML='<option value="">Cargando propiedades...</option>';
-  try{ if(window.google && google.script && google.script.url && google.script.url.getLocation) google.script.url.getLocation(function(l){ if(l && l.parameter && l.parameter.edit){ window.__EDIT=l.parameter.edit; if(l.parameter.ver) window.__VER='1'; if(window.__PROPLISTAS) intentarEditar(); } if(!_propUrl() && l && l.parameter && l.parameter.prop){ window.__PROP=l.parameter.prop; var sl=document.getElementById('propSel'); if(PROPIEDADES[__PROP]) sl.value=__PROP; } }); }catch(e){}
+  try{ if(window.google && google.script && google.script.url && google.script.url.getLocation) google.script.url.getLocation(function(l){ if(l && l.parameter && l.parameter.edit){ window.__EDIT=l.parameter.edit; if(l.parameter.ver){ window.__VER='1'; intentarEditar(); } else { _ov(); if(window.__PROPLISTAS) intentarEditar(); } } if(!_propUrl() && l && l.parameter && l.parameter.prop){ window.__PROP=l.parameter.prop; var sl=document.getElementById('propSel'); if(PROPIEDADES[__PROP]) sl.value=__PROP; } }); }catch(e){}
   function viejo(){
     google.script.run
       .withSuccessHandler(_ponerProps)
