@@ -127,6 +127,7 @@ var TIPOS_FILA = [
   ['SE PAGA · todo en orden', '#ffffff', function (e, c) { return e === 'AUTORIZADA' && !/HORARIO DISTINTO|noche del|por el jefe/.test(c); }, 'SE PAGA'],
   ['SE PAGA · lo decidió el jefe de Enfermería (extra autorizada, omisión justificada o registro verificado)', '#d9ead3', function (e, c) { return e === 'AUTORIZADA' && /por el jefe/.test(c); }, 'SE PAGA (lo decidió el jefe)'],
   ['SE PAGA · pero hay que corregir la planilla de horarios (cambio de turno sin cargar o extra cargada en otro día)', '#dbe9f9', function (e, c) { return e === 'AUTORIZADA' && /HORARIO DISTINTO|noche del/.test(c); }, 'SE PAGA · corregir la planilla'],
+  ['NO SE PAGA · ya lo decidió el jefe de Enfermería', '#f4cccc', function (e, c) { return e !== 'AUTORIZADA' && /DECISIÓN DEL JEFE/.test(c); }, 'NO SE PAGA (lo decidió el jefe)'],
   ['NO SE PAGA · fichó con licencia cargada: corregir la licencia en la planilla', '#fbd9d9', function (e, c) { return /NO INFORMADA/.test(c) && /licencia cargada/.test(c) && e !== 'AUTORIZADA'; }, 'NO SE PAGA · corregir la licencia'],
   ['TODAVÍA NO SE PAGA · extra no informada (no está en la planilla): la decide el jefe', '#ffe0b2', function (e, c) { return /NO autorizada|NO INFORMADA/.test(c); }, 'NO SE PAGA TODAVÍA · decide el jefe'],
   ['TODAVÍA NO SE PAGA · sin datos del reloj (#N/A en la tarjeta): pedir el registro', '#d0e0e3', function (e, c) { return /SIN DATOS DEL RELOJ/.test(c); }, 'NO SE PAGA TODAVÍA · falta el registro del reloj'],
@@ -199,35 +200,60 @@ function motivoClaro_(rows, e) {
   return rows.map(function (r) { var q = queRevisar_(r); return motivoFila_(r, e) + (q && q !== 'Nada.' ? ' ➜ Qué hacer: ' + q : ''); }).join(' · ');
 }
 
+function causaJefe_(c, r) {
+  var fichado = r[5] && r[6] ? r[5] + ' a ' + r[6] : r[5] || '';
+  if (/SIN DATOS DEL RELOJ/.test(c)) return 'Faltaba el registro del reloj del día ' + (c.match(/tarjeta del día ([^(]*?) \(/) || [, 'siguiente'])[1] + '.';
+  if (/NO INFORMADA/.test(c)) return 'Era una extra que no estaba cargada en la planilla (fichó ' + fichado + ').';
+  if (/omisión|una sola fichada/.test(c)) return 'Faltaba una fichada (solo estaba ' + (r[5] || r[6] || '-') + ').';
+  if (/no fichó la extra|no cubren/.test(c)) return 'El reloj no mostraba la extra ' + (r[7] || '') + '.';
+  return '';
+}
+
+function hhTurno_(t) { return t.replace(/^(\d{2}):(\d{2}) a (\d{2}):(\d{2})$/, function (x, a, b, c, d) { return +a + (b !== '00' ? ':' + b : '') + '/' + (+c) + (d !== '00' ? ':' + d : ''); }); }
+
 function queRevisar_(r) {
-  var c = String(r[12] || ''), h = String(r[14] || '').split(' · ')[0].replace(/ ≠ planilla.*/, ''), d = +r[3];
-  if (r[11] === 'REVISAR IDENTIDAD') return 'Confirmar que la tarjeta reloj sea de la misma persona (el nombre no coincide).';
+  var c = String(r[12] || ''), h = String(r[14] || '').split(' · ')[0].replace(/ ≠ planilla.*/, ''), d = +r[3], fz = r[7] || '';
+  var fichado = r[5] && r[6] ? r[5] + ' a ' + r[6] : r[5] || '';
+  var dj = c.match(/ · DECISIÓN DEL JEFE: «([^»]*)»/);
+  if (dj && /Corregir la planilla/.test(dj[1])) return 'Enfermería: corregir en la planilla de horarios la extra del día ' + d + ' (' + fz + '), como pidió el jefe.';
+  if (dj && /licencia cargada/.test(c)) return 'Enfermería: el día ' + d + ' figura con licencia «' + ((c.match(/licencia cargada \(([^)]*)\)/) || [, ''])[1]) + '» pero fichó ' + fichado + '. Si la licencia terminó antes, sacarla de la fila «Licencias» desde el día ' + d + '.';
+  if (dj) return 'Nada: ya lo decidió el jefe.';
+  if (r[11] === 'REVISAR IDENTIDAD') return 'Confirmar que la tarjeta reloj del día ' + d + ' sea de esta persona (el nombre no coincide con el legajo).';
   if (r[11] === 'AUTORIZADA' && /por el jefe/.test(c)) return 'Nada: ya lo decidió el jefe.';
-  if (r[11] === 'AUTORIZADA' && /HORARIO DISTINTO/.test(c)) return 'Enfermería: corregir su turno en la planilla de horarios. El pago no cambia.';
-  if (r[11] === 'AUTORIZADA' && /noche del/.test(c)) return 'Enfermería: pasar la extra al día ' + (d + 1) + ' en la planilla. El pago no cambia.';
-  if (r[11] === 'AUTORIZADA') return 'Nada.';
-  if (/SIN DATOS DEL RELOJ/.test(c)) return 'Pedir el registro del reloj de ese día. Si trabajó, el jefe elige «El reloj tiene el registro» y se paga.';
-  if (/NO INFORMADA|NO autorizada/.test(c)) {
-    if (/licencia cargada/.test(c)) return 'Enfermería: revisar la licencia (¿le dieron el alta?) y corregirla en la planilla. No es una extra: no autorizarla como extra.';
-    if (/\d{1,2}:\d{2} a \d{1,2}:\d{2}/.test(h)) return 'Enfermería: si era su turno (el reloj dice ' + h + '), cargarlo en la planilla. Si fue una extra, que el jefe la autorice.';
-    return 'El jefe decide: si la llamaron para cubrir, la autoriza; si no, no se paga.';
+  if (r[11] === 'AUTORIZADA' && /HORARIO DISTINTO/.test(c)) {
+    var tr = c.match(/se tomó turno (\d{2}:\d{2} a \d{2}:\d{2})/);
+    if (tr) return 'Enfermería: en la planilla de horarios, día ' + d + ', fila «Cambio», poner ' + hhTurno_(tr[1]) + ' (hoy dice ' + r[4] + '). El pago no cambia.';
+    return 'Enfermería: averiguar qué turno hizo el día ' + d + ' (la planilla dice ' + r[4] + ' y el reloj marca ' + fichado + ') y cargarlo en la fila «Cambio». El pago no cambia.';
   }
-  if (/no fichó la extra|no cubren/.test(c)) return 'Enfermería: si no la hizo, sacar la extra de la planilla. Si la hizo, el jefe justifica la falta de fichada con la nota.';
-  if (/omisión|una sola fichada/.test(c)) return 'Si trabajó, el jefe justifica la falta de fichada con la nota.';
-  if (/dentro del turno/.test(c)) return 'Enfermería: corregir la franja en la planilla (está dentro de su turno).';
-  if (/ilegible/.test(c)) return 'Enfermería: escribir bien la franja en la planilla (ej. 13/17).';
+  if (r[11] === 'AUTORIZADA' && /noche del/.test(c)) return 'Enfermería: en la fila «Extra», borrar ' + hhTurno_(fz) + ' del día ' + d + ' y ponerla en el día ' + (d + 1) + '. El pago no cambia.';
+  if (r[11] === 'AUTORIZADA') return 'Nada.';
+  if (/SIN DATOS DEL RELOJ/.test(c)) { var dn = (c.match(/tarjeta del día ([^(]*?) \(/) || [, 'siguiente'])[1]; return 'Pedirle a quien maneja el reloj el registro del día ' + dn + ' (no figura en la tarjeta). Si confirma que trabajó, el jefe elige «El reloj tiene el registro» y se paga.'; }
+  if (/NO INFORMADA|NO autorizada/.test(c)) {
+    if (/licencia cargada/.test(c)) { var lic = (c.match(/licencia cargada \(([^)]*)\)/) || [, ''])[1]; return 'Enfermería: el día ' + d + ' figura con licencia «' + lic + '» pero fichó ' + fichado + '. Si la licencia terminó antes, sacarla de la fila «Licencias» desde el día ' + d + '. Si sigue de licencia, averiguar por qué fichó.'; }
+    if (/\d{1,2}:\d{2} a \d{1,2}:\d{2}/.test(h)) return 'Enfermería: el reloj le asigna ' + h + ' el día ' + d + ' y en la planilla figura ' + (r[4] || 'sin turno') + '. Si era su turno, poner ' + hhTurno_(h) + ' en la fila «Cambio» del día ' + d + ' (no es extra). Si fue una extra, que el jefe la autorice.';
+    return 'El jefe decide: si el día ' + d + ' la llamaron para cubrir (fichó ' + fichado + '), la autoriza; si no, no se paga.';
+  }
+  if (/no fichó la extra|no cubren/.test(c)) return 'Enfermería: la extra ' + hhTurno_(fz) + ' del día ' + d + ' está cargada pero el reloj marca ' + (fichado || 'otra cosa') + '. Si no la hizo, borrarla de la fila «Extra». Si la hizo, el jefe justifica la falta de fichada con la nota.';
+  if (/omisión|una sola fichada/.test(c)) return 'Falta la entrada o la salida del día ' + d + '. Si trabajó, el jefe justifica la falta de fichada con la nota.';
+  if (/dentro del turno/.test(c)) return 'Enfermería: la extra ' + hhTurno_(fz) + ' del día ' + d + ' está dentro de su turno ' + r[4] + '. Corregir la franja o el turno en la planilla.';
+  if (/ilegible/.test(c)) return 'Enfermería: escribir bien la extra del día ' + d + ' en la planilla (ej. 13/17).';
   if (/menos de 1 h/.test(c)) return 'Nada: menos de 1 h no se paga.';
   return 'Mirarlo con el jefe.';
 }
 
 function motivoFila_(r, e) {
+  var dj0 = String(r[12] || '').match(/ · DECISIÓN DEL JEFE: (.*)$/);
+  if (dj0) { var r1 = r.slice(); r1[12] = String(r[12]).replace(/ · DECISIÓN DEL JEFE: .*$/, ''); return motivoFila_(r1, e) + ' El jefe eligió ' + dj0[1] + '.'; }
   if (true) {
     var c = String(r[12] || ''), fz = r[7] || 'la extra', fich = '';
     var hs = (+r[9] || 0) + (+r[10] || 0), fichado = r[5] && r[6] ? r[5] + ' a ' + r[6] : '';
     if (r[11] === 'AUTORIZADA') {
-      if (/por el jefe/.test(c)) return c.replace(/^EXTRA NO INFORMADA · /, 'Extra no informada ').replace(/: se paga la franja .*$/, '') + ': se pagan ' + hs + ' h.';
-      if (/REGISTRO DEL RELOJ VERIFICADO/.test(c)) return 'Faltaba el registro del reloj, pero el jefe confirmó que trabajó: se pagan ' + hs + ' h.';
-      if (/OMISIÓN JUSTIFICADA/.test(c)) return 'Le faltaba una fichada, pero el jefe la justificó: se pagan ' + hs + ' h.';
+      if (/por el jefe/.test(c)) {
+        var g = function (rx) { var m = c.match(rx); return m ? m[1] : ''; };
+        var dj = g(/decisión: «([^»]*)»/), cj = g(/comentario: «([^»]*)»/), nj = g(/ · jefe: ([^·]*?)(?: · antes:|$)/), antes = g(/ · antes: (.*)$/);
+        return (antes ? causaJefe_(antes, r) + ' ' : '') +
+          'El jefe' + (nj ? ' (' + nj.trim() + ')' : '') + ' eligió «' + (dj || 'autorizar') + '»' + (cj ? ' con el comentario «' + cj + '»' : '') + ': se pagan ' + hs + ' h.';
+      }
       if (/noche del/.test(c)) return 'La extra ' + fz + ' está cargada el día ' + r[3] + ', pero la hizo la noche del ' + r[3] + ' al ' + (+r[3] + 1) + ' (fichó ' + fichado + '). Se pagan ' + hs + ' h.';
       if (/HORARIO DISTINTO/.test(c)) {
         var tr = c.match(/se tomó turno (\d{2}:\d{2} a \d{2}:\d{2})/);
