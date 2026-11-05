@@ -635,11 +635,11 @@ function azcuHerrWhatsapp_(a, adj){
   else if(q==='formulario_captacion') txt = 'Hola! Para avanzar con tu propiedad necesitamos que completes este formulario: '+b+(p ? '?precarga='+encodeURIComponent(p.id) : ''), num = a.telefono || '';
   else if(q==='link_tokko'){ if(!p || !p.tokko) return {error:'Esa propiedad no tiene URL de ficha cargada.'}; txt = 'Mirá esta propiedad: '+p.tokko; }
   else if(q==='ubicacion'){ if(!p) return {error:'Indicá la propiedad.'}; txt = 'Ubicación de la propiedad ('+p.dir+'): '+azcuMapsUrl_(p); num = a.telefono || ''; }
-  else if(q==='documento'){ var u = p && (p.docUrls||{})[a.documento]; if(!u) return {error:'Ese documento no está cargado todavía.'}; txt = a.documento+': '+u; }
+  else if(q==='documento'){ var u = p && (p.docUrls||{})[a.documento]; if(!u) return {error:'Ese documento no está cargado todavía.'}; txt = a.documento+': '+u; try{ var m = String(u).match(/[-\w]{25,}/); var fl = m && DriveApp.getFileById(m[0]); if(fl && fl.getSize() <= 3000000){ var bl = fl.getBlob(); adj.push({k:'f', nombre:fl.getName(), mime:bl.getContentType()||'application/pdf', base64:Utilities.base64Encode(bl.getBytes())}); } }catch(e){} }
   else if(q==='texto_libre'){ if(!a.texto) return {error:'Falta el texto.'}; txt = String(a.texto).slice(0,1500); num = a.telefono || ''; }
   else return {error:'Tipo de mensaje desconocido.'};
   adj.push({k:'l', label:'💬 Abrir WhatsApp'+(num?' ('+(ow.nombre||num)+')':' (elegís el contacto)'), url:azcuWa_(num, txt)});
-  return {ok:true, estado:'Botón de WhatsApp listo en el chat', destinatario:num ? (ow.nombre||num) : 'a elegir'};
+  return {ok:true, estado:(q==='documento' && adj.some(function(x){return x.k==='f';}) ? 'Listos en el chat: el botón de WhatsApp con el enlace y el archivo para compartir (en el celular se manda adjunto por WhatsApp)' : 'Botón de WhatsApp listo en el chat'), destinatario:num ? (ow.nombre||num) : 'a elegir'};
 }
 function azcuHerrPdf_(a, adj){
   var p = azcuProp_(a.id); if(!p) return {error:'No encontré esa propiedad.'};
