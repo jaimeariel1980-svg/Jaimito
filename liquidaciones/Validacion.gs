@@ -138,7 +138,7 @@ function escribirValidacion_(ssH, rep, x, dec, nPend) {
     ['Nombre y apellido del jefe', conf[1]],
     ['¿Das conformidad a la liquidación?', conf[0]],
     ['Conformidad registrada', conf[2] ? conf[2] + ' (al liquidar)' : 'Todavía no'],
-    ['Cómo leer los colores', 'Sin color: coincide. Rojo: se paga menos que lo cargado. Amarillo: se paga más. Naranja: extra no cargada en la planilla. Verde: ya decidido.'],
+    ['Cómo leer los colores', 'Sin color: coincide con lo cargado. Rojo: se paga menos que lo cargado. Amarillo: se paga más. Naranja: extra que no está cargada en la planilla. Verde: ya decidido por vos.'],
     ['Cuándo se aplica', 'Lo que decidas se aplica la próxima vez que se liquide.']
   ]).setWrap(true).setVerticalAlignment('top').setBackground('#eef3fb').setNumberFormat('@');
   h.getRange(1, cb + 1, 1, 2).setFontWeight('bold').setBackground('#1f4e79').setFontColor('white');
