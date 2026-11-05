@@ -102,10 +102,42 @@ function consolidarGRH_(real50, real100, aut50, aut100, hayGRH, tope) {
   var al = [];
   if (!hayGRH) al.push('NO FIGURA EN EL EXPEDIENTE (' + total + ' h sin autorización)');
   if (reconv > 0) al.push('reconversión ' + reconv + 'h (' + dir + ')');
-  if (hayGRH && endoso > 0) al.push('endoso ' + endoso + 'h (' + [e50 ? e50 + 'h al 50 %' : '', e100 ? e100 + 'h al 100 %' : ''].filter(Boolean).join(' y ') + ': pedir a otro agente)');
+  if (hayGRH && endoso > 0) al.push('endoso ' + endoso + 'h (' + [e50 ? e50 + 'h al 50 %' : '', e100 ? e100 + 'h al 100 %' : ''].filter(Boolean).join(' y ') + ')');
   if (recorte > 0) al.push('EXCEDE ' + tope + ' (-' + recorte + 'h)');
   return { total: total, pagar: pagar, reconv: reconv, endoso: hayGRH ? endoso : 0, e50: hayGRH ? e50 : 0, e100: hayGRH ? e100 : 0,
     sobra50: hayGRH ? r1(Math.max(0, cap50 - real50)) : 0, sobra100: hayGRH ? r1(Math.max(0, cap100 - real100)) : 0, recorte: recorte, alerta: al.length ? al.join(' + ') : 'OK' };
+}
+
+function planEndoso_(cs, info, real, grh) {
+  var r1 = function (x) { return Math.round(x * 10) / 10; }, filas = [], porLeg = {}, n = 0;
+  var R = function (l) { return real[l] || { r50: 0, r100: 0 }; }, G = function (l) { return grh[l] || { a50: 0, a100: 0 }; };
+  var ape = function (l) { return (info[l] || {}).ape || (grh[l] || {}).ape || ''; }, serv = function (l) { return (info[l] || {}).serv || ''; };
+  var liq = function (l) { var r = R(l), rec = cs[l].recorte || 0, q = Math.min(rec, r.r100); return [r1(r.r50 - (rec - q)), r1(r.r100 - q)]; };
+  var pool = Object.keys(grh).filter(function (l) { return R(l).r50 + R(l).r100 === 0 && G(l).a50 + G(l).a100 > 0; });
+  Object.keys(cs).filter(function (l) { return cs[l].e50 + cs[l].e100 > 0; })
+    .sort(function (a, b) { return (cs[b].e50 + cs[b].e100) - (cs[a].e50 + cs[a].e100) || ape(a).localeCompare(ape(b)); })
+    .forEach(function (l) {
+      var f50 = cs[l].e50, f100 = cs[l].e100, dons = [], rc = cs[l].reconv ? (R(l).r100 === 0 ? 50 : 100) : 0, letra = n < 26 ? String.fromCharCode(65 + n) : 'Z' + (n - 25);
+      while ((f50 > 0 || f100 > 0) && pool.length) {
+        pool.sort(function (a, b) {
+          var cub = function (d) { var t = G(d).a50 + G(d).a100; return rc === 50 ? (t >= f50 ? 2 : 0) : rc === 100 ? (t >= f100 ? 2 : 0) : (G(d).a50 >= f50 ? 1 : 0) + (G(d).a100 >= f100 ? 1 : 0); };
+          return (serv(b) === serv(l)) - (serv(a) === serv(l)) || cub(b) - cub(a) || (G(a).a50 + G(a).a100) - (G(b).a50 + G(b).a100);
+        });
+        var d = pool.shift(), t = G(d).a50 + G(d).a100; dons.push(d);
+        if (rc === 50) f50 = r1(f50 - t); else if (rc === 100) f100 = r1(f100 - t); else { f50 = r1(f50 - G(d).a50); f100 = r1(f100 - G(d).a100); }
+      }
+      if (!dons.length) { filas.push([l, ape(l), G(l).a50, G(l).a100, '', '', liq(l)[0], liq(l)[1], 'Falta endoso: ' + cs[l].e50 + ' / ' + cs[l].e100 + ' (nadie disponible)', 'falta']); porLeg[l] = 'Falta endoso'; return; }
+      n++;
+      var tipo = 'Endoso ' + letra + (cs[l].reconv ? ' + reconversión' : '');
+      dons.forEach(function (d) { filas.push([d, ape(d), G(d).a50, G(d).a100, -G(d).a50, -G(d).a100, 0, 0, tipo, 'endoso']); porLeg[d] = 'Endoso ' + letra + ' · da a ' + ape(l); });
+      var lq = liq(l);
+      if (f50 > 0 || f100 > 0) tipo += ' (faltan ' + Math.max(0, f50) + ' / ' + Math.max(0, f100) + ')';
+      filas.push([l, ape(l), G(l).a50, G(l).a100, lq[0], lq[1], lq[0], lq[1], tipo, f50 > 0 || f100 > 0 ? 'falta' : 'endoso']);
+      porLeg[l] = 'Endoso ' + letra + ' · recibe de ' + dons.map(ape).join(' y ');
+    });
+  Object.keys(cs).filter(function (l) { return cs[l].reconv > 0 && !porLeg[l]; }).sort(function (a, b) { return ape(a).localeCompare(ape(b)); })
+    .forEach(function (l) { var lq = liq(l); filas.push([l, ape(l), G(l).a50, G(l).a100, lq[0], lq[1], lq[0], lq[1], 'Reconversión', 'reconv']); porLeg[l] = 'Reconversión'; });
+  return { filas: filas, porLeg: porLeg };
 }
 
 function sugerirEndosos_(cs, info) {

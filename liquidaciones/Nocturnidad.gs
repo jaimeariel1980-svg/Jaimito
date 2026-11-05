@@ -129,6 +129,7 @@ function liquidarNocturnidad() {
       .setBackgrounds(res.map(function (r) { return new Array(cab.length).fill(/SIN DATOS/.test(r[7]) ? '#d0e0e3' : r[5] ? '#fbd9d9' : /horario distinto/.test(r[7]) ? '#fff3b8' : '#ffffff'); }));
     h.getRange(2, 4, res.length, 1).setNumberFormat('0.0').setFontWeight('bold');
   }
+  ordenarPestanas_(ss);
   var tot = res.reduce(function (s, r) { return s + r[3]; }, 0), om = res.reduce(function (s, r) { return s + r[5]; }, 0);
   avisar_('NOCTURNIDAD lista: ' + res.length + ' agentes · ' + Math.round(tot * 10) / 10 + ' hs nocturnas' + (om ? ' · ' + om + ' omisiones (no se pagan, en rojo)' : '') +
     '\nDetalle por jornada en NOCTURNIDAD_DETALLE.' + (cfg.fichadasAuto ? '\nFichadas: ' + cfg.fichadasAuto : '') + notaMeses_());

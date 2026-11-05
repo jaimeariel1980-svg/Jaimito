@@ -28,8 +28,10 @@ function abrirValidacion_(cfg, filas, hojas, ctx) {
   if (hoja) {
     var datos = hoja.getDataRange().getDisplayValues(), hdr = datos[0] || [];
     var il = hdr.indexOf('Legajo'), id = hdr.indexOf('Día'), iv = hdr.indexOf(CAB_CTRL_[5]), ic = hdr.indexOf(CAB_CTRL_[6]);
+    var fin = false;
     if (il >= 0 && id >= 0 && iv >= 0) datos.slice(1).forEach(function (r) {
-      if (!/^\d+$/.test(String(r[il]).trim()) || !+r[id]) return;
+      if (/^CORRECCIONES A LA PLANILLA/.test(r[0])) fin = true;
+      if (fin || !/^\d+$/.test(String(r[il]).trim()) || !+r[id]) return;
       var k = String(r[il]).trim() + '|' + (+r[id]), d = [r[iv] || '', ic >= 0 ? r[ic] || '' : ''];
       if (d[0] || d[1]) v.dec[k] = d; else delete v.dec[k];
     });
@@ -67,7 +69,7 @@ function cerrarValidacion_(cfg, filas, v) {
   if (/^s/i.test(conf[0]) && conf[1] && !pend.length && !conf[2]) conf[2] = Utilities.formatDate(new Date(), 'America/Argentina/Buenos_Aires', 'dd/MM/yyyy HH:mm');
   if (!/^s/i.test(conf[0]) || pend.length) conf[2] = '';
   v.dec.CONFORMIDAD = conf;
-  try { escribirValidacion_(v.ssH, v.rep, x, v.dec, pend.length); try { limpiarReporteViejo_(v.ssH); } catch (e2) { } nota = '\nEl jefe de Enfermería decide en la pestaña «' + HOJA_VAL_ + '» de la planilla de horarios.'; }
+  try { escribirValidacion_(v.ssH, v.rep, x, v.dec, pend.length, correccionesPlanilla_(filas)); try { limpiarReporteViejo_(v.ssH); } catch (e2) { } nota = '\nEl jefe de Enfermería decide en la pestaña «' + HOJA_VAL_ + '» de la planilla de horarios.'; }
   catch (e) { nota = '\nNo pude escribir en la planilla de horarios (' + e.message + '): revisá que esta cuenta pueda editarla.'; }
   guardarValJefe_(v.dec);
   escribirActa_(cfg, x, v.dec, pend);
@@ -105,7 +107,15 @@ function limpiarReporteViejo_(ssH) {
   if (c0 >= 0) h.getRange(1, c0 + 1, h.getMaxRows(), h.getMaxColumns() - c0).clearContent().clearFormat().clearDataValidations();
 }
 
-function escribirValidacion_(ssH, rep, x, dec, nPend) {
+function correccionesPlanilla_(filas) {
+  return filas.map(function (r) { return [r, queRevisar_(r)]; })
+    .filter(function (z) { return /^Enfermería:/.test(z[1]) && /El pago no cambia|como pidió el jefe/.test(z[1]); })
+    .sort(function (a, b) { return String(a[0][2]).localeCompare(String(b[0][2])) || a[0][3] - b[0][3]; })
+    .map(function (z) { return { serv: z[0][0], leg: z[0][1], ape: z[0][2], dia: z[0][3], turno: z[0][4], que: z[1].replace(/^Enfermería: /, '') }; });
+}
+
+function escribirValidacion_(ssH, rep, x, dec, nPend, corr) {
+  corr = corr || [];
   var h = ssH.getSheetByName(HOJA_VAL_) || ssH.insertSheet(HOJA_VAL_, 0), NP = CAB_PLAN_.length, NC = CAB_CTRL_.length, NT = NP + NC, cb = NT + 1;
   var filas = [CAB_PLAN_.concat(CAB_CTRL_)], fondos = [new Array(NT).fill(null)], listas = [];
   rep.slice(1).forEach(function (r, i) {
@@ -125,22 +135,34 @@ function escribirValidacion_(ssH, rep, x, dec, nPend) {
       listas.push([filas.length, s.noInf ? DEC_NOINF_ : DEC_DIF_]);
     });
   }
+  var tc = 0;
+  if (corr.length) {
+    filas.push(new Array(NT).fill('')); fondos.push(new Array(NT).fill(null));
+    var tt = new Array(NT).fill(''); tt[0] = 'CORRECCIONES A LA PLANILLA DE HORARIOS (no cambian el pago ni hay que decidir nada: solo dejar la planilla igual a lo que se trabajó)';
+    filas.push(tt); fondos.push(new Array(NT).fill('#1f4e79')); tc = filas.length;
+    corr.forEach(function (c) {
+      var f = [c.serv, 'Leg. ' + c.leg, c.ape, String(c.dia), c.turno, '', '', ''].concat(['', '', '', '', c.que, '', '']);
+      filas.push(f); fondos.push(new Array(NT).fill('#dbe9f9'));
+    });
+  }
   h.clear(); h.getRange(1, 1, h.getMaxRows(), h.getMaxColumns()).clearDataValidations();
   if (h.getMaxColumns() < cb + 2) h.insertColumnsAfter(h.getMaxColumns(), cb + 2 - h.getMaxColumns());
   h.getRange(1, 1, filas.length, NT).setNumberFormat('@').setValues(filas).setBackgrounds(fondos).setWrap(true).setVerticalAlignment('top');
   h.getRange(1, 1, 1, NP).setFontWeight('bold').setBackground('#434343').setFontColor('white');
   h.getRange(1, NP + 1, 1, NC).setFontWeight('bold').setBackground('#f4b183');
-  if (x.solo.length) h.getRange(filas.length - x.solo.length, 1, 1, NT).setFontWeight('bold').setFontColor('white');
+  if (x.solo.length) h.getRange(filas.length - x.solo.length - (corr.length ? corr.length + 2 : 0), 1, 1, NT).setFontWeight('bold').setFontColor('white');
+  if (tc) h.getRange(tc, 1, 1, NT).setFontWeight('bold').setFontColor('white');
   h.setFrozenRows(1);
   listas.forEach(function (l) { h.getRange(l[0], NP + 6).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(l[1], true).setAllowInvalid(false).build()); });
   var conf = dec.CONFORMIDAD || ['', '', ''];
-  h.getRange(1, cb + 1, 7, 2).setValues([
+  h.getRange(1, cb + 1, 8, 2).setValues([
     [CONF_TIT_, ''],
     ['Decisiones pendientes', nPend ? nPend + ' (completá la columna «Decisión del jefe» en las filas de color)' : 'Ninguna'],
     ['Nombre y apellido del jefe', conf[1]],
     ['¿Das conformidad a la liquidación?', conf[0]],
     ['Conformidad registrada', conf[2] ? conf[2] + ' (al liquidar)' : 'Todavía no'],
-    ['Cómo leer los colores', 'Sin color: coincide con lo cargado. Rojo: se paga menos que lo cargado. Amarillo: se paga más. Naranja: extra que no está cargada en la planilla. Verde: ya decidido por vos.'],
+    ['Cómo leer los colores', 'Sin color: coincide con lo cargado. Rojo: se paga menos que lo cargado. Amarillo: se paga más. Naranja: extra que no está cargada en la planilla. Verde: ya decidido por vos. Celeste (al final): correcciones a la planilla, no hay que decidir nada.'],
+    ['Correcciones a la planilla', corr.length ? corr.length + ' (ver al final de la lista, en celeste)' : 'Ninguna'],
     ['Cuándo se aplica', 'Lo que decidas se aplica la próxima vez que se liquide.']
   ]).setWrap(true).setVerticalAlignment('top').setBackground('#eef3fb').setNumberFormat('@');
   h.getRange(1, cb + 1, 1, 2).setFontWeight('bold').setBackground('#1f4e79').setFontColor('white');

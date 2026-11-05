@@ -143,9 +143,18 @@ header{min-height:86px}
     });
     return h+'</div></div>';
   }
+  // Reservas y Descartados son desplegables cerrados: soltar una tarjeta sobre uno cerrado caía en la columna de al lado (Ariel, 5/11).
+  // Al empezar a arrastrar se abren todos, para que cada estado sea un destino visible; al soltar vuelven a quedar como estaban.
+  function abrirAcordeones(abrir){
+    document.querySelectorAll('.acc details').forEach(function(d){
+      if(abrir){d._cerr=!d.open;d.open=true;}
+      else{if(d._cerr)d.open=false;d._cerr=false;}
+    });
+  }
   function iniciarSortable(){
     if(typeof Sortable==='undefined')return;
-    document.querySelectorAll('.col-body,.dbody').forEach(function(col){new Sortable(col,{group:'kb',animation:150,forceFallback:true,fallbackOnBody:true,delay:300,delayOnTouchOnly:true,touchStartThreshold:10,onChoose:function(){try{navigator.vibrate&&navigator.vibrate(25);}catch(e){}},scroll:true,bubbleScroll:true,scrollSensitivity:80,scrollSpeed:15,onEnd:function(evt){
+    document.querySelectorAll('.col-body,.dbody').forEach(function(col){new Sortable(col,{group:'kb',animation:150,forceFallback:true,fallbackOnBody:true,delay:300,delayOnTouchOnly:true,touchStartThreshold:10,onChoose:function(){try{navigator.vibrate&&navigator.vibrate(25);}catch(e){}},scroll:true,bubbleScroll:true,scrollSensitivity:80,scrollSpeed:15,onStart:function(){abrirAcordeones(true);},onEnd:function(evt){
+      abrirAcordeones(false);
       var fila=+evt.item.dataset.fila,estado=evt.to.dataset.estado,cc=DATA_ALL.find(function(x){return x.fila===fila;});
       if(cc&&estado)cc.estado=estado;
       if(estado&&evt.from!==evt.to){google.script.run.withSuccessHandler(function(){toast();if(/^Descartad/i.test(estado))pedirMotivo(fila,true);else{renderBoardN();}}).withFailureHandler(function(e){blAlert('Error: '+e.message,function(){window.top.location.reload();});}).moverEstado(PERFIL,fila,estado,quienSoy());}
@@ -160,7 +169,11 @@ header{min-height:86px}
     });
     h+=acordeonN('Reservas','res',RES_TIPOS,function(e){return /reserva/i.test(e);},'');
     h+=acordeonN('Descartados','desc',DESC_TIPOS,function(e){return /^Descartad/.test(e);},'Descartado');
-    b.innerHTML=h;iniciarSortable();pintarKpi();filtrar();
+    // los desplegables de Reservas y Descartados que estaban abiertos siguen abiertos al volver a dibujar el tablero (Ariel, 5/11: «me cierra el desplegable»)
+    var abiertos=[];b.querySelectorAll('.acc details[open] .dbody').forEach(function(x){abiertos.push(x.getAttribute('data-estado'));});
+    b.innerHTML=h;
+    if(abiertos.length)b.querySelectorAll('.acc details .dbody').forEach(function(x){if(abiertos.indexOf(x.getAttribute('data-estado'))>-1)x.parentNode.open=true;});
+    iniciarSortable();pintarKpi();filtrar();
   };
   // ---- indicadores clickeables
   function kpiOk(k,c){
