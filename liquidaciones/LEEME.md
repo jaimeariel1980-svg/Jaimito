@@ -64,3 +64,5 @@ Cada corrida guarda una foto de las extras cargadas (pestaña oculta `_FOTO_EXTR
 
 ## Pendiente
 —
+
+**Orden de las pestañas** (05/11): RESUMEN · LIQUIDACION · ACTA_CONFORMIDAD · NOCTURNIDAD · NOCTURNIDAD_DETALLE · FERIADOS · FERIADOS_DETALLE · CONFIG; CAMBIOS y las internas quedan ocultas. Extras, nocturnidad y feriados son liquidaciones distintas y **no se mezclan** en una misma pestaña. RESUMEN suma la columna «Planilla de horarios» (link a la fila del agente). La pestaña del jefe («Extras - Validación del jefe») trae al final, en celeste, las **Correcciones a la planilla de horarios** (día, fila y valor; no cambian el pago ni piden decisión).
