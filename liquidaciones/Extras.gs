@@ -420,7 +420,8 @@ function liquidarExtras() {
     if (primera) visto[r[1]] = 1;
     var nov = String(r[14] || '').match(/Novedad del reloj: (.*)$/);
     var lab = TIPOS_FILA[tipos[i]][3], trn = String(r[12] || '').match(/se tomó turno (\d{2}:\d{2} a \d{2}:\d{2})/);
-    if (tipos[i] === 2) lab = /noche del/.test(r[12]) ? 'SE PAGA · corregir: pasar la extra ' + hhTurno_(r[7] || '') + ' al día ' + (+r[3] + 1) : trn ? 'SE PAGA · corregir: día ' + r[3] + ', turno ' + hhTurno_(trn[1]) + ' (no ' + r[4] + ')' : 'SE PAGA · corregir el turno del día ' + r[3];
+    var fch = r[5] && r[6] ? r[5] + ' a ' + r[6] : r[5] || '';
+    if (tipos[i] === 2) lab = /noche del/.test(r[12]) ? 'SE PAGA · NO COINCIDE EL DÍA DE LA EXTRA: la planilla tiene la extra ' + hhTurno_(r[7] || '') + ' el día ' + r[3] + ', pero el reloj marca ' + fch + ' (la hizo la noche del ' + r[3] + ' al ' + (+r[3] + 1) + '). Corregir: pasar la extra al día ' + (+r[3] + 1) + '.' : trn ? 'SE PAGA · NO COINCIDE EL TURNO: la planilla dice turno ' + r[4] + ' el día ' + r[3] + ', pero el reloj marca ' + fch + ' (hizo turno ' + hhTurno_(trn[1]) + ' + la extra ' + hhTurno_(r[7] || '') + '). Corregir: día ' + r[3] + ', turno ' + hhTurno_(trn[1]) + '.' : 'SE PAGA · NO COINCIDE EL TURNO: la planilla dice ' + r[4] + ' el día ' + r[3] + ', pero el reloj marca ' + fch + '. Corregir el turno de ese día.';
     var c = String(r[12] || ''), lic = c.match(/licencia cargada \(([^)]*)\)/);
     var plan = (/^-?$|^F$|FDO/i.test(r[4]) ? 'Franco (' + (r[4] || '-') + ')' : 'Turno ' + r[4]) + (lic ? ' · licencia «' + lic[1] + '»' : '') + (r[7] ? ' · extra ' + hhTurno_(String(r[7])) + ' el día ' + r[3] : ' · sin extra cargada');
     var rel = r[5] && r[6] ? 'Entró ' + r[5] + ' · salió ' + r[6] : r[5] ? 'Solo una fichada: ' + r[5] : 'Sin fichadas';
@@ -433,7 +434,7 @@ function liquidarExtras() {
              'Expte 50% (mes)', 'Expte 100% (mes)', 'Total hecho (mes)', 'A pagar mes (tope ' + cfg.tope + ')', 'Alerta del mes'];
   var h = escribir_(SpreadsheetApp.openById(ID_BASE), 'LIQUIDACION', cab, out, 5, 9);
   if (out.length) h.getRange(2, 12, out.length, 5).setWrap(true);
-  h.setColumnWidth(12, 190); h.setColumnWidth(13, 200); h.setColumnWidth(14, 220); h.setColumnWidth(15, 340); h.setColumnWidth(16, 300);
+  h.setColumnWidth(12, 320); h.setColumnWidth(13, 200); h.setColumnWidth(14, 220); h.setColumnWidth(15, 340); h.setColumnWidth(16, 300);
   pintarLiquidacion_(h, out, cab.length, tipos);
   escribirResumen_(filas, mens, grh, cfg);
   var cambios = registrarCambios_(hojas, cfg), ctrl = val ? cerrarValidacion_(cfg, filas, val) : '';
