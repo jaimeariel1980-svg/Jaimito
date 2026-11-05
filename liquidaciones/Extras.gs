@@ -412,18 +412,19 @@ function liquidarExtras() {
   }
   var out = filas.slice(), visto = {};
   out.sort(function (a, b) { return tipoFila_(a) - tipoFila_(b) || String(a[2]).localeCompare(String(b[2])) || a[3] - b[3]; });
-  out = out.map(function (r) {
+  var tipos = out.map(tipoFila_);
+  out = out.map(function (r, i) {
     var m = mens[r[1]], primera = m && !visto[r[1]];
     if (primera) visto[r[1]] = 1;
-    return r.slice(0, 13).concat([motivoClaro_([r], null)], r.slice(13)).concat(primera ? [m.g ? m.g.a50 : '', m.g ? m.g.a100 : '', m.c.total, m.c.pagar, m.c.alerta] : ['', '', '', '', '']);
+    return r.slice(0, 11).concat([TIPOS_FILA[tipos[i]][3], motivoFila_(r, null), queRevisar_(r)], r.slice(13)).concat(primera ? [m.g ? m.g.a50 : '', m.g ? m.g.a100 : '', m.c.total, m.c.pagar, m.c.alerta] : ['', '', '', '', '']);
   });
 
-  var cab = ['Servicio', 'Legajo', 'Apellido', 'Día', 'Turno', 'Entrada', 'Salida', 'Aut. Jefatura', 'Franja realizada', 'Hs 50%', 'Hs 100%', 'Estado', 'Condición', 'Por qué (en simple)', 'Fichadas del día', 'Horario en tarjeta reloj',
+  var cab = ['Servicio', 'Legajo', 'Apellido', 'Día', 'Turno', 'Entrada', 'Salida', 'Aut. Jefatura', 'Franja realizada', 'Hs 50%', 'Hs 100%', '¿Se paga?', 'Qué pasó', 'Qué hay que hacer', 'Fichadas del día', 'Horario en tarjeta reloj',
              'Expte 50% (mes)', 'Expte 100% (mes)', 'Total hecho (mes)', 'A pagar mes (tope ' + cfg.tope + ')', 'Alerta del mes'];
   var h = escribir_(SpreadsheetApp.openById(ID_BASE), 'LIQUIDACION', cab, out, 5, 9);
-  if (out.length) h.getRange(2, 14, out.length, 1).setWrap(true);
-  h.setColumnWidth(14, 360);
-  pintarLiquidacion_(h, out, cab.length);
+  if (out.length) h.getRange(2, 12, out.length, 3).setWrap(true);
+  h.setColumnWidth(12, 150); h.setColumnWidth(13, 340); h.setColumnWidth(14, 300);
+  pintarLiquidacion_(h, out, cab.length, tipos);
   escribirResumen_(filas, mens, grh, cfg);
   var cambios = registrarCambios_(hojas, cfg), ctrl = val ? cerrarValidacion_(cfg, filas, val) : '';
   var aut = filas.filter(function (r) { return r[11] === 'AUTORIZADA'; }).length;
@@ -441,13 +442,13 @@ function escribir_(ss, nombre, cab, filas, textoDesde, textoHasta) {
   return h;
 }
 
-function pintarLiquidacion_(h, filas, nc) {
+function pintarLiquidacion_(h, filas, nc, tipos) {
   h.setRowHeight(1, 32);
   h.getRange(1, 1, 1, nc).setVerticalAlignment('middle').setHorizontalAlignment('center').setWrap(true);
   if (!filas.length) return;
   var rg = h.getRange(2, 1, filas.length, nc), fondos = [], est = [];
   filas.forEach(function (r) {
-    var t = tipoFila_(r), c = TIPOS_FILA[t][1];
+    var t = tipos[fondos.length], c = TIPOS_FILA[t][1];
     fondos.push(new Array(nc).fill(c));
     est.push([t === 0 ? '#c9ebcf' : c]);
   });
@@ -459,7 +460,7 @@ function pintarLiquidacion_(h, filas, nc) {
   var hr = h.getRange(2, 16, filas.length, 1), fc = hr.getValues().map(function (v) { return [/≠/.test(v[0]) ? '#c62828' : '#000000']; });
   hr.setFontColors(fc);
   for (var i = 1; i < filas.length; i++) {
-    if (tipoFila_(filas[i]) !== tipoFila_(filas[i - 1])) h.getRange(i + 1, 1, 1, nc).setBorder(null, null, true, null, null, null, '#555555', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+    if (tipos[i] !== tipos[i - 1]) h.getRange(i + 1, 1, 1, nc).setBorder(null, null, true, null, null, null, '#555555', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
   }
   var ley = TIPOS_FILA.map(function (x) { return [x[0]]; }), col = nc + 2;
   h.getRange(1, col).setValue('Referencias').setFontWeight('bold');
