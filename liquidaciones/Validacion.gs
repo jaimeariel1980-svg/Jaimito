@@ -41,16 +41,18 @@ function abrirValidacion_(cfg, filas, hojas, ctx) {
 }
 
 function aplicarDecisiones_(filas, dec, E) {
-  var hechos = {};
+  var hechos = {}, jefe = (dec.CONFORMIDAD || [])[1] || '';
   filas.forEach(function (r) {
     var k = r[1] + '|' + r[3], d = dec[k];
     if (!d || !d[0]) return;
-    var nota = d[1] ? ' (' + d[1] + ')' : '';
+    var info = ' · decisión: «' + d[0] + '»' + (d[1] ? ' · comentario: «' + d[1] + '»' : '') + (jefe ? ' · jefe: ' + jefe : '') + ' · antes: ' + r[12];
     if (d[0] === DEC_NOINF_[0] && /NO INFORMADA/.test(r[12]) && r[11] !== 'AUTORIZADA') {
-      r[11] = 'AUTORIZADA'; r[12] = 'EXTRA NO INFORMADA · AUTORIZADA por el jefe de Enfermería' + nota;
+      r[11] = 'AUTORIZADA'; r[12] = 'AUTORIZADA por el jefe de Enfermería' + info;
     } else if ((d[0] === DEC_DIF_[1] || d[0] === DEC_DIF_[3]) && E[k] && !hechos[k] && r[11] !== 'AUTORIZADA') {
       hechos[k] = 1; r[9] = E[k].h50; r[10] = E[k].h100; r[11] = 'AUTORIZADA';
-      r[12] = (d[0] === DEC_DIF_[3] ? 'REGISTRO DEL RELOJ VERIFICADO' : 'OMISIÓN JUSTIFICADA') + ' por el jefe de Enfermería: se paga la franja ' + E[k].fr.join(' + ') + nota;
+      r[12] = 'AUTORIZADA por el jefe de Enfermería: se paga la franja ' + E[k].fr.join(' + ') + info;
+    } else if (!/DECISIÓN DEL JEFE/.test(r[12])) {
+      r[12] += ' · DECISIÓN DEL JEFE: «' + d[0] + '»' + (d[1] ? ' (' + d[1] + ')' : '') + (jefe ? ' — ' + jefe : '');
     }
   });
 }
