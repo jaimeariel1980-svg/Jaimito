@@ -165,6 +165,8 @@ select:focus{outline:none;border-color:var(--accent);}
 </style>
 </head>
 <body>
+<div id="cargaOv" style="display:none;position:fixed;inset:0;z-index:99999;background:#f1f3f8;align-items:center;justify-content:center;flex-direction:column;gap:12px;font:600 16px Inter,Arial,sans-serif;color:#1b3866"><div style="width:34px;height:34px;border:4px solid #cfd8ea;border-top-color:#1b3866;border-radius:50%;animation:ovg 1s linear infinite"></div><div id="cargaTxt">Abriendo el documento...</div></div>
+<style>@keyframes ovg{to{transform:rotate(360deg)}}</style>
 <div class="top">
   <img id="topLogo" alt="Azcuénaga" style="height:44px;background:#fff;padding:5px 9px;border-radius:8px;display:none;">
   <span class="brand" id="brandTxt">AZCUÉNAGA<small>INMOBILIARIA</small></span>
@@ -261,7 +263,7 @@ var DOCS = {
     titulo:"SE\u00d1A POR COMPRA-VENTA INMOBILIARIA",
     texto:
 "SE\u00d1A POR COMPRA-VENTA INMOBILIARIA\n\n"+
-"En la ciudad de Rosario, provincia de Santa Fe, a {fecha}, entre {vendedor}, D.N.I. Nro. {dni_vendedor}, con domicilio en {domicilio_vendedor}, en representaci\u00f3n de la parte VENDEDORA, y por la otra, {comprador}, D.N.I. Nro. {dni_comprador}, con domicilio en {domicilio_comprador}, como parte COMPRADORA, se consiente y ejecuta el presente contrato de SE\u00d1A por compra-venta inmobiliaria:\n\n"+
+"En la ciudad de Rosario, provincia de Santa Fe, a {fecha}, entre AZCUENAGA INMOBILIARIA, representada en este acto por la Corredora Inmobiliaria Silvina Novillo (Mat. CI N\u00b0 2352), con domicilio legal en calle Mendoza 4873 de la ciudad de Rosario, en representaci\u00f3n de la parte VENDEDORA, y por la otra, {comprador}, D.N.I. Nro. {dni_comprador}, con domicilio en {domicilio_comprador}, como parte COMPRADORA, se consiente y ejecuta el presente contrato de SE\u00d1A por compra-venta inmobiliaria:\n\n"+
 "PRIMERO: La parte VENDEDORA toma de la parte COMPRADORA, en concepto de SE\u00d1A, la suma de D\u00d3LARES BILLETES ESTADOUNIDENSES {sena_letras} (U$S {sena}), por la compra de un inmueble con todo lo edificado, clavado y plantado, ubicado en la calle {direccion} de esta ciudad, inscripto el dominio al {dominio}, en el Registro General de Propiedades, Departamento Rosario.\n\n"+
 "SEGUNDO: El precio de venta se pacta en la suma total de D\u00d3LARES BILLETES ESTADOUNIDENSES {precio_letras} (U$S {precio_total}), que la parte COMPRADORA abonar\u00e1 a la parte VENDEDORA de la siguiente forma: en efectivo y en este acto la suma de U$S {sena}, sirviendo el presente como suficiente recibo; y al momento de la firma de la escritura traslativa de dominio y entrega de posesi\u00f3n la suma de U$S {saldo}.\n\n"+
 "TERCERO: Todos los impuestos, tasas, servicios que graven el inmueble ser\u00e1n a cargo exclusivo de la parte VENDEDORA hasta la fecha de entrega de la posesi\u00f3n.\n\n"+
@@ -274,6 +276,16 @@ var DOCS = {
 "FIRMA DEL CONTRATO: Previa lectura y ratificaci\u00f3n del contenido del presente, se firman tres ejemplares de un mismo tenor y a un solo efecto, en el lugar y fecha al principio indicados.\n\n\n"+
 "_____________________________          _____________________________\n"+
 "        PARTE VENDEDORA                          PARTE COMPRADORA"
+  },
+  conformidadsena: {
+    nombre:"Conformidad de se\u00f1a", desc:"El propietario acepta la se\u00f1a de la venta", activo:true,
+    titulo:"CONFORMIDAD DE SE\u00d1A POR VENTA AUTORIZADA",
+    texto:
+"CONFORMIDAD DE SE\u00d1A POR VENTA AUTORIZADA\n\n"+
+"En la ciudad de Rosario, provincia de Santa Fe, a {fecha}, el/la Sr./Sra. {propietario}, D.N.I. Nro. {dni_propietario}, como titular de la propiedad del inmueble sito en calle {direccion} de esta ciudad, presta su total conformidad y acepta en todos sus t\u00e9rminos la se\u00f1a penitenciaria de compra-venta recibida el d\u00eda {fecha_sena}, por Administraci\u00f3n Azcu\u00e9naga, representada por Silvina Novillo CI 2352.\n\n\n"+
+"_____________________________\n"+
+"{propietario}\n"+
+"(PROPIETARIO VENDEDOR)"
   },
   autorizacion: {
     nombre:"Autorización de venta", desc:"Derechos de venta", activo:true,
@@ -453,15 +465,51 @@ function _ponerProps(lista){
   });
   var pre=_propUrl();
   if(pre && PROPIEDADES[pre]){ sel.value=pre; var n=document.getElementById('propInfo'); if(!n){ n=document.createElement('div'); n.id='propInfo'; n.style.cssText='margin-top:8px;font-size:13px;color:#2a5'; sel.parentNode.appendChild(n); } n.textContent='✓ Datos cargados de: '+PROPIEDADES[pre].etiqueta; }
+  window.__PROPLISTAS=1; intentarEditar();
+}
+function _limpiarHtml(h){
+  var d=new DOMParser().parseFromString('<div>'+h+'</div>','text/html'), r=d.body.firstChild;
+  r.querySelectorAll('script,style,iframe,object,embed,link,meta').forEach(function(x){ x.remove(); });
+  r.querySelectorAll('*').forEach(function(x){ Array.from(x.attributes).forEach(function(a){ if(/^on/i.test(a.name) || /javascript:/i.test(a.value)) x.removeAttribute(a.name); }); });
+  return r.innerHTML;
+}
+function _editUrl(){
+  try{ var q=new URLSearchParams(location.search).get('edit'); if(q) return q; }catch(e){}
+  return window.__EDIT||'';
+}
+function _verUrl(){
+  try{ if(new URLSearchParams(location.search).get('ver')) return '1'; }catch(e){}
+  return window.__VER||'';
+}
+function _camposRaw(){
+  var o={}; document.querySelectorAll('#campos input[data-campo]').forEach(function(i){ o[i.getAttribute('data-campo')]=i.value; }); return o;
+}
+function _ov(t){ var o=document.getElementById('cargaOv'); if(!o) return; if(t===false){ o.style.display='none'; return; } document.getElementById('cargaTxt').textContent=t||'Abriendo el documento...'; o.style.display='flex'; }
+function intentarEditar(){
+  var id=_editUrl(); if(!id || window.__EDITANDO) return; window.__EDITANDO=1;
+  var ver=!!_verUrl(); _ov(ver?'Preparando el PDF...':'Abriendo el documento...');
+  google.script.run.withSuccessHandler(function(r){
+    try{
+      var d=JSON.parse(r.borrador); if(!DOCS[d.docSel]) throw new Error('tipo de documento desconocido');
+      if(ver){ elegir(d.docSel); window.__DOCID=r.id; document.getElementById('editor').innerHTML=_limpiarHtml(d.html||''); paso(3); window.__SOLOVER=1; generarPDF(); _ov(false); mostrarAviso('Documento «'+r.nombre+'» (versión '+r.version+'). Si no se descargó, usá el link «Abrilo desde acá».', null); return; }
+      elegir(d.docSel); esCompartida=!!d.esCompartida; var sp=document.getElementById('propSel'); if(d.propKey && PROPIEDADES[d.propKey]) sp.value=d.propKey;
+      document.getElementById('compartida').checked=esCompartida;
+      if(d.campos){ try{ completar(); document.querySelectorAll('#campos input[data-campo]').forEach(function(i){ var k=i.getAttribute('data-campo'); if(d.campos[k]!=null) i.value=d.campos[k]; }); }catch(e){} }
+      window.__DOCID=r.id; document.getElementById('editor').innerHTML=_limpiarHtml(d.html||''); document.getElementById('edAI').innerHTML='';
+      paso(3); _ov(false);
+      mostrarAviso('Editando «'+r.nombre+'» (versión '+r.version+'). Al generar el PDF se guarda como una versión nueva.', null);
+    }catch(e){ _ov(false); alert('No pude abrir el borrador: '+e.message); }
+  })  .withFailureHandler(function(e){ _ov(false); alert('No pude abrir el documento: '+(e&&e.message?e.message:e)); }).borradorDocGenerado(id);
 }
 function _propUrl(){
   try{ var q=new URLSearchParams(location.search).get('prop'); if(q) return q; }catch(e){}
   return window.__PROP||'';
 }
 function cargarPropiedades(){
+  if(_editUrl()){ _ov(_verUrl()?'Preparando el PDF...':'Abriendo el documento...'); if(_verUrl()) intentarEditar(); }
   var sel=document.getElementById('propSel');
   sel.innerHTML='<option value="">Cargando propiedades...</option>';
-  try{ if(!_propUrl() && window.google && google.script && google.script.url && google.script.url.getLocation) google.script.url.getLocation(function(l){ if(l && l.parameter && l.parameter.prop){ window.__PROP=l.parameter.prop; var sl=document.getElementById('propSel'); if(PROPIEDADES[__PROP]) sl.value=__PROP; } }); }catch(e){}
+  try{ if(window.google && google.script && google.script.url && google.script.url.getLocation) google.script.url.getLocation(function(l){ if(l && l.parameter && l.parameter.edit){ window.__EDIT=l.parameter.edit; if(l.parameter.ver){ window.__VER='1'; intentarEditar(); } else { _ov(); if(window.__PROPLISTAS) intentarEditar(); } } if(!_propUrl() && l && l.parameter && l.parameter.prop){ window.__PROP=l.parameter.prop; var sl=document.getElementById('propSel'); if(PROPIEDADES[__PROP]) sl.value=__PROP; } }); }catch(e){}
   function viejo(){
     google.script.run
       .withSuccessHandler(_ponerProps)
@@ -606,6 +654,7 @@ function campoHTML(c, val, esAuto){
     fecha_fin:'Fecha de finalización',
     fecha_escritura:'Fecha de escritura',
     fecha_boleto:'Fecha del boleto',
+    fecha_sena:'Fecha en que se recibi\u00f3 la se\u00f1a',
     dia:'Día', mes:'Mes', anio:'Año',
     // personas
     interesado:'Interesado',
@@ -642,7 +691,7 @@ function campoHTML(c, val, esAuto){
   var full = (c==='direccion'||c==='monto_letras'||c==='precio_letras'||c==='sena_letras'||c==='descripcion_inmueble') ? ' full' : '';
   var tag = esAuto && val ? '<span class="tag auto">del sistema</span>' : (!esAuto ? '<span class="tag op">operación</span>' : '');
   var cls = esAuto && val ? ' auto' : '';
-  var tipo = (c==='fecha'||c==='fecha_inicio'||c==='fecha_fin'||c==='fecha_escritura'||c==='fecha_boleto') ? ' type="date"' : '';
+  var tipo = (c==='fecha'||c==='fecha_inicio'||c==='fecha_fin'||c==='fecha_escritura'||c==='fecha_boleto'||c==='fecha_sena') ? ' type="date"' : '';
 
   // Campos de MONTO (solo numeros) que disparan la conversion a letras
   var PARES = { monto_reserva:'monto_letras', precio_total:'precio_letras', precio_venta:'precio_letras', sena:'sena_letras' };
@@ -834,7 +883,7 @@ function leerDatos(){
     delete d['fecha_doc'];
   }
   // Fechas sueltas (date) -> formato dd/mm/aaaa legible
-  ['fecha','fecha_inicio','fecha_fin','fecha_escritura','fecha_boleto'].forEach(function(k){
+  ['fecha','fecha_inicio','fecha_fin','fecha_escritura','fecha_boleto','fecha_sena'].forEach(function(k){
     if(d[k] && /^\d{4}-\d{2}-\d{2}$/.test(d[k])){
       var q=d[k].split('-'); d[k]=q[2]+'/'+q[1]+'/'+q[0];
     }
@@ -1055,11 +1104,20 @@ function generarPDF(){
 
   var nombreArch = DOCS[docSel].nombre.replace(/[^A-Za-z]/g,'-')+'-Azcuenaga-'+Date.now()+'.pdf';
   descargarPDF(doc, nombreArch);
-  var b64 = doc.output('datauristring').split(',')[1];
-  google.script.run
-    .withSuccessHandler(function(r){ if(r && r.ok){ mostrarAviso('✓ Guardado en Drive: '+r.nombre, r.url); } })
-    .withFailureHandler(function(err){ mostrarAviso('⚠ Se descargó, pero no se pudo guardar en Drive: '+err.message, null); })
-    .guardarDocumento(nombreArch, b64);
+  if(window.__SOLOVER) return;
+  var b64 = doc.output('datauristring').split(',')[1], propK = document.getElementById('propSel').value, quien = ''; try{ quien = (localStorage.getItem('azcu_nombre')||'').trim(); }catch(e){}
+  if(propK){
+    var borr = JSON.stringify({docSel:docSel, propKey:propK, esCompartida:esCompartida, campos:_camposRaw(), html:document.getElementById('editor').innerHTML});
+    google.script.run
+      .withSuccessHandler(function(r){ if(r && r.ok){ window.__DOCID=r.id; mostrarAviso('✓ Guardado en la ficha de la propiedad (versión '+r.version+'). Podés volver a editarlo desde ahí.', r.url); } })
+      .withFailureHandler(function(err){ mostrarAviso('⚠ Se descargó, pero no se pudo guardar en la ficha: '+err.message, null); })
+      .guardarDocumentoPropiedad(propK, docSel, DOCS[docSel].nombre, nombreArch, b64, borr, quien, window.__DOCID||'');
+  } else {
+    google.script.run
+      .withSuccessHandler(function(r){ if(r && r.ok){ mostrarAviso('✓ Guardado en Drive: '+r.nombre, r.url); } })
+      .withFailureHandler(function(err){ mostrarAviso('⚠ Se descargó, pero no se pudo guardar en Drive: '+err.message, null); })
+      .guardarDocumento(nombreArch, b64);
+  }
 }
 
 function descargarPDF(doc, nombre){

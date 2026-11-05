@@ -28,7 +28,7 @@ assert.ok(run('apellidoCoincide("DELLABARCA","BARCA DELLA Juan")'));
 assert.ok(!run('apellidoCoincide("LOMBARDO","ALONSO Cecilia")'));
 // consolidado GRH
 // reconversión: es todo el bloque o nada. Hizo 12 al 50 y 2 al 100 con expte 10/6 => no se reconvierte, endoso 2
-let c=run('consolidarGRH_(12,2,10,6,true,30)');assert.deepStrictEqual([c.reconv,c.endoso,c.alerta],[0,2,'endoso 2h (pedir a otro agente)']);
+let c=run('consolidarGRH_(12,2,10,6,true,30)');assert.deepStrictEqual([c.reconv,c.endoso,c.alerta],[0,2,'endoso 2h (2h al 50 %: pedir a otro agente)']);assert.deepStrictEqual([c.e50,c.e100,c.sobra50,c.sobra100],[2,0,0,4]);
 // 100 sin usar: se reconvierten las 6 enteras
 c=run('consolidarGRH_(14,0,10,6,true,30)');assert.deepStrictEqual([c.reconv,c.endoso],[6,0]);
 c=run('consolidarGRH_(20,0,10,6,true,30)');assert.deepStrictEqual([c.reconv,c.endoso],[6,4]);
@@ -138,7 +138,7 @@ assert.deepStrictEqual([fd[0][11],fd[0][9],fd[1][11],fd[1][9],fd[1][10]],['AUTOR
 // 38) #N/A: el agente no figura en la tarjeta del día siguiente (sábado) => no es omisión, sin datos del reloj
 let fna=F({9:['6:00:30','19:13:00']});fna[10]={};
 r=R(sim(fna,ag({hab:{8:'23/6',9:'23/6'},ext:{9:'19/23'}}))[0]);assert.ok(/SIN DATOS DEL RELOJ/.test(r.cond));assert.ok(/día 10/.test(r.cond));assert.strictEqual(r.h50,0);
-assert.strictEqual(run("tipoFila_(['','','','','','','','','',0,0,'A REVISAR','SIN DATOS DEL RELOJ: el agente no figura en la tarjeta del día 10 (sale #N/A). No es omisión'])"),4);
+assert.strictEqual(run("tipoFila_(['','','','','','','','','',0,0,'A REVISAR','SIN DATOS DEL RELOJ: el agente no figura en la tarjeta del día 10 (sale #N/A). No es omisión'])"),6);
 // 39) MOYA: extra 0/6 cargada el 23 pero hecha la noche del 23 al 24 (23:23 a 6:01) => se paga esa noche, marcada
 r=R(sim(F({23:['23:23:16'],24:['6:01:17','17:50:55']}),ag({hab:{24:'18/06',3:'18/06',4:'18/06'},ext:{23:'0/6'}}))[0]);assert.deepStrictEqual([r.est,r.h100],['AUTORIZADA',6]);assert.ok(/noche del 23 al 24/.test(r.cond));
 // ACUÑA: 0/6 cargada el 20 y hecha 23:57 del 19 a 6:00 del 20 => sigue igual (sin marca)
@@ -153,13 +153,18 @@ r=run(`(function(){_fich={};_ssFich={getSheetByName:function(){return {getDataRa
 ['62318','MUÑOZ','ROSARIO 14 Anexo I','OK','19/10','06:00 a 13:00','','6:01:37','14:21:04','17:52:40','18:00:11','-','-','','','']];}};}};}};_diasMes=31;var x=fichDia_(19,{});return {t:x['62318'].txt,n:x['62318'].novedad};})()`);
 assert.deepStrictEqual(r.t,['6:01:37','14:21:04','14:23:48','14:23:51','14:23:54','17:49:12','17:52:40','18:00:11']);assert.strictEqual(r.n,'Debe compensar los 420 minutos');
 r=R(sim(F({19:['6:01:37','14:21:04','14:23:48','17:49:12','17:52:40','18:00:11']}),ag({hab:{19:'6/13'},ext:{19:'13/18'}}))[0]);assert.deepStrictEqual([r.est,r.h50],['AUTORIZADA',5]);
+// 42) SANTARELLI: licencia cargada ese día pero fichó dentro de su turno (vino y se retiró con ART) => no es extra
+assert.strictEqual(sim(F({27:['6:02:35','11:25:11']}),ag({hab:{27:'6/13'},lic:{27:'ART'}})).length,0);
+// 43) endoso: a quién pedirlo (al que le sobran horas de esa categoría, primero del mismo servicio)
+let se=run(`sugerirEndosos_({'1':consolidarGRH_(14,1,10,6,true,30),'2':consolidarGRH_(3,0,10,6,true,30),'3':consolidarGRH_(0,0,10,6,true,30)},{'1':{ape:'SARBA',serv:'4 piso'},'2':{ape:'LOPEZ',serv:'4 piso'},'3':{ape:'GOMEZ',serv:'2 piso'}})`);
+assert.ok(/^Pedir endoso: 4 h al 50 % a LOPEZ/.test(se['1']));
 // 16) identidad
 const f2=F({5:['6:58','19:10']});f2[5]['1'].nombre='ALONSO Cecilia';
 assert.strictEqual(R(sim(f2,ag({hab:{5:'7/14'},ext:{5:'14/19'}}))[0]).est,'REVISAR IDENTIDAD');
 // 18) orden y colores: autorizada primero (blanco), luego cada tipo
 assert.strictEqual(run("tipoFila_(['','','','','','','','','',1,0,'AUTORIZADA',''])"),0);
-assert.strictEqual(run("tipoFila_(['','','','','','','','','',0,0,'A REVISAR','omisión: una sola fichada'])"),5);
-assert.strictEqual(run("tipoFila_(['','','','','','','','','',4,0,'A REVISAR','extra NO autorizada (no hay franja declarada)'])"),3);
+assert.strictEqual(run("tipoFila_(['','','','','','','','','',0,0,'A REVISAR','omisión: una sola fichada'])"),7);
+assert.strictEqual(run("tipoFila_(['','','','','','','','','',4,0,'A REVISAR','extra NO autorizada (no hay franja declarada)'])"),5);
 assert.strictEqual(run("tipoFila_(['','','','','','','','','',3,0,'AUTORIZADA','HORARIO DISTINTO AL PROGRAMADO'])"),2);
 assert.strictEqual(run("tipoFila_(['','','','','','','','','',3,0,'AUTORIZADA','EXTRA NO INFORMADA · AUTORIZADA por el jefe de Enfermería'])"),1);
 // 19) horario de la tarjeta vs turno de la planilla

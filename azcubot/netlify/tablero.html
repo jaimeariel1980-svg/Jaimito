@@ -1033,11 +1033,12 @@ function ficha(id){
       '<div class="fi"><div class="k">Nacionalidad</div><input class="inp" value="'+(sm.nacionalidad||'')+'" onchange="setC(\''+p.id+'\',\'nacionalidad\',this.value)"></div>'+
       '<div class="fi" style="grid-column:1/-1"><div class="k">Domicilio</div><input class="inp" value="'+(sm.dom||'').replace(/"/g,'&quot;')+'" onchange="setC(\''+p.id+'\',\'dom\',this.value)"></div>'+
     '</div><div id="otrosProp">'+otrosPropHtml(p)+'</div>'))+
-    '<div id="enc-sec-'+p.id+'">'+(p.encuesta?'<h3 class="sec">Encuesta de satisfacción del cliente</h3><div class="enc-loading">Cargando...</div>':'')+'</div><h3 class="sec">Historial de consultas y visitas ('+p.cons+')</h3>'+seg+ofertasHtml+
+    '<div id="enc-sec-'+p.id+'">'+(p.encuesta?'<h3 class="sec">Encuesta de satisfacción del cliente</h3><div class="enc-loading">Cargando...</div>':'')+'</div><h3 class="sec">Historial de consultas y visitas ('+p.cons+')</h3>'+seg+ofertasHtml+(ext?'':'<div id="docsGen"></div>')+
     (ext?'':(function(){const e=papEstado(p),ks=reqDe(p),nk=ks.filter(d=>!!p.papeles[d]).length,c={ok:'var(--verde)',med:'var(--amarillo)',no:'var(--rojo)'}[e]||'var(--gris)',t={ok:'completa',med:'parcial',no:'inicial'}[e]||'';return '<details class="tec" id="docSec"><summary><i style="display:inline-block;width:11px;height:11px;border-radius:50%;background:'+c+';margin-right:7px;vertical-align:-1px"></i>Documentación para vender <span>· '+(e?nk+' de '+ks.length+' obligatorios · '+t:'sin datos')+'</span></summary><div style="padding:0 12px 12px"><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin:2px 0 6px"><span style="font-size:11px;color:var(--gris)">Los grises son opcionales: tocá «exigir» si hacen falta</span><button class="btn s" style="padding:2px 8px;font-size:11px" onclick="docsEditor(\''+p.id+'\')">📚 Unir / separar PDF</button></div><div class="docs">'+docsHtml+'</div></div></details>';})())+
     '<div style="display:flex;gap:10px;margin-top:18px;padding-top:16px;border-top:1px solid var(--linea)"><button class="btn p" style="flex:1;font-size:15px;padding:13px" onclick="guardar(\''+p.id+'\')">Guardar cambios</button></div>'+
     '<div class="acts grp"><div class="ag"><div class="agt">Gestionar</div><div class="agb"><button class="btn p" onclick="genDoc(\''+p.id+'\')">Generar documento</button><button class="btn s" onclick="genRep(\''+p.id+'\')">📝 Reporte propietario</button><button class="btn s" onclick="cargarForm(\''+p.id+'\')">➕ Cargar interacción</button><button class="btn s" onclick="agendarForm(\''+p.id+'\')">📅 Agendar visita</button><button class="btn s" onclick="verUbicacion(\''+p.id+'\')">📍 Ver ubicación</button>'+'<button class="btn s" id="btnFichaTokko_'+p.id+'" onclick="genFichaTokko(\''+p.id+'\')">📄 Ficha de la propiedad (PDF)</button>'+''+(p.encuesta?'<button class="btn s" onclick="verEncuesta(\''+p.id+'\')">⭐ Ver encuesta '+(p.encuesta.cal||'?')+'/10</button>':'')+'</div></div><div class="ag env"><div class="agt">📲 Enviar por WhatsApp</div><div class="agb"><button class="btn g" onclick="enviarReporte(\''+p.id+'\')">📲 Reporte</button><button class="btn g" onclick="enviarTokko(\''+p.id+'\')">📲 Ficha</button><button class="btn g" onclick="enviarUbicacion(\''+p.id+'\')">📲 Ubicación</button><button class="btn g" onclick="enviarEncuesta(\''+p.id+'\')">📲 Encuesta</button></div></div></div></div>';
   document.getElementById('ov').classList.add('on');
+  try{cargarDocsGen(p.id);}catch(e){}
 }
 function drill(tipo){
   var f2,rows,titulo,sub;
@@ -1089,6 +1090,23 @@ function drill(tipo){
   }
 }
 function irApp(q){google.script.run.withSuccessHandler(function(u){window.open(u+(q||''),'_blank');}).withFailureHandler(function(e){alert('No pude abrir el enlace: '+(e&&e.message?e.message:e));}).getAppUrl();}
+function cargarDocsGen(id){
+  var c=document.getElementById('docsGen'); if(!c) return;
+  var esc=function(x){return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');};
+  var pinta=function(l){
+    var h='<h3 class="sec">Documentos generados</h3>';
+    if(!l.length) h+='<div style="font-size:12.5px;color:var(--gris);margin-bottom:8px">Todavía no se generó ninguno desde esta propiedad.</div>';
+    else h+=l.map(function(d){return '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;border:1px solid var(--linea);border-radius:12px;padding:9px 12px;margin-bottom:8px"><div style="flex:1;min-width:180px"><div style="font-weight:700;font-size:13.5px">'+esc(d.nombre)+(d.version>1?' <span style="font-weight:500;color:var(--gris)">· versión '+d.version+'</span>':'')+'</div><div style="font-size:11.5px;color:var(--gris)">'+esc(d.fecha)+(d.quien?' · '+esc(d.quien):'')+'</div></div><button class="btn p" style="padding:5px 12px;font-size:12px" onclick="editDoc(\''+esc(d.id)+'\')">Editar</button><button class="btn s" style="padding:5px 12px;font-size:12px" onclick="editDoc(\''+esc(d.id)+'\',1)">Ver PDF</button></div>';}).join('');
+    c.innerHTML=h;
+  };
+  pinta([]);
+  google.script.run.withSuccessHandler(function(l){ if(document.getElementById('docsGen')===c) pinta(Array.isArray(l)?l:[]); }).withFailureHandler(function(){}).docsGeneradosDe(id);
+}
+function editDoc(docId,ver){
+  google.script.run.withSuccessHandler(function(url){
+    window.open(url+'?app=documentos&edit='+encodeURIComponent(docId)+(ver?'&ver=1':''),'_blank');
+  }).getAppUrl();
+}
 function genDoc(id){
   google.script.run.withSuccessHandler(function(url){
     window.open(url+'?app=documentos&prop='+encodeURIComponent(id),'_blank');

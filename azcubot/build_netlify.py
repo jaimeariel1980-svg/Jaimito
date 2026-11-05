@@ -76,7 +76,7 @@ GO = """<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="v
 (function(){
   var q = new URLSearchParams(location.search), app = q.get('app') || '', to = 'precarga.html';
   if(app === 'encuesta') to = 'encuesta.html?prop=' + encodeURIComponent(q.get('prop') || '');
-  else if(app === 'documentos') to = 'documentos.html' + (q.get('prop') ? '?prop=' + encodeURIComponent(q.get('prop')) : '');
+  else if(app === 'documentos') to = 'documentos.html' + (q.get('edit') ? '?edit=' + encodeURIComponent(q.get('edit')) + (q.get('ver') ? '&ver=1' : '') : (q.get('prop') ? '?prop=' + encodeURIComponent(q.get('prop')) : ''));
   else if(app === 'procedimiento') to = 'procedimiento.html';
   else if(app === 'tablero') to = 'tablero.html';
   else if(q.get('precarga')) to = 'precarga.html?precarga=' + encodeURIComponent(q.get('precarga'));

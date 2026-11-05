@@ -2446,6 +2446,50 @@ function obtenerImagenes(){
   return { logo:'', sello:'' };
 }
 
+var DOCSGEN_COLS_ = ['id','codigo','tipo','nombre','fecha','quien','version','pdf','pdfId','borradorId','anteriores'];
+function _hojaDocsGen_(){
+  var ss=SpreadsheetApp.openById(MAESTRO_ID), sh=ss.getSheetByName('Docs_Generados');
+  if(!sh){ sh=ss.insertSheet('Docs_Generados'); sh.getRange(1,1,1,DOCSGEN_COLS_.length).setValues([DOCSGEN_COLS_]).setFontWeight('bold'); sh.setFrozenRows(1); }
+  return sh;
+}
+function _subcarpetaDocs_(nombre){
+  var raiz=DriveApp.getFolderById('1LuYwU-I-hE1lEk6rcSblGmMVqzaPUdAh'), it=raiz.getFoldersByName('Documentos generados'), dest=it.hasNext()?it.next():raiz.createFolder('Documentos generados');
+  if(!nombre) return dest;
+  var s=dest.getFoldersByName(nombre); return s.hasNext()?s.next():dest.createFolder(nombre);
+}
+// guarda el PDF, el borrador editable y la fila en la ficha de la propiedad (si ya existía, es una nueva versión del mismo documento)
+function guardarDocumentoPropiedad(codigo, tipo, nombreDoc, nombreArch, base64, borrador, quien, idPrev){
+  codigo=String(codigo||'').trim(); if(!codigo) throw new Error('Falta la propiedad');
+  if(String(borrador||'').length>400000) throw new Error('El documento es demasiado largo para guardarlo');
+  var lock=LockService.getScriptLock(); lock.waitLock(20000);
+  try{
+    var pdf=_subcarpetaDocs_().createFile(Utilities.newBlob(Utilities.base64Decode(base64),'application/pdf',String(nombreArch||'documento.pdf')));
+    var sh=_hojaDocsGen_(), ahora=Utilities.formatDate(new Date(),'GMT-3','dd/MM/yyyy HH:mm'), q=String(quien||'').trim().slice(0,40), fila=-1, v;
+    if(idPrev){ v=sh.getDataRange().getValues(); for(var i=1;i<v.length;i++){ if(String(v[i][0])===String(idPrev) && String(v[i][1]).trim()===codigo){ fila=i+1; break; } } }
+    if(fila>0){
+      var r=sh.getRange(fila,1,1,DOCSGEN_COLS_.length).getValues()[0], ant=[]; try{ ant=JSON.parse(r[10]||'[]'); }catch(e){}
+      if(r[7]) ant.push({v:+r[6]||1,f:r[4],u:r[7]});
+      try{ DriveApp.getFileById(r[9]).setContent(String(borrador||'')); }catch(e){ r[9]=_subcarpetaDocs_('Borradores').createFile('borrador-'+idPrev+'.json',String(borrador||''),MimeType.PLAIN_TEXT).getId(); }
+      sh.getRange(fila,1,1,DOCSGEN_COLS_.length).setValues([[r[0],codigo,r[2],r[3],ahora,q,(+r[6]||1)+1,pdf.getUrl(),pdf.getId(),r[9],JSON.stringify(ant)]]);
+      _invalidaNovedades_();
+      return {ok:true, id:r[0], version:(+r[6]||1)+1, url:pdf.getUrl()};
+    }
+    var id='DOC-'+Date.now(), b=_subcarpetaDocs_('Borradores').createFile('borrador-'+id+'.json',String(borrador||''),MimeType.PLAIN_TEXT);
+    sh.appendRow([id,codigo,String(tipo||''),String(nombreDoc||''),ahora,q,1,pdf.getUrl(),pdf.getId(),b.getId(),'[]']);
+    try{ _audit_('docgen','📄 Generó «'+String(nombreDoc||'')+'»', (typeof azcuMapaDirs_==='function'?(azcuMapaDirs_()[codigo]||''):''), q); }catch(e){}
+    _invalidaNovedades_();
+    return {ok:true, id:id, version:1, url:pdf.getUrl()};
+  } finally { lock.releaseLock(); }
+}
+function docsGeneradosDe(codigo){
+  codigo=String(codigo||'').trim(); var sh=_hojaDocsGen_(); if(sh.getLastRow()<2) return [];
+  return sh.getRange(2,1,sh.getLastRow()-1,DOCSGEN_COLS_.length).getValues().filter(function(r){ return String(r[1]).trim()===codigo; }).map(function(r){ return {id:String(r[0]),tipo:String(r[2]),nombre:String(r[3]),fecha:String(r[4]),quien:String(r[5]),version:+r[6]||1,pdf:String(r[7])}; }).reverse();
+}
+function borradorDocGenerado(id){
+  var sh=_hojaDocsGen_(), v=sh.getDataRange().getValues();
+  for(var i=1;i<v.length;i++){ if(String(v[i][0])===String(id)){ return {id:String(v[i][0]), codigo:String(v[i][1]), tipo:String(v[i][2]), nombre:String(v[i][3]), version:+v[i][6]||1, borrador:DriveApp.getFileById(v[i][9]).getBlob().getDataAsString()}; } }
+  throw new Error('No encuentro ese documento');
+}
 function guardarDocumento(nombre, base64){
   try{
     var carpeta=DriveApp.getFolderById('1LuYwU-I-hE1lEk6rcSblGmMVqzaPUdAh');
