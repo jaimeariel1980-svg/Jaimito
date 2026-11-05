@@ -419,7 +419,9 @@ function liquidarExtras() {
     var m = mens[r[1]], primera = m && !visto[r[1]];
     if (primera) visto[r[1]] = 1;
     var nov = String(r[14] || '').match(/Novedad del reloj: (.*)$/);
-    return r.slice(0, 11).concat([TIPOS_FILA[tipos[i]][3], motivoFila_(r, null) + (nov ? ' Novedad del reloj ese día: «' + nov[1] + '».' : ''), queRevisar_(r)], r.slice(13)).concat(primera ? [m.g ? m.g.a50 : '', m.g ? m.g.a100 : '', m.c.total, m.c.pagar, m.c.alerta] : ['', '', '', '', '']);
+    var lab = TIPOS_FILA[tipos[i]][3], trn = String(r[12] || '').match(/se tomó turno (\d{2}:\d{2} a \d{2}:\d{2})/);
+    if (tipos[i] === 2) lab = /noche del/.test(r[12]) ? 'SE PAGA · corregir: pasar la extra ' + hhTurno_(r[7] || '') + ' al día ' + (+r[3] + 1) : trn ? 'SE PAGA · corregir: día ' + r[3] + ', turno ' + hhTurno_(trn[1]) + ' (no ' + r[4] + ')' : 'SE PAGA · corregir el turno del día ' + r[3];
+    return r.slice(0, 11).concat([lab, motivoFila_(r, null) + (nov ? ' Novedad del reloj ese día: «' + nov[1] + '».' : ''), queRevisar_(r)], r.slice(13)).concat(primera ? [m.g ? m.g.a50 : '', m.g ? m.g.a100 : '', m.c.total, m.c.pagar, m.c.alerta] : ['', '', '', '', '']);
   });
 
   var cab = ['Servicio', 'Legajo', 'Apellido', 'Día', 'Turno', 'Entrada', 'Salida', 'Aut. Jefatura', 'Franja realizada', 'Hs 50%', 'Hs 100%', '¿Se paga?', 'Qué pasó', 'Qué hay que hacer', 'Fichadas del día', 'Horario en tarjeta reloj',
