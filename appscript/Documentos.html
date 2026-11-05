@@ -811,6 +811,16 @@ function verDoc(){
     texto=texto.replace('{beneficiario_honorarios}', _benef);
   }
 
+  if(docSel==='conformidadsena'){
+    var _in=leerDatos(), _nm=String(_in.propietario||'').split(/\s*,\s*|\s+y\s+/).filter(String), _dn=String(_in.dni_propietario||'').split(/\s*[;,]\s*|\s+y\s+/).filter(String);
+    if(_nm.length>1 && _nm.length===_dn.length){
+      var _p=_nm.map(function(n,i){ return 'el/la Sr./Sra. '+n+', D.N.I. Nro. '+_dn[i]; });
+      var _txt=_p.slice(0,-1).join(', ')+' y '+_p[_p.length-1];
+      texto=texto.replace('el/la Sr./Sra. {propietario}, D.N.I. Nro. {dni_propietario}', _txt).replace('como titular de la propiedad','como titulares de la propiedad').replace('presta su total conformidad y acepta','prestan su total conformidad y aceptan');
+      texto=texto.replace('{propietario}\n(PROPIETARIO VENDEDOR)', _nm.map(function(n,i){ return n+'\nD.N.I. Nro. '+_dn[i]+'\n(PROPIETARIO VENDEDOR)'; }).join('\n\n\n_____________________________\n'));
+    }
+  }
+
   // Detectar campos vacios
   var faltantes=[];
   (texto.match(/\{([^}]+)\}/g)||[]).forEach(function(m){
