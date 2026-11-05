@@ -421,14 +421,19 @@ function liquidarExtras() {
     var nov = String(r[14] || '').match(/Novedad del reloj: (.*)$/);
     var lab = TIPOS_FILA[tipos[i]][3], trn = String(r[12] || '').match(/se tomó turno (\d{2}:\d{2} a \d{2}:\d{2})/);
     if (tipos[i] === 2) lab = /noche del/.test(r[12]) ? 'SE PAGA · corregir: pasar la extra ' + hhTurno_(r[7] || '') + ' al día ' + (+r[3] + 1) : trn ? 'SE PAGA · corregir: día ' + r[3] + ', turno ' + hhTurno_(trn[1]) + ' (no ' + r[4] + ')' : 'SE PAGA · corregir el turno del día ' + r[3];
-    return r.slice(0, 11).concat([lab, motivoFila_(r, null) + (nov ? ' Novedad del reloj ese día: «' + nov[1] + '».' : ''), queRevisar_(r)], r.slice(13)).concat(primera ? [m.g ? m.g.a50 : '', m.g ? m.g.a100 : '', m.c.total, m.c.pagar, m.c.alerta] : ['', '', '', '', '']);
+    var c = String(r[12] || ''), lic = c.match(/licencia cargada \(([^)]*)\)/);
+    var plan = (/^-?$|^F$|FDO/i.test(r[4]) ? 'Franco (' + (r[4] || '-') + ')' : 'Turno ' + r[4]) + (lic ? ' · licencia «' + lic[1] + '»' : '') + (r[7] ? ' · extra ' + hhTurno_(String(r[7])) + ' el día ' + r[3] : ' · sin extra cargada');
+    var rel = r[5] && r[6] ? 'Entró ' + r[5] + ' · salió ' + r[6] : r[5] ? 'Solo una fichada: ' + r[5] : 'Sin fichadas';
+    if (/SIN DATOS DEL RELOJ/.test(c)) rel += ' · ' + (c.match(/no figura en la tarjeta del día [^(]*/) || ['no figura en la tarjeta del día siguiente'])[0].trim() + ' (#N/A)';
+    if (nov) rel += ' · Novedad: «' + nov[1] + '»';
+    return r.slice(0, 11).concat([lab, plan, rel, motivoFila_(r, null), queRevisar_(r)], r.slice(13)).concat(primera ? [m.g ? m.g.a50 : '', m.g ? m.g.a100 : '', m.c.total, m.c.pagar, m.c.alerta] : ['', '', '', '', '']);
   });
 
-  var cab = ['Servicio', 'Legajo', 'Apellido', 'Día', 'Turno', 'Entrada', 'Salida', 'Aut. Jefatura', 'Franja realizada', 'Hs 50%', 'Hs 100%', '¿Se paga?', 'Qué pasó', 'Qué hay que hacer', 'Fichadas del día', 'Horario en tarjeta reloj',
+  var cab = ['Servicio', 'Legajo', 'Apellido', 'Día', 'Turno', 'Entrada', 'Salida', 'Aut. Jefatura', 'Franja realizada', 'Hs 50%', 'Hs 100%', '¿Se paga?', 'La planilla dice', 'El reloj dice', 'Qué pasó', 'Qué hay que hacer', 'Fichadas del día', 'Horario en tarjeta reloj',
              'Expte 50% (mes)', 'Expte 100% (mes)', 'Total hecho (mes)', 'A pagar mes (tope ' + cfg.tope + ')', 'Alerta del mes'];
   var h = escribir_(SpreadsheetApp.openById(ID_BASE), 'LIQUIDACION', cab, out, 5, 9);
-  if (out.length) h.getRange(2, 12, out.length, 3).setWrap(true);
-  h.setColumnWidth(12, 150); h.setColumnWidth(13, 340); h.setColumnWidth(14, 300);
+  if (out.length) h.getRange(2, 12, out.length, 5).setWrap(true);
+  h.setColumnWidth(12, 190); h.setColumnWidth(13, 200); h.setColumnWidth(14, 220); h.setColumnWidth(15, 340); h.setColumnWidth(16, 300);
   pintarLiquidacion_(h, out, cab.length, tipos);
   escribirResumen_(filas, mens, grh, cfg);
   var cambios = registrarCambios_(hojas, cfg), ctrl = val ? cerrarValidacion_(cfg, filas, val) : '';
@@ -462,7 +467,7 @@ function pintarLiquidacion_(h, filas, nc, tipos) {
   h.getRange(2, 12, filas.length, 1).setBackgrounds(est).setFontWeight('bold').setHorizontalAlignment('center');
   h.getRange(2, 4, filas.length, 8).setHorizontalAlignment('center');
   h.getRange(2, 10, filas.length, 2).setNumberFormat('0.0');
-  var hr = h.getRange(2, 16, filas.length, 1), fc = hr.getValues().map(function (v) { return [/≠/.test(v[0]) ? '#c62828' : '#000000']; });
+  var hr = h.getRange(2, 18, filas.length, 1), fc = hr.getValues().map(function (v) { return [/≠/.test(v[0]) ? '#c62828' : '#000000']; });
   hr.setFontColors(fc);
   for (var i = 1; i < filas.length; i++) {
     if (tipos[i] !== tipos[i - 1]) h.getRange(i + 1, 1, 1, nc).setBorder(null, null, true, null, null, null, '#555555', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
