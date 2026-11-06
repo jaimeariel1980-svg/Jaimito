@@ -8,7 +8,7 @@
    ============================================================ */
 
 const HOJA_HUNT_ = 'Hunting';
-const HUNT_COLS_ = ['id', 'perfil', 'nombre', 'cargo', 'empresa', 'linkedin', 'prioridad', 'estado', 'nivel', 'creado', 'contactado', 'ultimo_mov', 'seguimiento', 'quien', 'notas', 'mensaje', 'candidato', 'seguimientos', 'pdf', 'datos'];
+const HUNT_COLS_ = ['id', 'perfil', 'nombre', 'cargo', 'empresa', 'linkedin', 'prioridad', 'estado', 'nivel', 'creado', 'contactado', 'ultimo_mov', 'seguimiento', 'quien', 'notas', 'mensaje', 'candidato', 'seguimientos', 'pdf', 'datos', 'motivo'];
 const HUNT_NIVEL_ = { 'Identificado': 0, 'No encaja': 0, 'Contactado': 1, 'Sin respuesta': 1, 'Respondió': 2, 'No le interesa': 2, 'Interesado': 3, 'En proceso': 4 };
 const HUNT_FUENTE_ = 'Hunting (LinkedIn)';
 
@@ -161,12 +161,14 @@ function huntingActualizar_(perfilId, id, camposJson, quien) {
 }
 
 /* Cambia la etapa. «Contactado» otra vez = se mandó un seguimiento (los avisos son a los 4, 5 y 7 días; después se deja de insistir). */
-function huntingMover_(perfilId, id, estado, quien) {
+function huntingMover_(perfilId, id, estado, quien, motivo) {
   if (!(estado in HUNT_NIVEL_)) throw new Error('Etapa inválida.');
   const lock = LockService.getScriptLock(); lock.waitLock(20000);
   try {
     const o = huntBuscar_(perfilId, id), sh = huntHoja_(), antes = o.estado;
     o.estado = estado;
+    // motivo del descarte (texto libre, lo escribe quien descarta); se borra si la persona vuelve a estar activa
+    o.motivo = ['No le interesa', 'Sin respuesta', 'No encaja'].indexOf(estado) > -1 ? String(motivo || '').replace(/[<>]/g, '').trim().slice(0, 300) : '';
     o.nivel = Math.max(o.nivel, HUNT_NIVEL_[estado]);
     o.ultimo_mov = huntHoy_();
     if (estado === 'Contactado') {
@@ -176,7 +178,7 @@ function huntingMover_(perfilId, id, estado, quien) {
     } else o.seguimiento = '';
     if (!o.quien) o.quien = quien || '';
     huntEscribir_(sh, o);
-    huntHist_(perfilId, o, antes === estado ? 'Seguimiento enviado (' + o.seguimientos + ')' : antes + ' → ' + estado, quien);
+    huntHist_(perfilId, o, antes === estado ? 'Seguimiento enviado (' + o.seguimientos + ')' : antes + ' → ' + estado + (o.motivo ? ' · ' + o.motivo : ''), quien);
     return huntItem_(o);
   } finally { lock.releaseLock(); }
 }
@@ -416,7 +418,7 @@ function huntingFicha_(perfilId, id) {
     id: o.id, nombre: o.nombre, cargo: o.cargo, empresa: o.empresa, linkedin: o.linkedin, estado: o.estado, notas: o.notas,
     pdf: o.pdf || '', tienePdf: !!(o.pdf && o.datos),
     nota: v(d.nivel_ajuste), justificacion: v(d.justificacion), resumen: v(d.resumen),
-    formacion: v(d.formacion), zona: v(d.zona), email: v(d.email), telefono: v(d.telefono)
+    formacion: v(d.formacion), zona: v(d.zona), email: v(d.email), telefono: v(d.telefono), motivo: o.motivo || ''
   };
 }
 
