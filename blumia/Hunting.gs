@@ -1,7 +1,7 @@
 /* ============================================================
    HUNTING (30/10, pedido de Ariel para la búsqueda del Director Comercial): personas a las que se aborda directamente, antes de que sean candidatos.
    Viven en la pestaña «Hunting» de la planilla (una fila por persona y búsqueda) y se manejan desde la pestaña «Hunting» del tablero (HuntingPanel.html).
-   Etapas: Identificado → Contactado → Respondió → Interesado → En proceso. Cierres: No le interesa · Sin respuesta.
+   Etapas: Identificado → Contactado → Respondió → Interesado → En proceso. Cierres: No le interesa · Sin respuesta · No encaja. La pantalla (5/11, Ariel: «más sencillo») muestra solo 4: Por contactar · Contactado (incluye Respondió e Interesado) · Descartado (los 3 cierres) · En la búsqueda.
    Cuando dice «me interesa» se sube su perfil de LinkedIn (PDF): entra al tablero como candidato con «Llegó por: Hunting (LinkedIn)» y sigue el flujo normal.
    El embudo (identificados → contactados → respondieron → interesados → en proceso) sale en el Resumen y en el informe de la búsqueda.
    Estas personas NO están en la hoja de candidatos hasta que se interesan: no ensucian los números del proceso.
@@ -9,7 +9,7 @@
 
 const HOJA_HUNT_ = 'Hunting';
 const HUNT_COLS_ = ['id', 'perfil', 'nombre', 'cargo', 'empresa', 'linkedin', 'prioridad', 'estado', 'nivel', 'creado', 'contactado', 'ultimo_mov', 'seguimiento', 'quien', 'notas', 'mensaje', 'candidato', 'seguimientos', 'pdf', 'datos'];
-const HUNT_NIVEL_ = { 'Identificado': 0, 'Contactado': 1, 'Sin respuesta': 1, 'Respondió': 2, 'No le interesa': 2, 'Interesado': 3, 'En proceso': 4 };
+const HUNT_NIVEL_ = { 'Identificado': 0, 'No encaja': 0, 'Contactado': 1, 'Sin respuesta': 1, 'Respondió': 2, 'No le interesa': 2, 'Interesado': 3, 'En proceso': 4 };
 const HUNT_FUENTE_ = 'Hunting (LinkedIn)';
 
 function huntHoy_() { return Utilities.formatDate(new Date(), 'America/Argentina/Buenos_Aires', 'yyyy-MM-dd'); }
