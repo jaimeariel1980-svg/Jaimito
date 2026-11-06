@@ -2262,6 +2262,7 @@ function subirDocumento(codigo, docNombre, base64, filename, mime, quien){
   var i=head.indexOf('Doc: '+docNombre);
   if(i<0 && _docPorLabel(docNombre)){ i=head.length; mae.getRange(1,i+1).setValue('Doc: '+docNombre); head.push('Doc: '+docNombre); } // documento nuevo del catálogo sin columna todavía
   if(i>-1){
+    try{ archivo.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); }catch(e){}
     var previo=String(mae.getRange(fila,i+1).getValue()).match(/[-\w]{25,}/);
     mae.getRange(fila,i+1).setValue(archivo.getUrl());
     if(previo && previo[0]!==archivo.getId()){ try{ DriveApp.getFileById(previo[0]).setTrashed(true); }catch(e){} }
@@ -2502,6 +2503,22 @@ function guardarDocumento(nombre, base64){
   }catch(e){
     return {ok:false, error:e.message};
   }
+}
+// devuelve el archivo (no la carpeta) de un documento de la ficha y lo deja abierto a cualquiera con el enlace
+function _archivoDocAbierto_(url, nombreDoc){
+  var u=String(url||''), fl=null, norm=function(t){ return String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); };
+  var mf=u.match(/\/folders\/([-\w]{20,})/);
+  if(mf){
+    var it=DriveApp.getFolderById(mf[1]).getFiles(), nd=norm(nombreDoc), mejor=null;
+    while(it.hasNext()){ var x=it.next(); if(norm(x.getName()).indexOf(nd)>-1){ if(!mejor || x.getLastUpdated()>mejor.getLastUpdated()) mejor=x; } }
+    fl=mejor;
+  } else {
+    var m=u.match(/\/d\/([-\w]{20,})/) || u.match(/[?&]id=([-\w]{20,})/);
+    if(m) fl=DriveApp.getFileById(m[1]);
+  }
+  if(!fl) return null;
+  try{ fl.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); }catch(e){}
+  return fl;
 }
 function getAppUrl(){ return ScriptApp.getService().getUrl(); }
 function testProps(){

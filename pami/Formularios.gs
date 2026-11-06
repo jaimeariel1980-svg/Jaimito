@@ -219,7 +219,11 @@ function guardarTecnica_(k, p) {
   const fila = filaPorId_(sh, p.id);
   if (!fila) throw new Error('No encontré al candidato');
   const r = sh.getRange(fila, 1, 1, HEAD_CAND.length).getValues()[0];
-  if (ROL_ === 'Técnica') permiteTecnico_(r);
+  if (ROL_ === 'Técnica') {
+    permiteTecnico_(r);
+    // Una entrevista técnica ya guardada solo la corrige un administrador.
+    if (String(r[COL.notaP2 - 1] || '').trim() || p.editar) throw new Error('Esta entrevista técnica ya está cargada. Para corregirla, pedíselo a un administrador.');
+  }
   const d = getDatosForm(k, p.id, 'tecnica');
   const comps = (p.comps || []).map(c => ({ nombre: String(c.nombre || '').slice(0, 200), peso: Math.max(0, Number(c.peso) || 0), nivel: Math.max(0, Math.min(4, Number(c.nivel) || 0)), notas: String(c.notas || '').slice(0, 3000) }));
   let pts = 0, max = 0;

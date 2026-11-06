@@ -28,7 +28,7 @@ assert.ok(run('apellidoCoincide("DELLABARCA","BARCA DELLA Juan")'));
 assert.ok(!run('apellidoCoincide("LOMBARDO","ALONSO Cecilia")'));
 // consolidado GRH
 // reconversión: es todo el bloque o nada. Hizo 12 al 50 y 2 al 100 con expte 10/6 => no se reconvierte, endoso 2
-let c=run('consolidarGRH_(12,2,10,6,true,30)');assert.deepStrictEqual([c.reconv,c.endoso,c.alerta],[0,2,'endoso 2h (2h al 50 %: pedir a otro agente)']);assert.deepStrictEqual([c.e50,c.e100,c.sobra50,c.sobra100],[2,0,0,4]);
+let c=run('consolidarGRH_(12,2,10,6,true,30)');assert.deepStrictEqual([c.reconv,c.endoso,c.alerta],[0,2,'endoso 2h (2h al 50 %)']);assert.deepStrictEqual([c.e50,c.e100,c.sobra50,c.sobra100],[2,0,0,4]);
 // 100 sin usar: se reconvierten las 6 enteras
 c=run('consolidarGRH_(14,0,10,6,true,30)');assert.deepStrictEqual([c.reconv,c.endoso],[6,0]);
 c=run('consolidarGRH_(20,0,10,6,true,30)');assert.deepStrictEqual([c.reconv,c.endoso],[6,4]);
@@ -158,6 +158,9 @@ assert.strictEqual(sim(F({27:['6:02:35','11:25:11']}),ag({hab:{27:'6/13'},lic:{2
 // 43) endoso: a quién pedirlo (al que le sobran horas de esa categoría, primero del mismo servicio)
 let se=run(`sugerirEndosos_({'1':consolidarGRH_(14,1,10,6,true,30),'2':consolidarGRH_(3,0,10,6,true,30),'3':consolidarGRH_(0,0,10,6,true,30)},{'1':{ape:'SARBA',serv:'4 piso'},'2':{ape:'LOPEZ',serv:'4 piso'},'3':{ape:'GOMEZ',serv:'2 piso'}})`);
 assert.ok(/^Pedir endoso: 4 h al 50 % a LOPEZ/.test(se['1']));
+// 44) endoso como planilla: el donante que no hizo nada cede TODO su pedido (Sarba 14/1 con 10/6 recibe de Gómez)
+let pe=run(`planEndoso_({'1':consolidarGRH_(14,1,10,6,true,30),'2':consolidarGRH_(3,0,10,6,true,30),'3':consolidarGRH_(0,0,10,6,true,30),'4':consolidarGRH_(16,0,10,6,true,30)},{'1':{ape:'SARBA',serv:'4 piso'},'2':{ape:'LOPEZ',serv:'4 piso'},'3':{ape:'GOMEZ',serv:'2 piso'},'4':{ape:'BURGOS',serv:'2 piso'}},{'1':{r50:14,r100:1},'2':{r50:3,r100:0},'4':{r50:16,r100:0}},{'1':{a50:10,a100:6},'2':{a50:10,a100:6},'3':{a50:10,a100:6},'4':{a50:10,a100:6}})`);
+assert.deepStrictEqual(pe.filas.map(f=>f.slice(0,9)),[['3','GOMEZ',10,6,-10,-6,0,0,'Endoso A'],['1','SARBA',10,6,14,1,14,1,'Endoso A'],['4','BURGOS',10,6,16,0,16,0,'Reconversión']]);
 // 16) identidad
 const f2=F({5:['6:58','19:10']});f2[5]['1'].nombre='ALONSO Cecilia';
 assert.strictEqual(R(sim(f2,ag({hab:{5:'7/14'},ext:{5:'14/19'}}))[0]).est,'REVISAR IDENTIDAD');

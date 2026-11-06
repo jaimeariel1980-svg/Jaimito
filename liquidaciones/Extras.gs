@@ -77,7 +77,7 @@ function leerHoja_(hoja) {
     if (key === 'hab') {
       var leg = String(datos[r][0]).trim();
       if (!/^\d+$/.test(leg)) { cur = null; continue; }
-      cur = { leg: leg, ape: String(datos[r][1]).trim(), hab: {}, cam: {}, ext: {}, lic: {} };
+      cur = { leg: leg, ape: String(datos[r][1]).trim(), hab: {}, cam: {}, ext: {}, lic: {}, fila: r + 1 };
       ags.push(cur);
     }
     if (!cur) continue;
@@ -381,7 +381,7 @@ function cargarHorarios_(cfg, todos) {
     if (excl.indexOf(h.getName().trim().toUpperCase()) >= 0) return;
     var x = leerHoja_(h);
     if (!x) return;
-    hojas.push({ nombre: h.getName(), ags: x.agentes });
+    hojas.push({ nombre: h.getName(), ags: x.agentes, gid: h.getSheetId() });
     for (var d in x.fdo) fdo[d] = 1;
   });
   for (var e in cfg.feriadosExtra) fdo[e] = 1;
@@ -413,10 +413,11 @@ function liquidarExtras() {
     mens[leg].g = g; mens[leg].c = c;
   }
   var cs = {}, info = {};
-  hojas.forEach(function (h) { h.ags.forEach(function (a) { if (!info[a.leg]) info[a.leg] = { ape: a.ape, serv: h.nombre }; }); });
+  hojas.forEach(function (h) { h.ags.forEach(function (a) { if (!info[a.leg]) info[a.leg] = { ape: a.ape, serv: h.nombre, url: 'https://docs.google.com/spreadsheets/d/' + cfg.idHorarios + '/edit#gid=' + h.gid + '&range=A' + a.fila }; }); });
   if (grh) Object.keys(grh).forEach(function (l) { cs[l] = mens[l] ? mens[l].c : consolidarGRH_(0, 0, grh[l].a50, grh[l].a100, true, cfg.tope); if (!info[l]) info[l] = { ape: grh[l].ape, serv: '' }; });
-  var sug = sugerirEndosos_(cs, info);
-  for (var lg in mens) if (sug[lg]) mens[lg].c.alerta += ' → ' + sug[lg];
+  var real = {}; for (var lr in mens) real[lr] = { r50: mens[lr].r50, r100: mens[lr].r100 };
+  var plan = planEndoso_(cs, info, real, grh || {}), sug = plan.porLeg;
+  for (var lg in mens) if (sug[lg] && /^Endoso|^Falta/.test(sug[lg])) mens[lg].c.alerta += ' → ' + sug[lg] + ' (ver ENDOSO)';
   var out = filas.slice(), visto = {};
   out.sort(function (a, b) { return tipoFila_(a) - tipoFila_(b) || String(a[2]).localeCompare(String(b[2])) || a[3] - b[3]; });
   var tipos = out.map(tipoFila_);
@@ -432,16 +433,17 @@ function liquidarExtras() {
     var rel = r[5] && r[6] ? 'Entró ' + r[5] + ' · salió ' + r[6] : r[5] ? 'Solo una fichada: ' + r[5] : 'Sin fichadas';
     if (/SIN DATOS DEL RELOJ/.test(c)) rel += ' · ' + (c.match(/no figura en la tarjeta del día [^(]*/) || ['no figura en la tarjeta del día siguiente'])[0].trim() + ' (#N/A)';
     if (nov) rel += ' · Novedad: «' + nov[1] + '»';
-    return r.slice(0, 11).concat([r[13], lab, plan, rel, motivoFila_(r, null), queRevisar_(r)], r.slice(14)).concat(primera ? [m.g ? m.g.a50 : '', m.g ? m.g.a100 : '', m.c.total, m.c.pagar, m.c.alerta] : ['', '', '', '', '']);
+    return r.slice(0, 11).concat([r[13], r[11], r[14] || '', lab, plan, rel, motivoFila_(r, null), queRevisar_(r)], r.slice(15)).concat(primera ? [m.g ? m.g.a50 : '', m.g ? m.g.a100 : '', m.c.total, m.c.pagar, m.c.alerta] : ['', '', '', '', '']);
   });
 
-  var cab = ['Servicio', 'Legajo', 'Apellido', 'Día', 'Turno', 'Entrada', 'Salida', 'Aut. Jefatura', 'Franja realizada', 'Hs 50%', 'Hs 100%', 'Fichadas del día', '¿Se paga?', 'La planilla dice', 'El reloj dice', 'Qué pasó', 'Qué hay que hacer', 'Horario en tarjeta reloj',
+  var cab = ['Servicio', 'Legajo', 'Apellido', 'Día', 'Turno', 'Entrada', 'Salida', 'Aut. Jefatura', 'Franja realizada', 'Hs 50%', 'Hs 100%', 'Fichadas del día', 'Estado', 'Horario en tarjeta reloj', '¿Se paga?', 'La planilla dice', 'El reloj dice', 'Qué pasó', 'Qué hay que hacer',
              'Expte 50% (mes)', 'Expte 100% (mes)', 'Total hecho (mes)', 'A pagar mes (tope ' + cfg.tope + ')', 'Alerta del mes'];
   var h = escribir_(SpreadsheetApp.openById(ID_BASE), 'LIQUIDACION', cab, out, 5, 9);
-  if (out.length) h.getRange(2, 12, out.length, 6).setWrap(true);
-  h.setColumnWidth(12, 200); h.setColumnWidth(13, 320); h.setColumnWidth(14, 200); h.setColumnWidth(15, 220); h.setColumnWidth(16, 340); h.setColumnWidth(17, 300);
+  if (out.length) h.getRange(2, 12, out.length, 8).setWrap(true);
+  [[12, 200], [13, 120], [14, 200], [15, 320], [16, 200], [17, 220], [18, 340], [19, 300]].forEach(function (w) { h.setColumnWidth(w[0], w[1]); });
   pintarLiquidacion_(h, out, cab.length, tipos);
-  escribirResumen_(filas, mens, grh, cfg, sug);
+  escribirResumen_(filas, mens, grh, cfg, sug, info);
+  if (grh) escribirEndoso_(plan.filas, cfg);
   var cambios = registrarCambios_(hojas, cfg), ctrl = val ? cerrarValidacion_(cfg, filas, val) : '';
   var aut = filas.filter(function (r) { return r[11] === 'AUTORIZADA'; }).length;
   avisar_('LIQUIDACION lista: ' + out.length + ' filas (' + aut + ' autorizadas) · ' + Object.keys(mens).length + ' agentes' + (cfg.fichadasAuto ? '\nFichadas: ' + cfg.fichadasAuto : '') + (grh ? '\nExpediente: ' + Object.keys(grh).length + ' agentes de Enfermería con horas autorizadas' : '\nSin expediente (consolidado) en CONFIG: no se controla lo autorizado.') + (cambios ? '\n' + cambios : '') + ctrl + notaMeses_());
@@ -465,22 +467,22 @@ function pintarLiquidacion_(h, filas, nc, tipos) {
   var rg = h.getRange(2, 1, filas.length, nc), fondos = [], est = [];
   filas.forEach(function (r) {
     var t = tipos[fondos.length], c = TIPOS_FILA[t][1];
-    fondos.push(new Array(nc).fill(c));
-    est.push([t === 0 ? '#c9ebcf' : c]);
+    fondos.push(new Array(nc).fill(t === 0 ? '#e6f4ea' : c));
+    est.push([r[12] === 'AUTORIZADA' ? '#93c47d' : c]);
   });
   rg.setBackgrounds(fondos).setFontSize(10).setVerticalAlignment('middle')
     .setBorder(true, true, true, true, true, true, '#c8c8c8', SpreadsheetApp.BorderStyle.SOLID);
   h.getRange(2, 13, filas.length, 1).setBackgrounds(est).setFontWeight('bold').setHorizontalAlignment('center');
   h.getRange(2, 4, filas.length, 8).setHorizontalAlignment('center');
   h.getRange(2, 10, filas.length, 2).setNumberFormat('0.0');
-  var hr = h.getRange(2, 18, filas.length, 1), fc = hr.getValues().map(function (v) { return [/≠/.test(v[0]) ? '#c62828' : '#000000']; });
+  var hr = h.getRange(2, 14, filas.length, 1), fc = hr.getValues().map(function (v) { return [/≠/.test(v[0]) ? '#c62828' : '#000000']; });
   hr.setFontColors(fc);
   for (var i = 1; i < filas.length; i++) {
     if (tipos[i] !== tipos[i - 1]) h.getRange(i + 1, 1, 1, nc).setBorder(null, null, true, null, null, null, '#555555', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
   }
-  var ley = TIPOS_FILA.map(function (x) { return [x[0]]; }), col = nc + 2;
+  var ley = TIPOS_FILA.map(function (x) { return [x[0]]; }), col = nc + 2, cl = TIPOS_FILA.map(function (x, i) { return [i === 0 ? '#e6f4ea' : x[1]]; });
   h.getRange(1, col).setValue('Referencias').setFontWeight('bold');
-  h.getRange(2, col, ley.length, 1).setValues(ley).setBackgrounds(TIPOS_FILA.map(function (x) { return [x[1]]; }))
+  h.getRange(2, col, ley.length, 1).setValues(ley).setBackgrounds(cl)
     .setBorder(true, true, true, true, true, true, '#c8c8c8', SpreadsheetApp.BorderStyle.SOLID);
   h.setColumnWidth(col, 330);
 }
@@ -527,8 +529,12 @@ function registrarCambios_(hojas, cfg) {
   return dif.length + ' cambio(s) en las extras desde la corrida anterior' + (pasados ? ', ' + pasados + ' en días YA PASADOS (ver CAMBIOS, en rojo)' : '') + '.';
 }
 
-function escribirResumen_(filas, mens, grh, cfg, sug) {
-  sug = sug || {};
+var RESUMEN_CAB_ = ['Legajo', 'Apellido', 'Servicio', 'Hs 50% hechas', 'Hs 100% hechas', 'Total hecho', 'Expte 50%', 'Expte 100%',
+  'Reconversión (h)', 'Endoso al 50 % (h)', 'Endoso al 100 % (h)', 'Excede tope (h)', 'A pagar',
+  'Filas a revisar', 'Alerta', 'Endoso / reconversión', 'Planilla de horarios'];
+
+function escribirResumen_(filas, mens, grh, cfg, sug, inf) {
+  sug = sug || {}; inf = inf || {};
   var info = {}, pend = {};
   filas.forEach(function (r) {
     var i = info[r[1]] || (info[r[1]] = { ape: r[2], serv: {} });
@@ -540,18 +546,58 @@ function escribirResumen_(filas, mens, grh, cfg, sug) {
   var rows = legs.map(function (l) {
     var m = mens[l], g = grh && grh[l], i = info[l] || { ape: g ? g.ape : '', serv: {} };
     var c = m ? m.c : consolidarGRH_(0, 0, g ? g.a50 : 0, g ? g.a100 : 0, !!g, cfg.tope);
-    var al = m ? c.alerta : 'Figura en el expediente y no tiene extras autorizadas';
-    return [l, i.ape, Object.keys(i.serv).join(', '), m ? Math.round(m.r50 * 10) / 10 : 0, m ? Math.round(m.r100 * 10) / 10 : 0, c.total,
-            g ? g.a50 : '', g ? g.a100 : '', c.reconv || '', c.e50 || '', c.e100 || '', c.recorte || '', c.pagar, pend[l] || '', al.replace(/ → Pedir endoso.*$/, ''), sug[l] || '',
-            m ? '' : [c.sobra50 ? c.sobra50 + ' h al 50 %' : '', c.sobra100 ? c.sobra100 + ' h al 100 %' : ''].filter(Boolean).join(' y ')];
+    var al = m ? c.alerta : 'Figura en el expediente y no tiene extras autorizadas', u = (inf[l] || {}).url;
+    return [l, i.ape, Object.keys(i.serv).join(', ') || (inf[l] || {}).serv || '', m ? Math.round(m.r50 * 10) / 10 : 0, m ? Math.round(m.r100 * 10) / 10 : 0, c.total,
+            g ? g.a50 : '', g ? g.a100 : '', c.reconv || '', c.e50 || '', c.e100 || '', c.recorte || '', c.pagar, pend[l] || '', al.replace(/ → .*$/, ''), sug[l] || '',
+            u ? 'Ver en la planilla' : '', u || ''];
   }).sort(function (a, b) { return String(a[1]).localeCompare(String(b[1])); });
-  var cab = ['Legajo', 'Apellido', 'Servicio', 'Hs 50% hechas', 'Hs 100% hechas', 'Total hecho', 'Expte 50%', 'Expte 100%',
-             'Reconversión (h)', 'Endoso al 50 % (h)', 'Endoso al 100 % (h)', 'Excede tope (h)', 'A pagar (tope ' + cfg.tope + ')', 'Filas a revisar', 'Alerta', 'A quién pedir el endoso', 'Horas autorizadas sin usar (puede dar endoso)'];
-  var h = escribir_(SpreadsheetApp.openById(ID_BASE), 'RESUMEN', cab, rows);
-  if (!rows.length) return;
-  var nc = cab.length;
-  h.getRange(2, 1, rows.length, nc).setBorder(true, true, true, true, true, true, '#c8c8c8', SpreadsheetApp.BorderStyle.SOLID)
-    .setBackgrounds(rows.map(function (r) { return new Array(nc).fill(colorAlerta_(r[14])); }));
-  h.getRange(2, 13, rows.length, 1).setFontWeight('bold');
-  h.getRange(2, 15, rows.length, 3).setWrap(true); h.setColumnWidth(16, 380); h.setColumnWidth(17, 200);
+  RESUMEN_CAB_[12] = 'A pagar (tope ' + cfg.tope + ')';
+  var links = rows.map(function (r) { return r.pop(); });
+  var ss = SpreadsheetApp.openById(ID_BASE), h = escribir_(ss, 'RESUMEN', RESUMEN_CAB_, rows), nc = RESUMEN_CAB_.length;
+  if (rows.length) h.getRange(2, nc, rows.length, 1).setRichTextValues(links.map(function (u) {
+    var b = SpreadsheetApp.newRichTextValue().setText(u ? 'Ver en la planilla' : '');
+    return [u ? b.setLinkUrl(u).build() : b.build()];
+  }));
+  if (rows.length) {
+    h.getRange(2, 1, rows.length, nc).setBorder(true, true, true, true, true, true, '#c8c8c8', SpreadsheetApp.BorderStyle.SOLID)
+      .setBackgrounds(rows.map(function (r) { return new Array(nc).fill(colorAlerta_(r[14])); }));
+    h.getRange(2, 13, rows.length, 1).setFontWeight('bold');
+    h.setColumnWidth(15, 260); h.setColumnWidth(16, 240);
+  }
+  h.setFrozenColumns(2);
+  ordenarPestanas_(ss);
+}
+
+function escribirEndoso_(filas, cfg) {
+  var ss = SpreadsheetApp.openById(ID_BASE), h = ss.getSheetByName('ENDOSO') || ss.insertSheet('ENDOSO');
+  var MES = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'][cfg.mes - 1];
+  h.clear(); h.getRange(1, 1, h.getMaxRows(), h.getMaxColumns()).breakApart();
+  var g = [['PEDIDO ORIGINAL HS ' + MES + ' ' + cfg.anio, '', '', '', 'AJUSTE', '', 'LIQUIDACIÓN', '', '']];
+  var c = [['LEGAJO', 'APELLIDO Y NOMBRE', 'HS 50%', 'HS 100%', 'HS 50%', 'HS 100%', 'HS 50%', 'HS 100%', '']];
+  h.getRange(1, 1, 1, 9).setValues(g).setFontWeight('bold').setHorizontalAlignment('center');
+  h.getRange(1, 1, 1, 4).merge(); h.getRange(1, 5, 1, 2).merge(); h.getRange(1, 7, 1, 2).merge();
+  h.getRange(2, 1, 1, 9).setValues(c).setFontWeight('bold').setHorizontalAlignment('center').setFontColor('white');
+  h.getRange(2, 1, 1, 4).setBackground('#0066cc'); h.getRange(2, 5, 1, 2).setBackground('#ffc000'); h.getRange(2, 7, 1, 2).setBackground('#00b050');
+  var n = filas.length;
+  if (n) {
+    h.getRange(3, 1, n, 9).setValues(filas.map(function (f) { return f.slice(0, 9); })).setBorder(true, true, true, true, true, true, '#c8c8c8', SpreadsheetApp.BorderStyle.SOLID);
+    h.getRange(3, 3, n, 6).setHorizontalAlignment('center');
+    h.getRange(3, 9, n, 1).setBackgrounds(filas.map(function (f) { return [f[9] === 'reconv' ? '#92d050' : f[9] === 'falta' ? '#f4cccc' : '#ffff00']; })).setFontWeight('bold');
+    for (var i = 1; i < n; i++) if (filas[i][8] !== filas[i - 1][8]) h.getRange(i + 3, 1, 1, 9).setBorder(true, null, null, null, null, null, '#555555', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+  } else h.getRange(3, 1).setValue('Este mes no hay endosos ni reconversiones.');
+  var r = n + 5, ley = [['HHEE autorizadas', '#0066cc'], ['Ajuste de horas para la corrección del expediente', '#ffc000'], ['Liquidación solicitada', '#00b050'], ['Endoso (el que da cede todo su pedido)', '#ffff00'], ['Reconversión', '#92d050']];
+  h.getRange(r, 2).setValue('OBSERVACIONES:').setFontWeight('bold');
+  ley.forEach(function (x, k) { h.getRange(r + k, 3).setBackground(x[1]); h.getRange(r + k, 4).setValue(x[0]); });
+  [80, 230, 70, 70, 70, 70, 70, 70, 200].forEach(function (w, k) { h.setColumnWidth(k + 1, w); });
+  h.setFrozenRows(2);
+}
+
+function ordenarPestanas_(ss) {
+  var orden = ['RESUMEN', 'ENDOSO', 'LIQUIDACION', 'NOCTURNIDAD', 'NOCTURNIDAD_DETALLE', 'FERIADOS', 'FERIADOS_DETALLE', 'CONFIG'], ocultas = ['CAMBIOS', '_FOTO_EXTRAS', '_VALID_JEFE'];
+  try {
+    var pos = 1;
+    orden.forEach(function (n) { var h = ss.getSheetByName(n); if (!h) return; if (h.isSheetHidden()) h.showSheet(); if (h.getIndex() !== pos) { ss.setActiveSheet(h); ss.moveActiveSheet(pos); } pos++; });
+    ocultas.forEach(function (n) { var h = ss.getSheetByName(n); if (h && !h.isSheetHidden()) h.hideSheet(); });
+    
+  } catch (e) { Logger.log('ordenarPestanas_: ' + e.message); }
 }

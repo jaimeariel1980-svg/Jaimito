@@ -28,8 +28,10 @@ function abrirValidacion_(cfg, filas, hojas, ctx) {
   if (hoja) {
     var datos = hoja.getDataRange().getDisplayValues(), hdr = datos[0] || [];
     var il = hdr.indexOf('Legajo'), id = hdr.indexOf('Día'), iv = hdr.indexOf(CAB_CTRL_[5]), ic = hdr.indexOf(CAB_CTRL_[6]);
+    var fin = false;
     if (il >= 0 && id >= 0 && iv >= 0) datos.slice(1).forEach(function (r) {
-      if (!/^\d+$/.test(String(r[il]).trim()) || !+r[id]) return;
+      if (/^CORRECCIONES A LA PLANILLA/.test(r[0])) fin = true;
+      if (fin || !/^\d+$/.test(String(r[il]).trim()) || !+r[id]) return;
       var k = String(r[il]).trim() + '|' + (+r[id]), d = [r[iv] || '', ic >= 0 ? r[ic] || '' : ''];
       if (d[0] || d[1]) v.dec[k] = d; else delete v.dec[k];
     });
@@ -70,13 +72,18 @@ function cerrarValidacion_(cfg, filas, v) {
   try { escribirValidacion_(v.ssH, v.rep, x, v.dec, pend.length); try { limpiarReporteViejo_(v.ssH); } catch (e2) { } nota = '\nEl jefe de Enfermería decide en la pestaña «' + HOJA_VAL_ + '» de la planilla de horarios.'; }
   catch (e) { nota = '\nNo pude escribir en la planilla de horarios (' + e.message + '): revisá que esta cuenta pueda editarla.'; }
   guardarValJefe_(v.dec);
-  escribirActa_(cfg, x, v.dec, pend);
+  try {
+    var ssB = SpreadsheetApp.openById(ID_BASE), acta = ssB.getSheetByName('ACTA_CONFORMIDAD'), rs = ssB.getSheetByName('RESUMEN');
+    if (acta) ssB.deleteSheet(acta);
+    if (rs) rs.getRange(1, RESUMEN_CAB_.length + 2).setValue(conf[2] ? 'Conformidad del jefe: DADA por ' + conf[1] + ' el ' + conf[2] : 'Conformidad del jefe: PENDIENTE' + (pend.length ? ' (' + pend.length + ' decisiones)' : ' (falta «Sí» y su nombre)'))
+      .setFontWeight('bold').setFontColor('white').setBackground(conf[2] ? '#2e7d32' : '#c62828');
+  } catch (e3) { Logger.log('conformidad: ' + e3.message); }
   var viejo = SpreadsheetApp.openById(ID_BASE).getSheetByName('CONTROL_ENFERMERIA');
   if (viejo) SpreadsheetApp.openById(ID_BASE).deleteSheet(viejo);
   var t = x.tot.map(function (n) { return Math.round(n * 10) / 10; });
   var nd = 0; for (var i in x.porFila) if (x.porFila[i].dif !== '') nd++;
   return '\nValidación del jefe: ' + nd + ' extras cargadas con diferencia y ' + x.solo.length + ' extras no informadas. Planilla de horarios ' + t[0] + ' h al 50 y ' + t[1] + ' al 100; liquidación ' + t[2] + ' y ' + t[3] + '.' +
-    (conf[2] ? '\n✅ Conformidad del jefe dada (' + conf[1] + ', ' + conf[2] + ').' : '\n⏳ Falta la conformidad del jefe (' + pend.length + ' decisiones pendientes). Ver ACTA_CONFORMIDAD.') + nota;
+    (conf[2] ? '\n✅ Conformidad del jefe dada (' + conf[1] + ', ' + conf[2] + ').' : '\n⏳ Falta la conformidad del jefe (' + pend.length + ' decisiones pendientes).') + nota;
 }
 
 function pendientesJefe_(x, dec) {
@@ -149,32 +156,3 @@ function escribirValidacion_(ssH, rep, x, dec, nPend) {
   [70, 60, 130, 40, 70, 110, 70, 70, 70, 70, 70, 210, 340, 210, 220, 20, 220, 300].forEach(function (w, i) { h.setColumnWidth(i + 1, w); });
 }
 
-function escribirActa_(cfg, x, dec, pend) {
-  var ss = SpreadsheetApp.openById(ID_BASE), h = ss.getSheetByName('ACTA_CONFORMIDAD') || ss.insertSheet('ACTA_CONFORMIDAD');
-  var conf = dec.CONFORMIDAD || ['', '', ''], mes = MESES_[cfg.mes - 1][0];
-  var items = [];
-  for (var i in x.porFila) { var p = x.porFila[i]; if (p.dif !== '' || (dec[p.k] || [])[0]) items.push(p); }
-  items = items.concat(x.solo);
-  var t = x.tot.map(function (n) { return Math.round(n * 10) / 10; });
-  var est = conf[2] ? 'CONFORMIDAD DADA por ' + conf[1] + ' el ' + conf[2] : pend.length ? 'PENDIENTE: faltan ' + pend.length + ' decisiones del jefe' : 'PENDIENTE: falta que el jefe marque «Sí» y su nombre';
-  var cab = [['Acta de conformidad de horas extra · Enfermería · ' + mes.charAt(0).toUpperCase() + mes.slice(1) + ' ' + cfg.anio, '', '', '', '', '', '', ''],
-    ['Estado', est, '', '', '', '', '', ''],
-    ['Extras cargadas en la planilla de horarios', t[0] + ' h al 50 % y ' + t[1] + ' h al 100 %', '', '', '', '', '', ''],
-    ['Liquidación por fichadas', t[2] + ' h al 50 % y ' + t[3] + ' h al 100 % (ya incluye lo que autorizó el jefe)', '', '', '', '', '', ''],
-    ['', '', '', '', '', '', '', ''],
-    ['Legajo', 'Apellido', 'Día', 'Fichadas del día', 'Qué se encontró', 'Horas que se pagan', 'Decisión del jefe', 'Comentario']];
-  var rows = items.map(function (p) {
-    var d = dec[p.k] || ['', ''], b = p.k.split('|');
-    return [b[0], p.ape || (x.E[p.k] || {}).ape || '', b[1], p.fich, p.mot, p.n50 + p.n100, d[0] || 'PENDIENTE', d[1]];
-  }).sort(function (a, b) { return String(a[1]).localeCompare(String(b[1])) || a[2] - b[2]; });
-  var all = cab.concat(rows);
-  h.clear();
-  h.getRange(1, 1, all.length, 8).setNumberFormat('@').setValues(all).setWrap(true).setVerticalAlignment('top');
-  h.getRange(1, 1, 1, 8).merge().setFontWeight('bold').setFontSize(14).setBackground('#1f4e79').setFontColor('white');
-  h.getRange(2, 2, 1, 7).merge().setFontWeight('bold').setFontColor(conf[2] ? '#2e7d32' : '#c62828');
-  h.getRange(3, 2, 1, 7).merge(); h.getRange(4, 2, 1, 7).merge();
-  h.getRange(6, 1, 1, 8).setFontWeight('bold').setBackground('#434343').setFontColor('white');
-  if (rows.length) h.getRange(7, 1, rows.length, 8).setBorder(true, true, true, true, true, true, '#c8c8c8', SpreadsheetApp.BorderStyle.SOLID)
-    .setBackgrounds(rows.map(function (r) { return new Array(8).fill(r[6] === 'PENDIENTE' ? '#fbd9d9' : '#d9ead3'); }));
-  [70, 140, 45, 220, 380, 80, 220, 220].forEach(function (w, i) { h.setColumnWidth(i + 1, w); });
-}
