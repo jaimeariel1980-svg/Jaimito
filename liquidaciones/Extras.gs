@@ -593,7 +593,7 @@ function escribirEndoso_(filas, cfg) {
 }
 
 function ordenarPestanas_(ss) {
-  var orden = ['RESUMEN', 'ENDOSO', 'LIQUIDACION', 'ACTA_CONFORMIDAD', 'NOCTURNIDAD', 'NOCTURNIDAD_DETALLE', 'FERIADOS', 'FERIADOS_DETALLE', 'CONFIG'], ocultas = ['CAMBIOS', '_FOTO_EXTRAS', '_VALID_JEFE'];
+  var orden = ['RESUMEN', 'ENDOSO', 'LIQUIDACION', 'NOCTURNIDAD', 'NOCTURNIDAD_DETALLE', 'FERIADOS', 'FERIADOS_DETALLE', 'CONFIG'], ocultas = ['CAMBIOS', '_FOTO_EXTRAS', '_VALID_JEFE'];
   try {
     var pos = 1;
     orden.forEach(function (n) { var h = ss.getSheetByName(n); if (!h) return; if (h.isSheetHidden()) h.showSheet(); if (h.getIndex() !== pos) { ss.setActiveSheet(h); ss.moveActiveSheet(pos); } pos++; });
