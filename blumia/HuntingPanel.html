@@ -31,6 +31,7 @@
 #huntPage .hu-vac{font-size:12.5px;color:#888;text-align:center;padding:14px 6px}
 .hu-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99998;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:30px 12px}
 .hu-box{background:#fff;border-radius:12px;max-width:620px;width:100%;padding:20px 22px;font:14px 'PP Pangram Sans',Poppins,sans-serif;color:#222}
+.hu-spin{display:inline-block;width:12px;height:12px;border:2px solid #CDE7CE;border-top-color:#0F3F27;border-radius:50%;animation:huspin .8s linear infinite;vertical-align:-2px}@keyframes huspin{to{transform:rotate(360deg)}}
 .hu-box h3{margin:0 0 10px;color:#0F3F27}.hu-box p{font-size:12.5px;color:#666;line-height:1.5;margin:0 0 10px}
 .hu-box label{display:block;font-size:12px;font-weight:700;color:#555;margin:10px 0 4px}
 .hu-box input[type=text],.hu-box select,.hu-box textarea{width:100%;box-sizing:border-box;border:1px solid #ccc;border-radius:8px;padding:9px 10px;font-size:13.5px;font-family:inherit}
@@ -105,7 +106,7 @@
     return '<div class="hu-card '+esc(o.prioridad)+'"><div class="hu-n"><span data-a="ficha" data-id="'+esc(o.id)+'" style="cursor:pointer" title="Ver ficha">'+esc(o.nombre)+'</span><i class="hu-pr" title="Prioridad">'+esc(o.prioridad)+'</i></div>'+
       ((o.cargo||o.empresa)?'<div class="hu-s">'+esc(o.cargo)+(o.cargo&&o.empresa?' · ':'')+esc(o.empresa)+'</div>':'')+
       (o.nota?'<span class="hu-seg" title="Nota que le puso la IA al leer su PDF">Nota IA: '+esc(o.nota)+'</span> ':'')+(o.notas?'<div class="hu-s" style="color:#888">'+esc(o.notas)+'</div>':'')+
-      ((o.estado==='Respondió'||o.estado==='Interesado')?'<span class="hu-seg">'+esc(o.estado)+'</span> ':'')+(desc?'<div class="hu-s" style="font-weight:700;color:#8a4b2a">'+esc(o.estado==='Sin respuesta'?'No respondió':o.estado)+'</div>':'')+(o.estado==='En proceso'&&o.candidato?'<div class="hu-s" style="color:#0F3F27;font-weight:700">En el tablero como «'+esc(o.candidato)+'»</div>':'')+seg+'<div class="hu-acc">'+acc+'</div></div>';
+      ((o.estado==='Respondió'||o.estado==='Interesado')?'<span class="hu-seg">'+esc(o.estado)+'</span> ':'')+(desc?'<div class="hu-s" style="font-weight:700;color:#8a4b2a">'+esc(o.estado==='Sin respuesta'?'No respondió':o.estado)+'</div>'+(o.motivo?'<div class="hu-s" style="color:#555;white-space:pre-wrap">'+esc(o.motivo)+'</div>':''):'')+(o.estado==='En proceso'&&o.candidato?'<div class="hu-s" style="color:#0F3F27;font-weight:700">En el tablero como «'+esc(o.candidato)+'»</div>':'')+seg+'<div class="hu-acc">'+acc+'</div></div>';
   }
   function vistaBtns(){return '<div class="hu-vista"><button data-a="vista:personas" class="'+(vista==='personas'?'on':'')+'">Personas</button><button data-a="vista:empresas" class="'+(vista==='empresas'?'on':'')+'">Empresas objetivo</button></div>';}
   function pintar(){
@@ -188,17 +189,18 @@
     var inp=document.createElement('input');inp.type='file';inp.accept='application/pdf,.pdf';inp.multiple=true;
     inp.onchange=function(){
       var fs=[].slice.call(inp.files||[]);if(!fs.length)return;
-      var bg=modal('<h3>📄 Perfiles de LinkedIn</h3><p>La IA lee cada PDF (unos 20 a 40 segundos cada uno). No cierres esta pantalla.</p><div id="hp-l" style="font-size:13px;line-height:1.7"></div><div class="hu-row"><button class="go" id="hp-ok" disabled>Listo</button></div>');
+      var bg=modal('<h3>📄 Perfiles de LinkedIn</h3><p id="hp-t"><b>Leyendo los perfiles…</b> La IA lee cada PDF (unos 20 a 40 segundos cada uno). No cierres esta pantalla.</p><div id="hp-l" style="font-size:13px;line-height:1.7"></div><div class="hu-row"><button class="go" id="hp-ok" disabled>Leyendo…</button></div>');
       var L=bg.querySelector('#hp-l'),ok=bg.querySelector('#hp-ok'),hechos=0,fallas=0;
-      L.innerHTML=fs.map(function(f,i){return '<div id="hp-'+i+'">⏳ '+esc(f.name)+'</div>';}).join('');
+      L.innerHTML=fs.map(function(f,i){return '<div id="hp-'+i+'" style="color:#777">⏳ En espera · '+esc(f.name)+'</div>';}).join('');
       function una(i){
-        if(i>=fs.length){ok.disabled=false;ok.textContent=hechos?'Listo ('+hechos+' cargada'+(hechos===1?'':'s')+(fallas?', '+fallas+' con error':'')+')':'Cerrar';cargar();return;}
+        if(i>=fs.length){var tt=bg.querySelector('#hp-t');if(tt)tt.innerHTML='<b>'+(hechos?'Listo.':'No se pudo cargar.')+'</b>';ok.disabled=false;ok.textContent=hechos?'Listo ('+hechos+' cargada'+(hechos===1?'':'s')+(fallas?', '+fallas+' con error':'')+')':'Cerrar';cargar();return;}
         var f=fs[i],el=bg.querySelector('#hp-'+i);
+        el.style.color='#0F3F27';el.innerHTML='<span class="hu-spin"></span> <b>Leyendo…</b> '+esc(f.name)+(fs.length>1?' <span style="color:#777">('+(i+1)+' de '+fs.length+')</span>':'');
         if(f.size>10*1024*1024){el.innerHTML='❌ '+esc(f.name)+' · pesa más de 10 MB';fallas++;una(i+1);return;}
         var fr=new FileReader();
         fr.onload=function(){
           run('huntingCargarPdf',[PERFIL,String(fr.result).split(',')[1],f.name,quien()],function(r){
-            hechos++;el.innerHTML='✅ <b>'+esc(r.nombre)+'</b>'+(r.nota?' · nota IA '+esc(r.nota):'')+(r.existente?' · ya estaba en la lista: se agregó el PDF':'')+(r.yaEnTablero?' · <span style="color:#B45309">ya figura en el tablero de candidatos</span>':'');una(i+1);
+            hechos++;el.style.color='';el.innerHTML='✅ <b>'+esc(r.nombre)+'</b>'+(r.nota?' · nota IA '+esc(r.nota):'')+(r.existente?' · ya estaba en la lista: se agregó el PDF':'')+(r.yaEnTablero?' · <span style="color:#B45309">ya figura en el tablero de candidatos</span>':'');una(i+1);
           },function(e){fallas++;el.innerHTML='❌ '+esc(f.name)+' · '+esc((e&&e.message)||e);una(i+1);});
         };
         fr.onerror=function(){fallas++;el.innerHTML='❌ '+esc(f.name)+' · no pude leer el archivo';una(i+1);};
@@ -219,6 +221,7 @@
       if(f.tienePdf){
         x+=R('Por qué esa nota',f.justificacion)+R('Resumen de su experiencia',f.resumen)+R('Formación',f.formacion)+R('Zona',f.zona)+R('Contacto',[f.email,f.telefono].filter(Boolean).join(' · '));
       }else x+='<p style="margin-top:10px">Todavía no tiene su PDF de LinkedIn cargado: sin eso la IA no puede leerlo. Subilo con «Subir PDFs de LinkedIn» (si ya está en la lista, se le agrega al mismo registro).</p>';
+      x+=R('Motivo del descarte',f.motivo);
       x+=R('Notas',f.notas);
       x+='<div class="hu-row">'+(f.pdf?'<button class="go" id="hf-pdf">📄 Ver PDF</button>':'')+(f.linkedin?'<button id="hf-li">Abrir LinkedIn</button>':'')+'<button id="hf-m">✉ Mensaje</button>'+(f.tienePdf&&f.estado!=='En proceso'?'<button id="hf-p">➡ Pasar a la búsqueda</button>':'')+'<button id="hf-x">Cerrar</button></div>';
       bg.querySelector('.hu-box').innerHTML=x;
@@ -317,10 +320,15 @@
     inp.click();
   }
   function descartar(o){
-    var T=window.blMenu;
-    var mover=function(e){run('huntingMover',[PERFIL,o.id,e,quien()],function(){cargar();});};
-    if(T)T('Descartar a '+o.nombre,'¿Por qué?',[['No le interesa',function(){mover('No le interesa');}],['No respondió',function(){mover('Sin respuesta');}],['No encaja con el perfil',function(){mover('No encaja');}]]);
-    else mover('No le interesa');
+    var bg=modal('<h3>Descartar a '+esc(o.nombre)+'</h3><label>¿Por qué?</label><select id="hd-t"><option value="No le interesa">No le interesa</option><option value="Sin respuesta">No respondió</option><option value="No encaja">No encaja con el perfil</option></select><label>Motivo (opcional): escribí lo que quieras que quede registrado</label><textarea id="hd-m" style="min-height:90px" maxlength="300" placeholder="Ej: está en un proceso con la competencia; pretensión muy por encima de la banda…"></textarea><div class="hu-cnt" id="hd-n">0 / 300</div><div class="hu-row"><button class="go" id="hd-g">Descartar</button><button id="hd-x">Cancelar</button></div>');
+    var m=bg.querySelector('#hd-m');
+    m.oninput=function(){bg.querySelector('#hd-n').textContent=m.value.length+' / 300';};
+    bg.querySelector('#hd-x').onclick=function(){bg.remove();};
+    bg.querySelector('#hd-g').onclick=function(){
+      var g=this,t=bg.querySelector('#hd-t').value;g.disabled=true;g.textContent='Guardando…';
+      run('huntingMover',[PERFIL,o.id,t,quien(),m.value],function(){bg.remove();cargar();},function(e){g.disabled=false;g.textContent='Descartar';aviso((e&&e.message)||String(e));});
+    };
+    setTimeout(function(){m.focus();},50);
   }
   function masMenu(){
     var T=window.blMenu;if(!T)return;
