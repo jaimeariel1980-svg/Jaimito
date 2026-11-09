@@ -1764,7 +1764,7 @@ function azcuVisitasData_(atras, adelante){
   var hn = azcuHoy_(), ahora = Date.now(), dirs = azcuMapaDirs_(), sh = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento'), v = sh ? sh.getDataRange().getValues() : [], out = [], real = {}, i, k;
   for(i=1;i<v.length;i++){
     var id0 = String(v[i][0]).trim();
-    if(id0 && String(v[i][2]).trim()==='Visita' && String(v[i][5]).trim()!=='Visita agendada' && !/cancelad|reprogramad/i.test(String(v[i][5]))){ (real[id0] = real[id0]||[]).push({i:i, n:azcuNum_(v[i][1]), nom:azcuSinAc_(v[i][3]), tel:String(v[i][4]).replace(/\D/g,'')}); }
+    if(id0 && ((String(v[i][2]).trim()==='Visita' && String(v[i][5]).trim()!=='Visita agendada' && !/cancelad|reprogramad/i.test(String(v[i][5]))) || /^(Le interes[óo]|No le interes[óo]|Hizo una propuesta|Propuesta aceptada|Propuesta rechazada)$/i.test(String(v[i][5]).trim()))){ (real[id0] = real[id0]||[]).push({i:i, n:azcuNum_(v[i][1]), nom:azcuSinAc_(v[i][3]), tel:String(v[i][4]).replace(/\D/g,'')}); }
   }
   for(i=1;i<v.length;i++){
     var r = v[i], id = String(r[0]).trim(), via = String(r[2]).trim(), res = String(r[5]).trim(), ag = res==='Visita agendada', can = res==='Visita cancelada' || res==='Visita reprogramada', rp = res==='Visita reprogramada', n, hh = '';
