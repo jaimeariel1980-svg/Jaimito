@@ -140,6 +140,7 @@ function reanalizarCV_(perfilId, fila, quien) {
 /* ---- Agendar una entrevista desde el tablero (C3): crea el evento en el Calendar de Blumia y deja la cita en la ficha ---- */
 const AGENDA_TIPOS_ = {
   'screening': { titulo: 'Screening Blumia', estado: 'Screening agendado' },
+  'exploracion': { titulo: 'Exploración Blumia', estado: 'Exploración agendada' },
   'competencias': { titulo: 'Competencias Blumia', estado: 'Competencias agendada' },
   'empresa-virtual': { titulo: 'Entrevista con la empresa (virtual)', estado: 'Screening empresa agendado' },
   'empresa-presencial': { titulo: 'Entrevista con la empresa (presencial)', estado: 'Entrevista empresa agendada' }
@@ -163,10 +164,10 @@ function agendarCitaTablero_(perfilId, fila, tipo, fecha, hora, duracion, lugar,
   if (!cal) throw new Error('No tengo acceso al calendario de Blumia.');
   // Quién entrevista (solo screening y competencias; las de la empresa las hace la empresa). Se registra en el evento, en la ficha y en el Historial.
   let quienEntrevista = null;
-  if (entrevistador && (tipo === 'screening' || tipo === 'competencias')) {
+  if (entrevistador && (tipo === 'screening' || tipo === 'exploracion' || tipo === 'competencias')) {
     const u = leerUsuarios_().find(x => x.clave === usuClave_(entrevistador) && x.activo === 'SI');
     if (!u) throw new Error('No encontré a ese entrevistador entre los usuarios habilitados.');
-    if (!usuHaceEn_(u, tipo, perfilId)) throw new Error(String(u.nombre).split(' ')[0] + ' no hace ' + (tipo === 'competencias' ? 'competencias' : 'screening') + ' en esta búsqueda. Elegí a otra persona.');
+    if (!usuHaceEn_(u, tipo, perfilId)) throw new Error(String(u.nombre).split(' ')[0] + ' no hace ' + (tipo === 'competencias' ? 'competencias' : tipo === 'exploracion' ? 'exploración' : 'screening') + ' en esta búsqueda. Elegí a otra persona.');
     quienEntrevista = u;
   }
   const nomEnt = quienEntrevista ? quienEntrevista.nombre : '';
@@ -191,7 +192,7 @@ function agendarCitaTablero_(perfilId, fila, tipo, fecha, hora, duracion, lugar,
   const txt = Utilities.formatDate(inicio, 'GMT-3', "dd/MM/yyyy 'a las' HH:mm");
   sh.getRange(fila, 37).setValue(txt);
   sh.getRange(fila, 46).setValue(nomEnt);
-  const tipoHist = tipo.indexOf('empresa') === 0 ? 'Empresa' : (tipo === 'competencias' ? 'Competencias' : 'Screening');
+  const tipoHist = tipo.indexOf('empresa') === 0 ? 'Empresa' : (tipo === 'competencias' ? 'Competencias' : (tipo === 'exploracion' ? 'Exploración' : 'Screening'));
   const hist = String(sh.getRange(fila, 38).getValue() || '');
   sh.getRange(fila, 38).setValue(tipoHist + ' — ' + Utilities.formatDate(inicio, 'GMT-3', 'dd/MM/yyyy HH:mm') + (nomEnt ? ' · con ' + nomEnt : '') + (hist ? '\n' + hist : ''));
   registrarHistorial_(sh.getName(), nombre, 'Agenda', T.estado + ': ' + txt + (nomEnt ? ' · entrevista a cargo de ' + nomEnt : '') + (opts.guests ? ' · invitación enviada a ' + invitados.join(', ') : ' · sin mail, no se envió invitación') + ' (creada desde el tablero)');
