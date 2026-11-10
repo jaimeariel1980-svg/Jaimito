@@ -2111,6 +2111,7 @@ function completarProcesoIA(empresa) {
       const req=String(datos[i][5]||'');
       const mSal=req.match(/Remuneraci[oó]n pretendida:\s*\$?\s*([\d.\s]+)/i);
       const mt = metEstado_(estado);
+      if (mt) metHechos_(mt, { notaScr: datos[i][11], notaComp: datos[i][15], notaScrEmp: datos[i][43], notaPresEmp: datos[i][44] });
       if (banda && mt && mt.scr && mSal){
         const val=Number(mSal[1].replace(/[.\s]/g,''));
         if(val>0){
@@ -2186,7 +2187,7 @@ function kanbanHTML_(perfilId) {
   let eb = {}; try { eb = enlacesBusqueda_(cfg); } catch (e) { }
   if (eb.carpeta) enlaces.push(['Carpeta de Drive de la búsqueda', eb.carpeta]);
   if (eb.hoja) enlaces.push(['Sheet de la búsqueda (pestaña de candidatos)', eb.hoja]);
-  try { const extra = '<script>var metEstado = ' + metEstado_.toString() + '; var BANDA_REF = ' + bandaRef + '; var URL_APP = ' + JSON.stringify(URL_BASE()) + '; var ENLACES = ' + JSON.stringify(enlaces).replace(/</g, '\\u003c') + '; var ENLACE_CARPETA = ' + JSON.stringify(eb.carpeta || '') + '; var ENLACE_HOJA = ' + JSON.stringify(eb.hoja || '') + '; var ABRIR_CFG = ' + JSON.stringify(ABRIR_CFG_ || '') + ';</script>' + ['ConfigPanel', 'ResumenPanel', 'PerfilRef', 'HuntingPanel', 'TableroCards', 'BloomyWidget'].map(f => HtmlService.createHtmlOutputFromFile(f).getContent()).join(''); html = html.replace(/<\/html>\s*$/, () => extra + '</html>'); } catch (e) { }
+  try { const extra = '<script>var metEstado = ' + metEstado_.toString() + '; var metHechos = ' + metHechos_.toString() + '; var ajusteFuentes = ' + ajusteFuentes_.toString() + '; var AJUSTE_LI = ' + (Number(String(cfg.cv_linkedin_aviso || '').replace(/\D/g, '')) || 0) + '; var BANDA_REF = ' + bandaRef + '; var URL_APP = ' + JSON.stringify(URL_BASE()) + '; var ENLACES = ' + JSON.stringify(enlaces).replace(/</g, '\\u003c') + '; var ENLACE_CARPETA = ' + JSON.stringify(eb.carpeta || '') + '; var ENLACE_HOJA = ' + JSON.stringify(eb.hoja || '') + '; var ABRIR_CFG = ' + JSON.stringify(ABRIR_CFG_ || '') + ';</script>' + ['ConfigPanel', 'ResumenPanel', 'PerfilRef', 'HuntingPanel', 'TableroCards', 'BloomyWidget'].map(f => HtmlService.createHtmlOutputFromFile(f).getContent()).join(''); html = html.replace(/<\/html>\s*$/, () => extra + '</html>'); } catch (e) { }
   lapT_('Sumar los paneles (configurar, resumen, tablero)');
   return HtmlService.createHtmlOutput(html)
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)

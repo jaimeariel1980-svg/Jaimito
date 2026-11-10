@@ -1,4 +1,4 @@
-const CFG_CAMPOS_ = ['nombre', 'nombre_perfil', 'empresa', 'empresa_candidatos', 'logo_cliente', 'preguntas_base', 'datos_internos', 'busqueda_ciega', 'banda_salarial', 'entrevistan', 'link_empresa_virtual', 'link_empresa_presencial', 'link_flyer', 'link_perfil'];
+const CFG_CAMPOS_ = ['nombre', 'nombre_perfil', 'empresa', 'empresa_candidatos', 'logo_cliente', 'preguntas_base', 'datos_internos', 'busqueda_ciega', 'banda_salarial', 'cv_linkedin_aviso', 'entrevistan', 'link_empresa_virtual', 'link_empresa_presencial', 'link_flyer', 'link_perfil'];
 
 /* Preguntas habituales propias: una lista general (pestaña Preguntas_Habituales) que se crea una vez y se tilda en cualquier búsqueda.
    Tildarla en una búsqueda la copia a las preguntas de esa búsqueda (Postulacion_Preguntas); destildarla la saca de esa búsqueda. */
@@ -102,6 +102,7 @@ function guardarConfigBusqueda_(pin, perfilId, p, quien) {
           Object.keys(o).forEach(c => { if (claves.indexOf(c) < 0 || ok.indexOf(String(o[c])) < 0) throw new Error('«Quién entrevista» tiene una persona o una etapa que no existe.'); });
           poner(k, Object.keys(o).length ? JSON.stringify(o) : '', (base.datos || {})[k]); return;
         }
+        if (k === 'cv_linkedin_aviso') { const num = String(v).replace(/\D/g, ''); poner(k, num, (base.datos || {})[k]); return; }
         if (k === 'banda_salarial') { const num = String(v).replace(/\D/g, ''); if (v && Number(num) < 1000) throw new Error('La banda salarial va en pesos, por ejemplo 13000000.'); poner(k, num, (base.datos || {})[k]); return; }
         poner(k, v, (base.datos || {})[k]);
       });

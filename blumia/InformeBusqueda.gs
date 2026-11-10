@@ -36,6 +36,7 @@ function ibEstUna_(perfilId, conResumenes) {
   filas.forEach(c => {
     const m = metEstado_(c.estado);
     if (!m) return;
+    metHechos_(m, c);
     e.total++;
     if (m.scr) e.scr++;
     if (m.comp) e.comp++;
@@ -69,6 +70,7 @@ function ibEstUna_(perfilId, conResumenes) {
     if (conResumenes && m.scr && res.length < 60 && c.resumen) res.push(String(c.resumen).replace(/\s+/g, ' ').slice(0, 170));
     if (c.recMs && (!primero || c.recMs < primero)) primero = c.recMs;
   });
+  ajusteFuentes_(e.fuentes, Number(String(cfg.cv_linkedin_aviso || '').replace(/\D/g, '')) || 0);
   e._primero = primero; e.nombre = String(cfg.nombre || perfilId);
   if (conResumenes) e._res = res;
   return e;
