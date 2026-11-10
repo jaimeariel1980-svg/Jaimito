@@ -68,12 +68,13 @@ function anularEtapa_(perfilId, fila, etapa, quien) {
   fila = filaCandidato_(sh, fila);
   const E = {
     'cv': { col: 5, nom: 'análisis del CV', vuelve: 'Revisar', desde: ['Avanza a screening', 'Descartado sin screening'] },
-    'screening': { col: 12, nom: 'screening', vuelve: 'Avanza a screening', desde: ['Avanza a competencias', 'Descartado post screening', 'Competencias agendada', 'En reserva', 'Reserva screening'] },
+    'screening': { col: 12, nom: 'screening', vuelve: 'Avanza a screening', desde: ['Avanza a competencias', 'Descartado post screening', 'Competencias agendada', 'En reserva', 'Reserva screening', 'Avanza a exploración', 'Exploración agendada'] },
+    'exploracion': { col: colExpl_(sh, false), nom: 'exploración', vuelve: 'Avanza a exploración', desde: ['Avanza a competencias', 'Descartado post exploración', 'Reserva exploración', 'Competencias agendada'] },
     'competencias': { col: 16, nom: 'competencias', vuelve: 'Avanza a competencias', desde: ['Avanza a screening empresa', 'Descartado en competencias', 'Reserva competencias', 'Screening empresa agendado'] },
     'screening-empresa': { col: 44, nom: 'screening con la empresa', vuelve: 'Avanza a screening empresa', desde: ['Avanza a presencial empresa', 'Reserva screening empresa', 'Descartado en screening empresa', 'Entrevista empresa agendada'] },
     'presencial-empresa': { col: 45, nom: 'entrevista final con la empresa', vuelve: 'Avanza a presencial empresa', desde: ['Contratado', 'Reserva presencial empresa', 'Descartado presencial empresa'] }
   }[etapa];
-  if (!E) throw new Error('Etapa inválida.');
+  if (!E || !E.col) throw new Error(E ? 'Esa etapa no tiene nota para anular.' : 'Etapa inválida.');
   const celda = sh.getRange(fila, E.col);
   const nota = String(celda.getValue() || '').trim();
   if (!nota) throw new Error('Esa etapa no tiene nota para anular.');

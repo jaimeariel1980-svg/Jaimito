@@ -5,6 +5,7 @@
 #resumenPage{display:none;max-width:1500px;margin:0 auto;padding:14px 16px 50px;color:#1a1a1a}
 #resumenPage [data-k]{cursor:pointer}
 .rs-dash{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}@media(min-width:1300px){.rs-dash{grid-template-columns:repeat(8,1fr)}}@media(max-width:640px){.rs-dash{grid-template-columns:repeat(2,1fr)}}
+.rs-dash.n9{grid-template-columns:repeat(3,1fr)}@media(min-width:1300px){.rs-dash.n9{grid-template-columns:repeat(9,1fr)}}
 .rs-kpi{background:#fff;border:1px solid #e3e0d9;border-radius:14px;padding:20px 18px;position:relative;overflow:hidden;transition:.12s}
 .rs-kpi:before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:#0F3F27}
 .rs-kpi:hover{box-shadow:0 4px 14px rgba(26,102,69,.18);transform:translateY(-1px)}
@@ -54,6 +55,8 @@
   var NC={'A':'#0F3F27','B+':'#7bc47f','B':'#f0c24b','C':'#d9534f','Sin nota':'#b0b7c0'};
   var PAL=['#0F3F27','#5aa9e6','#e0a800','#8e7cc3','#e07b39','#d9534f','#2e9e5b','#9aa5b1'];
   function est(e){return metEstado(e);}
+  function etNom(){return window.EXPL?['Análisis de CV','Screening','Exploración','Competencias','Entrevista empresa']:['Análisis de CV','Screening','Competencias','Entrevista empresa'];}
+  function etIdx(x){var b=Math.min(x.lv,3);if(window.EXPL){if(/exploraci/i.test(x.c.estado||''))return 2;if(b>=2)b++;}return b;}
   function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
   function pct(a,b){return b?Math.round(a*100/b)+'%':'—';}
   function fm(n){return n?'$'+(Math.round(n/1e5)/10)+' M':'—';}
@@ -68,6 +71,7 @@
     var h0=inicioDia(),n=Date.now(),r=function(f){return L.filter(f);},t,lista;
     if(k==='all'){t='CVs recibidos';lista=L;}
     else if(k==='scr'){t='Screenings realizados (con nota de screening cargada)';lista=r(function(x){return x.scr;});}
+    else if(k==='expl'){t='Exploraciones realizadas (con nota de exploración cargada)';lista=r(function(x){return x.expl;});}
     else if(k==='comp'){t='Competencias realizadas (con nota de competencias cargada)';lista=r(function(x){return x.comp;});}
     else if(k==='emp'){t='Avanzan a empresa (con nota de competencias y en empresa, o con nota de la empresa)';lista=r(function(x){return x.emp;});}
     else if(k==='res'){t='En reserva';lista=r(function(x){return x.res;});}
@@ -79,8 +83,8 @@
     else if(k==='act'){t='En proceso';lista=r(function(x){return x.t==='act';});}
     else if(k==='sinc'){t='Sin contactar';lista=r(function(x){return x.t==='act'&&x.lv===0&&/^(nuevo|pendiente|revisar|)$/i.test(String(x.c.estado||'').trim())&&!x.c.contactado;});}
     else if(k==='prox'){t='Entrevistas de los próximos 7 días';lista=r(function(x){return citaEn(x,h0,h0+7*864e5);}).sort(function(a,b){return avFecha(a.c.cita)-avFecha(b.c.cita);});}
-    else if(k.indexOf('et:')===0){var i=+k.slice(3);t='Etapa actual: '+['Análisis de CV','Screening','Competencias','Entrevista empresa'][i];
-      lista=r(function(x){return x.t==='act'?Math.min(x.lv,3)===i:x.t==='cont'?i===3:false;});}
+    else if(k.indexOf('et:')===0){var i=+k.slice(3),ult=etNom().length-1;t='Etapa actual: '+etNom()[i];
+      lista=r(function(x){return x.t==='act'?etIdx(x)===i:x.t==='cont'?i===ult:false;});}
     else if(k.indexOf('nota:')===0){var nt=k.slice(5);t='CVs con nota '+nt;lista=r(function(x){return (String(x.c.nota||'').trim()||'Sin nota')===nt;});}
     else if(k==='fu:LinkedIn (aviso)'&&+AJUSTE_LI>0){t='Llegaron por el aviso en LinkedIn (dato cargado como total: no se sabe cuáles son)';lista=[];}
     else if(k.indexOf('fu:')===0){var fu=k.slice(3);t='Llegaron por: '+fu;lista=r(function(x){return (String(x.c.fuente||'').trim()||'Sin dato')===fu;});}
@@ -121,16 +125,16 @@
   function pintar(){
     prep();
     var n=L.length,g=function(k){return grupo(k).l.length;},h0=inicioDia(),pr=g('prox'),hoy=L.filter(function(x){return citaEn(x,h0,h0+864e5);}).length;
-    var cv=n,scr=g('scr'),comp=g('comp'),emp=g('emp'),res=g('res'),desc=g('desc'),dcv=g('dcv'),dpost=g('dpost'),dcomp=g('dcomp');
+    var cv=n,scr=g('scr'),exp=g('expl'),comp=g('comp'),emp=g('emp'),res=g('res'),desc=g('desc'),dcv=g('dcv'),dpost=g('dpost'),dcomp=g('dcomp');
     var pend=(typeof AV_PEND!=='undefined'&&AV_PEND)||[],nov=(typeof AV_NOV!=='undefined'&&AV_NOV)||[],urg=pend.filter(function(a){return a.urg;}).length;
-    var x='<div class="rs-dash">'+kpi(cv,'CVs recibidos','','all')+kpi(scr,'Screenings realizados','','scr')+kpi(comp,'Competencias realizadas','','comp')+kpi(emp,'Avanzan a empresa','','emp')+kpi(res,'En reserva','g','res')+kpi(desc,'Descartados','r','desc')+kpi(g('sinc'),'Sin contactar','y act','sinc')+kpi(pr,'Entrevistas próx. 7 días'+(hoy?' ('+hoy+' hoy)':''),'act','prox')+'</div>';
-    var ES=[0,1,2,3].map(function(i){return {l:['Análisis de CV','Screening','Competencias','Entrevista empresa'][i],v:g('et:'+i),c:[COLS.cv,COLS.scr,COLS.comp,COLS.fin][i],k:'et:'+i};});
+    var x='<div class="rs-dash'+(window.EXPL?' n9':'')+'">'+kpi(cv,'CVs recibidos','','all')+kpi(scr,'Screenings realizados','','scr')+(window.EXPL?kpi(exp,'Exploraciones realizadas','','expl'):'')+kpi(comp,'Competencias realizadas','','comp')+kpi(emp,'Avanzan a empresa','','emp')+kpi(res,'En reserva','g','res')+kpi(desc,'Descartados','r','desc')+kpi(g('sinc'),'Sin contactar','y act','sinc')+kpi(pr,'Entrevistas próx. 7 días'+(hoy?' ('+hoy+' hoy)':''),'act','prox')+'</div>';
+    var ES=etNom().map(function(nm,i){return {l:nm,v:g('et:'+i),c:(window.EXPL?[COLS.cv,COLS.scr,'#c98bb9',COLS.comp,COLS.fin]:[COLS.cv,COLS.scr,COLS.comp,COLS.fin])[i],k:'et:'+i};});
     ES.push({l:'En reserva',v:res,c:COLS.res,k:'res'});ES.push({l:'Descartados',v:desc,c:COLS.desc,k:'desc'});
     var notas={},fuentes={};L.forEach(function(y){var nt=String(y.c.nota||'').trim()||'Sin nota';notas[nt]=(notas[nt]||0)+1;var fu=String(y.c.fuente||'').trim()||'Sin dato';fuentes[fu]=(fuentes[fu]||0)+1;});
     if(typeof ajusteFuentes==='function'&&+AJUSTE_LI>0)ajusteFuentes(fuentes,+AJUSTE_LI);
     var NS=['A','B+','B','C','Sin nota'].filter(function(k){return notas[k];}).map(function(k){return {l:k==='Sin nota'?k:'Nota '+k,v:notas[k],c:NC[k],k:'nota:'+k};});
     var FS=Object.keys(fuentes).sort(function(a,b){return fuentes[b]-fuentes[a];}).map(function(k,i){return {l:k,v:fuentes[k],c:PAL[i%PAL.length],k:'fu:'+k};});
-    x+='<div class="rs-panel"><div class="rs-row3"><div><h3>Dónde está cada candidato</h3>'+dona(ES,n,n,'candidatos')+'</div><div><h3>Calidad de los CVs</h3>'+dona(NS,n,pct(notas['A']||0,n),'con nota A',4)+'</div><div><h3>De dónde llegan</h3>'+dona(FS,n,FS.length,FS.length===1?'canal':'canales')+'</div>'+'</div>'+motivosHtml()+'</div>';
+    x+='<div class="rs-panel"><div class="rs-row3"><div><h3>Dónde está cada candidato</h3>'+dona(ES,n,n,'candidatos',window.EXPL?4:0)+'</div><div><h3>Calidad de los CVs</h3>'+dona(NS,n,pct(notas['A']||0,n),'con nota A',4)+'</div><div><h3>De dónde llegan</h3>'+dona(FS,n,FS.length,FS.length===1?'canal':'canales')+'</div>'+'</div>'+motivosHtml()+'</div>';
     document.getElementById('resumenPage').innerHTML=x;
   }
   function ver(v){

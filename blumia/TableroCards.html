@@ -68,14 +68,14 @@ header{min-height:86px}
 <script>
 (function(){
   var DIAS_ALERTA=7,KF='';
-  window.proxEtapa=function(c){return (String(c.notaScr||'').trim()||/competenc/i.test(c.estado||''))?'competencias':'screening';}; // se usa al dibujar las tarjetas: tiene que existir antes del primer dibujo
+  window.proxEtapa=function(c){if(window.EXPL&&String(c.notaScr||'').trim()&&!String(c.notaExpl||'').trim()&&!/competenc/i.test(c.estado||''))return 'exploración';return (String(c.notaScr||'').trim()||/competenc/i.test(c.estado||''))?'competencias':'screening';}; // se usa al dibujar las tarjetas: tiene que existir antes del primer dibujo
   var COLS_PUROS=COLS; // [titulo, estados]
   function esc(s){return avEsc(s);}
   function notaCls(n){n=String(n||'').trim();return n==='A'?'cA':n==='B+'?'cBp':n==='B'?'cB':n==='C'?'cC':'';}
   function notaClsBadge(n){n=String(n||'').trim();return n==='A'?'nA':n==='B+'?'nBp':n==='B'?'nB':n==='C'?'nC':'';}
   function etapaNota(c){
     if(c.notaPresEmp)return [c.notaPresEmp,'FINAL'];if(c.notaScrEmp)return [c.notaScrEmp,'EMP'];
-    if(c.notaComp)return [c.notaComp,'COMP'];if(c.notaScr)return [c.notaScr,'SCR'];if(c.nota)return [c.nota,'CV'];return ['',''];
+    if(c.notaComp)return [c.notaComp,'COMP'];if(c.notaExpl)return [c.notaExpl,'EXPL'];if(c.notaScr)return [c.notaScr,'SCR'];if(c.nota)return [c.nota,'CV'];return ['',''];
   }
   function dias(c){var m=c.movMs;return m?Math.floor((Date.now()-m)/864e5):0;} // sin historial todavía = no se sabe, no se alerta
   function terminal(c){var m=metEstado(c.estado);return !m||m.t==='desc'||m.t==='cont';}
@@ -193,7 +193,7 @@ header{min-height:86px}
   function proximas(){var ah=Date.now()-36e5,L=[];DATA.forEach(function(c){var f=avFecha(c.cita);if(f&&f>=ah&&metEstado(c.estado)&&metEstado(c.estado).t==='act')L.push({f:f,c:c});});L.sort(function(a,b){return a.f-b.f;});return L;}
   function cuando(f){var d=new Date(f),h0=new Date();h0.setHours(0,0,0,0);var dif=Math.floor((new Date(d.getFullYear(),d.getMonth(),d.getDate())-h0)/864e5),hh=('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);return (dif<=0?'Hoy':dif===1?'Mañana':('0'+d.getDate()).slice(-2)+'/'+('0'+(d.getMonth()+1)).slice(-2))+' '+hh;}
   function corto(n){var p=String(n||'').trim().split(/\s+/);return p.length>1?p[0]+' '+p[p.length-1].charAt(0)+'.':p[0]||'';}
-  function etapaDe(c){var e=String(c.estado||'');return /competencia/i.test(e)?'Competencias':/empresa|cliente/i.test(e)?'Empresa':/screening/i.test(e)?'Screening':'Entrevista';}
+  function etapaDe(c){var e=String(c.estado||'');return /exploraci/i.test(e)?'Exploración':/competencia/i.test(e)?'Competencias':/empresa|cliente/i.test(e)?'Empresa':/screening/i.test(e)?'Screening':'Entrevista';}
   function dockPintar(){
     var nv=0;try{nv=(typeof avLS==='function'&&avLS('sinver'))||0;}catch(e){}
     var P=(typeof AV_PEND!=='undefined'&&AV_PEND)||[],urg=P.filter(function(x){return x.urg;}).length,L=proximas(),min=false;
@@ -296,6 +296,7 @@ header{min-height:86px}
     var etapas=[['CV',c.nota],['Screening'+(c.scrPDF&&!String(c.notaScr||'').trim()?' · sin nota':''),c.notaScr],['Competencias'+(c.compPDF&&!String(c.notaComp||'').trim()?' · sin nota':''),c.notaComp],['Empresa',c.notaScrEmp],['Final',c.notaPresEmp]];
     var st=String(c.estado||''),ei=/sin screening/i.test(st)?0:/final|cliente|contratad|presencial empresa/i.test(st)?4:/empresa/i.test(st)?3:/competencia/i.test(st)?2:/screening|agendad/i.test(st)?1:0;
     if(c.notaPresEmp)ei=Math.max(ei,4);else if(c.notaScrEmp)ei=Math.max(ei,3);else if(c.notaComp||c.compPDF)ei=Math.max(ei,2);else if(c.notaScr||c.scrPDF)ei=Math.max(ei,1);
+    if(window.EXPL){etapas.splice(2,0,['Exploración',c.notaExpl]);if(ei>=2)ei++;if(/exploraci/i.test(st))ei=Math.max(ei,2);if(c.notaExpl)ei=Math.max(ei,3);}
     var ecs=etapas.map(function(e,i){return '<span class="ec" style="border-bottom-color:'+(COL_N[String(e[1]||'').trim()]||'#C9C5BB')+'">'+nBadge(e[1],i>ei)+' '+e[0]+'</span>';}).join('');
     var contBtn='<button class="mbtn wa" onclick="menuContacto('+c.fila+')">💬 Contacto ▾</button>';
     var cvBtn=c.cv?'<a href="https://drive.google.com/file/d/'+esc(c.cv)+'/view" target="_blank" class="mbtn alt">📄 Ver CV</a>':'';
@@ -304,7 +305,7 @@ header{min-height:86px}
     var agBtn='<button class="mbtn alt" onclick="panelTog(\'agPanel\')">📅 Agendar</button>';
     
     var notasEmp=/screening empresa|presencial empresa|avanza a empresa|entrevista empresa|reserva screening empresa|reserva presencial empresa/i.test(c.estado)?['screening-empresa','presencial-empresa'].map(function(ep){return '<div class="notarow"><span>'+(ep==='screening-empresa'?'Emp. screening':'Emp. presencial')+'</span>'+['A','B','C'].map(function(n){return '<button class="nb'+(String(ep==='screening-empresa'?c.notaScrEmp:c.notaPresEmp).trim()===n?' on '+n.replace('+','p'):'')+'" onclick="setNotaEmp('+c.fila+',\''+ep+'\',\''+n+'\',this)">'+n+'</button>';}).join('')+sinNotaBtn(c.fila,ep,ep==='screening-empresa'?c.notaScrEmp:c.notaPresEmp)+'</div>';}).join(''):'';
-    var notas='<div class="notabox"><div class="notatit">Poner nota manual</div>'+['cv','screening','competencias'].map(function(et){return '<div class="notarow"><span>'+({cv:'CV',screening:'Screening',competencias:'Competencias'}[et])+'</span>'+['A','B+','B','C'].map(function(n){return '<button class="nb'+(String({cv:c.nota,screening:c.notaScr,competencias:c.notaComp}[et]||'').trim()===n?' on '+n.replace('+','p'):'')+'" onclick="setNota('+c.fila+',\''+et+'\',\''+n+'\',this)">'+n+'</button>';}).join('')+sinNotaBtn(c.fila,et,{cv:c.nota,screening:c.notaScr,competencias:c.notaComp}[et])+'</div>';}).join('')+notasEmp+'</div>';
+    var notas='<div class="notabox"><div class="notatit">Poner nota manual</div>'+(window.EXPL?['cv','screening','exploracion','competencias']:['cv','screening','competencias']).map(function(et){return '<div class="notarow"><span>'+({cv:'CV',screening:'Screening',exploracion:'Exploración',competencias:'Competencias'}[et])+'</span>'+['A','B+','B','C'].map(function(n){return '<button class="nb'+(String({cv:c.nota,screening:c.notaScr,exploracion:c.notaExpl,competencias:c.notaComp}[et]||'').trim()===n?' on '+n.replace('+','p'):'')+'" onclick="setNota('+c.fila+',\''+et+'\',\''+n+'\',this)">'+n+'</button>';}).join('')+sinNotaBtn(c.fila,et,{cv:c.nota,screening:c.notaScr,exploracion:c.notaExpl,competencias:c.notaComp}[et])+'</div>';}).join('')+notasEmp+'</div>';
     var contacto=(c.contactado?'<div class="frow"><span class="fl">Último contacto</span><span class="fv">'+esc(c.contactado)+' <a href="#" onclick="borrarMarca('+c.fila+');return false" style="color:#B3261E;font-size:12px;font-weight:700;text-decoration:underline;margin-left:8px">✕ Borrar marca</a></span></div>':'')
       +'<div class="frow"><span class="fl">Registro de contactos</span><span class="fv" id="regCont" style="white-space:pre-line">cargando…</span></div>';
     var h='<div class="fwrap" style="margin:-24px"><div class="fh"><div style="font-size:16px;color:#0F3F27"><b>'+esc(c.estado)+'</b></div><div class="ecs">'+ecs+'</div></div>'

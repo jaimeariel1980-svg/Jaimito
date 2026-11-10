@@ -47,7 +47,7 @@ function getContactosRegistro_(perfilId, fila) {
 
 // CSV para importar en Contactos de Google: solo la búsqueda indicada (o todas si no se indica) y solo quienes ya se contactaron o avanzaron
 function exportarContactosCSV_(perfilId) {
-  const OK = ['Contactado', 'Screening agendado', 'Avanza a competencias', 'Competencias agendada', 'Avanza a screening empresa', 'Screening empresa agendado', 'Avanza a presencial empresa', 'Avanza a empresa', 'Entrevista empresa agendada', 'En cliente', 'Contratado'];
+  const OK = ['Contactado', 'Screening agendado', 'Avanza a exploración', 'Exploración agendada', 'Avanza a competencias', 'Competencias agendada', 'Avanza a screening empresa', 'Screening empresa agendado', 'Avanza a presencial empresa', 'Avanza a empresa', 'Entrevista empresa agendada', 'En cliente', 'Contratado'];
   const q = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
   const filas = [['Name', 'Given Name', 'Phone 1 - Value', 'E-mail 1 - Value', 'Group Membership'].map(q).join(',')];
   let n = 0;

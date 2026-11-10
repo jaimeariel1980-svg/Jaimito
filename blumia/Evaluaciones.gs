@@ -26,14 +26,15 @@ function evalFila_(sh, perfilId, nombre, etapa) {
 }
 
 // estado de la fila que corresponde a una nota (la misma regla de aplicarEstadoNota)
-function estadoPorNota_(etapa, nota) {
+// ex = la búsqueda tiene la etapa «Exploración» entre screening y competencias (Config etapa_exploracion = SI)
+function estadoPorNota_(etapa, nota, ex) {
   let v = String(nota || '').trim().toUpperCase();
   const m = { 'ALTO': 'A', 'MEDIO': 'B', 'BAJO': 'C' };
   if (m[v]) v = m[v];
   if (['A', 'B+', 'B', 'C'].indexOf(v) === -1) return '';
-  if (v === 'C') return { cv: 'Descartado sin screening', screening: 'Descartado post screening', competencias: 'Descartado en competencias', empresa: 'Descartado en empresa' }[etapa];
-  if (v === 'B' && etapa !== 'cv') return { screening: 'Reserva screening', competencias: 'Reserva competencias' }[etapa] || 'En reserva';
-  return { cv: 'Avanza a screening', screening: 'Avanza a competencias', competencias: 'Avanza a screening empresa', empresa: 'En cliente' }[etapa];
+  if (v === 'C') return { cv: 'Descartado sin screening', screening: 'Descartado post screening', exploracion: 'Descartado post exploración', competencias: 'Descartado en competencias', empresa: 'Descartado en empresa' }[etapa];
+  if (v === 'B' && etapa !== 'cv') return { screening: 'Reserva screening', exploracion: 'Reserva exploración', competencias: 'Reserva competencias' }[etapa] || 'En reserva';
+  return { cv: 'Avanza a screening', screening: ex ? 'Avanza a exploración' : 'Avanza a competencias', exploracion: 'Avanza a competencias', competencias: 'Avanza a screening empresa', empresa: 'En cliente' }[etapa];
 }
 
 // ¿corresponde cambiar el estado al editar una evaluación? Solo si la nota cambió y el estado todavía es el que salía de la nota anterior
@@ -41,7 +42,7 @@ function aplicarEdicion_(sheet, fila, etapa, notaAntes, notaNueva) {
   if (String(notaAntes || '').trim() === String(notaNueva || '').trim()) return false;
   if (!String(notaAntes || '').trim()) return true;
   const est = String(sheet.getRange(fila, 9).getValue() || '').trim();
-  return est === estadoPorNota_(etapa, notaAntes);
+  return est === estadoPorNota_(etapa, notaAntes, explHoja_(sheet.getName()));
 }
 
 // {<nombre normalizado>|<etapa>: entrevistador} de una búsqueda (el que se eligió en el formulario; si falta, quien guardó)
