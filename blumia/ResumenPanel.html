@@ -78,6 +78,7 @@
     else if(k==='desc'){t='Descartados';lista=r(function(x){return x.t==='desc';});}
     else if(k==='dcv'){t='Descartados en análisis de CV';lista=r(function(x){return x.d==='cv';});}
     else if(k==='dpost'){t='Descartados post screening';lista=r(function(x){return x.d==='post';});}
+    else if(k==='dexpl'){t='Descartados post exploración';lista=r(function(x){return x.d==='expl';});}
     else if(k==='dcomp'){t='Descartados en competencias / empresa';lista=r(function(x){return x.d==='comp'||x.d==='emp';});}
     else if(k.indexOf('mot:')===0){var mo=k.slice(4);t=mo?'Descartados por: '+mo:'Descartados sin motivo cargado';lista=r(function(x){return x.t==='desc'&&(mo?String(x.c.motivo||'').split(/;\s*/).map(function(m){return m.replace(/^Otro: .*/,'Otro');}).indexOf(mo)>-1:!String(x.c.motivo||'').trim());});}
     else if(k==='act'){t='En proceso';lista=r(function(x){return x.t==='act';});}

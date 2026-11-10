@@ -78,7 +78,9 @@ function getDatosPerfil_(perfilId) {
       preguntas: String(r.preguntas || '').split('|').map(s => s.trim()).filter(Boolean)
     })),
     datosInternos: String(cfg.datos_internos || '').toUpperCase() !== 'NO',
-    proximos: (function () { try { return leerUsuarios_().filter(u => u.activo === 'SI' && usuHaceEn_(u, 'competencias', perfilId)).map(u => String(u.nombre).split(' ')[0]); } catch (e) { return []; } })(),
+    // la etapa que sigue al screening: «exploración» si la búsqueda la tiene activa, si no «competencias»
+    proximaEtapa: explActiva_(cfg) ? 'exploración' : 'competencias',
+    proximos: (function () { try { const et = explActiva_(cfg) ? 'exploracion' : 'competencias'; return leerUsuarios_().filter(u => u.activo === 'SI' && usuHaceEn_(u, et, perfilId)).map(u => String(u.nombre).split(' ')[0]); } catch (e) { return []; } })(),
     entrevistadoras: String(hero.entrevistadoras || entrevistadoresDefault_().join(',')).split(',').map(s => s.trim()).filter(Boolean)
   };
 }

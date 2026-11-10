@@ -7,7 +7,8 @@ function metEstado_(estado) {
   if (l === 'contratado') { t = 'cont'; lv = 5; }
   else if (/^descartad/.test(l)) {
     t = 'desc';
-    if (/post screening|post exploraci/.test(l)) { lv = 1; d = 'post'; }
+    if (/post exploraci/.test(l)) { lv = 1; d = 'expl'; }
+    else if (/post screening/.test(l)) { lv = 1; d = 'post'; }
     else if (/en competencias/.test(l)) { lv = 2; d = 'comp'; }
     else if (/screening empresa|presencial empresa|en empresa/.test(l)) { lv = /screening empresa/.test(l) ? 3 : 4; d = 'emp'; }
     else { lv = 0; d = 'cv'; }
@@ -41,7 +42,7 @@ function ajusteFuentes_(f, n) {
 
 // contadores de una búsqueda con las mismas definiciones que el Informe de proceso
 function contarBusqueda_(filas) {
-  const r = { cv: 0, scr: 0, comp: 0, emp: 0, res: 0, dsin: 0, dpost: 0, dcomp: 0 };
+  const r = { cv: 0, scr: 0, comp: 0, emp: 0, res: 0, dsin: 0, dpost: 0, dcomp: 0, dexpl: 0 };
   filas.forEach(f => {
     if (!String(f[1]).trim()) return;
     const m = metEstado_(f[8]);
@@ -54,6 +55,7 @@ function contarBusqueda_(filas) {
     if (m.res) r.res++;
     if (m.d === 'cv') r.dsin++;
     else if (m.d === 'post') r.dpost++;
+    else if (m.d === 'expl') { r.dpost++; r.dexpl++; } // en la hoja vieja de proceso la exploración cuenta como «después de entrevistar»
     else if (m.d === 'comp' || m.d === 'emp') r.dcomp++;
   });
   return r;

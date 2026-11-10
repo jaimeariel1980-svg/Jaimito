@@ -289,7 +289,7 @@ function render() {
       </div>
     </div>
     ${(DATOS.proximos||[]).length ? `<div class="prox-box ia-ui" id="prox-box" style="display:none">
-      <label for="d-proximo">Si avanza: ¿quién hace la entrevista de competencias?</label>
+      <label for="d-proximo">Si avanza: ¿quién hace la entrevista de ${DATOS.proximaEtapa || 'competencias'}?</label>
       <select id="d-proximo"><option value="">— Sin asignar —</option>${DATOS.proximos.map(e => `<option value="${e}">${e}</option>`).join('')}</select>
       <div class="prox-ayuda">Queda en la tarjeta del candidato («Próxima: …») y en la agenda de esa persona.</div>
     </div>` : ''}
