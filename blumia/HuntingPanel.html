@@ -63,7 +63,7 @@
 <script>
 (function(){
   if(typeof google==='undefined'||!google.script||typeof PERFIL==='undefined')return;
-  var ETAPAS=['Identificado','Contactado','Respondió','Interesado','En proceso'],CERR=['No le interesa','Sin respuesta','No encaja'];
+  var ETAPAS=['Identificado','Contactado','Respondió','Interesado','En proceso'],CERR=['No le interesa','Sin respuesta','No encaja'],lbl=function(e){return e==='Sin respuesta'?'No respondió':e==='No encaja'?'No se ajusta':e;};
   var DESC={'Identificado':'Mapeados, todavía sin contactar','Contactado':'Mensaje enviado, esperando respuesta','Respondió':'Hay conversación','Interesado':'Quiere avanzar: pasala a la búsqueda','En proceso':'Ya están en el tablero de candidatos'};
   var COLS4=[['Por contactar',['Identificado'],'Cargados, todavía sin contactar'],['Contactado',['Contactado','Respondió','Interesado'],'Ya les escribiste'],['Descartado',CERR,'No siguen en el proceso'],['En la búsqueda',['En proceso'],'Ya están en el tablero de candidatos']];
   var D={items:[],stats:null,hoy:''},abierta=false,cargando=false;
@@ -106,7 +106,7 @@
     return '<div class="hu-card '+esc(o.prioridad)+'"><div class="hu-n"><span data-a="ficha" data-id="'+esc(o.id)+'" style="cursor:pointer" title="Ver ficha">'+esc(o.nombre)+'</span><i class="hu-pr" title="Prioridad">'+esc(o.prioridad)+'</i></div>'+
       ((o.cargo||o.empresa)?'<div class="hu-s">'+esc(o.cargo)+(o.cargo&&o.empresa?' · ':'')+esc(o.empresa)+'</div>':'')+
       (o.nota?'<span class="hu-seg" title="Nota que le puso la IA al leer su PDF">Nota IA: '+esc(o.nota)+'</span> ':'')+(o.notas?'<div class="hu-s" style="color:#888">'+esc(o.notas)+'</div>':'')+
-      ((o.estado==='Respondió'||o.estado==='Interesado')?'<span class="hu-seg">'+esc(o.estado)+'</span> ':'')+(desc?'<div class="hu-s" style="font-weight:700;color:#8a4b2a">'+esc(o.estado==='Sin respuesta'?'No respondió':o.estado)+'</div>'+(o.motivo?'<div class="hu-s" style="color:#555;white-space:pre-wrap">'+esc(o.motivo)+'</div>':''):'')+(o.estado==='En proceso'&&o.candidato?'<div class="hu-s" style="color:#0F3F27;font-weight:700">En el tablero como «'+esc(o.candidato)+'»</div>':'')+seg+'<div class="hu-acc">'+acc+'</div></div>';
+      ((o.estado==='Respondió'||o.estado==='Interesado')?'<span class="hu-seg">'+esc(o.estado)+'</span> ':'')+(desc?'<div class="hu-s" style="font-weight:700;color:#8a4b2a">'+esc(lbl(o.estado))+'</div>'+(o.motivo?'<div class="hu-s" style="color:#555;white-space:pre-wrap">'+esc(o.motivo)+'</div>':''):'')+(o.estado==='En proceso'&&o.candidato?'<div class="hu-s" style="color:#0F3F27;font-weight:700">En el tablero como «'+esc(o.candidato)+'»</div>':'')+seg+'<div class="hu-acc">'+acc+'</div></div>';
   }
   function vistaBtns(){return '<div class="hu-vista"><button data-a="vista:personas" class="'+(vista==='personas'?'on':'')+'">Personas</button><button data-a="vista:empresas" class="'+(vista==='empresas'?'on':'')+'">Empresas objetivo</button></div>';}
   function pintar(){
@@ -320,7 +320,7 @@
     inp.click();
   }
   function descartar(o){
-    var bg=modal('<h3>Descartar a '+esc(o.nombre)+'</h3><label>¿Por qué?</label><select id="hd-t"><option value="">Elegir…</option><option value="No le interesa">No le interesa</option><option value="Sin respuesta">No respondió</option><option value="No encaja">No encaja con el perfil</option></select><label>Motivo (opcional): escribí lo que quieras que quede registrado</label><textarea id="hd-m" style="min-height:90px" maxlength="300" placeholder="Ej: está en un proceso con la competencia; pretensión muy por encima de la banda…"></textarea><div class="hu-cnt" id="hd-n">0 / 300</div><div class="hu-row"><button class="go" id="hd-g">Descartar</button><button id="hd-x">Cancelar</button></div>');
+    var bg=modal('<h3>Descartar a '+esc(o.nombre)+'</h3><label>¿Por qué?</label><select id="hd-t"><option value="">Elegir…</option><option value="No le interesa">No le interesa</option><option value="Sin respuesta">No respondió</option><option value="No encaja">No se ajusta al perfil</option></select><label>Motivo (opcional): escribí lo que quieras que quede registrado</label><textarea id="hd-m" style="min-height:90px" maxlength="300" placeholder="Ej: está en un proceso con la competencia; pretensión muy por encima de la banda…"></textarea><div class="hu-cnt" id="hd-n">0 / 300</div><div class="hu-row"><button class="go" id="hd-g">Descartar</button><button id="hd-x">Cancelar</button></div>');
     var m=bg.querySelector('#hd-m');
     m.oninput=function(){bg.querySelector('#hd-n').textContent=m.value.length+' / 300';};
     bg.querySelector('#hd-x').onclick=function(){bg.remove();};
@@ -335,7 +335,7 @@
     T('Más opciones','',[['+ Agregar a mano',function(){formPersona();}],['Pegar una lista',function(){pegarLista();}],['✉ Mensajes (todos)',function(){if(window.abrirMensajes)abrirMensajes();}],['📋 Perfil del puesto',function(){if(window.blPerfilRef)blPerfilRef();}]]);
   }
   function menu(o){
-    var bg=modal('<h3>'+esc(o.nombre)+'</h3><div class="hu-row" style="justify-content:flex-start;flex-direction:column;align-items:stretch"><button data-a="edit">Editar datos</button>'+(o.linkedin?'<button data-a="li">Abrir LinkedIn</button>':'')+'<button data-a="msg">✉ Mensaje</button>'+(o.tienePdf&&o.estado!=='En proceso'?'<button data-a="pasar">➡ Pasar a la búsqueda</button>':'')+'<label>Mover a otra etapa</label><select id="hmv"><option value="">Elegir…</option>'+ETAPAS.concat(CERR).map(function(e){return '<option'+(e===o.estado?' disabled':'')+'>'+e+'</option>';}).join('')+'</select><button data-a="del" style="border-color:#B91C1C;color:#B91C1C;margin-top:12px">Borrar de la lista</button><button data-a="x">Cerrar</button></div>');
+    var bg=modal('<h3>'+esc(o.nombre)+'</h3><div class="hu-row" style="justify-content:flex-start;flex-direction:column;align-items:stretch"><button data-a="edit">Editar datos</button>'+(o.linkedin?'<button data-a="li">Abrir LinkedIn</button>':'')+'<button data-a="msg">✉ Mensaje</button>'+(o.tienePdf&&o.estado!=='En proceso'?'<button data-a="pasar">➡ Pasar a la búsqueda</button>':'')+'<label>Mover a otra etapa</label><select id="hmv"><option value="">Elegir…</option>'+ETAPAS.concat(CERR).map(function(e){return '<option value="'+e+'"'+(e===o.estado?' disabled':'')+'>'+lbl(e)+'</option>';}).join('')+'</select><button data-a="del" style="border-color:#B91C1C;color:#B91C1C;margin-top:12px">Borrar de la lista</button><button data-a="x">Cerrar</button></div>');
     bg.querySelector('#hmv').onchange=function(){var v=this.value;if(v){bg.remove();run('huntingMover',[PERFIL,o.id,v,quien()],function(){cargar();});}};
     bg.addEventListener('click',function(ev){var a=ev.target.getAttribute&&ev.target.getAttribute('data-a');if(!a)return;bg.remove();
       if(a==='edit')formPersona(o);else if(a==='li')window.open(o.linkedin,'_blank');else if(a==='msg')mensaje(o);else if(a==='pasar')pasar(o);
