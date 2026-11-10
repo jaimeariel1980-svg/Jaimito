@@ -324,8 +324,36 @@ header{min-height:86px}
     cargarRegCont(f);cargarHist(f);proxCargar();
   };
   function inp(id,l,v,t){return '<label class="gl">'+l+'<input id="'+id+'" type="'+(t||'text')+'" value="'+esc(v||'')+'"></label>';}
+  /* «Llegó por» (Ariel, 10/11): un desplegable con los orígenes más usados + una aclaración; «Recomendado» pide por quién. Se guarda en la misma columna de siempre como texto. */
+  var FUE_T=['','CV directo','Postulación web','LinkedIn / Hunting','Recomendado','Otro'];
+  function fuenteParse(v){
+    v=String(v||'').trim();if(!v)return {t:'',d:''};
+    if(/recomend|referid/i.test(v))return {t:'Recomendado',d:v.replace(/^(recomendad[oa]|referid[oa])( por)?[\s:·-]*/i,'')};
+    if(/linkedin|hunting/i.test(v))return {t:'LinkedIn / Hunting',d:v.replace(/^hunting \(linkedin\)\s*·?\s*/i,'').replace(/^linkedin( \/ hunting)?\s*·?\s*/i,'')};
+    if(/^cv directo/i.test(v))return {t:'CV directo',d:v.replace(/^cv directo\s*·?\s*/i,'')};
+    if(/^postulaci/i.test(v))return {t:'Postulación web',d:v.replace(/^postulaci[oó]n( web)?\s*·?\s*/i,'')};
+    return {t:'Otro',d:v};
+  }
+  function fuenteHtml(c){
+    var p=fuenteParse(c.fuente);
+    return '<label class="gl">Llegó por<select id="gdFueT" onchange="fuenteCambio()">'+FUE_T.map(function(o){return '<option value="'+esc(o)+'"'+(o===p.t?' selected':'')+'>'+(o||'Sin dato')+'</option>';}).join('')+'</select></label>'
+      +'<label class="gl" id="gdFueL"><span id="gdFueS">Aclaración (opcional)</span><input id="gdFueD" type="text" value="'+esc(p.d)+'"></label>';
+  }
+  window.fuenteCambio=function(){
+    var t=val('gdFueT'),l=document.getElementById('gdFueL'),sp=document.getElementById('gdFueS'),i=document.getElementById('gdFueD');if(!l)return;
+    l.style.display=t===''?'none':'';
+    sp.textContent=t==='Recomendado'?'¿Por quién fue recomendado? (obligatorio)':t==='Otro'?'¿Cuál? (obligatorio)':'Aclaración (opcional)';
+    i.placeholder=t==='Recomendado'?'Ej: Laura Pérez':t==='Otro'?'Ej: consultora X':'';
+  };
+  function fuenteArmar(){
+    var t=val('gdFueT'),d=String(val('gdFueD')||'').trim();
+    if(t==='')return {ok:true,txt:''};
+    if(t==='Recomendado'){if(!d)return {ok:false,msg:'Escribí por quién fue recomendado.'};return {ok:true,txt:'Recomendado por '+d};}
+    if(t==='Otro'){if(!d)return {ok:false,msg:'Escribí cuál es el origen.'};return {ok:true,txt:d};}
+    return {ok:true,txt:t+(d?' · '+d:'')};
+  }
   function editarHtml(c){
-    return '<div class="edp" id="edPanel" hidden><div class="ggrid">'+inp('gdNom','Nombre',c.nombre)+inp('gdTel','Teléfono',c.tel)+inp('gdDni','DNI',c.dni)+inp('gdMail','Mail',c.mail==='Sin dato'?'':c.mail)+inp('gdFor','Formación',c.formacion)+inp('gdZon','Zona',c.zona)+inp('gdFue','Llegó por (ej: Recomendado por Laura Pérez)',c.fuente)+inp('gdPre','Pretensión ($)',c.pretension)+'</div><div class="obsb"><button class="mbtn sm" onclick="guardarDatosC('+c.fila+',this)">Guardar</button></div></div>';
+    return '<div class="edp" id="edPanel" hidden><div class="ggrid">'+inp('gdNom','Nombre',c.nombre)+inp('gdTel','Teléfono',c.tel)+inp('gdDni','DNI',c.dni)+inp('gdMail','Mail',c.mail==='Sin dato'?'':c.mail)+inp('gdFor','Formación',c.formacion)+inp('gdZon','Zona',c.zona)+fuenteHtml(c)+inp('gdPre','Pretensión ($)',c.pretension)+'</div><div class="obsb"><button class="mbtn sm" onclick="guardarDatosC('+c.fila+',this)">Guardar</button></div></div>';
   }
   function agendarHtml(c){
     var hoy=new Date(Date.now()+864e5).toISOString().slice(0,10);
@@ -359,7 +387,8 @@ header{min-height:86px}
   function fail(b,t){return function(e){b.disabled=false;b.textContent=t;alert('No se pudo: '+((e&&e.message)||e));};}
   function refrescar(){refrescarTablero();}
   window.guardarDatosC=function(f,b){
-    var d={nombre:val('gdNom'),tel:val('gdTel'),dni:val('gdDni'),mail:val('gdMail'),formacion:val('gdFor'),zona:val('gdZon'),fuente:val('gdFue'),pretension:val('gdPre')},t=b.textContent;
+    var fu=fuenteArmar();if(!fu.ok){blAlert(fu.msg);return;}
+    var d={nombre:val('gdNom'),tel:val('gdTel'),dni:val('gdDni'),mail:val('gdMail'),formacion:val('gdFor'),zona:val('gdZon'),fuente:fu.txt,pretension:val('gdPre')},t=b.textContent;
     b.disabled=true;b.textContent='Guardando…';
     google.script.run.withSuccessHandler(function(r){toast();refrescar();}).withFailureHandler(fail(b,t)).guardarDatosCandidato(PERFIL,f,d,quienSoy());
   };
