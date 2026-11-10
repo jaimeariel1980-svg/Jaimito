@@ -102,7 +102,7 @@ function doGetPagina_(e) {
   const tipo = e?.parameter?.tipo;
   const perfil = e?.parameter?.perfil || '';
   let template, titulo;
-  const tipoQuePideBusqueda = ['competencias', 'screening', 'postulacion', 'kanban', 'flyer', 'perfilpuesto', 'pdfcliente', 'informe', 'procesohtml', 'informebusqueda'].indexOf(tipo) >= 0 || (!tipo && !!e?.parameter?.nombre);
+  const tipoQuePideBusqueda = ['competencias', 'exploracion', 'screening', 'postulacion', 'kanban', 'flyer', 'perfilpuesto', 'pdfcliente', 'informe', 'procesohtml', 'informebusqueda'].indexOf(tipo) >= 0 || (!tipo && !!e?.parameter?.nombre);
   if (!perfil && tipoQuePideBusqueda) return linkIncompleto_();
 
   if (tipo === 'competencias') {
@@ -113,6 +113,12 @@ function doGetPagina_(e) {
     template.editar = e.parameter.editar === '1';
     template.editarform = e.parameter.editarform === '1';
     titulo = 'Evaluación de Competencias | Blumia';
+  } else if (tipo === 'exploracion') {
+    template = HtmlService.createTemplateFromFile('ExploracionForm');
+    template.candidato = e.parameter.nombre || '';
+    template.entrevistador = e.parameter.entrevistador || '';
+    template.perfil = perfil;
+    titulo = 'Entrevista de exploración | Blumia';
   } else if (tipo === 'postulacion') {
     let cerrada = false;
     try { cerrada = estadoBusqueda_(getConfig(perfil)) === 'CERRADA'; } catch (err) { }
@@ -2254,7 +2260,8 @@ function doGetKanban_(perfilId) {
   lapT_('Leer los candidatos (' + (d.length - 1) + ' filas)');
   const n = d.length - 1;
   const L = {};
-  if (n > 0) [13, 17, 31, 33].forEach(c => { L[c] = linksColumna_(sh, c, n, d.slice(1).map(r => r[c - 1])); });
+  const cEP = d[0].indexOf('Exploración PDF') + 1;
+  if (n > 0) [13, 17, 31, 33].concat(cEP > 0 ? [cEP] : []).forEach(c => { L[c] = linksColumna_(sh, c, n, d.slice(1).map(r => r[c - 1])); });
   const cvs = n > 0 ? idsCVColumna_(sh, 8, n, d.slice(1).map(r => r[7])) : [];
   lapT_('Leer los links de cada candidato');
   const link = (r, col) => (L[col] || [])[r - 2] || '';
@@ -2275,7 +2282,7 @@ function doGetKanban_(perfilId) {
     out.push({
       fila: i + 1, nombre: d[i][1], estado: String(d[i][8] || '').trim(), motivo: cMot >= 0 ? String(d[i][cMot] || '') : '', obs: cObs >= 0 ? String(d[i][cObs] || '') : '', movMs: movs[String(d[i][1]).trim()] || 0, recMs: d[i][0] ? new Date(d[i][0]).getTime() : 0, previos: prev[i - 1] || [],
       recibido: d[i][0] ? Utilities.formatDate(new Date(d[i][0]), 'GMT-3', 'dd/MM/yyyy') : '',
-      nota: d[i][4] || '', notaScr: d[i][11] || '', notaComp: d[i][15] || '', notaExpl: cExpl >= 0 ? String(d[i][cExpl] || '') : '',
+      nota: d[i][4] || '', notaScr: d[i][11] || '', notaComp: d[i][15] || '', notaExpl: cExpl >= 0 ? String(d[i][cExpl] || '') : '', explPDF: cEP > 0 ? link(i + 1, cEP) : '',
       pretension: m ? m[1].trim() : '', zona: d[i][23] || '',
       tel: d[i][2] || '', dni: String(d[i][3] || ''), mail: d[i][21] || '',
       resumen: d[i][6] || '', cv: cvs[i - 1] || '',

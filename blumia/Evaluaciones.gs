@@ -71,7 +71,7 @@ function guardarEstadoEval_(cfg, perfilId, nombre, etapa, estadoJSON, nota, quie
     let id = fila ? String(sh.getRange(fila, 7).getValue() || '') : '';
     if (id) { try { DriveApp.getFileById(id).setContent(String(estadoJSON)); } catch (e) { id = ''; } }
     if (!id) {
-      const carpeta = DriveApp.getFolderById(etapa === 'screening' ? cfg.folder_pdf_screening : cfg.folder_pdf_competencias);
+      const carpeta = etapa === 'exploracion' ? carpetaExpl_(cfg, perfilId) : DriveApp.getFolderById(etapa === 'screening' ? cfg.folder_pdf_screening : cfg.folder_pdf_competencias);
       id = carpeta.createFile('Estado_' + etapa + '_' + String(nombre).replace(/\s+/g, '_') + '.json', String(estadoJSON), MimeType.PLAIN_TEXT).getId();
     }
     const vals = [new Date(), perfilId, nombre, etapa, nota || '', quienHist_(quien), id];
@@ -85,7 +85,7 @@ function guardarEstadoEval_(cfg, perfilId, nombre, etapa, estadoJSON, nota, quie
 }
 
 function getEvaluacionPrevia_(perfilId, nombre, etapa) {
-  if (['screening', 'competencias'].indexOf(etapa) === -1) throw new Error('Etapa inválida');
+  if (['screening', 'exploracion', 'competencias'].indexOf(etapa) === -1) throw new Error('Etapa inválida');
   const sh = evalHoja_();
   const fila = evalFila_(sh, perfilId, nombre, etapa);
   if (!fila) return null;

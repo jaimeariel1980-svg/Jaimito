@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<base target="_top">
+<title>Exploración · Blumia</title>
+<?!= HtmlService.createHtmlOutputFromFile('FuenteMarca').getContent() ?>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F3F8F1;--white:#FFFFFF;--dark:#111111;--text:#1A1A1A;--mid:#555555;--light:#6B6B6B;--line:#D5E0CE;
+  --green:#0F3F27;--green2:#2F5E41;--glight:#E3EEDC;--dorado:#FBC67B;--coral:#C0391B;--turq:#5BB5A5;
+  --font:'PP Pangram Sans','Poppins','Plus Jakarta Sans',sans-serif;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text)}
+.wrap{max-width:900px;margin:0 auto;padding:36px 52px 60px}
+.topbar{background:rgba(247,245,241,0.97);backdrop-filter:blur(20px);border-bottom:1px solid var(--line);padding:0 52px;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.tb-logo{height:30px;display:block}.hero-logo{height:30px;display:none;margin-bottom:22px}@media print{.hero-logo{display:block}}
+.hero::after{content:'';position:absolute;right:-60px;top:-60px;width:320px;height:320px;border-radius:50%;border:60px solid rgba(255,255,255,0.06);pointer-events:none}
+.tb-brand{font-weight:800;font-size:20px;letter-spacing:-0.04em;color:var(--green)}
+.tb-sep{width:1px;height:24px;background:var(--line)}
+.tb-doc{font-size:13px;font-weight:600;color:var(--mid)}
+.tb-left{display:flex;align-items:center;gap:18px}
+.topbar-actions{display:flex;align-items:center;gap:8px}
+.btn{border-radius:2px;padding:10px 18px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;font-family:var(--font);transition:all .15s;border:1.5px solid var(--line);display:flex;align-items:center;gap:7px}
+.btn-success{background:var(--green);color:var(--white);border-color:var(--green)}
+.btn-success:hover{background:var(--green2);border-color:var(--green2)}
+.btn-secondary{background:transparent;color:var(--dark)}
+.btn-secondary:hover{border-color:var(--green);color:var(--green)}
+[contenteditable]{outline:none;cursor:text;border-radius:2px;transition:background .15s}
+[contenteditable]:hover{background:rgba(26,102,69,.05)}
+[contenteditable]:focus{background:rgba(26,102,69,.07);box-shadow:0 0 0 2px rgba(26,102,69,.2);padding:2px 5px;margin:-2px -5px}
+.hero{background:var(--green);color:#fff;padding:52px 52px 44px;border-bottom:4px solid var(--turq);position:relative;overflow:hidden}
+.hero h1{font-size:40px;font-weight:800;letter-spacing:-0.04em;color:#fff;line-height:1.1;margin-bottom:8px}
+.hero h1 em{color:rgba(255,255,255,0.75);font-style:normal}
+.hero-sub{font-size:15px;color:rgba(255,255,255,0.65);font-weight:500;margin-bottom:32px}
+.hero-meta{display:flex;gap:32px;flex-wrap:wrap}
+.hm-item{display:flex;flex-direction:column;gap:4px}
+.hm-label{font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(255,255,255,0.78)}
+.hm-val{font-size:15px;font-weight:600;color:#fff}
+.section{margin-bottom:32px}
+.section-label{font-size:11px;font-weight:800;letter-spacing:0.22em;text-transform:uppercase;color:var(--green);display:flex;align-items:center;gap:8px;margin-bottom:20px}
+.section-label::before{content:'';display:block;width:3px;height:16px;background:var(--green)}
+.section-divider{border:none;border-top:1.5px solid var(--line);margin:32px 0}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:11px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:var(--mid)}
+.field input,.field select,.field textarea{background:var(--bg);border:1.5px solid var(--line);border-radius:2px;padding:10px 12px;font-size:15px;font-family:var(--font);color:var(--text);outline:none;width:100%;transition:border-color .15s,box-shadow .15s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(26,102,69,.08)}
+.field textarea{resize:vertical;min-height:90px;line-height:1.5}
+.eval-row{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--line);gap:16px}
+.eval-row:last-child{border-bottom:none}
+.eval-label{font-size:15px;font-weight:600;color:var(--text);flex:1;min-width:0}
+.eval-select{appearance:none;-webkit-appearance:none;background:var(--bg);border:1.5px solid var(--line);border-radius:2px;padding:8px 12px;font-size:12px;font-weight:700;font-family:var(--font);color:var(--mid);cursor:pointer;min-width:160px;outline:none}
+.val-row{display:grid;grid-template-columns:1fr auto;align-items:center;gap:16px;padding:11px 0;border-bottom:1px solid var(--line)}
+.val-row:last-child{border-bottom:none}
+.val-label{font-size:15px;font-weight:500;color:var(--text)}
+.pill-group{display:flex;gap:6px;flex-wrap:wrap}
+.pill{border:1.5px solid var(--line);border-radius:2px;background:var(--bg);padding:10px 18px;min-height:40px;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--mid);cursor:pointer;transition:all .12s;user-select:none}
+.pill.active-alto,.pill.active-si{background:var(--green);color:var(--white);border-color:var(--green)}
+.pill.active-medio,.pill.active-revisar{background:var(--dorado);color:#5a3a00;border-color:var(--dorado)}
+.pill.active-bajo,.pill.active-no{background:#FDEAE4;color:var(--coral);border-color:var(--coral)}
+.resultado-card{border:1.5px solid var(--line);border-radius:2px;background:var(--white);padding:28px 32px;display:flex;align-items:stretch;gap:28px}
+.semaforo{display:flex;flex-direction:column;gap:7px;justify-content:center}
+.semaforo-dot{width:28px;height:28px;border-radius:50%;border:2px solid transparent;transition:all .25s}
+.sd-rojo{background:#FDEAE4;border-color:#FDEAE4}
+.sd-amarillo{background:#FEF3D8;border-color:#FEF3D8}
+.sd-verde{background:#E6F2EC;border-color:#E6F2EC}
+.sd-rojo.on{background:var(--coral);border-color:var(--coral)}
+.sd-amarillo.on{background:var(--dorado);border-color:var(--dorado)}
+.sd-verde.on{background:var(--green);border-color:var(--green)}
+.resultado-info{flex:1}
+.resultado-tag{font-size:9px;font-weight:800;letter-spacing:0.22em;text-transform:uppercase;color:var(--mid);margin-bottom:8px}
+.resultado-titulo{font-size:32px;font-weight:800;letter-spacing:-0.03em;margin-bottom:8px}
+.res-verde{color:var(--green)}
+.res-verdeclaro{color:#4A9E6F}
+.res-amarillo{color:#92400E}
+.res-rojo{color:var(--coral)}
+.resultado-desc{font-size:13px;color:var(--mid);font-weight:500;line-height:1.5;min-height:20px;border-radius:2px;padding:2px 4px;margin:-2px -4px}
+.barra-score{height:3px;background:var(--line);margin-top:14px;overflow:hidden}
+.barra-fill{height:100%;background:var(--green);width:0%;transition:width .4s ease}
+.score-aside{text-align:center;flex-shrink:0;display:flex;flex-direction:column;justify-content:center;padding-left:24px;border-left:1px solid var(--line);min-width:110px}
+.score-aside-label{font-size:9px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;color:var(--light);margin-bottom:6px}
+.score-aside-num{font-size:28px;font-weight:800;letter-spacing:-0.04em;color:var(--dark);line-height:1}
+.score-aside-max{font-size:10px;color:var(--light);font-weight:600;margin-top:2px}
+.veredicto-manual{margin-top:16px;background:var(--bg);border:1.5px dashed var(--line);border-radius:2px;padding:14px 16px}
+.prox-box{margin-top:14px;background:#FEF3D8;border:1.5px solid #FBC67B;border-radius:8px;padding:14px 16px}
+.prox-box label{display:block;font-size:12px;font-weight:800;color:#7a5500;margin-bottom:8px}
+.prox-box select{font:600 14px 'PP Pangram Sans',Poppins,Arial,sans-serif;padding:10px 12px;border:1.5px solid #FBC67B;border-radius:8px;background:#fff;min-width:240px;max-width:100%}
+.prox-ayuda{font-size:11px;color:#7a5500;margin-top:6px}
+.veredicto-manual-label{font-size:9px;font-weight:800;letter-spacing:0.16em;text-transform:uppercase;color:var(--mid);margin-bottom:10px}
+.vd-opts{display:flex;gap:8px}
+.vd-btn{border:1.5px solid var(--line);border-radius:2px;background:var(--white);padding:8px 16px;font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--mid);cursor:pointer;transition:all .12s;font-family:var(--font)}
+.vd-btn.vd-active-verde{background:var(--green);color:#fff;border-color:var(--green)}
+.vd-btn.vd-active-verdeclaro{background:#E6F2EC;color:#1A6645;border-color:#4A9E6F}
+.vd-btn.vd-active-amarillo{background:var(--dorado);color:#5a3a00;border-color:var(--dorado)}
+.vd-btn.vd-active-rojo{background:#FDEAE4;color:var(--coral);border-color:var(--coral)}
+.criterio-box{margin-top:16px;background:var(--bg);border-left:3px solid var(--green);padding:12px 16px;display:flex;gap:20px;flex-wrap:wrap;align-items:center}
+.criterio-item{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em}
+.criterio-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.footer{margin-top:48px;border-top:1.5px solid var(--line);padding-top:18px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:var(--light)}
+.toast{position:fixed;bottom:28px;right:28px;background:var(--dark);color:var(--white);padding:12px 20px;border-radius:2px;font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;opacity:0;transform:translateY(8px);transition:all .2s;pointer-events:none;z-index:999}
+.toast.show{opacity:1;transform:translateY(0)}
+.loading{padding:60px;text-align:center;color:var(--mid);font-size:14px}
+@media print{
+  .topbar,.toast,script,.veredicto-manual,.ia-ui{display:none!important}
+  .wrap{padding:20px 32px}body{background:#fff}
+  .hero,.pill.active-alto,.pill.active-si,.pill.active-medio,.pill.active-revisar,.pill.active-bajo,.pill.active-no,
+  .sd-verde.on,.sd-amarillo.on,.sd-rojo.on,.res-verde,.res-amarillo,.res-rojo{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+.gbar{position:sticky;bottom:0;z-index:250;display:flex;justify-content:center;padding:14px 16px 16px;background:linear-gradient(to top,rgba(247,245,241,.97) 65%,rgba(247,245,241,0));pointer-events:none}
+.gbar button{pointer-events:auto;background:#0F3F27;color:#fff;border:none;border-radius:99px;padding:14px 38px;font:700 15px 'PP Pangram Sans',Poppins,Arial,sans-serif;cursor:pointer;box-shadow:0 6px 20px rgba(36,61,44,.35);letter-spacing:.2px}
+.gbar button:hover{background:#1a2d20}.gbar button:disabled{opacity:.65;cursor:default}
+@media print{.gbar{display:none!important}}
+</style>
+<style id="mobcss">
+@media (max-width:640px){
+  .topbar{padding:8px 14px;height:auto;flex-wrap:wrap;gap:8px}
+  .tb-left{gap:10px}.tb-sep,.tb-doc{display:none}
+  .topbar-actions{width:100%}
+  .topbar-actions .btn{flex:1;padding:12px 8px}
+  .hero{padding:28px 18px 24px}.hero h1{font-size:28px}.hero-sub{margin-bottom:18px}.hero-meta{gap:16px}
+  .wrap{padding:22px 16px 48px}
+  .grid-2,.grid-4{grid-template-columns:1fr}
+  .field input,.field select,.field textarea{font-size:16px}
+  .field textarea{min-height:140px}
+  .eval-row{flex-direction:column;align-items:stretch;gap:8px}
+  .eval-select{width:100%;padding:12px}
+  .val-row{grid-template-columns:1fr;gap:8px}
+  .pill{padding:10px 16px}
+  .resultado-card{flex-direction:column;padding:20px;gap:16px}
+  .score-aside{border-left:0;border-top:1px solid var(--line);padding:14px 0 0}
+  .vd-opts{flex-wrap:wrap}
+  .criterio-box{gap:10px}
+  .ia-btn{padding:10px 14px;font-size:13px}
+  .toast{left:16px;right:16px;bottom:16px}
+}
+</style>
+<style id="skin">.btn,.vd-btn{border-radius:99px}.field input,.field select,.field textarea,.eval-select{border-radius:8px}</style>
+<style id="btnU">/* un solo estilo de botón: rectángulo de 8 px (las píldoras quedan solo para etiquetas y contadores) */
+.btn,.pill,.vd-btn,.gbar button,.ia-btn,.ed-fab,.ed-mini{border-radius:8px!important}
+</style>
+<style id="expl">
+.q-row{border:1.5px solid var(--line);border-radius:8px;background:var(--white);padding:14px 16px;margin-bottom:12px}
+.q-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.q-num{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--green);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.q-row[data-comun="1"] .q-num{background:var(--dorado);color:#5a3a00}
+.q-t{flex:1;min-width:0;background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:8px 10px;font-size:14px;font-weight:700;font-family:var(--font);color:var(--text);outline:none}
+.q-q{width:100%;background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;font-size:15px;font-family:var(--font);color:var(--text);outline:none;resize:vertical;min-height:70px;line-height:1.5}
+.q-t:focus,.q-q:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(26,102,69,.08)}
+.q-del{border:none;background:none;color:var(--coral);font-size:12px;font-weight:700;cursor:pointer;padding:4px 8px}
+.fx-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:-4px 0 18px}
+.fx-hint{font-size:12px;color:var(--mid)}
+.fx-btn{background:#fff;color:var(--green);border:1.5px solid var(--green);border-radius:8px;padding:9px 16px;font:700 13px var(--font);cursor:pointer}
+.fx-btn.prim{background:var(--green);color:#fff}
+.fx-btn:disabled{opacity:.6;cursor:default}
+.gbar{gap:10px;flex-wrap:wrap}
+.gbar button.sec{background:#fff;color:#0F3F27;border:1.5px solid #0F3F27;box-shadow:none}
+.gbar button.sec:hover{background:#E3EEDC}
+.resultado-card.sin-res .resultado-titulo{color:var(--light)}
+.vd-opts{flex-wrap:wrap}
+@media(max-width:640px){.q-row{padding:12px}.q-head{flex-wrap:wrap}.gbar button{padding:12px 20px;font-size:14px}}
+@media print{.q-del{display:none!important}}
+</style>
+</head>
+<body>
+<nav class="topbar">
+  <div class="tb-left">
+    <img class="tb-logo" alt="Blumia" src="<?!= LOGO_BLUMIA_VERDE_ ?>">
+    <div class="tb-sep"></div>
+    <div class="tb-doc">Entrevista de exploración</div>
+  </div>
+</nav>
+
+<div id="app"><div class="loading">Cargando perfil...</div></div>
+<div class="toast" id="toast"></div>
+<div class="gbar ia-ui"><button type="button" class="sec" id="btn-save-draft" onclick="guardarFicha()">Guardar ficha</button><button type="button" id="btn-save-sheet" onclick="enviarExploracion()">Guardar entrevista</button></div>
+
+<?!= HtmlService.createHtmlOutputFromFile('IAForm').getContent() ?>
+<?!= HtmlService.createHtmlOutputFromFile('PerfilRef').getContent() ?>
+<?!= HtmlService.createHtmlOutputFromFile('EstadoForm').getContent() ?>
+<?!= HtmlService.createTemplateFromFile('MotivoForm').evaluate().getContent() ?>
+<script>
+const LOGO_BLANCO = '<?!= LOGO_BLUMIA_ ?>';
+const PERFIL_ID = '<?= perfil ?>';
+const CAND_INICIAL = '<?= candidato ?>';
+const ENTR_INICIAL = '<?= entrevistador ?>';
+window.EDITAR = false; window.EF_TIPO = 'exploracion';
+
+let DATOS = null, EXD = {}, YA_GUARDADA = false;
+const state = {};
+const VEREDICTOS = {
+  A: { titulo: 'A · Avanza', desc: 'Validó lo que necesitábamos confirmar. Avanza a competencias.', cls: 'res-verde', color: 'verde' },
+  'B+': { titulo: 'B+ · Avanza', desc: 'Validó lo central, con una cuestión menor a seguir. Avanza a competencias.', cls: 'res-verdeclaro', color: 'verde' },
+  B: { titulo: 'B · Reserva', desc: 'Quedan dudas o condiciones sin validar. Queda en reserva.', cls: 'res-amarillo', color: 'amarillo' },
+  C: { titulo: 'C · No avanza', desc: 'No validó lo que necesitábamos o hay alertas importantes.', cls: 'res-rojo', color: 'rojo' }
+};
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+setTimeout(() => { if (!DATOS) document.getElementById('app').innerHTML = '<div class="loading" style="color:red;font-weight:bold;">No se pudo cargar la búsqueda «' + esc(PERFIL_ID) + '». Recargá la página; si sigue igual, avisá.</div>'; }, 20000);
+google.script.run.withSuccessHandler(d => {
+  if (!d) { document.getElementById('app').innerHTML = '<div class="loading" style="color:red;font-weight:bold;">El servidor devolvió la búsqueda vacía (' + esc(PERFIL_ID) + '). Contactá al administrador.</div>'; return; }
+  DATOS = d;
+  google.script.run.withSuccessHandler(x => { EXD = x || {}; render(); }).withFailureHandler(() => { EXD = {}; render(); }).explDatos(PERFIL_ID, CAND_INICIAL);
+}).withFailureHandler(e => {
+  document.getElementById('app').innerHTML = '<div class="loading" style="color:red;font-weight:bold;">Error: ' + esc(e.message) + '</div>';
+}).getDatosPerfil(PERFIL_ID);
+
+function parseComun(t) {
+  t = String(t || '').trim();
+  if (!t) return null;
+  const m = t.match(/^([^:\n]{3,45}):\s*([\s\S]+)$/);
+  return m ? { titulo: 'Pregunta común – ' + m[1].trim().toLowerCase(), pregunta: m[2].trim() } : { titulo: 'Pregunta común', pregunta: t };
+}
+
+function qHtml(q, comun) {
+  return `<div class="q-row"${comun ? ' data-comun="1"' : ''}>
+    <div class="q-head"><span class="q-num"></span><input type="text" class="q-t" placeholder="Tema de la pregunta" value="${esc(q.titulo)}"><button type="button" class="q-del ia-ui" onclick="quitarPregunta(this)" title="Quitar esta pregunta">✕ Quitar</button></div>
+    <textarea class="q-q" data-ia="1" placeholder="Pregunta para la entrevista...">${esc(q.pregunta)}</textarea>
+  </div>`;
+}
+function numerarPreguntas() { document.querySelectorAll('#qs .q-row').forEach((r, i) => { const n = r.querySelector('.q-num'); if (n) n.textContent = i + 1; }); }
+function sinBarras() { document.querySelectorAll('#app .q-q, #app .fx-ta').forEach(t => { t.dataset.ia = '1'; }); }
+function agregarPregunta(q) { document.getElementById('qs').insertAdjacentHTML('beforeend', qHtml(q || { titulo: '', pregunta: '' }, false)); numerarPreguntas(); }
+function quitarPregunta(b) { const r = b.closest('.q-row'); if (r) r.remove(); numerarPreguntas(); }
+
+function render() {
+  const h = DATOS.hero || {};
+  const entrevistadoras = DATOS.entrevistadoras || [];
+  const html = `
+<div class="hero">
+  <img class="hero-logo" alt="Blumia" src="${LOGO_BLANCO}">
+  <h1><span>Exploración de </span><em id="hero-nombre">${esc(CAND_INICIAL) || 'Candidato/a'}</em></h1>
+  <div class="hero-sub">${esc(h.posicion || '')} · ${esc(h.empresa || '')}</div>
+  <div id="hero-links" class="ia-ui" style="margin:-6px 0 14px"></div>
+  <div class="hero-meta">
+    <div class="hm-item"><div class="hm-label">Empresa</div><div class="hm-val">${esc(h.empresa || '')}</div></div>
+    <div class="hm-item"><div class="hm-label">Posición</div><div class="hm-val">${esc(h.posicion || '')}</div></div>
+    <div class="hm-item"><div class="hm-label">Ubicación</div><div class="hm-val">${esc(h.ubicacion || '')}</div></div>
+    <div class="hm-item"><div class="hm-label">Instancia</div><div class="hm-val">Entrevista de exploración</div></div>
+  </div>
+</div>
+<div class="wrap">
+  <div class="section">
+    <div class="section-label"><span>Datos del candidato</span></div>
+    <div class="grid-2" style="margin-bottom:14px">
+      <div class="field"><label>Nombre y apellido</label><input type="text" id="d-nombre" value="${esc(CAND_INICIAL)}" placeholder="—" oninput="document.getElementById('hero-nombre').innerText=this.value||'Candidato/a'"></div>
+      <div class="field"><label for="d-entrevistadora">Entrevistador/a</label>
+        <select id="d-entrevistadora"><option value="">— Elegí —</option>${entrevistadoras.map(e => `<option value="${esc(e)}">${esc(e)}</option>`).join('')}</select></div>
+    </div>
+    <div class="grid-2">
+      <div class="field"><label for="d-fecha">Fecha de la entrevista</label><input type="date" id="d-fecha"></div>
+      <div class="field"><label>Formación</label><input type="text" id="d-formacion" value="${esc(EXD.formacion || '')}" placeholder="Carrera, título, estado"></div>
+    </div>
+  </div>
+  <hr class="section-divider">
+  <div class="section">
+    <div class="section-label"><span>Ficha de la entrevista</span></div>
+    <div class="fx-bar ia-ui"><button type="button" class="fx-btn prim" id="btn-ia" onclick="prepararConIA()">✨ Preparar ficha con IA</button><span class="fx-hint">Arma un borrador con el CV y el perfil del puesto. Después lo revisás y lo editás.</span></div>
+    <div class="field" style="margin-bottom:14px"><label>Perfil predominante</label><input type="text" id="f-perfil" placeholder="Ej: operaciones, supply chain, finanzas y gestión de proyectos"></div>
+    <div class="field" style="margin-bottom:14px"><label>Síntesis del perfil</label><textarea class="fx-ta" id="f-sintesis" data-ia="1" placeholder="Qué muestra su trayectoria y qué no evidencia todavía para este puesto..."></textarea></div>
+    <div class="field" style="margin-bottom:14px"><label>Foco de la entrevista</label><textarea class="fx-ta" id="f-foco" data-ia="1" placeholder="Qué hay que determinar con esta persona en particular..."></textarea></div>
+    <div class="field"><label>Preguntas</label></div>
+    <div id="qs"></div>
+    <div class="ia-ui" style="margin:-2px 0 18px"><button type="button" class="fx-btn" onclick="agregarPregunta()">+ Agregar pregunta</button></div>
+    <div class="field"><label>Qué buscaría validar</label><textarea class="fx-ta" id="f-validar" data-ia="1" placeholder="Qué querés tener confirmado al terminar la entrevista..."></textarea></div>
+  </div>
+  <hr class="section-divider">
+  <div class="section">
+    <div class="section-label"><span>Registro de la entrevista</span></div>
+    <div class="field" style="margin-bottom:14px"><label>Evidencias relevantes</label><textarea id="r-evid" placeholder="Lo que contó, con ejemplos y resultados concretos..."></textarea></div>
+    <div class="field" style="margin-bottom:14px"><label>Fortalezas diferenciales</label><textarea id="r-fort" placeholder="Lo que lo distingue para este puesto..."></textarea></div>
+    <div class="field" style="margin-bottom:14px"><label>Aspectos a profundizar / alertas</label><textarea id="r-alert" placeholder="Dudas, contradicciones o puntos para seguir en competencias..."></textarea></div>
+    <div class="field"><label>Conclusión y recomendación de avance</label><textarea id="r-concl" placeholder="Qué recomendás y por qué..."></textarea></div>
+  </div>
+  <hr class="section-divider">
+  <div class="section">
+    <div class="section-label"><span>Resultado final</span></div>
+    <div class="resultado-card sin-res" id="res-card">
+      <div class="semaforo">
+        <div class="semaforo-dot sd-verde" id="dot-verde"></div>
+        <div class="semaforo-dot sd-amarillo" id="dot-amarillo"></div>
+        <div class="semaforo-dot sd-rojo" id="dot-rojo"></div>
+      </div>
+      <div class="resultado-info">
+        <div class="resultado-tag"><span>Evaluación general de la entrevista</span></div>
+        <div class="resultado-titulo" id="res-titulo">—</div>
+        <div class="resultado-desc" id="res-desc">Elegí el resultado al terminar la entrevista</div>
+      </div>
+    </div>
+    <div class="veredicto-manual">
+      <div class="veredicto-manual-label">Resultado · Letra para la planilla</div>
+      <div class="vd-opts">
+        <button type="button" class="vd-btn" data-l="A" onclick="elegirResultado('A')"><strong>A</strong> · Avanza</button>
+        <button type="button" class="vd-btn" data-l="B+" onclick="elegirResultado('B+')"><strong>B+</strong> · Avanza con observación</button>
+        <button type="button" class="vd-btn" data-l="B" onclick="elegirResultado('B')"><strong>B</strong> · Reserva</button>
+        <button type="button" class="vd-btn" data-l="C" onclick="elegirResultado('C')"><strong>C</strong> · No avanza</button>
+      </div>
+    </div>
+    ${(DATOS.proximos || []).length ? `<div class="prox-box ia-ui" id="prox-box" style="display:none">
+      <label for="d-proximo">Si avanza: ¿quién hace la entrevista de competencias?</label>
+      <select id="d-proximo"><option value="">— Sin asignar —</option>${DATOS.proximos.map(e => `<option value="${esc(e)}">${esc(e)}</option>`).join('')}</select>
+      <div class="prox-ayuda">Queda en la tarjeta del candidato («Próxima: …») y en la agenda de esa persona.</div>
+    </div>` : ''}
+  </div>
+  <div class="footer">Confidencial · Blumia Consulting · © 2026</div>
+</div>`;
+  document.getElementById('app').innerHTML = html;
+  const c = parseComun(EXD.comun);
+  for (let i = 0; i < 5; i++) agregarPregunta();
+  if (c) document.getElementById('qs').insertAdjacentHTML('beforeend', qHtml(c, true));
+  numerarPreguntas();
+  preseleccionarEntrevistadora();
+  cargarLinks();
+  cargarPrevia();
+}
+
+function letraActual() { const b = document.querySelector('.vd-btn[class*="vd-active-"]'); return b ? b.dataset.l : ''; }
+
+function elegirResultado(letra) {
+  const v = VEREDICTOS[letra];
+  document.querySelectorAll('.semaforo-dot').forEach(d => d.classList.remove('on'));
+  document.getElementById('dot-' + v.color).classList.add('on');
+  document.getElementById('res-card').classList.remove('sin-res');
+  const pb = document.getElementById('prox-box'); if (pb) pb.style.display = (letra === 'A' || letra === 'B+') ? 'block' : 'none';
+  const t = document.getElementById('res-titulo');
+  t.textContent = v.titulo; t.className = 'resultado-titulo ' + v.cls;
+  document.getElementById('res-desc').textContent = v.desc;
+  document.querySelectorAll('.vd-btn').forEach(b => b.className = 'vd-btn');
+  const colorClase = { A: 'verde', 'B+': 'verdeclaro', B: 'amarillo', C: 'rojo' }[letra];
+  document.querySelector('.vd-btn[data-l="' + letra + '"]')?.classList.add('vd-active-' + colorClase);
+}
+
+function cargarLinks() {
+  const el = document.getElementById('hero-links');
+  if (!el) return;
+  let h = '<button type="button" class="pr-btn" style="margin-top:8px" onclick="blPerfilRef()">📋 Perfil del puesto</button>';
+  if (EXD.cv) h += ' <a href="' + esc(EXD.cv) + '" target="_blank" rel="noopener" class="pr-btn" style="margin-top:8px;text-decoration:none;display:inline-block">📄 Ver CV</a>';
+  el.innerHTML = h;
+}
+
+function preseleccionarEntrevistadora() {
+  if (!ENTR_INICIAL) return;
+  const sel = document.getElementById('d-entrevistadora');
+  if (!sel) return;
+  let found = false;
+  [...sel.options].forEach(o => { if (o.value.toLowerCase() === ENTR_INICIAL.toLowerCase()) { o.selected = true; found = true; } });
+  if (!found) { const opt = document.createElement('option'); opt.value = ENTR_INICIAL; opt.text = ENTR_INICIAL; opt.selected = true; sel.appendChild(opt); }
+}
+
+// si la ficha ya se guardó (borrador o entrevista completa), se vuelve a abrir tal cual
+function cargarPrevia() {
+  if (!CAND_INICIAL) return;
+  google.script.run.withSuccessHandler(r => {
+    if (!r || !r.estado) return;
+    try {
+      efRestaurar(r.estado);
+      sinBarras(); numerarPreguntas(); cargarLinks();
+      YA_GUARDADA = !!r.nota;
+      const l = letraActual(); if (l) elegirResultado(l);
+      showToast(r.nota ? '✏️ Entrevista guardada el ' + r.fecha + ' · nota ' + r.nota : 'Ficha guardada el ' + r.fecha);
+      if (r.nota) document.getElementById('btn-save-sheet').textContent = 'Guardar cambios';
+    } catch (e) { showToast('No se pudo recuperar lo guardado: ' + e.message); }
+  }).withFailureHandler(() => {}).getEvaluacionPrevia(PERFIL_ID, CAND_INICIAL, 'exploracion');
+}
+
+function hayFicha() {
+  return ['f-perfil', 'f-sintesis', 'f-foco', 'f-validar'].some(id => (document.getElementById(id)?.value || '').trim()) ||
+    [...document.querySelectorAll('#qs .q-q')].some(t => t.value.trim() && !t.closest('.q-row').dataset.comun);
+}
+
+function prepararConIA() {
+  const nombre = (document.getElementById('d-nombre').value || '').trim();
+  if (!nombre) { alert('Falta el nombre de la persona entrevistada.'); return; }
+  const hacer = () => {
+    const b = document.getElementById('btn-ia'), old = b.textContent;
+    b.disabled = true; b.textContent = '⏳ Preparando la ficha…';
+    google.script.run.withSuccessHandler(r => {
+      b.disabled = false; b.textContent = old;
+      document.getElementById('f-perfil').value = r.perfil_predominante || '';
+      document.getElementById('f-sintesis').value = r.sintesis || '';
+      document.getElementById('f-foco').value = r.foco || '';
+      document.getElementById('f-validar').value = r.validar || '';
+      const comun = document.querySelector('#qs .q-row[data-comun="1"]');
+      const hold = comun ? { titulo: comun.querySelector('.q-t').value, pregunta: comun.querySelector('.q-q').value } : null;
+      document.getElementById('qs').innerHTML = '';
+      (r.preguntas || []).forEach(q => agregarPregunta(q));
+      if (hold) document.getElementById('qs').insertAdjacentHTML('beforeend', qHtml(hold, true));
+      numerarPreguntas();
+      showToast('Ficha preparada: revisala y editala antes de la entrevista.');
+    }).withFailureHandler(e => {
+      b.disabled = false; b.textContent = old;
+      alert('No se pudo preparar la ficha: ' + (e && e.message ? e.message : e));
+    }).explPreparar(PERFIL_ID, nombre);
+  };
+  if (!hayFicha()) return hacer();
+  const msg = 'La ficha ya tiene texto. Si seguís, la IA lo reemplaza. ¿Continuar?';
+  if (typeof blConfirm === 'function') blConfirm(msg, hacer, { si: 'Reemplazar', no: 'Cancelar' }); else if (confirm(msg)) hacer();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+// ficha + registro hasta ahora, sin nota ni cambio de etapa
+function guardarFicha() {
+  const nombre = (document.getElementById('d-nombre').value || '').trim();
+  if (!nombre) { alert('Falta el nombre de la persona entrevistada.'); return; }
+  const entrevistador = document.getElementById('d-entrevistadora').value;
+  const estado = efCapturar();
+  const btn = document.getElementById('btn-save-draft'), old = btn.textContent;
+  btn.disabled = true; btn.textContent = '⏳ Guardando…';
+  google.script.run.withSuccessHandler(() => { btn.disabled = false; btn.textContent = old; showToast('Ficha guardada. Podés volver a abrirla desde el tablero.'); })
+    .withFailureHandler(e => { btn.disabled = false; btn.textContent = old; alert('No se pudo guardar la ficha: ' + e.message); })
+    .explBorrador(PERFIL_ID, nombre, estado, entrevistador);
+}
+
+function enviarExploracion() {
+  const nombre = (document.getElementById('d-nombre').value || '').trim();
+  const entrevistador = document.getElementById('d-entrevistadora').value;
+  if (!nombre) { alert('Falta el nombre de la persona entrevistada.'); return; }
+  const cat = letraActual();
+  if (!cat) { alert('Elegí el resultado de la entrevista (A, B+, B o C) antes de guardar.'); return; }
+  const ESTADO_EF = efCapturar();
+  if (cat === 'C' && !YA_GUARDADA && !window.__mot) { mfPedir(function (m) { window.__mot = m; enviarExploracion(); }); return; }
+
+  const btn = document.getElementById('btn-save-sheet');
+  btn.innerText = '⏳ GUARDANDO...'; btn.disabled = true;
+  const proximo = (cat === 'A' || cat === 'B+') ? (document.getElementById('d-proximo')?.value || '') : '';
+
+  document.querySelectorAll('select[id]').forEach(s => { [...s.options].forEach(o => { if (o.selected) o.setAttribute('selected', 'selected'); else o.removeAttribute('selected'); }); });
+  const clone = document.documentElement.cloneNode(true);
+  const caja = 'border:1.5px solid #DDDBD7;border-radius:8px;padding:10px 12px;color:#1A1A1A;background:#F7F5F1;';
+  clone.querySelectorAll('input[id],textarea,select[id],input.q-t').forEach(el => {
+    const dst = el.id ? clone.querySelector('#' + el.id) : el;
+    if (!dst) return;
+    if (el.tagName === 'TEXTAREA') {
+      const div = clone.ownerDocument.createElement('div');
+      div.textContent = el.value;
+      div.style.cssText = caja + 'white-space:pre-wrap;word-wrap:break-word;font-size:15px;line-height:1.5;min-height:' + (el.classList.contains('q-q') ? '40' : '70') + 'px';
+      dst.parentNode.replaceChild(div, dst);
+    } else if (el.tagName === 'SELECT') {
+      const div = clone.ownerDocument.createElement('div');
+      div.textContent = el.options[el.selectedIndex] ? el.options[el.selectedIndex].text : '';
+      div.style.cssText = caja + 'font-size:14px;font-weight:700;color:#1A6645;display:inline-block;min-width:140px';
+      dst.parentNode.replaceChild(div, dst);
+    } else if (el.classList.contains('q-t')) {
+      const div = clone.ownerDocument.createElement('div');
+      div.textContent = el.value;
+      div.style.cssText = 'flex:1;font-size:15px;font-weight:800;color:#0F3F27';
+      dst.parentNode.replaceChild(div, dst);
+    } else {
+      const div = clone.ownerDocument.createElement('div');
+      div.textContent = el.value;
+      div.style.cssText = caja + 'font-size:15px;min-height:20px';
+      dst.parentNode.replaceChild(div, dst);
+    }
+  });
+  clone.querySelectorAll('script').forEach(s => s.remove());
+  clone.querySelectorAll('.topbar,.toast,.veredicto-manual,.ia-ui').forEach(el => el.remove());
+  clone.querySelectorAll('.hero-logo').forEach(el => { el.style.display = 'block'; });
+
+  blGuardando('Guardando la entrevista…');
+  google.script.run
+    .withSuccessHandler(() => {
+      YA_GUARDADA = true;
+      blGuardado('¡Entrevista guardada!' + (proximo ? ' Próxima: ' + proximo + '.' : ''));
+      showToast('¡Entrevista guardada!');
+      btn.innerHTML = '✅ ¡LISTO!';
+      setTimeout(() => { btn.innerHTML = 'Guardar cambios'; btn.disabled = false; }, 3000);
+    })
+    .withFailureHandler(err => {
+      blGuardadoError('No se pudo guardar: ' + err.message);
+      btn.innerHTML = '❌ REINTENTAR'; btn.disabled = false;
+    })
+    .procesarExploracion({
+      perfil: PERFIL_ID, editar: YA_GUARDADA, estado: ESTADO_EF, nombre: nombre, entrevistador: entrevistador, proximo: proximo, resultado: cat,
+      motivo: cat === 'C' ? (window.__mot || null) : null, htmlFull: clone.outerHTML
+    });
+  window.__mot = null;
+}
+</script>
+</body>
+</html>
