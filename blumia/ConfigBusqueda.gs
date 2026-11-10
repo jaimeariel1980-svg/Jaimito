@@ -41,6 +41,7 @@ function guardarHabituales_(pin, lista, quien) {
 function getConfigBusqueda_(pin, perfilId) {
   pinValido_(pin);
   const cfg = getConfig(perfilId);
+  if (explActiva_(cfg)) { try { asegurarPlantillasExploracion_(); } catch (e) { } }
   const ss = ssAbrir_(SHEET_MASTER_ID);
   const datos = {};
   CFG_CAMPOS_.forEach(k => { datos[k] = typeof cfg[k] === 'string' ? cfg[k] : (cfg[k] == null ? '' : String(cfg[k])); });
@@ -239,6 +240,7 @@ function guardarLogoCliente_(pin, perfilId, claro, color, quien) {
    Editarlos sigue siendo de ⚙ Configurar → Mensajes (solo administradores). */
 function mensajesLista_(perfilId) {
   const ss = ssAbrir_(SHEET_MASTER_ID), cfg = getConfig(perfilId);
+  if (explActiva_(cfg)) { try { asegurarPlantillasExploracion_(); } catch (e) { } }
   const items = listarPlantillas_(ss, perfilId).filter(t => t.clave !== 'hunting-nota-conexion').map(t => ({ clave: t.clave, canal: t.canal, texto: t.texto, propia: t.propia }));
   const puesto = String(cfg.nombre_perfil || cfg.nombre || perfilId);
   return { items: items, puesto: puesto, empresa: empresaParaCandidatos_(cfg) };

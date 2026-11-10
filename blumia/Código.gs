@@ -2547,10 +2547,11 @@ function bajarContactos(b){b.disabled=true;google.script.run.withSuccessHandler(
 function menuWA(f){
   var c=DATA.find(function(x){return x.fila===f;});
   var ops=[['contacto-screening','📞 Contacto screening'],['contacto-competencias','💼 Contacto competencias'],['contacto-empresa-virtual','🏢 Empresa (virtual)'],['contacto-empresa-presencial','🏢 Empresa (presencial)'],['descarte-competencias','❌ Descarte competencias'],['descarte-empresa','❌ Descarte empresa']];
+  if(window.EXPL){ops.splice(1,0,['contacto-exploracion','🔎 Contacto exploración']);ops.splice(5,0,['descarte-exploracion','❌ Descarte exploración']);}
   var h='<div style="font-size:13px;margin-bottom:12px;color:#555">Elegí qué mensaje enviar a <b>'+c.nombre+'</b>:</div>';
   ops.forEach(function(o){h+='<button class="mbtn wa" style="display:block;width:100%;margin-bottom:8px;text-align:left" onclick="enviarWA('+f+',\\''+o[0]+'\\',this)">'+o[1]+'</button>';});
   h+='<button class="mbtn alt" style="width:100%;margin-top:6px" onclick="ficha('+f+')">← Volver</button>';
-  h='<div style="margin-bottom:14px;padding:10px;border-radius:8px;background:#E3EEDC"><label for="waEnt" style="font-size:12px;font-weight:700;display:block;margin-bottom:4px">Quién lo entrevista (para screening y competencias)</label><select id="waEnt" style="height:38px;width:100%;border:1.5px solid #D5E0CE;border-radius:8px;padding:0 8px;font:inherit;background:#fff"><option value="auto" selected>Automático: quien tenga menos entrevistas próximas</option></select><div style="font-size:11px;color:#555;margin-top:4px">Siempre queda <b>asignada una persona</b> (a ella le llega el aviso cuando el candidato reserva, y 30 minutos antes). «Automático» reparte entre quienes hacen esa etapa en esta búsqueda; también podés elegir a alguien.</div></div>'+h;
+  h='<div style="margin-bottom:14px;padding:10px;border-radius:8px;background:#E3EEDC"><label for="waEnt" style="font-size:12px;font-weight:700;display:block;margin-bottom:4px">Quién lo entrevista (para screening, exploración y competencias)</label><select id="waEnt" style="height:38px;width:100%;border:1.5px solid #D5E0CE;border-radius:8px;padding:0 8px;font:inherit;background:#fff"><option value="auto" selected>Automático: quien tenga menos entrevistas próximas</option></select><div style="font-size:11px;color:#555;margin-top:4px">Siempre queda <b>asignada una persona</b> (a ella le llega el aviso cuando el candidato reserva, y 30 minutos antes). «Automático» reparte entre quienes hacen esa etapa en esta búsqueda; también podés elegir a alguien.</div></div>'+h;
   document.getElementById('mtit').textContent='WhatsApp · '+c.nombre;
   document.getElementById('mbody').innerHTML=h;
   waEntCargar();
@@ -2734,6 +2735,7 @@ function syncCitasCalendar() {
     const t = titulo.toLowerCase();
     if (t.includes('empresa')) return 'Empresa';
     if (t.includes('competencia')) return 'Competencias';
+    if (t.includes('exploraci')) return 'Exploración';
     if (t.includes('screening')) return 'Screening';
     return 'Entrevista';
   };
@@ -2742,12 +2744,13 @@ function syncCitasCalendar() {
     const e = String(est).toLowerCase();
     if (e.includes('empresa') && e.includes('agendad')) return 'empresa';
     if (e.includes('competencia') && e.includes('agendad')) return 'competencias';
+    if (e.includes('exploraci') && e.includes('agendad')) return 'exploración';
     if (e.includes('screening') && e.includes('agendad')) return 'screening';
     return '';
   };
   // el candidato reservó solo desde la página de citas: si está «Avanza a …» y hay una cita futura de esa etapa, pasa a «… agendada»
-  const sinEtapa = titulo => !/screening|competencia|empresa/i.test(titulo);
-  const AGENDA_AUTO = { 'avanza a screening': ['screening', 'Screening agendado'], 'avanza a competencias': ['competencias', 'Competencias agendada'] };
+  const sinEtapa = titulo => !/screening|competencia|empresa|exploraci/i.test(titulo);
+  const AGENDA_AUTO = { 'avanza a screening': ['screening', 'Screening agendado'], 'avanza a exploración': ['exploración', 'Exploración agendada'], 'avanza a competencias': ['competencias', 'Competencias agendada'] };
 
   perfiles.forEach(id => {
     try {
@@ -2894,7 +2897,7 @@ function enviarDescartesMasivo_(perfilId, textoSin, textoPost, quien) {
   for (let i = 1; i < d.length; i++) {
     if (!d[i][1]) continue;
     const estado = String(d[i][8] || '').trim();
-    if (!/descartado sin screening|descartado post screening/i.test(estado)) continue;
+    if (!/descartado sin screening|descartado post screening|descartado post exploraci/i.test(estado)) continue;
     if (String(d[i][39] || '').trim()) continue; // ya enviado
 
     const mail = String(d[i][21] || '').trim();
@@ -2924,7 +2927,7 @@ function enviarDescartesMasivo_(perfilId, textoSin, textoPost, quien) {
     try {
       enviarMailBlumia_(mail, asunto, cuerpo);
       sh.getRange(i + 1, 40).setValue('Enviado ' + Utilities.formatDate(new Date(), 'GMT-3', 'dd/MM/yyyy'));
-      registrarHistorial_(sh.getName(), d[i][1], 'Mail de descarte', 'Enviado (' + (esSin ? 'sin screening' : 'post screening') + ')');
+      registrarHistorial_(sh.getName(), d[i][1], 'Mail de descarte', 'Enviado (' + (esSin ? 'sin screening' : (/exploraci/i.test(estado) ? 'post exploración' : 'post screening')) + ')');
       enviados++;
     } catch(e) {}
   }
@@ -2944,7 +2947,7 @@ function previaDescartes_(perfilId) {
     const mail = String(d[i][21] || '').trim();
     if (!mail || mail === 'Sin dato' || mail.indexOf('@') === -1) continue;
     if (/descartado sin screening/i.test(estado)) sinScr++;
-    else if (/descartado post screening/i.test(estado)) postScr++;
+    else if (/descartado post screening|descartado post exploraci/i.test(estado)) postScr++;
   }
   return {
     sinScr: sinScr, postScr: postScr, puesto: puesto,
@@ -3010,13 +3013,14 @@ function armarComunicacion_(perfilId, fila, tipo, quien, entrevistadorElegido){
   const linkPorTipo = {
     'contacto-screening': cfg.link_screening,
     'contacto-competencias': cfg.link_competencias || cfg.link_screening,
+    'contacto-exploracion': cfg.link_competencias || cfg.link_screening,
     'contacto-empresa-virtual': cfg.link_empresa_virtual,
     'contacto-empresa-presencial': cfg.link_empresa_virtual
   };
   let link = linkPorTipo[tipo] || '';
   // Link de agenda de la persona que entrevista (su página de citas de Google Calendar; se carga en ⚙ Administración → Usuarios). Sin eso, el link de la búsqueda.
   let conQuien = '', aviso = '';
-  const etapaAg = tipo === 'contacto-screening' ? 'screening' : (tipo === 'contacto-competencias' ? 'competencias' : '');
+  const etapaAg = tipo === 'contacto-screening' ? 'screening' : (tipo === 'contacto-competencias' ? 'competencias' : (tipo === 'contacto-exploracion' ? 'exploracion' : ''));
   // «Automático»: se propone a quien tenga menos entrevistas en los próximos 14 días entre los que hacen esa etapa en esta búsqueda
   if (String(entrevistadorElegido || '') === 'auto') {
     entrevistadorElegido = '';
@@ -3053,6 +3057,7 @@ function armarComunicacion_(perfilId, fila, tipo, quien, entrevistadorElegido){
     } catch (e) { }
   }
 
+  if (/-exploracion$/.test(tipo)) asegurarPlantillasExploracion_();
   let texto = plantillaTexto_(tipo, perfilId).texto;
   if(!texto) return {ok:false, error:'No encontré la plantilla ' + tipo};
 
@@ -3065,7 +3070,7 @@ function armarComunicacion_(perfilId, fila, tipo, quien, entrevistadorElegido){
 
   let telWa = tel;
   if(telWa.indexOf('54') !== 0) telWa = '549' + telWa.replace(/^0+/,'');
-  var etiqueta = {'contacto-screening':'screening','contacto-competencias':'competencias','contacto-empresa-virtual':'empresa','contacto-empresa-presencial':'empresa','descarte-competencias':'descarte comp.','descarte-empresa':'descarte emp.'}[tipo] || '';
+  var etiqueta = {'contacto-screening':'screening','contacto-exploracion':'exploracion','contacto-competencias':'competencias','contacto-empresa-virtual':'empresa','contacto-empresa-presencial':'empresa','descarte-exploracion':'descarte expl.','descarte-competencias':'descarte comp.','descarte-empresa':'descarte emp.'}[tipo] || '';
   if(etiqueta){
     const etq = etiqueta + (conQuien ? ' (' + String(conQuien).split(' ')[0] + ')' : '');
     sh.getRange(fila, 41).setValue(etq + ' · ' + Utilities.formatDate(new Date(), 'GMT-3', 'dd/MM/yyyy'));

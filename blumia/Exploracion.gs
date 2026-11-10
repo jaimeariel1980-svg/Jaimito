@@ -150,3 +150,29 @@ function procesarExploracion_(data) {
     throw new Error('Guardé el resultado, pero el PDF falló: ' + e.message);
   }
 }
+
+/* Mensajes de la etapa (WhatsApp): invitación y descarte. Si todavía no están en la pestaña Plantillas se siembran una sola vez con un texto base
+   (se editan en ⚙ Configurar → Mensajes, solo para una búsqueda o para todas). */
+const EXPL_PLANTILLAS_ = {
+  'contacto-exploracion': 'Hola [NOMBRE], ¿cómo estás? Soy [ENTREVISTADOR] de Blumia Consulting.\n\nSeguimos adelante con tu postulación a la búsqueda de [PUESTO] para [EMPRESA]. El próximo paso es una entrevista de exploración: una conversación personalizada para conocer mejor tu experiencia.\n\nPodés elegir el día y el horario que mejor te quede en este link: [LINK]\n\n¡Gracias por tu tiempo!',
+  'descarte-exploracion': 'Hola [NOMBRE], ¿cómo estás?\n\nAnte todo, gracias por el tiempo que compartimos en la entrevista y por tu buena predisposición a lo largo del proceso.\n\nDespués de evaluar a todos los candidatos, en esta ocasión decidimos avanzar con otros perfiles que se ajustaban más a lo que [EMPRESA] estaba buscando para la posición de [PUESTO], así que no vamos a continuar con tu candidatura en este proceso.\n\nFue un gusto conocerte. Tu perfil queda en nuestra base y te vamos a tener presente para futuras búsquedas que puedan encajar con tu experiencia.\n\nTe deseamos mucho éxito en lo que viene.\n\nSaludos,\n[ENTREVISTADOR]'
+};
+function asegurarPlantillasExploracion_() {
+  const sh = ssAbrir_(SHEET_MASTER_ID).getSheetByName('Plantillas');
+  if (!sh) return;
+  const cp = colPerfilPlantillas_(sh);
+  const data = sh.getDataRange().getValues();
+  const hay = k => data.slice(1).some(r => r[0] === k);
+  const nuevas = Object.keys(EXPL_PLANTILLAS_).filter(k => !hay(k));
+  if (!nuevas.length) return;
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) return;
+  try {
+    const ancho = Math.max(cp, 4);
+    nuevas.forEach(k => {
+      const fila = [k, 'WhatsApp', '', EXPL_PLANTILLAS_[k]];
+      while (fila.length < ancho) fila.push('');
+      sh.getRange(sh.getLastRow() + 1, 1, 1, ancho).setNumberFormat('@').setValues([fila]);
+    });
+  } finally { lock.releaseLock(); }
+}
