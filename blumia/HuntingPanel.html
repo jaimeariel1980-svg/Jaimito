@@ -97,7 +97,7 @@
     var acc='';
     var B=function(t,a,c){return '<button class="hu-btn s '+(c||'')+'" data-a="'+a+'" data-id="'+esc(o.id)+'">'+t+'</button>';};
     var enBus=o.estado==='En proceso',desc=CERR.indexOf(o.estado)>=0;
-    if(desc)acc=B('↩ Reabrir','mov:'+(o.nivel>=1?'Contactado':'Identificado'));
+    if(desc)acc=B('↩ Reabrir','mov:'+(o.nivel>=1?'Contactado':'Identificado'))+B('✏ Motivo','desc');
     else if(!enBus){
       acc=B(o.estado==='Identificado'?'✓ Contactado':'↻ Seguimiento enviado','mov:Contactado',o.estado==='Identificado'?'p':'')+B('✗ Descartar','desc')+(o.tienePdf?B('➡ A la búsqueda','pasar','p'):B('📄 Subir PDF','pdf'));
     }
@@ -320,13 +320,14 @@
     inp.click();
   }
   function descartar(o){
-    var bg=modal('<h3>Descartar a '+esc(o.nombre)+'</h3><label>¿Por qué?</label><select id="hd-t"><option value="">Elegir…</option><option value="No le interesa">No le interesa</option><option value="Sin respuesta">No respondió</option><option value="No encaja">No se ajusta al perfil</option></select><label>Motivo (opcional): escribí lo que quieras que quede registrado</label><textarea id="hd-m" style="min-height:90px" maxlength="300" placeholder="Ej: está en un proceso con la competencia; pretensión muy por encima de la banda…"></textarea><div class="hu-cnt" id="hd-n">0 / 300</div><div class="hu-row"><button class="go" id="hd-g">Descartar</button><button id="hd-x">Cancelar</button></div>');
+    var cerr=CERR.indexOf(o.estado)>=0;var bg=modal('<h3>'+(cerr?'Motivo de ':'Descartar a ')+esc(o.nombre)+'</h3><label>¿Por qué?</label><select id="hd-t"><option value="">Elegir…</option><option value="No le interesa">No le interesa</option><option value="Sin respuesta">No respondió</option><option value="No encaja">No se ajusta al perfil</option></select><label>Motivo (opcional): escribí lo que quieras que quede registrado</label><textarea id="hd-m" style="min-height:90px" maxlength="300" placeholder="Ej: está en un proceso con la competencia; pretensión muy por encima de la banda…"></textarea><div class="hu-cnt" id="hd-n">0 / 300</div><div class="hu-row"><button class="go" id="hd-g">'+(cerr?'Guardar':'Descartar')+'</button><button id="hd-x">Cancelar</button></div>');
     var m=bg.querySelector('#hd-m');
+    if(cerr){bg.querySelector('#hd-t').value=o.estado;m.value=o.motivo||'';bg.querySelector('#hd-n').textContent=m.value.length+' / 300';}
     m.oninput=function(){bg.querySelector('#hd-n').textContent=m.value.length+' / 300';};
     bg.querySelector('#hd-x').onclick=function(){bg.remove();};
     bg.querySelector('#hd-g').onclick=function(){
       var g=this,t=bg.querySelector('#hd-t').value;if(!t){aviso('Elegí por qué se descarta.');return;}g.disabled=true;g.textContent='Guardando…';
-      run('huntingMover',[PERFIL,o.id,t,quien(),m.value],function(){bg.remove();cargar();},function(e){g.disabled=false;g.textContent='Descartar';aviso((e&&e.message)||String(e));});
+      run('huntingMover',[PERFIL,o.id,t,quien(),m.value],function(){bg.remove();cargar();},function(e){g.disabled=false;g.textContent=cerr?'Guardar':'Descartar';aviso((e&&e.message)||String(e));});
     };
     setTimeout(function(){m.focus();},50);
   }
