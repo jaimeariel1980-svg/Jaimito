@@ -19,6 +19,26 @@ function metEstado_(estado) {
   return { t: t, lv: lv, d: d, scr: lv >= 1, comp: lv >= 2, emp: lv >= 3, res: t === 'res' };
 }
 
+// Números del Resumen y de los informes (no del tablero): una etapa «realizada» solo cuenta si tiene la nota cargada.
+// Mover una tarjeta no cambia estos números. c = {notaScr, notaComp, notaScrEmp, notaPresEmp}. Se copia al navegador con toString().
+function metHechos_(m, c) {
+  if (!m) return m;
+  const t = v => String(v == null ? '' : v).trim() !== '';
+  const emp = t(c.notaScrEmp) || t(c.notaPresEmp) || (t(c.notaComp) && m.emp);
+  m.scr = t(c.notaScr); m.comp = t(c.notaComp); m.emp = !!emp;
+  return m;
+}
+
+// Pasa n CVs de «CV directo» (o, si faltan, de «Sin dato») a «LinkedIn (aviso)». Es un ajuste del total: no marca candidatos. Se copia al navegador con toString().
+function ajusteFuentes_(f, n) {
+  n = Number(n) || 0;
+  if (n <= 0) return f;
+  let falta = n, mov = 0;
+  ['CV directo', 'Sin dato'].forEach(k => { const x = Math.min(falta, f[k] || 0); if (x > 0) { f[k] -= x; if (!f[k]) delete f[k]; falta -= x; mov += x; } });
+  if (mov) f['LinkedIn (aviso)'] = (f['LinkedIn (aviso)'] || 0) + mov;
+  return f;
+}
+
 // contadores de una búsqueda con las mismas definiciones que el Informe de proceso
 function contarBusqueda_(filas) {
   const r = { cv: 0, scr: 0, comp: 0, emp: 0, res: 0, dsin: 0, dpost: 0, dcomp: 0 };
@@ -26,6 +46,7 @@ function contarBusqueda_(filas) {
     if (!String(f[1]).trim()) return;
     const m = metEstado_(f[8]);
     if (!m) return;
+    metHechos_(m, { notaScr: f[11], notaComp: f[15], notaScrEmp: f[43], notaPresEmp: f[44] });
     r.cv++;
     if (m.scr) r.scr++;
     if (m.comp) r.comp++;
@@ -46,7 +67,7 @@ function resumenBusquedas(perfilId) {
     let cfg, sh;
     try { cfg = getConfig(p.id); sh = getSheet(cfg); } catch (e) { return; }
     if (String(cfg.empresa || '') !== emp || !sh || sh.getLastRow() < 2) return;
-    const c = contarBusqueda_(sh.getRange(2, 1, sh.getLastRow() - 1, 9).getValues());
+    const c = contarBusqueda_(sh.getRange(2, 1, sh.getLastRow() - 1, Math.max(9, sh.getLastColumn())).getValues());
     out.push({ id: p.id, nombre: String(cfg.nombre || p.nombre || p.id), cv: c.cv, scr: c.scr, comp: c.comp, emp: c.emp, res: c.res, desc: c.dsin + c.dpost + c.dcomp });
   });
   return out;
