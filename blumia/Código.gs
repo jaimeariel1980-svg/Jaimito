@@ -660,6 +660,27 @@ function onEditDescartado(e) {
   }
 }
 
+/* Etapa «Exploración» (10/11, Ariel: la cliente no quiere competencias sin validar antes ciertas condiciones): entre screening y competencias, solo en las búsquedas con Config etapa_exploracion = SI. */
+const EXPL_MEMO_ = {};
+function explActiva_(cfg) { return String((cfg && cfg.etapa_exploracion) || '').trim().toUpperCase() === 'SI'; }
+function explHoja_(nombreHoja) {
+  if (EXPL_MEMO_[nombreHoja] !== undefined) return EXPL_MEMO_[nombreHoja];
+  let r = false;
+  try { listarPerfiles().forEach(p => { try { const c = getConfig(p.id); if (c.hoja_nombre === nombreHoja && explActiva_(c)) r = true; } catch (e) { } }); } catch (e) { }
+  return (EXPL_MEMO_[nombreHoja] = r);
+}
+// columna «Nota exploración» de la hoja de candidatos (se crea al final cuando hace falta)
+function colExpl_(sh, crear) {
+  const h = sh.getRange(1, 1, 1, Math.max(sh.getLastColumn(), 1)).getValues()[0];
+  let c = h.indexOf('Nota exploración') + 1;
+  if (!c && crear) {
+    c = Math.max(sh.getLastColumn(), 46) + 1;
+    if (sh.getMaxColumns() < c) sh.insertColumnsAfter(sh.getMaxColumns(), c - sh.getMaxColumns());
+    sh.getRange(1, c).setValue('Nota exploración').setFontWeight('bold');
+  }
+  return c;
+}
+
 function aplicarEstadoNota(sheet, fila, etapa, nota) {
   let v = String(nota || '').trim().toUpperCase();
   const m = { 'ALTO': 'A', 'MEDIO': 'B', 'BAJO': 'C' };
@@ -667,15 +688,8 @@ function aplicarEstadoNota(sheet, fila, etapa, nota) {
   if (['A','B+','B','C'].indexOf(v) === -1) return;
   if (String(sheet.getRange(fila, 9).getValue() || '').trim() === 'Contratado') return;
 
-  let estado;
-  if (v === 'C') {
-    estado = { cv:'Descartado sin screening', screening:'Descartado post screening', competencias:'Descartado en competencias', empresa:'Descartado en empresa' }[etapa];
-  } else if (v === 'B' && etapa !== 'cv') {
-    estado = { screening:'Reserva screening', competencias:'Reserva competencias' }[etapa] || 'En reserva';
-  } else {
-    // A y B+ siempre avanzan; B solo avanza en CV (en las demás etapas queda en reserva)
-    estado = { cv:'Avanza a screening', screening:'Avanza a competencias', competencias:'Avanza a screening empresa', empresa:'En cliente' }[etapa];
-  }
+  // A y B+ siempre avanzan; B solo avanza en CV (en las demás etapas queda en reserva); con la etapa Exploración activa, el screening manda a exploración
+  const estado = estadoPorNota_(etapa, v, etapa === 'screening' && explHoja_(sheet.getName()));
 
   let bg = '#D9D9D9', fc = '#333333';
   if (v === 'A') { bg = '#1A6645'; fc = '#FFFFFF'; }
@@ -687,7 +701,7 @@ function aplicarEstadoNota(sheet, fila, etapa, nota) {
   const regla = celda.getDataValidation();
   const estadoAntes = String(celda.getValue() || '').trim();
   celda.setDataValidation(null).setValue(estado);
-  registrarHistorial_(sheet.getName(), sheet.getRange(fila, 2).getValue(), 'Nota ' + etapa, v + ' · ' + (estadoAntes || '—') + ' → ' + estado);
+  registrarHistorial_(sheet.getName(), sheet.getRange(fila, 2).getValue(), 'Nota ' + (etapa === 'exploracion' ? 'exploración' : etapa), v + ' · ' + (estadoAntes || '—') + ' → ' + estado);
   if (regla) celda.setDataValidation(regla);
   celda.setBackground(bg).setFontColor(fc).setFontWeight('bold').setHorizontalAlignment('center');
 
@@ -2187,7 +2201,7 @@ function kanbanHTML_(perfilId) {
   let eb = {}; try { eb = enlacesBusqueda_(cfg); } catch (e) { }
   if (eb.carpeta) enlaces.push(['Carpeta de Drive de la búsqueda', eb.carpeta]);
   if (eb.hoja) enlaces.push(['Sheet de la búsqueda (pestaña de candidatos)', eb.hoja]);
-  try { const extra = '<script>var metEstado = ' + metEstado_.toString() + '; var metHechos = ' + metHechos_.toString() + '; var ajusteFuentes = ' + ajusteFuentes_.toString() + '; var AJUSTE_LI = ' + (Number(String(cfg.cv_linkedin_aviso || '').replace(/\D/g, '')) || 0) + '; var BANDA_REF = ' + bandaRef + '; var URL_APP = ' + JSON.stringify(URL_BASE()) + '; var ENLACES = ' + JSON.stringify(enlaces).replace(/</g, '\\u003c') + '; var ENLACE_CARPETA = ' + JSON.stringify(eb.carpeta || '') + '; var ENLACE_HOJA = ' + JSON.stringify(eb.hoja || '') + '; var ABRIR_CFG = ' + JSON.stringify(ABRIR_CFG_ || '') + ';</script>' + ['ConfigPanel', 'ResumenPanel', 'PerfilRef', 'HuntingPanel', 'TableroCards', 'BloomyWidget'].map(f => HtmlService.createHtmlOutputFromFile(f).getContent()).join(''); html = html.replace(/<\/html>\s*$/, () => extra + '</html>'); } catch (e) { }
+  try { const extra = '<script>var EXPL = ' + (explActiva_(cfg) ? 1 : 0) + '; if (EXPL) { COLS.splice(2, 0, ["Exploración", ["Avanza a exploración", "Exploración agendada"]]); BASE["Exploración"] = "Avanza a exploración"; DESC_TIPOS.splice(2, 0, "Descartado post exploración"); RES_TIPOS.splice(2, 0, "Reserva exploración"); } var metEstado = ' + metEstado_.toString() + '; var metHechos = ' + metHechos_.toString() + '; var ajusteFuentes = ' + ajusteFuentes_.toString() + '; var AJUSTE_LI = ' + (Number(String(cfg.cv_linkedin_aviso || '').replace(/\D/g, '')) || 0) + '; var BANDA_REF = ' + bandaRef + '; var URL_APP = ' + JSON.stringify(URL_BASE()) + '; var ENLACES = ' + JSON.stringify(enlaces).replace(/</g, '\\u003c') + '; var ENLACE_CARPETA = ' + JSON.stringify(eb.carpeta || '') + '; var ENLACE_HOJA = ' + JSON.stringify(eb.hoja || '') + '; var ABRIR_CFG = ' + JSON.stringify(ABRIR_CFG_ || '') + ';</script>' + ['ConfigPanel', 'ResumenPanel', 'PerfilRef', 'HuntingPanel', 'TableroCards', 'BloomyWidget'].map(f => HtmlService.createHtmlOutputFromFile(f).getContent()).join(''); html = html.replace(/<\/html>\s*$/, () => extra + '</html>'); } catch (e) { }
   lapT_('Sumar los paneles (configurar, resumen, tablero)');
   return HtmlService.createHtmlOutput(html)
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
@@ -2247,7 +2261,7 @@ function doGetKanban_(perfilId) {
   const out = [];
   const cMot = d[0].indexOf('Motivo de descarte');
   const cObs = d[0].indexOf('Observaciones');
-  const cProx = d[0].indexOf('Próximo entrevistador') + 1;
+  const cProx = d[0].indexOf('Próximo entrevistador') + 1, cExpl = d[0].indexOf('Nota exploración');
   let notasCV = [];
   try { if (d.length > 1) notasCV = sh.getRange(2, 5, d.length - 1, 1).getNotes(); } catch (e) { }
   const entEval = entrevistadoresEval_(perfilId);
@@ -2261,7 +2275,7 @@ function doGetKanban_(perfilId) {
     out.push({
       fila: i + 1, nombre: d[i][1], estado: String(d[i][8] || '').trim(), motivo: cMot >= 0 ? String(d[i][cMot] || '') : '', obs: cObs >= 0 ? String(d[i][cObs] || '') : '', movMs: movs[String(d[i][1]).trim()] || 0, recMs: d[i][0] ? new Date(d[i][0]).getTime() : 0, previos: prev[i - 1] || [],
       recibido: d[i][0] ? Utilities.formatDate(new Date(d[i][0]), 'GMT-3', 'dd/MM/yyyy') : '',
-      nota: d[i][4] || '', notaScr: d[i][11] || '', notaComp: d[i][15] || '',
+      nota: d[i][4] || '', notaScr: d[i][11] || '', notaComp: d[i][15] || '', notaExpl: cExpl >= 0 ? String(d[i][cExpl] || '') : '',
       pretension: m ? m[1].trim() : '', zona: d[i][23] || '',
       tel: d[i][2] || '', dni: String(d[i][3] || ''), mail: d[i][21] || '',
       resumen: d[i][6] || '', cv: cvs[i - 1] || '',
@@ -2580,11 +2594,12 @@ function avActivo(c){return !/^(Descartad|Eliminado|Contratado|En cliente)/i.tes
 function avEtapa(e){
   if(/^(Avanza a screening empresa|Screening empresa)/i.test(e))return {k:'empresa',n:'el screening con la empresa',h:'Empresa'};
   if(/^(Avanza a presencial empresa|Avanza a empresa|Entrevista empresa)/i.test(e))return {k:'empresa',n:'la entrevista con la empresa',h:'Empresa'};
+  if(/^(Avanza a exploración|Exploración)/i.test(e))return {k:'exploracion',n:'la entrevista de exploración',h:'Exploración'};
   if(/^(Avanza a competencias|Competencias)/i.test(e))return {k:'competencias',n:'competencias',h:'Competencias'};
   if(/^(Avanza a screening|Screening)/i.test(e))return {k:'screening',n:'screening',h:'Screening'};
   return null;
 }
-function avEtapasFaltan(c){var m=typeof metEstado==='function'?metEstado(c.estado):null,f=[];if(!m||m.t!=='act')return f;if(m.lv>=2&&!String(c.notaScr||'').trim())f.push('screening');if(m.lv>=3&&!String(c.notaComp||'').trim())f.push('competencias');return f;}
+function avEtapasFaltan(c){var m=typeof metEstado==='function'?metEstado(c.estado):null,f=[];if(!m||m.t!=='act')return f;if(m.lv>=2&&!String(c.notaScr||'').trim())f.push('screening');if(window.EXPL&&m.lv>=2&&!String(c.notaExpl||'').trim())f.push('exploración');if(m.lv>=3&&!String(c.notaComp||'').trim())f.push('competencias');return f;}
 function avPendientes(L){
   var out=[],now=Date.now();
   L.forEach(function(c){
@@ -2678,7 +2693,7 @@ function cerrar(){document.getElementById('modal').classList.remove('show');}
 function notaManual_(perfilId, fila, etapa, nota, quien) {
   QUIEN_ = quien || '';
   const sh = getSheet(getConfig(perfilId));
-  const col = {cv:5, screening:12, competencias:16}[etapa];
+  const col = etapa === 'exploracion' ? colExpl_(sh, true) : {cv:5, screening:12, competencias:16}[etapa];
   sh.getRange(fila, col).setValue(nota);
   if (etapa === 'cv') { try { sh.getRange(fila, col).setNote(''); } catch (e) { } } // la nota la puso una persona: ya no vale el motivo que había escrito la IA
   aplicarEstadoNota(sh, fila, etapa, nota);

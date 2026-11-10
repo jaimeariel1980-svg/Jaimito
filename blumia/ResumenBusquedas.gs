@@ -7,25 +7,25 @@ function metEstado_(estado) {
   if (l === 'contratado') { t = 'cont'; lv = 5; }
   else if (/^descartad/.test(l)) {
     t = 'desc';
-    if (/post screening/.test(l)) { lv = 1; d = 'post'; }
+    if (/post screening|post exploraci/.test(l)) { lv = 1; d = 'post'; }
     else if (/en competencias/.test(l)) { lv = 2; d = 'comp'; }
     else if (/screening empresa|presencial empresa|en empresa/.test(l)) { lv = /screening empresa/.test(l) ? 3 : 4; d = 'emp'; }
     else { lv = 0; d = 'cv'; }
   } else if (/reserva/.test(l)) {
-    t = 'res'; lv = /screening empresa/.test(l) ? 3 : /presencial empresa/.test(l) ? 4 : /reserva screening/.test(l) ? 1 : 2;
+    t = 'res'; lv = /screening empresa/.test(l) ? 3 : /presencial empresa/.test(l) ? 4 : /reserva screening|reserva exploraci/.test(l) ? 1 : 2;
   } else {
-    lv = /competencias/.test(l) ? 2 : /screening empresa/.test(l) ? 3 : /presencial empresa|avanza a empresa|entrevista empresa|en cliente/.test(l) ? 4 : /screening/.test(l) ? 1 : 0;
+    lv = /competencias/.test(l) ? 2 : /screening empresa/.test(l) ? 3 : /presencial empresa|avanza a empresa|entrevista empresa|en cliente/.test(l) ? 4 : /screening|exploraci/.test(l) ? 1 : 0;
   }
   return { t: t, lv: lv, d: d, scr: lv >= 1, comp: lv >= 2, emp: lv >= 3, res: t === 'res' };
 }
 
-// Números del Resumen y de los informes (no del tablero): una etapa «realizada» solo cuenta si tiene la nota cargada.
+// Números del Resumen y de los informes (no del tablero): una etapa «realizada» solo cuenta si tiene la nota cargada (la exploración también: m.expl).
 // Mover una tarjeta no cambia estos números. c = {notaScr, notaComp, notaScrEmp, notaPresEmp}. Se copia al navegador con toString().
 function metHechos_(m, c) {
   if (!m) return m;
   const t = v => String(v == null ? '' : v).trim() !== '';
   const emp = t(c.notaScrEmp) || t(c.notaPresEmp) || (t(c.notaComp) && m.emp);
-  m.scr = t(c.notaScr); m.comp = t(c.notaComp); m.emp = !!emp;
+  m.scr = t(c.notaScr); m.comp = t(c.notaComp); m.emp = !!emp; m.expl = t(c.notaExpl);
   return m;
 }
 

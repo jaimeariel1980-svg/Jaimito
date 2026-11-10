@@ -25,7 +25,7 @@ function ibEstUna_(perfilId, conResumenes) {
   const cfg = getConfig(perfilId);
   const filas = JSON.parse(doGetKanban_(perfilId));
   const banda = Number(String(cfg.banda_salarial || '').replace(/\D/g, '')) || 0;
-  const e = { total: 0, scr: 0, comp: 0, emp: 0, res: 0, desc: 0, dsin: 0, dpost: 0, dcomp: 0, activos: 0,
+  const e = { total: 0, scr: 0, expl: 0, comp: 0, emp: 0, res: 0, desc: 0, dsin: 0, dpost: 0, dcomp: 0, activos: 0,
     notasCV: { A: 0, 'B+': 0, B: 0, C: 0, sin: 0 }, motivos: {}, fuentes: {}, formacion: {}, pret: { debajo: 0, linea: 0, encima: 0, total: 0 }, banda: banda,
     edad: { 'Menos de 30': 0, '30 a 39': 0, '40 a 49': 0, '50 o más': 0, 'Sin dato': 0 }, edadScr: { 'Menos de 30': 0, '30 a 39': 0, '40 a 49': 0, '50 o más': 0, 'Sin dato': 0 },
     genero: { Mujeres: 0, Varones: 0, 'Sin dato': 0 }, generoScr: { Mujeres: 0, Varones: 0, 'Sin dato': 0 }, zona: { 'En zona': 0, 'Fuera de zona': 0, 'Sin dato': 0 } };
@@ -39,6 +39,7 @@ function ibEstUna_(perfilId, conResumenes) {
     metHechos_(m, c);
     e.total++;
     if (m.scr) e.scr++;
+    if (m.expl) e.expl++;
     if (m.comp) e.comp++;
     if (m.emp) e.emp++;
     if (m.res) e.res++;
