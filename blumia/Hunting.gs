@@ -178,7 +178,7 @@ function huntingMover_(perfilId, id, estado, quien, motivo) {
     } else o.seguimiento = '';
     if (!o.quien) o.quien = quien || '';
     huntEscribir_(sh, o);
-    huntHist_(perfilId, o, antes === estado ? 'Seguimiento enviado (' + o.seguimientos + ')' : antes + ' → ' + estado + (o.motivo ? ' · ' + o.motivo : ''), quien);
+    huntHist_(perfilId, o, antes === estado ? (estado === 'Contactado' ? 'Seguimiento enviado (' + o.seguimientos + ')' : 'Motivo editado' + (o.motivo ? ' · ' + o.motivo : '')) : antes + ' → ' + estado + (o.motivo ? ' · ' + o.motivo : ''), quien);
     return huntItem_(o);
   } finally { lock.releaseLock(); }
 }
