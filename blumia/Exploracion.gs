@@ -2,7 +2,7 @@
    ENTREVISTA DE EXPLORACIÓN (10/11, Ariel: la cliente no quiere competencias sin validar antes ciertas condiciones).
    Etapa opt-in por búsqueda (Config etapa_exploracion = SI) entre Screening y Competencias. No lleva puntaje ni pesos: es una evaluación
    general de la entrevista (A / B+ / B / C). Cada candidato tiene su propia ficha: perfil predominante, síntesis, foco, preguntas (5 a medida y
-   una común por búsqueda) y «qué buscaría validar»; después de la entrevista se completa el registro (evidencias, fortalezas, alertas, conclusión).
+   una común por búsqueda) y «qué buscaría validar»; después de la entrevista se completa el registro (observaciones por pregunta, fortalezas, alertas, conclusión).
    Pantalla: Exploracion.html (?tipo=exploracion&perfil=<id>&nombre=<candidato>). Las respuestas se guardan como las de screening y competencias
    (pestaña Evaluaciones, etapa «exploracion», un .json en la carpeta «Exploración» de la búsqueda) y el PDF queda en esa carpeta.
    ============================================================ */
@@ -208,27 +208,30 @@ function asegurarPlantillasExploracion_() {
 }
 
 const EXPL_SISTEMA_REG_ = 'Sos consultor/a senior de selección en Blumia Consulting. Te paso la transcripción de una ENTREVISTA DE EXPLORACIÓN (posterior al screening y previa a competencias) y la ficha con que se preparó. ' +
-  'Completá el REGISTRO de la entrevista. Respondé SOLO con un JSON válido: {"evidencias":"...","fortalezas":"...","alertas":"...","conclusion":"..."}. ' +
+  'Completá el REGISTRO de la entrevista. Respondé SOLO con un JSON válido: {"observaciones":["..."],"fortalezas":"...","alertas":"...","conclusion":"..."}. ' +
   'REGLAS: ' +
-  '1) «evidencias»: lo que la persona CONTÓ, ordenado por las preguntas de la ficha (podés encabezar cada bloque con el tema de la pregunta). Nombrá los ejemplos concretos (empresas, proyectos, cifras, resultados, cómo lo hizo). Atribuí siempre al relato («contó que», «mencionó que»). Si una pregunta no se respondió o se respondió en términos generales sin ejemplo, decilo. ' +
+  '1) «observaciones»: un arreglo con EXACTAMENTE una entrada por pregunta de la ficha, en el mismo orden. Cada una es lo que la persona CONTÓ al responder esa pregunta (aunque lo haya dicho en otro momento de la entrevista), con los ejemplos concretos (empresas, proyectos, cifras, resultados, cómo lo hizo). Atribuí siempre al relato («contó que», «mencionó que»). 2 a 6 oraciones. Si la pregunta no se abordó, escribí «No se abordó en la entrevista.»; si se respondió en términos generales sin ejemplo, decilo. ' +
   '2) «fortalezas»: 2 a 5 puntos con lo que la distingue para este puesto, apoyados en lo dicho. ' +
   '3) «alertas»: dudas, contradicciones, vacíos o puntos a profundizar en la etapa siguiente. Si no hubo, decí «Sin alertas relevantes». ' +
   '4) «conclusion»: 3 a 5 oraciones sobre si logró validar lo que se quería validar y una recomendación de avance (avanzar, avanzar con una observación, reserva o no avanzar) con su porqué. No asignes una letra. ' +
   '5) Usá solo lo que está en la transcripción. No inventes. NUNCA uses ni menciones edad, género, estado civil, situación familiar, nacionalidad, salud ni religión. ' +
   '6) Nombrá a la persona por su nombre de pila y usá el género gramatical que corresponde a su nombre; si es ambiguo, formas neutras. Español rioplatense, profesional y directo.';
 
-// Completa el registro de la entrevista a partir de la transcripción. No guarda: la persona revisa en pantalla.
+// Completa las observaciones de cada pregunta y el registro a partir de la transcripción. No guarda: la persona revisa en pantalla.
 function explAnalizar_(perfilId, nombre, fichaJson, texto) {
   const cfg = getConfig(perfilObligatorio_(perfilId));
   texto = String(texto || '').trim();
   if (texto.length < 200) throw new Error('La transcripción es muy corta para completar el registro.');
   let ficha = {};
   try { ficha = JSON.parse(String(fichaJson || '{}')) || {}; } catch (e) { }
-  const preg = (Array.isArray(ficha.preguntas) ? ficha.preguntas : []).map((p, i) => (i + 1) + '. ' + String(p.titulo || '') + ': ' + String(p.pregunta || '')).join('\n');
+  const ps = Array.isArray(ficha.preguntas) ? ficha.preguntas : [];
+  const preg = ps.map((p, i) => (i + 1) + '. ' + String(p.titulo || '') + ': ' + String(p.pregunta || '')).join('\n');
   const usuario = 'PUESTO: ' + String(cfg.nombre_perfil || cfg.nombre || '') + '\nPERSONA: ' + String(nombre || '') + '\n' +
-    'FOCO: ' + String(ficha.foco || '') + '\nQUÉ SE BUSCABA VALIDAR: ' + String(ficha.validar || cfg.expl_validar || '') + '\n\nPREGUNTAS DE LA FICHA:\n' + (preg || '(sin preguntas cargadas)') +
+    'FOCO: ' + String(ficha.foco || '') + '\nQUÉ SE BUSCABA VALIDAR: ' + String(ficha.validar || cfg.expl_validar || '') + '\n\nPREGUNTAS DE LA FICHA (' + ps.length + '):\n' + (preg || '(sin preguntas cargadas)') +
     '\n\nTRANSCRIPCIÓN:\n' + texto.slice(0, 60000);
   const r = extraerJSON_(procesarConClaude(EXPL_SISTEMA_REG_, usuario, 'analisis')) || {};
   const lim = (s, n) => String(s || '').replace(/[<>]/g, '').trim().slice(0, n);
-  return { evidencias: lim(r.evidencias, 6000), fortalezas: lim(r.fortalezas, 2000), alertas: lim(r.alertas, 2000), conclusion: lim(r.conclusion, 2000) };
+  const obs = (Array.isArray(r.observaciones) ? r.observaciones : []).slice(0, ps.length).map(o => lim(o, 3000));
+  while (obs.length < ps.length) obs.push('');
+  return { observaciones: obs, fortalezas: lim(r.fortalezas, 2000), alertas: lim(r.alertas, 2000), conclusion: lim(r.conclusion, 2000) };
 }
