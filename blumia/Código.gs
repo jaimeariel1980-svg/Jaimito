@@ -1485,7 +1485,9 @@ function getLinkScreening_(perfilId, nombreCandidato) {
         if (!cvU) { const rt = cvCel.getRichTextValue(); if (rt && rt.getLinkUrl()) cvU = rt.getLinkUrl(); }
         if (!cvU) cvU = String(datos[i][7] || '');
         const cvId = (cvU.match(/[?&]id=([-\w]{25,})/) || [])[1] || (cvU.match(/[-\w]{25,}/) || [''])[0];
-        return { link: link, nota: nota, cv: cvId ? 'https://drive.google.com/file/d/' + cvId + '/view' : '' };
+        let expl = '';
+        try { const cEP = colExplPdf_(sh, false); if (cEP) expl = explLinkCelda_(sh, i + 1, cEP); } catch (e) { }
+        return { link: link, nota: nota, cv: cvId ? 'https://drive.google.com/file/d/' + cvId + '/view' : '', expl: expl };
       }
     }
     return { link: '', nota: '', cv: '' };
