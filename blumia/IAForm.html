@@ -166,6 +166,16 @@
       analizar(t,st,p,ctx);
     }).withFailureHandler(function(e){st.textContent='';alert('No se pudo recuperar: '+errMsg(e));}).recuperarEntrevista(p,ctx.perfil,ctx.cand);
   }
+  /* Para otras pantallas (exploración): abre la grabadora y transcribe por partes; el análisis lo hace cada pantalla. */
+  function transcribirGen(partes,perfil,cand,progreso,ok,ko){
+    var acc=[],i=0;
+    (function sig(){
+      if(i>=partes.length){ok(acc.join(' '));return;}
+      progreso('Transcribiendo parte '+(i+1)+' de '+partes.length+'…');
+      google.script.run.withSuccessHandler(function(t){acc.push(t);i++;sig();}).withFailureHandler(function(e){ko(errMsg(e));}).transcribirAudio(getPin(),perfil,cand,partes[i].b64,partes[i].mime);
+    })();
+  }
+  window.IAGrab={abrir:abrirGrabadora,transcribir:transcribirGen};
   window.IAEntrevista={grabar:grabar,recuperar:recuperar,aplicar:aplicar};
   /* Oculta los botones de IA al guardar el PDF o descargar el HTML (no deben salir en el informe). */
   window.ocultarIA=function(on){[].forEach.call(document.querySelectorAll('.ia-ui'),function(e){e.style.display=on?'none':'';});};
