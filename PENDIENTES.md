@@ -196,6 +196,7 @@ Hecha con el código real y 37 fichas de ejemplo; el modelo real (`gpt-4o-mini`)
 
 
 ## Límite de 200 versiones de Apps Script (2/11)
+- **Prioridad alta · lo hace Ariel (11/11):** el deploy de Blumia volvió a chocar con «Script has reached the limit of 200 versions» (merge del PR 726, 10/11 23:09): hasta que se borren versiones viejas (Apps Script de Blumia → Historial del proyecto) **no se publica nada nuevo**; después Claude corre el workflow `blumia` (`publicar`). Pendiente de publicar: PR 726 (embudo del informe sin etiquetas cortadas) y Reservas / Descartados abiertos por defecto.
 - **Prioridad alta · lo hace Ariel:** en el proyecto Apps Script de Blumia (cuenta jaimeariel1980) borrar versiones viejas (Historial del proyecto) y avisar; después Claude vuelve a correr el workflow `blumia` (`publicar`). Hasta entonces **no están publicados** los PR 628 (mensaje modelo de Flavia + nota de conexión en Hunting) y 629 (ficha de Hunting). Revisar lo mismo en los otros proyectos (azcu, pami, liquidaciones): cada uno tiene su propio tope.
 
 
@@ -206,6 +207,8 @@ Hecha con el código real y 37 fichas de ejemplo; el modelo real (`gpt-4o-mini`)
 - **Prioridad baja · lo hace Ariel:** cerrar las búsquedas viejas de MACS (coord-rrhh, operaciones, analistas) desde 🏠 Inicio para que el aviso de «búsqueda cerrada» y el selector solo muestren ABECEB.
 - **Prioridad media · Claude:** decidir si se suman versiones por mail de los mensajes de contacto (contacto-screening / competencias / empresa) en Mensajes.
 - **Prioridad media · lo hace Ariel:** Analía no puede ingresar (queda en la pantalla de login): probar en incógnito o con otro navegador y avisar.
+- **Prioridad baja · Ariel + Claude (10/11):** el bloque «Hunting · búsqueda directa» del Resumen cuenta solo lo que está cargado en la pestaña 🎯 Hunting (hoy 8 identificados, 6 contactados, 4 respondieron…), y Ariel no vuelca todos los mensajes. Se queda así; al **cerrar la etapa de hunting** cargar los totales reales (identificados, contactados, respondieron, interesados). Si hace falta, sumar un campo para escribir esos totales a mano sin cargar persona por persona.
+- **Prioridad media · lo hace Ariel (10/11):** cargar en ⚙ Configurar → Datos «Cuántos CVs llegaron por el aviso en LinkedIn» (dijo 8; antes 9) para que «De dónde llegan» lo muestre; y revisar que «Competencias realizadas» dé 0 tras publicar.
 
 - **Prioridad alta · lo hace Ariel:** cargar el mail de Google de Flavia y de Analía en Inicio → ⚙ Administración → Usuarios (sin eso no les llega la invitación ni el recordatorio de 30 min).
 - **Prioridad media · Claude:** probar con la primera reserva real que (a) el disparador del calendario de Blumia se creó y (b) `addGuest` funciona sobre un evento creado por la página de citas; si no, revisar el registro de ejecuciones de `agendaVigilar`.

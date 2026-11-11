@@ -7,25 +7,47 @@ function metEstado_(estado) {
   if (l === 'contratado') { t = 'cont'; lv = 5; }
   else if (/^descartad/.test(l)) {
     t = 'desc';
-    if (/post screening/.test(l)) { lv = 1; d = 'post'; }
+    if (/post exploraci/.test(l)) { lv = 1; d = 'expl'; }
+    else if (/post screening/.test(l)) { lv = 1; d = 'post'; }
     else if (/en competencias/.test(l)) { lv = 2; d = 'comp'; }
     else if (/screening empresa|presencial empresa|en empresa/.test(l)) { lv = /screening empresa/.test(l) ? 3 : 4; d = 'emp'; }
     else { lv = 0; d = 'cv'; }
   } else if (/reserva/.test(l)) {
-    t = 'res'; lv = /screening empresa/.test(l) ? 3 : /presencial empresa/.test(l) ? 4 : /reserva screening/.test(l) ? 1 : 2;
+    t = 'res'; lv = /screening empresa/.test(l) ? 3 : /presencial empresa/.test(l) ? 4 : /reserva screening|reserva exploraci/.test(l) ? 1 : 2;
   } else {
-    lv = /competencias/.test(l) ? 2 : /screening empresa/.test(l) ? 3 : /presencial empresa|avanza a empresa|entrevista empresa|en cliente/.test(l) ? 4 : /screening/.test(l) ? 1 : 0;
+    lv = /competencias/.test(l) ? 2 : /screening empresa/.test(l) ? 3 : /presencial empresa|avanza a empresa|entrevista empresa|en cliente/.test(l) ? 4 : /screening|exploraci/.test(l) ? 1 : 0;
   }
   return { t: t, lv: lv, d: d, scr: lv >= 1, comp: lv >= 2, emp: lv >= 3, res: t === 'res' };
 }
 
+// Números del Resumen y de los informes (no del tablero): una etapa «realizada» solo cuenta si tiene la nota cargada (la exploración también: m.expl).
+// Mover una tarjeta no cambia estos números. c = {notaScr, notaComp, notaScrEmp, notaPresEmp}. Se copia al navegador con toString().
+function metHechos_(m, c) {
+  if (!m) return m;
+  const t = v => String(v == null ? '' : v).trim() !== '';
+  const emp = t(c.notaScrEmp) || t(c.notaPresEmp) || (t(c.notaComp) && m.emp);
+  m.scr = t(c.notaScr); m.comp = t(c.notaComp); m.emp = !!emp; m.expl = t(c.notaExpl);
+  return m;
+}
+
+// Pasa n CVs de «CV directo» (o, si faltan, de «Sin dato») a «LinkedIn (aviso)». Es un ajuste del total: no marca candidatos. Se copia al navegador con toString().
+function ajusteFuentes_(f, n) {
+  n = Number(n) || 0;
+  if (n <= 0) return f;
+  let falta = n, mov = 0;
+  ['CV directo', 'Sin dato'].forEach(k => { const x = Math.min(falta, f[k] || 0); if (x > 0) { f[k] -= x; if (!f[k]) delete f[k]; falta -= x; mov += x; } });
+  if (mov) f['LinkedIn (aviso)'] = (f['LinkedIn (aviso)'] || 0) + mov;
+  return f;
+}
+
 // contadores de una búsqueda con las mismas definiciones que el Informe de proceso
 function contarBusqueda_(filas) {
-  const r = { cv: 0, scr: 0, comp: 0, emp: 0, res: 0, dsin: 0, dpost: 0, dcomp: 0 };
+  const r = { cv: 0, scr: 0, comp: 0, emp: 0, res: 0, dsin: 0, dpost: 0, dcomp: 0, dexpl: 0 };
   filas.forEach(f => {
     if (!String(f[1]).trim()) return;
     const m = metEstado_(f[8]);
     if (!m) return;
+    metHechos_(m, { notaScr: f[11], notaComp: f[15], notaScrEmp: f[43], notaPresEmp: f[44] });
     r.cv++;
     if (m.scr) r.scr++;
     if (m.comp) r.comp++;
@@ -33,6 +55,7 @@ function contarBusqueda_(filas) {
     if (m.res) r.res++;
     if (m.d === 'cv') r.dsin++;
     else if (m.d === 'post') r.dpost++;
+    else if (m.d === 'expl') { r.dpost++; r.dexpl++; } // en la hoja vieja de proceso la exploración cuenta como «después de entrevistar»
     else if (m.d === 'comp' || m.d === 'emp') r.dcomp++;
   });
   return r;
@@ -46,7 +69,7 @@ function resumenBusquedas(perfilId) {
     let cfg, sh;
     try { cfg = getConfig(p.id); sh = getSheet(cfg); } catch (e) { return; }
     if (String(cfg.empresa || '') !== emp || !sh || sh.getLastRow() < 2) return;
-    const c = contarBusqueda_(sh.getRange(2, 1, sh.getLastRow() - 1, 9).getValues());
+    const c = contarBusqueda_(sh.getRange(2, 1, sh.getLastRow() - 1, Math.max(9, sh.getLastColumn())).getValues());
     out.push({ id: p.id, nombre: String(cfg.nombre || p.nombre || p.id), cv: c.cv, scr: c.scr, comp: c.comp, emp: c.emp, res: c.res, desc: c.dsin + c.dpost + c.dcomp });
   });
   return out;

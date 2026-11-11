@@ -1,4 +1,4 @@
-const CFG_CAMPOS_ = ['nombre', 'nombre_perfil', 'empresa', 'empresa_candidatos', 'logo_cliente', 'preguntas_base', 'datos_internos', 'busqueda_ciega', 'banda_salarial', 'entrevistan', 'link_empresa_virtual', 'link_empresa_presencial', 'link_flyer', 'link_perfil'];
+const CFG_CAMPOS_ = ['nombre', 'nombre_perfil', 'empresa', 'empresa_candidatos', 'logo_cliente', 'preguntas_base', 'datos_internos', 'busqueda_ciega', 'banda_salarial', 'cv_linkedin_aviso', 'etapa_exploracion', 'expl_pregunta_comun', 'expl_validar', 'entrevistan', 'link_empresa_virtual', 'link_empresa_presencial', 'link_flyer', 'link_perfil'];
 
 /* Preguntas habituales propias: una lista general (pestaña Preguntas_Habituales) que se crea una vez y se tilda en cualquier búsqueda.
    Tildarla en una búsqueda la copia a las preguntas de esa búsqueda (Postulacion_Preguntas); destildarla la saca de esa búsqueda. */
@@ -41,6 +41,7 @@ function guardarHabituales_(pin, lista, quien) {
 function getConfigBusqueda_(pin, perfilId) {
   pinValido_(pin);
   const cfg = getConfig(perfilId);
+  if (explActiva_(cfg)) { try { asegurarPlantillasExploracion_(); } catch (e) { } }
   const ss = ssAbrir_(SHEET_MASTER_ID);
   const datos = {};
   CFG_CAMPOS_.forEach(k => { datos[k] = typeof cfg[k] === 'string' ? cfg[k] : (cfg[k] == null ? '' : String(cfg[k])); });
@@ -84,9 +85,9 @@ function guardarConfigBusqueda_(pin, perfilId, p, quien) {
         const v = String(p.datos[k]).replace(/[<>]/g, '').trim();
         if ((k === 'nombre' || k === 'nombre_perfil' || k === 'empresa') && !v) throw new Error('«' + k + '» no puede quedar vacío.');
         if ((/^link_/.test(k) || k === 'logo_cliente') && v && !/^https?:\/\//i.test(v)) throw new Error('El link «' + k + '» tiene que empezar con https://');
-        if (k === 'datos_internos' || k === 'busqueda_ciega') {
+        if (k === 'datos_internos' || k === 'busqueda_ciega' || k === 'etapa_exploracion') {
           const u = v.toUpperCase();
-          if (u !== 'SI' && u !== 'NO') throw new Error('«' + (k === 'busqueda_ciega' ? 'Búsqueda ciega' : 'Edad y situación familiar') + '» tiene que ser Sí o No.');
+          if (u !== 'SI' && u !== 'NO') throw new Error('«' + (k === 'busqueda_ciega' ? 'Búsqueda ciega' : k === 'etapa_exploracion' ? 'Etapa de exploración' : 'Edad y situación familiar') + '» tiene que ser Sí o No.');
           poner(k, u, (base.datos || {})[k]); return;
         }
         if (k === 'preguntas_base') {
@@ -102,6 +103,8 @@ function guardarConfigBusqueda_(pin, perfilId, p, quien) {
           Object.keys(o).forEach(c => { if (claves.indexOf(c) < 0 || ok.indexOf(String(o[c])) < 0) throw new Error('«Quién entrevista» tiene una persona o una etapa que no existe.'); });
           poner(k, Object.keys(o).length ? JSON.stringify(o) : '', (base.datos || {})[k]); return;
         }
+        if (k === 'cv_linkedin_aviso') { const num = String(v).replace(/\D/g, ''); poner(k, num, (base.datos || {})[k]); return; }
+        if (k === 'expl_pregunta_comun' || k === 'expl_validar') { const t = String(v).replace(/[<>]/g, '').trim(); if (t.length > 1500) throw new Error('El texto de la exploración es demasiado largo (máximo 1500 caracteres).'); poner(k, t, (base.datos || {})[k]); return; }
         if (k === 'banda_salarial') { const num = String(v).replace(/\D/g, ''); if (v && Number(num) < 1000) throw new Error('La banda salarial va en pesos, por ejemplo 13000000.'); poner(k, num, (base.datos || {})[k]); return; }
         poner(k, v, (base.datos || {})[k]);
       });
@@ -237,6 +240,7 @@ function guardarLogoCliente_(pin, perfilId, claro, color, quien) {
    Editarlos sigue siendo de ⚙ Configurar → Mensajes (solo administradores). */
 function mensajesLista_(perfilId) {
   const ss = ssAbrir_(SHEET_MASTER_ID), cfg = getConfig(perfilId);
+  if (explActiva_(cfg)) { try { asegurarPlantillasExploracion_(); } catch (e) { } }
   const items = listarPlantillas_(ss, perfilId).filter(t => t.clave !== 'hunting-nota-conexion').map(t => ({ clave: t.clave, canal: t.canal, texto: t.texto, propia: t.propia }));
   const puesto = String(cfg.nombre_perfil || cfg.nombre || perfilId);
   return { items: items, puesto: puesto, empresa: empresaParaCandidatos_(cfg) };

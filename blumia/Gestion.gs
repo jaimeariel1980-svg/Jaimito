@@ -68,12 +68,13 @@ function anularEtapa_(perfilId, fila, etapa, quien) {
   fila = filaCandidato_(sh, fila);
   const E = {
     'cv': { col: 5, nom: 'análisis del CV', vuelve: 'Revisar', desde: ['Avanza a screening', 'Descartado sin screening'] },
-    'screening': { col: 12, nom: 'screening', vuelve: 'Avanza a screening', desde: ['Avanza a competencias', 'Descartado post screening', 'Competencias agendada', 'En reserva', 'Reserva screening'] },
+    'screening': { col: 12, nom: 'screening', vuelve: 'Avanza a screening', desde: ['Avanza a competencias', 'Descartado post screening', 'Competencias agendada', 'En reserva', 'Reserva screening', 'Avanza a exploración', 'Exploración agendada'] },
+    'exploracion': { col: colExpl_(sh, false), nom: 'exploración', vuelve: 'Avanza a exploración', desde: ['Avanza a competencias', 'Descartado post exploración', 'Reserva exploración', 'Competencias agendada'] },
     'competencias': { col: 16, nom: 'competencias', vuelve: 'Avanza a competencias', desde: ['Avanza a screening empresa', 'Descartado en competencias', 'Reserva competencias', 'Screening empresa agendado'] },
     'screening-empresa': { col: 44, nom: 'screening con la empresa', vuelve: 'Avanza a screening empresa', desde: ['Avanza a presencial empresa', 'Reserva screening empresa', 'Descartado en screening empresa', 'Entrevista empresa agendada'] },
     'presencial-empresa': { col: 45, nom: 'entrevista final con la empresa', vuelve: 'Avanza a presencial empresa', desde: ['Contratado', 'Reserva presencial empresa', 'Descartado presencial empresa'] }
   }[etapa];
-  if (!E) throw new Error('Etapa inválida.');
+  if (!E || !E.col) throw new Error(E ? 'Esa etapa no tiene nota para anular.' : 'Etapa inválida.');
   const celda = sh.getRange(fila, E.col);
   const nota = String(celda.getValue() || '').trim();
   if (!nota) throw new Error('Esa etapa no tiene nota para anular.');
@@ -139,6 +140,7 @@ function reanalizarCV_(perfilId, fila, quien) {
 /* ---- Agendar una entrevista desde el tablero (C3): crea el evento en el Calendar de Blumia y deja la cita en la ficha ---- */
 const AGENDA_TIPOS_ = {
   'screening': { titulo: 'Screening Blumia', estado: 'Screening agendado' },
+  'exploracion': { titulo: 'Exploración Blumia', estado: 'Exploración agendada' },
   'competencias': { titulo: 'Competencias Blumia', estado: 'Competencias agendada' },
   'empresa-virtual': { titulo: 'Entrevista con la empresa (virtual)', estado: 'Screening empresa agendado' },
   'empresa-presencial': { titulo: 'Entrevista con la empresa (presencial)', estado: 'Entrevista empresa agendada' }
@@ -162,10 +164,10 @@ function agendarCitaTablero_(perfilId, fila, tipo, fecha, hora, duracion, lugar,
   if (!cal) throw new Error('No tengo acceso al calendario de Blumia.');
   // Quién entrevista (solo screening y competencias; las de la empresa las hace la empresa). Se registra en el evento, en la ficha y en el Historial.
   let quienEntrevista = null;
-  if (entrevistador && (tipo === 'screening' || tipo === 'competencias')) {
+  if (entrevistador && (tipo === 'screening' || tipo === 'exploracion' || tipo === 'competencias')) {
     const u = leerUsuarios_().find(x => x.clave === usuClave_(entrevistador) && x.activo === 'SI');
     if (!u) throw new Error('No encontré a ese entrevistador entre los usuarios habilitados.');
-    if (!usuHaceEn_(u, tipo, perfilId)) throw new Error(String(u.nombre).split(' ')[0] + ' no hace ' + (tipo === 'competencias' ? 'competencias' : 'screening') + ' en esta búsqueda. Elegí a otra persona.');
+    if (!usuHaceEn_(u, tipo, perfilId)) throw new Error(String(u.nombre).split(' ')[0] + ' no hace ' + (tipo === 'competencias' ? 'competencias' : tipo === 'exploracion' ? 'exploración' : 'screening') + ' en esta búsqueda. Elegí a otra persona.');
     quienEntrevista = u;
   }
   const nomEnt = quienEntrevista ? quienEntrevista.nombre : '';
@@ -190,7 +192,7 @@ function agendarCitaTablero_(perfilId, fila, tipo, fecha, hora, duracion, lugar,
   const txt = Utilities.formatDate(inicio, 'GMT-3', "dd/MM/yyyy 'a las' HH:mm");
   sh.getRange(fila, 37).setValue(txt);
   sh.getRange(fila, 46).setValue(nomEnt);
-  const tipoHist = tipo.indexOf('empresa') === 0 ? 'Empresa' : (tipo === 'competencias' ? 'Competencias' : 'Screening');
+  const tipoHist = tipo.indexOf('empresa') === 0 ? 'Empresa' : (tipo === 'competencias' ? 'Competencias' : (tipo === 'exploracion' ? 'Exploración' : 'Screening'));
   const hist = String(sh.getRange(fila, 38).getValue() || '');
   sh.getRange(fila, 38).setValue(tipoHist + ' — ' + Utilities.formatDate(inicio, 'GMT-3', 'dd/MM/yyyy HH:mm') + (nomEnt ? ' · con ' + nomEnt : '') + (hist ? '\n' + hist : ''));
   registrarHistorial_(sh.getName(), nombre, 'Agenda', T.estado + ': ' + txt + (nomEnt ? ' · entrevista a cargo de ' + nomEnt : '') + (opts.guests ? ' · invitación enviada a ' + invitados.join(', ') : ' · sin mail, no se envió invitación') + ' (creada desde el tablero)');

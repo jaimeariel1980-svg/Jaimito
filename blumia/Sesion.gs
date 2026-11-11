@@ -178,6 +178,8 @@ function entrevistanDe_(perfilId) {
   } catch (e) { return {}; }
 }
 function usuHaceEn_(u, etapa, perfilId) {
+  // Exploración (10/11): la hace quien hace screening o competencias en esa búsqueda
+  if (etapa === 'exploracion') return usuHaceEn_(u, 'screening', perfilId) || usuHaceEn_(u, 'competencias', perfilId);
   const o = entrevistanDe_(perfilId), v = o[u.clave || usuClave_(u.nombre)];
   if (typeof v === 'string') return v.split(',').map(x => x.trim()).indexOf(etapa) >= 0;
   return usuHace_(u, etapa);
@@ -208,7 +210,7 @@ function guardarEntrevistaUsuario_(nombre, mail, screening, competencias, linkSc
 
 // Para el panel «Agendar» de la ficha: quién puede entrevistar cada etapa (sin mails) y quién es el usuario actual
 function entrevistadoresAgenda_(perfilId) {
-  return { yo: SES_ ? SES_.nombre : '', lista: leerUsuarios_().filter(u => u.activo === 'SI').map(u => ({ nombre: u.nombre, screening: usuHaceEn_(u, 'screening', perfilId), competencias: usuHaceEn_(u, 'competencias', perfilId), linkScr: !!u.linkScr, linkComp: !!u.linkComp })) };
+  return { yo: SES_ ? SES_.nombre : '', lista: leerUsuarios_().filter(u => u.activo === 'SI').map(u => ({ nombre: u.nombre, screening: usuHaceEn_(u, 'screening', perfilId), exploracion: usuHaceEn_(u, 'exploracion', perfilId), competencias: usuHaceEn_(u, 'competencias', perfilId), linkScr: !!u.linkScr, linkComp: !!u.linkComp })) };
 }
 
 function usuarioPorNombre_(nombre) {
@@ -296,6 +298,10 @@ function registroApi_() {
     getContactosRegistro: { f: getContactosRegistro_ },
     getDatosPerfil: { f: getDatosPerfil_ },
     getEvaluacionPrevia: { f: getEvaluacionPrevia_ },
+    explDatos: { f: explDatos_ },
+    explPreparar: { f: explPreparar_ },
+    explBorrador: { f: explBorrador_ },
+    procesarExploracion: { f: procesarExploracion_ },
     getHistorialBusqueda: { f: getHistorialBusqueda_ },
     getHistorialCandidato: { f: getHistorialCandidato_ },
     getLinkScreening: { f: getLinkScreening_ },

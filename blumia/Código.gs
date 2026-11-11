@@ -78,7 +78,9 @@ function getDatosPerfil_(perfilId) {
       preguntas: String(r.preguntas || '').split('|').map(s => s.trim()).filter(Boolean)
     })),
     datosInternos: String(cfg.datos_internos || '').toUpperCase() !== 'NO',
-    proximos: (function () { try { return leerUsuarios_().filter(u => u.activo === 'SI' && usuHaceEn_(u, 'competencias', perfilId)).map(u => String(u.nombre).split(' ')[0]); } catch (e) { return []; } })(),
+    // la etapa que sigue al screening: «exploración» si la búsqueda la tiene activa, si no «competencias»
+    proximaEtapa: explActiva_(cfg) ? 'exploración' : 'competencias',
+    proximos: (function () { try { const et = explActiva_(cfg) ? 'exploracion' : 'competencias'; return leerUsuarios_().filter(u => u.activo === 'SI' && usuHaceEn_(u, et, perfilId)).map(u => String(u.nombre).split(' ')[0]); } catch (e) { return []; } })(),
     entrevistadoras: String(hero.entrevistadoras || entrevistadoresDefault_().join(',')).split(',').map(s => s.trim()).filter(Boolean)
   };
 }
@@ -102,7 +104,7 @@ function doGetPagina_(e) {
   const tipo = e?.parameter?.tipo;
   const perfil = e?.parameter?.perfil || '';
   let template, titulo;
-  const tipoQuePideBusqueda = ['competencias', 'screening', 'postulacion', 'kanban', 'flyer', 'perfilpuesto', 'pdfcliente', 'informe', 'procesohtml', 'informebusqueda'].indexOf(tipo) >= 0 || (!tipo && !!e?.parameter?.nombre);
+  const tipoQuePideBusqueda = ['competencias', 'exploracion', 'screening', 'postulacion', 'kanban', 'flyer', 'perfilpuesto', 'pdfcliente', 'informe', 'procesohtml', 'informebusqueda'].indexOf(tipo) >= 0 || (!tipo && !!e?.parameter?.nombre);
   if (!perfil && tipoQuePideBusqueda) return linkIncompleto_();
 
   if (tipo === 'competencias') {
@@ -113,6 +115,12 @@ function doGetPagina_(e) {
     template.editar = e.parameter.editar === '1';
     template.editarform = e.parameter.editarform === '1';
     titulo = 'Evaluación de Competencias | Blumia';
+  } else if (tipo === 'exploracion') {
+    template = HtmlService.createTemplateFromFile('ExploracionForm');
+    template.candidato = e.parameter.nombre || '';
+    template.entrevistador = e.parameter.entrevistador || '';
+    template.perfil = perfil;
+    titulo = 'Entrevista de exploración | Blumia';
   } else if (tipo === 'postulacion') {
     let cerrada = false;
     try { cerrada = estadoBusqueda_(getConfig(perfil)) === 'CERRADA'; } catch (err) { }
@@ -660,6 +668,27 @@ function onEditDescartado(e) {
   }
 }
 
+/* Etapa «Exploración» (10/11, Ariel: la cliente no quiere competencias sin validar antes ciertas condiciones): entre screening y competencias, solo en las búsquedas con Config etapa_exploracion = SI. */
+const EXPL_MEMO_ = {};
+function explActiva_(cfg) { return String((cfg && cfg.etapa_exploracion) || '').trim().toUpperCase() === 'SI'; }
+function explHoja_(nombreHoja) {
+  if (EXPL_MEMO_[nombreHoja] !== undefined) return EXPL_MEMO_[nombreHoja];
+  let r = false;
+  try { listarPerfiles().forEach(p => { try { const c = getConfig(p.id); if (c.hoja_nombre === nombreHoja && explActiva_(c)) r = true; } catch (e) { } }); } catch (e) { }
+  return (EXPL_MEMO_[nombreHoja] = r);
+}
+// columna «Nota exploración» de la hoja de candidatos (se crea al final cuando hace falta)
+function colExpl_(sh, crear) {
+  const h = sh.getRange(1, 1, 1, Math.max(sh.getLastColumn(), 1)).getValues()[0];
+  let c = h.indexOf('Nota exploración') + 1;
+  if (!c && crear) {
+    c = Math.max(sh.getLastColumn(), 46) + 1;
+    if (sh.getMaxColumns() < c) sh.insertColumnsAfter(sh.getMaxColumns(), c - sh.getMaxColumns());
+    sh.getRange(1, c).setValue('Nota exploración').setFontWeight('bold');
+  }
+  return c;
+}
+
 function aplicarEstadoNota(sheet, fila, etapa, nota) {
   let v = String(nota || '').trim().toUpperCase();
   const m = { 'ALTO': 'A', 'MEDIO': 'B', 'BAJO': 'C' };
@@ -667,15 +696,8 @@ function aplicarEstadoNota(sheet, fila, etapa, nota) {
   if (['A','B+','B','C'].indexOf(v) === -1) return;
   if (String(sheet.getRange(fila, 9).getValue() || '').trim() === 'Contratado') return;
 
-  let estado;
-  if (v === 'C') {
-    estado = { cv:'Descartado sin screening', screening:'Descartado post screening', competencias:'Descartado en competencias', empresa:'Descartado en empresa' }[etapa];
-  } else if (v === 'B' && etapa !== 'cv') {
-    estado = { screening:'Reserva screening', competencias:'Reserva competencias' }[etapa] || 'En reserva';
-  } else {
-    // A y B+ siempre avanzan; B solo avanza en CV (en las demás etapas queda en reserva)
-    estado = { cv:'Avanza a screening', screening:'Avanza a competencias', competencias:'Avanza a screening empresa', empresa:'En cliente' }[etapa];
-  }
+  // A y B+ siempre avanzan; B solo avanza en CV (en las demás etapas queda en reserva); con la etapa Exploración activa, el screening manda a exploración
+  const estado = estadoPorNota_(etapa, v, etapa === 'screening' && explHoja_(sheet.getName()));
 
   let bg = '#D9D9D9', fc = '#333333';
   if (v === 'A') { bg = '#1A6645'; fc = '#FFFFFF'; }
@@ -687,7 +709,7 @@ function aplicarEstadoNota(sheet, fila, etapa, nota) {
   const regla = celda.getDataValidation();
   const estadoAntes = String(celda.getValue() || '').trim();
   celda.setDataValidation(null).setValue(estado);
-  registrarHistorial_(sheet.getName(), sheet.getRange(fila, 2).getValue(), 'Nota ' + etapa, v + ' · ' + (estadoAntes || '—') + ' → ' + estado);
+  registrarHistorial_(sheet.getName(), sheet.getRange(fila, 2).getValue(), 'Nota ' + (etapa === 'exploracion' ? 'exploración' : etapa), v + ' · ' + (estadoAntes || '—') + ' → ' + estado);
   if (regla) celda.setDataValidation(regla);
   celda.setBackground(bg).setFontColor(fc).setFontWeight('bold').setHorizontalAlignment('center');
 
@@ -2111,6 +2133,7 @@ function completarProcesoIA(empresa) {
       const req=String(datos[i][5]||'');
       const mSal=req.match(/Remuneraci[oó]n pretendida:\s*\$?\s*([\d.\s]+)/i);
       const mt = metEstado_(estado);
+      if (mt) metHechos_(mt, { notaScr: datos[i][11], notaComp: datos[i][15], notaScrEmp: datos[i][43], notaPresEmp: datos[i][44] });
       if (banda && mt && mt.scr && mSal){
         const val=Number(mSal[1].replace(/[.\s]/g,''));
         if(val>0){
@@ -2186,7 +2209,7 @@ function kanbanHTML_(perfilId) {
   let eb = {}; try { eb = enlacesBusqueda_(cfg); } catch (e) { }
   if (eb.carpeta) enlaces.push(['Carpeta de Drive de la búsqueda', eb.carpeta]);
   if (eb.hoja) enlaces.push(['Sheet de la búsqueda (pestaña de candidatos)', eb.hoja]);
-  try { const extra = '<script>var metEstado = ' + metEstado_.toString() + '; var BANDA_REF = ' + bandaRef + '; var URL_APP = ' + JSON.stringify(URL_BASE()) + '; var ENLACES = ' + JSON.stringify(enlaces).replace(/</g, '\\u003c') + '; var ENLACE_CARPETA = ' + JSON.stringify(eb.carpeta || '') + '; var ENLACE_HOJA = ' + JSON.stringify(eb.hoja || '') + '; var ABRIR_CFG = ' + JSON.stringify(ABRIR_CFG_ || '') + ';</script>' + ['ConfigPanel', 'ResumenPanel', 'PerfilRef', 'HuntingPanel', 'TableroCards', 'BloomyWidget'].map(f => HtmlService.createHtmlOutputFromFile(f).getContent()).join(''); html = html.replace(/<\/html>\s*$/, () => extra + '</html>'); } catch (e) { }
+  try { const extra = '<script>var EXPL = ' + (explActiva_(cfg) ? 1 : 0) + '; if (EXPL) { COLS.splice(2, 0, ["Exploración", ["Avanza a exploración", "Exploración agendada"]]); BASE["Exploración"] = "Avanza a exploración"; DESC_TIPOS.splice(2, 0, "Descartado post exploración"); RES_TIPOS.splice(2, 0, "Reserva exploración"); } var metEstado = ' + metEstado_.toString() + '; var metHechos = ' + metHechos_.toString() + '; var ajusteFuentes = ' + ajusteFuentes_.toString() + '; var AJUSTE_LI = ' + (Number(String(cfg.cv_linkedin_aviso || '').replace(/\D/g, '')) || 0) + '; var BANDA_REF = ' + bandaRef + '; var URL_APP = ' + JSON.stringify(URL_BASE()) + '; var ENLACES = ' + JSON.stringify(enlaces).replace(/</g, '\\u003c') + '; var ENLACE_CARPETA = ' + JSON.stringify(eb.carpeta || '') + '; var ENLACE_HOJA = ' + JSON.stringify(eb.hoja || '') + '; var ABRIR_CFG = ' + JSON.stringify(ABRIR_CFG_ || '') + ';</script>' + ['ConfigPanel', 'ResumenPanel', 'PerfilRef', 'HuntingPanel', 'TableroCards', 'BloomyWidget'].map(f => HtmlService.createHtmlOutputFromFile(f).getContent()).join(''); html = html.replace(/<\/html>\s*$/, () => extra + '</html>'); } catch (e) { }
   lapT_('Sumar los paneles (configurar, resumen, tablero)');
   return HtmlService.createHtmlOutput(html)
     .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
@@ -2239,14 +2262,15 @@ function doGetKanban_(perfilId) {
   lapT_('Leer los candidatos (' + (d.length - 1) + ' filas)');
   const n = d.length - 1;
   const L = {};
-  if (n > 0) [13, 17, 31, 33].forEach(c => { L[c] = linksColumna_(sh, c, n, d.slice(1).map(r => r[c - 1])); });
+  const cEP = d[0].indexOf('Exploración PDF') + 1;
+  if (n > 0) [13, 17, 31, 33].concat(cEP > 0 ? [cEP] : []).forEach(c => { L[c] = linksColumna_(sh, c, n, d.slice(1).map(r => r[c - 1])); });
   const cvs = n > 0 ? idsCVColumna_(sh, 8, n, d.slice(1).map(r => r[7])) : [];
   lapT_('Leer los links de cada candidato');
   const link = (r, col) => (L[col] || [])[r - 2] || '';
   const out = [];
   const cMot = d[0].indexOf('Motivo de descarte');
   const cObs = d[0].indexOf('Observaciones');
-  const cProx = d[0].indexOf('Próximo entrevistador') + 1;
+  const cProx = d[0].indexOf('Próximo entrevistador') + 1, cExpl = d[0].indexOf('Nota exploración');
   let notasCV = [];
   try { if (d.length > 1) notasCV = sh.getRange(2, 5, d.length - 1, 1).getNotes(); } catch (e) { }
   const entEval = entrevistadoresEval_(perfilId);
@@ -2260,7 +2284,7 @@ function doGetKanban_(perfilId) {
     out.push({
       fila: i + 1, nombre: d[i][1], estado: String(d[i][8] || '').trim(), motivo: cMot >= 0 ? String(d[i][cMot] || '') : '', obs: cObs >= 0 ? String(d[i][cObs] || '') : '', movMs: movs[String(d[i][1]).trim()] || 0, recMs: d[i][0] ? new Date(d[i][0]).getTime() : 0, previos: prev[i - 1] || [],
       recibido: d[i][0] ? Utilities.formatDate(new Date(d[i][0]), 'GMT-3', 'dd/MM/yyyy') : '',
-      nota: d[i][4] || '', notaScr: d[i][11] || '', notaComp: d[i][15] || '',
+      nota: d[i][4] || '', notaScr: d[i][11] || '', notaComp: d[i][15] || '', notaExpl: cExpl >= 0 ? String(d[i][cExpl] || '') : '', explPDF: cEP > 0 ? link(i + 1, cEP) : '',
       pretension: m ? m[1].trim() : '', zona: d[i][23] || '',
       tel: d[i][2] || '', dni: String(d[i][3] || ''), mail: d[i][21] || '',
       resumen: d[i][6] || '', cv: cvs[i - 1] || '',
@@ -2525,10 +2549,11 @@ function bajarContactos(b){b.disabled=true;google.script.run.withSuccessHandler(
 function menuWA(f){
   var c=DATA.find(function(x){return x.fila===f;});
   var ops=[['contacto-screening','📞 Contacto screening'],['contacto-competencias','💼 Contacto competencias'],['contacto-empresa-virtual','🏢 Empresa (virtual)'],['contacto-empresa-presencial','🏢 Empresa (presencial)'],['descarte-competencias','❌ Descarte competencias'],['descarte-empresa','❌ Descarte empresa']];
+  if(window.EXPL){ops.splice(1,0,['contacto-exploracion','🔎 Contacto exploración']);ops.splice(5,0,['descarte-exploracion','❌ Descarte exploración']);}
   var h='<div style="font-size:13px;margin-bottom:12px;color:#555">Elegí qué mensaje enviar a <b>'+c.nombre+'</b>:</div>';
   ops.forEach(function(o){h+='<button class="mbtn wa" style="display:block;width:100%;margin-bottom:8px;text-align:left" onclick="enviarWA('+f+',\\''+o[0]+'\\',this)">'+o[1]+'</button>';});
   h+='<button class="mbtn alt" style="width:100%;margin-top:6px" onclick="ficha('+f+')">← Volver</button>';
-  h='<div style="margin-bottom:14px;padding:10px;border-radius:8px;background:#E3EEDC"><label for="waEnt" style="font-size:12px;font-weight:700;display:block;margin-bottom:4px">Quién lo entrevista (para screening y competencias)</label><select id="waEnt" style="height:38px;width:100%;border:1.5px solid #D5E0CE;border-radius:8px;padding:0 8px;font:inherit;background:#fff"><option value="auto" selected>Automático: quien tenga menos entrevistas próximas</option></select><div style="font-size:11px;color:#555;margin-top:4px">Siempre queda <b>asignada una persona</b> (a ella le llega el aviso cuando el candidato reserva, y 30 minutos antes). «Automático» reparte entre quienes hacen esa etapa en esta búsqueda; también podés elegir a alguien.</div></div>'+h;
+  h='<div style="margin-bottom:14px;padding:10px;border-radius:8px;background:#E3EEDC"><label for="waEnt" style="font-size:12px;font-weight:700;display:block;margin-bottom:4px">Quién lo entrevista (para screening, exploración y competencias)</label><select id="waEnt" style="height:38px;width:100%;border:1.5px solid #D5E0CE;border-radius:8px;padding:0 8px;font:inherit;background:#fff"><option value="auto" selected>Automático: quien tenga menos entrevistas próximas</option></select><div style="font-size:11px;color:#555;margin-top:4px">Siempre queda <b>asignada una persona</b> (a ella le llega el aviso cuando el candidato reserva, y 30 minutos antes). «Automático» reparte entre quienes hacen esa etapa en esta búsqueda; también podés elegir a alguien.</div></div>'+h;
   document.getElementById('mtit').textContent='WhatsApp · '+c.nombre;
   document.getElementById('mbody').innerHTML=h;
   waEntCargar();
@@ -2579,11 +2604,12 @@ function avActivo(c){return !/^(Descartad|Eliminado|Contratado|En cliente)/i.tes
 function avEtapa(e){
   if(/^(Avanza a screening empresa|Screening empresa)/i.test(e))return {k:'empresa',n:'el screening con la empresa',h:'Empresa'};
   if(/^(Avanza a presencial empresa|Avanza a empresa|Entrevista empresa)/i.test(e))return {k:'empresa',n:'la entrevista con la empresa',h:'Empresa'};
+  if(/^(Avanza a exploración|Exploración)/i.test(e))return {k:'exploracion',n:'la entrevista de exploración',h:'Exploración'};
   if(/^(Avanza a competencias|Competencias)/i.test(e))return {k:'competencias',n:'competencias',h:'Competencias'};
   if(/^(Avanza a screening|Screening)/i.test(e))return {k:'screening',n:'screening',h:'Screening'};
   return null;
 }
-function avEtapasFaltan(c){var m=typeof metEstado==='function'?metEstado(c.estado):null,f=[];if(!m||m.t!=='act')return f;if(m.lv>=2&&!String(c.notaScr||'').trim())f.push('screening');if(m.lv>=3&&!String(c.notaComp||'').trim())f.push('competencias');return f;}
+function avEtapasFaltan(c){var m=typeof metEstado==='function'?metEstado(c.estado):null,f=[];if(!m||m.t!=='act')return f;if(m.lv>=2&&!String(c.notaScr||'').trim())f.push('screening');if(window.EXPL&&m.lv>=2&&!String(c.notaExpl||'').trim())f.push('exploración');if(m.lv>=3&&!String(c.notaComp||'').trim())f.push('competencias');return f;}
 function avPendientes(L){
   var out=[],now=Date.now();
   L.forEach(function(c){
@@ -2677,7 +2703,7 @@ function cerrar(){document.getElementById('modal').classList.remove('show');}
 function notaManual_(perfilId, fila, etapa, nota, quien) {
   QUIEN_ = quien || '';
   const sh = getSheet(getConfig(perfilId));
-  const col = {cv:5, screening:12, competencias:16}[etapa];
+  const col = etapa === 'exploracion' ? colExpl_(sh, true) : {cv:5, screening:12, competencias:16}[etapa];
   sh.getRange(fila, col).setValue(nota);
   if (etapa === 'cv') { try { sh.getRange(fila, col).setNote(''); } catch (e) { } } // la nota la puso una persona: ya no vale el motivo que había escrito la IA
   aplicarEstadoNota(sh, fila, etapa, nota);
@@ -2711,6 +2737,7 @@ function syncCitasCalendar() {
     const t = titulo.toLowerCase();
     if (t.includes('empresa')) return 'Empresa';
     if (t.includes('competencia')) return 'Competencias';
+    if (t.includes('exploraci')) return 'Exploración';
     if (t.includes('screening')) return 'Screening';
     return 'Entrevista';
   };
@@ -2719,12 +2746,13 @@ function syncCitasCalendar() {
     const e = String(est).toLowerCase();
     if (e.includes('empresa') && e.includes('agendad')) return 'empresa';
     if (e.includes('competencia') && e.includes('agendad')) return 'competencias';
+    if (e.includes('exploraci') && e.includes('agendad')) return 'exploración';
     if (e.includes('screening') && e.includes('agendad')) return 'screening';
     return '';
   };
   // el candidato reservó solo desde la página de citas: si está «Avanza a …» y hay una cita futura de esa etapa, pasa a «… agendada»
-  const sinEtapa = titulo => !/screening|competencia|empresa/i.test(titulo);
-  const AGENDA_AUTO = { 'avanza a screening': ['screening', 'Screening agendado'], 'avanza a competencias': ['competencias', 'Competencias agendada'] };
+  const sinEtapa = titulo => !/screening|competencia|empresa|exploraci/i.test(titulo);
+  const AGENDA_AUTO = { 'avanza a screening': ['screening', 'Screening agendado'], 'avanza a exploración': ['exploración', 'Exploración agendada'], 'avanza a competencias': ['competencias', 'Competencias agendada'] };
 
   perfiles.forEach(id => {
     try {
@@ -2871,7 +2899,7 @@ function enviarDescartesMasivo_(perfilId, textoSin, textoPost, quien) {
   for (let i = 1; i < d.length; i++) {
     if (!d[i][1]) continue;
     const estado = String(d[i][8] || '').trim();
-    if (!/descartado sin screening|descartado post screening/i.test(estado)) continue;
+    if (!/descartado sin screening|descartado post screening|descartado post exploraci/i.test(estado)) continue;
     if (String(d[i][39] || '').trim()) continue; // ya enviado
 
     const mail = String(d[i][21] || '').trim();
@@ -2901,7 +2929,7 @@ function enviarDescartesMasivo_(perfilId, textoSin, textoPost, quien) {
     try {
       enviarMailBlumia_(mail, asunto, cuerpo);
       sh.getRange(i + 1, 40).setValue('Enviado ' + Utilities.formatDate(new Date(), 'GMT-3', 'dd/MM/yyyy'));
-      registrarHistorial_(sh.getName(), d[i][1], 'Mail de descarte', 'Enviado (' + (esSin ? 'sin screening' : 'post screening') + ')');
+      registrarHistorial_(sh.getName(), d[i][1], 'Mail de descarte', 'Enviado (' + (esSin ? 'sin screening' : (/exploraci/i.test(estado) ? 'post exploración' : 'post screening')) + ')');
       enviados++;
     } catch(e) {}
   }
@@ -2921,7 +2949,7 @@ function previaDescartes_(perfilId) {
     const mail = String(d[i][21] || '').trim();
     if (!mail || mail === 'Sin dato' || mail.indexOf('@') === -1) continue;
     if (/descartado sin screening/i.test(estado)) sinScr++;
-    else if (/descartado post screening/i.test(estado)) postScr++;
+    else if (/descartado post screening|descartado post exploraci/i.test(estado)) postScr++;
   }
   return {
     sinScr: sinScr, postScr: postScr, puesto: puesto,
@@ -2987,13 +3015,14 @@ function armarComunicacion_(perfilId, fila, tipo, quien, entrevistadorElegido){
   const linkPorTipo = {
     'contacto-screening': cfg.link_screening,
     'contacto-competencias': cfg.link_competencias || cfg.link_screening,
+    'contacto-exploracion': cfg.link_competencias || cfg.link_screening,
     'contacto-empresa-virtual': cfg.link_empresa_virtual,
     'contacto-empresa-presencial': cfg.link_empresa_virtual
   };
   let link = linkPorTipo[tipo] || '';
   // Link de agenda de la persona que entrevista (su página de citas de Google Calendar; se carga en ⚙ Administración → Usuarios). Sin eso, el link de la búsqueda.
   let conQuien = '', aviso = '';
-  const etapaAg = tipo === 'contacto-screening' ? 'screening' : (tipo === 'contacto-competencias' ? 'competencias' : '');
+  const etapaAg = tipo === 'contacto-screening' ? 'screening' : (tipo === 'contacto-competencias' ? 'competencias' : (tipo === 'contacto-exploracion' ? 'exploracion' : ''));
   // «Automático»: se propone a quien tenga menos entrevistas en los próximos 14 días entre los que hacen esa etapa en esta búsqueda
   if (String(entrevistadorElegido || '') === 'auto') {
     entrevistadorElegido = '';
@@ -3030,6 +3059,7 @@ function armarComunicacion_(perfilId, fila, tipo, quien, entrevistadorElegido){
     } catch (e) { }
   }
 
+  if (/-exploracion$/.test(tipo)) asegurarPlantillasExploracion_();
   let texto = plantillaTexto_(tipo, perfilId).texto;
   if(!texto) return {ok:false, error:'No encontré la plantilla ' + tipo};
 
@@ -3042,7 +3072,7 @@ function armarComunicacion_(perfilId, fila, tipo, quien, entrevistadorElegido){
 
   let telWa = tel;
   if(telWa.indexOf('54') !== 0) telWa = '549' + telWa.replace(/^0+/,'');
-  var etiqueta = {'contacto-screening':'screening','contacto-competencias':'competencias','contacto-empresa-virtual':'empresa','contacto-empresa-presencial':'empresa','descarte-competencias':'descarte comp.','descarte-empresa':'descarte emp.'}[tipo] || '';
+  var etiqueta = {'contacto-screening':'screening','contacto-exploracion':'exploracion','contacto-competencias':'competencias','contacto-empresa-virtual':'empresa','contacto-empresa-presencial':'empresa','descarte-exploracion':'descarte expl.','descarte-competencias':'descarte comp.','descarte-empresa':'descarte emp.'}[tipo] || '';
   if(etiqueta){
     const etq = etiqueta + (conQuien ? ' (' + String(conQuien).split(' ')[0] + ')' : '');
     sh.getRange(fila, 41).setValue(etq + ' · ' + Utilities.formatDate(new Date(), 'GMT-3', 'dd/MM/yyyy'));
