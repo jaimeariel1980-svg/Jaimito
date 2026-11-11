@@ -151,7 +151,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--text)}
 .q-row[data-comun="1"] .q-num{background:var(--dorado);color:#5a3a00}
 .q-t{flex:1;min-width:0;background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:8px 10px;font-size:14px;font-weight:700;font-family:var(--font);color:var(--text);outline:none}
 .q-q{width:100%;background:var(--bg);border:1.5px solid var(--line);border-radius:8px;padding:10px 12px;font-size:15px;font-family:var(--font);color:var(--text);outline:none;resize:vertical;min-height:70px;line-height:1.5}
-.q-t:focus,.q-q:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(26,102,69,.08)}
+.q-t:focus,.q-q:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(26,102,69,.08)}.q-obs-l{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--mid);margin:10px 0 5px}
+.q-obs{width:100%;background:#FBFDF9;border:1.5px dashed var(--line);border-radius:8px;padding:10px 12px;font-size:15px;font-family:var(--font);color:var(--text);outline:none;resize:vertical;min-height:60px;line-height:1.5}
+.q-obs:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(26,102,69,.08)}
+.rec-box{border:1.5px solid var(--green);border-radius:12px;background:var(--glight);padding:16px 18px;margin-bottom:28px}
+.rec-box .section-label{margin-bottom:12px}
 .q-del{border:none;background:none;color:var(--coral);font-size:12px;font-weight:700;cursor:pointer;padding:4px 8px}
 .fx-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:-4px 0 18px}
 .fx-hint{font-size:12px;color:var(--mid)}
@@ -221,16 +225,18 @@ function qHtml(q, comun) {
   return `<div class="q-row"${comun ? ' data-comun="1"' : ''}>
     <div class="q-head"><span class="q-num"></span><input type="text" class="q-t" placeholder="Tema de la pregunta" value="${esc(q.titulo)}"><button type="button" class="q-del ia-ui" onclick="quitarPregunta(this)" title="Quitar esta pregunta">✕ Quitar</button></div>
     <textarea class="q-q" data-ia="1" placeholder="Pregunta para la entrevista...">${esc(q.pregunta)}</textarea>
+    <div class="q-obs-l">Observaciones</div>
+    <textarea class="q-obs" data-ia="1" placeholder="Lo que contó la persona. La IA lo completa con el audio; lo que escribas vos se mantiene.">${esc(q.obs || '')}</textarea>
   </div>`;
 }
 // los cuadros de la guía crecen con el texto (no se ve cortado)
 function autoAlto(t) { t.style.height = 'auto'; t.style.height = (t.scrollHeight + 2) + 'px'; }
-function ajustarAltos() { document.querySelectorAll('#app .q-q, #app .fx-ta').forEach(autoAlto); clearTimeout(window.__aa); window.__aa = setTimeout(() => document.querySelectorAll('#app .q-q, #app .fx-ta').forEach(autoAlto), 250); }
+function ajustarAltos() { document.querySelectorAll('#app .q-q, #app .q-obs, #app .fx-ta').forEach(autoAlto); clearTimeout(window.__aa); window.__aa = setTimeout(() => document.querySelectorAll('#app .q-q, #app .q-obs, #app .fx-ta').forEach(autoAlto), 250); }
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => setTimeout(ajustarAltos, 50));
 window.addEventListener('resize', () => ajustarAltos());
-document.addEventListener('input', e => { if (e.target.matches && e.target.matches('.q-q,.fx-ta')) autoAlto(e.target); });
+document.addEventListener('input', e => { if (e.target.matches && e.target.matches('.q-q,.q-obs,.fx-ta')) autoAlto(e.target); });
 function numerarPreguntas() { document.querySelectorAll('#qs .q-row').forEach((r, i) => { const n = r.querySelector('.q-num'); if (n) n.textContent = i + 1; }); ajustarAltos(); }
-function sinBarras() { document.querySelectorAll('#app .q-q, #app .fx-ta').forEach(t => { t.dataset.ia = '1'; }); }
+function sinBarras() { document.querySelectorAll('#app .q-q, #app .q-obs, #app .fx-ta').forEach(t => { t.dataset.ia = '1'; }); }
 function agregarPregunta(q) { document.getElementById('qs').insertAdjacentHTML('beforeend', qHtml(q || { titulo: '', pregunta: '' }, false)); numerarPreguntas(); }
 function quitarPregunta(b) { const r = b.closest('.q-row'); if (r) r.remove(); numerarPreguntas(); }
 
@@ -252,6 +258,11 @@ function render() {
   </div>
 </div>
 <div class="wrap">
+  <div class="rec-box ia-ui">
+    <div class="section-label"><span>Grabar la entrevista</span></div>
+    <div id="barRec" class="fx-bar" style="margin:0 0 8px"></div>
+    <div id="iaSt" style="font-size:13px;color:#555"></div>
+  </div>
   <div class="section">
     <div class="section-label"><span>Datos del candidato</span></div>
     <div class="grid-2" style="margin-bottom:14px">
@@ -279,9 +290,6 @@ function render() {
   <hr class="section-divider">
   <div class="section">
     <div class="section-label"><span>Registro de la entrevista</span></div>
-    <div id="barRec" class="fx-bar ia-ui"></div>
-    <div id="iaSt" class="ia-ui" style="font-size:13px;color:#555;margin:-8px 0 14px"></div>
-    <div class="field" style="margin-bottom:14px"><label>Evidencias relevantes</label><textarea id="r-evid" placeholder="Lo que contó, con ejemplos y resultados concretos..."></textarea></div>
     <div class="field" style="margin-bottom:14px"><label>Fortalezas diferenciales</label><textarea id="r-fort" placeholder="Lo que lo distingue para este puesto..."></textarea></div>
     <div class="field" style="margin-bottom:14px"><label>Aspectos a profundizar / alertas</label><textarea id="r-alert" placeholder="Dudas, contradicciones o puntos para seguir en competencias..."></textarea></div>
     <div class="field"><label>Conclusión y recomendación de avance</label><textarea id="r-concl" placeholder="Qué recomendás y por qué..."></textarea></div>
@@ -333,7 +341,7 @@ function render() {
 function cargarBarras() {
   const a = document.getElementById('barIA'), r = document.getElementById('barRec');
   if (a) a.innerHTML = '<button type="button" class="fx-btn prim" id="btn-ia" onclick="prepararConIA()">✨ Armar la guía con IA</button><span class="fx-hint">Solo si esta persona todavía no tiene guía. Las que ya se prepararon vienen cargadas.</span>';
-  if (r) r.innerHTML = '<button type="button" class="fx-btn prim" id="btn-rec" onclick="grabarEntrevista()">🎙 Grabar la entrevista y completar el registro</button><button type="button" class="fx-btn" onclick="recuperarGrabacion()">Recuperar la última grabación</button><span class="fx-hint">Se graba la videollamada, la IA transcribe y completa los cuatro cuadros. El audio no se guarda. Después revisás todo.</span>';
+  if (r) r.innerHTML = '<button type="button" class="fx-btn prim" id="btn-rec" onclick="grabarEntrevista()">🎙 Grabar la entrevista y completar el registro</button><button type="button" class="fx-btn" onclick="recuperarGrabacion()">Recuperar la última grabación</button><span class="fx-hint">Se graba la videollamada y la IA completa las observaciones de cada pregunta, las fortalezas, las alertas y la conclusión. Lo que escribas vos se mantiene. El audio no se guarda. No pone la letra.</span>';
 }
 const iaSt = t => { const e = document.getElementById('iaSt'); if (e) e.textContent = t || ''; };
 
@@ -353,13 +361,15 @@ function aplicarGuia(f, hold) {
   numerarPreguntas();
 }
 
+function filasConPregunta() { return [...document.querySelectorAll('#qs .q-row')].filter(r => r.querySelector('.q-q').value.trim()); }
 function guiaActualJSON() {
   const v = id => (document.getElementById(id)?.value || '').trim();
-  return JSON.stringify({ foco: v('f-foco'), validar: v('f-validar'), preguntas: [...document.querySelectorAll('#qs .q-row')].map(r => ({ titulo: r.querySelector('.q-t').value, pregunta: r.querySelector('.q-q').value })).filter(p => p.pregunta.trim()) });
+  return JSON.stringify({ foco: v('f-foco'), validar: v('f-validar'), preguntas: filasConPregunta().map(r => ({ titulo: r.querySelector('.q-t').value, pregunta: r.querySelector('.q-q').value })) });
 }
 
-function sumaEn(id, v) {
-  v = String(v || '').trim(); const e = document.getElementById(id);
+function sumaEn(id, v) { sumaEl(document.getElementById(id), v); }
+function sumaEl(e, v) {
+  v = String(v || '').trim();
   if (!e || !v) return;
   const c = String(e.value || '').trim();
   if (!c) e.value = v; else if (c.toLowerCase().indexOf(v.toLowerCase()) < 0) e.value = c + '\n\n' + v;
@@ -367,12 +377,15 @@ function sumaEn(id, v) {
 }
 
 function analizarTexto(texto, nombre) {
-  iaSt('Completando el registro con la entrevista…');
+  iaSt('Completando observaciones, fortalezas, alertas y conclusión…');
   google.script.run.withSuccessHandler(r => {
-    sumaEn('r-evid', r.evidencias); sumaEn('r-fort', r.fortalezas); sumaEn('r-alert', r.alertas); sumaEn('r-concl', r.conclusion);
-    iaSt('✓ Registro completado por la IA (lo que ya habías escrito se mantuvo y se le sumó). Revisá todo antes de guardar.');
-    document.getElementById('r-evid')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }).withFailureHandler(e => { iaSt(''); alert('No se pudo completar el registro: ' + (e && e.message ? e.message : e)); })
+    const filas = filasConPregunta();
+    (r.observaciones || []).forEach((o, i) => { if (filas[i]) sumaEl(filas[i].querySelector('.q-obs'), o); });
+    sumaEn('r-fort', r.fortalezas); sumaEn('r-alert', r.alertas); sumaEn('r-concl', r.conclusion);
+    ajustarAltos();
+    iaSt('✓ Completado por la IA: observaciones de cada pregunta, fortalezas, alertas y conclusión. Lo que habías escrito se mantuvo y se le sumó. Revisá todo antes de guardar.');
+    (filas[0] ? filas[0].querySelector('.q-obs') : document.getElementById('r-fort'))?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }).withFailureHandler(e => { iaSt(''); alert('No se pudo completar la entrevista: ' + (e && e.message ? e.message : e)); })
     .explAnalizar(PERFIL_ID, nombre, guiaActualJSON(), texto);
 }
 
@@ -518,7 +531,7 @@ function enviarExploracion() {
     if (el.tagName === 'TEXTAREA') {
       const div = clone.ownerDocument.createElement('div');
       div.textContent = el.value;
-      div.style.cssText = caja + 'white-space:pre-wrap;word-wrap:break-word;font-size:15px;line-height:1.5;min-height:' + (el.classList.contains('q-q') ? '40' : '70') + 'px';
+      div.style.cssText = caja + 'white-space:pre-wrap;word-wrap:break-word;font-size:15px;line-height:1.5;min-height:' + ((el.classList.contains('q-q') || el.classList.contains('q-obs')) ? '40' : '70') + 'px';
       dst.parentNode.replaceChild(div, dst);
     } else if (el.tagName === 'SELECT') {
       const div = clone.ownerDocument.createElement('div');
