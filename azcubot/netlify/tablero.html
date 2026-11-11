@@ -1190,6 +1190,8 @@ function cargarForm(id, nombre, tel, deVisita){
 }
 setTimeout(function(){_pintaVend();var n='';try{n=(localStorage.getItem('azcu_nombre')||'').trim();}catch(e){}if(!n)setTimeout(_yo,1500);},400);
 function satVend(l){
+  var yo='';try{yo=localStorage.getItem('azcu_nombre')||'';}catch(e){}
+  if(!/ariel|ana[ií]?lia/i.test(yo))return '';
   var m={};l.forEach(function(p){var v=String(p.vendedor||'Sin vendedor').trim()||'Sin vendedor',c=parseFloat(p.encuesta.cal);if(!c)return;(m[v]=m[v]||[]).push(c);});
   var r=Object.keys(m).map(function(v){var a=m[v];return {v:v,n:a.length,p:Math.round(a.reduce(function(x,y){return x+y;},0)/a.length*10)/10};}).sort(function(a,b){return b.p-a.p||b.n-a.n;});
   if(!r.length)return '';
