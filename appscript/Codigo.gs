@@ -2184,11 +2184,19 @@ function registrarInteraccion(codigo, datos){
   ];
   // visita a una propiedad nuestra que trae otra inmobiliaria: cols 12 (Inmobiliaria) y 16 (Colega)
   if(datos.inmob || datos.colega) filaSeg = filaSeg.concat([_limpiarTxt_(String(datos.inmob||'')).trim(), '', '', '', _limpiarTxt_(String(datos.colega||'')).trim()]);
+  var parecido='';
+  try{
+    var nq=String(datos.interesado||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim(), pq=nq.split(/\s+/)[0];
+    if(nq && nq!=='sin nombre' && seg.getLastRow()>1){
+      var vv=seg.getRange(2,1,seg.getLastRow()-1,4).getValues(), vistos={};
+      vv.forEach(function(r){ if(String(r[0]).trim()!==String(codigo).trim()) return; var o=String(r[3]).trim(), on=o.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); if(!on||on==='sin nombre'||on===nq||vistos[on]) return; if(on.split(/\s+/)[0]===pq || on.indexOf(nq)>=0 || nq.indexOf(on)>=0){ vistos[on]=1; parecido=parecido?parecido+', '+o:o; } });
+    }
+  }catch(e){}
   seg.appendRow(filaSeg);
   try{ if(!String(seg.getRange(1,11).getValue()).trim()) seg.getRange(1,11).setValue('Cargó'); }catch(e){}
   if(/Propuesta aceptada/i.test(String(datos.resultado||''))) _extAReserva_(codigo, datos.cargo);
   _invalidaNovedades_();
-  return sinAg ? {ok:true, sinAgendada:true} : {ok:true};
+  return sinAg ? {ok:true, sinAgendada:true, parecido:parecido} : {ok:true, parecido:parecido};
 }
 function editarInteraccion(filaSeg, datos){
   var ss=SpreadsheetApp.openById(MAESTRO_ID);
@@ -2447,10 +2455,11 @@ function obtenerImagenes(){
   return { logo:'', sello:'' };
 }
 
-var DOCSGEN_COLS_ = ['id','codigo','tipo','nombre','fecha','quien','version','pdf','pdfId','borradorId','anteriores'];
+var DOCSGEN_COLS_ = ['id','codigo','tipo','nombre','fecha','quien','version','pdf','pdfId','borradorId','anteriores','firmado'];
 function _hojaDocsGen_(){
   var ss=SpreadsheetApp.openById(MAESTRO_ID), sh=ss.getSheetByName('Docs_Generados');
   if(!sh){ sh=ss.insertSheet('Docs_Generados'); sh.getRange(1,1,1,DOCSGEN_COLS_.length).setValues([DOCSGEN_COLS_]).setFontWeight('bold'); sh.setFrozenRows(1); }
+  else if(sh.getLastColumn()<DOCSGEN_COLS_.length){ if(sh.getMaxColumns()<DOCSGEN_COLS_.length) sh.insertColumnsAfter(sh.getMaxColumns(),DOCSGEN_COLS_.length-sh.getMaxColumns()); sh.getRange(1,1,1,DOCSGEN_COLS_.length).setValues([DOCSGEN_COLS_]).setFontWeight('bold'); }
   return sh;
 }
 function _subcarpetaDocs_(nombre){
@@ -2471,12 +2480,12 @@ function guardarDocumentoPropiedad(codigo, tipo, nombreDoc, nombreArch, base64, 
       var r=sh.getRange(fila,1,1,DOCSGEN_COLS_.length).getValues()[0], ant=[]; try{ ant=JSON.parse(r[10]||'[]'); }catch(e){}
       if(r[7]) ant.push({v:+r[6]||1,f:r[4],u:r[7]});
       try{ DriveApp.getFileById(r[9]).setContent(String(borrador||'')); }catch(e){ r[9]=_subcarpetaDocs_('Borradores').createFile('borrador-'+idPrev+'.json',String(borrador||''),MimeType.PLAIN_TEXT).getId(); }
-      sh.getRange(fila,1,1,DOCSGEN_COLS_.length).setValues([[r[0],codigo,r[2],r[3],ahora,q,(+r[6]||1)+1,pdf.getUrl(),pdf.getId(),r[9],JSON.stringify(ant)]]);
+      sh.getRange(fila,1,1,DOCSGEN_COLS_.length).setValues([[r[0],codigo,r[2],r[3],ahora,q,(+r[6]||1)+1,pdf.getUrl(),pdf.getId(),r[9],JSON.stringify(ant),r[11]||'']]);
       _invalidaNovedades_();
       return {ok:true, id:r[0], version:(+r[6]||1)+1, url:pdf.getUrl()};
     }
     var id='DOC-'+Date.now(), b=_subcarpetaDocs_('Borradores').createFile('borrador-'+id+'.json',String(borrador||''),MimeType.PLAIN_TEXT);
-    sh.appendRow([id,codigo,String(tipo||''),String(nombreDoc||''),ahora,q,1,pdf.getUrl(),pdf.getId(),b.getId(),'[]']);
+    sh.appendRow([id,codigo,String(tipo||''),String(nombreDoc||''),ahora,q,1,pdf.getUrl(),pdf.getId(),b.getId(),'[]','']);
     try{ _audit_('docgen','📄 Generó «'+String(nombreDoc||'')+'»', (typeof azcuMapaDirs_==='function'?(azcuMapaDirs_()[codigo]||''):''), q); }catch(e){}
     _invalidaNovedades_();
     return {ok:true, id:id, version:1, url:pdf.getUrl()};
@@ -2484,7 +2493,25 @@ function guardarDocumentoPropiedad(codigo, tipo, nombreDoc, nombreArch, base64, 
 }
 function docsGeneradosDe(codigo){
   codigo=String(codigo||'').trim(); var sh=_hojaDocsGen_(); if(sh.getLastRow()<2) return [];
-  return sh.getRange(2,1,sh.getLastRow()-1,DOCSGEN_COLS_.length).getValues().filter(function(r){ return String(r[1]).trim()===codigo; }).map(function(r){ return {id:String(r[0]),tipo:String(r[2]),nombre:String(r[3]),fecha:String(r[4]),quien:String(r[5]),version:+r[6]||1,pdf:String(r[7])}; }).reverse();
+  return sh.getRange(2,1,sh.getLastRow()-1,DOCSGEN_COLS_.length).getValues().filter(function(r){ return String(r[1]).trim()===codigo; }).map(function(r){ return {id:String(r[0]),tipo:String(r[2]),nombre:String(r[3]),fecha:String(r[4]),quien:String(r[5]),version:+r[6]||1,pdf:String(r[7]),firmado:(function(){try{return r[11]?JSON.parse(r[11]):null;}catch(e){return null;}})()}; }).reverse();
+}
+function subirDocFirmado(id, codigo, nombreArch, base64, quien){
+  codigo=String(codigo||'').trim(); if(!base64) throw new Error('Falta el archivo');
+  if(String(base64).length>9000000) throw new Error('El archivo es demasiado grande (máx. 6 MB)');
+  var lock=LockService.getScriptLock(); lock.waitLock(20000);
+  try{
+    var sh=_hojaDocsGen_(), v=sh.getDataRange().getValues(), fila=-1;
+    for(var i=1;i<v.length;i++){ if(String(v[i][0])===String(id) && String(v[i][1]).trim()===codigo){ fila=i+1; break; } }
+    if(fila<0) throw new Error('No encuentro el documento');
+    var nom=String(nombreArch||'firmado.pdf'), mime=/\.pdf$/i.test(nom)?'application/pdf':(/\.png$/i.test(nom)?'image/png':'image/jpeg');
+    var f=_subcarpetaDocs_('Firmados').createFile(Utilities.newBlob(Utilities.base64Decode(base64),mime,nom));
+    try{ f.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); }catch(e){}
+    var ahora=Utilities.formatDate(new Date(),'GMT-3','dd/MM/yyyy HH:mm'), q=String(quien||'').trim().slice(0,40);
+    sh.getRange(fila,12).setValue(JSON.stringify({u:f.getUrl(),f:ahora,q:q}));
+    try{ _audit_('docgen','✍️ Subió firmado «'+String(v[fila-1][3])+'»', (typeof azcuMapaDirs_==='function'?(azcuMapaDirs_()[codigo]||''):''), q); }catch(e){}
+    _invalidaNovedades_();
+    return {ok:true, url:f.getUrl()};
+  } finally { lock.releaseLock(); }
 }
 function borradorDocGenerado(id){
   var sh=_hojaDocsGen_(), v=sh.getDataRange().getValues();

@@ -1400,7 +1400,7 @@ function azcuGet_(id){
   return s;
 }
 var AZCU_PUB_ = ['obtenerDatosOFallar','extraerDatosDNI','extraerDatosPropiedad','extraerDatosEscritura','clasificarPaginasLegajo','precargarDatos','guardarEncuesta'];
-var AZCU_TB_ = ['obtenerUrlDocumento','obtenerConsultasWS','marcarConsultaWS','marcarReporteEnviado','revisarTextoIA','obtenerPropiedadesDoc','obtenerImagenes','obtenerPropiedades','guardarDocumento','getDatos','guardarPropiedad','registrarInteraccion','editarInteraccion','unirInteresados','guardarDocumentoPropiedad','docsGeneradosDe','borradorDocGenerado','eliminarInteraccion','eliminarPropiedad','agendarVisita','registrarPropuesta','subirDocumento','bajarDocumento','novedadesTb','visitasTb','registrarVisitaExterna','cancelarVisita','papeleraTb','restaurarPapelera','borrarDocumento','obtenerEncuesta','enviarReportePropietario','generarInformeTokko','getAppUrl','getEncuestaUrl','probarAvisoTb','telegramEnlaceTb'];
+var AZCU_TB_ = ['obtenerUrlDocumento','obtenerConsultasWS','marcarConsultaWS','marcarReporteEnviado','revisarTextoIA','obtenerPropiedadesDoc','obtenerImagenes','obtenerPropiedades','guardarDocumento','getDatos','guardarPropiedad','registrarInteraccion','editarInteraccion','unirInteresados','guardarDocumentoPropiedad','docsGeneradosDe','subirDocFirmado','borradorDocGenerado','eliminarInteraccion','eliminarPropiedad','agendarVisita','registrarPropuesta','subirDocumento','bajarDocumento','novedadesTb','visitasTb','registrarVisitaExterna','cancelarVisita','papeleraTb','restaurarPapelera','borrarDocumento','obtenerEncuesta','enviarReportePropietario','generarInformeTokko','getAppUrl','getEncuestaUrl','probarAvisoTb','telegramEnlaceTb'];
 function azcuApi(e){
   var raw = (e && e.parameter && e.parameter.payload) || (e && e.postData && e.postData.contents) || '{}', req = {}, out;
   if(e && e.parameter && e.parameter.tg && /"update_id"/.test(raw)){ try{ azcuTgUpdate_(e.parameter.tg, JSON.parse(raw)); }catch(eT){ Logger.log('Telegram: '+eT.message); } return ContentService.createTextOutput('{"ok":true}').setMimeType(ContentService.MimeType.JSON); }
@@ -1764,7 +1764,7 @@ function azcuVisitasData_(atras, adelante){
   var hn = azcuHoy_(), ahora = Date.now(), dirs = azcuMapaDirs_(), sh = SpreadsheetApp.openById(MAESTRO_ID).getSheetByName('Seguimiento'), v = sh ? sh.getDataRange().getValues() : [], out = [], real = {}, i, k;
   for(i=1;i<v.length;i++){
     var id0 = String(v[i][0]).trim();
-    if(id0 && ((String(v[i][2]).trim()==='Visita' && String(v[i][5]).trim()!=='Visita agendada' && !/cancelad|reprogramad/i.test(String(v[i][5]))) || /^(Le interes[óo]|No le interes[óo]|Hizo una propuesta|Propuesta aceptada|Propuesta rechazada)$/i.test(String(v[i][5]).trim()))){ (real[id0] = real[id0]||[]).push({i:i, n:azcuNum_(v[i][1]), nom:azcuSinAc_(v[i][3]), tel:String(v[i][4]).replace(/\D/g,'')}); }
+    if(id0 && ((String(v[i][2]).trim()==='Visita' && String(v[i][5]).trim()!=='Visita agendada' && !/cancelad|reprogramad/i.test(String(v[i][5]))) || /^(Le interes[óo]|No le interes[óo]|Solo consulta|Hizo una propuesta|Propuesta aceptada|Propuesta rechazada)$/i.test(String(v[i][5]).trim()))){ (real[id0] = real[id0]||[]).push({i:i, n:azcuNum_(v[i][1]), nom:azcuSinAc_(v[i][3]), tel:String(v[i][4]).replace(/\D/g,'')}); }
   }
   for(i=1;i<v.length;i++){
     var r = v[i], id = String(r[0]).trim(), via = String(r[2]).trim(), res = String(r[5]).trim(), ag = res==='Visita agendada', can = res==='Visita cancelada' || res==='Visita reprogramada', rp = res==='Visita reprogramada', n, hh = '';
@@ -1778,7 +1778,7 @@ function azcuVisitasData_(atras, adelante){
     var dd = azcuDif_(n, hn); if(dd<-atras || dd>adelante) continue;
     var nom = azcuSinAc_(r[3]), tel = String(r[4]).replace(/\D/g,''), hecho = false, ext = /^EXT-/.test(id), e = 'r';
     if(ag){
-      (real[id]||[]).forEach(function(x){ if(hecho || x.i===i || (x.n!==null && x.n<n)) return; if((!nom && !tel) || (nom && x.nom===nom) || (tel && x.tel===tel)) hecho = true; });
+      (real[id]||[]).forEach(function(x){ if(hecho || x.i===i || (x.n!==null && x.n<n)) return; if((!nom && !tel) || (nom && x.nom && (x.nom===nom || x.nom.indexOf(nom)>=0 || nom.indexOf(x.nom)>=0 || x.nom.split(' ')[0]===nom.split(' ')[0])) || (tel && x.tel===tel)) hecho = true; });
       if(hecho) continue;
       e = new Date(azcuIsoN_(n)+'T'+(hh||'23:59')+':00-03:00').getTime() >= ahora ? 'a' : 'p';
     }
