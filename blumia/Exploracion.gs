@@ -75,10 +75,11 @@ function explSemilla_(perfilId, nombre) {
 // lo que necesita la pantalla además de getDatosPerfil: link del CV, pregunta común y qué validar (de ⚙ Configurar → Datos)
 function explDatos_(perfilId, nombre) {
   const cfg = getConfig(perfilObligatorio_(perfilId));
-  const out = { activa: explActiva_(cfg), comun: String(cfg.expl_pregunta_comun || '').trim(), validar: String(cfg.expl_validar || '').trim(), cv: '', formacion: '', zona: '', scr: '', comp: '', notaScr: '', notaComp: '', semilla: null };
+  const out = { activa: explActiva_(cfg), comun: String(cfg.expl_pregunta_comun || '').trim(), validar: String(cfg.expl_validar || '').trim(), cv: '', formacion: '', zona: '', scr: '', comp: '', notaScr: '', notaComp: '', semilla: null, encontrado: false };
   try {
     const sh = getSheet(cfg), f = explBuscarFila_(sh, nombre);
     if (f) {
+      out.encontrado = true;
       const id = cvIdDeFila_(sh, f);
       if (id) out.cv = 'https://drive.google.com/file/d/' + id + '/view';
       out.formacion = String(sh.getRange(f, 23).getValue() || '');
