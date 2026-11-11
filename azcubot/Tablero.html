@@ -768,7 +768,7 @@ function render(){
   });
   var _satTotal=_encs.length;
   var _satAvg=_sat===null?'—':_sat+'/10';
-  document.getElementById('bars2').innerHTML=_encs.length===0?'<div class="vacio"><b>Todavía no hay encuestas</b>Cuando un cliente conteste la encuesta, acá vas a ver la satisfacción.</div>':donutPanel(_satSegs,_satTotal===0?1:_satTotal,'encuestas',_satAvg);
+  document.getElementById('bars2').innerHTML=_encs.length===0?'<div class="vacio"><b>Todavía no hay encuestas</b>Cuando un cliente conteste la encuesta, acá vas a ver la satisfacción.</div>':donutPanel(_satSegs,_satTotal===0?1:_satTotal,'encuestas',_satAvg)+satVend(_encs);
   const pb={"Completa":0,"Parcial":0,"Inicial":0};
   f.forEach(p=>{const e=papEstado(p);if(e==='ok')pb["Completa"]++;else if(e==='med')pb["Parcial"]++;else if(e==='no')pb["Inicial"]++;});
   const cp3={"Completa":"var(--verde)","Parcial":"var(--amarillo)","Inicial":"var(--rojo)"},rg3={"Completa":"100%","Parcial":"50 a 99%","Inicial":"menos de 50%"};
@@ -1101,6 +1101,13 @@ function cargarForm(id, nombre, tel, deVisita){
   document.getElementById('ov2').classList.add('on');
 }
 setTimeout(function(){_pintaVend();var n='';try{n=(localStorage.getItem('azcu_nombre')||'').trim();}catch(e){}if(!n)setTimeout(_yo,1500);},400);
+function satVend(l){
+  var m={};l.forEach(function(p){var v=String(p.vendedor||'Sin vendedor').trim()||'Sin vendedor',c=parseFloat(p.encuesta.cal);if(!c)return;(m[v]=m[v]||[]).push(c);});
+  var r=Object.keys(m).map(function(v){var a=m[v];return {v:v,n:a.length,p:Math.round(a.reduce(function(x,y){return x+y;},0)/a.length*10)/10};}).sort(function(a,b){return b.p-a.p||b.n-a.n;});
+  if(!r.length)return '';
+  return '<div style="margin-top:14px"><div style="font-size:12px;font-weight:700;color:var(--gris);margin-bottom:6px;text-align:center">PUNTAJE POR VENDEDOR</div>'+r.map(function(x){var c=x.p>=8?'var(--verde)':(x.p>=5?'var(--amarillo)':'var(--rojo)');return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border:1px solid var(--linea);border-radius:8px;margin-bottom:5px;font-size:13px"><span style="flex:1;font-weight:600">'+esc_(x.v)+'</span><span style="color:var(--gris);font-size:11.5px">'+x.n+(x.n===1?' encuesta':' encuestas')+'</span><b style="color:'+c+'">'+x.p+'/10</b></div>';}).join('')+'</div>';
+}
+function esc_(x){return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');}
 function _vendNombres(){var s={};try{var n=(localStorage.getItem('azcu_nombre')||'').trim();if(n)s[n]=1;}catch(e){}(DATA||[]).forEach(x=>{if(x.vendedor)s[x.vendedor]=1;});return Object.keys(s);}
 function avisosTelegram(){var n=_yo();if(!n)return;google.script.run.withSuccessHandler(function(r){if(r&&r.ok&&r.url){alert(r.msg);window.open(r.url,'_blank');}else alert((r&&r.msg)||'Sin respuesta');}).withFailureHandler(function(e){alert('Error: '+(e&&e.message?e.message:e));}).telegramEnlaceTb(n);}
 var SOPORTE_WA='',SOPORTE_MAIL='azcuenagaventas@gmail.com';
@@ -1891,7 +1898,7 @@ function novBadge(){
   if(b){b.textContent=n>99?'99+':n;b.style.display=n?'':'none';}
   document.title=(n?'('+n+') ':'')+document.title.replace(/^\(\d+\+?\)\s*/,'');
 }
-function novLoad(){google.script.run.withSuccessHandler(function(d){NOV=(d&&d.items)||[];novBadge();try{var cel=+localStorage.getItem('tbcel')||0,yo=(localStorage.getItem('azcu_nombre')||'').trim().toLowerCase();if(!cel){localStorage.setItem('tbcel',String(Date.now()));}else{var nv=NOV.filter(function(x){return x.ms>cel&&/→ Vendida/.test(x.t||'')&&String(x.q||'').trim().toLowerCase()!==yo;});if(nv.length){localStorage.setItem('tbcel',String(Math.max.apply(null,NOV.map(function(x){return x.ms;}))));festejar('🎉 ¡Se vendió '+(nv[0].dir||'una propiedad')+'!');}else{var ne=NOV.filter(function(x){return x.ms>cel&&/Encuesta respondida: [45]\/5/.test(x.t||'');});if(ne.length){localStorage.setItem('tbcel',String(Math.max.apply(null,NOV.map(function(x){return x.ms;}))));festejar('🎉 ¡Encuesta '+(ne[0].t.match(/[45]\/5/)||[''])[0]+' en '+(ne[0].dir||'una propiedad')+'!');}else{localStorage.setItem('tbcel',String(Math.max(cel,Date.now()-1000)));}}}}catch(e){}}).withFailureHandler(function(){}).novedadesTb(90);}
+function novLoad(){google.script.run.withSuccessHandler(function(d){NOV=(d&&d.items)||[];novBadge();try{var cel=+localStorage.getItem('tbcel')||0,yo=(localStorage.getItem('azcu_nombre')||'').trim().toLowerCase();if(!cel){localStorage.setItem('tbcel',String(Date.now()));}else{var nv=NOV.filter(function(x){return x.ms>cel&&/→ Vendida/.test(x.t||'')&&String(x.q||'').trim().toLowerCase()!==yo;});if(nv.length){localStorage.setItem('tbcel',String(Math.max.apply(null,NOV.map(function(x){return x.ms;}))));festejar('🎉 ¡Se vendió '+(nv[0].dir||'una propiedad')+'!');}else{var ne=NOV.filter(function(x){return x.ms>cel&&/Encuesta respondida: (8|9|10)\/10/.test(x.t||'');});if(ne.length){localStorage.setItem('tbcel',String(Math.max.apply(null,NOV.map(function(x){return x.ms;}))));festejar('🎉 ¡Encuesta '+(ne[0].t.match(/\d+\/10/)||[''])[0]+' en '+(ne[0].dir||'una propiedad')+'!');}else{localStorage.setItem('tbcel',String(Math.max(cel,Date.now()-1000)));}}}}catch(e){}}).withFailureHandler(function(){}).novedadesTb(90);}
 function novAbrir(hist){
   hist=hist===true;
   var seen=_novSeen(),last='',h='',hoy=new Date().toDateString(),ayer=new Date(Date.now()-864e5).toDateString();
