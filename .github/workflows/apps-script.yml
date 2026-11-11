@@ -17,6 +17,7 @@ on:
     paths: ['pami/**', 'appscript/**', 'liquidaciones/**', 'caja-obra/**', 'blumia/**']
 permissions:
   contents: write
+  issues: write
 concurrency: apps-script
 jobs:
   # Decide qué proyectos tocar: solo esos arrancan trabajo (cada trabajo cuenta como mínimo 1 minuto de Actions aunque no haga nada)
@@ -142,3 +143,16 @@ jobs:
           DEP="${{ vars[matrix.depvar] || matrix.depid }}"
           if [ -n "$DEP" ]; then clasp deploy -i "$DEP" -d "GitHub ${{ github.sha }}"; else echo "sin deployment (proyecto con menú)"; fi
           if [ "$MARCA" != 1 ]; then echo "::error::El deploy se hizo, pero GitHub no dejó marcar lo publicado (rama publicado-${{ matrix.id }}). Avisar para marcarla a mano."; exit 1; fi
+      # Si algo falla se abre un issue: GitHub le manda un mail al dueño del repo (así nadie se entera tarde de que la web quedó con la versión anterior)
+      - name: Avisar por mail si falló
+        if: failure() && steps.dec.outputs.go == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create --repo "${{ github.repository }}" \
+            --title "⚠ Falló la publicación de ${{ matrix.id }}" \
+            --body "No se publicó ${{ matrix.id }} (commit ${{ github.sha }}). La web puede haber quedado con la versión anterior.
+
+          Qué mirar primero: si el error dice «Script has reached the limit of 200 versions», hay que borrar versiones viejas en el Historial del proyecto de Apps Script y volver a correr el workflow Apps Script con acción «publicar».
+
+          Detalle: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" || echo "No se pudo abrir el issue de aviso"
