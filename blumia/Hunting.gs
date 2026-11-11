@@ -124,7 +124,7 @@ function huntingAgregar_(perfilId, personasJson, quien) {
       if ((url && urls[url.toLowerCase()]) || claves[k]) { repetidos++; return; }
       if (url) urls[url.toLowerCase()] = 1; claves[k] = 1;
       const pr = String(p && p.prioridad || '').toUpperCase() === 'B' ? 'B' : 'A';
-      filas.push(['h' + Utilities.getUuid().replace(/-/g, '').slice(0, 8), perfilId, nombre, cut(p && p.cargo, 120), empresa, url, pr, 'Identificado', 0, huntHoy_(), '', huntHoy_(), '', quien || '', cut(p && p.notas, 500), '', '', 0, '', '']);
+      filas.push(['h' + Utilities.getUuid().replace(/-/g, '').slice(0, 8), perfilId, nombre, cut(p && p.cargo, 120), empresa, url, pr, 'Identificado', 0, huntHoy_(), '', huntHoy_(), '', quien || '', cut(p && p.notas, 500), '', '', 0, '', '', '']);
     });
     if (filas.length) {
       const ini = Math.max(sh.getLastRow(), 1) + 1;
@@ -377,7 +377,7 @@ function huntingCargarPdf_(perfilId, b64, nombreArchivo, quien) {
       return { id: ex.id, nombre: ex.nombre, existente: true, yaEnTablero: yaEnTablero, nota: datos.nivel_ajuste || '' };
     }
     const id = 'h' + Utilities.getUuid().replace(/-/g, '').slice(0, 8);
-    const fila = [id, perfilId, cut(datos.nombre, 90), cut(datos.cargo, 120), cut(datos.empresa, 90), url, 'A', 'Identificado', 0, huntHoy_(), '', huntHoy_(), '', quien || '', '', '', '', 0, file.getUrl(), json];
+    const fila = [id, perfilId, cut(datos.nombre, 90), cut(datos.cargo, 120), cut(datos.empresa, 90), url, 'A', 'Identificado', 0, huntHoy_(), '', huntHoy_(), '', quien || '', '', '', '', 0, file.getUrl(), json, ''];
     const ini = Math.max(sh.getLastRow(), 1) + 1;
     sh.getRange(ini, 1, 1, HUNT_COLS_.length).setNumberFormat('@').setValues([fila]);
     huntHist_(perfilId, { nombre: fila[2] }, 'Identificado (PDF de LinkedIn)' + (fila[4] ? ' · ' + fila[4] : ''), quien);

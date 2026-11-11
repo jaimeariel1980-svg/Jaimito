@@ -43,21 +43,6 @@
 .hu-box .hu-cnt{font-size:11px;color:#888;text-align:right}
 .hu-box .hu-tp{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
 .hu-box .hu-tp button{padding:6px 12px;font-size:12.5px}.hu-box .hu-tp button.on{background:#0F3F27;color:#fff;border-color:#0F3F27}
-#huntPage .hu-vista{display:inline-flex;border:1px solid #0F3F27;border-radius:8px;overflow:hidden}
-#huntPage .hu-vista button{height:40px;padding:0 16px;border:0;background:#fff;color:#0F3F27;font-weight:700;font-size:13px;font-family:inherit;cursor:pointer}
-#huntPage .hu-vista button.on{background:#0F3F27;color:#fff}
-#huntPage .he-fil{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 12px}
-#huntPage .he-fil select,#huntPage .he-fil input[type=text]{height:36px;border:1px solid #ccc;border-radius:8px;padding:0 10px;font:13px inherit;font-family:inherit;background:#fff}
-#huntPage .he-fil label{font-size:13px;font-weight:600;color:#555;display:inline-flex;gap:5px;align-items:center}
-#huntPage .he-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:10px}
-#huntPage .he-card{background:#fff;border:1px solid #DDE5DA;border-left:5px solid #0F3F27;border-radius:10px;padding:11px 12px}
-#huntPage .he-card.Media{border-left-color:#E0A800}#huntPage .he-card.Baja,#huntPage .he-card.sin{border-left-color:#B9C2B5}
-#huntPage .he-card.rev{background:#F3F8F1}#huntPage .he-card.desc{opacity:.55}
-#huntPage .he-n{font-weight:800;font-size:15px;line-height:1.25;display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap}
-#huntPage .he-n span{flex:1 1 auto}
-#huntPage .he-tag{font-weight:800;font-size:10px;line-height:1;border-radius:6px;padding:3px 6px;background:#FBE3E1;color:#B91C1C}
-#huntPage .he-ref{font-weight:700;font-size:11px;color:#7A5A00;background:#FDF1C4;border-radius:6px;padding:3px 7px;display:inline-block;margin-top:5px}
-#huntPage .he-card select{height:32px;border:1px solid #ccc;border-radius:8px;padding:0 8px;font:12.5px inherit;font-family:inherit;margin-top:8px;background:#fff}
 @media(max-width:640px){#huntPage{padding:10px 10px 50px}#huntPage .hu-kpis{grid-template-columns:repeat(2,1fr)}#huntPage .hu-col{flex:0 0 84%;max-height:none}.hu-box .hu-g2{grid-template-columns:1fr}}
 </style>
 <script>
@@ -67,8 +52,6 @@
   var DESC={'Identificado':'Mapeados, todavía sin contactar','Contactado':'Mensaje enviado, esperando respuesta','Respondió':'Hay conversación','Interesado':'Quiere avanzar: pasala a la búsqueda','En proceso':'Ya están en el tablero de candidatos'};
   var COLS4=[['Por contactar',['Identificado'],'Cargados, todavía sin contactar'],['Contactado',['Contactado','Respondió','Interesado'],'Ya les escribiste'],['Descartado',CERR,'No siguen en el proceso'],['En la búsqueda',['En proceso'],'Ya están en el tablero de candidatos']];
   var D={items:[],stats:null,hoy:''},abierta=false,cargando=false;
-  var vista='personas',E={items:[],stats:null},F={prio:'',cat:'',est:'',q:'',comp:false},ESTE=['Sin revisar','En búsqueda','Revisada','Descartada'];
-  var CARGOS_DEF='("gerente comercial" OR "business development" OR "desarrollo de negocios" OR "key account" OR "account manager" OR "sales director" OR "director comercial" OR "client partner")';
   function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
   function quien(){try{return quienSoy();}catch(e){return '';}}
   function run(fn,args,ok,ko){var r=google.script.run.withSuccessHandler(ok||function(){}).withFailureHandler(ko||function(e){aviso((e&&e.message)||String(e));});r[fn].apply(r,args);}
@@ -108,12 +91,10 @@
       (o.nota?'<span class="hu-seg" title="Nota que le puso la IA al leer su PDF">Nota IA: '+esc(o.nota)+'</span> ':'')+(o.notas?'<div class="hu-s" style="color:#888">'+esc(o.notas)+'</div>':'')+
       ((o.estado==='Respondió'||o.estado==='Interesado')?'<span class="hu-seg">'+esc(o.estado)+'</span> ':'')+(desc?'<div class="hu-s" style="font-weight:700;color:#8a4b2a">'+esc(lbl(o.estado))+'</div>'+(o.motivo?'<div class="hu-s" style="color:#555;white-space:pre-wrap">'+esc(o.motivo)+'</div>':''):'')+(o.estado==='En proceso'&&o.candidato?'<div class="hu-s" style="color:#0F3F27;font-weight:700">En el tablero como «'+esc(o.candidato)+'»</div>':'')+seg+'<div class="hu-acc">'+acc+'</div></div>';
   }
-  function vistaBtns(){return '<div class="hu-vista"><button data-a="vista:personas" class="'+(vista==='personas'?'on':'')+'">Personas</button><button data-a="vista:empresas" class="'+(vista==='empresas'?'on':'')+'">Empresas objetivo</button></div>';}
   function pintar(){
-    if(vista==='empresas'){pintarEmpresas();return;}
     var p=document.getElementById('huntPage');if(!p)return;
     var it=D.items,s=D.stats||{identificados:0,contactados:0,respondieron:0,interesados:0,enProceso:0,vencidos:0};
-    var x='<div class="hu-top"><h2>🎯 Hunting</h2>'+vistaBtns()+'<button class="hu-btn p" data-a="pdfs">📄 Subir PDFs de LinkedIn</button><button class="hu-btn" data-a="mailm">✉ Mensaje modelo</button><button class="hu-btn" data-a="mas">Más ▾</button></div>';
+    var x='<div class="hu-top"><h2>🎯 Hunting</h2><button class="hu-btn p" data-a="pdfs">📄 Subir PDFs de LinkedIn</button><button class="hu-btn" data-a="mailm">✉ Mensaje modelo</button><button class="hu-btn" data-a="mas">Más ▾</button></div>';
     x+='<div class="hu-help"><b>Cómo se trabaja.</b> 1) En LinkedIn, <i>Más → Guardar como PDF</i> del perfil y subilo con <b>«Subir PDFs de LinkedIn»</b> (varios juntos): la IA lo lee y la persona queda en <b>Por contactar</b>, con su PDF guardado. 2) Cuando le escribís, tocá <b>«Contactado»</b>. 3) Si no sigue, <b>«Descartar»</b> y elegís el motivo. 4) Si avanza, <b>«A la búsqueda»</b> la manda al tablero de candidatos con «Llegó por: Hunting (LinkedIn)». Todo queda registrado con fecha y quién lo hizo.</div>';
     x+=kpis();
     x+='<div class="hu-board">'+COLS4.map(function(c){
@@ -234,65 +215,6 @@
     },function(e){bg.remove();aviso((e&&e.message)||String(e));});
   }
 
-  /* ---------- empresas objetivo ---------- */
-  function cargosKey(){return 'bl_hunt_cargos_'+PERFIL;}
-  function cargos(){try{return localStorage.getItem(cargosKey())||CARGOS_DEF;}catch(e){return CARGOS_DEF;}}
-  function urlLinkedin(e){return 'https://www.linkedin.com/search/results/people/?keywords='+encodeURIComponent(cargos()+' "'+e.empresa+'"')+'&origin=GLOBAL_SEARCH_HEADER';}
-  function cargarEmpresas(cb){
-    run('huntingEmpresasListar',[PERFIL],function(r){E=r;if(vista==='empresas')pintarEmpresas();if(cb)cb();},function(e){var p=document.getElementById('huntPage');if(p)p.innerHTML='<div class="hu-help" style="color:#B91C1C">'+esc((e&&e.message)||e)+'</div>';});
-  }
-  function pintarEmpresas(){
-    var p=document.getElementById('huntPage');if(!p)return;
-    var s=E.stats||{total:0,alta:0,altaRevisadas:0,enBusqueda:0,revisadas:0,personas:0,conPersonas:0};
-    var cats={};(E.items||[]).forEach(function(e){if(e.categoria)cats[e.categoria]=1;});
-    var f=function(n,l){return '<div class="rs-kpi"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>';};
-    var x='<div class="hu-top"><h2>🎯 Hunting</h2>'+vistaBtns()+'<button class="hu-btn p" data-a="epegar">+ Pegar empresas</button><button class="hu-btn" data-a="ecargos">⚙ Cargos a buscar</button><button class="hu-btn" data-a="perfil">📋 Perfil del puesto</button></div>';
-    if(!s.total){
-      x+='<div class="hu-help"><b>Todavía no hay empresas cargadas.</b> Abrí el Excel del hunting, copiá la tabla de «Servicios B2B» <b>con la fila de encabezados</b> y tocá <b>«+ Pegar empresas»</b>. Las empresas quedan ordenadas por prioridad y de cada una podés abrir la búsqueda en LinkedIn ya armada.</div>';
-      p.innerHTML=x;return;
-    }
-    x+='<div class="hu-help"><b>Cómo se trabaja.</b> Empezá por las de prioridad <b>Alta</b>. En cada empresa tocá <b>«🔎 Buscar en LinkedIn»</b>, mirá los perfiles de gerentes comerciales y de desarrollo de negocios, y de los que sirvan subí el PDF en la pestaña <i>Personas</i> (o usá <b>«+ Persona»</b>). Cuando terminás con una empresa, marcala <b>Revisada</b>. En estudios jurídicos y auditoras la venta la hace el socio: sirven más para pedir referencias.</div>';
-    x+='<div class="hu-kpis" style="grid-template-columns:repeat(5,1fr)">'+f(s.total,'Empresas')+f(s.altaRevisadas+' de '+s.alta,'Prioridad alta revisadas')+f(s.enBusqueda,'En búsqueda')+f(s.personas,'Personas cargadas')+f(s.conPersonas,'Empresas con personas')+'</div>';
-    x+='<div class="he-fil"><select data-e="fprio"><option value="">Todas las prioridades</option><option'+(F.prio==='Alta'?' selected':'')+'>Alta</option><option'+(F.prio==='Media'?' selected':'')+'>Media</option><option'+(F.prio==='Baja'?' selected':'')+'>Baja</option></select>'+
-      '<select data-e="fcat"><option value="">Todas las categorías</option>'+Object.keys(cats).sort().map(function(c){return '<option'+(F.cat===c?' selected':'')+'>'+esc(c)+'</option>';}).join('')+'</select>'+
-      '<select data-e="fest"><option value="">Todos los estados</option>'+ESTE.map(function(c){return '<option'+(F.est===c?' selected':'')+'>'+c+'</option>';}).join('')+'</select>'+
-      '<input type="text" data-e="fq" placeholder="Buscar empresa…" value="'+esc(F.q)+'"><label><input type="checkbox" data-e="fcomp"'+(F.comp?' checked':'')+'> Solo competidoras</label></div>';
-    x+='<div class="he-grid" id="he-list"></div>';
-    p.innerHTML=x;pintarListaE();
-  }
-  function pintarListaE(){
-    var l=document.getElementById('he-list');if(!l)return;
-    var OP={Alta:0,Media:1,Baja:2},q=F.q.toLowerCase();
-    var it=(E.items||[]).filter(function(e){return (!F.prio||e.prioridad===F.prio)&&(!F.cat||e.categoria===F.cat)&&(!F.est||e.estado===F.est)&&(!F.comp||e.competidora==='Sí')&&(!q||(e.empresa+' '+e.categoria).toLowerCase().indexOf(q)>=0);});
-    it.sort(function(a,b){var pa=OP[a.prioridad]==null?3:OP[a.prioridad],pb=OP[b.prioridad]==null?3:OP[b.prioridad];if(pa!==pb)return pa-pb;var ea=ESTE.indexOf(a.estado),eb=ESTE.indexOf(b.estado);if(ea!==eb)return ea-eb;if((a.competidora==='Sí')!==(b.competidora==='Sí'))return a.competidora==='Sí'?-1:1;return a.empresa<b.empresa?-1:1;});
-    if(!it.length){l.innerHTML='<div class="hu-vac" style="grid-column:1/-1">Ninguna empresa con esos filtros.</div>';return;}
-    l.innerHTML=it.map(function(e){
-      var ref=/legal|auditor/i.test(e.categoria||'')?'<span class="he-ref">Sirve más para referencias</span>':'';
-      return '<div class="he-card '+esc(e.prioridad||'sin')+(e.estado==='Revisada'?' rev':'')+(e.estado==='Descartada'?' desc':'')+'"><div class="he-n"><span>'+esc(e.empresa)+'</span>'+(e.prioridad?'<i class="hu-pr" style="background:'+(e.prioridad==='Alta'?'#0F3F27':e.prioridad==='Media'?'#E0A800':'#9aa59a')+'">'+esc(e.prioridad)+'</i>':'')+(e.competidora==='Sí'?'<i class="he-tag">COMPETIDORA</i>':'')+'</div>'+
-        (e.categoria?'<div class="hu-s">'+esc(e.categoria)+(e.sectores?' · '+esc(e.sectores):'')+'</div>':'')+(e.nota?'<div class="hu-s" style="color:#888">'+esc(e.nota)+'</div>':'')+ref+
-        '<div class="hu-s" style="margin-top:6px;font-weight:700;color:#0F3F27">'+(e.personas?'👤 '+e.personas+' persona'+(e.personas===1?'':'s')+(e.contactadas?' · '+e.contactadas+' contactada'+(e.contactadas===1?'':'s'):''):'Sin personas cargadas')+'</div>'+
-        '<select data-e="estado" data-id="'+esc(e.id)+'">'+ESTE.map(function(s){return '<option'+(e.estado===s?' selected':'')+'>'+s+'</option>';}).join('')+'</select>'+
-        '<div class="hu-acc"><button class="hu-btn s p" data-a="ebusq" data-id="'+esc(e.id)+'">🔎 Buscar en LinkedIn</button><button class="hu-btn s" data-a="eper" data-id="'+esc(e.id)+'">+ Persona</button><button class="hu-btn s" data-a="emenu" data-id="'+esc(e.id)+'">⋯</button></div></div>';
-    }).join('');
-  }
-  function porIdE(id){var a=E.items||[];for(var i=0;i<a.length;i++)if(a[i].id===id)return a[i];return null;}
-  function pegarEmpresas(){
-    var bg=modal('<h3>Pegar empresas</h3><p>En el Excel seleccioná la tabla <b>con la fila de encabezados</b> (Empresa, Categoría, Prioridad, Competidor…, Nota), copiá y pegá acá. Las empresas repetidas se ignoran. Si la tabla trae «Candidato identificado», «Cargo actual» y «Perfil de LinkedIn» con datos, esas personas también pasan a la lista.</p><textarea id="pe-t" style="min-height:200px" placeholder="Empresa\tCategoría\t…"></textarea><div class="hu-row"><button id="pe-x">Cancelar</button><button class="go" id="pe-g">Cargar</button></div>');
-    bg.querySelector('#pe-x').onclick=function(){bg.remove();};
-    bg.querySelector('#pe-g').onclick=function(){var b=this;b.disabled=true;b.textContent='Cargando…';
-      run('huntingEmpresasAgregar',[PERFIL,bg.querySelector('#pe-t').value,quien()],function(r){bg.remove();aviso('Se cargaron '+r.agregadas+' empresa'+(r.agregadas===1?'':'s')+(r.repetidas?' ('+r.repetidas+' ya estaban)':'')+(r.personas?' y '+r.personas+' persona'+(r.personas===1?'':'s'):'')+'.');cargarEmpresas();if(r.personas)cargar();},function(e){b.disabled=false;b.textContent='Cargar';aviso((e&&e.message)||String(e));});};
-  }
-  function cargosModal(){
-    var bg=modal('<h3>Cargos a buscar</h3><p>Es el texto que se manda a LinkedIn junto con el nombre de la empresa. Podés usar OR y comillas. Se guarda en este navegador.</p><textarea id="cg-t" style="min-height:110px">'+esc(cargos())+'</textarea><div class="hu-row"><button id="cg-d">Volver al original</button><button id="cg-x">Cancelar</button><button class="go" id="cg-g">Guardar</button></div>');
-    bg.querySelector('#cg-x').onclick=function(){bg.remove();};
-    bg.querySelector('#cg-d').onclick=function(){bg.querySelector('#cg-t').value=CARGOS_DEF;};
-    bg.querySelector('#cg-g').onclick=function(){try{localStorage.setItem(cargosKey(),bg.querySelector('#cg-t').value.trim()||CARGOS_DEF);}catch(e){}bg.remove();};
-  }
-  function empresaMenu(e){
-    var bg=modal('<h3>'+esc(e.empresa)+'</h3><div class="hu-row" style="justify-content:flex-start;flex-direction:column;align-items:stretch"><button data-a="del" style="border-color:#B91C1C;color:#B91C1C">Borrar de la lista</button><button data-a="x">Cerrar</button></div>');
-    bg.addEventListener('click',function(ev){var a=ev.target.getAttribute&&ev.target.getAttribute('data-a');if(!a)return;bg.remove();
-      if(a==='del')confirma('¿Borrar «'+e.empresa+'» de las empresas objetivo? Las personas cargadas de esa empresa no se tocan.',function(){run('huntingEmpresaBorrar',[PERFIL,e.id,quien()],function(){cargarEmpresas();});},{si:'Borrar',peligro:true});});
-  }
   function pasar(o){
     confirma('¿Pasar a '+o.nombre+' a la búsqueda? Entra al tablero de candidatos con «Llegó por: Hunting (LinkedIn)», con los datos que ya leyó la IA.',function(){
       run('huntingPasar',[PERFIL,o.id,quien()],function(r){
@@ -352,7 +274,7 @@
       if(p)p.style.display='block';
       ['rsTabR','rsTabT'].forEach(function(i){var b=document.getElementById(i);if(b)b.className='rs-tab';});
       var h=document.getElementById('rsTabH');if(h)h.className='rs-tab on';
-      abierta=true;cargar();if(vista==='empresas')cargarEmpresas();
+      abierta=true;cargar();
     }else{
       abierta=false;if(p)p.style.display='none';
       var h2=document.getElementById('rsTabH');if(h2)h2.className='rs-tab';
@@ -385,22 +307,10 @@
   page.addEventListener('click',function(e){
     var b=e.target.closest('[data-a]');if(!b)return;
     var a=b.getAttribute('data-a'),id=b.getAttribute('data-id'),o=id?porId(id):null;
-    var oe=id?porIdE(id):null;
-    if(a.indexOf('vista:')===0){vista=a.slice(6);if(vista==='empresas'){if((E.items||[]).length)pintarEmpresas();cargarEmpresas();}else pintar();return;}
-    if(a==='epegar'){pegarEmpresas();return;}if(a==='ecargos'){cargosModal();return;}
-    if(a==='ebusq'&&oe){window.open(urlLinkedin(oe),'_blank');if(oe.estado==='Sin revisar'){run('huntingEmpresaEstado',[PERFIL,oe.id,'En búsqueda',quien()],function(){cargarEmpresas();});}return;}
-    if(a==='eper'&&oe){formPersona(null,{empresa:oe.empresa});return;}
-    if(a==='emenu'&&oe){empresaMenu(oe);return;}
     if(a==='nueva')formPersona();else if(a==='pdfs')pdfs();else if(a==='mailm')mensaje(null);else if(a==='mensajes'){if(window.abrirMensajes)abrirMensajes();}else if(a==='lista')pegarLista();else if(a==='perfil'){if(window.blPerfilRef)blPerfilRef();}
     else if(a==='mas'){masMenu();}else if(a==='desc'&&o)descartar(o);else if(a==='ficha'&&o)ficha(o);else if(a==='msg'&&o)mensaje(o);else if(a==='pdf'&&o)subirPdf(o);else if(a==='pasar'&&o)pasar(o);else if(a==='menu'&&o)menu(o);
     else if(a.indexOf('mov:')===0&&o){b.disabled=true;run('huntingMover',[PERFIL,o.id,a.slice(4),quien()],function(){cargar();},function(er){b.disabled=false;aviso((er&&er.message)||String(er));});}
   });
-  page.addEventListener('change',function(ev){
-    var t=ev.target,k=t.getAttribute&&t.getAttribute('data-e');if(!k)return;
-    if(k==='estado'){run('huntingEmpresaEstado',[PERFIL,t.getAttribute('data-id'),t.value,quien()],function(){cargarEmpresas();});return;}
-    if(k==='fprio')F.prio=t.value;else if(k==='fcat')F.cat=t.value;else if(k==='fest')F.est=t.value;else if(k==='fcomp')F.comp=t.checked;pintarListaE();
-  });
-  page.addEventListener('input',function(ev){var t=ev.target;if(t.getAttribute&&t.getAttribute('data-e')==='fq'){F.q=t.value;pintarListaE();}});
   // el globito con los seguimientos de hoy se ve desde cualquier pestaña
   run('huntingListar',[PERFIL],function(r){D=r;cache=r.stats;badge();},function(){});
 })();
