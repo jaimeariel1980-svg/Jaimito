@@ -284,7 +284,7 @@ header{min-height:86px}
     var etapaBtn=function(tipo,pdf,nom,nuevo){
       var link=linkForm(tipo);
       if(!pdf)return '<a href="'+esc(link)+'" target="_blank" class="mbtn">'+nuevo+'</a>';
-      return '<span class="sp"><a href="'+esc(pdf)+'" target="_blank" class="mbtn alt">📄 '+nom+'</a><a href="'+esc(link+'&editar=1')+'" target="_blank" class="mbtn alt ed" title="Editar el formulario de '+nom+' ya cargado">✏️</a></span>';
+      return '<span class="sp"><a href="'+esc(pdf)+'" target="_blank" class="mbtn alt">📄 '+nom+'</a><a href="'+esc(link+'&editar=1')+'" target="_blank" class="mbtn alt ed" title="Editar lo que ya se cargó">✏️</a></span>';
     };
     var btn=function(u,t){return u?'<a href="'+esc(u)+'" target="_blank" class="mbtn">'+t+'</a>':'';};
     var al='';
@@ -312,7 +312,7 @@ header{min-height:86px}
     var h='<div class="fwrap" style="margin:-24px"><div class="fh"><div style="font-size:16px;color:#0F3F27"><b>'+esc(c.estado)+'</b></div><div class="ecs">'+ecs+'</div></div>'
       +(al?'<div class="fal">'+al+'</div>':'')
       +motFichaHtml(c)
-      +'<div class="fb"><div class="acts all">'+contBtn+cvBtn+agBtn+'<button class="mbtn alt mas-t" onclick="var b=this.nextElementSibling;b.classList.toggle(\'show\');this.textContent=b.classList.contains(\'show\')?\'Menos opciones ▴\':\'Más opciones ▾\'">Más opciones ▾</button><div class="mas-b">'+etapaBtn('screening',c.scrPDF,'Screening','📝 Cargar screening')+(window.EXPL?etapaBtn('exploracion',c.explPDF,'Exploración','🔎 Cargar exploración'):'')+etapaBtn('competencias',c.compPDF,'Competencias','💼 Cargar competencias')+btn(c.postulacion,'📄 Ver postulación')+btn(c.informe,'📄 Ver informe')+genBtn+bancoBtn+'</div></div>'+agendarHtml(c)
+      +'<div class="fb"><div class="acts all">'+contBtn+cvBtn+agBtn+'<button class="mbtn alt mas-t" onclick="var b=this.nextElementSibling;b.classList.toggle(\'show\');this.textContent=b.classList.contains(\'show\')?\'Menos opciones ▴\':\'Más opciones ▾\'">Más opciones ▾</button><div class="mas-b">'+etapaBtn('screening',c.scrPDF,'Ver screening','📝 Hacer screening')+(window.EXPL?etapaBtn('exploracion',c.explPDF,'Ver exploración','🔎 Hacer exploración'):'')+etapaBtn('competencias',c.compPDF,'Ver competencias','💼 Hacer competencias')+btn(c.postulacion,'📄 Ver postulación')+btn(c.informe,'📄 Ver informe')+genBtn+bancoBtn+'</div></div>'+agendarHtml(c)
       +'<div class="fpw"><button class="fpe" title="Editar datos del candidato" onclick="panelTog(\'edPanel\')">✏️</button><div class="fp"><div class="pn"><h4>Contacto</h4>'+row('Teléfono',esc(fmtTel(c.tel)))+row('Email',esc(c.mail))+row('Zona',esc(c.zona))+'</div>'
       +'<div class="pn"><h4>Postulación</h4>'+row('Recibido',esc(c.recibido))+row('Llegó por',esc(c.fuente))+row('Formación',esc(fmtForm(c.formacion)))+row('Pretensión',c.pretension?'$'+fmtMiles(c.pretension):'')+'</div></div></div>'+editarHtml(c)
       +((c.resumen||c.cvPorque)?'<div class="sec">Análisis del CV</div>'+(c.cvPorque?'<div class="cvpq'+(c.nota==='C'?' c':'')+'"><b>Por qué la IA puso '+esc(c.nota||'esa nota')+':</b> '+esc(String(c.cvPorque).replace(/^\s*(A|B\+|B|C)\s*[:\-–]\s*/i,''))+'</div>':'')+(c.resumen?'<div class="fres" style="margin:0">'+esc(c.resumen)+'</div>':''):'')

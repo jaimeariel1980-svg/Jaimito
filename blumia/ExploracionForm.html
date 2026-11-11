@@ -178,7 +178,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text)}
 
 <div id="app"><div class="loading">Cargando perfil...</div></div>
 <div class="toast" id="toast"></div>
-<div class="gbar ia-ui"><button type="button" class="sec" id="btn-save-draft" onclick="guardarFicha()">Guardar ficha</button><button type="button" id="btn-save-sheet" onclick="enviarExploracion()">Guardar entrevista</button></div>
+<div class="gbar ia-ui"><button type="button" class="sec" id="btn-save-draft" onclick="guardarFicha()">Guardar borrador</button><button type="button" id="btn-save-sheet" onclick="enviarExploracion()">Guardar entrevista</button></div>
 
 <?!= HtmlService.createHtmlOutputFromFile('IAForm').getContent() ?>
 <?!= HtmlService.createHtmlOutputFromFile('PerfilRef').getContent() ?>
@@ -223,7 +223,13 @@ function qHtml(q, comun) {
     <textarea class="q-q" data-ia="1" placeholder="Pregunta para la entrevista...">${esc(q.pregunta)}</textarea>
   </div>`;
 }
-function numerarPreguntas() { document.querySelectorAll('#qs .q-row').forEach((r, i) => { const n = r.querySelector('.q-num'); if (n) n.textContent = i + 1; }); }
+// los cuadros de la guía crecen con el texto (no se ve cortado)
+function autoAlto(t) { t.style.height = 'auto'; t.style.height = (t.scrollHeight + 2) + 'px'; }
+function ajustarAltos() { document.querySelectorAll('#app .q-q, #app .fx-ta').forEach(autoAlto); clearTimeout(window.__aa); window.__aa = setTimeout(() => document.querySelectorAll('#app .q-q, #app .fx-ta').forEach(autoAlto), 250); }
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => setTimeout(ajustarAltos, 50));
+window.addEventListener('resize', () => ajustarAltos());
+document.addEventListener('input', e => { if (e.target.matches && e.target.matches('.q-q,.fx-ta')) autoAlto(e.target); });
+function numerarPreguntas() { document.querySelectorAll('#qs .q-row').forEach((r, i) => { const n = r.querySelector('.q-num'); if (n) n.textContent = i + 1; }); ajustarAltos(); }
 function sinBarras() { document.querySelectorAll('#app .q-q, #app .fx-ta').forEach(t => { t.dataset.ia = '1'; }); }
 function agregarPregunta(q) { document.getElementById('qs').insertAdjacentHTML('beforeend', qHtml(q || { titulo: '', pregunta: '' }, false)); numerarPreguntas(); }
 function quitarPregunta(b) { const r = b.closest('.q-row'); if (r) r.remove(); numerarPreguntas(); }
@@ -242,6 +248,7 @@ function render() {
     <div class="hm-item"><div class="hm-label">Posición</div><div class="hm-val">${esc(h.posicion || '')}</div></div>
     <div class="hm-item"><div class="hm-label">Ubicación</div><div class="hm-val">${esc(h.ubicacion || '')}</div></div>
     <div class="hm-item"><div class="hm-label">Instancia</div><div class="hm-val">Entrevista de exploración</div></div>
+    <div class="hm-item"><div class="hm-label">Screening</div><div class="hm-val">${esc(EXD.notaScr || '—')}</div></div>
   </div>
 </div>
 <div class="wrap">
@@ -259,8 +266,8 @@ function render() {
   </div>
   <hr class="section-divider">
   <div class="section">
-    <div class="section-label"><span>Ficha de la entrevista</span></div>
-    <div class="fx-bar ia-ui"><button type="button" class="fx-btn prim" id="btn-ia" onclick="prepararConIA()">✨ Preparar ficha con IA</button><span class="fx-hint">Arma un borrador con el CV y el perfil del puesto. Después lo revisás y lo editás.</span></div>
+    <div class="section-label"><span>Guía de la entrevista</span></div>
+    <div id="barIA" class="fx-bar ia-ui"></div>
     <div class="field" style="margin-bottom:14px"><label>Perfil predominante</label><input type="text" id="f-perfil" placeholder="Ej: operaciones, supply chain, finanzas y gestión de proyectos"></div>
     <div class="field" style="margin-bottom:14px"><label>Síntesis del perfil</label><textarea class="fx-ta" id="f-sintesis" data-ia="1" placeholder="Qué muestra su trayectoria y qué no evidencia todavía para este puesto..."></textarea></div>
     <div class="field" style="margin-bottom:14px"><label>Foco de la entrevista</label><textarea class="fx-ta" id="f-foco" data-ia="1" placeholder="Qué hay que determinar con esta persona en particular..."></textarea></div>
@@ -272,6 +279,8 @@ function render() {
   <hr class="section-divider">
   <div class="section">
     <div class="section-label"><span>Registro de la entrevista</span></div>
+    <div id="barRec" class="fx-bar ia-ui"></div>
+    <div id="iaSt" class="ia-ui" style="font-size:13px;color:#555;margin:-8px 0 14px"></div>
     <div class="field" style="margin-bottom:14px"><label>Evidencias relevantes</label><textarea id="r-evid" placeholder="Lo que contó, con ejemplos y resultados concretos..."></textarea></div>
     <div class="field" style="margin-bottom:14px"><label>Fortalezas diferenciales</label><textarea id="r-fort" placeholder="Lo que lo distingue para este puesto..."></textarea></div>
     <div class="field" style="margin-bottom:14px"><label>Aspectos a profundizar / alertas</label><textarea id="r-alert" placeholder="Dudas, contradicciones o puntos para seguir en competencias..."></textarea></div>
@@ -316,7 +325,77 @@ function render() {
   numerarPreguntas();
   preseleccionarEntrevistadora();
   cargarLinks();
+  cargarBarras();
   cargarPrevia();
+}
+
+// botones de IA (se vuelven a dibujar al reabrir lo guardado, así siempre son los de esta versión)
+function cargarBarras() {
+  const a = document.getElementById('barIA'), r = document.getElementById('barRec');
+  if (a) a.innerHTML = '<button type="button" class="fx-btn prim" id="btn-ia" onclick="prepararConIA()">✨ Armar la guía con IA</button><span class="fx-hint">Solo si esta persona todavía no tiene guía. Las que ya se prepararon vienen cargadas.</span>';
+  if (r) r.innerHTML = '<button type="button" class="fx-btn prim" id="btn-rec" onclick="grabarEntrevista()">🎙 Grabar la entrevista y completar el registro</button><button type="button" class="fx-btn" onclick="recuperarGrabacion()">Recuperar la última grabación</button><span class="fx-hint">Se graba la videollamada, la IA transcribe y completa los cuatro cuadros. El audio no se guarda. Después revisás todo.</span>';
+}
+const iaSt = t => { const e = document.getElementById('iaSt'); if (e) e.textContent = t || ''; };
+
+// una guía ya armada (de las fichas preparadas o de la IA) se vuelca en la pantalla
+function aplicarGuia(f, hold) {
+  const set = (id, v) => { const e = document.getElementById(id); if (e) e.value = v || ''; };
+  set('f-perfil', f.perfil_predominante); set('f-sintesis', f.sintesis); set('f-foco', f.foco); set('f-validar', f.validar);
+  document.getElementById('qs').innerHTML = '';
+  let hayComun = false;
+  (f.preguntas || []).forEach(q => {
+    const comun = /^pregunta com[uú]n/i.test(String(q.titulo || ''));
+    if (comun) hayComun = true;
+    document.getElementById('qs').insertAdjacentHTML('beforeend', qHtml({ titulo: q.titulo || '', pregunta: q.pregunta || '' }, comun));
+  });
+  const c = hold || parseComun(EXD.comun);
+  if (!hayComun && c) document.getElementById('qs').insertAdjacentHTML('beforeend', qHtml(c, true));
+  numerarPreguntas();
+}
+
+function guiaActualJSON() {
+  const v = id => (document.getElementById(id)?.value || '').trim();
+  return JSON.stringify({ foco: v('f-foco'), validar: v('f-validar'), preguntas: [...document.querySelectorAll('#qs .q-row')].map(r => ({ titulo: r.querySelector('.q-t').value, pregunta: r.querySelector('.q-q').value })).filter(p => p.pregunta.trim()) });
+}
+
+function sumaEn(id, v) {
+  v = String(v || '').trim(); const e = document.getElementById(id);
+  if (!e || !v) return;
+  const c = String(e.value || '').trim();
+  if (!c) e.value = v; else if (c.toLowerCase().indexOf(v.toLowerCase()) < 0) e.value = c + '\n\n' + v;
+  e.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+function analizarTexto(texto, nombre) {
+  iaSt('Completando el registro con la entrevista…');
+  google.script.run.withSuccessHandler(r => {
+    sumaEn('r-evid', r.evidencias); sumaEn('r-fort', r.fortalezas); sumaEn('r-alert', r.alertas); sumaEn('r-concl', r.conclusion);
+    iaSt('✓ Registro completado por la IA (lo que ya habías escrito se mantuvo y se le sumó). Revisá todo antes de guardar.');
+    document.getElementById('r-evid')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }).withFailureHandler(e => { iaSt(''); alert('No se pudo completar el registro: ' + (e && e.message ? e.message : e)); })
+    .explAnalizar(PERFIL_ID, nombre, guiaActualJSON(), texto);
+}
+
+function grabarEntrevista() {
+  const nombre = (document.getElementById('d-nombre').value || '').trim();
+  if (!nombre) { alert('Falta el nombre de la persona entrevistada.'); return; }
+  if (!window.IAGrab) { alert('La grabación no está disponible en esta pantalla.'); return; }
+  iaSt('');
+  window.IAGrab.abrir(partes => {
+    window.IAGrab.transcribir(partes, PERFIL_ID, nombre, iaSt, texto => analizarTexto(texto, nombre), m => { iaSt(''); alert('No se pudo transcribir: ' + m); });
+  });
+}
+
+function recuperarGrabacion() {
+  const nombre = (document.getElementById('d-nombre').value || '').trim();
+  if (!nombre) { alert('Falta el nombre de la persona entrevistada.'); return; }
+  iaSt('Buscando la última grabación…');
+  google.script.run.withSuccessHandler(r => {
+    let x = {}; try { x = JSON.parse(r); } catch (e) { }
+    const t = String(x.parcial || '').trim();
+    if (t.length < 300) { iaSt(''); alert('No encontré ninguna grabación reciente de esta persona (se conservan 6 horas).'); return; }
+    analizarTexto(t, nombre);
+  }).withFailureHandler(e => { iaSt(''); alert('No se pudo recuperar: ' + (e && e.message ? e.message : e)); }).recuperarEntrevista('sesion', PERFIL_ID, nombre);
 }
 
 function letraActual() { const b = document.querySelector('.vd-btn[class*="vd-active-"]'); return b ? b.dataset.l : ''; }
@@ -339,7 +418,8 @@ function cargarLinks() {
   const el = document.getElementById('hero-links');
   if (!el) return;
   let h = '<button type="button" class="pr-btn" style="margin-top:8px" onclick="blPerfilRef()">📋 Perfil del puesto</button>';
-  if (EXD.cv) h += ' <a href="' + esc(EXD.cv) + '" target="_blank" rel="noopener" class="pr-btn" style="margin-top:8px;text-decoration:none;display:inline-block">📄 Ver CV</a>';
+  const a = (u, t) => u ? ' <a href="' + esc(u) + '" target="_blank" rel="noopener" class="pr-btn" style="margin-top:8px;text-decoration:none;display:inline-block">' + t + '</a>' : '';
+  h += a(EXD.cv, '📄 Ver CV') + a(EXD.scr, '📄 Ver screening') + a(EXD.comp, '📄 Ver competencias');
   el.innerHTML = h;
 }
 
@@ -355,17 +435,18 @@ function preseleccionarEntrevistadora() {
 // si la ficha ya se guardó (borrador o entrevista completa), se vuelve a abrir tal cual
 function cargarPrevia() {
   if (!CAND_INICIAL) return;
+  const semilla = () => { if (EXD.semilla) { aplicarGuia(EXD.semilla); showToast('La guía de esta persona ya estaba preparada.'); } };
   google.script.run.withSuccessHandler(r => {
-    if (!r || !r.estado) return;
+    if (!r || !r.estado) { semilla(); return; }
     try {
       efRestaurar(r.estado);
-      sinBarras(); numerarPreguntas(); cargarLinks();
+      sinBarras(); numerarPreguntas(); cargarLinks(); cargarBarras();
       YA_GUARDADA = !!r.nota;
       const l = letraActual(); if (l) elegirResultado(l);
-      showToast(r.nota ? '✏️ Entrevista guardada el ' + r.fecha + ' · nota ' + r.nota : 'Ficha guardada el ' + r.fecha);
+      showToast(r.nota ? '✏️ Entrevista guardada el ' + r.fecha + ' · nota ' + r.nota : 'Borrador guardado el ' + r.fecha);
       if (r.nota) document.getElementById('btn-save-sheet').textContent = 'Guardar cambios';
     } catch (e) { showToast('No se pudo recuperar lo guardado: ' + e.message); }
-  }).withFailureHandler(() => {}).getEvaluacionPrevia(PERFIL_ID, CAND_INICIAL, 'exploracion');
+  }).withFailureHandler(() => { semilla(); }).getEvaluacionPrevia(PERFIL_ID, CAND_INICIAL, 'exploracion');
 }
 
 function hayFicha() {
@@ -378,27 +459,19 @@ function prepararConIA() {
   if (!nombre) { alert('Falta el nombre de la persona entrevistada.'); return; }
   const hacer = () => {
     const b = document.getElementById('btn-ia'), old = b.textContent;
-    b.disabled = true; b.textContent = '⏳ Preparando la ficha…';
+    b.disabled = true; b.textContent = '⏳ Armando la guía…';
     google.script.run.withSuccessHandler(r => {
       b.disabled = false; b.textContent = old;
-      document.getElementById('f-perfil').value = r.perfil_predominante || '';
-      document.getElementById('f-sintesis').value = r.sintesis || '';
-      document.getElementById('f-foco').value = r.foco || '';
-      document.getElementById('f-validar').value = r.validar || '';
       const comun = document.querySelector('#qs .q-row[data-comun="1"]');
-      const hold = comun ? { titulo: comun.querySelector('.q-t').value, pregunta: comun.querySelector('.q-q').value } : null;
-      document.getElementById('qs').innerHTML = '';
-      (r.preguntas || []).forEach(q => agregarPregunta(q));
-      if (hold) document.getElementById('qs').insertAdjacentHTML('beforeend', qHtml(hold, true));
-      numerarPreguntas();
-      showToast('Ficha preparada: revisala y editala antes de la entrevista.');
+      aplicarGuia(r, comun ? { titulo: comun.querySelector('.q-t').value, pregunta: comun.querySelector('.q-q').value } : null);
+      showToast('Guía armada: revisala y editala antes de la entrevista.');
     }).withFailureHandler(e => {
       b.disabled = false; b.textContent = old;
-      alert('No se pudo preparar la ficha: ' + (e && e.message ? e.message : e));
+      alert('No se pudo armar la guía: ' + (e && e.message ? e.message : e));
     }).explPreparar(PERFIL_ID, nombre);
   };
   if (!hayFicha()) return hacer();
-  const msg = 'La ficha ya tiene texto. Si seguís, la IA lo reemplaza. ¿Continuar?';
+  const msg = 'La guía ya tiene texto. Si seguís, la IA lo reemplaza. ¿Continuar?';
   if (typeof blConfirm === 'function') blConfirm(msg, hacer, { si: 'Reemplazar', no: 'Cancelar' }); else if (confirm(msg)) hacer();
 }
 
@@ -413,11 +486,12 @@ function guardarFicha() {
   const nombre = (document.getElementById('d-nombre').value || '').trim();
   if (!nombre) { alert('Falta el nombre de la persona entrevistada.'); return; }
   const entrevistador = document.getElementById('d-entrevistadora').value;
+  iaSt('');
   const estado = efCapturar();
   const btn = document.getElementById('btn-save-draft'), old = btn.textContent;
   btn.disabled = true; btn.textContent = '⏳ Guardando…';
-  google.script.run.withSuccessHandler(() => { btn.disabled = false; btn.textContent = old; showToast('Ficha guardada. Podés volver a abrirla desde el tablero.'); })
-    .withFailureHandler(e => { btn.disabled = false; btn.textContent = old; alert('No se pudo guardar la ficha: ' + e.message); })
+  google.script.run.withSuccessHandler(() => { btn.disabled = false; btn.textContent = old; showToast('Borrador guardado. Podés volver a abrirlo desde el tablero.'); })
+    .withFailureHandler(e => { btn.disabled = false; btn.textContent = old; alert('No se pudo guardar el borrador: ' + e.message); })
     .explBorrador(PERFIL_ID, nombre, estado, entrevistador);
 }
 
@@ -427,6 +501,7 @@ function enviarExploracion() {
   if (!nombre) { alert('Falta el nombre de la persona entrevistada.'); return; }
   const cat = letraActual();
   if (!cat) { alert('Elegí el resultado de la entrevista (A, B+, B o C) antes de guardar.'); return; }
+  iaSt('');
   const ESTADO_EF = efCapturar();
   if (cat === 'C' && !YA_GUARDADA && !window.__mot) { mfPedir(function (m) { window.__mot = m; enviarExploracion(); }); return; }
 

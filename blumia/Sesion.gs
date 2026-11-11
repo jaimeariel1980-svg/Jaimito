@@ -300,6 +300,7 @@ function registroApi_() {
     getEvaluacionPrevia: { f: getEvaluacionPrevia_ },
     explDatos: { f: explDatos_ },
     explPreparar: { f: explPreparar_ },
+    explAnalizar: { f: explAnalizar_ },
     explBorrador: { f: explBorrador_ },
     procesarExploracion: { f: procesarExploracion_ },
     getHistorialBusqueda: { f: getHistorialBusqueda_ },
