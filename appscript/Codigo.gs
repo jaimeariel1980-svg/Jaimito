@@ -2184,11 +2184,19 @@ function registrarInteraccion(codigo, datos){
   ];
   // visita a una propiedad nuestra que trae otra inmobiliaria: cols 12 (Inmobiliaria) y 16 (Colega)
   if(datos.inmob || datos.colega) filaSeg = filaSeg.concat([_limpiarTxt_(String(datos.inmob||'')).trim(), '', '', '', _limpiarTxt_(String(datos.colega||'')).trim()]);
+  var parecido='';
+  try{
+    var nq=String(datos.interesado||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim(), pq=nq.split(/\s+/)[0];
+    if(nq && nq!=='sin nombre' && seg.getLastRow()>1){
+      var vv=seg.getRange(2,1,seg.getLastRow()-1,4).getValues(), vistos={};
+      vv.forEach(function(r){ if(String(r[0]).trim()!==String(codigo).trim()) return; var o=String(r[3]).trim(), on=o.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); if(!on||on==='sin nombre'||on===nq||vistos[on]) return; if(on.split(/\s+/)[0]===pq || on.indexOf(nq)>=0 || nq.indexOf(on)>=0){ vistos[on]=1; parecido=parecido?parecido+', '+o:o; } });
+    }
+  }catch(e){}
   seg.appendRow(filaSeg);
   try{ if(!String(seg.getRange(1,11).getValue()).trim()) seg.getRange(1,11).setValue('Cargó'); }catch(e){}
   if(/Propuesta aceptada/i.test(String(datos.resultado||''))) _extAReserva_(codigo, datos.cargo);
   _invalidaNovedades_();
-  return sinAg ? {ok:true, sinAgendada:true} : {ok:true};
+  return sinAg ? {ok:true, sinAgendada:true, parecido:parecido} : {ok:true, parecido:parecido};
 }
 function editarInteraccion(filaSeg, datos){
   var ss=SpreadsheetApp.openById(MAESTRO_ID);
