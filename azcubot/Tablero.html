@@ -1070,7 +1070,8 @@ function enviarReporteMail(id){
     })
     .enviarReportePropietario(id, LOGO, _repTxt().html, _repTxt().own, _yo());
 }
-function cargarForm(id, nombre, tel){
+function cargarForm(id, nombre, tel, deVisita){
+  window.__CF_DV=!!deVisita;
   const p=DATA.find(x=>x.id===id);
   const hoy=new Date().toISOString().slice(0,10);
   const nom=nombre?decodeURIComponent(nombre):'';const t=tel?decodeURIComponent(tel):'';
@@ -1080,7 +1081,7 @@ function cargarForm(id, nombre, tel){
   '<div class="fb"><div style="font-size:12px;color:var(--gris);margin-bottom:8px">Lo que ya pasó con un interesado: visita realizada, consulta, llamada, WhatsApp o mail.</div><div class="form">'+
     '<label>Fecha<input id="cf_fecha" type="date" value="'+hoy+'"></label>'+
     '<label>Vía<select id="cf_via"><option>WhatsApp</option><option value="Visita">Visita realizada</option><option>Llamada</option><option>Mail</option></select></label>'+
-    '<label>Interesado<input id="cf_cli" value="'+nom.replace(/"/g,'&quot;')+'" placeholder="Nombre y apellido"></label>'+
+    '<label>Interesado'+(deVisita?' (opcional)':'')+'<input id="cf_cli" value="'+nom.replace(/"/g,'&quot;')+'" placeholder="Nombre y apellido"></label>'+
     '<label>Teléfono<input id="cf_tel" value="'+t+'" placeholder="+54 341 ..."></label>'+
     '<label>Resultado<select id="cf_res" onchange="cfResTog()">'+resOpts+'</select></label>'+
     '<label id="cf_rpl" style="display:none">Nueva fecha y hora de la visita<input id="cf_cuando" type="datetime-local"></label>'+
@@ -1135,6 +1136,7 @@ function guardarConsulta(id){
   const g=x=>document.getElementById(x)?document.getElementById(x).value:'';
   const datos={ fecha:_fechaAr(g('cf_fecha')), via:g('cf_via'), interesado:g('cf_cli'),
     tel:g('cf_tel'), resultado:g('cf_res'), prox:g('cf_prox'), obs:g('cf_obs'), vendedor:_vend(id), cargo:_yo() };
+  if(!datos.interesado&&window.__CF_DV)datos.interesado='Sin nombre';
   if(!datos.interesado){ alert('Poné al menos el nombre del interesado'); return; }
   if(/rechaz|no le interes|^Visita cancelada$/i.test(datos.resultado)&&!String(datos.obs||'').trim()){ alert('Anotá el motivo en Observaciones: queda registrado.'); return; }
   if(/^Reprogramar/.test(datos.resultado)){ const c=g('cf_cuando'); if(!c){ alert('Poné la fecha y hora nueva de la visita'); return; } datos.cuando=new Date(c).toISOString(); }
@@ -1958,7 +1960,7 @@ function visDet(f){
   var row=function(a,b){return b?'<tr><td style="color:var(--gris);width:34%">'+a+'</td><td>'+b+'</td></tr>':'';};
   var lk=x.lk?(/^https?:\/\//i.test(x.lk)?'<a href="'+_vE(x.lk)+'" target="_blank" rel="noopener">'+_vE(x.lk)+'</a>':_vE(x.lk)):'';
   var est=x.e==='a'?'Agendada':x.e==='p'?'Ya pasó · falta cargar el resultado':x.e==='c'?(x.rp?'Reprogramada':'Cancelada'):(x.res||'Realizada'),pend=x.e==='a'||x.e==='p';
-  document.getElementById('dlg').innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">'+(x.x?'🏢 ':'🏠 ')+_vE(x.dir)+'</div><div class="sub">'+(x.x?'Visita con otra inmobiliaria':'Visita a una propiedad nuestra')+'</div></div><div class="fb"><table>'+row('Fecha',x.d.split('-').reverse().join('/')+(x.h?' · '+x.h:''))+row('Estado',_vE(est))+row('Inmobiliaria',_vE(x.im))+row('Colega',_vE(x.co))+row('Interesado',_vE(x.cli))+row('Teléfono',_vE(x.tel))+row('Vendedor',_vE(x.v||x.c))+row('Precio',_vE(x.pr))+row('Ficha',lk)+row('Detalle',_vE(x.obs).replace(/\n/g,'<br>'))+'</table><div class="dlbtns">'+((!x.x||x.fi)?'<button class="btn p" onclick="closeDL();ficha(\''+_vE(x.id)+'\')">🏠 Abrir ficha</button>':'')+(x.x?'<button class="btn s" onclick="visEditar('+x.f+')">✏️ Editar</button>':'')+(pend?'<button class="btn g" onclick="'+(x.x?'visExtForm(\''+_vE(x.id)+'\')':'closeDL();cargarForm(\''+_vE(x.id)+'\')')+'">✅ Cargar resultado</button><button class="btn s" onclick="visCancelar('+x.f+')">🚫 Cancelar visita</button>':'')+'<button class="btn s" onclick="visBorrar('+x.f+')">🗑 Borrar</button><button class="btn s" onclick="visAbrir()">‹ Volver</button></div></div>';
+  document.getElementById('dlg').innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">'+(x.x?'🏢 ':'🏠 ')+_vE(x.dir)+'</div><div class="sub">'+(x.x?'Visita con otra inmobiliaria':'Visita a una propiedad nuestra')+'</div></div><div class="fb"><table>'+row('Fecha',x.d.split('-').reverse().join('/')+(x.h?' · '+x.h:''))+row('Estado',_vE(est))+row('Inmobiliaria',_vE(x.im))+row('Colega',_vE(x.co))+row('Interesado',_vE(x.cli))+row('Teléfono',_vE(x.tel))+row('Vendedor',_vE(x.v||x.c))+row('Precio',_vE(x.pr))+row('Ficha',lk)+row('Detalle',_vE(x.obs).replace(/\n/g,'<br>'))+'</table><div class="dlbtns">'+((!x.x||x.fi)?'<button class="btn p" onclick="closeDL();ficha(\''+_vE(x.id)+'\')">🏠 Abrir ficha</button>':'')+(x.x?'<button class="btn s" onclick="visEditar('+x.f+')">✏️ Editar</button>':'')+(pend?'<button class="btn g" onclick="'+(x.x?'visExtForm(\''+_vE(x.id)+'\')':'closeDL();cargarForm(\''+_vE(x.id)+'\',\''+encodeURIComponent(x.cli||'')+'\',\''+encodeURIComponent(x.tel||'')+'\',1)')+'">✅ Cargar resultado</button><button class="btn s" onclick="visCancelar('+x.f+')">🚫 Cancelar visita</button>':'')+'<button class="btn s" onclick="visBorrar('+x.f+')">🗑 Borrar</button><button class="btn s" onclick="visAbrir()">‹ Volver</button></div></div>';
   document.getElementById('ov2').classList.add('on');
 }
 function bajasAbrir(){
@@ -2059,6 +2061,7 @@ function visExtGuardar(cod){
   var g=function(i){var e=document.getElementById(i);return e?e.value.trim():'';},fijo=!!cod,ya=fijo||g('ve_est')==='hecha';
   var o={dir:g('ve_dir'),inmob:g('ve_im'),colega:g('ve_co'),link:g('ve_lk'),precio:g('ve_pr'),tipo:g('ve_tipo'),interesado:g('ve_cli'),tel:g('ve_tel'),mail:g('ve_mail'),obs:g('ve_obs'),vendedor:g('ve_vend'),quien:_yo(),codigo:cod||''};
   if(!fijo&&!o.dir){alert('Poné la dirección de la propiedad');return;}
+  if(!o.interesado&&fijo)o.interesado='Sin nombre';
   if(!o.interesado){alert('Poné el nombre del cliente');return;}
   if(ya&&/rechaz|no le interes|^Visita cancelada$/i.test(g('ve_res'))&&!o.obs){alert('Anotá el motivo en Observaciones: queda registrado.');return;}
   if(ya){var f=g('ve_fecha');if(f)o.fecha=f.split('-').reverse().join('/');o.resultado=g('ve_res')||'Visita';if(/^Reprogramar/.test(o.resultado)){var rp=g('ve_rp');if(!rp){alert('Poné la fecha y hora nueva');return;}o.cuando=new Date(rp).toISOString();}}
