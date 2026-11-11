@@ -1218,7 +1218,7 @@ function azcuNotificarEtapa_(id, dir, de, a, quien){
     if(c==='v'){ try{ var vd = String(_vendedorDe_(id)||'').trim(); if(vd) azcuPush_('🎉 ¡Felicitaciones, '+azcuApodo_(vd)+'!', 'Se vendió '+dir+'. ¡Gran trabajo!', AZCU_WEB+'?go=novedades', azcuDestinos_(vd, true), true); }catch(e2){} }
   }catch(e){}
 }
-var AZCU_LOGT_ = {elimint:'🗑', etapa:'🔶', campos:'✏️', doc:'📄', borrardoc:'📄', adjuntar:'📎', aviso:'📣', completar:'📝', agendar:'📅', reporte:'✉️', elimprop:'🗑', nueva:'🆕', avisopersona:'📣', cancelvis:'🚫', restaurar:'♻️'};
+var AZCU_LOGT_ = {elimint:'🗑', etapa:'🔶', campos:'✏️', doc:'📄', borrardoc:'📄', adjuntar:'📎', aviso:'📣', completar:'📝', agendar:'📅', reporte:'✉️', elimprop:'🗑', nueva:'🆕', avisopersona:'📣', cancelvis:'🚫', restaurar:'♻️', encuesta:'📝'};
 function azcuEjecutar(pin, accion){
   var r, t = accion && accion.tipo;
   AZCU_NOAUDIT_ = true;
