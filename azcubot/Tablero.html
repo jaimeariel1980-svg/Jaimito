@@ -1699,7 +1699,7 @@ function eliminarProp(id){
 function enviarEncuesta(id){
   const p=DATA.find(x=>x.id===id);let tel='';
   if(p&&p.origen==='Otra inmobiliaria'){
-    const s=(p.seg||[]).filter(x=>x.tel&&/interes|propuesta/i.test(x.res||'')&&!/no le/i.test(x.res||'')).pop();
+    const cT=(p.seg||[]).filter(x=>x.tel&&String(x.tel).replace(/\D/g,'').length>=6),s=cT.filter(x=>/interes|propuesta/i.test(x.res||'')&&!/no le/i.test(x.res||'')).pop()||cT.filter(x=>!/no le/i.test(x.res||'')).pop()||cT.pop();
     tel=s?String(s.tel).replace(/\D/g,''):'';
     if(!tel){alert('Para mandarle la encuesta al cliente, cargá su teléfono en la última interacción.');return;}
   }
