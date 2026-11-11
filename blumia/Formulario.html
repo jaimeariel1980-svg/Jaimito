@@ -116,6 +116,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--text)}
 .gbar button{pointer-events:auto;background:#0F3F27;color:#fff;border:none;border-radius:99px;padding:14px 38px;font:700 15px 'PP Pangram Sans',Poppins,Arial,sans-serif;cursor:pointer;box-shadow:0 6px 20px rgba(36,61,44,.35);letter-spacing:.2px}
 .gbar button:hover{background:#1a2d20}.gbar button:disabled{opacity:.65;cursor:default}
 @media print{.gbar{display:none!important}}
+.loading{display:flex;align-items:center;justify-content:center;gap:14px;min-height:60vh;font-size:20px!important;font-weight:700;color:#0F3F27!important}
+.loading::before{content:'';width:26px;height:26px;border:3px solid #CDE7CE;border-top-color:#0F3F27;border-radius:50%;animation:blspin .8s linear infinite}
+@keyframes blspin{to{transform:rotate(360deg)}}
+body:has(#app .loading) .gbar{display:none!important}
+.loading.err{color:#B3261E!important;font-size:16px!important;text-align:center}.loading.err::before{display:none}
 </style>
 <style id="mobcss">
 @media (max-width:640px){
@@ -187,9 +192,9 @@ const VEREDICTOS = {
   C: { titulo: 'C · No avanza', desc: 'No cumple lo crítico o presenta red flags importantes.', cls: 'res-rojo', color: 'rojo' }
 };
 
-setTimeout(() => { if (!DATOS) document.getElementById('app').innerHTML = '<div class="loading" style="color:red;font-weight:bold;">No se pudo cargar el perfil «' + PERFIL_ID + '». Recargá la página; si sigue igual, avisá.</div>'; }, 20000);
-google.script.run.withSuccessHandler(d => { if (!d) { document.getElementById('app').innerHTML = '<div class="loading" style="color:red;font-weight:bold;">El servidor devolvió el perfil vacío (' + PERFIL_ID + '). Contactá al administrador.</div>'; return; } DATOS = d; render(); }).withFailureHandler(e => {
-  document.getElementById('app').innerHTML = '<div class="loading" style="color:red;font-weight:bold;">Error: ' + e.message + '</div>';
+setTimeout(() => { if (!DATOS) document.getElementById('app').innerHTML = '<div class="loading err">No se pudo cargar el perfil «' + PERFIL_ID + '». Recargá la página; si sigue igual, avisá.</div>'; }, 20000);
+google.script.run.withSuccessHandler(d => { if (!d) { document.getElementById('app').innerHTML = '<div class="loading err">El servidor devolvió el perfil vacío (' + PERFIL_ID + '). Contactá al administrador.</div>'; return; } DATOS = d; render(); }).withFailureHandler(e => {
+  document.getElementById('app').innerHTML = '<div class="loading err">Error: ' + e.message + '</div>';
 }).getDatosPerfil(PERFIL_ID);
 
 const fmtN = v => String(v).replace('.', ','); // números con coma decimal (es-AR)
