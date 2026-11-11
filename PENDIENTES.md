@@ -196,6 +196,7 @@ Hecha con el código real y 37 fichas de ejemplo; el modelo real (`gpt-4o-mini`)
 
 
 ## Límite de 200 versiones de Apps Script (2/11)
+- **Prioridad alta · lo hace Ariel (11/11):** el deploy de Blumia volvió a chocar con «Script has reached the limit of 200 versions» (merge del PR 726, 10/11 23:09): hasta que se borren versiones viejas (Apps Script de Blumia → Historial del proyecto) **no se publica nada nuevo**; después Claude corre el workflow `blumia` (`publicar`). Pendiente de publicar: PR 726 (embudo del informe sin etiquetas cortadas) y Reservas / Descartados abiertos por defecto.
 - **Prioridad alta · lo hace Ariel:** en el proyecto Apps Script de Blumia (cuenta jaimeariel1980) borrar versiones viejas (Historial del proyecto) y avisar; después Claude vuelve a correr el workflow `blumia` (`publicar`). Hasta entonces **no están publicados** los PR 628 (mensaje modelo de Flavia + nota de conexión en Hunting) y 629 (ficha de Hunting). Revisar lo mismo en los otros proyectos (azcu, pami, liquidaciones): cada uno tiene su propio tope.
 
 

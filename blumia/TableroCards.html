@@ -171,9 +171,10 @@ header{min-height:86px}
     h+=acordeonN('Reservas','res',RES_TIPOS,function(e){return /reserva/i.test(e);},'');
     h+=acordeonN('Descartados','desc',DESC_TIPOS,function(e){return /^Descartad/.test(e);},'Descartado');
     // los desplegables de Reservas y Descartados que estaban abiertos siguen abiertos al volver a dibujar el tablero (Ariel, 5/11: «me cierra el desplegable»)
-    var abiertos=[];b.querySelectorAll('.acc details[open] .dbody').forEach(function(x){abiertos.push(x.getAttribute('data-estado'));});
+    // Reservas y Descartados arrancan abiertos (los que tienen tarjetas); lo que la persona abre o cierra se respeta al volver a dibujar (Ariel, 11/11: «siempre aparece no desplegado»)
+    var abiertos=[],cerrados=[],primera=!window.__accInit;window.__accInit=1;if(!primera)b.querySelectorAll('.acc details .dbody').forEach(function(x){var d=x.parentNode,e=x.getAttribute('data-estado');if(d.open)abiertos.push(e);else if(!d.classList.contains('vacio'))cerrados.push(e);});
     b.innerHTML=h;
-    if(abiertos.length)b.querySelectorAll('.acc details .dbody').forEach(function(x){if(abiertos.indexOf(x.getAttribute('data-estado'))>-1)x.parentNode.open=true;});
+    b.querySelectorAll('.acc details .dbody').forEach(function(x){var d=x.parentNode,e=x.getAttribute('data-estado');if(abiertos.indexOf(e)>-1||(cerrados.indexOf(e)<0&&!d.classList.contains('vacio')))d.open=true;});
     iniciarSortable();pintarKpi();filtrar();
   };
   // ---- indicadores clickeables
