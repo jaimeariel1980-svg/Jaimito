@@ -1400,7 +1400,7 @@ function azcuGet_(id){
   return s;
 }
 var AZCU_PUB_ = ['obtenerDatosOFallar','extraerDatosDNI','extraerDatosPropiedad','extraerDatosEscritura','clasificarPaginasLegajo','precargarDatos','guardarEncuesta'];
-var AZCU_TB_ = ['obtenerUrlDocumento','obtenerConsultasWS','marcarConsultaWS','marcarReporteEnviado','revisarTextoIA','obtenerPropiedadesDoc','obtenerImagenes','obtenerPropiedades','guardarDocumento','getDatos','guardarPropiedad','registrarInteraccion','editarInteraccion','unirInteresados','guardarDocumentoPropiedad','docsGeneradosDe','borradorDocGenerado','eliminarInteraccion','eliminarPropiedad','agendarVisita','registrarPropuesta','subirDocumento','bajarDocumento','novedadesTb','visitasTb','registrarVisitaExterna','cancelarVisita','papeleraTb','restaurarPapelera','borrarDocumento','obtenerEncuesta','enviarReportePropietario','generarInformeTokko','getAppUrl','getEncuestaUrl','probarAvisoTb','telegramEnlaceTb'];
+var AZCU_TB_ = ['obtenerUrlDocumento','obtenerConsultasWS','marcarConsultaWS','marcarReporteEnviado','revisarTextoIA','obtenerPropiedadesDoc','obtenerImagenes','obtenerPropiedades','guardarDocumento','getDatos','guardarPropiedad','registrarInteraccion','editarInteraccion','unirInteresados','guardarDocumentoPropiedad','docsGeneradosDe','subirDocFirmado','borradorDocGenerado','eliminarInteraccion','eliminarPropiedad','agendarVisita','registrarPropuesta','subirDocumento','bajarDocumento','novedadesTb','visitasTb','registrarVisitaExterna','cancelarVisita','papeleraTb','restaurarPapelera','borrarDocumento','obtenerEncuesta','enviarReportePropietario','generarInformeTokko','getAppUrl','getEncuestaUrl','probarAvisoTb','telegramEnlaceTb'];
 function azcuApi(e){
   var raw = (e && e.parameter && e.parameter.payload) || (e && e.postData && e.postData.contents) || '{}', req = {}, out;
   if(e && e.parameter && e.parameter.tg && /"update_id"/.test(raw)){ try{ azcuTgUpdate_(e.parameter.tg, JSON.parse(raw)); }catch(eT){ Logger.log('Telegram: '+eT.message); } return ContentService.createTextOutput('{"ok":true}').setMimeType(ContentService.MimeType.JSON); }
@@ -1778,7 +1778,7 @@ function azcuVisitasData_(atras, adelante){
     var dd = azcuDif_(n, hn); if(dd<-atras || dd>adelante) continue;
     var nom = azcuSinAc_(r[3]), tel = String(r[4]).replace(/\D/g,''), hecho = false, ext = /^EXT-/.test(id), e = 'r';
     if(ag){
-      (real[id]||[]).forEach(function(x){ if(hecho || x.i===i || (x.n!==null && x.n<n)) return; if((!nom && !tel) || (nom && x.nom===nom) || (tel && x.tel===tel)) hecho = true; });
+      (real[id]||[]).forEach(function(x){ if(hecho || x.i===i || (x.n!==null && x.n<n)) return; if((!nom && !tel) || (nom && x.nom && (x.nom===nom || x.nom.indexOf(nom)>=0 || nom.indexOf(x.nom)>=0 || x.nom.split(' ')[0]===nom.split(' ')[0])) || (tel && x.tel===tel)) hecho = true; });
       if(hecho) continue;
       e = new Date(azcuIsoN_(n)+'T'+(hh||'23:59')+':00-03:00').getTime() >= ahora ? 'a' : 'p';
     }
