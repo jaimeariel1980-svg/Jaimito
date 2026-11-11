@@ -2566,6 +2566,12 @@ function guardarEncuesta(datos){
     datos.nombre||'', datos.operacion||'', datos.calificacion||'', datos.equipo||'',
     datos.tiempos_respuesta||'', datos.tiempos_operacion||'', datos.recomendacion||'', datos.comentarios||''
   ]);
+  try{
+    var cod=String(datos.codigo||'').trim(), nota=String(datos.calificacion||'').trim(), dir=(typeof azcuMapaDirs_==='function'?(azcuMapaDirs_()[cod]||''):'')||cod, buena=(+nota)>=4;
+    _audit_('encuesta','📝 Encuesta respondida: '+nota+'/5'+(buena?' 🎉':'')+(datos.nombre?' · '+datos.nombre:''), dir, 'Cliente');
+    if(typeof azcuPush_==='function') azcuPush_((buena?'🎉 ':'📝 ')+'Respondieron la encuesta: '+nota+'/5', dir+(datos.nombre?' · '+datos.nombre:'')+(datos.comentarios?' · «'+String(datos.comentarios).slice(0,80)+'»':''), AZCU_WEB+'?go=novedades');
+    _invalidaNovedades_();
+  }catch(e){}
   return {ok:true};
 }
 function obtenerEncuesta(codigo){
