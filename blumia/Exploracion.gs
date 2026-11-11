@@ -47,10 +47,35 @@ function cvIdDeFila_(sh, fila) {
   return m ? (m[1] || m[0]) : '';
 }
 
+// link de una celda con «Ver detalle» (fórmula HYPERLINK o texto con link)
+function explLinkCelda_(sh, fila, col) {
+  const cel = sh.getRange(fila, col);
+  let u = '';
+  const f = String(cel.getFormula() || '').match(/HYPERLINK\("([^"]+)"/i);
+  if (f) u = f[1];
+  if (!u) { const rt = cel.getRichTextValue(); if (rt && rt.getLinkUrl()) u = rt.getLinkUrl(); }
+  if (!u) { const v = String(cel.getValue() || ''); if (v.indexOf('http') === 0) u = v; }
+  return u;
+}
+
+/* Fichas ya armadas (por ejemplo las que se preparan en Word antes de usar el sistema): pestaña «Exploracion_Fichas» de la planilla, con perfil, candidato y la ficha en JSON
+   ({perfil_predominante, sintesis, foco, preguntas:[{titulo, pregunta}], validar}). El formulario las usa la primera vez que se abre a esa persona, hasta que se guarde algo. */
+function explSemilla_(perfilId, nombre) {
+  const sh = ssAbrir_(SHEET_MASTER_ID).getSheetByName('Exploracion_Fichas');
+  if (!sh || sh.getLastRow() < 2) return null;
+  const d = sh.getRange(2, 1, sh.getLastRow() - 1, 3).getValues(), k = evalNorm_(nombre);
+  for (let i = 0; i < d.length; i++) {
+    if (String(d[i][0]) === String(perfilId) && evalNorm_(d[i][1]) === k) {
+      try { return JSON.parse(String(d[i][2])); } catch (e) { return null; }
+    }
+  }
+  return null;
+}
+
 // lo que necesita la pantalla además de getDatosPerfil: link del CV, pregunta común y qué validar (de ⚙ Configurar → Datos)
 function explDatos_(perfilId, nombre) {
   const cfg = getConfig(perfilObligatorio_(perfilId));
-  const out = { activa: explActiva_(cfg), comun: String(cfg.expl_pregunta_comun || '').trim(), validar: String(cfg.expl_validar || '').trim(), cv: '', formacion: '', zona: '' };
+  const out = { activa: explActiva_(cfg), comun: String(cfg.expl_pregunta_comun || '').trim(), validar: String(cfg.expl_validar || '').trim(), cv: '', formacion: '', zona: '', scr: '', comp: '', notaScr: '', notaComp: '', semilla: null };
   try {
     const sh = getSheet(cfg), f = explBuscarFila_(sh, nombre);
     if (f) {
@@ -58,8 +83,13 @@ function explDatos_(perfilId, nombre) {
       if (id) out.cv = 'https://drive.google.com/file/d/' + id + '/view';
       out.formacion = String(sh.getRange(f, 23).getValue() || '');
       out.zona = String(sh.getRange(f, 24).getValue() || '');
+      out.notaScr = String(sh.getRange(f, 12).getValue() || '').trim();
+      out.notaComp = String(sh.getRange(f, 16).getValue() || '').trim();
+      out.scr = explLinkCelda_(sh, f, 13);
+      out.comp = explLinkCelda_(sh, f, 17);
     }
   } catch (e) { Logger.log('explDatos_: ' + e); }
+  try { out.semilla = explSemilla_(perfilId, nombre); } catch (e) { Logger.log('explSemilla_: ' + e); }
   return out;
 }
 
@@ -175,4 +205,30 @@ function asegurarPlantillasExploracion_() {
       sh.getRange(sh.getLastRow() + 1, 1, 1, ancho).setNumberFormat('@').setValues([fila]);
     });
   } finally { lock.releaseLock(); }
+}
+
+const EXPL_SISTEMA_REG_ = 'Sos consultor/a senior de selección en Blumia Consulting. Te paso la transcripción de una ENTREVISTA DE EXPLORACIÓN (posterior al screening y previa a competencias) y la ficha con que se preparó. ' +
+  'Completá el REGISTRO de la entrevista. Respondé SOLO con un JSON válido: {"evidencias":"...","fortalezas":"...","alertas":"...","conclusion":"..."}. ' +
+  'REGLAS: ' +
+  '1) «evidencias»: lo que la persona CONTÓ, ordenado por las preguntas de la ficha (podés encabezar cada bloque con el tema de la pregunta). Nombrá los ejemplos concretos (empresas, proyectos, cifras, resultados, cómo lo hizo). Atribuí siempre al relato («contó que», «mencionó que»). Si una pregunta no se respondió o se respondió en términos generales sin ejemplo, decilo. ' +
+  '2) «fortalezas»: 2 a 5 puntos con lo que la distingue para este puesto, apoyados en lo dicho. ' +
+  '3) «alertas»: dudas, contradicciones, vacíos o puntos a profundizar en la etapa siguiente. Si no hubo, decí «Sin alertas relevantes». ' +
+  '4) «conclusion»: 3 a 5 oraciones sobre si logró validar lo que se quería validar y una recomendación de avance (avanzar, avanzar con una observación, reserva o no avanzar) con su porqué. No asignes una letra. ' +
+  '5) Usá solo lo que está en la transcripción. No inventes. NUNCA uses ni menciones edad, género, estado civil, situación familiar, nacionalidad, salud ni religión. ' +
+  '6) Nombrá a la persona por su nombre de pila y usá el género gramatical que corresponde a su nombre; si es ambiguo, formas neutras. Español rioplatense, profesional y directo.';
+
+// Completa el registro de la entrevista a partir de la transcripción. No guarda: la persona revisa en pantalla.
+function explAnalizar_(perfilId, nombre, fichaJson, texto) {
+  const cfg = getConfig(perfilObligatorio_(perfilId));
+  texto = String(texto || '').trim();
+  if (texto.length < 200) throw new Error('La transcripción es muy corta para completar el registro.');
+  let ficha = {};
+  try { ficha = JSON.parse(String(fichaJson || '{}')) || {}; } catch (e) { }
+  const preg = (Array.isArray(ficha.preguntas) ? ficha.preguntas : []).map((p, i) => (i + 1) + '. ' + String(p.titulo || '') + ': ' + String(p.pregunta || '')).join('\n');
+  const usuario = 'PUESTO: ' + String(cfg.nombre_perfil || cfg.nombre || '') + '\nPERSONA: ' + String(nombre || '') + '\n' +
+    'FOCO: ' + String(ficha.foco || '') + '\nQUÉ SE BUSCABA VALIDAR: ' + String(ficha.validar || cfg.expl_validar || '') + '\n\nPREGUNTAS DE LA FICHA:\n' + (preg || '(sin preguntas cargadas)') +
+    '\n\nTRANSCRIPCIÓN:\n' + texto.slice(0, 60000);
+  const r = extraerJSON_(procesarConClaude(EXPL_SISTEMA_REG_, usuario, 'analisis')) || {};
+  const lim = (s, n) => String(s || '').replace(/[<>]/g, '').trim().slice(0, n);
+  return { evidencias: lim(r.evidencias, 6000), fortalezas: lim(r.fortalezas, 2000), alertas: lim(r.alertas, 2000), conclusion: lim(r.conclusion, 2000) };
 }
