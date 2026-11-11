@@ -419,7 +419,7 @@ function cargarLinks() {
   if (!el) return;
   let h = '<button type="button" class="pr-btn" style="margin-top:8px" onclick="blPerfilRef()">📋 Perfil del puesto</button>';
   const a = (u, t) => u ? ' <a href="' + esc(u) + '" target="_blank" rel="noopener" class="pr-btn" style="margin-top:8px;text-decoration:none;display:inline-block">' + t + '</a>' : '';
-  h += a(EXD.cv, '📄 Ver CV') + a(EXD.scr, '📄 Ver screening') + a(EXD.comp, '📄 Ver competencias');
+  h += a(EXD.cv, '📄 Ver CV') + a(EXD.scr, '📄 Ver screening');
   el.innerHTML = h;
 }
 
