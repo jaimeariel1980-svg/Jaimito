@@ -2567,9 +2567,10 @@ function guardarEncuesta(datos){
     datos.tiempos_respuesta||'', datos.tiempos_operacion||'', datos.recomendacion||'', datos.comentarios||''
   ]);
   try{
-    var cod=String(datos.codigo||'').trim(), nota=String(datos.calificacion||'').trim(), dir=(typeof azcuMapaDirs_==='function'?(azcuMapaDirs_()[cod]||''):'')||cod, buena=(+nota)>=4;
-    _audit_('encuesta','📝 Encuesta respondida: '+nota+'/5'+(buena?' 🎉':'')+(datos.nombre?' · '+datos.nombre:''), dir, 'Cliente');
-    if(typeof azcuPush_==='function') azcuPush_((buena?'🎉 ':'📝 ')+'Respondieron la encuesta: '+nota+'/5', dir+(datos.nombre?' · '+datos.nombre:'')+(datos.comentarios?' · «'+String(datos.comentarios).slice(0,80)+'»':''), AZCU_WEB+'?go=novedades');
+    var cod=String(datos.codigo||'').trim(), nota=String(datos.calificacion||'').trim(), dir=(typeof azcuMapaDirs_==='function'?(azcuMapaDirs_()[cod]||''):'')||cod, buena=(+nota)>=8, vend='';
+    try{ vend=String(_vendedorDe_(cod)||'').trim(); }catch(e0){}
+    _audit_('encuesta','📝 Encuesta respondida: '+nota+'/10'+(buena?' 🎉':'')+(vend?' · vendedor: '+vend:'')+(datos.nombre?' · '+datos.nombre:''), dir, 'Cliente');
+    if(typeof azcuPush_==='function') azcuPush_((buena?'🎉 ':'📝 ')+'Respondieron la encuesta: '+nota+'/10'+(vend?' · '+vend:''), dir+(datos.nombre?' · '+datos.nombre:'')+(datos.comentarios?' · «'+String(datos.comentarios).slice(0,80)+'»':''), AZCU_WEB+'?go=novedades');
     _invalidaNovedades_();
   }catch(e){}
   return {ok:true};
