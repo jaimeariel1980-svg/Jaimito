@@ -154,6 +154,7 @@ body{font-family:var(--font);background:var(--bg);color:var(--text)}
 .q-t:focus,.q-q:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(26,102,69,.08)}.q-obs-l{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--mid);margin:10px 0 5px}
 .q-obs{width:100%;background:#FBFDF9;border:1.5px dashed var(--line);border-radius:8px;padding:10px 12px;font-size:15px;font-family:var(--font);color:var(--text);outline:none;resize:vertical;min-height:60px;line-height:1.5}
 .q-obs:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(26,102,69,.08)}
+.nom-aviso{background:#FDECEA;border:1.5px solid #D9534F;color:#8A1C14;border-radius:8px;padding:10px 14px;font-size:13px;font-weight:600;line-height:1.5;margin-top:14px}
 .rec-box{border:1.5px solid var(--green);border-radius:12px;background:var(--glight);padding:16px 18px;margin-bottom:28px}
 .rec-box .section-label{margin-bottom:12px}
 .q-del{border:none;background:none;color:var(--coral);font-size:12px;font-weight:700;cursor:pointer;padding:4px 8px}
@@ -209,7 +210,7 @@ setTimeout(() => { if (!DATOS) document.getElementById('app').innerHTML = '<div 
 google.script.run.withSuccessHandler(d => {
   if (!d) { document.getElementById('app').innerHTML = '<div class="loading" style="color:red;font-weight:bold;">El servidor devolvió la búsqueda vacía (' + esc(PERFIL_ID) + '). Contactá al administrador.</div>'; return; }
   DATOS = d;
-  google.script.run.withSuccessHandler(x => { EXD = x || {}; render(); }).withFailureHandler(() => { EXD = {}; render(); }).explDatos(PERFIL_ID, CAND_INICIAL);
+  google.script.run.withSuccessHandler(x => { EXD = x || {}; render(); ENCONTRADO = EXD.encontrado !== false; avisoNombre(); const dn = document.getElementById('d-nombre'); if (dn) dn.addEventListener('change', chequearNombre); }).withFailureHandler(() => { EXD = {}; render(); }).explDatos(PERFIL_ID, CAND_INICIAL);
 }).withFailureHandler(e => {
   document.getElementById('app').innerHTML = '<div class="loading" style="color:red;font-weight:bold;">Error: ' + esc(e.message) + '</div>';
 }).getDatosPerfil(PERFIL_ID);
@@ -274,6 +275,7 @@ function render() {
       <div class="field"><label for="d-fecha">Fecha de la entrevista</label><input type="date" id="d-fecha"></div>
       <div class="field"><label>Formación</label><input type="text" id="d-formacion" value="${esc(EXD.formacion || '')}" placeholder="Carrera, título, estado"></div>
     </div>
+    <div id="nom-aviso" class="nom-aviso ia-ui" style="display:none"></div>
   </div>
   <hr class="section-divider">
   <div class="section">
@@ -495,9 +497,23 @@ function showToast(msg) {
 }
 
 // ficha + registro hasta ahora, sin nota ni cambio de etapa
+// ¿el nombre escrito es el de alguien de la búsqueda? (si no, no se puede guardar en su ficha)
+let ENCONTRADO = true;
+function avisoNombre() {
+  const e = document.getElementById('nom-aviso'); if (!e) return;
+  e.style.display = ENCONTRADO ? 'none' : 'block';
+  e.textContent = ENCONTRADO ? '' : 'No encuentro a «' + (document.getElementById('d-nombre').value || '').trim() + '» en esta búsqueda. Escribí el nombre tal como figura en el tablero; si no, no se puede guardar en su ficha.';
+}
+function chequearNombre() {
+  const n = (document.getElementById('d-nombre').value || '').trim();
+  if (!n) { ENCONTRADO = false; avisoNombre(); return; }
+  google.script.run.withSuccessHandler(x => { if (n === (document.getElementById('d-nombre').value || '').trim()) { ENCONTRADO = !x || x.encontrado !== false; avisoNombre(); } })
+    .withFailureHandler(() => { }).explDatos(PERFIL_ID, n);
+}
 function guardarFicha() {
   const nombre = (document.getElementById('d-nombre').value || '').trim();
   if (!nombre) { alert('Falta el nombre de la persona entrevistada.'); return; }
+  if (!ENCONTRADO) { avisoNombre(); alert('No encuentro a «' + nombre + '» en esta búsqueda: corregí el nombre para poder guardar.'); return; }
   const entrevistador = document.getElementById('d-entrevistadora').value;
   iaSt('');
   const estado = efCapturar();
@@ -512,6 +528,7 @@ function enviarExploracion() {
   const nombre = (document.getElementById('d-nombre').value || '').trim();
   const entrevistador = document.getElementById('d-entrevistadora').value;
   if (!nombre) { alert('Falta el nombre de la persona entrevistada.'); return; }
+  if (!ENCONTRADO) { avisoNombre(); alert('No encuentro a «' + nombre + '» en esta búsqueda: corregí el nombre para poder guardar.'); return; }
   const cat = letraActual();
   if (!cat) { alert('Elegí el resultado de la entrevista (A, B+, B o C) antes de guardar.'); return; }
   iaSt('');
