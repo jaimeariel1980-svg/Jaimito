@@ -1090,8 +1090,9 @@ setTimeout(function(){_pintaVend();var n='';try{n=(localStorage.getItem('azcu_no
 function _encV(v){var n=+v;return (n>=1&&n<=5&&/^\d$/.test(String(v).trim()))?'★'.repeat(n)+' ('+n+'/5)':v;}
 function _nrm(x){return String(x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();}
 function starsHtml(n,sz){var r=Math.max(0,Math.min(5,Math.round((+n||0)*2)/2)),h='';for(var k=1;k<=5;k++){h+=r>=k?'<span style="color:#F5B301">★</span>':(r>=k-0.5?'<span style="background:linear-gradient(90deg,#F5B301 50%,#d1d5db 50%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent">★</span>':'<span style="color:#d1d5db">★</span>');}return '<span style="font-size:'+(sz||16)+'px;letter-spacing:1px;white-space:nowrap">'+h+'</span>';}
-var ENC_MAP={'equipo':{'excelente':5,'buena':4.5,'regular':3,'mala':1},'tiempos_respuesta':{'muy rapidos':5,'normales':4.5,'lentos':3,'muy lentos':1},'tiempos_operacion':{'mas rapido de lo esperado':5,'dentro de los plazos normales':4.5,'demoro mas de lo previsto':3,'demasiado lento':1}};
-function encVal(e,k){var raw=e[k],n=(+raw>=1&&+raw<=5)?+raw:ENC_MAP[k][_nrm(raw)];return n||0;}
+var ENC_MAP={'equipo':{'excelente':5,'buena':4,'regular':2,'mala':1},'tiempos_respuesta':{'muy rapidos':5,'normales':4,'lentos':2,'muy lentos':1},'tiempos_operacion':{'mas rapido de lo esperado':5,'dentro de los plazos normales':4,'demoro mas de lo previsto':2,'demasiado lento':1}};
+var ENC_MAP_GEN={'equipo':{'excelente':5,'buena':4.5,'regular':3,'mala':1},'tiempos_respuesta':{'muy rapidos':5,'normales':4.5,'lentos':3,'muy lentos':1},'tiempos_operacion':{'mas rapido de lo esperado':5,'dentro de los plazos normales':4.5,'demoro mas de lo previsto':3,'demasiado lento':1}};
+function encVal(e,k){var raw=e[k],mp=(e.conv==='generosa'?ENC_MAP_GEN:ENC_MAP),n=(+raw>=1&&+raw<=5)?+raw:mp[k][_nrm(raw)];return n||0;}
 function encProm(e){var v=[],c=parseFloat(e.cal);if(c)v.push(c);['equipo','tiempos_respuesta','tiempos_operacion'].forEach(function(k){var n=encVal(e,k);if(n)v.push(n);});return v.length?v.reduce(function(a,b){return a+b;},0)/v.length:0;}
 function satPanel(encs,sat){
   var M={'Equipo':['equipo'],'T. respuesta':['tiempos_respuesta'],'T. operación':['tiempos_operacion']};

@@ -2466,9 +2466,11 @@ function azcuSegGuia(pin, tipo, id, ci){
 }
 
 function azcuEncProm_(e){
-  var M = {equipo:{'excelente':5,'buena':4.5,'regular':3,'mala':1}, tiempos_respuesta:{'muy rapidos':5,'normales':4.5,'lentos':3,'muy lentos':1}, tiempos_operacion:{'mas rapido de lo esperado':5,'dentro de los plazos normales':4.5,'demoro mas de lo previsto':3,'demasiado lento':1}}, v = [], c = parseFloat(e.cal);
+  var M = {equipo:{'excelente':5,'buena':4,'regular':2,'mala':1}, tiempos_respuesta:{'muy rapidos':5,'normales':4,'lentos':2,'muy lentos':1}, tiempos_operacion:{'mas rapido de lo esperado':5,'dentro de los plazos normales':4,'demoro mas de lo previsto':2,'demasiado lento':1}};
+  var G = {equipo:{'excelente':5,'buena':4.5,'regular':3,'mala':1}, tiempos_respuesta:{'muy rapidos':5,'normales':4.5,'lentos':3,'muy lentos':1}, tiempos_operacion:{'mas rapido de lo esperado':5,'dentro de los plazos normales':4.5,'demoro mas de lo previsto':3,'demasiado lento':1}};
+  var mp = (e.conv==='generosa') ? G : M, v = [], c = parseFloat(e.cal);
   if(c) v.push(c);
-  Object.keys(M).forEach(function(k){ var raw = e[k], n = (+raw>=1 && +raw<=5) ? +raw : M[k][azcuSinAc_(String(raw||'')).toLowerCase().trim()]; if(n) v.push(n); });
+  Object.keys(mp).forEach(function(k){ var raw = e[k], n = (+raw>=1 && +raw<=5) ? +raw : mp[k][azcuSinAc_(String(raw||'')).toLowerCase().trim()]; if(n) v.push(n); });
   return v.length ? v.reduce(function(a,b){ return a+b; },0)/v.length : 0;
 }
 function azcuEncuestaAviso_(id){
