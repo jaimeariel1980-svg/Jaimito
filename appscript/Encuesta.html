@@ -257,6 +257,19 @@
 
       <p style="margin:4px 0 14px;font-size:14px;color:#374151;text-align:center">Calificá de 1 a 5 estrellas:</p>
 
+      <!-- Pregunta 6 -->
+      <div class="question">
+        <label class="question-title">Tu experiencia general con nosotros</label>
+        <div class="stars">
+          <input type="radio" id="st5" name="calificacion" value="5" required><label for="st5" title="5 · Excelente">★</label>
+          <input type="radio" id="st4" name="calificacion" value="4"><label for="st4" title="4 · Muy buena">★</label>
+          <input type="radio" id="st3" name="calificacion" value="3"><label for="st3" title="3 · Buena">★</label>
+          <input type="radio" id="st2" name="calificacion" value="2"><label for="st2" title="2 · Regular">★</label>
+          <input type="radio" id="st1" name="calificacion" value="1"><label for="st1" title="1 · Mala">★</label>
+        </div>
+        <div class="stars-ref"><span>Mala</span><span>Excelente</span></div>
+      </div>
+
       <!-- Pregunta 2 -->
       <div class="question">
         <label class="question-title">Atención de nuestro equipo comercial</label>
@@ -285,7 +298,7 @@
 
       <!-- Pregunta 4: Tiempos de la Operación -->
       <div class="question">
-        <label class="question-title">Duración de la operación</label>
+        <label class="question-title">Tiempo que tardó en concretarse la operación</label>
         <div class="stars">
           <input type="radio" id="so5" name="tiempos_operacion" value="5" required><label for="so5" title="5">★</label>
           <input type="radio" id="so4" name="tiempos_operacion" value="4"><label for="so4" title="4">★</label>
@@ -341,22 +354,9 @@
         </div>
       </div>
 
-      <!-- Pregunta 6 -->
-      <div class="question">
-        <label class="question-title">Tu experiencia general con nosotros</label>
-        <div class="stars">
-          <input type="radio" id="st5" name="calificacion" value="5" required><label for="st5" title="5 · Excelente">★</label>
-          <input type="radio" id="st4" name="calificacion" value="4"><label for="st4" title="4 · Muy buena">★</label>
-          <input type="radio" id="st3" name="calificacion" value="3"><label for="st3" title="3 · Buena">★</label>
-          <input type="radio" id="st2" name="calificacion" value="2"><label for="st2" title="2 · Regular">★</label>
-          <input type="radio" id="st1" name="calificacion" value="1"><label for="st1" title="1 · Mala">★</label>
-        </div>
-        <div class="stars-ref"><span>Mala</span><span>Excelente</span></div>
-      </div>
-
       <!-- Pregunta 7 -->
       <div class="question">
-        <label class="question-title">¿Qué podríamos haber hecho mejor? (Contanos si no nos pusiste 5 estrellas)</label>
+        <label class="question-title">¿Qué podríamos haber hecho mejor? (Contanos si nos pusiste 3 estrellas o menos)</label>
         <textarea name="comentarios" placeholder="Dejanos tu comentario acá..."></textarea>
       </div>
 
@@ -1022,7 +1022,7 @@ document.addEventListener("DOMContentLoaded",function(){var el=document.getEleme
     function enviarDatos(e) {
       e.preventDefault();
       var _f=document.getElementById('encuestaForm');
-      if(_f.calificacion.value && +_f.calificacion.value<5 && !_f.comentarios.value.trim()){ alert('Para ayudarnos a mejorar, contanos en el comentario qué nos faltó para las 5 estrellas.'); _f.comentarios.focus(); return; }
+      if(_f.calificacion.value && +_f.calificacion.value<=3 && !_f.comentarios.value.trim()){ alert('Para ayudarnos a mejorar, contanos en el comentario qué podríamos haber hecho mejor.'); _f.comentarios.focus(); return; }
       document.getElementById('btnEnviar').innerText = "Enviando...";
       document.getElementById('btnEnviar').disabled = true;
 
