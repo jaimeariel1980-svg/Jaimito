@@ -2567,7 +2567,7 @@ function guardarEncuesta(datos){
     datos.tiempos_respuesta||'', datos.tiempos_operacion||'', datos.recomendacion||'', datos.comentarios||''
   ]);
   try{
-    var cod=String(datos.codigo||'').trim(), nota=String(datos.calificacion||'').trim(), dir=(typeof azcuMapaDirs_==='function'?(azcuMapaDirs_()[cod]||''):'')||cod, buena=(+nota)>=4, vend='';
+    var cod=String(datos.codigo||'').trim(), prom=(typeof azcuEncProm_==='function')?azcuEncProm_({cal:datos.calificacion,equipo:datos.equipo,tiempos_respuesta:datos.tiempos_respuesta,tiempos_operacion:datos.tiempos_operacion}):(+datos.calificacion||0), nota=String(Math.round(prom*10)/10), dir=(typeof azcuMapaDirs_==='function'?(azcuMapaDirs_()[cod]||''):'')||cod, buena=prom>=4.5, vend='';
     try{ vend=String(_vendedorDe_(cod)||'').trim(); }catch(e0){}
     _audit_('encuesta','📝 Encuesta respondida: '+nota+'/5'+(buena?' 🎉':'')+(vend?' · vendedor: '+vend:'')+(datos.nombre?' · '+datos.nombre:''), dir, 'Cliente');
     if(typeof azcuPush_==='function') azcuPush_((buena?'🎉 ':'📝 ')+'Respondieron la encuesta: '+nota+'/5'+(vend?' · '+vend:''), dir+(datos.nombre?' · '+datos.nombre:'')+(datos.comentarios?' · «'+String(datos.comentarios).slice(0,80)+'»':''), AZCU_WEB+'/tablero.html?vencuesta='+encodeURIComponent(cod));
@@ -2577,7 +2577,7 @@ function guardarEncuesta(datos){
 }
 function reenviarAvisoEncuesta(codigo){
   var e=obtenerEncuesta(codigo); if(!e) throw new Error('No encuentro la encuesta');
-  var nota=String(e['Calificación']||'').trim(), buena=(+nota)>=4, dir=(typeof azcuMapaDirs_==='function'?(azcuMapaDirs_()[String(codigo).trim()]||''):'')||codigo, vend='';
+  var prom=(typeof azcuEncProm_==='function')?azcuEncProm_({cal:e['Calificación'],equipo:e['Equipo'],tiempos_respuesta:e['Tiempos respuesta'],tiempos_operacion:e['Tiempos operación'],conv:String(e['Conversión (formato anterior)']||'').trim().toLowerCase()}):(+e['Calificación']||0), nota=String(Math.round(prom*10)/10), buena=prom>=4.5, dir=(typeof azcuMapaDirs_==='function'?(azcuMapaDirs_()[String(codigo).trim()]||''):'')||codigo, vend='';
   try{ vend=String(_vendedorDe_(codigo)||'').trim(); }catch(e0){}
   azcuPush_((buena?'🎉 ':'📝 ')+'Respondieron la encuesta: '+nota+'/5'+(vend?' · '+vend:''), dir+(e.Nombre?' · '+e.Nombre:'')+(e.Comentarios?' · «'+String(e.Comentarios).slice(0,80)+'»':''), AZCU_WEB+'/tablero.html?vencuesta='+encodeURIComponent(String(codigo).trim()));
   return {ok:true};
