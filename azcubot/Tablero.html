@@ -965,7 +965,7 @@ function drill(tipo){
     const dim=tipo.slice(4),DM={'Equipo':'equipo','T. respuesta':'tiempos_respuesta','T. operación':'tiempos_operacion','Recomendaría':'rec'};
     f2=filtered().filter(p=>p.encuesta&&p.encuesta.cal);
     const val=p=>{const e=p.encuesta;return DM[dim]?(e[DM[dim]]==null||e[DM[dim]]===''?'—':e[DM[dim]]):(e.cal+'/10');};
-    rows=f2.length?f2.map(p=>'<tr onclick=\'closeDL();ficha("'+p.id+'")\' style="cursor:pointer"><td><span class="idpill">'+p.id+'</span></td><td>'+p.dir+'</td><td style="text-align:right;font-weight:700">'+val(p)+'</td></tr>').join(''):'<tr><td colspan="3" style="color:var(--gris)">Todavía no hay encuestas respondidas</td></tr>';
+    rows=f2.length?f2.map(p=>'<tr onclick=\'verEncuesta("'+p.id+'")\' style="cursor:pointer"><td><span class="idpill">'+p.id+'</span></td><td>'+p.dir+'</td><td style="text-align:right;font-weight:700">'+val(p)+'</td></tr>').join(''):'<tr><td colspan="3" style="color:var(--gris)">Todavía no hay encuestas respondidas</td></tr>';
     document.getElementById('dlg').innerHTML='<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">Satisfacción'+(DM[dim]?': '+dim:'')+' ('+f2.length+')</div><div class="sub">Encuestas respondidas · tocá una fila para abrir la ficha</div></div><div class="fb"><table><tr><th>ID</th><th>Dirección</th><th style="text-align:right">'+(DM[dim]?dim:'Calificación')+'</th></tr>'+rows+'</table></div>';
     document.getElementById('ov2').classList.add('on');return;
   }
@@ -1716,13 +1716,13 @@ function enviarEncuesta(id){
   }).getEncuestaUrl();
 }
 function verEncuesta(id){
-  var p=DATA.find(x=>x.id===id);
-  google.script.run.withSuccessHandler(function(e){ if(!e){alert('Sin encuesta');return;} pintarEncuesta(p,e); }).obtenerEncuesta(id);
+  var p=DATA.find(x=>x.id===id)||{id:id,dir:''};
+  google.script.run.withSuccessHandler(function(e){ if(!e){alert('Sin encuesta');return;} pintarEncuesta(p,e); }).withFailureHandler(function(){alert('No pude abrir la encuesta');}).obtenerEncuesta(id);
 }
 function pintarEncuestaFicha(e){
   function q(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
   var cal=parseInt(e['Calificación']||e.cal)||0, col=cal>=8?'var(--verde)':(cal>=5?'var(--amarillo)':'var(--rojo)');
-  return '<h3 class="sec">Encuesta de satisfacción del cliente</h3><div style="display:flex;gap:14px;align-items:center;background:var(--beige);border-radius:12px;padding:10px 14px"><div style="font-size:34px;font-weight:800;line-height:1;color:'+col+'">'+(cal||'—')+'<span style="font-size:15px;color:var(--gris)">/10</span></div><div style="font-size:13px">'+(e['Recomendación']?'¿Recomendaría? <b>'+q(e['Recomendación'])+'</b><br>':'')+(e.Comentarios?'<i>'+q(e.Comentarios)+'</i>':'')+'</div></div>';
+  return '<h3 class="sec">Encuesta de satisfacción del cliente</h3><div style="display:flex;gap:14px;align-items:center;background:var(--beige);border-radius:12px;padding:10px 14px"><div style="font-size:34px;font-weight:800;line-height:1;color:'+col+'">'+(cal||'—')+'<span style="font-size:15px;color:var(--gris)">/10</span></div><div style="font-size:13px">'+(e['Recomendación']?'¿Recomendaría? <b>'+q(e['Recomendación'])+'</b><br>':'')+(e.Comentarios?'<i>'+q(e.Comentarios)+'</i>':'')+'</div></div>'+(function(){function r(k,v){return v?'<tr><td style="color:var(--gris);padding:3px 10px 3px 0">'+k+'</td><td style="font-weight:600">'+q(v)+'</td></tr>':'';}return '<table style="margin-top:8px;font-size:13px">'+r('Fecha',e.Fecha)+r('Nombre',e.Nombre)+r('Operación',e['Operación'])+r('Equipo comercial',e.Equipo)+r('Tiempos de respuesta',e['Tiempos respuesta'])+r('Tiempos de operación',e['Tiempos operación'])+'</table>';})();
 }
 function pintarEncuesta(p,e){
   function q(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -1908,7 +1908,7 @@ function novAbrir(hist){
     var d=new Date(x.ms),k=d.toDateString(),lb=k===hoy?'Hoy':k===ayer?'Ayer':d.toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'});
     if(hist&&lb!==last){h+='<div style="margin:14px 0 6px;font-size:12px;font-weight:700;color:var(--gris);text-transform:uppercase;letter-spacing:.04em">'+e(lb)+'</div>';last=lb;}
     var nuevo=x.ms>seen,hora=(hist?'':lb+' · ')+(x.h?d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'}):'');
-    h+='<div '+(x.id?'onclick=\'closeDL();ficha("'+e(x.id)+'")\' ':'')+'style="display:flex;gap:10px;padding:9px 10px;border-radius:12px;margin-bottom:4px;'+(x.id?'cursor:pointer;':'')+(nuevo?'background:#fff4f4;':'background:#f6f8fc;')+'"><span style="font-size:18px">'+e(x.ic)+'</span><div style="min-width:0">'+(x.q?'<div style="font-size:12.5px;font-weight:700;color:#0A3D91">👤 '+e(x.q)+'</div>':'')+'<b style="font-size:13.5px">'+e(x.t)+(nuevo?' <span style="background:#d1495b;color:#fff;border-radius:8px;padding:1px 6px;font-size:10px">NUEVO</span>':'')+'</b>'+(x.dir?'<div style="font-size:12.5px;color:#0A3D91">'+e(x.dir)+'</div>':'')+(x.d?'<div style="font-size:12px;color:var(--gris)">'+e(x.d)+'</div>':'')+(hora?'<div style="font-size:11.5px;color:var(--gris)">'+hora+'</div>':'')+'</div></div>';
+    h+='<div '+(x.id?(/Encuesta respondida/.test(x.t||'')?'onclick=\'verEncuesta("'+e(x.id)+'")\' ':'onclick=\'closeDL();ficha("'+e(x.id)+'")\' '):'')+'style="display:flex;gap:10px;padding:9px 10px;border-radius:12px;margin-bottom:4px;'+(x.id?'cursor:pointer;':'')+(nuevo?'background:#fff4f4;':'background:#f6f8fc;')+'"><span style="font-size:18px">'+e(x.ic)+'</span><div style="min-width:0">'+(x.q?'<div style="font-size:12.5px;font-weight:700;color:#0A3D91">👤 '+e(x.q)+'</div>':'')+'<b style="font-size:13.5px">'+e(x.t)+(nuevo?' <span style="background:#d1495b;color:#fff;border-radius:8px;padding:1px 6px;font-size:10px">NUEVO</span>':'')+'</b>'+(x.dir?'<div style="font-size:12.5px;color:#0A3D91">'+e(x.dir)+'</div>':'')+(x.d?'<div style="font-size:12px;color:var(--gris)">'+e(x.d)+'</div>':'')+(hora?'<div style="font-size:11.5px;color:var(--gris)">'+hora+'</div>':'')+'</div></div>';
   });
   if(!its.length)h='<div style="color:var(--gris);padding:20px 0">Todo tranquilo. No hubo novedades en los últimos días.</div>';
   if(hist)h='<button class="btn s" style="margin-bottom:8px" onclick="novAbrir()">‹ Volver a novedades</button>'+h+(its.length>8?'<button class="btn p" style="position:sticky;bottom:6px;display:block;margin:10px 0 0 auto;border-radius:999px" onclick="document.querySelector(\'#dlg .fb\').scrollTo({top:0,behavior:\'smooth\'})">↑ Subir</button>':'');
