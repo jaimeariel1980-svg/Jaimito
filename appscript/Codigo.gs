@@ -2575,6 +2575,13 @@ function guardarEncuesta(datos){
   }catch(e){}
   return {ok:true};
 }
+function reenviarAvisoEncuesta(codigo){
+  var e=obtenerEncuesta(codigo); if(!e) throw new Error('No encuentro la encuesta');
+  var nota=String(e['Calificación']||'').trim(), buena=(+nota)>=8, dir=(typeof azcuMapaDirs_==='function'?(azcuMapaDirs_()[String(codigo).trim()]||''):'')||codigo, vend='';
+  try{ vend=String(_vendedorDe_(codigo)||'').trim(); }catch(e0){}
+  azcuPush_((buena?'🎉 ':'📝 ')+'Respondieron la encuesta: '+nota+'/10'+(vend?' · '+vend:''), dir+(e.Nombre?' · '+e.Nombre:'')+(e.Comentarios?' · «'+String(e.Comentarios).slice(0,80)+'»':''), AZCU_WEB+'/tablero.html?vencuesta='+encodeURIComponent(String(codigo).trim()));
+  return {ok:true};
+}
 function obtenerEncuesta(codigo){
   var ss=SpreadsheetApp.openById(MAESTRO_ID);
   var h=ss.getSheetByName('Encuestas');
