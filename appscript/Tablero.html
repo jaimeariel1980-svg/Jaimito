@@ -755,16 +755,15 @@ function render(){
   const segE=ET.map(e=>({l:e[0],v:cnt[e[0]],c:e[1],k:'et:'+e[0]}));const actPct=f.length?Math.round((activas.length/f.length)*100):0;document.getElementById('bars').innerHTML=donutPanel(segE,f.length,'activas',actPct+'%');
   var _encs=f.filter(function(p){return p.encuesta&&p.encuesta.cal;});
   var _dims=[
-    {k:'Equipo',fn:function(e){return parseFloat(e.equipo)||0;}},
-    {k:'T. respuesta',fn:function(e){return parseFloat(e.tiempos_respuesta)||0;}},
-    {k:'T. operación',fn:function(e){return parseFloat(e.tiempos_operacion)||0;}},
-    {k:'Recomendaría',fn:function(e){return e.rec==='Sí'?10:e.rec==='No'?0:5;}}
+    {k:'Equipo',fn:function(e){return /^(excelente|buena)$/i.test(String(e.equipo||'').trim());}},
+    {k:'T. respuesta',fn:function(e){return /^(muy r[aá]pidos|normales)$/i.test(String(e.tiempos_respuesta||'').trim());}},
+    {k:'T. operación',fn:function(e){return /^(m[aá]s r[aá]pido de lo esperado|dentro de los plazos normales)$/i.test(String(e.tiempos_operacion||'').trim());}},
+    {k:'Recomendaría',fn:function(e){return e.rec==='Sí';}}
   ];
   var _satSegs=_dims.map(function(d){
-    var vals=_encs.map(function(p){return d.fn(p.encuesta);}).filter(function(v){return !isNaN(v)&&v>0;});
-    var avg=vals.length?Math.round(vals.reduce(function(a,b){return a+b;},0)/vals.length*10)/10:null;
-    var c=avg===null?'var(--neutro)':(avg>=8?'var(--verde)':(avg>=5?'var(--amarillo)':'var(--rojo)'));
-    return {l:d.k,v:avg===null?0:Math.round(avg),c:c,k:'sat:'+d.k};
+    var fav=_encs.filter(function(p){return d.fn(p.encuesta);}).length, pc=_encs.length?fav/_encs.length:0;
+    var c=!_encs.length?'var(--neutro)':(pc>=0.8?'var(--verde)':(pc>=0.5?'var(--amarillo)':'var(--rojo)'));
+    return {l:d.k,v:fav,c:c,k:'sat:'+d.k};
   });
   var _satTotal=_encs.length;
   var _satAvg=_sat===null?'—':_sat+'/5';
