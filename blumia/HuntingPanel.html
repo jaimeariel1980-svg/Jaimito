@@ -122,16 +122,20 @@
     setTimeout(function(){bg.querySelector('#hf-n').focus();},50);
   }
   function pegarLista(){
-    var bg=modal('<h3>Pegar lista</h3><p>Una persona por línea, separando con <b>|</b> (o con tabulación si la copiás de una planilla): <b>Nombre | Cargo | Empresa | LinkedIn</b>. Solo el nombre es obligatorio. Las repetidas se ignoran.</p><textarea id="hl-t" placeholder="Ana Pérez | Directora Comercial | Empresa S.A. | https://www.linkedin.com/in/anaperez"></textarea><label><input type="checkbox" id="hl-b" style="width:auto;margin-right:6px">Marcar todas como prioridad B (secundarias)</label><div class="hu-row"><button id="hl-x">Cancelar</button><button class="go" id="hl-g">Agregar</button></div>');
+    var bg=modal('<h3>Pegar lista</h3><p>Copiá las filas de tu planilla (con la fila de títulos) y pegalas acá. Entiende las columnas <b>Nombre, Cargo, Empresa, LinkedIn, Estado</b> (y «Última comunicación» y «Fecha»). Si no hay fila de títulos, el orden es <b>Nombre | Cargo | Empresa | LinkedIn | Estado</b>, separado con <b>|</b> o tabulación. Solo el nombre es obligatorio.</p><p><b>Estado:</b> «Sin contactar» queda en <i>Por contactar</i>; «Contactado» queda en <i>Contactado</i> (con el seguimiento agendado a 4 días de la fecha); «Contactado - No le interesa» y «Descartado - motivo» quedan en <i>Descartado</i> con ese motivo. Las personas que ya están cargadas se ignoran.</p><textarea id="hl-t" placeholder="Nombre\tCargo actual\tEmpresa\tEstado\nAna Pérez\tDirectora Comercial\tEmpresa S.A.\tContactado"></textarea><label><input type="checkbox" id="hl-b" style="width:auto;margin-right:6px">Marcar todas como prioridad B (secundarias)</label><div class="hu-row"><button id="hl-x">Cancelar</button><button class="go" id="hl-g">Agregar</button></div>');
     bg.querySelector('#hl-x').onclick=function(){bg.remove();};
+    function norm(x){return String(x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();}
     bg.querySelector('#hl-g').onclick=function(){
-      var pr=bg.querySelector('#hl-b').checked?'B':'A',L=[];
-      bg.querySelector('#hl-t').value.split(/\r?\n/).forEach(function(r){r=r.trim();if(!r)return;var c=r.split(/\t|\||;/).map(function(x){return x.trim();});
+      var pr=bg.querySelector('#hl-b').checked?'B':'A',L=[],map=null;
+      var rows=bg.querySelector('#hl-t').value.split(/\r?\n/);
+      rows.forEach(function(r,n){r=r.trim();if(!r)return;var c=r.split(/\t|\||;/).map(function(x){return x.trim();});
+        if(n===0||!map&&!L.length){var h=c.map(norm);if(h.indexOf('nombre')>-1){map={};h.forEach(function(x,i){if(x==='nombre')map.nombre=i;else if(/^cargo/.test(x))map.cargo=i;else if(/^empresa/.test(x))map.empresa=i;else if(/linkedin|perfil|^url/.test(x))map.linkedin=i;else if(/^estado/.test(x))map.estado=i;else if(/ultima|comunicaci/.test(x))map.ultima=i;else if(/^fecha/.test(x))map.fecha=i;else if(/^nota/.test(x))map.notas=i;});return;}}
         if(/linkedin\.com/i.test(c[0])&&c.length===1)return;
-        L.push({nombre:c[0],cargo:c[1]||'',empresa:c[2]||'',linkedin:c[3]||'',prioridad:pr});});
+        var g=function(k,pos){var i=map?map[k]:pos;return i==null?'':(c[i]||'');};
+        L.push({nombre:g('nombre',0),cargo:g('cargo',1),empresa:g('empresa',2),linkedin:g('linkedin',3),estado:g('estado',4),ultima:g('ultima',5),fecha:g('fecha',6),notas:g('notas',99),prioridad:pr});});
       if(!L.length){aviso('No hay nada para agregar.');return;}
       this.disabled=true;
-      run('huntingAgregar',[PERFIL,JSON.stringify(L),quien()],function(r){bg.remove();aviso('Se agregaron '+r.agregadas+' persona'+(r.agregadas===1?'':'s')+(r.repetidas?' ('+r.repetidas+' ya estaban)':'')+'.');cargar();},function(e){bg.querySelector('#hl-g').disabled=false;aviso((e&&e.message)||String(e));});
+      run('huntingAgregar',[PERFIL,JSON.stringify(L),quien()],function(r){bg.remove();var pe=r.porEstado||{},x=Object.keys(pe).map(function(k){return pe[k]+' '+(k==='Identificado'?'por contactar':lbl(k));}).join(', ');aviso('Se agregaron '+r.agregadas+' persona'+(r.agregadas===1?'':'s')+(x?' ('+x+')':'')+'.'+(r.repetidas?' Ya estaban '+r.repetidas+(r.repetidasNombres&&r.repetidasNombres.length?': '+r.repetidasNombres.join(', '):'')+'.':''));cargar();},function(e){bg.querySelector('#hl-g').disabled=false;aviso((e&&e.message)||String(e));});
     };
   }
   function copiar(t,btn){
