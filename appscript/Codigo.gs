@@ -2564,9 +2564,10 @@ function guardarEncuesta(datos){
   h.appendRow([
     datos.codigo||'', Utilities.formatDate(new Date(),'GMT-3','dd/MM/yyyy'),
     datos.nombre||'', datos.operacion||'', datos.calificacion||'', datos.equipo||'',
-    datos.tiempos_respuesta||'', datos.tiempos_operacion||'', datos.recomendacion||'', datos.comentarios||'', '', '', datos.publicacion||'', datos.comunicacion||''
+    datos.tiempos_respuesta||'', datos.tiempos_operacion||'', datos.recomendacion||'', datos.comentarios||'', '', '', datos.publicacion||'', datos.comunicacion||'', datos.c_general||'', datos.c_atencion||'', datos.c_rapidez||'', datos.c_tiempo||'', datos.c_publicacion||'', datos.c_comunicacion||''
   ]);
   try{ if(!String(h.getRange(1,13).getValue()).trim()) h.getRange(1,13,1,2).setValues([['Publicación','Comunicación']]); }catch(e9){}
+  try{ if(!String(h.getRange(1,15).getValue()).trim()) h.getRange(1,15,1,6).setValues([['Com. general','Com. atención','Com. rapidez','Com. tiempo','Com. publicación','Com. comunicación']]); }catch(e8){}
   try{
     var cod=String(datos.codigo||'').trim(), prom=(typeof azcuEncProm_==='function')?azcuEncProm_({cal:datos.calificacion,equipo:datos.equipo,tiempos_respuesta:datos.tiempos_respuesta,tiempos_operacion:datos.tiempos_operacion}):(+datos.calificacion||0), nota=String(Math.round(prom*10)/10), dir=(typeof azcuMapaDirs_==='function'?(azcuMapaDirs_()[cod]||''):'')||cod, buena=prom>=4.5, vend='';
     try{ vend=String(_vendedorDe_(cod)||'').trim(); }catch(e0){}

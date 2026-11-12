@@ -188,6 +188,9 @@
     .stars input:checked ~ label, .stars label:hover, .stars label:hover ~ label { color:#F5B301; }
     .stars-ref { display:flex; justify-content:space-between; font-size:12px; color:#6b7280; margin-top:4px; padding:0 8px; }
 
+    .addc { display:inline-block; margin-top:8px; font-size:13px; color:#0A3D91; text-decoration:underline; }
+    .qc { width:100%; margin-top:8px; box-sizing:border-box; padding:10px; border:1px solid #d1d5db; border-radius:8px; font:inherit; font-size:14px; }
+
     /* Botón enviar */
     .btn-submit {
       background: linear-gradient(120deg,#1B3866,#0A3D91);
@@ -268,6 +271,8 @@
           <input type="radio" id="st1" name="calificacion" value="1"><label for="st1" title="1 · Mala">★</label>
         </div>
         <div class="stars-ref"><span>Mala</span><span>Excelente</span></div>
+        <a href="#" class="addc" onclick="return tc(this)">+ Agregar un comentario (opcional)</a>
+        <textarea class="qc" name="c_general" rows="2" placeholder="Contanos más…" style="display:none"></textarea>
       </div>
 
       <!-- Pregunta 2 -->
@@ -281,6 +286,8 @@
           <input type="radio" id="sq1" name="equipo" value="1"><label for="sq1" title="1">★</label>
         </div>
         <div class="stars-ref"><span>Malo</span><span>Excelente</span></div>
+        <a href="#" class="addc" onclick="return tc(this)">+ Agregar un comentario (opcional)</a>
+        <textarea class="qc" name="c_atencion" rows="2" placeholder="Contanos más…" style="display:none"></textarea>
       </div>
 
       <!-- Pregunta 3: Tiempos de Respuesta -->
@@ -294,6 +301,8 @@
           <input type="radio" id="sr1" name="tiempos_respuesta" value="1"><label for="sr1" title="1">★</label>
         </div>
         <div class="stars-ref"><span>Muy lentos</span><span>Muy rápidos</span></div>
+        <a href="#" class="addc" onclick="return tc(this)">+ Agregar un comentario (opcional)</a>
+        <textarea class="qc" name="c_rapidez" rows="2" placeholder="Contanos más…" style="display:none"></textarea>
       </div>
 
       <!-- Pregunta 4: Tiempos de la Operación -->
@@ -307,6 +316,8 @@
           <input type="radio" id="so1" name="tiempos_operacion" value="1"><label for="so1" title="1">★</label>
         </div>
         <div class="stars-ref"><span>Demasiado lento</span><span>Más rápido de lo esperado</span></div>
+        <a href="#" class="addc" onclick="return tc(this)">+ Agregar un comentario (opcional)</a>
+        <textarea class="qc" name="c_tiempo" rows="2" placeholder="Contanos más…" style="display:none"></textarea>
       </div>
 
       <!-- Solo propietarios: captación y venta -->
@@ -321,6 +332,8 @@
           <input type="radio" id="sp1" name="publicacion" value="1"><label for="sp1" title="1">★</label>
           </div>
           <div class="stars-ref"><span>Mala</span><span>Excelente</span></div>
+        <a href="#" class="addc" onclick="return tc(this)">+ Agregar un comentario (opcional)</a>
+        <textarea class="qc" name="c_publicacion" rows="2" placeholder="Contanos más…" style="display:none"></textarea>
         </div>
         <div class="question">
           <label class="question-title">Comunicación durante el proceso de venta</label>
@@ -332,6 +345,8 @@
           <input type="radio" id="sc1" name="comunicacion" value="1"><label for="sc1" title="1">★</label>
           </div>
           <div class="stars-ref"><span>Mala</span><span>Excelente</span></div>
+        <a href="#" class="addc" onclick="return tc(this)">+ Agregar un comentario (opcional)</a>
+        <textarea class="qc" name="c_comunicacion" rows="2" placeholder="Contanos más…" style="display:none"></textarea>
         </div>
       </div>
 
@@ -1038,6 +1053,12 @@ document.addEventListener("DOMContentLoaded",function(){var el=document.getEleme
         recomendacion: form.recomendacion.value,
         publicacion: form.publicacion.value,
         comunicacion: form.comunicacion.value,
+        c_general: form.c_general.value,
+        c_atencion: form.c_atencion.value,
+        c_rapidez: form.c_rapidez.value,
+        c_tiempo: form.c_tiempo.value,
+        c_publicacion: form.c_publicacion.value,
+        c_comunicacion: form.c_comunicacion.value,
         comentarios: form.comentarios.value
       };
 
@@ -1056,6 +1077,7 @@ document.addEventListener("DOMContentLoaded",function(){var el=document.getEleme
       }
       f.querySelectorAll('input[name="operacion"]').forEach(function(r){ r.addEventListener('change',tog); });
     })();
+    function tc(a){ var t=a.nextElementSibling; t.style.display='block'; a.style.display='none'; t.focus(); return false; }
     function mostrarExito(respuesta) {
       document.getElementById('form-container').style.display = 'none';
       document.getElementById('pantalla-exito').style.display = 'block';
