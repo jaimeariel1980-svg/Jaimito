@@ -135,7 +135,7 @@
     if(typeof ajusteFuentes==='function'&&+AJUSTE_LI>0)ajusteFuentes(fuentes,+AJUSTE_LI);
     var NS=['A','B+','B','C','Sin nota'].filter(function(k){return notas[k];}).map(function(k){return {l:k==='Sin nota'?k:'Nota '+k,v:notas[k],c:NC[k],k:'nota:'+k};});
     var FS=Object.keys(fuentes).sort(function(a,b){return fuentes[b]-fuentes[a];}).map(function(k,i){return {l:k,v:fuentes[k],c:PAL[i%PAL.length],k:'fu:'+k};});
-    x+='<div class="rs-panel"><div class="rs-row3"><div><h3>Dónde está cada candidato</h3>'+dona(ES,n,n,'candidatos',window.EXPL?4:0)+'</div><div><h3>Calidad de los CVs</h3>'+dona(NS,n,pct(notas['A']||0,n),'con nota A',4)+'</div><div><h3>De dónde llegan</h3>'+dona(FS,n,FS.length,FS.length===1?'canal':'canales')+'</div>'+'</div>'+motivosHtml()+'</div>';
+    x+='<div class="rs-panel"><div class="rs-row3"><div><h3>Dónde está cada candidato</h3>'+dona(ES,n,n,'candidatos',window.EXPL?4:0)+'</div><div><h3>Calidad de los CVs</h3>'+dona(NS,n,pct((notas['A']||0)+(notas['B+']||0)+(notas['B']||0),n),'pasan el CV',4)+'</div><div><h3>De dónde llegan</h3>'+dona(FS,n,FS.length,FS.length===1?'canal':'canales')+'</div>'+'</div>'+motivosHtml()+'</div>';
     document.getElementById('resumenPage').innerHTML=x;
   }
   /* «LinkedIn / Hunting» (elegido a mano en la ficha) y «Hunting (LinkedIn)» (al pasar desde Hunting) son el mismo canal */
