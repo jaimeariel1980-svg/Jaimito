@@ -101,7 +101,28 @@ function huntHist_(perfilId, o, detalle, quien) {
   try { registrarHistorial_(getConfig(perfilId).hoja_nombre, o.nombre, 'Hunting', detalle, quien); } catch (e) { }
 }
 
-/* Agrega personas a la lista: [{nombre, cargo, empresa, linkedin, prioridad, notas}]. No duplica (mismo LinkedIn o mismo nombre y empresa). */
+function huntSumarISO_(iso, n) { const d = new Date(iso + 'T12:00:00-03:00'); return Utilities.formatDate(new Date(d.getTime() + n * 864e5), 'America/Argentina/Buenos_Aires', 'yyyy-MM-dd'); }
+function huntFechaISO_(v) {
+  const t = String(v || '').trim(); let m;
+  if ((m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) return m[1] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[3]).slice(-2);
+  if ((m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/))) return m[3] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2);
+  return '';
+}
+/* Interpreta la columna «Estado» (y «Última comunicación») de una lista pegada → {estado, nota, motivo}; null si no trae estado. */
+function huntEstadoDeTexto_(est, ult) {
+  const orig = String(est || '').trim(); if (!orig) return null;
+  const t = huntNorm_(orig), u = huntNorm_(ult);
+  const enviado = /mensaje enviado|invitacion enviada|mensaje recibido/.test(u);
+  const despues = re => orig.replace(re, '').replace(/^[\s\-–:]+|[\s\-–:]+$/g, '').replace(/^\(([^()]*)\)$/, '$1').trim();
+  if (/^descartad/.test(t)) { const r = despues(/^descartad[oa]\s*/i); return { estado: 'No encaja', motivo: /^(-|–|:)/.test(orig.replace(/^descartad[oa]\s*/i, '')) ? r : orig, nota: '' }; }
+  if (/no le interes|rechaz/.test(t)) return { estado: 'No le interesa', motivo: despues(/^contactad[oa]\s*/i), nota: '' };
+  if (/^contactad/.test(t)) { const r = despues(/^contactad[oa]\s*/i); return /interesad/.test(t) ? { estado: 'Interesado', nota: r, motivo: '' } : { estado: 'Contactado', nota: /sin respuesta/.test(t) ? '' : r, motivo: '' }; }
+  if (/^sin contactar/.test(t)) return { estado: 'Identificado', nota: despues(/^sin contactar\s*/i), motivo: '' };
+  return { estado: enviado ? 'Contactado' : 'Identificado', nota: orig, motivo: '' };
+}
+
+/* Agrega personas a la lista: [{nombre, cargo, empresa, linkedin, prioridad, notas, estado, ultima, fecha}]. No duplica (mismo LinkedIn o mismo nombre).
+   Si trae «estado» (texto libre: Sin contactar / Contactado / Descartado - motivo…) la persona entra directamente en ese estado, con su seguimiento. */
 function huntingAgregar_(perfilId, personasJson, quien) {
   getConfig(perfilId);
   let lista;
@@ -112,26 +133,32 @@ function huntingAgregar_(perfilId, personasJson, quien) {
   try {
     const sh = huntHoja_();
     const existentes = huntLeerTodo_().filter(o => o.perfil === perfilId);
-    const urls = {}, claves = {};
-    existentes.forEach(o => { if (o.linkedin) urls[o.linkedin.toLowerCase()] = 1; claves[huntNorm_(o.nombre) + '|' + huntNorm_(o.empresa)] = 1; });
+    const urls = {}, claves = {}, nombres = {};
+    existentes.forEach(o => { if (o.linkedin) urls[o.linkedin.toLowerCase()] = 1; claves[huntNorm_(o.nombre) + '|' + huntNorm_(o.empresa)] = 1; nombres[huntNorm_(o.nombre)] = 1; });
     const cut = (v, n) => limpiarTxt_(v).slice(0, n);
-    const filas = []; let repetidos = 0, sinNombre = 0;
+    const filas = []; let repetidos = 0, sinNombre = 0; const repNom = [], porEstado = {};
     lista.forEach(p => {
       const nombre = cut(p && p.nombre, 90);
       if (nombre.length < 2) { sinNombre++; return; }
       const empresa = cut(p && p.empresa, 90), url = huntUrl_(p && p.linkedin);
       const k = huntNorm_(nombre) + '|' + huntNorm_(empresa);
-      if ((url && urls[url.toLowerCase()]) || claves[k]) { repetidos++; return; }
-      if (url) urls[url.toLowerCase()] = 1; claves[k] = 1;
+      if ((url && urls[url.toLowerCase()]) || claves[k] || nombres[huntNorm_(nombre)]) { repetidos++; if (repNom.length < 8) repNom.push(nombre); return; }
+      if (url) urls[url.toLowerCase()] = 1; claves[k] = 1; nombres[huntNorm_(nombre)] = 1;
       const pr = String(p && p.prioridad || '').toUpperCase() === 'B' ? 'B' : 'A';
-      filas.push(['h' + Utilities.getUuid().replace(/-/g, '').slice(0, 8), perfilId, nombre, cut(p && p.cargo, 120), empresa, url, pr, 'Identificado', 0, huntHoy_(), '', huntHoy_(), '', quien || '', cut(p && p.notas, 500), '', '', 0, '', '', '']);
+      const inf = huntEstadoDeTexto_(p && p.estado, p && p.ultima) || { estado: 'Identificado', nota: '', motivo: '' };
+      const hoy = huntHoy_(), fecha = huntFechaISO_(p && p.fecha) || hoy;
+      const contacto = ['Contactado', 'Interesado', 'No le interesa'].indexOf(inf.estado) > -1;
+      const seg = inf.estado === 'Contactado' ? (huntSumarISO_(fecha, 4) < hoy ? hoy : huntSumarISO_(fecha, 4)) : '';
+      const notas = [cut(p && p.notas, 300), cut(inf.nota, 200)].filter(Boolean).join(' · ');
+      porEstado[inf.estado] = (porEstado[inf.estado] || 0) + 1;
+      filas.push(['h' + Utilities.getUuid().replace(/-/g, '').slice(0, 8), perfilId, nombre, cut(p && p.cargo, 120), empresa, url, pr, inf.estado, HUNT_NIVEL_[inf.estado], fecha, contacto ? fecha : '', hoy, seg, quien || '', notas.slice(0, 500), '', '', 0, '', '', ['No le interesa', 'No encaja'].indexOf(inf.estado) > -1 ? cut(inf.motivo, 300) : '']);
     });
     if (filas.length) {
       const ini = Math.max(sh.getLastRow(), 1) + 1;
       sh.getRange(ini, 1, filas.length, HUNT_COLS_.length).setNumberFormat('@').setValues(filas);
-      filas.forEach(f => huntHist_(perfilId, { nombre: f[2] }, 'Identificado' + (f[4] ? ' · ' + f[4] : ''), quien));
+      filas.forEach(f => huntHist_(perfilId, { nombre: f[2] }, (f[7] === 'No encaja' ? 'No se ajusta' : f[7] === 'Sin respuesta' ? 'No respondió' : f[7]) + (f[4] ? ' · ' + f[4] : '') + (f[20] ? ' · ' + f[20] : ''), quien));
     }
-    return { agregadas: filas.length, repetidas: repetidos, sinNombre: sinNombre };
+    return { agregadas: filas.length, repetidas: repetidos, sinNombre: sinNombre, repetidasNombres: repNom, porEstado: porEstado };
   } finally { lock.releaseLock(); }
 }
 
