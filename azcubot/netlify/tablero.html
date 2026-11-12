@@ -842,20 +842,7 @@ function render(){
   const cnt={};ET.forEach(e=>cnt[e[0]]=0);f.forEach(p=>{if(cnt[p.etapa]!=null)cnt[p.etapa]++});
   const segE=ET.map(e=>({l:e[0],v:cnt[e[0]],c:e[1],k:'et:'+e[0]}));const actPct=f.length?Math.round((activas.length/f.length)*100):0;document.getElementById('bars').innerHTML=donutPanel(segE,f.length,'activas',actPct+'%');
   var _encs=f.filter(function(p){return p.encuesta&&p.encuesta.cal;});
-  var _dims=[
-    {k:'Equipo',fn:function(e){return /^(excelente|buena)$/i.test(String(e.equipo||'').trim());}},
-    {k:'T. respuesta',fn:function(e){return /^(muy r[aá]pidos|normales)$/i.test(String(e.tiempos_respuesta||'').trim());}},
-    {k:'T. operación',fn:function(e){return /^(m[aá]s r[aá]pido de lo esperado|dentro de los plazos normales)$/i.test(String(e.tiempos_operacion||'').trim());}},
-    {k:'Recomendaría',fn:function(e){return e.rec==='Sí';}}
-  ];
-  var _satSegs=_dims.map(function(d){
-    var fav=_encs.filter(function(p){return d.fn(p.encuesta);}).length, pc=_encs.length?fav/_encs.length:0;
-    var c=!_encs.length?'var(--neutro)':(pc>=0.8?'var(--verde)':(pc>=0.5?'var(--amarillo)':'var(--rojo)'));
-    return {l:d.k,v:fav,c:c,k:'sat:'+d.k};
-  });
-  var _satTotal=_encs.length;
-  var _satAvg=_sat===null?'—':_sat+'/5';
-  document.getElementById('bars2').innerHTML=_encs.length===0?'<div class="vacio"><b>Todavía no hay encuestas</b>Cuando un cliente conteste la encuesta, acá vas a ver la satisfacción.</div>':donutPanel(_satSegs,_satTotal===0?1:_satTotal,'encuestas',_satAvg)+satVend(_encs);
+  document.getElementById('bars2').innerHTML=_encs.length===0?'<div class="vacio"><b>Todavía no hay encuestas</b>Cuando un cliente conteste la encuesta, acá vas a ver la satisfacción.</div>':satPanel(_encs,_sat)+satVend(_encs);
   const pb={"Completa":0,"Parcial":0,"Inicial":0};
   f.forEach(p=>{const e=papEstado(p);if(e==='ok')pb["Completa"]++;else if(e==='med')pb["Parcial"]++;else if(e==='no')pb["Inicial"]++;});
   const cp3={"Completa":"var(--verde)","Parcial":"var(--amarillo)","Inicial":"var(--rojo)"},rg3={"Completa":"100%","Parcial":"50 a 99%","Inicial":"menos de 50%"};
@@ -1188,6 +1175,18 @@ function cargarForm(id, nombre, tel, deVisita){
   document.getElementById('ov2').classList.add('on');
 }
 setTimeout(function(){_pintaVend();var n='';try{n=(localStorage.getItem('azcu_nombre')||'').trim();}catch(e){}if(!n)setTimeout(_yo,1500);},400);
+function _nrm(x){return String(x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();}
+function starsHtml(n,sz){var r=Math.max(0,Math.min(5,Math.round(n)||0));return '<span style="color:#F5B301;font-size:'+(sz||16)+'px;letter-spacing:1px;white-space:nowrap">'+'★'.repeat(r)+'<span style="color:#d1d5db">'+'★'.repeat(5-r)+'</span></span>';}
+function satPanel(encs,sat){
+  var M={'Equipo':['equipo',{'excelente':5,'buena':4,'regular':2,'mala':1}],'T. respuesta':['tiempos_respuesta',{'muy rapidos':5,'normales':4,'lentos':2,'muy lentos':1}],'T. operación':['tiempos_operacion',{'mas rapido de lo esperado':5,'dentro de los plazos normales':4,'demoro mas de lo previsto':2}]};
+  var h='<div style="text-align:center;margin-bottom:12px"><div style="font-size:42px;font-weight:800;line-height:1;color:#1B3866">'+sat+'<span style="font-size:18px;color:var(--gris)">/5</span></div>'+starsHtml(sat,30)+'<div style="font-size:12.5px;color:var(--gris);margin-top:2px">'+encs.length+(encs.length===1?' encuesta':' encuestas')+'</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">';
+  Object.keys(M).forEach(function(k){var v=[];encs.forEach(function(p){var n=M[k][1][_nrm(p.encuesta[M[k][0]])];if(n)v.push(n);});var a=v.length?v.reduce(function(x,y){return x+y;},0)/v.length:0;h+='<div onclick="drill(\'sat:'+k+'\')" style="cursor:pointer;border:1px solid var(--linea);border-radius:12px;padding:10px;text-align:center"><div style="font-size:12px;color:var(--gris);font-weight:600">'+k+'</div>'+(v.length?starsHtml(a,20)+'<div style="font-size:12px;color:var(--gris)">'+(Math.round(a*10)/10)+' de 5</div>':'<div style="color:var(--gris)">—</div>')+'</div>';});
+  var si=encs.filter(function(p){return p.encuesta.rec==='Sí';}).length;
+  h+='<div onclick="drill(\'sat:Recomendaría\')" style="cursor:pointer;border:1px solid var(--linea);border-radius:12px;padding:10px;text-align:center"><div style="font-size:12px;color:var(--gris);font-weight:600">Recomendaría</div><div style="font-size:22px;font-weight:800;color:#1B3866">'+si+' de '+encs.length+'</div><div style="font-size:12px;color:var(--gris)">dicen que sí</div></div></div>';
+  var co=encs.filter(function(p){return p.encuesta.com;});
+  h+='<div style="margin-top:14px"><div style="font-size:12px;font-weight:700;color:var(--gris);margin-bottom:6px;text-align:center">OBSERVACIONES</div>'+(co.length?co.slice(0,6).map(function(p){return '<div onclick="verEncuesta(\''+esc_(p.id)+'\')" style="cursor:pointer;border:1px solid var(--linea);border-radius:10px;padding:8px 10px;margin-bottom:5px;font-size:13px"><div style="display:flex;justify-content:space-between;gap:8px"><b>'+esc_(p.encuesta.nombre||'Cliente')+'</b>'+starsHtml(p.encuesta.cal,13)+'</div><div style="font-size:11.5px;color:var(--gris)">'+esc_(p.dir||'')+'</div><div style="margin-top:3px;font-style:italic">«'+esc_(p.encuesta.com)+'»</div></div>';}).join(''):'<div style="text-align:center;font-size:12.5px;color:var(--gris)">Todavía nadie dejó comentarios.</div>')+'</div>';
+  return h;
+}
 function satVend(l){
   var m={};l.forEach(function(p){var v=String(p.vendedor||'Sin vendedor').trim()||'Sin vendedor',c=parseFloat(p.encuesta.cal);if(!c)return;(m[v]=m[v]||[]).push(c);});
   var r=Object.keys(m).map(function(v){var a=m[v];return {v:v,n:a.length,p:Math.round(a.reduce(function(x,y){return x+y;},0)/a.length*10)/10};}).sort(function(a,b){return b.p-a.p||b.n-a.n;});
