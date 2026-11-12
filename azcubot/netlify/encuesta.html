@@ -345,6 +345,32 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
         </div>
       </div>
 
+      <!-- Solo propietarios: captación y venta -->
+      <div id="extraProp" style="display:none">
+        <div class="question">
+          <label class="question-title">Por ser propietario: ¿cómo evaluarías la publicación y difusión de tu propiedad?</label>
+          <div class="stars">
+          <input type="radio" id="sp5" name="publicacion" value="5"><label for="sp5" title="5">★</label>
+          <input type="radio" id="sp4" name="publicacion" value="4"><label for="sp4" title="4">★</label>
+          <input type="radio" id="sp3" name="publicacion" value="3"><label for="sp3" title="3">★</label>
+          <input type="radio" id="sp2" name="publicacion" value="2"><label for="sp2" title="2">★</label>
+          <input type="radio" id="sp1" name="publicacion" value="1"><label for="sp1" title="1">★</label>
+          </div>
+          <div class="stars-ref"><span>Mala</span><span>Excelente</span></div>
+        </div>
+        <div class="question">
+          <label class="question-title">¿Cómo evaluarías cómo te mantuvimos informado durante la venta?</label>
+          <div class="stars">
+          <input type="radio" id="sc5" name="comunicacion" value="5"><label for="sc5" title="5">★</label>
+          <input type="radio" id="sc4" name="comunicacion" value="4"><label for="sc4" title="4">★</label>
+          <input type="radio" id="sc3" name="comunicacion" value="3"><label for="sc3" title="3">★</label>
+          <input type="radio" id="sc2" name="comunicacion" value="2"><label for="sc2" title="2">★</label>
+          <input type="radio" id="sc1" name="comunicacion" value="1"><label for="sc1" title="1">★</label>
+          </div>
+          <div class="stars-ref"><span>Mala</span><span>Excelente</span></div>
+        </div>
+      </div>
+
       <!-- Pregunta 2 -->
       <div class="question">
         <label class="question-title">2. ¿Cómo evaluarías el acompañamiento de nuestro equipo comercial?</label>
@@ -1098,6 +1124,8 @@ document.addEventListener("DOMContentLoaded",function(){var el=document.getEleme
         tiempos_respuesta: form.tiempos_respuesta.value,
         tiempos_operacion: form.tiempos_operacion.value,
         recomendacion: form.recomendacion.value,
+        publicacion: form.publicacion.value,
+        comunicacion: form.comunicacion.value,
         comentarios: form.comentarios.value
       };
 
@@ -1106,6 +1134,16 @@ document.addEventListener("DOMContentLoaded",function(){var el=document.getEleme
         .guardarEncuesta(datos);
     }
 
+
+    (function(){
+      var f=document.getElementById('encuestaForm');
+      function tog(){
+        var on=(f.operacion.value==='Vendí mi propiedad'), b=document.getElementById('extraProp');
+        b.style.display=on?'block':'none';
+        b.querySelectorAll('input[value="5"]').forEach(function(i){ i.required=on; });
+      }
+      f.querySelectorAll('input[name="operacion"]').forEach(function(r){ r.addEventListener('change',tog); });
+    })();
     function mostrarExito(respuesta) {
       document.getElementById('form-container').style.display = 'none';
       document.getElementById('pantalla-exito').style.display = 'block';

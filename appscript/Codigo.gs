@@ -2564,8 +2564,9 @@ function guardarEncuesta(datos){
   h.appendRow([
     datos.codigo||'', Utilities.formatDate(new Date(),'GMT-3','dd/MM/yyyy'),
     datos.nombre||'', datos.operacion||'', datos.calificacion||'', datos.equipo||'',
-    datos.tiempos_respuesta||'', datos.tiempos_operacion||'', datos.recomendacion||'', datos.comentarios||''
+    datos.tiempos_respuesta||'', datos.tiempos_operacion||'', datos.recomendacion||'', datos.comentarios||'', '', '', datos.publicacion||'', datos.comunicacion||''
   ]);
+  try{ if(!String(h.getRange(1,13).getValue()).trim()) h.getRange(1,13,1,2).setValues([['Publicación','Comunicación']]); }catch(e9){}
   try{
     var cod=String(datos.codigo||'').trim(), prom=(typeof azcuEncProm_==='function')?azcuEncProm_({cal:datos.calificacion,equipo:datos.equipo,tiempos_respuesta:datos.tiempos_respuesta,tiempos_operacion:datos.tiempos_operacion}):(+datos.calificacion||0), nota=String(Math.round(prom*10)/10), dir=(typeof azcuMapaDirs_==='function'?(azcuMapaDirs_()[cod]||''):'')||cod, buena=prom>=4.5, vend='';
     try{ vend=String(_vendedorDe_(cod)||'').trim(); }catch(e0){}
@@ -2627,7 +2628,7 @@ function _mapaEncuestas_(){
   var d=h.getRange(2,1,h.getLastRow()-1,h.getLastColumn()).getValues();
   for(var i=0;i<d.length;i++){
     var cod=(''+d[i][0]).trim();
-    if(cod) m[cod]={cal:d[i][4], nombre:(''+d[i][2]), rec:(''+d[i][8]), equipo:d[i][5], tiempos_respuesta:d[i][6], tiempos_operacion:d[i][7], com:(''+d[i][9]).trim(), conv:(''+(d[i][11]||'')).trim().toLowerCase()};
+    if(cod) m[cod]={cal:d[i][4], nombre:(''+d[i][2]), rec:(''+d[i][8]), equipo:d[i][5], tiempos_respuesta:d[i][6], tiempos_operacion:d[i][7], com:(''+d[i][9]).trim(), conv:(''+(d[i][11]||'')).trim().toLowerCase(), op:(''+d[i][3]).trim(), pub:(''+(d[i][12]||'')).trim(), comu:(''+(d[i][13]||'')).trim()};
   }
   return m;
 }
