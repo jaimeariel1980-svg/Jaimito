@@ -559,7 +559,7 @@ function azcuHerrDashboard_(){
     propiedades:d.length, activas:act, vendidas:vend, bajas:susp, en_captacion:capt, por_etapa:por,
     propuestas_en_curso:pr.abierta+pr.aceptada, detalle_propuestas:pr, activas_sin_movimiento_30d:sinMov, activas_sin_visitas:sinVis, papeles:pap,
     salud_aviso_tokko_promedio_pct:pcts.length ? Math.round(pcts.reduce(function(s,x){ return s+x; },0)/pcts.length) : null,
-    encuestas:{cantidad:enc.length, satisfaccion_promedio:azcuAvg_(enc,function(e){ return parseFloat(e.cal)||0; }), equipo:azcuAvg_(enc,function(e){ return parseFloat(e.equipo)||0; }),
+    encuestas:{cantidad:enc.length, satisfaccion_promedio:azcuAvg_(enc,azcuEncProm_), equipo:azcuAvg_(enc,function(e){ return parseFloat(e.equipo)||0; }),
       tiempos_respuesta:azcuAvg_(enc,function(e){ return parseFloat(e.tiempos_respuesta)||0; }), tiempos_operacion:azcuAvg_(enc,function(e){ return parseFloat(e.tiempos_operacion)||0; }),
       recomendaria_pct:enc.length ? Math.round(enc.filter(function(e){ return e.rec==='Sí'; }).length/enc.length*100) : null}
   };
@@ -2465,6 +2465,12 @@ function azcuSegGuia(pin, tipo, id, ci){
     texto:'Hola'+(cn ? ' '+cn : '')+'! Te escribo por la reserva de '+p.dir+'. Estamos trabajando con la documentación para cerrar los papeles lo antes posible. Cualquier duda o dato que necesites, avisame. ¡Gracias por la paciencia!'};
 }
 
+function azcuEncProm_(e){
+  var M = {equipo:{'excelente':5,'buena':4,'regular':2,'mala':1}, tiempos_respuesta:{'muy rapidos':5,'normales':4,'lentos':2,'muy lentos':1}, tiempos_operacion:{'mas rapido de lo esperado':5,'dentro de los plazos normales':4,'demoro mas de lo previsto':2}}, v = [], c = parseFloat(e.cal);
+  if(c) v.push(c);
+  Object.keys(M).forEach(function(k){ var raw = e[k], n = (+raw>=1 && +raw<=5) ? +raw : M[k][azcuSinAc_(String(raw||'')).toLowerCase().trim()]; if(n) v.push(n); });
+  return v.length ? v.reduce(function(a,b){ return a+b; },0)/v.length : 0;
+}
 function azcuEncuestaAviso_(id){
   try{
     var m = azcuMapaGet_('AZCU_ENC'), k = String(id).trim();
