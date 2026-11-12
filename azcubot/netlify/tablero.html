@@ -1175,6 +1175,7 @@ function cargarForm(id, nombre, tel, deVisita){
   document.getElementById('ov2').classList.add('on');
 }
 setTimeout(function(){_pintaVend();var n='';try{n=(localStorage.getItem('azcu_nombre')||'').trim();}catch(e){}if(!n)setTimeout(_yo,1500);},400);
+function _encCom(e){var L=[['Com. general','Experiencia general'],['Com. atención','Atención del equipo'],['Com. rapidez','Rapidez al responder'],['Com. tiempo','Tiempo de la operación'],['Com. publicación','Publicación'],['Com. comunicación','Comunicación']],h='';L.forEach(function(x){var v=String(e[x[0]]||'').trim();if(v)h+='<div style="margin-bottom:6px"><b style="font-size:12px;color:var(--gris)">'+x[1]+'</b><div style="background:var(--beige);border-radius:8px;padding:8px 10px;font-size:13px;font-style:italic">'+String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div></div>';});return h?'<h3 class="sec">Comentarios por pregunta</h3>'+h:'';}
 function _encV(v){var n=+v;return (n>=1&&n<=5&&/^\d$/.test(String(v).trim()))?'★'.repeat(n)+' ('+n+'/5)':v;}
 function _nrm(x){return String(x||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();}
 function starsHtml(n,sz){var r=Math.max(0,Math.min(5,Math.round((+n||0)*2)/2)),h='';for(var k=1;k<=5;k++){h+=r>=k?'<span style="color:#F5B301">★</span>':(r>=k-0.5?'<span style="background:linear-gradient(90deg,#F5B301 50%,#d1d5db 50%);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent">★</span>':'<span style="color:#d1d5db">★</span>');}return '<span style="font-size:'+(sz||16)+'px;letter-spacing:1px;white-space:nowrap">'+h+'</span>';}
@@ -1830,7 +1831,7 @@ function pintarEncuesta(p,e){
     '<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">Encuesta de satisfacción</div><div class="sub">'+p.id+' · '+p.dir+'</div></div>'+
     '<div class="fb"><div style="text-align:center;margin-bottom:16px"><div style="font-size:46px;font-weight:800;color:'+col+';line-height:1">'+(cal||'—')+'<span style="font-size:20px;color:var(--gris)">/5</span></div><div style="font-size:12px;color:var(--gris)">calificación general</div></div>'+
     '<table>'+row('Fecha',e.Fecha)+row('Nombre',e.Nombre)+row('Operación',e['Operación'])+row('Atención del equipo comercial',_encV(e.Equipo))+row('Rapidez al responder',_encV(e['Tiempos respuesta']))+row('Duración de la operación',_encV(e['Tiempos operación']))+row('Publicación de la propiedad',_encV(e['Publicación']))+row('Comunicación durante el proceso de venta',_encV(e['Comunicación']))+row('¿Recomendaría?',e['Recomendación'])+'</table>'+
-    (e.Comentarios?'<h3 class="sec">Comentarios</h3><div style="background:var(--beige);border-radius:8px;padding:10px 12px;font-size:13px">'+q(e.Comentarios)+'</div>':'')+
+    _encCom(e)+(e.Comentarios?'<h3 class="sec">Comentarios</h3><div style="background:var(--beige);border-radius:8px;padding:10px 12px;font-size:13px">'+q(e.Comentarios)+'</div>':'')+
     '<div class="dlbtns"><button class="btn s" onclick="reenviarAviso(\''+p.id+'\',this)">🔔 Reenviar aviso al equipo</button><button class="btn s" onclick="closeDL()">Cerrar</button></div></div>';
   document.getElementById('ov2').classList.add('on');
 }
