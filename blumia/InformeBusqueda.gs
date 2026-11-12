@@ -52,7 +52,8 @@ function ibEstUna_(perfilId, conResumenes) {
     if (m.t === 'act') e.activos++;
     const n = String(c.nota || '').trim();
     if (e.notasCV[n] !== undefined) e.notasCV[n]++; else e.notasCV.sin++;
-    const f = String(c.fuente || '').trim();
+    let f = String(c.fuente || '').trim();
+    if (/hunting/i.test(f)) f = 'Hunting (LinkedIn)'; // «LinkedIn / Hunting» (elegido a mano) y «Hunting (LinkedIn)» (al pasar desde Hunting) son el mismo canal
     if (f) e.fuentes[f] = (e.fuentes[f] || 0) + 1;
     const fo = String(c.formacion || '').trim().slice(0, 60);
     if (fo) e.formacion[fo] = (e.formacion[fo] || 0) + 1;

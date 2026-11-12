@@ -88,7 +88,7 @@
       lista=r(function(x){return x.t==='act'?etIdx(x)===i:x.t==='cont'?i===ult:false;});}
     else if(k.indexOf('nota:')===0){var nt=k.slice(5);t='CVs con nota '+nt;lista=r(function(x){return (String(x.c.nota||'').trim()||'Sin nota')===nt;});}
     else if(k==='fu:LinkedIn (aviso)'&&+AJUSTE_LI>0){t='Llegaron por el aviso en LinkedIn (dato cargado como total: no se sabe cuáles son)';lista=[];}
-    else if(k.indexOf('fu:')===0){var fu=k.slice(3);t='Llegaron por: '+fu;lista=r(function(x){return (String(x.c.fuente||'').trim()||'Sin dato')===fu;});}
+    else if(k.indexOf('fu:')===0){var fu=k.slice(3);t='Llegaron por: '+fu;lista=r(function(x){return fuG(x.c.fuente)===fu;});}
     else if(k.indexOf('sal:')===0){var q=k.slice(4);t='Pretensión '+(q==='deb'?'por debajo':q==='lin'?'en línea':'por encima')+' de la banda';lista=r(function(x){return salBucket(x)===q;});}
     else {t='';lista=[];}
     return {t:t,l:lista};
@@ -131,13 +131,15 @@
     var x='<div class="rs-dash'+(window.EXPL?' n9':'')+'">'+kpi(cv,'CVs recibidos','','all')+kpi(scr,'Screenings realizados','','scr')+(window.EXPL?kpi(exp,'Exploraciones realizadas','','expl'):'')+kpi(comp,'Competencias realizadas','','comp')+kpi(emp,'Avanzan a empresa','','emp')+kpi(res,'En reserva','g','res')+kpi(desc,'Descartados','r','desc')+kpi(g('sinc'),'Sin contactar','y act','sinc')+kpi(pr,'Entrevistas próx. 7 días'+(hoy?' ('+hoy+' hoy)':''),'act','prox')+'</div>';
     var ES=etNom().map(function(nm,i){return {l:nm,v:g('et:'+i),c:(window.EXPL?[COLS.cv,COLS.scr,'#c98bb9',COLS.comp,COLS.fin]:[COLS.cv,COLS.scr,COLS.comp,COLS.fin])[i],k:'et:'+i};});
     ES.push({l:'En reserva',v:res,c:COLS.res,k:'res'});ES.push({l:'Descartados',v:desc,c:COLS.desc,k:'desc'});
-    var notas={},fuentes={};L.forEach(function(y){var nt=String(y.c.nota||'').trim()||'Sin nota';notas[nt]=(notas[nt]||0)+1;var fu=String(y.c.fuente||'').trim()||'Sin dato';fuentes[fu]=(fuentes[fu]||0)+1;});
+    var notas={},fuentes={};L.forEach(function(y){var nt=String(y.c.nota||'').trim()||'Sin nota';notas[nt]=(notas[nt]||0)+1;var fu=fuG(y.c.fuente);fuentes[fu]=(fuentes[fu]||0)+1;});
     if(typeof ajusteFuentes==='function'&&+AJUSTE_LI>0)ajusteFuentes(fuentes,+AJUSTE_LI);
     var NS=['A','B+','B','C','Sin nota'].filter(function(k){return notas[k];}).map(function(k){return {l:k==='Sin nota'?k:'Nota '+k,v:notas[k],c:NC[k],k:'nota:'+k};});
     var FS=Object.keys(fuentes).sort(function(a,b){return fuentes[b]-fuentes[a];}).map(function(k,i){return {l:k,v:fuentes[k],c:PAL[i%PAL.length],k:'fu:'+k};});
     x+='<div class="rs-panel"><div class="rs-row3"><div><h3>Dónde está cada candidato</h3>'+dona(ES,n,n,'candidatos',window.EXPL?4:0)+'</div><div><h3>Calidad de los CVs</h3>'+dona(NS,n,pct(notas['A']||0,n),'con nota A',4)+'</div><div><h3>De dónde llegan</h3>'+dona(FS,n,FS.length,FS.length===1?'canal':'canales')+'</div>'+'</div>'+motivosHtml()+'</div>';
     document.getElementById('resumenPage').innerHTML=x;
   }
+  /* «LinkedIn / Hunting» (elegido a mano en la ficha) y «Hunting (LinkedIn)» (al pasar desde Hunting) son el mismo canal */
+  function fuG(v){v=String(v||'').trim();return /hunting/i.test(v)?'Hunting (LinkedIn)':(v||'Sin dato');}
   function ver(v){
     var R=v==='resumen';
     document.getElementById('resumenPage').style.display=R?'block':'none';
