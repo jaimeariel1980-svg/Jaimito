@@ -4,8 +4,7 @@
 .rs-tab.on{background:#0F3F27;color:#fff;border-color:#0F3F27}
 #resumenPage{display:none;max-width:1500px;margin:0 auto;padding:14px 16px 50px;color:#1a1a1a}
 #resumenPage [data-k]{cursor:pointer}
-.rs-dash{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px}@media(min-width:1300px){.rs-dash{grid-template-columns:repeat(8,1fr)}}@media(max-width:640px){.rs-dash{grid-template-columns:repeat(2,1fr)}}
-.rs-dash.n9{grid-template-columns:repeat(3,1fr)}@media(min-width:1300px){.rs-dash.n9{grid-template-columns:repeat(9,1fr)}}
+.rs-dash{display:grid;grid-template-columns:repeat(12,1fr);gap:12px;margin-bottom:14px}.rs-dash>*{grid-column:span 3}.rs-dash.n7>:nth-child(n+5){grid-column:span 4}@media(min-width:1300px){.rs-dash.n7{grid-template-columns:repeat(7,1fr)}.rs-dash.n8{grid-template-columns:repeat(8,1fr)}.rs-dash>*,.rs-dash.n7>:nth-child(n+5){grid-column:span 1}}@media(max-width:640px){.rs-dash{grid-template-columns:repeat(2,1fr)}.rs-dash>*,.rs-dash.n7>:nth-child(n+5){grid-column:span 1}.rs-dash.n7>:last-child{grid-column:span 2}}
 .rs-kpi{background:#fff;border:1px solid #e3e0d9;border-radius:14px;padding:20px 18px;position:relative;overflow:hidden;transition:.12s}
 .rs-kpi:before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:#0F3F27}
 .rs-kpi:hover{box-shadow:0 4px 14px rgba(26,102,69,.18);transform:translateY(-1px)}
@@ -82,7 +81,6 @@
     else if(k==='dcomp'){t='Descartados en competencias / empresa';lista=r(function(x){return x.d==='comp'||x.d==='emp';});}
     else if(k.indexOf('mot:')===0){var mo=k.slice(4);t=mo?'Descartados por: '+mo:'Descartados sin motivo cargado';lista=r(function(x){return x.t==='desc'&&(mo?String(x.c.motivo||'').split(/;\s*/).map(function(m){return m.replace(/^Otro: .*/,'Otro');}).indexOf(mo)>-1:!String(x.c.motivo||'').trim());});}
     else if(k==='act'){t='En proceso';lista=r(function(x){return x.t==='act';});}
-    else if(k==='sinc'){t='Falta contactar (avanzaron de etapa y todavía no se los contactó para la siguiente)';lista=r(function(x){return avPendientes([x.c]).some(function(p){return /^contactar/.test(p.k);});});}
     else if(k==='prox'){t='Entrevistas de los próximos 7 días';lista=r(function(x){return citaEn(x,h0,h0+7*864e5);}).sort(function(a,b){return avFecha(a.c.cita)-avFecha(b.c.cita);});}
     else if(k.indexOf('et:')===0){var i=+k.slice(3),ult=etNom().length-1;t='Etapa actual: '+etNom()[i];
       lista=r(function(x){return x.t==='act'?etIdx(x)===i:x.t==='cont'?i===ult:false;});}
@@ -128,7 +126,7 @@
     var n=L.length,g=function(k){return grupo(k).l.length;},h0=inicioDia(),pr=g('prox'),hoy=L.filter(function(x){return citaEn(x,h0,h0+864e5);}).length;
     var cv=n,scr=g('scr'),exp=g('expl'),comp=g('comp'),emp=g('emp'),res=g('res'),desc=g('desc'),dcv=g('dcv'),dpost=g('dpost'),dcomp=g('dcomp');
     var pend=(typeof AV_PEND!=='undefined'&&AV_PEND)||[],nov=(typeof AV_NOV!=='undefined'&&AV_NOV)||[],urg=pend.filter(function(a){return a.urg;}).length;
-    var x='<div class="rs-dash'+(window.EXPL?' n9':'')+'">'+kpi(cv,'CVs recibidos','','all')+kpi(scr,'Screenings realizados','','scr')+(window.EXPL?kpi(exp,'Exploraciones realizadas','','expl'):'')+kpi(comp,'Competencias realizadas','','comp')+kpi(emp,'Avanzan a empresa','','emp')+kpi(res,'En reserva','g','res')+kpi(desc,'Descartados','r','desc')+kpi(g('sinc'),'Falta contactar','y act','sinc')+kpi(pr,'Entrevistas próx. 7 días'+(hoy?' ('+hoy+' hoy)':''),'act','prox')+'</div>';
+    var x='<div class="rs-dash'+(window.EXPL?' n8':' n7')+'">'+kpi(cv,'CVs recibidos','','all')+kpi(scr,'Screenings realizados','','scr')+(window.EXPL?kpi(exp,'Exploraciones realizadas','','expl'):'')+kpi(comp,'Competencias realizadas','','comp')+kpi(emp,'Avanzan a empresa','','emp')+kpi(res,'En reserva','g','res')+kpi(desc,'Descartados','r','desc')+kpi(pr,'Entrevistas próx. 7 días'+(hoy?' ('+hoy+' hoy)':''),'act','prox')+'</div>';
     var ES=etNom().map(function(nm,i){return {l:nm,v:g('et:'+i),c:(window.EXPL?[COLS.cv,COLS.scr,'#c98bb9',COLS.comp,COLS.fin]:[COLS.cv,COLS.scr,COLS.comp,COLS.fin])[i],k:'et:'+i};});
     ES.push({l:'En reserva',v:res,c:COLS.res,k:'res'});ES.push({l:'Descartados',v:desc,c:COLS.desc,k:'desc'});
     var notas={},fuentes={};L.forEach(function(y){var nt=String(y.c.nota||'').trim()||'Sin nota';notas[nt]=(notas[nt]||0)+1;var fu=fuG(y.c.fuente);fuentes[fu]=(fuentes[fu]||0)+1;});
