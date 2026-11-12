@@ -1888,7 +1888,7 @@ function azcuAvisoPostVisita(){
     m = String(v[i][6]).match(/^Visita (\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2})/);
     if(!m) continue;
     var dt = ahora - new Date(m[3]+'-'+m[2]+'-'+m[1]+'T'+m[4]+':'+m[5]+':00-03:00').getTime();
-    if(dt<2*3600000 || dt>14*86400000) continue;
+    if(dt<24*3600000 || dt>14*86400000) continue;
     var id = String(v[i][0]).trim(), key = id+'|'+m[3]+m[2]+m[1]+m[4]+m[5]+'|'+azcuSlug_(v[i][3]).slice(0,8);
     if(env[key] && ahora-env[key] < 2*86400000) continue;
     var tel = String(v[i][4]).replace(/\D/g,''), nom = azcuSinAc_(v[i][3]), vn = +(m[3]+m[2]+m[1]), hecho = false;
