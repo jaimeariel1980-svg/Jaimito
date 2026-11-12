@@ -43,21 +43,21 @@ function azcuDif_(a, b){
 }
 function azcuHoy_(){ return +Utilities.formatDate(new Date(), AZCU_TZ, 'yyyyMMdd'); }
 function azcuDatosTb_(){
-  try{ var t = +CacheService.getScriptCache().get('azd_t') || 0; if(Date.now()-t < 330000) return azcuDatos_(); }catch(e){}
+  try{ var t = +CacheService.getScriptCache().get('azd2_t') || 0; if(Date.now()-t < 330000) return azcuDatos_(); }catch(e){}
   return azcuDatos_(true);
 }
 function azcuDatos_(forzar){
   if(!forzar){
     if(AZCU_D_) return AZCU_D_;
-    var c0 = CacheService.getScriptCache(), n0 = +(c0.get('azd_n') || 0), s0 = '', i0, p0, ok0 = n0 > 0;
-    for(i0=0;i0<n0 && ok0;i0++){ p0 = c0.get('azd_'+i0); if(p0===null) ok0 = false; else s0 += p0; }
+    var c0 = CacheService.getScriptCache(), n0 = +(c0.get('azd2_n') || 0), s0 = '', i0, p0, ok0 = n0 > 0;
+    for(i0=0;i0<n0 && ok0;i0++){ p0 = c0.get('azd2_'+i0); if(p0===null) ok0 = false; else s0 += p0; }
     if(ok0){ try{ AZCU_D_ = JSON.parse(s0); return AZCU_D_; }catch(e){} }
   }
   AZCU_D_ = getDatosRaw_();
   try{
     var c = CacheService.getScriptCache(), j = JSON.stringify(AZCU_D_), k = Math.ceil(j.length/90000), i;
-    for(i=0;i<k;i++) c.put('azd_'+i, j.slice(i*90000, (i+1)*90000), 660);
-    c.put('azd_n', String(k), 660); c.put('azd_t', String(Date.now()), 660);
+    for(i=0;i<k;i++) c.put('azd2_'+i, j.slice(i*90000, (i+1)*90000), 660);
+    c.put('azd2_n', String(k), 660); c.put('azd2_t', String(Date.now()), 660);
   }catch(e){}
   return AZCU_D_;
 }
@@ -73,7 +73,7 @@ function azcuMapaDirs_(forzar){
   }catch(e){}
   return m;
 }
-function azcuLimpiarCache_(){ try{ var c = CacheService.getScriptCache(), n = +(c.get('azd_n') || 0), i; c.remove('azmov_90'); c.remove('azmov_30'); for(i=0;i<n;i++) c.remove('azd_'+i); c.remove('azd_n'); c.remove('azd_t'); c.remove('azdir'); AZCU_D_ = null; }catch(e){} }
+function azcuLimpiarCache_(){ try{ var c = CacheService.getScriptCache(), n = +(c.get('azd2_n') || 0), i; c.remove('azmov_90'); c.remove('azmov_30'); for(i=0;i<n;i++) c.remove('azd2_'+i); c.remove('azd2_n'); c.remove('azd2_t'); c.remove('azdir'); AZCU_D_ = null; }catch(e){} }
 function azcuProp_(id){
   var d = azcuDatos_(), q = azcuSinAc_(id), i;
   for(i=0;i<d.length;i++) if(String(d[i].id).trim()===String(id).trim()) return d[i];
