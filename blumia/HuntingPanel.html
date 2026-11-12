@@ -288,12 +288,29 @@
   }
   /* embudo de hunting dentro del Resumen (solo si la búsqueda tiene hunting) */
   var cache=null;
+  /* tocar una tarjeta del embudo abre la lista de esas personas (mismo criterio que el número: nivel alcanzado) y cada una abre su ficha */
+  var NOMB=['Identificados','Contactados','Respondieron','Interesados','En el proceso'];
+  function listaEmbudo(k){
+    var L=D.items.filter(function(o){return Number(o.nivel||0)>=k;});
+    L.sort(function(a,b){return Number(b.nivel||0)-Number(a.nivel||0)||String(a.nombre).localeCompare(String(b.nombre));});
+    var rows=L.map(function(o){var sub=[o.cargo,o.empresa].filter(Boolean).join(' · ');
+      return '<div class="hu-fr" data-id="'+esc(o.id)+'" tabindex="0" style="display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 4px;border-bottom:1px solid #E5E9E2;cursor:pointer"><div><b>'+esc(o.nombre)+'</b>'+(sub?'<div style="font-size:12.5px;color:#666">'+esc(sub)+'</div>':'')+'</div><span class="hu-seg" style="margin:0;white-space:nowrap">'+esc(o.estado==='Identificado'?'Por contactar':lbl(o.estado))+'</span></div>';}).join('');
+    var bg=modal('<h3>'+NOMB[k]+' · '+L.length+'</h3><div style="max-height:60vh;overflow:auto">'+(rows||'<p>Todavía no hay nadie.</p>')+'</div><div class="hu-row"><button id="hl-c">Cerrar</button><button class="go" id="hl-h">Ir a Hunting</button></div>');
+    bg.querySelector('#hl-c').onclick=function(){bg.remove();};
+    bg.querySelector('#hl-h').onclick=function(){bg.remove();window.rsVer('hunting');};
+    var abrir=function(e){var r=e.target.closest&&e.target.closest('.hu-fr');if(!r)return;var o=porId(r.getAttribute('data-id'));if(o){bg.remove();ficha(o);}};
+    bg.addEventListener('click',abrir);
+    bg.addEventListener('keydown',function(e){if(e.key==='Enter')abrir(e);});
+  }
   function resumenBloque(){
     var rp=document.getElementById('resumenPage');if(!rp)return;
+    if(!rp._huClick){rp._huClick=1;
+      rp.addEventListener('click',function(e){var c=e.target.closest&&e.target.closest('#rsHunt [data-hl]');if(c)listaEmbudo(Number(c.getAttribute('data-hl')));});
+      rp.addEventListener('keydown',function(e){if(e.key!=='Enter')return;var c=e.target.closest&&e.target.closest('#rsHunt [data-hl]');if(c)listaEmbudo(Number(c.getAttribute('data-hl')));});}
     var pon=function(){
       var s=cache;if(!s||!s.identificados||document.getElementById('rsHunt'))return;
-      var f=function(n,l){return '<div class="rs-kpi"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>';};
-      var h='<div class="rs-panel" id="rsHunt"><h3>Hunting · búsqueda directa</h3><div class="rs-dash" style="grid-template-columns:repeat(5,1fr)">'+f(s.identificados,'Identificados')+f(s.contactados,'Contactados')+f(s.respondieron,'Respondieron')+f(s.interesados,'Interesados')+f(s.enProceso,'En el proceso')+'</div></div>';
+      var f=function(n,l,k){return '<div class="rs-kpi" data-hl="'+k+'" role="button" tabindex="0" title="Ver quiénes son" style="cursor:pointer"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>';};
+      var h='<div class="rs-panel" id="rsHunt"><h3>Hunting · búsqueda directa</h3><div class="rs-dash" style="grid-template-columns:repeat(5,1fr)">'+f(s.identificados,'Identificados',0)+f(s.contactados,'Contactados',1)+f(s.respondieron,'Respondieron',2)+f(s.interesados,'Interesados',3)+f(s.enProceso,'En el proceso',4)+'</div></div>';
       var d=rp.querySelector('.rs-dash');if(d&&d.parentNode===rp)d.insertAdjacentElement('afterend',document.createRange().createContextualFragment(h).firstChild);else rp.insertAdjacentHTML('beforeend',h);
     };
     run('huntingListar',[PERFIL],function(r){cache=r.stats;D=r;badge();pon();},function(){});
