@@ -332,7 +332,7 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
 
       <!-- Pregunta 1 -->
       <div class="question">
-        <label class="question-title">1. ¿Cuál fue tu operación con nosotros?</label>
+        <label class="question-title">¿Cuál fue tu operación con nosotros?</label>
         <div class="grid-options">
           <label class="option-card">
             <input type="radio" name="operacion" value="Compré una propiedad" required>
@@ -345,35 +345,11 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
         </div>
       </div>
 
-      <!-- Solo propietarios: captación y venta -->
-      <div id="extraProp" style="display:none">
-        <div class="question">
-          <label class="question-title">Por ser propietario: ¿cómo evaluarías la publicación y difusión de tu propiedad?</label>
-          <div class="stars">
-          <input type="radio" id="sp5" name="publicacion" value="5"><label for="sp5" title="5">★</label>
-          <input type="radio" id="sp4" name="publicacion" value="4"><label for="sp4" title="4">★</label>
-          <input type="radio" id="sp3" name="publicacion" value="3"><label for="sp3" title="3">★</label>
-          <input type="radio" id="sp2" name="publicacion" value="2"><label for="sp2" title="2">★</label>
-          <input type="radio" id="sp1" name="publicacion" value="1"><label for="sp1" title="1">★</label>
-          </div>
-          <div class="stars-ref"><span>Mala</span><span>Excelente</span></div>
-        </div>
-        <div class="question">
-          <label class="question-title">¿Cómo evaluarías cómo te mantuvimos informado durante la venta?</label>
-          <div class="stars">
-          <input type="radio" id="sc5" name="comunicacion" value="5"><label for="sc5" title="5">★</label>
-          <input type="radio" id="sc4" name="comunicacion" value="4"><label for="sc4" title="4">★</label>
-          <input type="radio" id="sc3" name="comunicacion" value="3"><label for="sc3" title="3">★</label>
-          <input type="radio" id="sc2" name="comunicacion" value="2"><label for="sc2" title="2">★</label>
-          <input type="radio" id="sc1" name="comunicacion" value="1"><label for="sc1" title="1">★</label>
-          </div>
-          <div class="stars-ref"><span>Mala</span><span>Excelente</span></div>
-        </div>
-      </div>
+      <p style="margin:4px 0 14px;font-size:14px;color:#374151;text-align:center">Calificá de 1 a 5 estrellas:</p>
 
       <!-- Pregunta 2 -->
       <div class="question">
-        <label class="question-title">2. ¿Cómo evaluarías el acompañamiento de nuestro equipo comercial?</label>
+        <label class="question-title">Atención de nuestro equipo comercial</label>
         <div class="stars">
           <input type="radio" id="sq5" name="equipo" value="5" required><label for="sq5" title="5">★</label>
           <input type="radio" id="sq4" name="equipo" value="4"><label for="sq4" title="4">★</label>
@@ -386,7 +362,7 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
 
       <!-- Pregunta 3: Tiempos de Respuesta -->
       <div class="question">
-        <label class="question-title">3. ¿Cómo evaluarías nuestros tiempos de respuesta en la comunicación?</label>
+        <label class="question-title">Rapidez para responderte</label>
         <div class="stars">
           <input type="radio" id="sr5" name="tiempos_respuesta" value="5" required><label for="sr5" title="5">★</label>
           <input type="radio" id="sr4" name="tiempos_respuesta" value="4"><label for="sr4" title="4">★</label>
@@ -399,7 +375,7 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
 
       <!-- Pregunta 4: Tiempos de la Operación -->
       <div class="question">
-        <label class="question-title">4. ¿Cómo calificarías el tiempo que tomó concretar la operación?</label>
+        <label class="question-title">Duración de la operación</label>
         <div class="stars">
           <input type="radio" id="so5" name="tiempos_operacion" value="5" required><label for="so5" title="5">★</label>
           <input type="radio" id="so4" name="tiempos_operacion" value="4"><label for="so4" title="4">★</label>
@@ -410,9 +386,35 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
         <div class="stars-ref"><span>Demasiado lento</span><span>Más rápido de lo esperado</span></div>
       </div>
 
+      <!-- Solo propietarios: captación y venta -->
+      <div id="extraProp" style="display:none">
+        <div class="question">
+          <label class="question-title">Publicación y difusión de tu propiedad</label>
+          <div class="stars">
+          <input type="radio" id="sp5" name="publicacion" value="5"><label for="sp5" title="5">★</label>
+          <input type="radio" id="sp4" name="publicacion" value="4"><label for="sp4" title="4">★</label>
+          <input type="radio" id="sp3" name="publicacion" value="3"><label for="sp3" title="3">★</label>
+          <input type="radio" id="sp2" name="publicacion" value="2"><label for="sp2" title="2">★</label>
+          <input type="radio" id="sp1" name="publicacion" value="1"><label for="sp1" title="1">★</label>
+          </div>
+          <div class="stars-ref"><span>Mala</span><span>Excelente</span></div>
+        </div>
+        <div class="question">
+          <label class="question-title">Información durante la venta</label>
+          <div class="stars">
+          <input type="radio" id="sc5" name="comunicacion" value="5"><label for="sc5" title="5">★</label>
+          <input type="radio" id="sc4" name="comunicacion" value="4"><label for="sc4" title="4">★</label>
+          <input type="radio" id="sc3" name="comunicacion" value="3"><label for="sc3" title="3">★</label>
+          <input type="radio" id="sc2" name="comunicacion" value="2"><label for="sc2" title="2">★</label>
+          <input type="radio" id="sc1" name="comunicacion" value="1"><label for="sc1" title="1">★</label>
+          </div>
+          <div class="stars-ref"><span>Mala</span><span>Excelente</span></div>
+        </div>
+      </div>
+
       <!-- Pregunta 5 -->
       <div class="question">
-        <label class="question-title">5. ¿Nos recomendarías a un familiar o amigo?</label>
+        <label class="question-title">¿Nos recomendarías a un familiar o amigo?</label>
         <div class="grid-options" style="grid-template-columns: 1fr 1fr 1fr;">
           <label class="option-card">
             <input type="radio" name="recomendacion" value="Sí" required>
@@ -431,7 +433,7 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
 
       <!-- Pregunta 6 -->
       <div class="question">
-        <label class="question-title">6. ¿Cómo calificarías tu experiencia general con nosotros?</label>
+        <label class="question-title">Tu experiencia general con nosotros</label>
         <div class="stars">
           <input type="radio" id="st5" name="calificacion" value="5" required><label for="st5" title="5 · Excelente">★</label>
           <input type="radio" id="st4" name="calificacion" value="4"><label for="st4" title="4 · Muy buena">★</label>
@@ -444,7 +446,7 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
 
       <!-- Pregunta 7 -->
       <div class="question">
-        <label class="question-title">7. ¿Qué podríamos haber hecho mejor? (Contanos si no nos pusiste 5 estrellas)</label>
+        <label class="question-title">¿Qué podríamos haber hecho mejor? (Contanos si no nos pusiste 5 estrellas)</label>
         <textarea name="comentarios" placeholder="Dejanos tu comentario acá..."></textarea>
       </div>
 
