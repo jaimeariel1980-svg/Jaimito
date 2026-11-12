@@ -199,7 +199,7 @@ function azcuFmtFicha_(id, modo){
   sec('Documentación');
   lin('Consultas', f.consultas); lin('Visitas', f.visitas); lin('Propuestas', f.propuestas); lin('Días sin movimiento', f.dias_sin_movimiento);
   sec('Seguimiento');
-  if(f.encuesta) lin('Encuesta', (f.encuesta.nota||'?')+'/10'+(f.encuesta.nombre ? ' · '+f.encuesta.nombre : '')+(f.encuesta.recomienda ? ' · recomienda: '+f.encuesta.recomienda : ''));
+  if(f.encuesta) lin('Encuesta', (f.encuesta.nota||'?')+'/5'+(f.encuesta.nombre ? ' · '+f.encuesta.nombre : '')+(f.encuesta.recomienda ? ' · recomienda: '+f.encuesta.recomienda : ''));
   sec('Encuesta');
   lin('Observaciones', f.observaciones); lin('Ficha / link Tokko', f.link_tokko); lin('Carpeta Drive', f.carpeta_drive);
   sec('Notas y links');
@@ -568,7 +568,7 @@ function azcuPanel_(){
   var x = azcuHerrDashboard_(), sat = x.encuestas.satisfaccion_promedio, cet = {'Captación':'#7a5cc0','Publicadas':'#3b6fb5','Reserva':'#e0a53d','Vendida':'#2e9e5b','Otras inmobiliarias':'#c2761a'};
   return {
     kpis:[{n:x.propiedades,l:'Propiedades'},{n:x.activas,l:'Activas'},{n:x.vendidas,l:'Vendidas',c:'g'},{n:x.bajas,l:'Bajas'},
-      {n:sat===null?'—':sat+'/10',l:'Satisfacción',c:sat===null?'':(sat>=8?'g':(sat>=5?'a':'r'))},{n:x.propuestas_en_curso,l:'Propuestas',c:'g'},{n:x.activas_sin_movimiento_30d,l:'Sin movimiento',c:x.activas_sin_movimiento_30d?'r':'g'}],
+      {n:sat===null?'—':sat+'/5',l:'Satisfacción',c:sat===null?'':(sat>=4?'g':(sat>=3?'a':'r'))},{n:x.propuestas_en_curso,l:'Propuestas',c:'g'},{n:x.activas_sin_movimiento_30d,l:'Sin movimiento',c:x.activas_sin_movimiento_30d?'r':'g'}],
     etapas:['Captación','Publicadas','Reserva','Vendida','Otras inmobiliarias'].map(function(k){ return {l:k, v:x.por_etapa[k]||0, c:cet[k]}; }),
     papeles:[{l:'Al día',v:x.papeles['Al día'],c:'#2e9e5b'},{l:'Incompletos',v:x.papeles['Incompletos'],c:'#e0a53d'},{l:'Faltan papeles',v:x.papeles['Faltan papeles'],c:'#d1495b'}]
   };
@@ -589,7 +589,7 @@ function azcuHerrListar_(a){
     if(f==='papeles_incompletos') return pe==='med';
     if(f==='papeles_al_dia') return pe==='ok';
     if(f==='con_encuesta') return !isNaN(cal);
-    if(f==='encuesta_baja') return !isNaN(cal) && cal<7;
+    if(f==='encuesta_baja') return !isNaN(cal) && cal<3;
     return true;
   });
   return {total:out.length, propiedades:out.slice(0,80).map(function(p){ var c = azcuCorta_(p); c.dias_sin_movimiento = p.dias; c.visitas = p.vis; c.consultas = p.cons; c.salud_aviso_pct = p.pct; c.vendedor = p.vendedor; return c; })};
@@ -1966,7 +1966,7 @@ function azcuResumenSemanal(){
     +fila('Interacciones con interesados', a.interacciones, b.interacciones)+fila('Visitas realizadas', a.visitas_realizadas, b.visitas_realizadas)+fila('Visitas agendadas', a.visitas_agendadas, b.visitas_agendadas)
     +fila('Le interesó', a.le_intereso, b.le_intereso)+fila('Propuestas', a.propuestas, b.propuestas)+fila('Propuestas aceptadas', a.aceptadas, b.aceptadas)+fila('Captaciones nuevas', S.captaciones_nuevas, S.captaciones_nuevas_semana_anterior)+'</table>';
   H += tit('Movimiento de cartera')+'<div style="font-size:14px;line-height:1.7">'+(ant ? '🔶 Pasaron a Reserva: <b>'+res+'</b><br>✅ Vendidas: <b>'+vend+'</b><br>' : '<i>El próximo resumen incluye reservas y ventas de la semana.</i><br>')
-    +'📋 Cartera: <b>'+D.propiedades+'</b> propiedades · <b>'+D.activas+'</b> activas · <b>'+D.en_captacion+'</b> en captación · <b>'+D.vendidas+'</b> vendidas<br>🗓 Visitas agendadas para los próximos 7 días: <b>'+S.visitas_proximos_7_dias+'</b>'+(D.encuestas.satisfaccion_promedio!==null ? '<br>⭐ Satisfacción promedio: <b>'+D.encuestas.satisfaccion_promedio+'/10</b> ('+D.encuestas.cantidad+' encuestas)' : '')+'</div>';
+    +'📋 Cartera: <b>'+D.propiedades+'</b> propiedades · <b>'+D.activas+'</b> activas · <b>'+D.en_captacion+'</b> en captación · <b>'+D.vendidas+'</b> vendidas<br>🗓 Visitas agendadas para los próximos 7 días: <b>'+S.visitas_proximos_7_dias+'</b>'+(D.encuestas.satisfaccion_promedio!==null ? '<br>⭐ Satisfacción promedio: <b>'+D.encuestas.satisfaccion_promedio+'/5</b> ('+D.encuestas.cantidad+' encuestas)' : '')+'</div>';
   var vk = Object.keys(S.por_vendedor).sort(function(x,y){ return S.por_vendedor[y].interacciones - S.por_vendedor[x].interacciones; });
   if(vk.length) H += tit('Por vendedor · últimos 7 días')+'<table style="width:100%;border-collapse:collapse;font-size:14px"><tr style="color:#6b7280;font-size:12px"><td></td><td style="text-align:right;padding:4px 10px">Interacc.</td><td style="text-align:right;padding:4px 10px">Visitas</td><td style="text-align:right;padding:4px 10px">Propuestas</td></tr>'
     +vk.map(function(k){ var o = S.por_vendedor[k]; return '<tr><td style="padding:6px 10px;border-bottom:1px solid #eee">'+k+'</td><td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:right"><b>'+o.interacciones+'</b></td><td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:right">'+o.visitas+'</td><td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:right">'+o.propuestas+'</td></tr>'; }).join('')+'</table>';

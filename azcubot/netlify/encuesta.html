@@ -271,6 +271,13 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
       display: none;
     }
 
+    /* Estrellas */
+    .stars { display:flex; flex-direction:row-reverse; justify-content:center; gap:4px; }
+    .stars input { display:none; }
+    .stars label { font-size:48px; line-height:1; color:#d1d5db; cursor:pointer; padding:0 2px; }
+    .stars input:checked ~ label, .stars label:hover, .stars label:hover ~ label { color:#F5B301; }
+    .stars-ref { display:flex; justify-content:space-between; font-size:12px; color:#6b7280; margin-top:4px; padding:0 8px; }
+
     /* Botón enviar */
     .btn-submit {
       background: linear-gradient(120deg,#1B3866,#0A3D91);
@@ -428,24 +435,20 @@ window.google.script = {run: mk({}), host:{close:function(){}, setHeight:functio
 
       <!-- Pregunta 6 -->
       <div class="question">
-        <label class="question-title">6. Del 1 al 10, ¿cómo calificarías tu experiencia general?</label>
-        <div class="scale-container">
-          <label class="scale-option"><input type="radio" name="calificacion" value="1" required>1</label>
-          <label class="scale-option"><input type="radio" name="calificacion" value="2">2</label>
-          <label class="scale-option"><input type="radio" name="calificacion" value="3">3</label>
-          <label class="scale-option"><input type="radio" name="calificacion" value="4">4</label>
-          <label class="scale-option"><input type="radio" name="calificacion" value="5">5</label>
-          <label class="scale-option"><input type="radio" name="calificacion" value="6">6</label>
-          <label class="scale-option"><input type="radio" name="calificacion" value="7">7</label>
-          <label class="scale-option"><input type="radio" name="calificacion" value="8">8</label>
-          <label class="scale-option"><input type="radio" name="calificacion" value="9">9</label>
-          <label class="scale-option"><input type="radio" name="calificacion" value="10">10</label>
+        <label class="question-title">6. ¿Cómo calificarías tu experiencia general con nosotros?</label>
+        <div class="stars">
+          <input type="radio" id="st5" name="calificacion" value="5" required><label for="st5" title="5 · Excelente">★</label>
+          <input type="radio" id="st4" name="calificacion" value="4"><label for="st4" title="4 · Muy buena">★</label>
+          <input type="radio" id="st3" name="calificacion" value="3"><label for="st3" title="3 · Buena">★</label>
+          <input type="radio" id="st2" name="calificacion" value="2"><label for="st2" title="2 · Regular">★</label>
+          <input type="radio" id="st1" name="calificacion" value="1"><label for="st1" title="1 · Mala">★</label>
         </div>
+        <div class="stars-ref"><span>Mala</span><span>Excelente</span></div>
       </div>
 
       <!-- Pregunta 7 -->
       <div class="question">
-        <label class="question-title">7. ¿Hay algo que quieras destacar o en lo que podamos mejorar? (Opcional)</label>
+        <label class="question-title">7. ¿Qué podríamos haber hecho mejor? (Contanos si no nos pusiste 5 estrellas)</label>
         <textarea name="comentarios" placeholder="Dejanos tu comentario acá..."></textarea>
       </div>
 
@@ -1110,7 +1113,8 @@ var LOGO_AZ="data:image/png;base64,"+
 document.addEventListener("DOMContentLoaded",function(){var el=document.getElementById("logoAZ");if(el)el.src=LOGO_AZ;});
     function enviarDatos(e) {
       e.preventDefault();
-      
+      var _f=document.getElementById('encuestaForm');
+      if(_f.calificacion.value && +_f.calificacion.value<5 && !_f.comentarios.value.trim()){ alert('Para ayudarnos a mejorar, contanos en el comentario qué nos faltó para las 5 estrellas.'); _f.comentarios.focus(); return; }
       document.getElementById('btnEnviar').innerText = "Enviando...";
       document.getElementById('btnEnviar').disabled = true;
 
