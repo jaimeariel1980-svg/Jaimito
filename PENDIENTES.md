@@ -100,6 +100,7 @@ Lo mantiene Claude. Prioridad: 🔴 urgente · 🟠 importante · 🟡 cuando se
 
 ## Producto (ideas hablando con Ariel)
 - 🟡 Guía corta «qué se hace con Azcu y qué con el Tablero» para el equipo (Azcu = cargar al paso, sobre todo en el celular; Tablero = ver y gestionar, sobre todo en la compu). — *Claude, si Ariel quiere*
+- **Prioridad baja · Claude (12/11):** nota de captación en la encuesta: que lo que opine el propietario sume al puntaje de quien captó su propiedad (hoy el puntaje por vendedor usa solo atención del equipo y rapidez). Hacerlo cuando haya varias encuestas de propietarios; con 1 o 2 el promedio no dice nada.
 
 ## Auditorías del 24/10 (funcional, diseño/uso, rendimiento) — hallazgos agrupados en tandas
 Tanda 1 — ✅ HECHA el 24/10 (encuesta en celular con viewport/charset/title/lang; formularios del Tablero en una columna en celular; memoria de avisos y cola en trozos `azcuPropGet_/azcuPropSet_`; festejo de Reserva en el widget; `azcuTokens_` duplicada → `azcuTokensNom_`; promedios de encuesta; texto de borrar propiedad). Quedó sin hacer, por riesgo/valor bajo: unificar «Hizo propuesta» / «Hizo una propuesta» (hoy se tolera por regex).
