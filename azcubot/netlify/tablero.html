@@ -1826,10 +1826,10 @@ function pintarEncuestaFicha(e){
 function pintarEncuesta(p,e){
   function q(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
   function row(k,v){return '<tr><td style="color:var(--gris)">'+k+'</td><td style="font-weight:600">'+(v?q(v):'—')+'</td></tr>';}
-  var cal=parseInt(e['Calificación']||e.cal)||0; var col=cal>=4?'var(--verde)':(cal>=3?'var(--amarillo)':'var(--rojo)');
+  var cal=encProm({cal:e['Calificación'],equipo:e.Equipo,tiempos_respuesta:e['Tiempos respuesta'],tiempos_operacion:e['Tiempos operación'],conv:e['Conversión (formato anterior)']}); var col=cal>=4?'var(--verde)':(cal>=3?'var(--amarillo)':'var(--rojo)'); var calT=cal?(Math.round(cal*10)/10).toString().replace('.',','):'—';
   document.getElementById('dlg').innerHTML=
     '<div class="fh"><span class="x" onclick="closeDL()">×</span><div class="dir">Encuesta de satisfacción</div><div class="sub">'+p.id+' · '+p.dir+'</div></div>'+
-    '<div class="fb"><div style="text-align:center;margin-bottom:16px"><div style="font-size:46px;font-weight:800;color:'+col+';line-height:1">'+(cal||'—')+'<span style="font-size:20px;color:var(--gris)">/5</span></div><div style="font-size:12px;color:var(--gris)">calificación general</div></div>'+
+    '<div class="fb"><div style="text-align:center;margin-bottom:16px"><div style="font-size:46px;font-weight:800;color:'+col+';line-height:1">'+calT+'<span style="font-size:20px;color:var(--gris)">/5</span></div><div style="font-size:20px;margin-top:4px">'+starsHtml(cal)+'</div><div style="font-size:12px;color:var(--gris)">promedio de las 4 calificaciones</div></div>'+
     '<table>'+row('Fecha',e.Fecha)+row('Nombre',e.Nombre)+row('Operación',e['Operación'])+row('Atención del equipo comercial',_encV(e.Equipo))+row('Rapidez al responder',_encV(e['Tiempos respuesta']))+row('Duración de la operación',_encV(e['Tiempos operación']))+row('Publicación de la propiedad',_encV(e['Publicación']))+row('Comunicación durante el proceso de venta',_encV(e['Comunicación']))+row('¿Recomendaría?',e['Recomendación'])+'</table>'+
     _encCom(e)+(e.Comentarios?'<h3 class="sec">Comentarios</h3><div style="background:var(--beige);border-radius:8px;padding:10px 12px;font-size:13px">'+q(e.Comentarios)+'</div>':'')+
     '<div class="dlbtns"><button class="btn s" onclick="reenviarAviso(\''+p.id+'\',this)">🔔 Reenviar aviso al equipo</button><button class="btn s" onclick="closeDL()">Cerrar</button></div></div>';
