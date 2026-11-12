@@ -2187,7 +2187,7 @@ var _CK='azdatos_v1', _ck=null, _fdone=false, _hayCache=false;
 try{ _ck=localStorage.getItem(_CK); }catch(e){}
 function _cargaDatos(datos){
   DATA=adaptar(datos); if(DATA[0]) DOCLIST=Object.keys(DATA[0].papeles); render();
-  if(!_fdone){ _fdone=true; try{ var _f=new URLSearchParams(location.search).get('ficha'); if(_f && DATA.some(function(x){return x.id===_f;})) ficha(_f); }catch(e){} }
+  if(!_fdone){ _fdone=true; try{ var _f=new URLSearchParams(location.search).get('ficha'); if(_f && DATA.some(function(x){return x.id===_f;})) ficha(_f); var _ve=new URLSearchParams(location.search).get('vencuesta'); if(_ve && DATA.some(function(x){return x.id===_ve;})){ try{history.replaceState(null,'',location.pathname);}catch(e2){} verEncuesta(_ve); } }catch(e){} }
 }
 if(_ck){ try{ _cargaDatos(JSON.parse(_ck)); _hayCache=true; }catch(e){ _ck=null; } }
 google.script.run
